@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009, by the GROMACS development team, led by
+# Copyright (c) 2009,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -72,26 +72,26 @@ MACRO(GMX_TEST_FLOAT_FORMAT FP_IEEE754 FP_BIG_ENDIAN_BYTE FP_BIG_ENDIAN_WORD)
                 IF(CMAKE_SYSTEM_PROCESSOR MATCHES powerpc)
                     SET(GMX_IEEE754_BB_BW TRUE)
                     SET(GMX_IEEE754_LB_LW FALSE)
-                ELSE(CMAKE_SYSTEM_PROCESSOR MATCHES powerpc)
+                ELSE()
                     SET(GMX_IEEE754_BB_BW FALSE)
                     SET(GMX_IEEE754_LB_LW TRUE)
-                ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES powerpc)
+                ENDIF()
                 MESSAGE(STATUS "GMX_TEST_IEEE754_FORMAT found different results, consider setting CMAKE_OSX_ARCHITECTURES or CMAKE_TRY_COMPILE_OSX_ARCHITECTURES to one or no architecture !")
-            ENDIF(GMX_IEEE754_BB_BW  AND  GMX_IEEE754_LB_LW)
+            ENDIF()
 
             IF(GMX_IEEE754)
                 SET(${FP_IEEE754} 1 CACHE INTERNAL "Result of test for IEEE754 FP format" FORCE)
-            ENDIF(GMX_IEEE754)
+            ENDIF()
 
             IF(GMX_IEEE754_BB_BW  OR  GMX_IEEE754_BB_LW)
                 SET(${FP_BIG_ENDIAN_BYTE} 1 CACHE INTERNAL "Result of test for big endian FP byte order" FORCE)
-            ENDIF(GMX_IEEE754_BB_BW  OR  GMX_IEEE754_BB_LW)
+            ENDIF()
 
             IF(GMX_IEEE754_BB_BW  OR  GMX_IEEE754_LB_BW)
                 SET(${FP_BIG_ENDIAN_WORD} 1 CACHE INTERNAL "Result of test for big endian FP word order" FORCE)
-            ENDIF(GMX_IEEE754_BB_BW  OR  GMX_IEEE754_LB_BW)
+            ENDIF()
 
-        endif(HAVE_${FP_IEEE754})
+        endif()
 
         # just some informational output for the user
         if(GMX_IEEE754_BB_BW)
@@ -102,10 +102,10 @@ MACRO(GMX_TEST_FLOAT_FORMAT FP_IEEE754 FP_BIG_ENDIAN_BYTE FP_BIG_ENDIAN_WORD)
             MESSAGE(STATUS "Checking floating point format - IEEE754 (LE byte, BE word)")
         elseif(GMX_IEEE754_LB_LW)
             MESSAGE(STATUS "Checking floating point format - IEEE754 (LE byte, LE word)")
-        else(GMX_IEEE754_LB_LW)
+        else()
             MESSAGE(STATUS "Checking floating point format - unknown")
-        endif(GMX_IEEE754_BB_BW)
-    ENDIF(NOT DEFINED HAVE_${FP_IEEE754})
+        endif()
+    ENDIF()
 ENDMACRO(GMX_TEST_FLOAT_FORMAT FP_IEEE754 FP_BIG_ENDIAN_BYTE FP_BIG_ENDIAN_WORD)
 
 

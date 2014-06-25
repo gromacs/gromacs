@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,15 +39,16 @@
 #endif
 
 #include <string.h>
-#include "sysstuff.h"
-#include "gromacs/fileio/futil.h"
-#include "smalloc.h"
+
+#include <algorithm>
+
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "xdlghi.h"
 #include "dialogs.h"
-#include "index.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
 {

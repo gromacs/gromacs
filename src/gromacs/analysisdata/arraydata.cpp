@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,9 +52,10 @@ namespace gmx
 {
 
 AbstractAnalysisArrayData::AbstractAnalysisArrayData()
-    : rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstart_(0.0), xstep_(1.0),
-      bReady_(false)
+    : rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstep_(1.0),
+      bUniformX_(true), bReady_(false)
 {
+    xvalue_.push_back(0);
 }
 
 AbstractAnalysisArrayData::~AbstractAnalysisArrayData()
@@ -101,6 +102,17 @@ AbstractAnalysisArrayData::setRowCount(int rowCount)
     GMX_RELEASE_ASSERT(rowCount > 0, "Invalid number of rows");
     GMX_RELEASE_ASSERT(!isAllocated(),
                        "Cannot change row count after data has been allocated");
+    GMX_RELEASE_ASSERT(bUniformX_ || rowCount_ == 0
+                       || rowCount == static_cast<int>(xvalue_.size()),
+                       "X axis set with setXAxisValue() does not match the row count");
+    xvalue_.resize(rowCount);
+    if (bUniformX_ && rowCount > rowCount_)
+    {
+        for (int i = rowCount_; i < rowCount; ++i)
+        {
+            xvalue_[i] = xvalue_[0] + i * xstep_;
+        }
+    }
     rowCount_ = rowCount;
 }
 
@@ -124,8 +136,31 @@ void
 AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
-    xstart_ = start;
-    xstep_  = step;
+    xvalue_[0] = start;
+    xstep_     = step;
+    bUniformX_ = true;
+    for (int i = 0; i < rowCount_; ++i)
+    {
+        xvalue_[i] = start + i * xstep_;
+    }
+}
+
+
+void
+AbstractAnalysisArrayData::setXAxisValue(int row, real value)
+{
+    GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
+    if (rowCount_ > 0)
+    {
+        GMX_RELEASE_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+    }
+    else if (row >= static_cast<int>(xvalue_.size()))
+    {
+        xvalue_.resize(row + 1);
+    }
+    bUniformX_   = false;
+    xstep_       = 0.0;
+    xvalue_[row] = value;
 }
 
 
@@ -167,7 +202,9 @@ AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData *src,
     dest->setColumnCount(src->columnCount());
     dest->setRowCount(src->rowCount());
     dest->allocateValues();
-    dest->setXAxis(src->xstart(), src->xstep());
+    dest->xstep_     = src->xstep_;
+    dest->bUniformX_ = src->bUniformX_;
+    std::copy(src->xvalue_.begin(), src->xvalue_.end(), dest->xvalue_.begin());
     std::copy(src->value_.begin(), src->value_.end(), dest->value_.begin());
 }
 

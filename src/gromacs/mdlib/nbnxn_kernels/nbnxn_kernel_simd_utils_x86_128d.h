@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,8 +45,13 @@
  *   energy group pair energy storage
  */
 
-typedef gmx_epi32 gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
+#define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
+
+typedef gmx_simd_int32_t gmx_exclfilter;
+/* This is set to a constant for now, since the code does not adapt automatically just
+ * because we set the SIMD widths to other values.
+ */
+static const int filter_stride = 2;
 
 /* Transpose 2 double precision registers */
 static gmx_inline void
@@ -68,7 +73,7 @@ gmx_mm_transpose_sum2_pr(__m128d in0, __m128d in1)
     return _mm_add_pd(tr0, tr1);
 }
 
-static inline __m128
+static gmx_inline __m128
 gmx_mm128_invsqrt_ps_single(__m128 x)
 {
     const __m128 half  = _mm_set_ps(0.5, 0.5, 0.5, 0.5);
@@ -130,7 +135,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * AVX_256. */
 
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int gmx_unused *ti,
+load_table_f(const real *tab_coul_F, gmx_simd_int32_t ti_S, int gmx_unused *ti,
              __m128d *ctab0_S, __m128d *ctab1_S)
 {
     int     idx[2];
@@ -150,7 +155,7 @@ load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int gmx_unused *ti,
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_epi32 ti_S, int gmx_unused *ti,
+               gmx_simd_int32_t ti_S, int gmx_unused *ti,
                __m128d *ctab0_S, __m128d *ctab1_S, __m128d *ctabv_S)
 {
     int     idx[2];
@@ -183,13 +188,14 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return _mm_load_si128((__m128i *) i);
+    /* For now this has to be an explicit-float load since we use stride==2 */
+    return gmx_simd_load_fi(i);
 }
 
-static gmx_inline gmx_mm_pb
+static gmx_inline gmx_simd_bool_t
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
-    return gmx_mm_castsi128_pd(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
+    return _mm_castsi128_pd(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s128d_h_ */

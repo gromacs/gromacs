@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 #ifndef GMX_TIMING_WALLTIME_ACCOUNTING_H
 #define GMX_TIMING_WALLTIME_ACCOUNTING_H
 
-#include "../legacyheaders/types/simple.h"
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,8 +48,9 @@ extern "C" {
 }
 #endif
 
-/*! Contains per-process and per-thread data about elapsed wall-clock
- *  times and integration steps performed. */
+/*! \brief
+ * Contains per-process and per-thread data about elapsed wall-clock
+ * times and integration steps performed. */
 typedef struct gmx_walltime_accounting *gmx_walltime_accounting_t;
 
 //! Constructor
@@ -60,18 +61,21 @@ walltime_accounting_init(int numOpenMPThreads);
 void
 walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting);
 
-/*! Record initial time stamps, e.g. at run end or counter
- * re-initalization time */
+/*! \brief
+ * Record initial time stamps, e.g. at run end or counter re-initalization time
+ */
 void
 walltime_accounting_start(gmx_walltime_accounting_t walltime_accounting);
 
-/*! Measure and cache the elapsed wall-clock time since
- * walltime_accounting_start */
+/*! \brief
+ * Measure and cache the elapsed wall-clock time since
+ * walltime_accounting_start() */
 void
 walltime_accounting_end(gmx_walltime_accounting_t walltime_accounting);
 
-/*! Measure and return the elapsed wall-clock time since
- * walltime_accounting_start */
+/*! \brief
+ * Measure and return the elapsed wall-clock time since
+ * walltime_accounting_start() */
 double
 walltime_accounting_get_current_elapsed_time(gmx_walltime_accounting_t walltime_accounting);
 
@@ -91,15 +95,16 @@ walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_acco
 double
 walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accounting);
 
-/*! Set the number of integration steps done
+/*! \brief Set the number of integration steps done
  *
  * TODO consider whether this should get done in walltime_accounting_end */
 void
 walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_accounting,
-                                    gmx_large_int_t             nsteps_done);
+                                    gmx_int64_t                 nsteps_done);
 
-/*! \brief Calls system timing routines (e.g. clock_gettime) to get the
- * (fractional) number of seconds elapsed since the epoch.
+/*! \brief
+ * Calls system timing routines (e.g. clock_gettime) to get the (fractional)
+ * number of seconds elapsed since the epoch.
  *
  * Resolution is implementation-dependent, but typically nanoseconds
  * or microseconds. */

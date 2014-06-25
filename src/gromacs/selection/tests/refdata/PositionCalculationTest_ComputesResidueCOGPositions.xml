@@ -58,19 +58,19 @@
         </Sequence>
         <Int Name="RefId">0</Int>
         <Vector Name="Coordinates">
-          <Real Name="X">1.000000</Real>
-          <Real Name="Y">0.000000</Real>
-          <Real Name="Z">0.000000</Real>
+          <Real Name="X">1</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
         </Vector>
         <Vector Name="Velocity">
-          <Real Name="X">1.000000</Real>
-          <Real Name="Y">0.000000</Real>
-          <Real Name="Z">1.000000</Real>
+          <Real Name="X">1</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">1</Real>
         </Vector>
         <Vector Name="Force">
-          <Real Name="X">4.000000</Real>
-          <Real Name="Y">0.000000</Real>
-          <Real Name="Z">-3.333333</Real>
+          <Real Name="X">4</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">-3.333333333333333</Real>
         </Vector>
       </Position>
       <Position>
@@ -81,19 +81,19 @@
         </Sequence>
         <Int Name="RefId">1</Int>
         <Vector Name="Coordinates">
-          <Real Name="X">3.500000</Real>
-          <Real Name="Y">1.000000</Real>
-          <Real Name="Z">0.000000</Real>
+          <Real Name="X">3.5</Real>
+          <Real Name="Y">1</Real>
+          <Real Name="Z">0</Real>
         </Vector>
         <Vector Name="Velocity">
-          <Real Name="X">3.500000</Real>
-          <Real Name="Y">1.000000</Real>
-          <Real Name="Z">1.000000</Real>
+          <Real Name="X">3.5</Real>
+          <Real Name="Y">1</Real>
+          <Real Name="Z">1</Real>
         </Vector>
         <Vector Name="Force">
-          <Real Name="X">8.250000</Real>
-          <Real Name="Y">2.250000</Real>
-          <Real Name="Z">-2.250000</Real>
+          <Real Name="X">8.25</Real>
+          <Real Name="Y">2.25</Real>
+          <Real Name="Z">-2.25</Real>
         </Vector>
       </Position>
       <Position>
@@ -103,19 +103,19 @@
         </Sequence>
         <Int Name="RefId">2</Int>
         <Vector Name="Coordinates">
-          <Real Name="X">8.000000</Real>
-          <Real Name="Y">2.000000</Real>
-          <Real Name="Z">0.000000</Real>
+          <Real Name="X">8</Real>
+          <Real Name="Y">2</Real>
+          <Real Name="Z">0</Real>
         </Vector>
         <Vector Name="Velocity">
-          <Real Name="X">8.000000</Real>
-          <Real Name="Y">2.000000</Real>
-          <Real Name="Z">1.000000</Real>
+          <Real Name="X">8</Real>
+          <Real Name="Y">2</Real>
+          <Real Name="Z">1</Real>
         </Vector>
         <Vector Name="Force">
-          <Real Name="X">8.000000</Real>
-          <Real Name="Y">2.000000</Real>
-          <Real Name="Z">-1.000000</Real>
+          <Real Name="X">8</Real>
+          <Real Name="Y">2</Real>
+          <Real Name="Z">-1</Real>
         </Vector>
       </Position>
     </Positions>

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -85,7 +85,8 @@ macro(manage_linear_algebra_library name function_in_library)
         endif()
 
         if(NOT _library_was_found AND HAVE_LIBMKL)
-            set(CMAKE_REQUIRED_LIBRARIES ${FFT_LINKER_FLAGS} ${FFT_LIBRARIES})
+            set(CMAKE_REQUIRED_LIBRARIES "${FFT_LIBRARIES}")
+            set(CMAKE_REQUIRED_FLAGS "${FFT_LINKER_FLAGS}")
             # This may also not work correctly if the user changes
             # MKL_LIBRARIES after the first run. However,
             # MKL_LIBRARIES is only needed for icc version < 11, or
@@ -139,7 +140,7 @@ macro(manage_linear_algebra_library name function_in_library)
     if(GMX_EXTERNAL_${name})
         if (NOT _library_was_found)
             message(FATAL_ERROR "You have set GMX_EXTERNAL_${name}=ON to instruct GROMACS to use an external ${name} library, but no external library could be detected.")
-        endif ()
+        endif()
         # Actually trigger linking.
         list(APPEND LINEAR_ALGEBRA_LIBRARIES ${_libraries_to_link})
     else()

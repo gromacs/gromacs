@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*- */
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 /*! \internal \file
@@ -43,24 +44,28 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <sstream>
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "copyrite.h"
-#include "statutil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "names.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "gmx_ana.h"
 #include "macros.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/fileio/xvgr.h"
 
-#include "string2.h"
-#include "xvgr.h"
+#include "gromacs/utility/fatalerror.h"
 
 //! longest file names allowed in input files
 #define WHAM_MAXFILELEN 2048
@@ -111,14 +116,14 @@ typedef struct
      * \name Using umbrella pull code since gromacs 4.x
      */
     /*!\{*/
-    int   npullcrds;     //!< nr of pull coordinates in tpr file
-    int   pull_geometry; //!< such as distance, direction
-    ivec  pull_dim;      //!< pull dimension with geometry distance
-    int   pull_ndim;     //!< nr of pull_dim != 0
-    gmx_bool bPrintRef;  //!< Coordinates of reference groups written to pullx.xvg ?
-    real *k;             //!< force constants in tpr file
-    real *init_dist;     //!< reference displacements
-    real *umbInitDist;   //!< reference displacement in umbrella direction
+    int      npullcrds;     //!< nr of pull coordinates in tpr file
+    int      pull_geometry; //!< such as distance, direction
+    ivec     pull_dim;      //!< pull dimension with geometry distance
+    int      pull_ndim;     //!< nr of pull_dim != 0
+    gmx_bool bPrintRef;     //!< Coordinates of reference groups written to pullx.xvg ?
+    real    *k;             //!< force constants in tpr file
+    real    *init_dist;     //!< reference displacements
+    real    *umbInitDist;   //!< reference displacement in umbrella direction
     /*!\}*/
     /*!
      * \name Using PDO files common until gromacs 3.x
@@ -1245,7 +1250,7 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
             fprintf(fp, "\n");
         }
         printf("Wrote cumulative distribution functions to %s\n", fn);
-        ffclose(fp);
+        gmx_ffclose(fp);
         sfree(fn);
         sfree(buf);
     }
@@ -1471,7 +1476,7 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
         fprintf(fp, "\n");
     }
 
-    ffclose(fp);
+    gmx_ffclose(fp);
     printf("Wrote %s\n", fn);
     if (bs_index >= 0)
     {
@@ -1715,7 +1720,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         }
         fprintf(fp, "&\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     /* write average and stddev */
     fp = xvgropen(fnres, "Average and stddev from bootstrapping", "z", ylabel, opt->oenv);
@@ -1728,7 +1733,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         stddev             = (tmp >= 0.) ? sqrt(tmp) : 0.; /* Catch rouding errors */
         fprintf(fp, "%e\t%e\t%e\n", (i+0.5)*opt->dz+opt->min, bsProfiles_av [i], stddev);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     printf("Wrote boot strap result to %s\n", fnres);
 }
 
@@ -1764,7 +1769,7 @@ void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
     int    nread, sizenow, i, block = 1;
     FILE  *fp;
 
-    fp      = ffopen(fn, "r");
+    fp      = gmx_ffopen(fn, "r");
     nread   = 0;
     sizenow = 0;
     while (fgets(tmp, sizeof(tmp), fp) != NULL)
@@ -1861,7 +1866,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
     }
     else
     {
-        pipe       = ffopen(fn, "r");
+        pipe       = gmx_ffopen(fn, "r");
         *bPipeOpen = FALSE;
     }
 
@@ -1874,7 +1879,7 @@ void pdo_close_file(FILE *fp)
 #ifdef HAVE_PIPES
     pclose(fp);
 #else
-    ffclose(fp);
+    gmx_ffclose(fp);
 #endif
 }
 
@@ -1927,7 +1932,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
             }
             else
             {
-                ffclose(file);
+                gmx_ffclose(file);
             }
         }
         printf("\n");
@@ -1965,7 +1970,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
         }
         else
         {
-            ffclose(file);
+            gmx_ffclose(file);
         }
     }
     printf("\n");
@@ -2703,7 +2708,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
     printf(" done\n");
     if (fpcorr)
     {
-        ffclose(fpcorr);
+        gmx_ffclose(fpcorr);
     }
 
     /* plot IACT along reaction coordinate */
@@ -2742,7 +2747,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
             }
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     printf("Wrote %s\n", fn);
 }
 
@@ -2981,7 +2986,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
         {
             fprintf(fp, "%g  %g\n", (j+0.5)*dz+opt->min, pot[j]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         printf("verbose mode: wrote %s with PMF from interated forces\n", "pmfintegrated.xvg");
     }
 
@@ -3035,7 +3040,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
     char  fmt[1024], fmtign[1024];
     int   block = 1, sizenow;
 
-    fp            = ffopen(opt->fnGroupsel, "r");
+    fp            = gmx_ffopen(opt->fnGroupsel, "r");
     opt->groupsel = NULL;
 
     snew(tmpbuf, len);
@@ -3100,7 +3105,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 //! Boolean XOR
 #define WHAMBOOLXOR(a, b) ( ((!(a)) && (b)) || ((a) && (!(b))))
 
-/*! Number of elements in fnm (used for command line parsing) */
+//! Number of elements in fnm (used for command line parsing)
 #define NFILE asize(fnm)
 
 //! The main g_wham routine
@@ -3500,7 +3505,7 @@ int gmx_wham(int argc, char *argv[])
         }
         fprintf(histout, "\n");
     }
-    ffclose(histout);
+    gmx_ffclose(histout);
     printf("Wrote %s\n", opt2fn("-hist", NFILE, fnm));
     if (opt.bHistOnly)
     {
@@ -3601,7 +3606,7 @@ int gmx_wham(int argc, char *argv[])
     {
         fprintf(profout, "%e\t%e\n", (double)(i+0.5)/opt.bins*(opt.max-opt.min)+opt.min, profile[i]);
     }
-    ffclose(profout);
+    gmx_ffclose(profout);
     printf("Wrote %s\n", opt2fn("-o", NFILE, fnm));
 
     /* Bootstrap Method */

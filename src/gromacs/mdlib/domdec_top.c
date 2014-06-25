@@ -1,19 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- * This file is part of Gromacs        Copyright (c) 1991-2008
- * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -21,23 +38,27 @@
 #endif
 
 #include <string.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
+#include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
 #include "names.h"
 #include "network.h"
-#include "vec.h"
-#include "pbc.h"
 #include "chargegroup.h"
-#include "gmx_random.h"
-#include "topsort.h"
-#include "mtop_util.h"
-#include "mshift.h"
 #include "vsite.h"
 #include "gmx_ga2la.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topsort.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* for dd_init_local_state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
@@ -767,7 +788,7 @@ void dd_make_reverse_top(FILE *fplog,
     }
 }
 
-static inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
+static gmx_inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
 {
     t_iatom *liatoms;
     int      k;
@@ -1878,7 +1899,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     {
         dd->nbonded_local += nexcl;
 
-        forcerec_set_excl_load(fr, ltop, NULL);
+        forcerec_set_excl_load(fr, ltop);
     }
 
     ltop->atomtypes  = mtop->atomtypes;
@@ -1942,29 +1963,6 @@ void dd_init_local_state(gmx_domdec_t *dd,
 
     init_state(state_local, 0, buf[1], buf[2], buf[3], buf[4]);
     state_local->flags = buf[0];
-
-    /* With Langevin Dynamics we need to make proper storage space
-     * in the global and local state for the random numbers.
-     */
-    if (state_local->flags & (1<<estLD_RNG))
-    {
-        if (DDMASTER(dd) && state_global->nrngi > 1)
-        {
-            state_global->nrng = dd->nnodes*gmx_rng_n();
-            srenew(state_global->ld_rng, state_global->nrng);
-        }
-        state_local->nrng = gmx_rng_n();
-        snew(state_local->ld_rng, state_local->nrng);
-    }
-    if (state_local->flags & (1<<estLD_RNGI))
-    {
-        if (DDMASTER(dd) && state_global->nrngi > 1)
-        {
-            state_global->nrngi = dd->nnodes;
-            srenew(state_global->ld_rngi, state_global->nrngi);
-        }
-        snew(state_local->ld_rngi, 1);
-    }
 }
 
 static void check_link(t_blocka *link, int cg_gl, int cg_gl_j)
@@ -2260,7 +2258,7 @@ static void get_cgcm_mol(gmx_moltype_t *molt, gmx_ffparams_t *ffparams,
     {
         construct_vsites(vsite, xs, 0.0, NULL,
                          ffparams->iparams, molt->ilist,
-                         epbcNONE, TRUE, NULL, NULL, NULL);
+                         epbcNONE, TRUE, NULL, NULL);
     }
 
     calc_cgcm(NULL, 0, molt->cgs.nr, &molt->cgs, xs, cg_cm);

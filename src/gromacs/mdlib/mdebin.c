@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,28 +38,29 @@
 #include <config.h>
 #endif
 
-#include <string.h>
 #include <float.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
-#include "string2.h"
 #include "mdebin.h"
-#include "smalloc.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/enxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "disre.h"
-#include "main.h"
 #include "network.h"
 #include "names.h"
 #include "orires.h"
 #include "constr.h"
-#include "mtop_util.h"
-#include "xvgr.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "macros.h"
 #include "mdrun.h"
 #include "mdebin_bar.h"
 
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
@@ -734,7 +735,7 @@ static void print_lambda_vector(t_lambda *fep, int i,
     if (Nsep > 1)
     {
         /* and add the closing parenthesis */
-        str += sprintf(str, ")");
+        sprintf(str, ")");
     }
 }
 
@@ -790,7 +791,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         bufplace = sprintf(buf, "T = %g (K) ",
                            ir->opts.ref_t[0]);
     }
-    if (ir->efep != efepSLOWGROWTH)
+    if ((ir->efep != efepSLOWGROWTH) && (ir->efep != efepEXPANDED))
     {
         if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
         {
@@ -1302,7 +1303,7 @@ static void pprint(FILE *log, const char *s, t_mdebin *md)
     fprintf(log, "\n");
 }
 
-void print_ebin_header(FILE *log, gmx_large_int_t steps, double time, real lambda)
+void print_ebin_header(FILE *log, gmx_int64_t steps, double time, real lambda)
 {
     char buf[22];
 
@@ -1313,7 +1314,7 @@ void print_ebin_header(FILE *log, gmx_large_int_t steps, double time, real lambd
 
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
-                gmx_large_int_t step, double time,
+                gmx_int64_t step, double time,
                 int mode, gmx_bool bCompact,
                 t_mdebin *md, t_fcdata *fcd,
                 gmx_groups_t *groups, t_grpopts *opts)
@@ -1436,7 +1437,6 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
                 /* do the actual I/O */
                 do_enx(fp_ene, &fr);
-                gmx_fio_check_file_position(enx_file_pointer(fp_ene));
                 if (fr.nre)
                 {
                     /* We have stored the sums, so reset the sum history */

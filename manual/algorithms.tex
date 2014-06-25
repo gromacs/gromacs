@@ -1,9 +1,10 @@
+%
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
-% David van der Spoel, Berk Hess, Erik Lindahl, and including many
-% others, as listed in the AUTHORS file in the top-level source
-% directory and at http://www.gromacs.org.
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
 %
 % GROMACS is free software; you can redistribute it and/or
 % modify it under the terms of the GNU Lesser General Public License
@@ -12,7 +13,7 @@
 %
 % GROMACS is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 % Lesser General Public License for more details.
 %
 % You should have received a copy of the GNU Lesser General Public
@@ -29,7 +30,7 @@
 % official version at http://www.gromacs.org.
 %
 % To help us fund GROMACS development, we humbly ask that you cite
-% the research papers on the package. Check out http://www.gromacs.org
+% the research papers on the package. Check out http://www.gromacs.org.
 
 \newcommand{\nproc}{\mbox{$M$}}
 \newcommand{\natom}{\mbox{$N$}}
@@ -325,11 +326,13 @@ systems) to prevent center of mass motion to occur. It makes sense to
 use the same groups for temperature coupling and center of mass motion
 removal.
 
-\item[\swapindex{XTC output}{group}]
-In order to reduce the size of the {\tt .xtc{\index{XTC}}} trajectory file, only a subset
-of all particles can be stored. All XTC groups that are specified
-are saved, the rest is not. If no XTC groups are specified, than all
-atoms are saved to the {\tt .xtc} file.
+\item[\swapindex{Compressed position output}{group}]
+
+In order to further reduce the size of the compressed trajectory file
+({\tt .xtc{\index{XTC}}} or {\tt .tng{\index{TNG}}}), it is possible
+to store only a subset of all particles. All x-compression groups that
+are specified are saved, the rest are not. If no such groups are
+specified, than all atoms are saved to the compressed trajectory file.
 
 \end{description}
 The use of groups in {\gromacs} tools is described in
@@ -643,14 +646,23 @@ the inter particle distance changes from $r_0$ to $r_t$, as:
 \nonumber\\
 & &
 \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[}
-V''(r_c)\frac{1}{2}(r_t - r_c)^2 \Big] G\!\left(\frac{r_t-r_0}{\sigma}\right) d r_0 \, d r_t\\
+V''(r_c)\frac{1}{2}(r_t - r_c)^2 +
+\nonumber\\
+& &
+\phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[}
+V'''(r_c)\frac{1}{6}(r_t - r_c)^3 \Big] G\!\left(\frac{r_t-r_0}{\sigma}\right)
+d r_0 \, d r_t\\
 &=&
 4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{
 \frac{1}{2}V'(r_c)\left[r_b \sigma G\!\left(\frac{r_b}{\sigma}\right) - (r_b^2+\sigma^2)E\!\left(\frac{r_b}{\sigma}\right) \right] +
 \nonumber\\
 & &
 \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{ }
-\frac{1}{6}V''(r_c)\left[ \sigma(r_b^2+\sigma^2)G\!\left(\frac{r_b}{\sigma}\right) - r_b(r_b^2+3\sigma^2 ) E\!\left(\frac{r_b}{\sigma}\right) \right]
+\frac{1}{6}V''(r_c)\left[ \sigma(r_b^2+2\sigma^2)G\!\left(\frac{r_b}{\sigma}\right) - r_b(r_b^2+3\sigma^2 ) E\!\left(\frac{r_b}{\sigma}\right) \right] +
+\nonumber\\
+& &
+\phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{ }
+\frac{1}{24}V'''(r_c)\left[ r_b\sigma(r_b^2+5\sigma^2)G\!\left(\frac{r_b}{\sigma}\right) - (r_b^4+6r_b^2\sigma^2+3\sigma^4 ) E\!\left(\frac{r_b}{\sigma}\right) \right]
 \bigg\}
 \end{eqnarray}
 
@@ -1279,27 +1291,27 @@ is written to the energy and log file.
 \subsubsection{\normindex{Andersen thermostat}}
 One simple way to maintain a thermostatted ensemble is to take an
 $NVE$ integrator and periodically re-select the velocities of the
-particles from a Maxwell-Boltzmann distribution.~\cite{Andersen80}.
+particles from a Maxwell-Boltzmann distribution.~\cite{Andersen80}
 This can either be done by randomizing all the velocities
-simultaneously (massive collision) every $\tau_T/\Dt$ steps, or by
-randomizing every particle with some small probability every timestep,
+simultaneously (massive collision) every $\tau_T/\Dt$ steps ({\tt andersen-massive}), or by
+randomizing every particle with some small probability every timestep ({\tt andersen}),
 equal to $\Dt/\tau$, where in both cases $\Dt$ is the timestep and
 $\tau_T$ is a characteristic coupling time scale.
-
 Because of the way constraints operate, all particles in the same
-constraint group must be re-randomized simultaneously.  This
-thermostat is also only possible with velocity Verlet algorithms,
+constraint group must be randomized simultaneously.  Because of
+parallelization issues, the {\tt andersen} version cannot currently (5.0) be
+used in systems with constraints. {\tt andersen-massive} can be used regardless of constraints.
+This thermostat is also currently only possible with velocity Verlet algorithms,
 because it operates directly on the velocities at each timestep.
 
-This algorithm avoids some of the ergodicity issues of other
+This algorithm completely avoids some of the ergodicity issues of other thermostatting
 algorithms, as energy cannot flow back and forth between energetically
 decoupled components of the system as in velocity scaling motions.
 However, it can slow down the kinetics of system by randomizing
 correlated motions of the system, including slowing sampling when
 $\tau_T$ is at moderate levels (less than 10 ps). This algorithm
-should therefore generally not be used when examining kinetics of the
-system, but can avoid ergodicity problems of scaling problems when
-examining thermodynamic properties.
+should therefore generally not be used when examining kinetics or
+transport properties of the system.~\cite{Basconi2013}
 
 % \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Nos{\'e}-Hoover temperature coupling\index{Nose-Hoover temperature coupling@Nos{\'e}-Hoover temperature coupling|see{temperature coupling, Nos{\'e}-Hoover}}{\index{temperature coupling Nose-Hoover@temperature coupling Nos{\'e}-Hoover}}\index{extended ensemble}}
@@ -1640,14 +1652,14 @@ the difference between the normal and the lateral pressure
 \eea
 where $L_z$ is the height of the box and $n$ is the number of surfaces.
 The pressure in the z-direction is corrected by scaling the height of
-the box with $\mu_z$
+the box with $\mu_{zz}$
 \beq
 \Delta P_{zz} = \frac{\Delta t}{\tau_p} \{ P_{0zz} - P_{zz}(t) \}
 \eeq
 \beq
 \mu_{zz} = 1 + \beta_{zz} \Delta P_{zz}
 \eeq
-This is similar to normal pressure coupling, except that the power
+This is similar to normal pressure coupling, except that the factor
 of $1/3$ is missing. 
 The pressure correction in the $z$-direction is then used to get the
 correct convergence for the surface tension to the reference value $\gamma_0$.
@@ -1662,7 +1674,7 @@ The value of $\beta_{zz}$ is more critical than with normal pressure
 coupling. Normally an incorrect compressibility will just scale $\tau_p$,
 but with surface tension coupling it affects the convergence of the surface
 tension. 
-When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_z$ is also set
+When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_{zz}$ is also set
 to zero, which is necessary for obtaining the correct surface tension. 
 
 \subsubsection{MTTK pressure control algorithms}
@@ -2787,11 +2799,6 @@ simulation to explore many thermodynamic states.
 
 
 
-% This stuff is quite outdated now.
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
-%\input{gmxpar}
-%} % Brace matches ifthenelse test for gmxlite
-
 \section{Parallelization\index{parallelization}}
 The CPU time required for a simulation can be reduced by running the simulation
 in parallel over more than one processor or processor core.
@@ -2800,27 +2807,6 @@ makes the simulation $N$ times faster. In practice this can only be
 achieved for a small number of processors. The scaling will depend
 a lot on the algorithms used. Also, different algorithms can have different
 restrictions on the interaction ranges between atoms.
-In {\gromacs} we have two types of parallelization: particle decomposition
-and domain decomposition. Particle decomposition is only useful for
-a few special cases. Domain decomposition, which is the default algorithm,
-will always be faster and scale better.
-
-\section{Particle decomposition\index{particle decomposition}}
-Particle decomposition, also called \index{force decomposition},
-is the simplest type of decomposition. At the start of the simulation,
-particles are assigned to processors. Then forces between particles
-need to be assigned to processors such that the force load is evenly balanced.
-This decomposition requires that each processor know the coordinates
-of at least half of the particles in the system.
-Thus for a high number of processors $N$, about $N \times N/2$ coordinates
-need to be communicated. Because of this quadratic relation
-particle decomposition does not scale well.
-
-Particle decomposition was the only method available before version 4
-of {\gromacs}. Now it is only useful in cases where domain decomposition
-does not work, such as systems with long-range bonded interactions,
-especially NMR distance or orientation restraints.
-With particle decomposition only whole molecules can be assigned to a processor.
 
 \section{Domain decomposition\index{domain decomposition}}
 Since most interactions in molecular simulations are local,
@@ -3181,7 +3167,7 @@ but differing slightly between the three Born radii models.
 % LocalWords:  GROningen MAchine BIOSON Groningen GROMACS Berendsen der Spoel
 % LocalWords:  Drunen Comp Phys Comm ROck NS FFT pbc EM ifthenelse gmxlite ff
 % LocalWords:  octahedra triclinic Ewald PME PPPM trjconv xy solvated
-% LocalWords:  boxtypes boxshapes editconf Lennard mdpopt COM XTC kT defunits
+% LocalWords:  boxtypes boxshapes editconf Lennard mdpopt COM XTC TNG kT defunits
 % LocalWords:  Boltzmann's Mueller nb int mdrun chargegroup simplerc prefactor
 % LocalWords:  pme waterloops CH NH CO df com virial integrator Verlet vverlet
 % LocalWords:  integrators ref timepoint timestep timesteps mdp md vv avek NVE
@@ -3191,7 +3177,7 @@ but differing slightly between the three Born radii models.
 % LocalWords:  zy zz se barostat compressibilities MTTK NPT Martyna al isobaric
 % LocalWords:  Tuckerman vir PV fkT iLt iL Liouville NHC Eq baro mu trj mol bc
 % LocalWords:  freezegroup Shannon's polarizability Overhauser barostats iLn KE
-% LocalWords:  negligibly thermostatted Tobias  rhombic maxwell et xtc TC rlist
+% LocalWords:  negligibly thermostatted Tobias  rhombic maxwell et xtc tng TC rlist
 % LocalWords:  waals LINCS holonomic plincs lincs unc ang SA Langevin SD amu BD
 % LocalWords:  bfgs Broyden Goldfarb Shanno mkT kJ DFLEXIBLE Nocedal diag nmeig
 % LocalWords:  diagonalization anaeig nmens covanal ddg feia BT dp dq pV dV dA

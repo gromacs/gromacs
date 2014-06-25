@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,11 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/simd/macros.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
 #include "../../nbnxn_consts.h"
 #ifdef CALC_COUL_EWALD
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #endif
 
 #ifndef GMX_SIMD_J_UNROLL_SIZE
@@ -44,31 +46,31 @@
 #endif
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
+#define UNROLLJ    (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
 
 /* The stride of all the atom data arrays is max(UNROLLI,unrollj) */
-#if GMX_SIMD_WIDTH_HERE >= UNROLLI
-#define STRIDE     (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
+#if GMX_SIMD_REAL_WIDTH >= UNROLLI
+#define STRIDE     (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
 #else
 #define STRIDE     (UNROLLI)
 #endif
 
 #include "../nbnxn_kernel_simd_utils.h"
 
-static inline void
-gmx_load_simd_4xn_interactions(int                    excl,
-                               gmx_exclfilter         filter_S0,
-                               gmx_exclfilter         filter_S1,
-                               gmx_exclfilter         filter_S2,
-                               gmx_exclfilter         filter_S3,
-                               const char gmx_unused *interaction_mask_indices,
-                               real gmx_unused       *simd_interaction_array,
-                               gmx_mm_pb             *interact_S0,
-                               gmx_mm_pb             *interact_S1,
-                               gmx_mm_pb             *interact_S2,
-                               gmx_mm_pb             *interact_S3)
+static gmx_inline void
+gmx_load_simd_4xn_interactions(int gmx_unused             excl,
+                               gmx_exclfilter gmx_unused  filter_S0,
+                               gmx_exclfilter gmx_unused  filter_S1,
+                               gmx_exclfilter gmx_unused  filter_S2,
+                               gmx_exclfilter gmx_unused  filter_S3,
+                               const char gmx_unused     *interaction_mask_indices,
+                               real gmx_unused           *simd_interaction_array,
+                               gmx_simd_bool_t           *interact_S0,
+                               gmx_simd_bool_t           *interact_S1,
+                               gmx_simd_bool_t           *interact_S2,
+                               gmx_simd_bool_t           *interact_S3)
 {
-#ifdef GMX_X86_SSE2
+#if defined GMX_SIMD_X86_SSE2_OR_HIGHER || defined GMX_SIMD_REFERENCE
     /* Load integer interaction mask */
     gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
     *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
@@ -76,8 +78,8 @@ gmx_load_simd_4xn_interactions(int                    excl,
     *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
     *interact_S3  = gmx_checkbitmask_pb(mask_pr_S, filter_S3);
 #endif
-#ifdef GMX_CPU_ACCELERATION_IBM_QPX
-    const int size = GMX_SIMD_WIDTH_HERE * sizeof(real);
+#ifdef GMX_SIMD_IBM_QPX
+    const int size = GMX_SIMD_REAL_WIDTH * sizeof(real);
     *interact_S0  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[0], simd_interaction_array);
     *interact_S1  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[1], simd_interaction_array);
     *interact_S2  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[2], simd_interaction_array);

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 Erik Lindahl, David van der Spoel, University of Groningen.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,20 +33,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/fft/fft.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
-#include "types/simple.h"
-#include "gmxcomplex.h"
-#include "gmx_fatal.h"
-#include "gromacs/fft/fft.h"
-
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 /* This file contains common fft utility functions, but not
  * the actual transform implementations. Check the

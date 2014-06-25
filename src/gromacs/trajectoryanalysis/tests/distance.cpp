@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ TEST_F(DistanceModuleTest, ComputesDistances)
         "-len", "2", "-binw", "0.5"
     };
     setTopology("simple.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(DistanceModuleTest, ComputesMultipleDistances)
@@ -80,7 +80,7 @@ TEST_F(DistanceModuleTest, ComputesMultipleDistances)
         "-len", "2", "-binw", "0.5"
     };
     setTopology("simple.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(DistanceModuleTest, HandlesDynamicSelections)
@@ -91,7 +91,7 @@ TEST_F(DistanceModuleTest, HandlesDynamicSelections)
         "-len", "2", "-binw", "0.5"
     };
     setTopology("simple.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 } // namespace

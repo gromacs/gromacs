@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,8 @@
  * \ingroup module_selection
  */
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/math/vec.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
@@ -173,7 +172,7 @@ static const char *help_distance[] = {
     "returned as equal to the cutoff.",
 };
 
-/** \internal Selection method data for the \p distance method. */
+/** Selection method data for the \p distance method. */
 gmx_ana_selmethod_t sm_distance = {
     "distance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_distance), smparams_distance,
@@ -188,7 +187,7 @@ gmx_ana_selmethod_t sm_distance = {
     {"distance from POS [cutoff REAL]", asize(help_distance), help_distance},
 };
 
-/** \internal Selection method data for the \p distance method. */
+/** Selection method data for the \p distance method. */
 gmx_ana_selmethod_t sm_mindistance = {
     "mindistance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_mindistance), smparams_mindistance,
@@ -203,7 +202,7 @@ gmx_ana_selmethod_t sm_mindistance = {
     {"mindistance from POS_EXPR [cutoff REAL]", asize(help_distance), help_distance},
 };
 
-/** \internal Selection method data for the \p within method. */
+/** Selection method data for the \p within method. */
 gmx_ana_selmethod_t sm_within = {
     "within", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_within), smparams_within,
@@ -230,7 +229,7 @@ init_data_common(int /* npar */, gmx_ana_selparam_t *param)
 static void
 init_common(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
+    t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     if ((param[0].flags & SPAR_SET) && d->cutoff <= 0)
     {
@@ -254,7 +253,7 @@ free_data_common(void *data)
 static void
 init_frame_common(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
+    t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     d->nbsearch.reset();
     gmx::AnalysisNeighborhoodPositions pos(d->p.x, d->p.count());
@@ -272,7 +271,7 @@ static void
 evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
+    t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     out->nr = pos->m.mapb.nra;
     for (int b = 0; b < pos->count(); ++b)
@@ -296,7 +295,7 @@ static void
 evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
+    t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     out->u.g->isize = 0;
     for (int b = 0; b < pos->count(); ++b)

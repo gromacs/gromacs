@@ -63,6 +63,9 @@ are not used outside a single source file are in the source file.
 
 Unit tests, and data required for them, are in a `tests/` subdirectory under
 the module directory.
+\if libapi
+See \ref page_unittesting for more details.
+\endif
 
 When compiling, the include search path is set to `src/`.  This means that
 source files include headers as
@@ -87,8 +90,8 @@ that do not follow the above rules.  The installed headers for these are in
 directories and move code into proper modules.
 
 For similar historical reasons, the include path also includes
-`src/gromacs/legacyheaders/` and `src/gromacs/gmxpreprocess/` (the latter only
-for part of the source).  New code should not depend on these.
+`src/gromacs/legacyheaders/`.  It is preferred that new code does not depend on
+this.
 
 Documentation organization
 ==========================

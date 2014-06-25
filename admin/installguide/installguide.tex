@@ -1,3 +1,37 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
 % Process from LaTeX via XML to XHTML with
 % latexml --destination installguide.xml --xml installguide.tex
 % latexmlpost --destination installguide.xhtml --format=xhtml installguide.xml
@@ -88,14 +122,16 @@ are only going to continue to get more complex.
 \section{Prerequisites}
 \subsection{Platform}
 \gromacs{} can be compiled for any distribution of Linux, Mac OS X,
-Windows (native, Cygwin or MinGW), BlueGene, Cray and many other
+Windows, BlueGene, Cray and many other
 architectures. Technically, it can be compiled on any platform with
-an ANSI C89 compiler, an ISO C++98 compiler, and supporting libraries,
+an ANSI C99 compiler, an ISO C++98 compiler, and supporting libraries,
 such as the GNU C library. However, \gromacs{} also comes with many
 hardware-specific extensions to provide very high performance on those
 platforms, and to enable these we have slightly more specific
 requirements since old compilers do not support new features, or they
-can be buggy.
+can be buggy. Not all of the C99 standard is required and some C89
+compilers (including Microsoft Visual C) will also be able to compile
+Gromacs.
 
 \subsection{Compiler}
 
@@ -111,19 +147,22 @@ more sensitive to the compiler used, and the binary will only work on
 the hardware for which it is compiled.
 
 \begin{itemize}
-\item On Intel-based x86 hardware, there is very little difference in
-  mdrun performance between the Intel and gcc compilers.
-\item On AMD-based x86 hardware up through the Magny-Cours architecture
-(e.g. Opteron 6100-series processors), it is worth using the Intel compiler for
-better performance, but gcc-4.7 and later are also reasonable.
+\item On Intel-based x86 hardware, we recommend you to use
+the GNU compilers version 4.7 or later or Intel compilers version 12 or later
+for best performance. The Intel compiler has historically been better at
+instruction scheduling, but recent gcc versions have proved to be as fast or
+sometimes faster than Intel.
+\item On AMD-based x86 hardware up through the ``K10'' microarchitecture (``Family 10h'')
+Thuban/Magny-Cours architecture (e.g. Opteron 6100-series processors), it is worth using the Intel compiler for
+better performance, but gcc version 4.7 and later are also reasonable.
 \item On the AMD Bulldozer architecture (Opteron 6200), AMD introduced fused multiply-add
 instructions and an "FMA4" instruction format not available on Intel x86 processors. Thus,
-on the most recent AMD processors you want to use gcc-4.7 or later for better performance!
-icc will only generate code for the subset also supported by Intel processors, and that
+on the most recent AMD processors you want to use gcc version 4.7 or later for better performance!
+The Intel compiler will only generate code for the subset also supported by Intel processors, and that
 is significantly slower right now.
 \item If you are running on Mac OS X, the best option is the Intel compiler.
 Both clang and gcc will work, but they produce lower performance and each have some
-shortcomings. Clang before 3.4 does not fully support OpenMP, and the current gcc ports do not
+shortcomings. Current Clang does not support OpenMP, and the current gcc ports do not
 support \avx{} instructions.
 \item For all non-x86 platforms, your best option is typically to use the vendor's 
 default or recommended compiler, and check for specialized information below.
@@ -165,9 +204,9 @@ Often \openmp{} parallelism is an advantage for \gromacs{},
 but support for this is generally built into your compiler and detected
 automatically. The one common exception is Mac OS X, where the default
 clang compiler currently does not fully support OpenMP. You can install
-gcc-4.7 instead, but the currently available binary distribution of gcc 
+gcc version 4.7 instead, but the currently available binary distribution of gcc 
 uses an old system assembler that does not support \avx{} acceleration
-instructions. There are some examples on the internet where people have
+instructions. There are some examples on the Internet where people have
 hacked this to work, but presently the only straightforward way to get
 both OpenMP and \avx{} support on Mac OS X is to get the Intel compiler.
 This may change when clang 3.4 becomes available.
@@ -241,7 +280,7 @@ support has been compiled into \fftw{}, so you need to set this at compile time.
 
 \subsubsection{\mkl{}}
 
-Using \mkl{} with icc 11 or higher is very simple. Set up your
+Using \mkl{} with the Intel Compilers version 11 or higher is very simple. Set up your
 compiler environment correctly, perhaps with a command like
 \verb+source /path/to/compilervars.sh intel64+ (or consult your local
 documentation). Then set \verb+-DGMX_FFT_LIBRARY=mkl+ when you run
@@ -269,8 +308,6 @@ Intel's \mkl{} documentation for your system.
   to use third-party software for visualization, such as \vmd{}
   \url{http://www.ks.uiuc.edu/Research/vmd/} or \pymol{}
   \url{http://www.pymol.org/}.
-\item A few \gromacs{} tools get some extra functionality when linked with the
-GNU scientific library GSL.
 \item Running the \gromacs{} test suite requires \libxmltwo{}
 \item Building the \gromacs{} manual requires ImageMagick, pdflatex
   and bibtex
@@ -286,7 +323,7 @@ but it is not an exhaustive discussion of how to use \cmake{}. There
 are many resources available on the web, which we suggest you search
 for when you encounter problems not covered here. The material below
 applies specifically to builds on Unix-like systems, including Linux,
-Mac OS X, MinGW and Cygwin. For other platforms, see the specialist
+and Mac OS X. For other platforms, see the specialist
 instructions below.
 
 \subsection{Configuring with \cmake{}}
@@ -343,10 +380,11 @@ about them by using e.g. the curses interface
 \begin{verbatim}
 $ ccmake ..
 \end{verbatim}
-You can actually use \verb+ccmake+ directly in the first step, but then
+You can actually use \verb+ccmake+ (available on most Unix platforms,
+if the curses library is supported) directly in the first step, but then
 most of the status messages will merely blink in the lower part
-of the terminal rather than be written to standard out. Some platforms
-like Windows or Mac even have native graphical user interfaces for
+of the terminal rather than be written to standard out. Most platforms
+including Linux, Windows, and Mac OS X even have native graphical user interfaces for
 \cmake{}, and it can create project files for almost any build environment
 you want (including Visual Studio or Xcode).
 Check out \url{http://www.cmake.org/cmake/help/runningcmake.html} for
@@ -389,6 +427,45 @@ also do this kind of thing with \verb+ccmake+, but you should avoid
 this, because the options set with '\verb+-D+' will not be able to be
 changed interactively in that run of \verb+ccmake+.
 
+\subsection{SIMD support}
+\gromacs{} has extensive support for detecting and using the SIMD
+capabilities of nearly all modern HPC CPUs. If you are building
+\gromacs{} on the same hardware you will run it on, then you don't
+need to read more about this. Otherwise, you may wish to choose the
+value of \verb+GMX_SIMD+ to much the execution environment. If you
+make no choice, the default will be based on the computer on which you
+are running \cmake{}. Valid values are listed below, and the
+applicable value lowest on the list is generally the one you should
+choose:
+\begin{enumerate}
+\item \verb+None+ For use only on an architecture either lacking SIMD,
+  or to which \gromacs{} has not yet been ported and none of the
+  options below are applicable.
+\item \verb+SSE2+ Essentially all x86 machines in existence have this
+\item \verb+SSE4.1+ More recent x86 have this
+\item \verb+AVX_128_FMA+ More recent AMD x86 have this
+\item \verb+AVX_256+ More recent Intel x86 have this
+\item \verb+AVX2_256+ Yet more recent Intel x86 have this
+\item \verb+IBM_QPX + BlueGene/Q A2 cores have this
+\item \verb+Sparc64_HPC_ACE+ Fujitsu machines like the K computer have this
+\end{enumerate}
+The \cmake{} configure system will check that the compiler you have
+chosen can target the architecture you have chosen. mdrun will check
+further at runtime, so if in doubt, choose the lowest setting you
+think might work, and see what mdrun says. The configure system also
+works around many known issues in many versions of common HPC
+compilers.
+
+A further \verb+GMX_SIMD=Reference+ option exists, which is a special
+SIMD-like implementation written in plain C that developers can use
+when developing support in GROMACS for new SIMD architectures. It is
+not designed for use in production simulations, but if you are using
+an architecture with SIMD support to which \gromacs{} has not yet been
+ported, you may wish to try the performance of this option, in case
+the auto-vectorization in your compiler does a good job. And post on
+the \gromacs{} mailing lists, because \gromacs{} can probably be
+ported for new SIMD architectures in a few days.
+
 \subsection{CMake advanced options}
 The options that can be seen with \verb+ccmake+ are ones that we
 think a reasonable number of users might want to consider
@@ -398,6 +475,42 @@ toggling the advanced mode in \verb+ccmake+ on and off with
 change have a '\verb+CMAKE_+' or '\verb+GMX_+' prefix. There are also
 some options that will be visible or not according to whether
 their preconditions are satisfied.
+
+\subsubsection{Portability aspects}
+Here, we consider portability aspects related to CPU instruction sets,
+for details on other topics like binaries with statical vs dynamic linking
+please consult the relevant parts of this documentation or other non-\gromacs{} specific
+resources.
+
+Most often a \gromacs{} build will by default not be portable,
+not even across hardware with the same base instruction set like x86.
+The reason for this is that hardware-specific optimizations are selected
+at configure-time, like the SIMD instruction set used in the compute-kernels.
+This selection will be done by the build system based on the capabilities
+of the build host machine or based on cross-compilation information provided
+to \cmake{} at configuration.
+
+Often it is possible to ensure portability by choosing the
+least common denominator of SIMD support, e.g. SSE2 for x86
+and ensuring the \cmake{} option \verb+GMX_USE_RDTSCP+ is off if any of the
+target CPU architectures does not support the \verb+RDTSCP+ instruction.
+However, we discourage attempts to use a single \gromacs{}
+installation when the execution environment is heterogeneous, such as
+a mix of \avx{} and earlier hardware, because this will lead to slow
+binaries (especially \verb+mdrun+), on the new hardware.
+Building two full installations and locally managing how to
+call the correct one (e.g. using the module system) is the recommended
+approach.
+Alternatively, as at the moment the \gromacs{} tools do not make
+strong use of SIMD acceleration, it can be convenient to create an installation
+with tools portable across different x86 machines, but with separate \verb+mdrun+
+binaries for each architecture.
+To achieve this, one can first build a full installation with the least common
+denominator SIMD instruction set, e.g. SSE2, then build separate \verb+mdrun+
+binaries for each architecture present in the heterogeneous environment.
+By using custom binary and library suffixes for the \verb+mdrun+-only builds,
+these can be installed to the same location as the ''generic`` tools installation.
+
 
 \subsection{Helping CMake find the right libraries/headers/programs}
 
@@ -551,7 +664,13 @@ now supported with the \cmake{} option
 \verb+-DGMX_BUILD_MDRUN_ONLY=ON+, which will build a cut-down version
 of \verb+libgromacs+ and/or the \verb+mdrun+ binary (according to
 whether shared or static). Naturally, now \verb+make install+ acts
-only those binaries.
+only those binaries. By default, a fresh build tree with this variable
+set will default to building statically, because this is generally a
+good idea for the targets for which an mdrun-only build is
+desirable. If you re-use a build tree and change to the mdrun-only
+build, then you will inherit the setting for \verb+BUILD_SHARED_LIBS+
+from the old build, and will be warned that you may wish to manage
+\verb+BUILD_SHARED_LIBS+ yourself.
 
 \subsection{Installing \gromacs{}}
 
@@ -684,9 +803,6 @@ follow these steps to find the solution:
 \section{Special instructions for some platforms}
 
 \subsection{Building on Windows}
-Building on Cygwin/MinGW/etc. works just like Unix. Please see the
-instructions above.
-
 Building on Windows using native compilers is rather similar to
 building on Unix, so please start by reading the above. Then, download
 and unpack the GROMACS source archive. The UNIX-standard .tar.gz
@@ -729,8 +845,8 @@ parallel job execution.
 
 \subsubsection{BlueGene/P}
 
-There is currently no native acceleration on this platform and no
-plans to make one. The default plain C kernels will work.
+There is currently no SIMD support on this platform and no plans to
+add it. The default plain C kernels will work.
 
 \subsubsection{BlueGene/Q}
 
@@ -796,6 +912,22 @@ Sparc64viiifx chips. On this platform \gromacs{} \gromacsversion{} has
 accelerated group kernels, no accelerated Verlet kernels, and a custom
 build toolchain.
 
+\subsubsection{Intel Xeon Phi}
+
+\gromacs{} 5.0 has preliminary support for Intel Xeon Phi. Only symmetric
+(aka native) mode is supported. \gromacs{} is functional on Xeon Phi,
+but it has so far not been optimized to the same level as other
+architectures have. The performance depends among other factors on the
+system size (see ``Running in parallel''), and for now the performance
+might not be faster than CPUs. Building for Xeon Phi works almost as any
+other Unix. See the instructions above for details. The recommended
+configuration is
+\begin{verbatim}
+cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/XeonPhi
+make
+make install
+\end{verbatim}
+
 \section{Tested platforms}
 
 While it is our best belief that \gromacs{} will build and run pretty
@@ -804,11 +936,14 @@ it works because we've tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code
 repository is currently tested on x86 with gcc versions ranging
-from 4.1 through 4.8, and versions 12 and 13 of the Intel compiler.
-Under Windows, we test both the Visual Studio and Intel compilers.
+from 4.4 through 4.8, and versions 12 and 13 of the Intel compiler as 
+well as Clang version 3.1 through 3.3. For this we use a variety of GNU/Linux
+flavors and versions as well as recent version of Mac OS X.
+Under Windows we test both MSVC and the Intel compiler. For details, you can
+have a look at the continuous integration server at \url{http://jenkins.gromacs.org}.
 
 We test irregularly on BlueGene/Q, Cray,
-Fujitsu PRIMEHPC, Google nativeclient and other environments. In 
+Fujitsu PRIMEHPC, Google Native Client and other environments. In
 the future we expect ARM to be an important test target too, but this
 is currently not included.
 

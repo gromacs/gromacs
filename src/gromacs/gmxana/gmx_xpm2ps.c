@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -39,19 +41,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "string2.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "statutil.h"
-#include "writeps.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "string2.h"
-#include "gromacs/fileio/matio.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 #include "viewit.h"
 #include "gmx_ana.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/writeps.h"
 
 #define FUDGE 1.2
 #define DDD   2
@@ -522,8 +523,8 @@ static void draw_zerolines(t_psdata out, real x0, real y0, real w,
                 xx = xx00+(x+0.7)*psr->xboxsize;
                 /* draw lines whenever tick label almost zero (e.g. next trajectory) */
                 if (x != 0 && x < mat[i].nx-1 &&
-                    abs(mat[i].axis_x[x]) <
-                    0.1*abs(mat[i].axis_x[x+1]-mat[i].axis_x[x]) )
+                    fabs(mat[i].axis_x[x]) <
+                    0.1*fabs(mat[i].axis_x[x+1]-mat[i].axis_x[x]) )
                 {
                     ps_line (out, xx, yy00, xx, yy00+dy+2);
                 }
@@ -537,8 +538,8 @@ static void draw_zerolines(t_psdata out, real x0, real y0, real w,
                 yy = yy00+(y+0.7)*psr->yboxsize;
                 /* draw lines whenever tick label almost zero (e.g. next trajectory) */
                 if (y != 0 && y < mat[i].ny-1 &&
-                    abs(mat[i].axis_y[y]) <
-                    0.1*abs(mat[i].axis_y[y+1]-mat[i].axis_y[y]) )
+                    fabs(mat[i].axis_y[y]) <
+                    0.1*fabs(mat[i].axis_y[y+1]-mat[i].axis_y[y]) )
                 {
                     ps_line (out, xx00, yy, xx00+w+2, yy);
                 }
@@ -674,7 +675,7 @@ void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
     int        nmap;
     t_mapping *map = NULL;
 
-    out = ffopen(outf, "w");
+    out = gmx_ffopen(outf, "w");
 
     for (i = 0; i < nmat; i++)
     {
@@ -710,18 +711,18 @@ void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
             sfree(mat[i].map);
             mat[i].nmap = nmap;
             mat[i].map  = map;
-            if (mat2 && (strcmp(mat[i].title, mat2[i].title) != 0))
+            if (strcmp(mat[i].title, mat2[i].title) != 0)
             {
                 sprintf(mat[i].title+strlen(mat[i].title), " / %s", mat2[i].title);
             }
-            if (mat2 && (strcmp(mat[i].legend, mat2[i].legend) != 0))
+            if (strcmp(mat[i].legend, mat2[i].legend) != 0)
             {
                 sprintf(mat[i].legend+strlen(mat[i].legend), " / %s", mat2[i].legend);
             }
             write_xpm_m(out, mat[i]);
         }
     }
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 static void tick_spacing(int n, real axis[], real offset, char axisnm,
@@ -1134,7 +1135,7 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
             }
             for (x = 0; x < mats[i].nx-1; x++)
             {
-                if (abs(mats[i].axis_x[x+1]) < 1e-5)
+                if (fabs(mats[i].axis_x[x+1]) < 1e-5)
                 {
                     for (y = 0; y < mats[i].ny; y++)
                     {
@@ -1144,7 +1145,7 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
             }
             for (y = 0; y < mats[i].ny-1; y++)
             {
-                if (abs(mats[i].axis_y[y+1]) < 1e-5)
+                if (fabs(mats[i].axis_y[y+1]) < 1e-5)
                 {
                     for (x = 0; x < mats[i].nx; x++)
                     {
@@ -1166,7 +1167,7 @@ void write_combined_matrix(int ecombine, const char *fn,
     real     **rmat1, **rmat2;
     real       rhi, rlo;
 
-    out = ffopen(fn, "w");
+    out = gmx_ffopen(fn, "w");
     for (k = 0; k < nmat; k++)
     {
         if (mat2[k].nx != mat1[k].nx || mat2[k].ny != mat1[k].ny)
@@ -1237,7 +1238,7 @@ void write_combined_matrix(int ecombine, const char *fn,
                       rmat1, rlo, rhi, white, black, &nlevels);
         }
     }
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 void do_mat(int nmat, t_matrix *mat, t_matrix *mat2,

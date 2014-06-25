@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,10 @@ class SelectionOptionStorage;
  *
  * Public methods in this class do not throw.
  *
+ * To use options of this type, SelectionOptionManager must first be added to
+ * the Options collection.  For trajectory analysis tools, the framework takes
+ * care of this.
+ *
  * \todo
  * Support for specifying that an option accepts, e.g., two to four selections.
  * Currently, only a fixed count or any number of selections is possible.
@@ -79,7 +83,8 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 
         //! Initializes an option with the given name.
         explicit SelectionOption(const char *name)
-            : MyBase(name), selectionFlags_(efSelection_DisallowEmpty)
+            : MyBase(name), defaultText_(""),
+              selectionFlags_(efSelection_DisallowEmpty)
         {
         }
 
@@ -126,6 +131,15 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         MyClass &allowEmpty()
         { selectionFlags_.clear(efSelection_DisallowEmpty); return me(); }
 
+        /*! \brief
+         * Sets default selection text for the option.
+         *
+         * If the option is not set by the user, the provided text is parsed as
+         * the value of the selection.
+         */
+        MyClass &defaultSelectionText(const char *text)
+        { defaultText_ = text; return me(); }
+
     private:
         // Disable possibility to allow multiple occurrences, since it isn't
         // implemented.
@@ -135,8 +149,10 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         using MyBase::defaultValue;
         using MyBase::defaultValueIfSet;
 
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
 
+        const char             *defaultText_;
         SelectionFlags          selectionFlags_;
 
         /*! \brief
@@ -199,22 +215,6 @@ class SelectionOptionInfo : public OptionInfo
          * Does not throw.
          */
         explicit SelectionOptionInfo(SelectionOptionStorage *option);
-
-        /*! \brief
-         * Set manager for handling interaction with other options and the
-         * selection collection.
-         *
-         * \param   manager  Selection manager to set.
-         *
-         * This must be called before the values are added.
-         *
-         * Typically it is called through setManagerForSelectionOptions(),
-         * which recursively sets the manager for all selection options in
-         * an Options object.
-         *
-         * Does not throw.
-         */
-        void setManager(SelectionOptionManager *manager);
 
         /*! \brief
          * Sets the number of selections allowed for the option.

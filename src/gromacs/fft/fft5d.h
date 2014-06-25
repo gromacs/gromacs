@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,19 +40,15 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef NOGMX
 /*#define GMX_MPI*/
 /*#define GMX_FFT_FFTW3*/
 FILE* debug;
 #endif
 
-#include "gromacs/legacyheaders/gmxcomplex.h"
-#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/fft/fft.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #ifndef GMX_MPI
 double MPI_Wtime();
@@ -70,12 +66,18 @@ double MPI_Wtime();
 #endif
 
 #ifdef NOGMX
+#ifdef __cplusplus
+extern "C" {
+#endif
 struct fft5d_time_t {
     double fft, local, mpi1, mpi2;
 };
 typedef struct fft5d_time_t *fft5d_time;
 #else
 #include "gromacs/timing/wallcycle.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 typedef gmx_wallcycle_t fft5d_time;
 #endif
 

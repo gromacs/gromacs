@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,9 +46,8 @@
 #include <boost/current_function.hpp>
 #include <boost/exception/detail/attribute_noreturn.hpp>
 
-/*! \addtopublicapi
- * \{
- */
+//! \addtogroup module_utility
+//! \{
 
 /*! \def GMX_RELEASE_ASSERT
  * \brief
@@ -84,7 +83,7 @@
 #define GMX_ASSERT(condition, msg) GMX_RELEASE_ASSERT(condition, msg)
 #endif
 
-/*!\}*/
+//! \}
 
 namespace gmx
 {

@@ -128,6 +128,23 @@ class TextTableFormatter
          * Does not throw.
          */
         void setFirstColumnIndent(int indent);
+        /*! \brief
+         * Enables folding the last column to separate lines if it overflows.
+         *
+         * \param[in]  indent  Number of spaces to use for indenting the lines.
+         *
+         * If called with `indent >= 0`, the last column for each row is
+         * treated specially: if it contains more lines than the other columns,
+         * and if the text would fit more compactly as separate lines after the
+         * row, then the whole last column is written after the row with the
+         * given \p indent.  The column text then spans the whole space
+         * reserved for the table, making long text fit into a smaller amount
+         * of vertical space.
+         * If not called, the last column is not treates specially.
+         *
+         * Does not throw.
+         */
+        void setFoldLastColumnToNextLine(int indent);
 
         /*! \brief
          * Whether formatRow() has been successfully called.
@@ -208,20 +225,6 @@ class TextTableFormatter
          * Calls clear() on successful return.
          */
         std::string formatRow();
-
-        /*! \brief
-         * Returns the last line on which column \p index has text.
-         *
-         * \param[in] index  Zero-based column index.
-         * \returns   Last line index (zero-based) on which \p index has text.
-         *
-         * The return value is the sum of the number of lines added with
-         * addColumnLine() (taking into account possible wrapping) and the line
-         * offset set with setColumnFirstLineOffset().
-         *
-         * Does not throw.
-         */
-        int lastColumnLine(int index) const;
 
     private:
         class Impl;

@@ -73,9 +73,9 @@
         </Sequence>
         <Int Name="RefId">0</Int>
         <Vector Name="Coordinates">
-          <Real Name="X">0.500000</Real>
-          <Real Name="Y">0.000000</Real>
-          <Real Name="Z">0.000000</Real>
+          <Real Name="X">0.5</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
         </Vector>
       </Position>
       <Position>
@@ -86,9 +86,9 @@
         </Sequence>
         <Int Name="RefId">1</Int>
         <Vector Name="Coordinates">
-          <Real Name="X">4.500000</Real>
-          <Real Name="Y">1.000000</Real>
-          <Real Name="Z">0.000000</Real>
+          <Real Name="X">4.5</Real>
+          <Real Name="Y">1</Real>
+          <Real Name="Z">0</Real>
         </Vector>
       </Position>
     </Positions>
@@ -109,9 +109,9 @@
         </Sequence>
         <Int Name="RefId">0</Int>
         <Vector Name="Coordinates">
-          <Real Name="X">4.500000</Real>
-          <Real Name="Y">1.000000</Real>
-          <Real Name="Z">0.000000</Real>
+          <Real Name="X">4.5</Real>
+          <Real Name="Y">1</Real>
+          <Real Name="Z">0</Real>
         </Vector>
       </Position>
       <Position>
@@ -122,9 +122,9 @@
         </Sequence>
         <Int Name="RefId">1</Int>
         <Vector Name="Coordinates">
-          <Real Name="X">7.500000</Real>
-          <Real Name="Y">2.000000</Real>
-          <Real Name="Z">0.000000</Real>
+          <Real Name="X">7.5</Real>
+          <Real Name="Y">2</Real>
+          <Real Name="Z">0</Real>
         </Vector>
       </Position>
     </Positions>

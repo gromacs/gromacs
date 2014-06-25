@@ -1,3 +1,1 @@
-; This file is for backward compatibility only.
-; Please directly include the file below in your .top file.
-#include "gromos45a3.ff/forcefield.itp"
+#error   This top-level .itp file has been removed. Edit your topology to include it from your force field directory instead, e.g. "gromos45a3.ff/forcefield.itp"

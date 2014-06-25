@@ -1,42 +1,45 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GRoups of Organic Molecules in ACtion for Science
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifndef _state_h_
 #define _state_h_
 
 
 #include "simple.h"
+#include "../../swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,10 +50,6 @@ extern "C" {
  * information required to define the state of the system.
  * Currently the random seeds for SD and BD are missing.
  */
-
-/* for now, define the length of the NH chains here */
-#define NHCHAINLENGTH 10
-#define MAXLAMBDAS 1024
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
@@ -143,13 +142,13 @@ typedef struct
 
 typedef struct
 {
-    gmx_large_int_t    nsteps;       /* The number of steps in the history            */
-    gmx_large_int_t    nsum;         /* The nr. of steps in the ener_ave and ener_sum */
+    gmx_int64_t        nsteps;       /* The number of steps in the history            */
+    gmx_int64_t        nsum;         /* The nr. of steps in the ener_ave and ener_sum */
     double         *   ener_ave;     /* Energy term history sum to get fluctuations   */
     double         *   ener_sum;     /* Energy term history sum to get fluctuations   */
     int                nener;        /* Number of energy terms in two previous arrays */
-    gmx_large_int_t    nsteps_sim;   /* The number of steps in ener_sum_sim      */
-    gmx_large_int_t    nsum_sim;     /* The number of frames in ener_sum_sim     */
+    gmx_int64_t        nsteps_sim;   /* The number of steps in ener_sum_sim      */
+    gmx_int64_t        nsum_sim;     /* The number of frames in ener_sum_sim     */
     double         *   ener_sum_sim; /* Energy term history sum of the whole sim      */
 
     delta_h_history_t *dht;          /* The BAR energy differences */
@@ -178,14 +177,48 @@ typedef struct
 }
 edsamstate_t;
 
+
+typedef struct
+{
+    int        eSwapCoords;                         /* Swapping along x, y, or z-direction?      */
+    int        nat_req[eCompNR][eIonNR];            /* Requested ion numbers per type an comp.   */
+    int       *nat_req_p[eCompNR][eIonNR];          /* Pointer to this data (for .cpt writing)   */
+    int        nAverage;                            /* Use average over this many swap attempt
+                                                       steps when determining the ion counts     */
+    int        inflow_netto[eCompNR][eIonNR];       /* Flux determined from the # of swaps       */
+    int       *inflow_netto_p[eCompNR][eIonNR];     /* Pointer to this data                      */
+    int       *nat_past[eCompNR][eIonNR];           /* Array with nAverage entries for history   */
+    int       *nat_past_p[eCompNR][eIonNR];         /* Pointer points to the first entry only    */
+
+    /* Channel flux detection, this is counting only and has no influence on whether swaps
+     * are performed or not: */
+    int            fluxfromAtoB[eCompNR][eIonNR];   /* Flux determined from the split cylinders  */
+    int           *fluxfromAtoB_p[eCompNR][eIonNR]; /* Pointer to this data                      */
+    int           *fluxleak;                        /* Flux not going through any channel        */
+    int            nions;                           /* Size of the following arrays              */
+    unsigned char *comp_from;                       /* Ion came from which compartment?          */
+    unsigned char *channel_label;                   /* Through which channel did this ion pass?  */
+
+    /* To also make multimeric channel proteins whole, we save the last whole configuration of
+     * the channels in the checkpoint file. If we have no checkpoint file, we assume that the
+     * starting configuration hast the correct PBC representation after making the individual
+     * molecules whole */
+    gmx_bool    bFromCpt;                           /* Did we started from a checkpoint file?    */
+    int         nat[eChanNR];                       /* Size of xc_old_whole, i.e. the number of
+                                                       atoms in each channel                     */
+    rvec       *xc_old_whole[eChanNR];              /* Last known whole positions of the two
+                                                       channels (important for multimeric ch.!)  */
+    rvec      **xc_old_whole_p[eChanNR];            /* Pointer to these positions                */
+}
+swapstate_t;
+
+
 typedef struct
 {
     int              natoms;
     int              ngtc;
     int              nnhpres;
-    int              nhchainlength; /* number of nose-hoover chains               */
-    int              nrng;
-    int              nrngi;
+    int              nhchainlength;   /* number of nose-hoover chains               */
     int              flags;           /* Flags telling which entries are present      */
     int              fep_state;       /* indicates which of the alchemical states we are in                 */
     real            *lambda;          /* lambda vector                               */
@@ -208,18 +241,12 @@ typedef struct
     rvec            *sd_X;            /* random part of the x update for stoch. dyn.  */
     rvec            *cg_p;            /* p vector for conjugate gradient minimization */
 
-    unsigned int    *ld_rng;          /* RNG random state                           */
-    int             *ld_rngi;         /* RNG index                                  */
-
-    int              nmcrng;          /* number of RNG states                       */
-    unsigned int    *mc_rng;          /* lambda MC RNG random state                 */
-    int             *mc_rngi;         /* lambda MC RNG index                        */
-
     history_t        hist;            /* Time history for restraints                  */
 
     ekinstate_t      ekinstate;       /* The state of the kinetic energy data      */
 
     energyhistory_t  enerhist;        /* Energy history for statistics           */
+    swapstate_t      swapstate;       /* Position swapping                       */
     df_history_t     dfhist;          /*Free energy history for free energy analysis  */
     edsamstate_t     edsamstate;      /* Essential dynamics / flooding history */
 

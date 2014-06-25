@@ -1,53 +1,56 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <string.h>
-#include <math.h>
 
-#include "string2.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
-#include "statutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/commandline/pargs.h"
 #include "disre.h"
 #include "names.h"
 #include "macros.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/enxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 
@@ -65,7 +68,7 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
     int      *set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
     {
         bVerbose = FALSE;
     }
@@ -347,8 +350,8 @@ static void copy_ee(t_energy *src, t_energy *dst, int nre)
     }
 }
 
-static void update_ee(t_energy *lastee, gmx_large_int_t laststep,
-                      t_energy *startee, gmx_large_int_t startstep,
+static void update_ee(t_energy *lastee, gmx_int64_t laststep,
+                      t_energy *startee, gmx_int64_t startstep,
                       t_energy *ee, int step,
                       t_energy *outee, int nre)
 {
@@ -383,8 +386,8 @@ static void update_ee(t_energy *lastee, gmx_large_int_t laststep,
          */
         if (startstep > 0)
         {
-            gmx_large_int_t q = laststep+step;
-            gmx_large_int_t p = startstep+1;
+            gmx_int64_t q = laststep+step;
+            gmx_int64_t p = startstep+1;
             prestart_esum  = startee[i].esum-startee[i].e;
             sigmacorr      = prestart_esum-(p-1)*startee[i].e;
             prestart_sigma = startee[i].eav-
@@ -407,13 +410,13 @@ static void update_ee(t_energy *lastee, gmx_large_int_t laststep,
 }
 
 static void update_ee_sum(int nre,
-                          gmx_large_int_t *ee_sum_step,
-                          gmx_large_int_t *ee_sum_nsteps,
-                          gmx_large_int_t *ee_sum_nsum,
+                          gmx_int64_t *ee_sum_step,
+                          gmx_int64_t *ee_sum_nsteps,
+                          gmx_int64_t *ee_sum_nsum,
                           t_energy *ee_sum,
                           t_enxframe *fr, int out_step)
 {
-    gmx_large_int_t nsteps, nsum, fr_nsum;
+    gmx_int64_t     nsteps, nsum, fr_nsum;
     int             i;
 
     nsteps = *ee_sum_nsteps;
@@ -517,9 +520,9 @@ int gmx_eneconv(int argc, char *argv[])
     gmx_enxnm_t    *enm = NULL;
 #endif
     t_enxframe     *fr, *fro;
-    gmx_large_int_t ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
+    gmx_int64_t     ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
     t_energy       *ee_sum;
-    gmx_large_int_t lastfilestep, laststep, startstep, startstep_file = 0;
+    gmx_int64_t     lastfilestep, laststep, startstep, startstep_file = 0;
     int             noutfr;
     int             nre, nremax, this_nre, nfile, f, i, j, kkk, nset, *set = NULL;
     double          last_t;
@@ -580,7 +583,6 @@ int gmx_eneconv(int argc, char *argv[])
     nset     = 0;
     timestep = 0.0;
     snew(fnms, argc);
-    nfile        = 0;
     lastfilestep = 0;
     laststep     = startstep = 0;
 
@@ -725,8 +727,8 @@ int gmx_eneconv(int argc, char *argv[])
                 }
                 else
                 {
-                    fro->nsum = gmx_large_int_to_int(ee_sum_nsum,
-                                                     "energy average summation");
+                    fro->nsum = gmx_int64_to_int(ee_sum_nsum,
+                                                 "energy average summation");
                     /* Copy the energy sums */
                     for (i = 0; i < nre; i++)
                     {

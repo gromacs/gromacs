@@ -39,25 +39,20 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "string2.h"
-#include "strdb.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "mshift.h"
-#include "statutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
-#include "gromacs/fileio/matio.h"
-#include "index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/topology/index.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "viewit.h"
 #include "gbutil.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 
@@ -76,7 +71,7 @@ static void process_multiprot_output(const char *fn, real *rmsd, int *nres, rvec
     
     (*rmsd)=-1;
     (*nres)=0;
-    mpoutput=ffopen (fn,"r");
+    mpoutput=gmx_ffopen (fn,"r");
     
     if (bCountres) {
 	do {
@@ -139,7 +134,7 @@ static void process_multiprot_output(const char *fn, real *rmsd, int *nres, rvec
 	    (*nres) = atoi(string);
 	}
     }
-    ffclose(mpoutput);
+    gmx_ffclose(mpoutput);
 }
 
 int main(int argc,char *argv[])
@@ -290,7 +285,7 @@ int main(int argc,char *argv[])
 	}
     }
     else {
-	ffclose(tmpf);
+	gmx_ffclose(tmpf);
     }
 
     if (ftp != efPDB) {
@@ -349,7 +344,7 @@ int main(int argc,char *argv[])
 		    useatoms.nres=max(useatoms.nres,useatoms.atom[i].resind+1);
 		}
 		useatoms.nr=nout;
-		out=ffopen(TrjoutFile,filemode);
+		out=gmx_ffopen(TrjoutFile,filemode);
 		break;
 	}
 	if (outftp == efG87)
@@ -370,9 +365,9 @@ int main(int argc,char *argv[])
     do {
 	t = output_env_conv_time(oenv,fr.time);
 	gmx_rmpbc(gpbc,natoms,fr.box,fr.x);
-	tapein=ffopen(pdbfile,"w");
+	tapein=gmx_ffopen(pdbfile,"w");
 	write_pdbfile_indexed(tapein,NULL,atoms,fr.x,ePBC,fr.box,' ',-1,gnx,index,NULL,TRUE); 
-	ffclose(tapein);
+	gmx_ffclose(tapein);
 	system(multiprot);
 	remove(pdbfile);
 	process_multiprot_output(fn, &rmsd, &nres2,rotangles,translation,bCountres,countres);
@@ -434,17 +429,17 @@ int main(int argc,char *argv[])
 	for (i=0;i<ratoms.nres;i++) {
 	    fprintf(fres,"%10d  %12d\n",countres[i].resnr,countres[i].count);
 	}
-	ffclose(fres);
+	gmx_ffclose(fres);
     }
-    ffclose(fo);
-    ffclose(frc);
+    gmx_ffclose(fo);
+    gmx_ffclose(frc);
     fprintf(stderr,"\n");
     close_trj(status);
     if (trxout != NULL) {
 	close_trx(trxout);
     }
     else if (out != NULL) {
-	ffclose(out);
+	gmx_ffclose(out);
     }
     view_all(oenv,NFILE, fnm);
     sfree(xr);

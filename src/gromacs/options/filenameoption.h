@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #define GMX_OPTIONS_FILENAMEOPTION_H
 
 #include <string>
+#include <vector>
 
 #include "abstractoption.h"
 #include "optionfiletype.h"
@@ -51,7 +52,9 @@
 namespace gmx
 {
 
+template <typename T> class ConstArrayRef;
 class FileNameOptionInfo;
+class FileNameOptionManager;
 class FileNameOptionStorage;
 
 /*! \brief
@@ -70,7 +73,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
-            : MyBase(name), filetype_(eftUnknown), defaultBasename_(NULL),
+            : MyBase(name), optionType_(eftUnknown), legacyType_(-1),
+              defaultBasename_(NULL), bLegacyOptionalBehavior_(false),
               bRead_(false), bWrite_(false), bLibrary_(false)
         {
         }
@@ -78,10 +82,28 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         /*! \brief
          * Sets the type of the file this option accepts.
          *
-         * This attribute must be provided.
+         * Either this attribute or legacyType() must be provided.
          */
         MyClass &filetype(OptionFileType type)
-        { filetype_ = type; return me(); }
+        { optionType_ = type; return me(); }
+        /*! \brief
+         * Sets the type of the file from an enum in filenm.h.
+         *
+         * New code should prefer filetype(), extending the enumeration if
+         * necessary.
+         */
+        MyClass &legacyType(int type)
+        { legacyType_ = type; return me(); }
+        /*! \brief
+         * Changes the behavior of optional options to match old t_filenm.
+         *
+         * If this is not set, optional options return an empty string if not
+         * set.  If this is set, a non-empty value is always returned.
+         * In the latter case, whether the option is set only affects the
+         * return value of OptionInfo::isSet() and Options::isSet().
+         */
+        MyClass &legacyOptionalBehavior()
+        { bLegacyOptionalBehavior_ = true; return me(); }
         //! Tells that the file provided by this option is used for input only.
         MyClass &inputFile()
         { bRead_ = true; bWrite_ = false; return me(); }
@@ -95,6 +117,11 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         MyClass &inputOutputFile()
         { bRead_ = bWrite_ = true; return me(); }
         /*! \brief
+         * Sets the read/write usage for this file from boolean flags.
+         */
+        MyClass &readWriteFlags(bool bRead, bool bWrite)
+        { bRead_ = bRead; bWrite_ = bWrite; return me(); }
+        /*! \brief
          * Tells that the file will be looked up in library directories in
          * addition to working directory.
          *
@@ -104,7 +131,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * directories.  It would be nicer to do this searching within the
          * file name option implementation.
          */
-        MyClass &libraryFile() { bLibrary_ = true; return me(); }
+        MyClass &libraryFile(bool bLibrary = true)
+        { bLibrary_ = bLibrary; return me(); }
         /*! \brief
          * Sets a default basename for the file option.
          *
@@ -113,7 +141,21 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * be provided; it is automatically added based on filetype().
          * The behavior is also adjusted based on required(): if the option is
          * required, the value given to defaultBasename() is treated as for
-         * defaultValue(), otherwise it is treated as for defaultValueIfSet().
+         * both defaultValue() and defaultValueIfSet(), otherwise it is treated
+         * as for defaultValueIfSet().
+         *
+         * For input files that accept multiple extensions, the extension is
+         * completed to the default extension on creation of the option or at
+         * time of parsing an option without a value.
+         * The extension may change during Options::finish(), as this is the
+         * time when the default names are checked against the file system to
+         * provide an extension that matches an existing file if that is
+         * possible.
+         *
+         * If FileNameOptionManager is used, and
+         * FileNameOptionManager::addDefaultFileNameOption() is used, and the
+         * user provides a global default file name using that option, then the
+         * global default takes precedence over defaultBasename().
          */
         MyClass &defaultBasename(const char *basename)
         { defaultBasename_ = basename; return me(); }
@@ -124,10 +166,13 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         using MyBase::defaultValueIfSet;
 
         //! Creates a FileNameOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
 
-        OptionFileType          filetype_;
+        OptionFileType          optionType_;
+        int                     legacyType_;
         const char             *defaultBasename_;
+        bool                    bLegacyOptionalBehavior_;
         bool                    bRead_;
         bool                    bWrite_;
         bool                    bLibrary_;
@@ -148,6 +193,9 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 class FileNameOptionInfo : public OptionInfo
 {
     public:
+        //! Shorthand for a list of extensions.
+        typedef std::vector<const char *> ExtensionList;
+
         //! Creates an option info object for the given option.
         explicit FileNameOptionInfo(FileNameOptionStorage *option);
 
@@ -163,6 +211,13 @@ class FileNameOptionInfo : public OptionInfo
          * \see FileNameOption::libraryFile()
          */
         bool isLibraryFile() const;
+
+        //! Whether the option specifies directories.
+        bool isDirectoryOption() const;
+        //! Returns the default extension for this option.
+        const char *defaultExtension() const;
+        //! Returns the list of extensions this option accepts.
+        ExtensionList extensions() const;
 
     private:
         const FileNameOptionStorage &option() const;

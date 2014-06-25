@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,12 +32,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::CommandLineModuleManager.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_commandline
  */
 #ifndef GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
@@ -51,32 +51,32 @@ namespace gmx
 {
 
 class CommandLineModuleGroup;
+class CommandLineModuleGroupData;
 class CommandLineModuleInterface;
-class ProgramInfo;
+class CommandLineProgramContext;
+class File;
+
+//! \addtogroup module_commandline
+//! \{
 
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
     CommandLineModulePointer;
 
-namespace internal
-{
-class CommandLineModuleGroupData;
-}   // namespace internal
-
-/*! \brief
+/*! \libinternal \brief
  * Implements a wrapper command-line interface for multiple modules.
  *
  * Typical usage:
  * \code
    int main(int argc, char *argv[])
    {
-       gmx::ProgramInfo &programInfo = gmx::init("gmx", &argc, &argv);
+       gmx::CommandLineProgramContext &programContext = gmx::initForCommandLine(&argc, &argv);
        try
        {
-           gmx::CommandLineModuleManager manager(&programInfo);
+           gmx::CommandLineModuleManager manager("gmx", &programContext);
            // <register all necessary modules>
            int rc = manager.run(argc, argv);
-           gmx::finalize();
+           gmx::finalizeForCommandLine();
            return rc;
        }
        catch (const std::exception &ex)
@@ -87,8 +87,8 @@ class CommandLineModuleGroupData;
    }
  * \endcode
  *
- * \inpublicapi
- * \ingroup module_commandline
+ * \see page_wrapperbinary
+ * \inlibraryapi
  */
 class CommandLineModuleManager
 {
@@ -163,16 +163,19 @@ class CommandLineModuleManager
         /*! \brief
          * Initializes a command-line module manager.
          *
-         * \param     programInfo  Program information for the running binary.
+         * \param[in] binaryName     Name of the running binary
+         *     (without Gromacs binary suffix or .exe on Windows).
+         * \param     programContext Program information for the running binary.
          * \throws    std::bad_alloc if out of memory.
          *
-         * The binary name is used to detect when the binary is run through a
+         * \p binaryName is used to detect when the binary is run through a
          * symlink, and automatically invoke a matching module in such a case.
          *
          * \p programInfo is non-const to allow the manager to amend it based
          * on the actual module that is getting executed.
          */
-        explicit CommandLineModuleManager(ProgramInfo *programInfo);
+        CommandLineModuleManager(const char                *binaryName,
+                                 CommandLineProgramContext *programContext);
         ~CommandLineModuleManager();
 
         /*! \brief
@@ -180,12 +183,26 @@ class CommandLineModuleManager
          *
          * \param[in] bQuiet  Whether the module manager should remain silent.
          *
-         * Normally, the module manager prints out some information to stderr
+         * Normally, the module manager prints out some information to `stderr`
          * before it starts the module and after it finishes.  This removes
          * that output, which is useful in particular for unit tests so that
-         * they don't spam stderr.
+         * they don't spam `stderr`.
          */
         void setQuiet(bool bQuiet);
+        /*! \brief
+         * Redirects the output of the module manager to a file.
+         *
+         * \param[in] output  File to write the output to.
+         *
+         * Normally, the module manager prints explicitly requested text such
+         * as help output to `stdout`, but this method can be used to redirect
+         * that output to a file.  This is used for unit tests, either to keep
+         * them quiet or to verify that output.  To keep implementation options
+         * open, behavior with `output == NULL` is undefined and should not be
+         * relied on.  For tests, there should only be need to call this a
+         * single time, right after creating the manager.
+         */
+        void setOutputRedirect(File *output);
 
         /*! \brief
          * Makes the manager always run a single module.
@@ -302,7 +319,7 @@ class CommandLineModuleManager
         PrivateImplPointer<Impl> impl_;
 };
 
-/*! \brief
+/*! \libinternal \brief
  * Handle to add content to a group added with
  * CommandLineModuleManager::addModuleGroup().
  *
@@ -311,15 +328,14 @@ class CommandLineModuleManager
  * point to the same group.  The actual state of the group is maintained in an
  * internal implementation class.
  *
- * \inpublicapi
- * \ingroup module_commandline
+ * \inlibraryapi
  */
 class CommandLineModuleGroup
 {
     public:
         /*! \cond internal */
         //! Shorthand for the implementation type that holds all the data.
-        typedef internal::CommandLineModuleGroupData Impl;
+        typedef CommandLineModuleGroupData Impl;
 
         //! Creates a new group (only called by CommandLineModuleManager).
         explicit CommandLineModuleGroup(Impl *impl) : impl_(impl) {}
@@ -353,6 +369,8 @@ class CommandLineModuleGroup
         //! Pointer to the data owned by CommandLineModuleManager.
         Impl                     *impl_;
 };
+
+//! \}
 
 } // namespace gmx
 

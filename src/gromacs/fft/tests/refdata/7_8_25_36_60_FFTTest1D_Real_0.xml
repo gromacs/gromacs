@@ -3,23 +3,23 @@
 <ReferenceData>
   <Sequence Name="forward">
     <Int Name="Length">8</Int>
-    <Real>5.500000</Real>
-    <Real>0.000000</Real>
-    <Real>3.784214</Real>
-    <Real>-6.770811</Real>
-    <Real>-1.265258</Real>
-    <Real>1.880868</Real>
-    <Real>-17.518957</Real>
-    <Real>5.957638</Real>
+    <Real>5.5</Real>
+    <Real>0</Real>
+    <Real>3.7842143902307015</Real>
+    <Real>-6.7708113439945521</Real>
+    <Real>-1.2652576727083036</Real>
+    <Real>1.8808686578458298</Real>
+    <Real>-17.518956717522443</Real>
+    <Real>5.9576376892160745</Real>
   </Sequence>
   <Sequence Name="backward">
     <Int Name="Length">7</Int>
-    <Real>12.700001</Real>
-    <Real>-0.650572</Real>
-    <Real>-7.285891</Real>
-    <Real>-12.340374</Real>
-    <Real>-1.403408</Real>
-    <Real>9.718491</Real>
-    <Real>-25.238245</Real>
+    <Real>12.699999999999999</Real>
+    <Real>-0.6505718798723219</Real>
+    <Real>-7.285891055946923</Real>
+    <Real>-12.340373630085017</Real>
+    <Real>-1.403407475454765</Real>
+    <Real>9.7184909573086422</Real>
+    <Real>-25.238246915949688</Real>
   </Sequence>
 </ReferenceData>

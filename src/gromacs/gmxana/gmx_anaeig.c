@@ -1,66 +1,69 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
-#include "statutil.h"
-#include "sysstuff.h"
+
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
-#include "index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/matio.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "do_fit.h"
-#include "rmpbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gmx_ana.h"
+
+#include "gromacs/math/do_fit.h"
 
 static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip)
 {
@@ -153,7 +156,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
     int   g, s, i;
     real  min, max, xsp, ysp;
 
-    out = ffopen(file, "w");
+    out = gmx_ffopen(file, "w");
     if (output_env_get_xvg_format(oenv) == exvgXMGRACE)
     {
         fprintf(out, "@ autoscale onread none\n");
@@ -255,7 +258,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
         {
             for (i = 0; i < n; i++)
             {
-                if (bSplit && i > 0 && abs(x[i]) < 1e-5)
+                if (bSplit && i > 0 && fabs(x[i]) < 1e-5)
                 {
                     if (output_env_get_print_xvgr_codes(oenv))
                     {
@@ -271,7 +274,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
             }
         }
     }
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 static void
@@ -445,10 +448,10 @@ static void inprod_matrix(const char *matfile, int natoms,
     rlo.r   = 1; rlo.g = 1; rlo.b = 1;
     rhi.r   = 0; rhi.g = 0; rhi.b = 0;
     nlevels = 41;
-    out     = ffopen(matfile, "w");
+    out     = gmx_ffopen(matfile, "w");
     write_xpm(out, 0, "Eigenvector inner-products", "in.prod.", "run 1", "run 2",
               nx, ny, t_x, t_y, mat, 0.0, max, rlo, rhi, &nlevels);
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 static void overlap(const char *outfile, int natoms,
@@ -488,7 +491,7 @@ static void overlap(const char *outfile, int natoms,
         fprintf(out, "%5d  %5.3f\n", eignr2[x]+1, overlap/noutvec);
     }
 
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 static void project(const char *trajfile, t_topology *top, int ePBC, matrix topbox,
@@ -668,13 +671,13 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                            oenv);
         for (i = 0; i < nframes; i++)
         {
-            if (bSplit && i > 0 && abs(inprod[noutvec][i]) < 1e-5)
+            if (bSplit && i > 0 && fabs(inprod[noutvec][i]) < 1e-5)
             {
                 fprintf(xvgrout, "&\n");
             }
             fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec-1][i]);
         }
-        ffclose(xvgrout);
+        gmx_ffclose(xvgrout);
     }
 
     if (threedplotfile)
@@ -747,7 +750,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             strcpy(pdbform, get_pdbformat());
             strcat(pdbform, "%8.4f%8.4f\n");
 
-            out = ffopen(threedplotfile, "w");
+            out = gmx_ffopen(threedplotfile, "w");
             fprintf(out, "HEADER    %s\n", str);
             if (b4D)
             {
@@ -756,13 +759,13 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             j = 0;
             for (i = 0; i < atoms.nr; i++)
             {
-                if (j > 0 && bSplit && abs(inprod[noutvec][i]) < 1e-5)
+                if (j > 0 && bSplit && fabs(inprod[noutvec][i]) < 1e-5)
                 {
                     fprintf(out, "TER\n");
                     j = 0;
                 }
                 fprintf(out, pdbform, "ATOM", i+1, "C", "PRJ", ' ', j+1,
-                        PR_VEC(10*x[i]), 1.0, 10*b[i]);
+                        10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i]);
                 if (j > 0)
                 {
                     fprintf(out, "CONECT%5d%5d\n", i, i+1);
@@ -770,7 +773,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                 j++;
             }
             fprintf(out, "TER\n");
-            ffclose(out);
+            gmx_ffclose(out);
         }
         else
         {
@@ -1276,6 +1279,11 @@ int gmx_anaeig(int argc, char *argv[])
             snew(xrefp, atoms->nr);
             if (xref1 != NULL)
             {
+                /* Safety check between selected fit-group and reference structure read from the eigenvector file */
+                if (natoms != nfit)
+                {
+                    gmx_fatal(FARGS, "you selected a group with %d elements instead of %d, your selection does not fit the reference structure in the eigenvector file.", nfit, natoms);
+                }
                 for (i = 0; (i < nfit); i++)
                 {
                     copy_rvec(xref1[i], xrefp[ifit[i]]);

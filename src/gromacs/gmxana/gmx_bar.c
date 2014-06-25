@@ -1,61 +1,60 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <math.h>
-#include <string.h>
 #include <ctype.h>
-#include <math.h>
 #include <float.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/commandline/pargs.h"
 #include "macros.h"
 #include "gromacs/fileio/enxio.h"
-#include "physics.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
+#include "gromacs/math/units.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gmx_ana.h"
-#include "maths.h"
-#include "string2.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/utility/cstringutil.h"
 #include "names.h"
 #include "mdebin.h"
 
@@ -107,12 +106,12 @@ typedef struct hist_t
     unsigned int   *bin[2];                 /* the (forward + reverse) histogram values */
     double          dx[2];                  /* the histogram spacing. The reverse
                                                dx is the negative of the forward dx.*/
-    gmx_large_int_t x0[2];                  /* the (forward + reverse) histogram start
-                                               point(s) as int */
+    gmx_int64_t     x0[2];                  /* the (forward + reverse) histogram start
+                                                   point(s) as int */
 
     int             nbin[2];                /* the (forward+reverse) number of bins */
-    gmx_large_int_t sum;                    /* the total number of counts. Must be
-                                               the same for forward + reverse.  */
+    gmx_int64_t     sum;                    /* the total number of counts. Must be
+                                                   the same for forward + reverse.  */
     int             nhist;                  /* number of hist datas (forward or reverse) */
 
     double          start_time, delta_time; /* start time, end time of histogram */
@@ -141,7 +140,7 @@ typedef struct samples_t
     size_t          ndu_alloc, nt_alloc; /* pre-allocated sizes */
     hist_t         *hist_alloc;          /* allocated hist */
 
-    gmx_large_int_t ntot;                /* total number of samples */
+    gmx_int64_t     ntot;                /* total number of samples */
     const char     *filename;            /* the file name this sample comes from */
 } samples_t;
 
@@ -171,8 +170,8 @@ typedef struct sample_coll_t
     sample_range_t *r;                 /* the sample ranges */
     int             nsamples_alloc;    /* number of allocated samples */
 
-    gmx_large_int_t ntot;              /* total number of samples in the ranges of
-                                          this collection */
+    gmx_int64_t     ntot;              /* total number of samples in the ranges of
+                                              this collection */
 
     struct sample_coll_t *next, *prev; /* next and previous in the list */
 } sample_coll_t;
@@ -235,7 +234,7 @@ static void lambda_components_add(lambda_components_t *lc,
     while (lc->N + 1 > lc->Nalloc)
     {
         lc->Nalloc = (lc->Nalloc == 0) ? 2 : 2*lc->Nalloc;
-        srealloc( lc->names, lc->Nalloc );
+        srenew(lc->names, lc->Nalloc);
     }
     snew(lc->names[lc->N], name_length+1);
     strncpy(lc->names[lc->N], name, name_length);
@@ -357,7 +356,7 @@ static void lambda_vec_print(const lambda_vec_t *lv, char *str, gmx_bool named)
         str += sprintf(str, "dH/dl");
         if (strlen(lv->lc->names[lv->dhdl]) > 0)
         {
-            str += sprintf(str, " (%s)", lv->lc->names[lv->dhdl]);
+            sprintf(str, " (%s)", lv->lc->names[lv->dhdl]);
         }
     }
 }
@@ -1420,9 +1419,9 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
     int             j;
     int             hist_start, hist_end;
 
-    gmx_large_int_t ntot_start;
-    gmx_large_int_t ntot_end;
-    gmx_large_int_t ntot_so_far;
+    gmx_int64_t     ntot_start;
+    gmx_int64_t     ntot_end;
+    gmx_int64_t     ntot_so_far;
 
     *sc = *sc_orig; /* just copy all fields */
 
@@ -1439,13 +1438,13 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
 
     /* now fix start and end fields */
     /* the casts avoid possible overflows */
-    ntot_start  = (gmx_large_int_t)(sc_orig->ntot*(double)i/(double)ni);
-    ntot_end    = (gmx_large_int_t)(sc_orig->ntot*(double)(i+1)/(double)ni);
+    ntot_start  = (gmx_int64_t)(sc_orig->ntot*(double)i/(double)ni);
+    ntot_end    = (gmx_int64_t)(sc_orig->ntot*(double)(i+1)/(double)ni);
     ntot_so_far = 0;
     for (j = 0; j < sc->nsamples; j++)
     {
-        gmx_large_int_t ntot_add;
-        gmx_large_int_t new_start, new_end;
+        gmx_int64_t ntot_add;
+        gmx_int64_t new_start, new_end;
 
         if (sc->r[j].use)
         {
@@ -3033,7 +3032,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     /* check the block types etc. */
     if ( (blk->nsub < 2) ||
          (blk->sub[0].type != xdr_datatype_double) ||
-         (blk->sub[1].type != xdr_datatype_large_int) ||
+         (blk->sub[1].type != xdr_datatype_int64) ||
          (blk->sub[0].nr < 2)  ||
          (blk->sub[1].nr < 2) )
     {
@@ -3131,7 +3130,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     for (i = 0; i < nhist; i++)
     {
         int             nbin;
-        gmx_large_int_t sum = 0;
+        gmx_int64_t     sum = 0;
 
         for (j = 0; j < s->hist->nbin[i]; j++)
         {
@@ -3939,7 +3938,7 @@ int gmx_bar(int argc, char *argv[])
     {
         lambda_vec_print_short(results[nresults-1].b->native_lambda, buf);
         fprintf(fpi, xvg2format, buf, dg_tot);
-        ffclose(fpi);
+        gmx_ffclose(fpi);
     }
 
     do_view(oenv, opt2fn_null("-o", NFILE, fnm), "-xydy");

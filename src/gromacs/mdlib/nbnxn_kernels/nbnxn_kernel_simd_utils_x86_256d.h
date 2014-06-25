@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@
  *   energy group pair energy storage
  */
 
-typedef gmx_mm_pr gmx_exclfilter;
+typedef gmx_simd_real_t gmx_exclfilter;
 static const int filter_stride = 2;
 
 /* Transpose 2 double precision registers */
@@ -193,10 +193,10 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return gmx_load_pr((real *) (i));
+    return gmx_simd_load_r((real *) (i));
 }
 
-static gmx_inline gmx_mm_pb
+static gmx_inline gmx_simd_bool_t
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     /* With <= 16 bits used the cast and conversion should not be

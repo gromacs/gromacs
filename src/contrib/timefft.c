@@ -38,14 +38,14 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "xvgr.h"
-#include "gmxcomplex.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
 #include "mdrun.h"
 #include "main.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fft/fft.h"
+#include "gromacs/math/gmxcomplex.h"
 
 #ifdef GMX_MPI
 #include "gromacs/fft/parallel_3dfft.h"

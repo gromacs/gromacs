@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -123,11 +124,22 @@ BooleanOptionInfo::BooleanOptionInfo(BooleanOptionStorage *option)
 {
 }
 
+const BooleanOptionStorage &BooleanOptionInfo::option() const
+{
+    return static_cast<const BooleanOptionStorage &>(OptionInfo::option());
+}
+
+bool BooleanOptionInfo::defaultValue() const
+{
+    return option().defaultValue();
+}
+
 /********************************************************************
  * BooleanOption
  */
 
-AbstractOptionStoragePointer BooleanOption::createStorage() const
+AbstractOptionStoragePointer
+BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new BooleanOptionStorage(*this));
 }
@@ -184,9 +196,58 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
  * IntegerOption
  */
 
-AbstractOptionStoragePointer IntegerOption::createStorage() const
+AbstractOptionStoragePointer
+IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new IntegerOptionStorage(*this));
+}
+
+
+/********************************************************************
+ * Int64OptionStorage
+ */
+
+std::string Int64OptionStorage::formatSingleValue(const gmx_int64_t &value) const
+{
+    return formatString("%" GMX_PRId64, value);
+}
+
+void Int64OptionStorage::convertValue(const std::string &value)
+{
+    const char       *ptr = value.c_str();
+    char             *endptr;
+    errno = 0;
+    const gmx_int64_t ival = str_to_int64_t(ptr, &endptr);
+    if (errno == ERANGE)
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; it causes an integer overflow"));
+    }
+    if (*ptr == '\0' || *endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; expected an integer"));
+    }
+    addValue(ival);
+}
+
+/********************************************************************
+ * Int64OptionInfo
+ */
+
+Int64OptionInfo::Int64OptionInfo(Int64OptionStorage *option)
+    : OptionInfo(option)
+{
+}
+
+/********************************************************************
+ * Int64Option
+ */
+
+AbstractOptionStoragePointer
+Int64Option::createStorage(const OptionManagerContainer & /*managers*/) const
+{
+    return AbstractOptionStoragePointer(new Int64OptionStorage(*this));
 }
 
 
@@ -199,9 +260,9 @@ DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
 {
 }
 
-const char *DoubleOptionStorage::typeString() const
+std::string DoubleOptionStorage::typeString() const
 {
-    return isVector() ? "vector" : (isTime() ? "time" : "double");
+    return isVector() ? "vector" : (isTime() ? "time" : "real");
 }
 
 std::string DoubleOptionStorage::formatSingleValue(const double &value) const
@@ -234,10 +295,6 @@ void DoubleOptionStorage::processSetValues(ValueList *values)
     {
         expandVector(maxValueCount(), values);
     }
-}
-
-void DoubleOptionStorage::processAll()
-{
 }
 
 void DoubleOptionStorage::setScaleFactor(double factor)
@@ -289,9 +346,114 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStoragePointer DoubleOption::createStorage() const
+AbstractOptionStoragePointer
+DoubleOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new DoubleOptionStorage(*this));
+}
+
+
+/********************************************************************
+ * FloatOptionStorage
+ */
+
+FloatOptionStorage::FloatOptionStorage(const FloatOption &settings)
+    : MyBase(settings), info_(this), bTime_(settings.bTime_), factor_(1.0)
+{
+}
+
+std::string FloatOptionStorage::typeString() const
+{
+    return isVector() ? "vector" : (isTime() ? "time" : "real");
+}
+
+std::string FloatOptionStorage::formatSingleValue(const float &value) const
+{
+    return formatString("%g", value / factor_);
+}
+
+void FloatOptionStorage::convertValue(const std::string &value)
+{
+    const char *ptr = value.c_str();
+    char       *endptr;
+    errno = 0;
+    double      dval = std::strtod(ptr, &endptr);
+    if (errno == ERANGE
+        || dval * factor_ < -std::numeric_limits<float>::max()
+        || dval * factor_ >  std::numeric_limits<float>::max())
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; it causes an overflow/underflow"));
+    }
+    if (*ptr == '\0' || *endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + value
+                                    + "'; expected a number"));
+    }
+    addValue(dval * factor_);
+}
+
+void FloatOptionStorage::processSetValues(ValueList *values)
+{
+    if (isVector())
+    {
+        expandVector(maxValueCount(), values);
+    }
+}
+
+void FloatOptionStorage::setScaleFactor(double factor)
+{
+    GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
+    if (!hasFlag(efOption_HasDefaultValue))
+    {
+        double              scale = factor / factor_;
+        ValueList::iterator i;
+        for (i = values().begin(); i != values().end(); ++i)
+        {
+            (*i) *= scale;
+        }
+        refreshValues();
+    }
+    factor_ = factor;
+}
+
+/********************************************************************
+ * FloatOptionInfo
+ */
+
+FloatOptionInfo::FloatOptionInfo(FloatOptionStorage *option)
+    : OptionInfo(option)
+{
+}
+
+FloatOptionStorage &FloatOptionInfo::option()
+{
+    return static_cast<FloatOptionStorage &>(OptionInfo::option());
+}
+
+const FloatOptionStorage &FloatOptionInfo::option() const
+{
+    return static_cast<const FloatOptionStorage &>(OptionInfo::option());
+}
+
+bool FloatOptionInfo::isTime() const
+{
+    return option().isTime();
+}
+
+void FloatOptionInfo::setScaleFactor(double factor)
+{
+    option().setScaleFactor(factor);
+}
+
+/********************************************************************
+ * FloatOption
+ */
+
+AbstractOptionStoragePointer
+FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
+{
+    return AbstractOptionStoragePointer(new FloatOptionStorage(*this));
 }
 
 
@@ -370,6 +532,25 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
         addValue(allowed_[settings.defaultEnumIndex_]);
         commitValues();
     }
+}
+
+std::string StringOptionStorage::formatExtraDescription() const
+{
+    std::string result;
+    if (!allowed_.empty())
+    {
+        result.append(": ");
+        ValueList::const_iterator i;
+        for (i = allowed_.begin(); i != allowed_.end(); ++i)
+        {
+            if (i != allowed_.begin())
+            {
+                result.append(", ");
+            }
+            result.append(*i);
+        }
+    }
+    return result;
 }
 
 std::string StringOptionStorage::formatSingleValue(const std::string &value) const
@@ -455,7 +636,8 @@ const std::vector<std::string> &StringOptionInfo::allowedValues() const
  * StringOption
  */
 
-AbstractOptionStoragePointer StringOption::createStorage() const
+AbstractOptionStoragePointer
+StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new StringOptionStorage(*this));
 }

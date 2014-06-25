@@ -1,51 +1,51 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 
 #include <cuda.h>
 
-#include "gmx_fatal.h"
-#include "smalloc.h"
 #include "tables.h"
 #include "typedefs.h"
+#include "types/enums.h"
 #include "types/nb_verlet.h"
 #include "types/interaction_const.h"
 #include "types/force_flags.h"
@@ -58,6 +58,12 @@
 #include "pmalloc_cuda.h"
 #include "gpu_utils.h"
 
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
 
 /* This is a heuristically determined parameter for the Fermi architecture for
@@ -68,8 +74,9 @@ static unsigned int gpu_min_ci_balanced_factor = 40;
 
 /* Functions from nbnxn_cuda.cu */
 extern void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo);
-extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref();
-extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
 
 /* We should actually be using md_print_warn in md_logging.c,
  * but we can't include mpi.h in CUDA code.
@@ -111,9 +118,9 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
                                            const cuda_dev_info_t *dev_info)
 {
     float       *ftmp, *coul_tab;
-    int         tabsize;
-    double      tabscale;
-    cudaError_t stat;
+    int          tabsize;
+    double       tabscale;
+    cudaError_t  stat;
 
     tabsize     = GPU_EWALD_COULOMB_FORCE_TABLE_SIZE;
     /* Subtract 2 iso 1 to avoid access out of range due to rounding */
@@ -122,7 +129,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
     table_spline3_fill_ewald_lr(ftmp, NULL, NULL, tabsize,
-                                1/tabscale, nbp->ewald_beta);
+                                1/tabscale, nbp->ewald_beta, v_q_ewald_lr);
 
     /* If the table pointer == NULL the table is generated the first time =>
        the array pointer will be saved to nbparam and the texture is bound.
@@ -156,6 +163,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
         else
 #endif
         {
+            GMX_UNUSED_VALUE(dev_info);
             cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
             stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
                                    coul_tab, &cd, tabsize*sizeof(*coul_tab));
@@ -179,7 +187,7 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     cudaError_t stat;
 
     ad->ntypes  = ntypes;
-    stat = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
+    stat        = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec");
     ad->bShiftVecUploaded = false;
 
@@ -254,27 +262,77 @@ static int pick_ewald_kernel_type(bool                   bTwinCut,
     return kernel_type;
 }
 
+/*! Copies all parameters related to the cut-off from ic to nbp */
+static void set_cutoff_parameters(cu_nbparam_t              *nbp,
+                                  const interaction_const_t *ic)
+{
+    nbp->ewald_beta       = ic->ewaldcoeff_q;
+    nbp->sh_ewald         = ic->sh_ewald;
+    nbp->epsfac           = ic->epsfac;
+    nbp->two_k_rf         = 2.0 * ic->k_rf;
+    nbp->c_rf             = ic->c_rf;
+    nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
+    nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
+    nbp->rlist_sq         = ic->rlist * ic->rlist;
+
+    nbp->sh_lj_ewald      = ic->sh_lj_ewald;
+    nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
+
+    nbp->rvdw_switch      = ic->rvdw_switch;
+    nbp->dispersion_shift = ic->dispersion_shift;
+    nbp->repulsion_shift  = ic->repulsion_shift;
+    nbp->vdw_switch       = ic->vdw_switch;
+}
 
 /*! Initializes the nonbonded parameter data structure. */
-static void init_nbparam(cu_nbparam_t *nbp,
+static void init_nbparam(cu_nbparam_t              *nbp,
                          const interaction_const_t *ic,
-                         const nbnxn_atomdata_t *nbat,
-                         const cuda_dev_info_t *dev_info)
+                         const nbnxn_atomdata_t    *nbat,
+                         const cuda_dev_info_t     *dev_info)
 {
     cudaError_t stat;
-    int         ntypes, nnbfp;
+    int         ntypes, nnbfp, nnbfp_comb;
 
     ntypes  = nbat->ntype;
 
-    nbp->ewald_beta = ic->ewaldcoeff_q;
-    nbp->sh_ewald   = ic->sh_ewald;
-    nbp->epsfac     = ic->epsfac;
-    nbp->two_k_rf   = 2.0 * ic->k_rf;
-    nbp->c_rf       = ic->c_rf;
-    nbp->rvdw_sq    = ic->rvdw * ic->rvdw;
-    nbp->rcoulomb_sq= ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq   = ic->rlist * ic->rlist;
-    nbp->sh_invrc6  = ic->sh_invrc6;
+    set_cutoff_parameters(nbp, ic);
+
+    if (ic->vdwtype == evdwCUT)
+    {
+        switch (ic->vdw_modifier)
+        {
+            case eintmodNONE:
+            case eintmodPOTSHIFT:
+                nbp->vdwtype = evdwCuCUT;
+                break;
+            case eintmodFORCESWITCH:
+                nbp->vdwtype = evdwCuFSWITCH;
+                break;
+            case eintmodPOTSWITCH:
+                nbp->vdwtype = evdwCuPSWITCH;
+                break;
+            default:
+                gmx_incons("The requested VdW interaction modifier is not implemented in the CUDA GPU accelerated kernels!");
+                break;
+        }
+    }
+    else if (ic->vdwtype == evdwPME)
+    {
+        if (ic->ljpme_comb_rule == ljcrGEOM)
+        {
+            assert(nbat->comb_rule == ljcrGEOM);
+            nbp->vdwtype = evdwCuEWALDGEOM;
+        }
+        else
+        {
+            assert(nbat->comb_rule == ljcrLB);
+            nbp->vdwtype = evdwCuEWALDLB;
+        }
+    }
+    else
+    {
+        gmx_incons("The requested VdW type is not implemented in the CUDA GPU accelerated kernels!");
+    }
 
     if (ic->eeltype == eelCUT)
     {
@@ -284,7 +342,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
     {
         nbp->eeltype = eelCuRF;
     }
-    else if ((EEL_PME(ic->eeltype) || ic->eeltype==eelEWALD))
+    else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
     {
         /* Initially rcoulomb == rvdw, so it's surely not twin cut-off. */
         nbp->eeltype = pick_ewald_kernel_type(false, dev_info);
@@ -302,49 +360,80 @@ static void init_nbparam(cu_nbparam_t *nbp,
         init_ewald_coulomb_force_table(nbp, dev_info);
     }
 
-    nnbfp = 2*ntypes*ntypes;
-    stat = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
+    nnbfp      = 2*ntypes*ntypes;
+    nnbfp_comb = 2*ntypes;
+
+    stat  = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp");
     cu_copy_H2D(nbp->nbfp, nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
 
+
+    if (ic->vdwtype == evdwPME)
+    {
+        stat  = cudaMalloc((void **)&nbp->nbfp_comb, nnbfp_comb*sizeof(*nbp->nbfp_comb));
+        CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp_comb");
+        cu_copy_H2D(nbp->nbfp_comb, nbat->nbfp_comb, nnbfp_comb*sizeof(*nbp->nbfp_comb));
+    }
+
 #ifdef TEXOBJ_SUPPORTED
-        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-        if (dev_info->prop.major >= 3)
+    /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+    if (dev_info->prop.major >= 3)
+    {
+        cudaResourceDesc rd;
+        cudaTextureDesc  td;
+
+        memset(&rd, 0, sizeof(rd));
+        rd.resType                  = cudaResourceTypeLinear;
+        rd.res.linear.devPtr        = nbp->nbfp;
+        rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+        rd.res.linear.desc.x        = 32;
+        rd.res.linear.sizeInBytes   = nnbfp*sizeof(*nbp->nbfp);
+
+        memset(&td, 0, sizeof(td));
+        td.readMode                 = cudaReadModeElementType;
+        stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, NULL);
+        CU_RET_ERR(stat, "cudaCreateTextureObject on nbfp_texobj failed");
+
+        if (ic->vdwtype == evdwPME)
         {
-            cudaResourceDesc rd;
             memset(&rd, 0, sizeof(rd));
             rd.resType                  = cudaResourceTypeLinear;
-            rd.res.linear.devPtr        = nbp->nbfp;
+            rd.res.linear.devPtr        = nbp->nbfp_comb;
             rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
             rd.res.linear.desc.x        = 32;
-            rd.res.linear.sizeInBytes   = nnbfp*sizeof(*nbp->nbfp);
+            rd.res.linear.sizeInBytes   = nnbfp_comb*sizeof(*nbp->nbfp_comb);
 
-            cudaTextureDesc td;
             memset(&td, 0, sizeof(td));
-            td.readMode                 = cudaReadModeElementType;
-            stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, NULL);
-            CU_RET_ERR(stat, "cudaCreateTextureObject on nbfp_texobj failed");
+            td.readMode = cudaReadModeElementType;
+            stat        = cudaCreateTextureObject(&nbp->nbfp_comb_texobj, &rd, &td, NULL);
+            CU_RET_ERR(stat, "cudaCreateTextureObject on nbfp_comb_texobj failed");
         }
-        else
+    }
+    else
 #endif
+    {
+        cudaChannelFormatDesc cd = cudaCreateChannelDesc<float>();
+        stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
+                               nbp->nbfp, &cd, nnbfp*sizeof(*nbp->nbfp));
+        CU_RET_ERR(stat, "cudaBindTexture on nbfp_texref failed");
+
+        if (ic->vdwtype == evdwPME)
         {
-            cudaChannelFormatDesc cd = cudaCreateChannelDesc<float>();
-            stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
-                                   nbp->nbfp, &cd, nnbfp*sizeof(*nbp->nbfp));
-            CU_RET_ERR(stat, "cudaBindTexture on nbfp_texref failed");
+            stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_comb_texref(),
+                                   nbp->nbfp_comb, &cd, nnbfp_comb*sizeof(*nbp->nbfp_comb));
+            CU_RET_ERR(stat, "cudaBindTexture on nbfp_comb_texref failed");
         }
+    }
 }
 
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
-void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t           cu_nb,
                                          const interaction_const_t *ic)
 {
     cu_nbparam_t *nbp = cu_nb->nbparam;
 
-    nbp->rlist_sq       = ic->rlist * ic->rlist;
-    nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
-    nbp->ewald_beta     = ic->ewaldcoeff_q;
+    set_cutoff_parameters(nbp, ic);
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  cu_nb->dev_info);
@@ -376,7 +465,7 @@ static void init_plist(cu_plist_t *pl)
 static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
 {
     cudaError_t stat;
-    int eventflags = ( bUseCudaEventBlockingSync ? cudaEventBlockingSync: cudaEventDefault );
+    int         eventflags = ( bUseCudaEventBlockingSync ? cudaEventBlockingSync : cudaEventDefault );
 
     stat = cudaEventCreateWithFlags(&(t->start_atdat), eventflags);
     CU_RET_ERR(stat, "cudaEventCreate on start_atdat failed");
@@ -416,12 +505,12 @@ static void init_timings(wallclock_gpu_t *t)
 
     t->nb_h2d_t = 0.0;
     t->nb_d2h_t = 0.0;
-    t->nb_c    = 0;
+    t->nb_c     = 0;
     t->pl_h2d_t = 0.0;
     t->pl_h2d_c = 0;
     for (i = 0; i < 2; i++)
     {
-        for(j = 0; j < 2; j++)
+        for (j = 0; j < 2; j++)
         {
             t->ktime[i][j].t = 0.0;
             t->ktime[i][j].c = 0;
@@ -429,22 +518,25 @@ static void init_timings(wallclock_gpu_t *t)
     }
 }
 
-void nbnxn_cuda_init(FILE *fplog,
-                     nbnxn_cuda_ptr_t *p_cu_nb,
+void nbnxn_cuda_init(FILE                 *fplog,
+                     nbnxn_cuda_ptr_t     *p_cu_nb,
                      const gmx_gpu_info_t *gpu_info,
-                     const gmx_gpu_opt_t *gpu_opt,
-                     int my_gpu_index,
-                     gmx_bool bLocalAndNonlocal)
+                     const gmx_gpu_opt_t  *gpu_opt,
+                     int                   my_gpu_index,
+                     gmx_bool              bLocalAndNonlocal)
 {
-    cudaError_t stat;
+    cudaError_t       stat;
     nbnxn_cuda_ptr_t  nb;
-    char sbuf[STRLEN];
-    bool bStreamSync, bNoStreamSync, bTMPIAtomics, bX86, bOldDriver;
-    int cuda_drv_ver;
+    char              sbuf[STRLEN];
+    bool              bStreamSync, bNoStreamSync, bTMPIAtomics, bX86, bOldDriver;
+    int               cuda_drv_ver;
 
     assert(gpu_info);
 
-    if (p_cu_nb == NULL) return;
+    if (p_cu_nb == NULL)
+    {
+        return;
+    }
 
     snew(nb, 1);
     snew(nb->atdat, 1);
@@ -513,7 +605,7 @@ void nbnxn_cuda_init(FILE *fplog,
      * With polling wait event-timing also needs to be disabled.
      *
      * The overhead is greatly reduced in API v5.0 drivers and the improvement
-     $ is independent of runtime version. Hence, with API v5.0 drivers and later
+     * is independent of runtime version. Hence, with API v5.0 drivers and later
      * we won't switch to polling.
      *
      * NOTE: Unfortunately, this is known to fail when GPUs are shared by (t)MPI,
@@ -589,8 +681,8 @@ void nbnxn_cuda_init(FILE *fplog,
                         "      However, the polling wait workaround can not be used because\n%s\n"
                         "      Consider updating the driver or turning ECC off.",
                         (bX86 && bTMPIAtomics) ?
-                            "      GPU(s) are being oversubscribed." :
-                            "      atomic operations are not supported by the platform/CPU+compiler.");
+                        "      GPU(s) are being oversubscribed." :
+                        "      atomic operations are not supported by the platform/CPU+compiler.");
                 md_print_warn(fplog, sbuf);
             }
         }
@@ -648,15 +740,15 @@ void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t                cu_nb,
     nbnxn_cuda_clear_e_fshift(cu_nb);
 }
 
-void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t        cu_nb,
                               const nbnxn_pairlist_t *h_plist,
-                              int iloc)
+                              int                     iloc)
 {
-    char         sbuf[STRLEN];
-    cudaError_t  stat;
-    bool         bDoTime    = cu_nb->bDoTime;
-    cudaStream_t stream     = cu_nb->stream[iloc];
-    cu_plist_t   *d_plist   = cu_nb->plist[iloc];
+    char          sbuf[STRLEN];
+    cudaError_t   stat;
+    bool          bDoTime    = cu_nb->bDoTime;
+    cudaStream_t  stream     = cu_nb->stream[iloc];
+    cu_plist_t   *d_plist    = cu_nb->plist[iloc];
 
     if (d_plist->na_c < 0)
     {
@@ -679,19 +771,19 @@ void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
     }
 
     cu_realloc_buffered((void **)&d_plist->sci, h_plist->sci, sizeof(*d_plist->sci),
-                         &d_plist->nsci, &d_plist->sci_nalloc,
-                         h_plist->nsci,
-                         stream, true);
+                        &d_plist->nsci, &d_plist->sci_nalloc,
+                        h_plist->nsci,
+                        stream, true);
 
     cu_realloc_buffered((void **)&d_plist->cj4, h_plist->cj4, sizeof(*d_plist->cj4),
-                         &d_plist->ncj4, &d_plist->cj4_nalloc,
-                         h_plist->ncj4,
-                         stream, true);
+                        &d_plist->ncj4, &d_plist->cj4_nalloc,
+                        h_plist->ncj4,
+                        stream, true);
 
     cu_realloc_buffered((void **)&d_plist->excl, h_plist->excl, sizeof(*d_plist->excl),
-                         &d_plist->nexcl, &d_plist->excl_nalloc,
-                         h_plist->nexcl,
-                         stream, true);
+                        &d_plist->nexcl, &d_plist->excl_nalloc,
+                        h_plist->nexcl,
+                        stream, true);
 
     if (bDoTime)
     {
@@ -703,16 +795,16 @@ void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
     d_plist->bDoPrune = true;
 }
 
-void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t        cu_nb,
                                 const nbnxn_atomdata_t *nbatom)
 {
-    cu_atomdata_t *adat = cu_nb->atdat;
-    cudaStream_t  ls    = cu_nb->stream[eintLocal];
+    cu_atomdata_t *adat  = cu_nb->atdat;
+    cudaStream_t   ls    = cu_nb->stream[eintLocal];
 
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
-        cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 
+        cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec,
                           SHIFTS * sizeof(*adat->shift_vec), ls);
         adat->bShiftVecUploaded = true;
     }
@@ -721,9 +813,9 @@ void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
 /*! Clears the first natoms_clear elements of the GPU nonbonded force output array. */
 static void nbnxn_cuda_clear_f(nbnxn_cuda_ptr_t cu_nb, int natoms_clear)
 {
-    cudaError_t   stat;
-    cu_atomdata_t *adat = cu_nb->atdat;
-    cudaStream_t  ls    = cu_nb->stream[eintLocal];
+    cudaError_t    stat;
+    cu_atomdata_t *adat  = cu_nb->atdat;
+    cudaStream_t   ls    = cu_nb->stream[eintLocal];
 
     stat = cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on f falied");
@@ -732,9 +824,9 @@ static void nbnxn_cuda_clear_f(nbnxn_cuda_ptr_t cu_nb, int natoms_clear)
 /*! Clears nonbonded shift force output array and energy outputs on the GPU. */
 static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb)
 {
-    cudaError_t   stat;
-    cu_atomdata_t *adat = cu_nb->atdat;
-    cudaStream_t  ls    = cu_nb->stream[eintLocal];
+    cudaError_t    stat;
+    cu_atomdata_t *adat  = cu_nb->atdat;
+    cudaStream_t   ls    = cu_nb->stream[eintLocal];
 
     stat = cudaMemsetAsync(adat->fshift, 0, SHIFTS * sizeof(*adat->fshift), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on fshift falied");
@@ -747,7 +839,7 @@ static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb)
 void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb, int flags)
 {
     nbnxn_cuda_clear_f(cu_nb, cu_nb->atdat->natoms);
-    /* clear shift force array and energies if the outputs were 
+    /* clear shift force array and energies if the outputs were
        used in the current step */
     if (flags & GMX_FORCE_VIRIAL)
     {
@@ -755,18 +847,18 @@ void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb, int flags)
     }
 }
 
-void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t        cu_nb,
                               const nbnxn_atomdata_t *nbat)
 {
-    cudaError_t   stat;
-    int           nalloc, natoms;
-    bool          realloced;
-    bool          bDoTime   = cu_nb->bDoTime;
-    cu_timers_t   *timers   = cu_nb->timers;
-    cu_atomdata_t *d_atdat  = cu_nb->atdat;
-    cudaStream_t  ls        = cu_nb->stream[eintLocal];
+    cudaError_t    stat;
+    int            nalloc, natoms;
+    bool           realloced;
+    bool           bDoTime   = cu_nb->bDoTime;
+    cu_timers_t   *timers    = cu_nb->timers;
+    cu_atomdata_t *d_atdat   = cu_nb->atdat;
+    cudaStream_t   ls        = cu_nb->stream[eintLocal];
 
-    natoms = nbat->natoms;
+    natoms    = nbat->natoms;
     realloced = false;
 
     if (bDoTime)
@@ -799,10 +891,10 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->atom_types");
 
         d_atdat->nalloc = nalloc;
-        realloced = true;
+        realloced       = true;
     }
 
-    d_atdat->natoms = natoms;
+    d_atdat->natoms       = natoms;
     d_atdat->natoms_local = nbat->natoms_local;
 
     /* need to clear GPU f output if realloc happened */
@@ -821,15 +913,18 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
+void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
 {
-    cudaError_t     stat;
+    cudaError_t      stat;
     cu_atomdata_t   *atdat;
     cu_nbparam_t    *nbparam;
     cu_plist_t      *plist, *plist_nl;
     cu_timers_t     *timers;
 
-    if (cu_nb == NULL) return;
+    if (cu_nb == NULL)
+    {
+        return;
+    }
 
     atdat       = cu_nb->atdat;
     nbparam     = cu_nb->nbparam;
@@ -911,6 +1006,24 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
     }
     cu_free_buffered(nbparam->nbfp);
 
+    if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
+    {
+#ifdef TEXOBJ_SUPPORTED
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (cu_nb->dev_info->prop.major >= 3)
+        {
+            stat = cudaDestroyTextureObject(nbparam->nbfp_comb_texobj);
+            CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_comb_texobj failed");
+        }
+        else
+#endif
+        {
+            stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_comb_texref());
+            CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_comb_texref failed");
+        }
+        cu_free_buffered(nbparam->nbfp_comb);
+    }
+
     stat = cudaFree(atdat->shift_vec);
     CU_RET_ERR(stat, "cudaFree failed on atdat->shift_vec");
     stat = cudaFree(atdat->fshift);
@@ -954,7 +1067,7 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
 
 void cu_synchstream_atdat(nbnxn_cuda_ptr_t cu_nb, int iloc)
 {
-    cudaError_t stat;
+    cudaError_t  stat;
     cudaStream_t stream = cu_nb->stream[iloc];
 
     stat = cudaStreamWaitEvent(stream, cu_nb->timers->stop_atdat, 0);
@@ -977,7 +1090,7 @@ void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
 int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
 {
     return cu_nb != NULL ?
-        gpu_min_ci_balanced_factor*cu_nb->dev_info->prop.multiProcessorCount : 0;
+           gpu_min_ci_balanced_factor*cu_nb->dev_info->prop.multiProcessorCount : 0;
 
 }
 

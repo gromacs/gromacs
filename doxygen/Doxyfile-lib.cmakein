@@ -8,7 +8,4 @@ HTML_OUTPUT            = html-lib
 
 ALIASES               += inpublicapi="\ingroup group_publicapi"
 ALIASES               += inlibraryapi="\ingroup group_libraryapi"
-ALIASES               += addtopublicapi="\addtogroup group_publicapi"
-ALIASES               += addtolibraryapi="\addtogroup group_libraryapi"
 ALIASES               += libinternal=
-ALIASES               += endlibinternal=

@@ -1,62 +1,64 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <stdio.h>
+
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
 #include "macros.h"
-#include "maths.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
-#include "statutil.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/units.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
-#include <string.h>
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
-#include "vec.h"
-#include "strdb.h"
-#include "xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
@@ -439,7 +441,7 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
     return j;
 }
 
-static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
+static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int nf, int maxchi, real **dih,
                           int nlist, t_dlist dlist[],
                           atom_id index[],
@@ -486,7 +488,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
     rt_size = gmx_residuetype_get_size(rt);
     if (bSSHisto)
     {
-        fp = ffopen(ssdump, "r");
+        fp = gmx_ffopen(ssdump, "r");
         if (1 != fscanf(fp, "%d", &nres))
         {
             gmx_fatal(FARGS, "Error reading from file %s", ssdump);
@@ -498,7 +500,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
             gmx_fatal(FARGS, "Error reading from file %s", ssdump);
         }
 
-        ffclose(fp);
+        gmx_ffclose(fp);
         /* Four dimensional array... Very cool */
         snew(his_aa_ss, 3);
         for (i = 0; (i < 3); i++)
@@ -707,7 +709,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         for (i = 0; (i < NJC); i++)
         {
             sfree(leg[i]);
@@ -777,7 +779,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
                     for (k = 0; (k < 3); k++)
                     {
                         sprintf(sshisfile, "%s-%s.xvg", hisfile, sss[k]);
-                        ssfp[k] = ffopen(sshisfile, "w");
+                        ssfp[k] = gmx_ffopen(sshisfile, "w");
                     }
                 }
                 for (j = 0; (j < nbin); j++)
@@ -801,13 +803,13 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
                     }
                 }
                 fprintf(fp, "&\n");
-                ffclose(fp);
+                gmx_ffclose(fp);
                 if (bSSHisto)
                 {
                     for (k = 0; (k < 3); k++)
                     {
                         fprintf(ssfp[k], "&\n");
-                        ffclose(ssfp[k]);
+                        gmx_ffclose(ssfp[k]);
                     }
                 }
             }
@@ -903,7 +905,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
             if (bViol)
             {
                 sprintf(fn, "violPhiPsi%s.xvg", dlist[i].name);
-                gp = ffopen(fn, "w");
+                gp = gmx_ffopen(fn, "w");
             }
             Phi = dlist[i].j0[edPhi];
             Psi = dlist[i].j0[edPsi];
@@ -925,13 +927,13 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
             }
             if (bViol)
             {
-                ffclose(gp);
+                gmx_ffclose(gp);
             }
-            ffclose(fp);
+            gmx_ffclose(fp);
             if (bOm)
             {
                 sprintf(fn, "ramomega%s.xpm", dlist[i].name);
-                fp = ffopen(fn, "w");
+                fp = gmx_ffopen(fn, "w");
                 lo = hi = 0;
                 for (j = 0; (j < NMAT); j++)
                 {
@@ -964,7 +966,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 nlevels = 20;
                 write_xpm3(fp, 0, "Omega/Ramachandran Plot", "Deg", "Phi", "Psi",
                            NMAT, NMAT, axis, axis, mat, lo, 180.0, hi, rlo, rmid, rhi, &nlevels);
-                ffclose(fp);
+                gmx_ffclose(fp);
                 for (j = 0; (j < NMAT); j++)
                 {
                     sfree(mat[j]);
@@ -984,7 +986,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
             {
                 fprintf(fp, "%10g  %10g\n", RAD2DEG*dih[Xi1][j], RAD2DEG*dih[Xi2][j]);
             }
-            ffclose(fp);
+            gmx_ffclose(fp);
         }
         else
         {
@@ -1045,7 +1047,7 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
         /* fprintf(fp,"%12s\n",dlist[i].name);  this confuses xmgrace */
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static void order_params(FILE *log,
@@ -1124,7 +1126,7 @@ static void order_params(FILE *log,
         fprintf(fp, "\n");
         /* fprintf(fp,"%12s\n",dlist[i].name);  this confuses xmgrace */
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     if (NULL != pdbfn)
     {
@@ -1154,7 +1156,7 @@ static void order_params(FILE *log,
             }
         }
 
-        fp = ffopen(pdbfn, "w");
+        fp = gmx_ffopen(pdbfn, "w");
         fprintf(fp, "REMARK generated by g_chi\n");
         fprintf(fp, "REMARK "
                 "B-factor field contains negative of dihedral order parameters\n");
@@ -1175,7 +1177,7 @@ static void order_params(FILE *log,
             fprintf(fp, buf, "ATOM  ", atoms->nr+1+i, "CA", "LEG", ' ',
                     atoms->nres+1, ' ', x0, y0, z0+(1.2*i), 0.0, -0.1*i);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     fprintf(log, "Dihedrals with S2 > 0.8\n");
@@ -1352,7 +1354,7 @@ int gmx_chi(int argc, char *argv[])
     gmx_bool           bDo_rt, bDo_oh, bDo_ot, bDo_jc;
     real               dt = 0, traj_t_ns;
     output_env_t       oenv;
-    gmx_residuetype_t  rt;
+    gmx_residuetype_t *rt;
 
     atom_id            isize, *index;
     int                ndih, nactdih, nf;
@@ -1391,7 +1393,7 @@ int gmx_chi(int argc, char *argv[])
     sscanf(maxchistr[0], "%d", &maxchi);
     bChi = (maxchi > 0);
 
-    log = ffopen(ftp2fn(efLOG, NFILE, fnm), "w");
+    log = gmx_ffopen(ftp2fn(efLOG, NFILE, fnm), "w");
 
     if (bRamOmega)
     {
@@ -1536,7 +1538,7 @@ int gmx_chi(int argc, char *argv[])
     traj_t_ns = 0.001 * (time[nf-1]-time[0]);
     pr_dlist(log, nlist, dlist, traj_t_ns, edPrintST, bPhi, bPsi, bChi, bOmega, maxchi);
     pr_dlist(log, nlist, dlist, traj_t_ns, edPrintRO, bPhi, bPsi, bChi, bOmega, maxchi);
-    ffclose(log);
+    gmx_ffclose(log);
     /* transitions to xvg */
     if (bDo_rt)
     {
@@ -1564,7 +1566,7 @@ int gmx_chi(int argc, char *argv[])
         }
     }
 
-    /* Correlation comes last because it fucks up the angles */
+    /* Correlation comes last because it messes up the angles */
     if (bCorr)
     {
         do_dihcorr(opt2fn("-corr", NFILE, fnm), nf, ndih, dih, dt, nlist, dlist, time,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Wraps <mpi.h> usage in Gromacs.
  *
@@ -43,16 +43,15 @@
  * convenience.  It also disables MPI C++ bindings that can cause compilation
  * issues.
  *
- * \todo
- * This header is installed because commrec.h depends on it; it would be good
- * to encapsulate this dependency within the library, making the public
- * interface less dependent on the compilation options.
- *
  * \inlibraryapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_GMXMPI_H
 #define GMX_UTILITY_GMXMPI_H
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 /*! \cond */
 #ifdef GMX_LIB_MPI
@@ -60,10 +59,24 @@
 #define MPICH_SKIP_MPICXX 1
 #define OMPI_SKIP_MPICXX 1
 #include <mpi.h>
+/* Starting with 2.2 MPI_INT64_T is required. Earlier version still might have it.
+   In theory MPI_Datatype doesn't have to be a #define, but current available MPI
+   implementations (OpenMPI + MPICH (+derivates)) use #define and future versions
+   should support 2.2. */
+#if (MPI_VERSION == 1 || (MPI_VERSION == 2 && MPI_SUBVERSION < 2)) && !defined MPI_INT64_T
+#include <limits.h>
+#if LONG_MAX == 9223372036854775807L
+#define MPI_INT64_T MPI_LONG
+#elif LONG_LONG_MAX == 9223372036854775807L
+#define MPI_INT64_T MPI_LONG_LONG
+#else
+#error No MPI_INT64_T and no 64 bit integer found.
+#endif
+#endif /*MPI_INT64_T*/
 #else
 #ifdef GMX_THREAD_MPI
-#include "../legacyheaders/thread_mpi/tmpi.h"
-#include "../legacyheaders/thread_mpi/mpi_bindings.h"
+#include "thread_mpi/tmpi.h"
+#include "thread_mpi/mpi_bindings.h"
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;

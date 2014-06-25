@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,9 +35,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *  \brief
+ *  Data types used internally in the nbnxn_cuda module.
+ *
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_mdlib
+ */
+
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
+#include "types/interaction_const.h"
 #include "types/nbnxn_pairlist.h"
 #include "types/nbnxn_cuda_types_ext.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
@@ -46,7 +55,7 @@
 #if CUDA_VERSION >= 5000
 #define TEXOBJ_SUPPORTED
 #else  /* CUDA_VERSION */
-/* This typedef allows us to define only one version of struct cu_nbparam */
+/** This typedef allows us to define only one version of struct cu_nbparam */
 typedef int cudaTextureObject_t;
 #endif /* CUDA_VERSION */
 
@@ -54,7 +63,9 @@ typedef int cudaTextureObject_t;
 extern "C" {
 #endif
 
-/** Types of electrostatics implementations available in the CUDA non-bonded
+/*! \brief Electrostatic CUDA kernel flavors.
+ *
+ *  Types of electrostatics implementations available in the CUDA non-bonded
  *  force kernels. These represent both the electrostatics types implemented
  *  by the kernels (cut-off, RF, and Ewald - a subset of what's defined in
  *  enums.h) as well as encode implementation details analytical/tabulated
@@ -62,24 +73,43 @@ extern "C" {
  *  Note that the cut-off and RF kernels have only analytical flavor and unlike
  *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
  *
- *  The order of pointers to different electrostatic kernels defined in
- *  nbnxn_cuda.cu by the nb_default_kfunc_ptr array
- *  should match the order of enumerated types below. */
-enum {
+ *  The row-order of pointers to different electrostatic kernels defined in
+ *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
+ *  should match the order of enumerated types below.
+ */
+enum eelCu {
     eelCuCUT, eelCuRF, eelCuEWALD_TAB, eelCuEWALD_TAB_TWIN, eelCuEWALD_ANA, eelCuEWALD_ANA_TWIN, eelCuNR
+};
+
+/*! \brief VdW CUDA kernel flavors.
+ *
+ * The enumerates values correspond to the LJ implementations in the CUDA non-bonded
+ * kernels.
+ *
+ * The column-order of pointers to different electrostatic kernels defined in
+ * nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
+ * should match the order of enumerated types below.
+ */
+enum evdwCu {
+    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
  * are passed to the kernels, except cu_timers_t. */
+/*! \cond */
 typedef struct cu_plist     cu_plist_t;
 typedef struct cu_atomdata  cu_atomdata_t;
 typedef struct cu_nbparam   cu_nbparam_t;
 typedef struct cu_timers    cu_timers_t;
 typedef struct nb_staging   nb_staging_t;
+/*! \endcond */
 
 
-/** Staging area for temporary data. The energies get downloaded here first,
- *  before getting added to the CPU-side aggregate values.
+/** \internal
+ * \brief Staging area for temporary data downloaded from the GPU.
+ *
+ *  The energies/shift forces get downloaded here first, before getting added
+ *  to the CPU-side aggregate values.
  */
 struct nb_staging
 {
@@ -88,7 +118,9 @@ struct nb_staging
     float3  *fshift;    /**< shift forces         */
 };
 
-/** Nonbonded atom data -- both inputs and outputs. */
+/** \internal
+ * \brief Nonbonded atom data - both inputs and outputs.
+ */
 struct cu_atomdata
 {
     int      natoms;            /**< number of atoms                              */
@@ -97,9 +129,9 @@ struct cu_atomdata
 
     float4  *xq;                /**< atom coordinates + charges, size natoms      */
     float3  *f;                 /**< force output array, size natoms              */
-    /* TODO: try float2 for the energies */
-    float   *e_lj,              /**< LJ energy output, size 1                     */
-            *e_el;              /**< Electrostatics energy input, size 1          */
+
+    float   *e_lj;              /**< LJ energy output, size 1                     */
+    float   *e_el;              /**< Electrostatics energy input, size 1          */
 
     float3  *fshift;            /**< shift forces                                 */
 
@@ -110,33 +142,49 @@ struct cu_atomdata
     bool     bShiftVecUploaded; /**< true if the shift vector has been uploaded   */
 };
 
-/** Parameters required for the CUDA nonbonded calculations. */
+/** \internal
+ * \brief Parameters required for the CUDA nonbonded calculations.
+ */
 struct cu_nbparam
 {
-    int      eeltype;        /**< type of electrostatics                            */
 
-    float    epsfac;         /**< charge multiplication factor                      */
-    float    c_rf;           /**< Reaction-field/plain cutoff electrostatics const. */
-    float    two_k_rf;       /**< Reaction-field electrostatics constant            */
-    float    ewald_beta;     /**< Ewald/PME parameter                               */
-    float    sh_ewald;       /**< Ewald/PME  correction term                        */
-    float    rvdw_sq;        /**< VdW cut-off                                       */
-    float    rcoulomb_sq;    /**< Coulomb cut-off                                   */
-    float    rlist_sq;       /**< pair-list cut-off                                 */
-    float    sh_invrc6;      /**< LJ potential correction term                      */
+    int             eeltype;          /**< type of electrostatics, takes values from #eelCu */
+    int             vdwtype;          /**< type of VdW impl., takes values from #evdwCu     */
 
-    /* Non-bonded parameters - accessed through texture memory */
-    float            *nbfp;          /**< nonbonded parameter table with C6/C12 pairs  */
-    cudaTextureObject_t nbfp_texobj; /**< texture object bound to nbfp                 */
+    float           epsfac;           /**< charge multiplication factor                      */
+    float           c_rf;             /**< Reaction-field/plain cutoff electrostatics const. */
+    float           two_k_rf;         /**< Reaction-field electrostatics constant            */
+    float           ewald_beta;       /**< Ewald/PME parameter                               */
+    float           sh_ewald;         /**< Ewald/PME correction term substracted from the direct-space potential */
+    float           sh_lj_ewald;      /**< LJ-Ewald/PME correction term added to the correction potential        */
+    float           ewaldcoeff_lj;    /**< LJ-Ewald/PME coefficient                          */
+
+    float           rcoulomb_sq;      /**< Coulomb cut-off squared                           */
+
+    float           rvdw_sq;          /**< VdW cut-off squared                               */
+    float           rvdw_switch;      /**< VdW switched cut-off                              */
+    float           rlist_sq;         /**< pair-list cut-off squared                         */
+
+    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
+    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
+    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+
+    /* LJ non-bonded parameters - accessed through texture memory */
+    float               *nbfp;             /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
+    cudaTextureObject_t  nbfp_texobj;      /**< texture object bound to nbfp                                                       */
+    float               *nbfp_comb;        /**< nonbonded parameter table per atom type, 2*ntype elements                          */
+    cudaTextureObject_t  nbfp_comb_texobj; /**< texture object bound to nbfp_texobj                                                */
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    int               coulomb_tab_size;      /**< table size (s.t. it fits in texture cache) */
-    float             coulomb_tab_scale;     /**< table scale/spacing                        */
-    float            *coulomb_tab;           /**< pointer to the table in the device memory  */
+    int                  coulomb_tab_size;   /**< table size (s.t. it fits in texture cache) */
+    float                coulomb_tab_scale;  /**< table scale/spacing                        */
+    float               *coulomb_tab;        /**< pointer to the table in the device memory  */
     cudaTextureObject_t  coulomb_tab_texobj; /**< texture object bound to coulomb_tab        */
 };
 
-/** Pair list data */
+/** \internal
+ * \brief Pair list data.
+ */
 struct cu_plist
 {
     int              na_c;        /**< number of atoms per cluster                  */
@@ -157,7 +205,9 @@ struct cu_plist
                                        done during the  current step                */
 };
 
-/** CUDA events used for timing GPU kernels and H2D/D2H transfers.
+/** \internal
+ * \brief CUDA events used for timing GPU kernels and H2D/D2H transfers.
+ *
  * The two-sized arrays hold the local and non-local values and should always
  * be indexed with eintLocal/eintNonlocal.
  */
@@ -175,7 +225,9 @@ struct cu_timers
     cudaEvent_t stop_nb_k[2];    /**< stop event non-bonded kernels (l/nl, every step)               */
 };
 
-/** Main data structure for CUDA nonbonded force calculations. */
+/** \internal
+ * \brief Main data structure for CUDA nonbonded force calculations.
+ */
 struct nbnxn_cuda
 {
     cuda_dev_info_t *dev_info;       /**< CUDA device information                              */

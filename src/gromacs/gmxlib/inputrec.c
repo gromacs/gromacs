@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 4.5
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2010, The GROMACS development team.
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -41,7 +42,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "inputrec.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 
 /* The minimum number of integration steps required for reasonably accurate
@@ -193,4 +194,47 @@ int ir_optimal_nstpcouple(const t_inputrec *ir)
     }
 
     return n;
+}
+
+gmx_bool ir_coulomb_switched(const t_inputrec *ir)
+{
+    return (ir->coulombtype == eelSWITCH ||
+            ir->coulombtype == eelSHIFT ||
+            ir->coulombtype == eelENCADSHIFT ||
+            ir->coulombtype == eelPMESWITCH ||
+            ir->coulombtype == eelPMEUSERSWITCH ||
+            ir->coulomb_modifier == eintmodPOTSWITCH ||
+            ir->coulomb_modifier == eintmodFORCESWITCH);
+}
+
+gmx_bool ir_coulomb_is_zero_at_cutoff(const t_inputrec *ir)
+{
+    return (ir->cutoff_scheme == ecutsVERLET ||
+            ir_coulomb_switched(ir) || ir->coulomb_modifier != eintmodNONE ||
+            ir->coulombtype == eelRF_ZERO);
+}
+
+gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec *ir)
+{
+    return (ir_coulomb_is_zero_at_cutoff(ir) || ir->coulombtype == eelUSER || ir->coulombtype == eelPMEUSER);
+}
+
+gmx_bool ir_vdw_switched(const t_inputrec *ir)
+{
+    return (ir->vdwtype == evdwSWITCH ||
+            ir->vdwtype == evdwSHIFT ||
+            ir->vdwtype == evdwENCADSHIFT ||
+            ir->vdw_modifier == eintmodPOTSWITCH ||
+            ir->vdw_modifier == eintmodFORCESWITCH);
+}
+
+gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir)
+{
+    return (ir->cutoff_scheme == ecutsVERLET ||
+            ir_vdw_switched(ir) || ir->vdw_modifier != eintmodNONE);
+}
+
+gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
+{
+    return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }

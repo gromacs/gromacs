@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,9 +44,10 @@
 #include <string.h>
 #include <math.h>
 #include "typedefs.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "vec.h"
+#include "types/commrec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
 #include "pme.h"
 #include "network.h"
 #include "domdec.h"
@@ -55,7 +56,7 @@
 #include "gromacs/utility/gmxmpi.h"
 
 enum {
-    eCommType_ChargeA, eCommType_ChargeB, eCommType_C6A, eCommType_C6B,
+    eCommType_ChargeA, eCommType_ChargeB, eCommType_SQRTC6A, eCommType_SQRTC6B,
     eCommType_SigmaA, eCommType_SigmaB, eCommType_NR, eCommType_COORD,
     eCommType_CNB
 };
@@ -69,8 +70,8 @@ enum {
 
 #define PP_PME_CHARGE         (1<<0)
 #define PP_PME_CHARGEB        (1<<1)
-#define PP_PME_C6             (1<<2)
-#define PP_PME_C6B            (1<<3)
+#define PP_PME_SQRTC6         (1<<2)
+#define PP_PME_SQRTC6B        (1<<3)
 #define PP_PME_SIGMA          (1<<4)
 #define PP_PME_SIGMAB         (1<<5)
 #define PP_PME_COORD          (1<<6)
@@ -95,8 +96,8 @@ typedef struct gmx_pme_pp {
     int          flags_charge; /* The flags sent along with the last charges */
     real        *chargeA;
     real        *chargeB;
-    real        *c6A;
-    real        *c6B;
+    real        *sqrt_c6A;
+    real        *sqrt_c6B;
     real        *sigmaA;
     real        *sigmaB;
     rvec        *x;
@@ -116,7 +117,7 @@ typedef struct gmx_pme_comm_n_box {
     real            lambda_q;
     real            lambda_lj;
     int             flags;
-    gmx_large_int_t step;
+    gmx_int64_t     step;
     ivec            grid_size;    /* For PME grid tuning */
     real            ewaldcoeff_q; /* For PME grid tuning */
     real            ewaldcoeff_lj;
@@ -160,7 +161,7 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec gmx_unused *cr)
 /* This should be faster with a real non-blocking MPI implementation */
 /* #define GMX_PME_DELAYED_WAIT */
 
-static void gmx_pme_send_params_coords_wait(gmx_domdec_t gmx_unused *dd)
+static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t gmx_unused *dd)
 {
 #ifdef GMX_MPI
     if (dd->nreq_pme)
@@ -171,14 +172,14 @@ static void gmx_pme_send_params_coords_wait(gmx_domdec_t gmx_unused *dd)
 #endif
 }
 
-static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
+static void gmx_pme_send_coeffs_coords(t_commrec *cr, int flags,
                                        real gmx_unused *chargeA, real gmx_unused *chargeB,
                                        real gmx_unused *c6A, real gmx_unused *c6B,
                                        real gmx_unused *sigmaA, real gmx_unused *sigmaB,
                                        matrix box, rvec gmx_unused *x,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
-                                       gmx_large_int_t step)
+                                       gmx_int64_t step)
 {
     gmx_domdec_t         *dd;
     gmx_pme_comm_n_box_t *cnb;
@@ -197,7 +198,7 @@ static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
 
 #ifdef GMX_PME_DELAYED_WAIT
     /* When can not use cnb until pending communication has finished */
-    gmx_pme_send_params_coords_wait(dd);
+    gmx_pme_send_coeffs_coords_wait(dd);
 #endif
 
     if (dd->pme_receive_vir_ener)
@@ -226,7 +227,7 @@ static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
                   &dd->req_pme[dd->nreq_pme++]);
 #endif
     }
-    else if (flags & (PP_PME_CHARGE | PP_PME_C6 | PP_PME_SIGMA))
+    else if (flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
     {
 #ifdef GMX_MPI
         /* Communicate only the number of atoms */
@@ -251,16 +252,16 @@ static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
                       dd->pme_nodeid, eCommType_ChargeB, cr->mpi_comm_mysim,
                       &dd->req_pme[dd->nreq_pme++]);
         }
-        if (flags & PP_PME_C6)
+        if (flags & PP_PME_SQRTC6)
         {
             MPI_Isend(c6A, n*sizeof(real), MPI_BYTE,
-                      dd->pme_nodeid, eCommType_C6A, cr->mpi_comm_mysim,
+                      dd->pme_nodeid, eCommType_SQRTC6A, cr->mpi_comm_mysim,
                       &dd->req_pme[dd->nreq_pme++]);
         }
-        if (flags & PP_PME_C6B)
+        if (flags & PP_PME_SQRTC6B)
         {
             MPI_Isend(c6B, n*sizeof(real), MPI_BYTE,
-                      dd->pme_nodeid, eCommType_C6B, cr->mpi_comm_mysim,
+                      dd->pme_nodeid, eCommType_SQRTC6B, cr->mpi_comm_mysim,
                       &dd->req_pme[dd->nreq_pme++]);
         }
         if (flags & PP_PME_SIGMA)
@@ -288,7 +289,7 @@ static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
     /* We can skip this wait as we are sure x and q will not be modified
      * before the next call to gmx_pme_send_x_q or gmx_pme_receive_f.
      */
-    gmx_pme_send_params_coords_wait(dd);
+    gmx_pme_send_coeffs_coords_wait(dd);
 #endif
 #endif
 }
@@ -296,12 +297,22 @@ static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
 void gmx_pme_send_parameters(t_commrec *cr,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
-                             real *c6A, real *c6B, real *sigmaA, real *sigmaB,
+                             real *sqrt_c6A, real *sqrt_c6B,
+                             real *sigmaA, real *sigmaB,
                              int maxshift_x, int maxshift_y)
 {
     int flags;
 
-    flags = PP_PME_CHARGE | PP_PME_C6 | PP_PME_SIGMA;
+    /* We always send the charges, even with only LJ- and no Coulomb-PME */
+    flags = PP_PME_CHARGE;
+    if (sqrt_c6A != NULL)
+    {
+        flags |= PP_PME_SQRTC6;
+    }
+    if (sigmaA != NULL)
+    {
+        flags |= PP_PME_SIGMA;
+    }
     if (bFreeEnergy_q || bFreeEnergy_lj)
     {
         /* Assumes that the B state flags are in the bits just above
@@ -309,7 +320,9 @@ void gmx_pme_send_parameters(t_commrec *cr,
         flags |= (flags << 1);
     }
 
-    gmx_pme_send_params_coords(cr, flags, chargeA, chargeB, c6A, c6B, sigmaA, sigmaB,
+    gmx_pme_send_coeffs_coords(cr, flags,
+                               chargeA, chargeB,
+                               sqrt_c6A, sqrt_c6B, sigmaA, sigmaB,
                                NULL, NULL, 0, 0, maxshift_x, maxshift_y, -1);
 }
 
@@ -317,7 +330,7 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
                               gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir, int pme_flags,
-                              gmx_large_int_t step)
+                              gmx_int64_t step)
 {
     int flags;
 
@@ -334,7 +347,7 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
     {
         flags |= PP_PME_ENER_VIR;
     }
-    gmx_pme_send_params_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL,
+    gmx_pme_send_coeffs_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL,
                                box, x, lambda_q, lambda_lj, 0, 0, step);
 }
 
@@ -344,7 +357,7 @@ void gmx_pme_send_finish(t_commrec *cr)
 
     flags = PP_PME_FINISH;
 
-    gmx_pme_send_params_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, -1);
+    gmx_pme_send_coeffs_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, -1);
 }
 
 void gmx_pme_send_switchgrid(t_commrec gmx_unused *cr,
@@ -370,7 +383,7 @@ void gmx_pme_send_switchgrid(t_commrec gmx_unused *cr,
 #endif
 }
 
-void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_large_int_t gmx_unused step)
+void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_int64_t gmx_unused step)
 {
 #ifdef GMX_MPI
     gmx_pme_comm_n_box_t cnb;
@@ -388,12 +401,12 @@ void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_large_int_t gmx_un
 #endif
 }
 
-int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
+int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
                                int                        *natoms,
                                real                      **chargeA,
                                real                      **chargeB,
-                               real                      **c6A,
-                               real                      **c6B,
+                               real                      **sqrt_c6A,
+                               real                      **sqrt_c6B,
                                real                      **sigmaA,
                                real                      **sigmaB,
                                matrix gmx_unused           box,
@@ -407,7 +420,7 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
                                real gmx_unused            *lambda_lj,
                                gmx_bool gmx_unused        *bEnerVir,
                                int                        *pme_flags,
-                               gmx_large_int_t gmx_unused *step,
+                               gmx_int64_t gmx_unused     *step,
                                ivec gmx_unused             grid_size,
                                real gmx_unused            *ewaldcoeff_q,
                                real gmx_unused            *ewaldcoeff_lj)
@@ -456,7 +469,7 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
             return pmerecvqxRESETCOUNTERS;
         }
 
-        if (cnb.flags & (PP_PME_CHARGE | PP_PME_C6 | PP_PME_SIGMA))
+        if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
         {
             /* Receive the send counts from the other PP nodes */
             for (sender = 0; sender < pme_pp->nnode; sender++)
@@ -493,13 +506,13 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
                 {
                     srenew(pme_pp->chargeB, pme_pp->nalloc);
                 }
-                if (cnb.flags & PP_PME_C6)
+                if (cnb.flags & PP_PME_SQRTC6)
                 {
-                    srenew(pme_pp->c6A, pme_pp->nalloc);
+                    srenew(pme_pp->sqrt_c6A, pme_pp->nalloc);
                 }
-                if (cnb.flags & PP_PME_C6B)
+                if (cnb.flags & PP_PME_SQRTC6B)
                 {
-                    srenew(pme_pp->c6B, pme_pp->nalloc);
+                    srenew(pme_pp->sqrt_c6B, pme_pp->nalloc);
                 }
                 if (cnb.flags & PP_PME_SIGMA)
                 {
@@ -526,12 +539,12 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
                 }
                 switch (q)
                 {
-                    case eCommType_ChargeA: charge_pp = pme_pp->chargeA; break;
-                    case eCommType_ChargeB: charge_pp = pme_pp->chargeB; break;
-                    case eCommType_C6A:     charge_pp = pme_pp->c6A;     break;
-                    case eCommType_C6B:     charge_pp = pme_pp->c6B;     break;
-                    case eCommType_SigmaA:  charge_pp = pme_pp->sigmaA;  break;
-                    case eCommType_SigmaB:  charge_pp = pme_pp->sigmaB;  break;
+                    case eCommType_ChargeA: charge_pp = pme_pp->chargeA;  break;
+                    case eCommType_ChargeB: charge_pp = pme_pp->chargeB;  break;
+                    case eCommType_SQRTC6A: charge_pp = pme_pp->sqrt_c6A; break;
+                    case eCommType_SQRTC6B: charge_pp = pme_pp->sqrt_c6B; break;
+                    case eCommType_SigmaA:  charge_pp = pme_pp->sigmaA;   break;
+                    case eCommType_SigmaB:  charge_pp = pme_pp->sigmaB;   break;
                     default: gmx_incons("Wrong eCommType");
                 }
                 nat = 0;
@@ -561,7 +574,7 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
 
         if (cnb.flags & PP_PME_COORD)
         {
-            if (!(pme_pp->flags_charge & (PP_PME_CHARGE | PP_PME_C6)))
+            if (!(pme_pp->flags_charge & (PP_PME_CHARGE | PP_PME_SQRTC6)))
             {
                 gmx_incons("PME-only node received coordinates before charges and/or C6-values"
                            );
@@ -570,8 +583,10 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
             /* The box, FE flag and lambda are sent along with the coordinates
              *  */
             copy_mat(cnb.box, box);
-            *bFreeEnergy_q  = (cnb.flags & PP_PME_FEP_Q);
-            *bFreeEnergy_lj = (cnb.flags & PP_PME_FEP_LJ);
+            *bFreeEnergy_q  = ((cnb.flags & GMX_PME_DO_COULOMB) &&
+                               (cnb.flags & PP_PME_FEP_Q));
+            *bFreeEnergy_lj = ((cnb.flags & GMX_PME_DO_LJ) &&
+                               (cnb.flags & PP_PME_FEP_LJ));
             *lambda_q       = cnb.lambda_q;
             *lambda_lj      = cnb.lambda_lj;
             *bEnerVir       = (cnb.flags & PP_PME_ENER_VIR);
@@ -583,7 +598,7 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
                            "did not receive B-state charges");
             }
 
-            if (*bFreeEnergy_lj && !(pme_pp->flags_charge & PP_PME_C6B))
+            if (*bFreeEnergy_lj && !(pme_pp->flags_charge & PP_PME_SQRTC6B))
             {
                 gmx_incons("PME-only node received free energy request, but "
                            "did not receive B-state C6-values");
@@ -619,15 +634,15 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
     *step = cnb.step;
 #endif
 
-    *natoms  = nat;
-    *chargeA = pme_pp->chargeA;
-    *chargeB = pme_pp->chargeB;
-    *c6A     = pme_pp->c6A;
-    *c6B     = pme_pp->c6B;
-    *sigmaA  = pme_pp->sigmaA;
-    *sigmaB  = pme_pp->sigmaB;
-    *x       = pme_pp->x;
-    *f       = pme_pp->f;
+    *natoms   = nat;
+    *chargeA  = pme_pp->chargeA;
+    *chargeB  = pme_pp->chargeB;
+    *sqrt_c6A = pme_pp->sqrt_c6A;
+    *sqrt_c6B = pme_pp->sqrt_c6B;
+    *sigmaA   = pme_pp->sigmaA;
+    *sigmaB   = pme_pp->sigmaB;
+    *x        = pme_pp->x;
+    *f        = pme_pp->f;
 
     return ((cnb.flags & PP_PME_FINISH) ? pmerecvqxFINISH : pmerecvqxX);
 }
@@ -686,7 +701,7 @@ void gmx_pme_receive_f(t_commrec *cr,
 
 #ifdef GMX_PME_DELAYED_WAIT
     /* Wait for the x request to finish */
-    gmx_pme_send_params_coords_wait(cr->dd);
+    gmx_pme_send_coeffs_coords_wait(cr->dd);
 #endif
 
     natoms = cr->dd->nat_home;

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,13 +41,13 @@
 #include <string.h>
 #include <errno.h>
 
-#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fft/fft.h"
+#include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/gmxmpi.h"
 
-#include "smalloc.h"
-#include "gmxcomplex.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "fft5d.h"
 

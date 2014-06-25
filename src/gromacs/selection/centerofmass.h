@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief API for calculation of centers of mass/geometry.
  *
  * This header defines a few functions that can be used to calculate
@@ -74,7 +74,13 @@
 #ifndef GMX_SELECTION_CENTEROFMASS_H
 #define GMX_SELECTION_CENTEROFMASS_H
 
-#include "../legacyheaders/typedefs.h"
+#include "../legacyheaders/types/simple.h"
+#include "../math/vectypes.h"
+
+struct t_block;
+struct t_blocka;
+struct t_pbc;
+struct t_topology;
 
 /*! \brief
  * Calculate a single center of geometry.

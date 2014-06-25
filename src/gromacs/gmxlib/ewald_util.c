@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,16 +40,16 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "coulomb.h"
-#include "smalloc.h"
-#include "physics.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/units.h"
 #include "txtdump.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "names.h"
-#include "writeps.h"
 #include "macros.h"
 
 real calc_ewaldcoeff_q(real rc, real dtol)
@@ -148,10 +148,10 @@ void ewald_LRcorrection(int start, int end,
     double      Vexcl_q, dvdl_excl_q, dvdl_excl_lj; /* Necessary for precision */
     double      Vexcl_lj;
     real        one_4pi_eps;
-    real        v, vc, qiA, qiB, dr, dr2, rinv, fscal, enercorr;
+    real        v, vc, qiA, qiB, dr2, rinv, enercorr;
     real        Vself_q[2], Vself_lj[2], Vdipole[2], rinv2, ewc_q = fr->ewaldcoeff_q, ewcdr;
-    real        ewc_lj = fr->ewaldcoeff_lj;
-    real        c6Ai   = 0, c6Bi = 0, c6A = 0, c6B = 0, ewcdr2, ewcdr4, ewcdr5, c6L = 0, rinv6;
+    real        ewc_lj = fr->ewaldcoeff_lj, ewc_lj2 = ewc_lj * ewc_lj;
+    real        c6Ai   = 0, c6Bi = 0, c6A = 0, c6B = 0, ewcdr2, ewcdr4, c6L = 0, rinv6;
     rvec        df, dx, mutot[2], dipcorrA, dipcorrB;
     tensor      dxdf_q, dxdf_lj;
     real        vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
@@ -168,7 +168,7 @@ void ewald_LRcorrection(int start, int end,
     vr0_q         = ewc_q*M_2_SQRTPI;
     if (EVDW_PME(fr->vdwtype))
     {
-        vr0_lj        = -pow(ewc_lj, 6)/6.0;
+        vr0_lj    = -pow(ewc_lj, 6)/6.0;
     }
 
     AA           = excl->a;
@@ -269,8 +269,10 @@ void ewald_LRcorrection(int start, int end,
                         }
                         if (qqA != 0.0 || c6A != 0.0)
                         {
-                            rvec_sub(x[i], x[k], dx);
+                            real fscal;
+
                             fscal = 0;
+                            rvec_sub(x[i], x[k], dx);
                             if (bMolPBC)
                             {
                                 /* Cheap pbc_dx, assume excluded pairs are at short distance. */
@@ -294,9 +296,11 @@ void ewald_LRcorrection(int start, int end,
                             {
                                 rinv              = gmx_invsqrt(dr2);
                                 rinv2             = rinv*rinv;
-                                dr                = 1.0/rinv;
                                 if (qqA != 0.0)
                                 {
+                                    real dr;
+
+                                    dr       = 1.0/rinv;
                                     ewcdr    = ewc_q*dr;
                                     vc       = qqA*gmx_erf(ewcdr)*rinv;
                                     Vexcl_q += vc;
@@ -307,6 +311,8 @@ void ewald_LRcorrection(int start, int end,
                                     /* Relative accuracy at R_ERF_R_INACC of 2e-5 */
 #define       R_ERF_R_INACC 0.1
 #endif
+                                    /* fscal is the scalar force pre-multiplied by rinv,
+                                     * to normalise the relative position vector dx */
                                     if (ewcdr > R_ERF_R_INACC)
                                     {
                                         fscal = rinv2*(vc - qqA*ewc_q*M_2_SQRTPI*exp(-ewcdr*ewcdr));
@@ -318,7 +324,7 @@ void ewald_LRcorrection(int start, int end,
                                     }
 
                                     /* The force vector is obtained by multiplication with
-                                     * the distance vector
+                                     * the relative position vector
                                      */
                                     svmul(fscal, dx, df);
                                     rvec_inc(f[k], df);
@@ -335,21 +341,20 @@ void ewald_LRcorrection(int start, int end,
                                 if (c6A != 0.0)
                                 {
                                     rinv6     = rinv2*rinv2*rinv2;
-                                    ewcdr     = ewc_lj*dr;
-                                    ewcdr2    = ewcdr*ewcdr;
+                                    ewcdr2    = ewc_lj2*dr2;
                                     ewcdr4    = ewcdr2*ewcdr2;
-                                    ewcdr5    = ewcdr4*ewcdr;
                                     /* We get the excluded long-range contribution from -C6*(1-g(r))
                                      * g(r) is also defined in the manual under LJ-PME
                                      */
                                     vc        = -c6A*rinv6*(1.0 - exp(-ewcdr2)*(1 + ewcdr2 + 0.5*ewcdr4));
                                     Vexcl_lj += vc;
-                                    /* The force is the derivative of the potential vc */
-                                    fscal     = 6.0*vc*rinv + c6A*rinv6*exp(-ewcdr2)*ewc_lj*ewcdr5;
+                                    /* The force is the derivative of the potential vc.
+                                     * fscal is the scalar force pre-multiplied by rinv,
+                                     * to normalise the relative position vector dx */
+                                    fscal     = 6.0*vc*rinv2 + c6A*rinv6*exp(-ewcdr2)*ewc_lj2*ewcdr4;
 
-                                    /* The force vector is obtained by
-                                     * multiplication with the distance
-                                     * vector
+                                    /* The force vector is obtained by multiplication with
+                                     * the relative position vector
                                      */
                                     svmul(fscal, dx, df);
                                     rvec_inc(f[k], df);
@@ -424,6 +429,8 @@ void ewald_LRcorrection(int start, int end,
                         }
                         if (qqA != 0.0 || qqB != 0.0 || c6A != 0.0 || c6B != 0.0)
                         {
+                            real fscal;
+
                             fscal = 0;
                             qqL   = L1_q*qqA + lambda_q*qqB;
                             if (EVDW_PME(fr->vdwtype))
@@ -451,15 +458,22 @@ void ewald_LRcorrection(int start, int end,
                             {
                                 rinv    = gmx_invsqrt(dr2);
                                 rinv2   = rinv*rinv;
-                                dr      = 1.0/rinv;
                                 if (qqA != 0.0 || qqB != 0.0)
                                 {
+                                    real dr;
+
+                                    dr           = 1.0/rinv;
                                     v            = gmx_erf(ewc_q*dr)*rinv;
                                     vc           = qqL*v;
                                     Vexcl_q     += vc;
+                                    /* fscal is the scalar force pre-multiplied by rinv,
+                                     * to normalise the relative position vector dx */
                                     fscal        = rinv2*(vc-qqL*ewc_q*M_2_SQRTPI*exp(-ewc_q*ewc_q*dr2));
                                     dvdl_excl_q += (qqB - qqA)*v;
 
+                                    /* The force vector is obtained by multiplication with
+                                     * the relative position vector
+                                     */
                                     svmul(fscal, dx, df);
                                     rvec_inc(f[k], df);
                                     rvec_dec(f[i], df);
@@ -475,15 +489,19 @@ void ewald_LRcorrection(int start, int end,
                                 if ((c6A != 0.0 || c6B != 0.0) && EVDW_PME(fr->vdwtype))
                                 {
                                     rinv6         = rinv2*rinv2*rinv2;
-                                    ewcdr         = ewc_lj*dr;
-                                    ewcdr2        = ewcdr*ewcdr;
+                                    ewcdr2        = ewc_lj2*dr2;
                                     ewcdr4        = ewcdr2*ewcdr2;
-                                    ewcdr5        = ewcdr4*ewcdr;
                                     v             = -rinv6*(1.0 - exp(-ewcdr2)*(1 + ewcdr2 + 0.5*ewcdr4));
                                     vc            = c6L*v;
                                     Vexcl_lj     += vc;
-                                    fscal         = 6.0*vc*rinv + c6L*rinv6*exp(-ewcdr2)*ewc_lj*ewcdr5;
+                                    /* fscal is the scalar force pre-multiplied by rinv,
+                                     * to normalise the relative position vector dx */
+                                    fscal         = 6.0*vc*rinv2 + c6L*rinv6*exp(-ewcdr2)*ewc_lj2*ewcdr4;
                                     dvdl_excl_lj += (c6B - c6A)*v;
+
+                                    /* The force vector is obtained by multiplication with
+                                     * the relative position vector
+                                     */
                                     svmul(fscal, dx, df);
                                     rvec_inc(f[k], df);
                                     rvec_dec(f[i], df);
@@ -543,7 +561,7 @@ void ewald_LRcorrection(int start, int end,
                 Vself_q[q] = ewc_q*one_4pi_eps*fr->q2sum[q]*M_1_SQRTPI;
                 if (EVDW_PME(fr->vdwtype))
                 {
-                    Vself_lj[q] = -pow(ewc_lj, 6)*fr->c6sum[q];
+                    Vself_lj[q] =  fr->c6sum[q]*0.5*vr0_lj;
                 }
             }
 

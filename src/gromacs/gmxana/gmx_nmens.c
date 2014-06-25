@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -39,22 +41,20 @@
 #include <math.h>
 #include <string.h>
 
-#include "statutil.h"
-#include "sysstuff.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
-#include "index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "txtdump.h"
-#include "physics.h"
-#include "random.h"
+#include "gromacs/math/units.h"
+#include "gromacs/random/random.h"
 #include "eigio.h"
 #include "gmx_ana.h"
 
@@ -106,7 +106,7 @@ int gmx_nmens(int argc, char *argv[])
     real                rfac, invfr, rhalf, jr;
     int          *      eigvalnr;
     output_env_t        oenv;
-
+    gmx_rng_t           rng;
     unsigned long       jran;
     const unsigned long im = 0xffff;
     const unsigned long ia = 1093;
@@ -216,14 +216,20 @@ int gmx_nmens(int argc, char *argv[])
 
     if (seed == -1)
     {
-        seed = make_seed();
+        seed = (int)gmx_rng_make_seed();
+        rng  = gmx_rng_init(seed);
+    }
+    else
+    {
+        rng = gmx_rng_init(seed);
     }
     fprintf(stderr, "Using seed %d and a temperature of %g K\n", seed, temp);
 
     snew(xout1, natoms);
     snew(xout2, atoms->nr);
     out  = open_trx(ftp2fn(efTRO, NFILE, fnm), "w");
-    jran = (unsigned long)((real)im*rando(&seed));
+    jran = (unsigned long)((real)im*gmx_rng_uniform_real(rng));
+    gmx_rng_destroy(rng);
     for (s = 0; s < nstruct; s++)
     {
         for (i = 0; i < natoms; i++)

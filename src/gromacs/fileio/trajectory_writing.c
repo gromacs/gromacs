@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,49 +37,45 @@
 #endif
 
 #include "typedefs.h"
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "sim_util.h"
 #include "mdrun.h"
 #include "confio.h"
 #include "trajectory_writing.h"
 #include "mdoutf.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/wallcycle.h"
 
 void
-do_trajectory_writing(FILE           *fplog,
-                      t_commrec      *cr,
-                      int             nfile,
-                      const t_filenm  fnm[],
-                      gmx_large_int_t step,
-                      gmx_large_int_t step_rel,
-                      double          t,
-                      t_inputrec     *ir,
-                      t_state        *state,
-                      t_state        *state_global,
-                      gmx_mtop_t     *top_global,
-                      t_forcerec     *fr,
-                      gmx_update_t    upd,
-                      gmx_mdoutf_t   *outf,
-                      t_mdebin       *mdebin,
-                      gmx_ekindata_t *ekind,
-                      rvec           *f,
-                      rvec           *f_global,
-                      gmx_wallcycle_t wcycle,
-                      gmx_rng_t       mcrng,
-                      int            *nchkpt,
-                      gmx_bool        bCPT,
-                      gmx_bool        bRerunMD,
-                      gmx_bool        bLastStep,
-                      gmx_bool        bDoConfOut,
-                      gmx_bool        bSumEkinhOld
-                      )
+do_md_trajectory_writing(FILE           *fplog,
+                         t_commrec      *cr,
+                         int             nfile,
+                         const t_filenm  fnm[],
+                         gmx_int64_t     step,
+                         gmx_int64_t     step_rel,
+                         double          t,
+                         t_inputrec     *ir,
+                         t_state        *state,
+                         t_state        *state_global,
+                         gmx_mtop_t     *top_global,
+                         t_forcerec     *fr,
+                         gmx_mdoutf_t    outf,
+                         t_mdebin       *mdebin,
+                         gmx_ekindata_t *ekind,
+                         rvec           *f,
+                         rvec           *f_global,
+                         gmx_wallcycle_t wcycle,
+                         int            *nchkpt,
+                         gmx_bool        bCPT,
+                         gmx_bool        bRerunMD,
+                         gmx_bool        bLastStep,
+                         gmx_bool        bDoConfOut,
+                         gmx_bool        bSumEkinhOld
+                         )
 {
     int   mdof_flags;
-    int   n_xtc    = -1;
-    rvec *x_xtc    = NULL;
 
     mdof_flags = 0;
     if (do_per_step(step, ir->nstxout))
@@ -94,9 +90,9 @@ do_trajectory_writing(FILE           *fplog,
     {
         mdof_flags |= MDOF_F;
     }
-    if (do_per_step(step, ir->nstxtcout))
+    if (do_per_step(step, ir->nstxout_compressed))
     {
-        mdof_flags |= MDOF_XTC;
+        mdof_flags |= MDOF_X_COMPRESSED;
     }
     if (bCPT)
     {
@@ -117,6 +113,10 @@ do_trajectory_writing(FILE           *fplog,
         fcReportProgress( ir->nsteps, step );
     }
 
+#if defined(__native_client__)
+    fcCheckin(MASTER(cr));
+#endif
+
     /* sync bCPT and fc record-keeping */
     if (bCPT && MASTER(cr))
     {
@@ -129,14 +129,6 @@ do_trajectory_writing(FILE           *fplog,
         wallcycle_start(wcycle, ewcTRAJ);
         if (bCPT)
         {
-            if (state->flags & (1<<estLD_RNG))
-            {
-                get_stochd_state(upd, state);
-            }
-            if (state->flags  & (1<<estMC_RNG))
-            {
-                get_mc_state(mcrng, state);
-            }
             if (MASTER(cr))
             {
                 if (bSumEkinhOld)
@@ -151,19 +143,18 @@ do_trajectory_writing(FILE           *fplog,
                 update_energyhistory(&state_global->enerhist, mdebin);
             }
         }
-        write_traj(fplog, cr, outf, mdof_flags, top_global,
-                   step, t, state, state_global, f, f_global, &n_xtc, &x_xtc);
+        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
+                                         step, t, state, state_global, f, f_global);
         if (bCPT)
         {
             (*nchkpt)++;
-            bCPT = FALSE;
         }
         debug_gmx();
         if (bLastStep && step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
         {
-            /* x and v have been collected in write_traj,
+            /* x and v have been collected in mdoutf_write_to_trajectory_files,
              * because a checkpoint file will always be written
              * at the last step.
              */

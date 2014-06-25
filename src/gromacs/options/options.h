@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,9 +56,32 @@
 namespace gmx
 {
 
+template <typename T> class ConstArrayRef;
+
 class AbstractOption;
 class OptionsAssigner;
 class OptionsIterator;
+
+/*! \brief
+ * Base class for option managers.
+ *
+ * This class is used as a marker for all classes that are used with
+ * Options::addManager().  It doesn't provide any methods, but only supports
+ * transporting these classes through the Options collection into the
+ * individual option implementation classes.
+ *
+ * The virtual destructor is present to make this class polymorphic, such that
+ * `dynamic_cast` can be used when retrieving a manager of a certain type for
+ * the individual options.
+ *
+ * \inlibraryapi
+ * \ingroup module_options
+ */
+class OptionManagerInterface
+{
+    protected:
+        virtual ~OptionManagerInterface();
+};
 
 /*! \brief
  * Collection of options.
@@ -79,7 +102,7 @@ class OptionsIterator;
    options.addOption(StringOption("arg1").store(&arg1));
    options.addOption(IntegerOption("arg2").store(&arg2));
    return &options;
- * \endcode
+   \endcode
  * The caller of that method can then use a parser implementation such as
  * CommandLineParser to provide values for the options.
  *
@@ -122,10 +145,55 @@ class Options
          *
          * \param[in] desc  String to set as the description.
          *
-         * concatenateStrings() is useful for forming the input string.
+         * This overload is mainly useful if the description is very short.
+         * Currently this is mostly the case in unit testing.
          */
         void setDescription(const std::string &desc);
-        //int addBugs(int nbugs, const char *const *bugs);
+        /*! \brief
+         * Sets the full description of the option collection from string array.
+         *
+         * \param[in] descArray  String array to set as the description.
+         *
+         * All strings in `descArray` are concatenated to form the description.
+         * Spaces are inserted between strings if they are missing.
+         *
+         * Example usage:
+         * \code
+           const char *const desc[] = {
+               "This is the description",
+               "for the options"
+           };
+
+           gmx::Options options(NULL, NULL);
+           options.setDescription(desc);
+           \endcode
+         *
+         * To use this overload, you must also include
+         * `gromacs/utility/arrayref.h`.
+         */
+        void setDescription(const ConstArrayRef<const char *> &descArray);
+
+        /*! \brief
+         * Adds an option manager.
+         *
+         * \param    manager Manager to add.
+         * \throws   std::bad_alloc if out of memory.
+         *
+         * Option managers are used by some types of options that require
+         * interaction between different option instances (e.g., selection
+         * options), or need to support globally set properties (e.g., a global
+         * default file prefix).  Option objects can retrieve the pointer to
+         * their manager when they are created, and the caller can alter the
+         * behavior of the options through the manager.
+         * See the individual managers for details.
+         *
+         * Caller is responsible for memory management of \p manager.
+         * The Options object (and its contained options) only stores a
+         * reference to the object.
+         *
+         * This method cannot be called after adding options or subsections.
+         */
+        void addManager(OptionManagerInterface *manager);
 
         /*! \brief
          * Adds an option collection as a subsection of this collection.
@@ -136,9 +204,8 @@ class Options
          * subsection.  If an attempt is made to add two different subsections
          * with the same name, this function asserts.
          *
-         * For certain functionality to work properly, no options should
-         * be added to the subsection after it has been added to another
-         * collection.
+         * \p section should not have any options added at the point this
+         * method is called.
          *
          * Only a pointer to the provided object is stored.  The caller is
          * responsible that the object exists for the lifetime of the

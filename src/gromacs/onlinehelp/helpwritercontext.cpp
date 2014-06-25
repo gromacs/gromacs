@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,11 +49,10 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -124,17 +123,19 @@ const t_sandr sandrTty[] = {
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
     { "[BR]", "\n"},
+    /* [UL], [LI], [ul] cannot be implemented properly with the current
+     * approach. */
     { "[GRK]", "" },
     { "[grk]", "" }
 };
 
 //! List of replacements for man page output.
 const t_sandr sandrMan[] = {
-    { "[TT]", "\\fB " },
+    { "[TT]", "\\fB" },
     { "[tt]", "\\fR" },
-    { "[BB]", "\\fB " },
+    { "[BB]", "\\fB" },
     { "[bb]", "\\fR" },
-    { "[IT]", "\\fI " },
+    { "[IT]", "\\fI" },
     { "[it]", "\\fR" },
     { "[MATH]", "" },
     { "[math]", "" },
@@ -174,6 +175,11 @@ const t_sandr sandrMan[] = {
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
     { "\n ",    "\n" },
+    // The following three work only in the specific context in which they are
+    // currently used.
+    { "[UL]", "" },
+    { "[LI]", "\n- " },
+    { "[ul]", "" },
     { "<",    "" },
     { ">",    "" },
     { "^",    "" },
@@ -232,6 +238,9 @@ const t_sandr sandrHtml[] = {
     { "[tanh]", ")" },
     { "[PAR]", "<p>" },
     { "[BR]", "<br>" },
+    { "[UL]", "<ul>" },
+    { "[LI]", "<li>" },
+    { "[ul]", "</ul>" },
     { "[GRK]", "&"  },
     { "[grk]", ";"  }
 };
@@ -525,7 +534,7 @@ class HelpWriterContext::Impl
 
 void HelpWriterContext::Impl::initDefaultReplacements()
 {
-    const char *program = ProgramInfo::getInstance().programName().c_str();
+    const char *program = getProgramContext().programName();
     addReplacement("[PROGRAM]", program);
 }
 
@@ -559,10 +568,6 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         {
             result = repall(result, sandrTty);
             result = replaceLinks(result);
-            if (wrapper->settings().lineLength() == 0)
-            {
-                wrapper->settings().setLineLength(78);
-            }
             return wrapper->wrap(result);
         }
         case eHelpOutputFormat_Man:
@@ -653,27 +658,84 @@ HelpWriterContext::substituteMarkupAndWrapToVector(
 
 void HelpWriterContext::writeTitle(const std::string &title) const
 {
-    if (outputFormat() != eHelpOutputFormat_Console)
-    {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "This output format is not implemented"));
-    }
     File &file = outputFile();
-    file.writeLine(toUpperCase(title));
-    file.writeLine();
+    switch (outputFormat())
+    {
+        case eHelpOutputFormat_Console:
+            file.writeLine(toUpperCase(title));
+            file.writeLine();
+            break;
+        case eHelpOutputFormat_Man:
+            file.writeLine(formatString(".SH %s", toUpperCase(title).c_str()));
+            break;
+        case eHelpOutputFormat_Html:
+            file.writeLine(formatString("<H3>%s</H3>", title.c_str()));
+            break;
+        default:
+            GMX_THROW(NotImplementedError(
+                              "This output format is not implemented"));
+    }
 }
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
-    writeTextBlock(TextLineWrapperSettings(), text);
+    TextLineWrapperSettings settings;
+    if (outputFormat() == eHelpOutputFormat_Console)
+    {
+        settings.setLineLength(78);
+    }
+    outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
 }
 
-void HelpWriterContext::writeTextBlock(const TextLineWrapperSettings &settings,
-                                       const std::string             &text) const
+void HelpWriterContext::writeOptionListStart() const
 {
-    outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
+    if (outputFormat() == eHelpOutputFormat_Html)
+    {
+        outputFile().writeLine("<dl>");
+    }
+}
+
+void HelpWriterContext::writeOptionItem(const std::string &name,
+                                        const std::string &args,
+                                        const std::string &description) const
+{
+    File &file = outputFile();
+    switch (outputFormat())
+    {
+        case eHelpOutputFormat_Console:
+            // TODO: Generalize this when there is need for it; the current,
+            // special implementation is in CommandLineHelpWriter.
+            GMX_THROW(NotImplementedError("Option item formatting for console output not implemented"));
+            break;
+        case eHelpOutputFormat_Man:
+            file.writeLine(formatString(".BI \"\\%s\" \" %s\"", name.c_str(), args.c_str()));
+            file.writeString("    ");
+            writeTextBlock(description);
+            file.writeLine();
+            break;
+        case eHelpOutputFormat_Html:
+        {
+            std::string substArgs =
+                substituteMarkupAndWrapToString(TextLineWrapperSettings(), args);
+            file.writeLine(formatString("<dt><b><tt>%s</tt></b> %s</dt>", name.c_str(),
+                                        substArgs.c_str()));
+            file.writeLine("<dd>");
+            writeTextBlock(description);
+            file.writeLine("</dd>");
+            break;
+        }
+        default:
+            GMX_THROW(NotImplementedError(
+                              "This output format is not implemented"));
+    }
+}
+
+void HelpWriterContext::writeOptionListEnd() const
+{
+    if (outputFormat() == eHelpOutputFormat_Html)
+    {
+        outputFile().writeLine("</dl>");
+    }
 }
 
 } // namespace gmx

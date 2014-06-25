@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,8 @@
 # set as "uncrustify" (or something ending in "uncrustify") are processed: if
 # other files have been changed, they are ignored by the script.  Files passed
 # to uncrustify, as well as files with filter "copyright", get their copyright
-# header checked.
+# header checked.  To only run uncrustify for a file, set the filter to
+# "uncrustify_only".
 #
 # If you want to run uncrustify automatically for changes you make, there are
 # two options:
@@ -197,9 +198,12 @@ cut -f2 <$tmpdir/difflist | \
     git check-attr --stdin filter | \
     sed -e 's/.*: filter: //' | \
     paste $tmpdir/difflist - | \
-    grep -E '(uncrustify|copyright)$' >$tmpdir/filtered
+    grep -E '(uncrustify|uncrustify_only|copyright)$' >$tmpdir/filtered
 cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
-grep 'uncrustify$' <$tmpdir/filtered | cut -f2 >$tmpdir/filelist_uncrustify
+grep -E '(uncrustify|uncrustify_only)$' <$tmpdir/filtered | \
+    cut -f2 >$tmpdir/filelist_uncrustify
+grep -E '(uncrustify|copyright)$' <$tmpdir/filtered | \
+    cut -f2 >$tmpdir/filelist_copyright
 git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 
 # Extract changed files to a temporary directory
@@ -258,16 +262,13 @@ if [[ $copyright_mode != "off" ]] ; then
         *)
             echo "Unknown copyright mode: $copyright_mode"
             exit 2
-    if [[ $copyright -eq 2 ]] ; then
-        cpscript_args+=" --update-header"
-    fi
     esac
     if [[ $action == check-* ]] ; then
         cpscript_args+=" --check"
     fi
     # TODO: Probably better to invoke python explicitly through a customizable
     # variable.
-    if ! $admin_dir/copyright.py -F $tmpdir/filelist_all $cpscript_args >>$tmpdir/messages
+    if ! $admin_dir/copyright.py -F $tmpdir/filelist_copyright $cpscript_args >>$tmpdir/messages
     then
         echo "Copyright checking failed!"
         rm -rf $tmpdir

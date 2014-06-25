@@ -1,52 +1,54 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifndef _update_h
 #define _update_h
 
 #include "typedefs.h"
-#include "mshift.h"
 #include "tgroup.h"
 #include "network.h"
-#include "pull.h"
-#include "gmx_random.h"
-#include "maths.h"
+
+#include "../timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_graph;
 
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_update *gmx_update_t;
@@ -64,19 +66,18 @@ void set_stochd_state(gmx_update_t sd, t_state *state);
  * as a reference state for simulations with box deformation.
  */
 void set_deform_reference_box(gmx_update_t upd,
-                              gmx_large_int_t step, matrix box);
+                              gmx_int64_t step, matrix box);
 
-void update_tcouple(gmx_large_int_t   step,
+void update_tcouple(gmx_int64_t       step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
-                    gmx_update_t      upd,
                     t_extmass        *MassQ,
                     t_mdatoms        *md
                     );
 
 void update_pcouple(FILE             *fplog,
-                    gmx_large_int_t   step,
+                    gmx_int64_t       step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     matrix            pcoupl_mu,
@@ -84,7 +85,7 @@ void update_pcouple(FILE             *fplog,
                     gmx_bool          bInitStep);
 
 void update_coords(FILE             *fplog,
-                   gmx_large_int_t   step,
+                   gmx_int64_t       step,
                    t_inputrec       *inputrec, /* input record and box stuff	*/
                    t_mdatoms        *md,
                    t_state          *state,
@@ -92,6 +93,7 @@ void update_coords(FILE             *fplog,
                    rvec             *f, /* forces on home particles */
                    gmx_bool          bDoLR,
                    rvec             *f_lr,
+                   tensor           *vir_lr_constr,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
@@ -105,17 +107,17 @@ void update_coords(FILE             *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr_t constr);
 
 void update_constraints(FILE             *fplog,
-                        gmx_large_int_t   step,
+                        gmx_int64_t       step,
                         real             *dvdlambda, /* FEP stuff */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
                         gmx_ekindata_t   *ekind,
                         t_mdatoms        *md,
                         t_state          *state,
                         gmx_bool          bMolPBC,
-                        t_graph          *graph,
+                        struct t_graph   *graph,
                         rvec              force[], /* forces on home particles */
                         t_idef           *idef,
                         tensor            vir_part,
@@ -131,7 +133,7 @@ void update_constraints(FILE             *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 void update_box(FILE             *fplog,
-                gmx_large_int_t   step,
+                gmx_int64_t       step,
                 t_inputrec       *inputrec, /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
@@ -173,7 +175,8 @@ restore_ekinstate_from_state(t_commrec *cr,
 
 void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt);
 
-void andersen_tcoupl(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock, gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac);
+void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
+                     const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac);
 
 void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
                        double xi[], double vxi[], t_extmass *MassQ);
@@ -182,7 +185,7 @@ t_state *init_bufstate(const t_state *template_state);
 
 void destroy_bufstate(t_state *state);
 
-void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
+void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
@@ -194,9 +197,9 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
 void NBaroT_trotter(t_grpopts *opts, real dt,
                     double xi[], double vxi[], real *veta, t_extmass *MassQ);
 
-void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
-                     double therm_integral[],
-                     gmx_rng_t rng);
+void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
+                     gmx_ekindata_t *ekind, real dt,
+                     double therm_integral[]);
 /* Compute temperature scaling. For V-rescale it is done in update. */
 
 real vrescale_energy(t_grpopts *opts, double therm_integral[]);
@@ -218,13 +221,13 @@ real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
  * The unit of pressure is bar.
  */
 
-void parrinellorahman_pcoupl(FILE *fplog, gmx_large_int_t step,
+void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                              t_inputrec *ir, real dt, tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu,
                              gmx_bool bFirstStep);
 
-void berendsen_pcoupl(FILE *fplog, gmx_large_int_t step,
+void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
                       t_inputrec *ir, real dt, tensor pres, matrix box,
                       matrix mu);
 

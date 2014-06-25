@@ -1,59 +1,60 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <math.h>
-#include <ctype.h>
 
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "names.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "string2.h"
-#include "strdb.h"
-#include "vec.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "index.h"
-#include "pbc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
@@ -173,7 +174,7 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
     int       neq, na, n, resnr;
     t_equiv **equiv;
 
-    fp    = ffopen(eq_fn, "r");
+    fp    = gmx_ffopen(eq_fn, "r");
     neq   = 0;
     equiv = NULL;
     while (get_a_line(fp, line, STRLEN))
@@ -212,7 +213,7 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
         /* next */
         neq++;
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     *equivptr = equiv;
 
@@ -324,7 +325,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                     if (bEquiv)
                     {
                         /* set index for matching atom */
-                        noe_index[j] = groupnr;
+                        noe_index[i] = groupnr;
                         /* skip matching atom */
                         i = j;
                     }
@@ -342,7 +343,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                    This is supposed to cover all CH3 groups and the like */
                 anmi   = *atoms->atomname[index[i]];
                 anmil  = strlen(anmi);
-                bMatch = i < isize-3 && anmi[anmil-1] == '1';
+                bMatch = i <= isize-3 && anmi[anmil-1] == '1';
                 if (bMatch)
                 {
                     for (j = 1; j < 3; j++)
@@ -645,7 +646,7 @@ int gmx_rmsdist(int argc, char *argv[])
         "equivalent atoms can be supplied ([TT]-equiv[tt]), each line containing",
         "a set of equivalent atoms specified as residue number and name and",
         "atom name; e.g.:[PAR]",
-        "[TT]3 SER  HB1 3 SER  HB2[tt][PAR]",
+        "[TT]HB* 3 SER  HB1 3 SER  HB2[tt][PAR]",
         "Residue and atom names must exactly match those in the structure",
         "file, including case. Specifying non-sequential atoms is undefined."
 
@@ -786,7 +787,8 @@ int gmx_rmsdist(int argc, char *argv[])
     }
 
     /*do a first step*/
-    natom = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natom  = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    teller = 0;
 
     do
     {
@@ -794,13 +796,12 @@ int gmx_rmsdist(int argc, char *argv[])
 
         rmsnow = rms_diff(isize, d, d_r);
         fprintf(fp, "%g  %g\n", t, rmsnow);
+        teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
-    ffclose(fp);
-
-    teller = nframes_read(status);
+    gmx_ffclose(fp);
 
     close_trj(status);
 

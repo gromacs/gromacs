@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,11 +32,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
  * Declares test fixture for integration tests
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
  * \ingroup module_testutils
  */
 #ifndef GMX_INTEGRATION_TESTS_MODULETEST_H
@@ -57,6 +58,7 @@ namespace test
  *
  * Any method in this class may throw std::bad_alloc if out of memory.
  *
+ * \inlibraryapi
  * \ingroup module_testutils
  */
 class IntegrationTestFixture : public ::testing::Test
@@ -73,12 +75,12 @@ class IntegrationTestFixture : public ::testing::Test
          */
         void redirectStringToStdin(const char* theString);
 
-        /*! Discards stdout while running a test
+        /*! \brief Discards stdout while running a test
          *
          * \todo Implement this when the output routines are
          * sufficiently modular to permit it to work. */
         void redirectStdoutToDevNull();
-        /*! Discards stderr while running a test
+        /*! \brief Discards stderr while running a test
          *
          * \todo Implement this when the output routines are
          * sufficiently modular to permit it to work. */

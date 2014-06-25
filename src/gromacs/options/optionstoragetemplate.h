@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
 
         // No implementation in this class for the pure virtual methods, but
         // the declarations are still included for clarity.
-        virtual const char *typeString() const = 0;
+        virtual std::string typeString() const = 0;
         virtual int valueCount() const { return static_cast<int>(values_->size()); }
         /*! \copydoc gmx::AbstractOptionStorage::formatValue()
          *
@@ -475,6 +475,7 @@ void OptionStorageTemplate<T>::setDefaultValueIfSet(const T &value)
     {
         GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
     }
+    setFlag(efOption_DefaultValueIfSetExists);
     defaultValueIfSet_.reset(new T(value));
 }
 

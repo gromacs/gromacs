@@ -1,14 +1,10 @@
 Steps to produce minimal version of BOOST:
-1) Download Boost (current minimal version is derived from 1.48.0)
+1) Download Boost (current minimal version is derived from 1.55.0)
 2) Extract
 3) Edit Boost files to uncomment unnessary includes (search for GMX in minimal version and copy all changes)
 4) run bcp with required files (currently exception/all.hpp, scoped_ptr.hpp)
 5) delete source files which are not required. Currently:
-        libs/exception/src/clone_current_exception_non_intrusive.cpp
  	libs/smart_ptr/src/sp_collector.cpp
 	libs/smart_ptr/src/sp_debug_hooks.cpp
-   Make sure that they are really not needed and that activating the feature they implement gives a compiler
-   not linker error (by adding an appropriate #error directive). If any source files are added make sure 
-   to add them to cmake.
-6) Check that boost/exception/detail/error_info_impl.hpp has virtual
-   destructors to avoid compiler warnings.
+   Make sure that they are really not needed.If any source files are added make sure to add them to cmake.
+

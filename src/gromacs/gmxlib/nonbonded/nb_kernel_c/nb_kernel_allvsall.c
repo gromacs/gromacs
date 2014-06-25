@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,8 +42,8 @@
 
 #include "types/simple.h"
 
-#include "vec.h"
-#include "smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "nb_kernel_allvsall.h"
 #include "nrnb.h"
@@ -280,8 +280,8 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
     type                = mdatoms->typeA;
     facel               = fr->epsfac;
     natoms              = mdatoms->nr;
-    ni0                 = mdatoms->start;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
     aadata              = fr->AllvsAll_work;
     excl                = kernel_data->exclusions;
 

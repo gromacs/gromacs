@@ -1,19 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- * This file is part of Gromacs        Copyright (c) 1991-2008
- * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -21,16 +38,20 @@
 #endif
 #include <assert.h>
 
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "constr.h"
+#include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ga2la.h"
 #include "gmx_hash.h"
 #include "gmx_omp_nthreads.h"
 #include "macros.h"
+
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int  nsend;
@@ -219,7 +240,9 @@ void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f)
 }
 
 static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
-                             matrix box, rvec *x0, rvec *x1)
+                             matrix box,
+                             rvec *x0,
+                             rvec *x1, gmx_bool bX1IsCoord)
 {
     gmx_specatsend_t *spas;
     rvec             *x, *vbuf, *rbuf;
@@ -228,7 +251,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     rvec              shift = {0, 0, 0};
 
     nvec = 1;
-    if (x1)
+    if (x1 != NULL)
     {
         nvec++;
     }
@@ -268,7 +291,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                 {
                     x = (v == 0 ? x0 : x1);
                     /* Copy the required coordinates to the send buffer */
-                    if (!bPBC)
+                    if (!bPBC || (v == 1 && !bX1IsCoord))
                     {
                         /* Only copy */
                         for (i = 0; i < spas->nsend; i++)
@@ -397,11 +420,12 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
-void dd_move_x_constraints(gmx_domdec_t *dd, matrix box, rvec *x0, rvec *x1)
+void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
+                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord)
 {
     if (dd->constraint_comm)
     {
-        dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1);
+        dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1, bX1IsCoord);
     }
 }
 
@@ -409,7 +433,7 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
 {
     if (dd->vsite_comm)
     {
-        dd_move_x_specat(dd, dd->vsite_comm, box, x, NULL);
+        dd_move_x_specat(dd, dd->vsite_comm, box, x, NULL, FALSE);
     }
 }
 

@@ -2,20 +2,26 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
-Option Filename     Type         Description
----------------------------------------------------------
--f                  Input        File name option with a long value
-       path/to/long/trajectory/name.xtc
--f2                 Input        File name option with a long value
-       path/to/long/trajectory.xtc
--lib                Input, Opt., Lib.
-       path/to/long/trajectory/name.xtc
-                                 File name option with a long value and type
--longfileopt        Input, Opt.  File name option with a long name
-       deffile.dat
--longfileopt2       Input, Opt., Lib.
-       path/to/long/file/name.dat
-                                 File name option with multiple long fields
+SYNOPSIS
+
+gmx [-f [<.xtc/.trr/...>]] [-f2 [<.xtc/.trr/...>]] [-lib [<.xtc/.trr/...>]]
+    [-longfileopt [<.dat>]] [-longfileopt2 [<.dat>]]
+
+OPTIONS
+
+Options to specify input and output files:
+
+ -f     [<.xtc/.trr/...>] (path/to/long/trajectory/name.xtc) (Input)
+     File name option with a long value: xtc trr cpt trj gro g96 pdb tng
+ -f2    [<.xtc/.trr/...>] (path/to/long/trajectory.xtc) (Input)
+     File name option with a long value: xtc trr cpt trj gro g96 pdb tng
+ -lib   [<.xtc/.trr/...>] (path/to/long/trajectory/name.xtc) (Input, Opt., Lib.)
+     File name option with a long value and type: xtc trr cpt trj gro g96 pdb
+     tng
+ -longfileopt [<.dat>] (deffile.dat) (Input, Opt.)
+     File name option with a long name
+ -longfileopt2 [<.dat>] (path/to/long/file/name.dat) (Input, Opt., Lib.)
+     File name option with multiple long fields
 
 ]]></String>
 </ReferenceData>

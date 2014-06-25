@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,51 +61,25 @@
 #ifndef GMX_UTILITY_INIT_H
 #define GMX_UTILITY_INIT_H
 
-// Forward declaration of class ProgramInfo is not sufficient for MSVC if
-// the return value of init() is ignored(!)
-#include "programinfo.h"
-
 namespace gmx
 {
 
-/*! \brief
- * Initializes the \Gromacs library with explicit binary name.
- *
- * \param[in] realBinaryName  Name of the binary
- *     (without Gromacs binary suffix or .exe on Windows).
- * \param[in] argc  argc value passed to main().
- * \param[in] argv  argv array passed to main().
- * \returns   Reference to initialized program information object.
- *
- * This overload is provided for cases where the program may be invoked
- * through a symlink, and it is necessary to know the real name of the
- * binary.
- *
- * Currently, this is tailored for use in command-line/standalone applications.
- * Some additional thought may be required to make it generally usable.
- *
- * The command line arguments are communicated so that they can be
- * parsed on each processor.
- * Arguments are the number of command line arguments, and a pointer to the
- * array of argument strings. Both are allowed to be NULL.
- *
- * Does not throw. Terminates the program on out-of-memory error.
- *
- * \ingroup module_utility
- */
-ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv);
 /*! \brief
  * Initializes the \Gromacs library.
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
- * \returns   Reference to initialized program information object.
  *
- * Does not throw. Terminates the program on out-of-memory error.
+ * \p argc and \p argv are the command line arguments passed to main().
+ * They are allowed to be NULL if \Gromacs is not compiled with MPI, MPI_Init()
+ * has already been called, or if the MPI library \Gromacs is compiled against
+ * allows it.
+ *
+ * Does not throw.
  *
  * \ingroup module_utility
  */
-ProgramInfo &init(int *argc, char ***argv);
+void init(int *argc, char ***argv);
 /*! \brief
  * Deinitializes the \Gromacs library.
  *

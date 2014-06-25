@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,7 @@ if(EXISTS "${GIT_EXECUTABLE}")
     # compile final version string
     set(GMX_PROJECT_VERSION_STR "${PROJECT_VERSION}-${VERSION_STR_SUFFIX}")
 else()
-    # the version has to be defined - if not we're not using gitversion.h/.c;
+    # the version has to be defined
     # set the GIT related information to "unknown"
     message(WARNING "Source tree seems to be a repository, but no compatible git is available, using hard-coded version string")
     set(GMX_PROJECT_VERSION_STR "${PROJECT_VERSION}")

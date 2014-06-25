@@ -1,33 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -36,12 +39,12 @@
 
 #include <math.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "smalloc.h"
+#include <assert.h>
+
+#include "types/commrec.h"
 #include "macros.h"
-#include "maths.h"
-#include "vec.h"
-#include "pbc.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "nbnxn_consts.h"
 /* nbnxn_internal.h included gromacs/simd/macros.h */
 #include "nbnxn_internal.h"
@@ -52,27 +55,30 @@
 #include "nbnxn_search.h"
 #include "gmx_omp_nthreads.h"
 #include "nrnb.h"
+#include "ns.h"
 
-#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
-/* We use 4-wide SIMD for bounding box calculations */
+/* Always use 4-wide SIMD for bounding box calculations */
 
-#ifndef GMX_DOUBLE
+#    ifndef GMX_DOUBLE
 /* Single precision BBs + coordinates, we can also load coordinates with SIMD */
-#define NBNXN_SEARCH_SIMD4_FLOAT_X_BB
-#endif
+#        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB
+#    endif
 
-#if defined NBNXN_SEARCH_SIMD4_FLOAT_X_BB && (GPU_NSUBCELL == 4 || GPU_NSUBCELL == 8)
+#    if defined NBNXN_SEARCH_SIMD4_FLOAT_X_BB && (GPU_NSUBCELL == 4 || GPU_NSUBCELL == 8)
 /* Store bounding boxes with x, y and z coordinates in packs of 4 */
-#define NBNXN_PBB_SIMD4
-#endif
+#        define NBNXN_PBB_SIMD4
+#    endif
 
 /* The packed bounding box coordinate stride is always set to 4.
  * With AVX we could use 8, but that turns out not to be faster.
  */
-#define STRIDE_PBB        4
-#define STRIDE_PBB_2LOG   2
+#    define STRIDE_PBB        4
+#    define STRIDE_PBB_2LOG   2
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
 
@@ -102,17 +108,17 @@
 #define X_IND_CJ_J8(cj)  ((cj)*STRIDE_P8)
 
 /* The j-cluster size is matched to the SIMD width */
-#if GMX_SIMD_WIDTH_HERE == 2
+#if GMX_SIMD_REAL_WIDTH == 2
 #define CI_TO_CJ_SIMD_4XN(ci)  CI_TO_CJ_J2(ci)
 #define X_IND_CI_SIMD_4XN(ci)  X_IND_CI_J2(ci)
 #define X_IND_CJ_SIMD_4XN(cj)  X_IND_CJ_J2(cj)
 #else
-#if GMX_SIMD_WIDTH_HERE == 4
+#if GMX_SIMD_REAL_WIDTH == 4
 #define CI_TO_CJ_SIMD_4XN(ci)  CI_TO_CJ_J4(ci)
 #define X_IND_CI_SIMD_4XN(ci)  X_IND_CI_J4(ci)
 #define X_IND_CJ_SIMD_4XN(cj)  X_IND_CJ_J4(cj)
 #else
-#if GMX_SIMD_WIDTH_HERE == 8
+#if GMX_SIMD_REAL_WIDTH == 8
 #define CI_TO_CJ_SIMD_4XN(ci)  CI_TO_CJ_J8(ci)
 #define X_IND_CI_SIMD_4XN(ci)  X_IND_CI_J8(ci)
 #define X_IND_CJ_SIMD_4XN(cj)  X_IND_CJ_J8(cj)
@@ -121,12 +127,12 @@
 #define X_IND_CI_SIMD_2XNN(ci) X_IND_CI_J4(ci)
 #define X_IND_CJ_SIMD_2XNN(cj) X_IND_CJ_J4(cj)
 #else
-#if GMX_SIMD_WIDTH_HERE == 16
+#if GMX_SIMD_REAL_WIDTH == 16
 #define CI_TO_CJ_SIMD_2XNN(ci) CI_TO_CJ_J8(ci)
 #define X_IND_CI_SIMD_2XNN(ci) X_IND_CI_J8(ci)
 #define X_IND_CJ_SIMD_2XNN(cj) X_IND_CJ_J8(cj)
 #else
-#error "unsupported GMX_NBNXN_SIMD_WIDTH"
+#error "unsupported GMX_SIMD_REAL_WIDTH"
 #endif
 #endif
 #endif
@@ -255,7 +261,7 @@ int nbnxn_kernel_to_cj_size(int nb_kernel_type)
     int cj_size          = 0;
 
 #ifdef GMX_NBNXN_SIMD
-    nbnxn_simd_width = GMX_SIMD_WIDTH_HERE;
+    nbnxn_simd_width = GMX_SIMD_REAL_WIDTH;
 #endif
 
     switch (nb_kernel_type)
@@ -316,9 +322,34 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
     }
 }
 
+/* Initializes a single nbnxn_pairlist_t data structure */
+static void nbnxn_init_pairlist_fep(t_nblist *nl)
+{
+    nl->type        = GMX_NBLIST_INTERACTION_FREE_ENERGY;
+    nl->igeometry   = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
+    /* The interaction functions are set in the free energy kernel fuction */
+    nl->ivdw        = -1;
+    nl->ivdwmod     = -1;
+    nl->ielec       = -1;
+    nl->ielecmod    = -1;
+
+    nl->maxnri      = 0;
+    nl->maxnrj      = 0;
+    nl->nri         = 0;
+    nl->nrj         = 0;
+    nl->iinr        = NULL;
+    nl->gid         = NULL;
+    nl->shift       = NULL;
+    nl->jindex      = NULL;
+    nl->jjnr        = NULL;
+    nl->excl_fep    = NULL;
+
+}
+
 void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
                        ivec               *n_dd_cells,
                        gmx_domdec_zones_t *zones,
+                       gmx_bool            bFEP,
                        int                 nthread_max)
 {
     nbnxn_search_t nbs;
@@ -326,6 +357,8 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
 
     snew(nbs, 1);
     *nbs_ptr = nbs;
+
+    nbs->bFEP   = bFEP;
 
     nbs->DomDec = (n_dd_cells != NULL);
 
@@ -366,6 +399,9 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
         nbs->work[t].cxy_na_nalloc    = 0;
         nbs->work[t].sort_work        = NULL;
         nbs->work[t].sort_work_nalloc = 0;
+
+        snew(nbs->work[t].nbl_fep, 1);
+        nbnxn_init_pairlist_fep(nbs->work[t].nbl_fep);
     }
 
     /* Initialize detailed nbsearch cycle counting */
@@ -518,6 +554,10 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         }
 
         srenew(grid->flags, grid->nc_nalloc);
+        if (nbs->bFEP)
+        {
+            srenew(grid->fep, grid->nc_nalloc*grid->na_sc/grid->na_c);
+        }
     }
 
     copy_rvec(corner0, grid->c0);
@@ -805,20 +845,20 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
          * so we don't need to treat special cases in the rest of the code.
          */
 #ifdef NBNXN_SEARCH_BB_SIMD4
-        gmx_simd4_store_pr(&bbj[1].lower[0], gmx_simd4_load_bb_pr(&bbj[0].lower[0]));
-        gmx_simd4_store_pr(&bbj[1].upper[0], gmx_simd4_load_bb_pr(&bbj[0].upper[0]));
+        gmx_simd4_store_f(&bbj[1].lower[0], gmx_simd4_load_f(&bbj[0].lower[0]));
+        gmx_simd4_store_f(&bbj[1].upper[0], gmx_simd4_load_f(&bbj[0].upper[0]));
 #else
         bbj[1] = bbj[0];
 #endif
     }
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
-    gmx_simd4_store_pr(&bb->lower[0],
-                       gmx_simd4_min_pr(gmx_simd4_load_bb_pr(&bbj[0].lower[0]),
-                                        gmx_simd4_load_bb_pr(&bbj[1].lower[0])));
-    gmx_simd4_store_pr(&bb->upper[0],
-                       gmx_simd4_max_pr(gmx_simd4_load_bb_pr(&bbj[0].upper[0]),
-                                        gmx_simd4_load_bb_pr(&bbj[1].upper[0])));
+    gmx_simd4_store_f(&bb->lower[0],
+                      gmx_simd4_min_f(gmx_simd4_load_f(&bbj[0].lower[0]),
+                                      gmx_simd4_load_f(&bbj[1].lower[0])));
+    gmx_simd4_store_f(&bb->upper[0],
+                      gmx_simd4_max_f(gmx_simd4_load_f(&bbj[0].upper[0]),
+                                      gmx_simd4_load_f(&bbj[1].upper[0])));
 #else
     {
         int i;
@@ -874,23 +914,23 @@ static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
 /* Coordinate order xyz?, bb order xyz0 */
 static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
 {
-    gmx_simd4_pr bb_0_S, bb_1_S;
-    gmx_simd4_pr x_S;
+    gmx_simd4_float_t bb_0_S, bb_1_S;
+    gmx_simd4_float_t x_S;
 
-    int          i;
+    int               i;
 
-    bb_0_S = gmx_simd4_load_bb_pr(x);
+    bb_0_S = gmx_simd4_load_f(x);
     bb_1_S = bb_0_S;
 
     for (i = 1; i < na; i++)
     {
-        x_S    = gmx_simd4_load_bb_pr(x+i*NNBSBB_C);
-        bb_0_S = gmx_simd4_min_pr(bb_0_S, x_S);
-        bb_1_S = gmx_simd4_max_pr(bb_1_S, x_S);
+        x_S    = gmx_simd4_load_f(x+i*NNBSBB_C);
+        bb_0_S = gmx_simd4_min_f(bb_0_S, x_S);
+        bb_1_S = gmx_simd4_max_f(bb_1_S, x_S);
     }
 
-    gmx_simd4_store_pr(&bb->lower[0], bb_0_S);
-    gmx_simd4_store_pr(&bb->upper[0], bb_1_S);
+    gmx_simd4_store_f(&bb->lower[0], bb_0_S);
+    gmx_simd4_store_f(&bb->upper[0], bb_1_S);
 }
 
 /* Coordinate order xyz?, bb order xxxxyyyyzzzz */
@@ -925,14 +965,14 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
         for (c2 = sc2; c2 < sc2+nc2; c2++)
         {
 #ifdef NBNXN_SEARCH_BB_SIMD4
-            gmx_simd4_pr min_S, max_S;
+            gmx_simd4_float_t min_S, max_S;
 
-            min_S = gmx_simd4_min_pr(gmx_simd4_load_bb_pr(&bb[c2*2+0].lower[0]),
-                                     gmx_simd4_load_bb_pr(&bb[c2*2+1].lower[0]));
-            max_S = gmx_simd4_max_pr(gmx_simd4_load_bb_pr(&bb[c2*2+0].upper[0]),
-                                     gmx_simd4_load_bb_pr(&bb[c2*2+1].upper[0]));
-            gmx_simd4_store_pr(&grid->bbj[c2].lower[0], min_S);
-            gmx_simd4_store_pr(&grid->bbj[c2].upper[0], max_S);
+            min_S = gmx_simd4_min_f(gmx_simd4_load_f(&bb[c2*2+0].lower[0]),
+                                    gmx_simd4_load_f(&bb[c2*2+1].lower[0]));
+            max_S = gmx_simd4_max_f(gmx_simd4_load_f(&bb[c2*2+0].upper[0]),
+                                    gmx_simd4_load_f(&bb[c2*2+1].upper[0]));
+            gmx_simd4_store_f(&grid->bbj[c2].lower[0], min_S);
+            gmx_simd4_store_f(&grid->bbj[c2].upper[0], max_S);
 #else
             for (j = 0; j < NNBSBB_C; j++)
             {
@@ -1049,7 +1089,7 @@ void sort_on_lj(int na_c,
     int      subc, s, a, n1, n2, a_lj_max, i, j;
     int      sort1[NBNXN_NA_SC_MAX/GPU_NSUBCELL];
     int      sort2[NBNXN_NA_SC_MAX/GPU_NSUBCELL];
-    gmx_bool haveQ;
+    gmx_bool haveQ, bFEP;
 
     *flags = 0;
 
@@ -1076,7 +1116,7 @@ void sort_on_lj(int na_c,
             }
         }
 
-        /* If we don't have atom with LJ, there's nothing to sort */
+        /* If we don't have atoms with LJ, there's nothing to sort */
         if (n1 > 0)
         {
             *flags |= NBNXN_CI_DO_LJ(subc);
@@ -1137,6 +1177,23 @@ void fill_cell(const nbnxn_search_t nbs,
                    grid->flags+(a0>>grid->na_c_2log)-grid->cell0);
     }
 
+    if (nbs->bFEP)
+    {
+        /* Set the fep flag for perturbed atoms in this (sub-)cell */
+        int c, at;
+
+        /* The grid-local cluster/(sub-)cell index */
+        c            = (a0 >> grid->na_c_2log) - grid->cell0*(grid->bSimple ? 1 : GPU_NSUBCELL);
+        grid->fep[c] = 0;
+        for (at = a0; at < a1; at++)
+        {
+            if (nbs->a[at] >= 0 && GET_CGINFO_FEP(atinfo[nbs->a[at]]))
+            {
+                grid->fep[c] |= (1 << (at - a0));
+            }
+        }
+    }
+
     /* Now we have sorted the atoms, set the cell indices */
     for (a = a0; a < a1; a++)
     {
@@ -1153,7 +1210,7 @@ void fill_cell(const nbnxn_search_t nbs,
         offset = (a0 - grid->cell0*grid->na_sc) >> grid->na_c_2log;
         bb_ptr = grid->bb + offset;
 
-#if defined GMX_NBNXN_SIMD && GMX_SIMD_WIDTH_HERE == 2
+#if defined GMX_NBNXN_SIMD && GMX_SIMD_REAL_WIDTH == 2
         if (2*grid->na_cj == grid->na_c)
         {
             calc_bounding_box_x_x4_halves(na, nbat->x+X4_IND_A(a0), bb_ptr,
@@ -1316,14 +1373,13 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                                   int cxy_start, int cxy_end,
                                   int *sort_work)
 {
-    int  cxy;
-    int  cx, cy, cz = -1, c = -1, ncz;
-    int  na, ash, na_c, ind, a;
-    int  subdiv_z, sub_z, na_z, ash_z;
-    int  subdiv_y, sub_y, na_y, ash_y;
-    int  subdiv_x, sub_x, na_x, ash_x;
+    int        cxy;
+    int        cx, cy, cz = -1, c = -1, ncz;
+    int        na, ash, na_c, ind, a;
+    int        subdiv_z, sub_z, na_z, ash_z;
+    int        subdiv_y, sub_y, na_y, ash_y;
+    int        subdiv_x, sub_x, na_x, ash_x;
 
-    /* cppcheck-suppress unassignedVariable */
     nbnxn_bb_t bb_work_array[2], *bb_work_aligned;
 
     bb_work_aligned = (nbnxn_bb_t *)(((size_t)(bb_work_array+1)) & (~((size_t)15)));
@@ -2072,74 +2128,74 @@ static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
 static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
                                  int csj, const nbnxn_bb_t *bb_j_all)
 {
-    gmx_simd4_pr bb_i_S0, bb_i_S1;
-    gmx_simd4_pr bb_j_S0, bb_j_S1;
-    gmx_simd4_pr dl_S;
-    gmx_simd4_pr dh_S;
-    gmx_simd4_pr dm_S;
-    gmx_simd4_pr dm0_S;
+    gmx_simd4_float_t bb_i_S0, bb_i_S1;
+    gmx_simd4_float_t bb_j_S0, bb_j_S1;
+    gmx_simd4_float_t dl_S;
+    gmx_simd4_float_t dh_S;
+    gmx_simd4_float_t dm_S;
+    gmx_simd4_float_t dm0_S;
 
-    bb_i_S0 = gmx_simd4_load_bb_pr(&bb_i_ci[si].lower[0]);
-    bb_i_S1 = gmx_simd4_load_bb_pr(&bb_i_ci[si].upper[0]);
-    bb_j_S0 = gmx_simd4_load_bb_pr(&bb_j_all[csj].lower[0]);
-    bb_j_S1 = gmx_simd4_load_bb_pr(&bb_j_all[csj].upper[0]);
+    bb_i_S0 = gmx_simd4_load_f(&bb_i_ci[si].lower[0]);
+    bb_i_S1 = gmx_simd4_load_f(&bb_i_ci[si].upper[0]);
+    bb_j_S0 = gmx_simd4_load_f(&bb_j_all[csj].lower[0]);
+    bb_j_S1 = gmx_simd4_load_f(&bb_j_all[csj].upper[0]);
 
-    dl_S    = gmx_simd4_sub_pr(bb_i_S0, bb_j_S1);
-    dh_S    = gmx_simd4_sub_pr(bb_j_S0, bb_i_S1);
+    dl_S    = gmx_simd4_sub_f(bb_i_S0, bb_j_S1);
+    dh_S    = gmx_simd4_sub_f(bb_j_S0, bb_i_S1);
 
-    dm_S    = gmx_simd4_max_pr(dl_S, dh_S);
-    dm0_S   = gmx_simd4_max_pr(dm_S, gmx_simd4_setzero_pr());
+    dm_S    = gmx_simd4_max_f(dl_S, dh_S);
+    dm0_S   = gmx_simd4_max_f(dm_S, gmx_simd4_setzero_f());
 
-    return gmx_simd4_dotproduct3(dm0_S, dm0_S);
+    return gmx_simd4_dotproduct3_f(dm0_S, dm0_S);
 }
 
 /* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
 #define SUBC_BB_DIST2_SIMD4_XXXX_INNER(si, bb_i, d2) \
     {                                                \
-        int          shi;                                  \
+        int               shi;                                  \
                                                  \
-        gmx_simd4_pr dx_0, dy_0, dz_0;                       \
-        gmx_simd4_pr dx_1, dy_1, dz_1;                       \
+        gmx_simd4_float_t dx_0, dy_0, dz_0;                    \
+        gmx_simd4_float_t dx_1, dy_1, dz_1;                    \
                                                  \
-        gmx_simd4_pr mx, my, mz;                             \
-        gmx_simd4_pr m0x, m0y, m0z;                          \
+        gmx_simd4_float_t mx, my, mz;                          \
+        gmx_simd4_float_t m0x, m0y, m0z;                       \
                                                  \
-        gmx_simd4_pr d2x, d2y, d2z;                          \
-        gmx_simd4_pr d2s, d2t;                              \
+        gmx_simd4_float_t d2x, d2y, d2z;                       \
+        gmx_simd4_float_t d2s, d2t;                            \
                                                  \
         shi = si*NNBSBB_D*DIM;                       \
                                                  \
-        xi_l = gmx_simd4_load_bb_pr(bb_i+shi+0*STRIDE_PBB);   \
-        yi_l = gmx_simd4_load_bb_pr(bb_i+shi+1*STRIDE_PBB);   \
-        zi_l = gmx_simd4_load_bb_pr(bb_i+shi+2*STRIDE_PBB);   \
-        xi_h = gmx_simd4_load_bb_pr(bb_i+shi+3*STRIDE_PBB);   \
-        yi_h = gmx_simd4_load_bb_pr(bb_i+shi+4*STRIDE_PBB);   \
-        zi_h = gmx_simd4_load_bb_pr(bb_i+shi+5*STRIDE_PBB);   \
+        xi_l = gmx_simd4_load_f(bb_i+shi+0*STRIDE_PBB);   \
+        yi_l = gmx_simd4_load_f(bb_i+shi+1*STRIDE_PBB);   \
+        zi_l = gmx_simd4_load_f(bb_i+shi+2*STRIDE_PBB);   \
+        xi_h = gmx_simd4_load_f(bb_i+shi+3*STRIDE_PBB);   \
+        yi_h = gmx_simd4_load_f(bb_i+shi+4*STRIDE_PBB);   \
+        zi_h = gmx_simd4_load_f(bb_i+shi+5*STRIDE_PBB);   \
                                                  \
-        dx_0 = gmx_simd4_sub_pr(xi_l, xj_h);                \
-        dy_0 = gmx_simd4_sub_pr(yi_l, yj_h);                \
-        dz_0 = gmx_simd4_sub_pr(zi_l, zj_h);                \
+        dx_0 = gmx_simd4_sub_f(xi_l, xj_h);                 \
+        dy_0 = gmx_simd4_sub_f(yi_l, yj_h);                 \
+        dz_0 = gmx_simd4_sub_f(zi_l, zj_h);                 \
                                                  \
-        dx_1 = gmx_simd4_sub_pr(xj_l, xi_h);                \
-        dy_1 = gmx_simd4_sub_pr(yj_l, yi_h);                \
-        dz_1 = gmx_simd4_sub_pr(zj_l, zi_h);                \
+        dx_1 = gmx_simd4_sub_f(xj_l, xi_h);                 \
+        dy_1 = gmx_simd4_sub_f(yj_l, yi_h);                 \
+        dz_1 = gmx_simd4_sub_f(zj_l, zi_h);                 \
                                                  \
-        mx   = gmx_simd4_max_pr(dx_0, dx_1);                \
-        my   = gmx_simd4_max_pr(dy_0, dy_1);                \
-        mz   = gmx_simd4_max_pr(dz_0, dz_1);                \
+        mx   = gmx_simd4_max_f(dx_0, dx_1);                 \
+        my   = gmx_simd4_max_f(dy_0, dy_1);                 \
+        mz   = gmx_simd4_max_f(dz_0, dz_1);                 \
                                                  \
-        m0x  = gmx_simd4_max_pr(mx, zero);                  \
-        m0y  = gmx_simd4_max_pr(my, zero);                  \
-        m0z  = gmx_simd4_max_pr(mz, zero);                  \
+        m0x  = gmx_simd4_max_f(mx, zero);                   \
+        m0y  = gmx_simd4_max_f(my, zero);                   \
+        m0z  = gmx_simd4_max_f(mz, zero);                   \
                                                  \
-        d2x  = gmx_simd4_mul_pr(m0x, m0x);                  \
-        d2y  = gmx_simd4_mul_pr(m0y, m0y);                  \
-        d2z  = gmx_simd4_mul_pr(m0z, m0z);                  \
+        d2x  = gmx_simd4_mul_f(m0x, m0x);                   \
+        d2y  = gmx_simd4_mul_f(m0y, m0y);                   \
+        d2z  = gmx_simd4_mul_f(m0z, m0z);                   \
                                                  \
-        d2s  = gmx_simd4_add_pr(d2x, d2y);                  \
-        d2t  = gmx_simd4_add_pr(d2s, d2z);                  \
+        d2s  = gmx_simd4_add_f(d2x, d2y);                   \
+        d2t  = gmx_simd4_add_f(d2s, d2z);                   \
                                                  \
-        gmx_simd4_store_pr(d2+si, d2t);                     \
+        gmx_simd4_store_f(d2+si, d2t);                      \
     }
 
 /* 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz */
@@ -2147,21 +2203,21 @@ static void subc_bb_dist2_simd4_xxxx(const float *bb_j,
                                      int nsi, const float *bb_i,
                                      float *d2)
 {
-    gmx_simd4_pr xj_l, yj_l, zj_l;
-    gmx_simd4_pr xj_h, yj_h, zj_h;
-    gmx_simd4_pr xi_l, yi_l, zi_l;
-    gmx_simd4_pr xi_h, yi_h, zi_h;
+    gmx_simd4_float_t xj_l, yj_l, zj_l;
+    gmx_simd4_float_t xj_h, yj_h, zj_h;
+    gmx_simd4_float_t xi_l, yi_l, zi_l;
+    gmx_simd4_float_t xi_h, yi_h, zi_h;
 
-    gmx_simd4_pr zero;
+    gmx_simd4_float_t zero;
 
-    zero = gmx_simd4_setzero_pr();
+    zero = gmx_simd4_setzero_f();
 
-    xj_l = gmx_simd4_set1_pr(bb_j[0*STRIDE_PBB]);
-    yj_l = gmx_simd4_set1_pr(bb_j[1*STRIDE_PBB]);
-    zj_l = gmx_simd4_set1_pr(bb_j[2*STRIDE_PBB]);
-    xj_h = gmx_simd4_set1_pr(bb_j[3*STRIDE_PBB]);
-    yj_h = gmx_simd4_set1_pr(bb_j[4*STRIDE_PBB]);
-    zj_h = gmx_simd4_set1_pr(bb_j[5*STRIDE_PBB]);
+    xj_l = gmx_simd4_set1_f(bb_j[0*STRIDE_PBB]);
+    yj_l = gmx_simd4_set1_f(bb_j[1*STRIDE_PBB]);
+    zj_l = gmx_simd4_set1_f(bb_j[2*STRIDE_PBB]);
+    xj_h = gmx_simd4_set1_f(bb_j[3*STRIDE_PBB]);
+    yj_h = gmx_simd4_set1_f(bb_j[4*STRIDE_PBB]);
+    zj_h = gmx_simd4_set1_f(bb_j[5*STRIDE_PBB]);
 
     /* Here we "loop" over si (0,STRIDE_PBB) from 0 to nsi with step STRIDE_PBB.
      * But as we know the number of iterations is 1 or 2, we unroll manually.
@@ -2208,14 +2264,6 @@ static gmx_bool subc_in_range_x(int na_c,
 }
 
 #ifdef NBNXN_SEARCH_SIMD4_FLOAT_X_BB
-/* When we make seperate single/double precision SIMD vector operation
- * include files, this function should be moved there (also using FMA).
- */
-static inline gmx_simd4_pr
-gmx_simd4_calc_rsq_pr(gmx_simd4_pr x, gmx_simd4_pr y, gmx_simd4_pr z)
-{
-    return gmx_simd4_add_pr( gmx_simd4_add_pr( gmx_simd4_mul_pr(x, x), gmx_simd4_mul_pr(y, y) ), gmx_simd4_mul_pr(z, z) );
-}
 
 /* 4-wide SIMD function which determines if any atom pair between two cells,
  * both with 8 atoms, is within distance sqrt(rl2).
@@ -2226,23 +2274,23 @@ static gmx_bool subc_in_range_simd4(int na_c,
                                     int csj, int stride, const real *x_j,
                                     real rl2)
 {
-    gmx_simd4_pr ix_S0, iy_S0, iz_S0;
-    gmx_simd4_pr ix_S1, iy_S1, iz_S1;
+    gmx_simd4_real_t ix_S0, iy_S0, iz_S0;
+    gmx_simd4_real_t ix_S1, iy_S1, iz_S1;
 
-    gmx_simd4_pr rc2_S;
+    gmx_simd4_real_t rc2_S;
 
-    int          dim_stride;
-    int          j0, j1;
+    int              dim_stride;
+    int              j0, j1;
 
-    rc2_S   = gmx_simd4_set1_pr(rl2);
+    rc2_S   = gmx_simd4_set1_r(rl2);
 
     dim_stride = NBNXN_GPU_CLUSTER_SIZE/STRIDE_PBB*DIM;
-    ix_S0      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+0)*STRIDE_PBB);
-    iy_S0      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+1)*STRIDE_PBB);
-    iz_S0      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+2)*STRIDE_PBB);
-    ix_S1      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+3)*STRIDE_PBB);
-    iy_S1      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+4)*STRIDE_PBB);
-    iz_S1      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+5)*STRIDE_PBB);
+    ix_S0      = gmx_simd4_load_r(x_i+(si*dim_stride+0)*STRIDE_PBB);
+    iy_S0      = gmx_simd4_load_r(x_i+(si*dim_stride+1)*STRIDE_PBB);
+    iz_S0      = gmx_simd4_load_r(x_i+(si*dim_stride+2)*STRIDE_PBB);
+    ix_S1      = gmx_simd4_load_r(x_i+(si*dim_stride+3)*STRIDE_PBB);
+    iy_S1      = gmx_simd4_load_r(x_i+(si*dim_stride+4)*STRIDE_PBB);
+    iz_S1      = gmx_simd4_load_r(x_i+(si*dim_stride+5)*STRIDE_PBB);
 
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
@@ -2251,63 +2299,63 @@ static gmx_bool subc_in_range_simd4(int na_c,
     j1 = j0 + na_c - 1;
     while (j0 < j1)
     {
-        gmx_simd4_pr jx0_S, jy0_S, jz0_S;
-        gmx_simd4_pr jx1_S, jy1_S, jz1_S;
+        gmx_simd4_real_t jx0_S, jy0_S, jz0_S;
+        gmx_simd4_real_t jx1_S, jy1_S, jz1_S;
 
-        gmx_simd4_pr dx_S0, dy_S0, dz_S0;
-        gmx_simd4_pr dx_S1, dy_S1, dz_S1;
-        gmx_simd4_pr dx_S2, dy_S2, dz_S2;
-        gmx_simd4_pr dx_S3, dy_S3, dz_S3;
+        gmx_simd4_real_t dx_S0, dy_S0, dz_S0;
+        gmx_simd4_real_t dx_S1, dy_S1, dz_S1;
+        gmx_simd4_real_t dx_S2, dy_S2, dz_S2;
+        gmx_simd4_real_t dx_S3, dy_S3, dz_S3;
 
-        gmx_simd4_pr rsq_S0;
-        gmx_simd4_pr rsq_S1;
-        gmx_simd4_pr rsq_S2;
-        gmx_simd4_pr rsq_S3;
+        gmx_simd4_real_t rsq_S0;
+        gmx_simd4_real_t rsq_S1;
+        gmx_simd4_real_t rsq_S2;
+        gmx_simd4_real_t rsq_S3;
 
-        gmx_simd4_pb wco_S0;
-        gmx_simd4_pb wco_S1;
-        gmx_simd4_pb wco_S2;
-        gmx_simd4_pb wco_S3;
-        gmx_simd4_pb wco_any_S01, wco_any_S23, wco_any_S;
+        gmx_simd4_bool_t wco_S0;
+        gmx_simd4_bool_t wco_S1;
+        gmx_simd4_bool_t wco_S2;
+        gmx_simd4_bool_t wco_S3;
+        gmx_simd4_bool_t wco_any_S01, wco_any_S23, wco_any_S;
 
-        jx0_S = gmx_simd4_set1_pr(x_j[j0*stride+0]);
-        jy0_S = gmx_simd4_set1_pr(x_j[j0*stride+1]);
-        jz0_S = gmx_simd4_set1_pr(x_j[j0*stride+2]);
+        jx0_S = gmx_simd4_set1_r(x_j[j0*stride+0]);
+        jy0_S = gmx_simd4_set1_r(x_j[j0*stride+1]);
+        jz0_S = gmx_simd4_set1_r(x_j[j0*stride+2]);
 
-        jx1_S = gmx_simd4_set1_pr(x_j[j1*stride+0]);
-        jy1_S = gmx_simd4_set1_pr(x_j[j1*stride+1]);
-        jz1_S = gmx_simd4_set1_pr(x_j[j1*stride+2]);
+        jx1_S = gmx_simd4_set1_r(x_j[j1*stride+0]);
+        jy1_S = gmx_simd4_set1_r(x_j[j1*stride+1]);
+        jz1_S = gmx_simd4_set1_r(x_j[j1*stride+2]);
 
         /* Calculate distance */
-        dx_S0            = gmx_simd4_sub_pr(ix_S0, jx0_S);
-        dy_S0            = gmx_simd4_sub_pr(iy_S0, jy0_S);
-        dz_S0            = gmx_simd4_sub_pr(iz_S0, jz0_S);
-        dx_S1            = gmx_simd4_sub_pr(ix_S1, jx0_S);
-        dy_S1            = gmx_simd4_sub_pr(iy_S1, jy0_S);
-        dz_S1            = gmx_simd4_sub_pr(iz_S1, jz0_S);
-        dx_S2            = gmx_simd4_sub_pr(ix_S0, jx1_S);
-        dy_S2            = gmx_simd4_sub_pr(iy_S0, jy1_S);
-        dz_S2            = gmx_simd4_sub_pr(iz_S0, jz1_S);
-        dx_S3            = gmx_simd4_sub_pr(ix_S1, jx1_S);
-        dy_S3            = gmx_simd4_sub_pr(iy_S1, jy1_S);
-        dz_S3            = gmx_simd4_sub_pr(iz_S1, jz1_S);
+        dx_S0            = gmx_simd4_sub_r(ix_S0, jx0_S);
+        dy_S0            = gmx_simd4_sub_r(iy_S0, jy0_S);
+        dz_S0            = gmx_simd4_sub_r(iz_S0, jz0_S);
+        dx_S1            = gmx_simd4_sub_r(ix_S1, jx0_S);
+        dy_S1            = gmx_simd4_sub_r(iy_S1, jy0_S);
+        dz_S1            = gmx_simd4_sub_r(iz_S1, jz0_S);
+        dx_S2            = gmx_simd4_sub_r(ix_S0, jx1_S);
+        dy_S2            = gmx_simd4_sub_r(iy_S0, jy1_S);
+        dz_S2            = gmx_simd4_sub_r(iz_S0, jz1_S);
+        dx_S3            = gmx_simd4_sub_r(ix_S1, jx1_S);
+        dy_S3            = gmx_simd4_sub_r(iy_S1, jy1_S);
+        dz_S3            = gmx_simd4_sub_r(iz_S1, jz1_S);
 
         /* rsq = dx*dx+dy*dy+dz*dz */
-        rsq_S0           = gmx_simd4_calc_rsq_pr(dx_S0, dy_S0, dz_S0);
-        rsq_S1           = gmx_simd4_calc_rsq_pr(dx_S1, dy_S1, dz_S1);
-        rsq_S2           = gmx_simd4_calc_rsq_pr(dx_S2, dy_S2, dz_S2);
-        rsq_S3           = gmx_simd4_calc_rsq_pr(dx_S3, dy_S3, dz_S3);
+        rsq_S0           = gmx_simd4_calc_rsq_r(dx_S0, dy_S0, dz_S0);
+        rsq_S1           = gmx_simd4_calc_rsq_r(dx_S1, dy_S1, dz_S1);
+        rsq_S2           = gmx_simd4_calc_rsq_r(dx_S2, dy_S2, dz_S2);
+        rsq_S3           = gmx_simd4_calc_rsq_r(dx_S3, dy_S3, dz_S3);
 
-        wco_S0           = gmx_simd4_cmplt_pr(rsq_S0, rc2_S);
-        wco_S1           = gmx_simd4_cmplt_pr(rsq_S1, rc2_S);
-        wco_S2           = gmx_simd4_cmplt_pr(rsq_S2, rc2_S);
-        wco_S3           = gmx_simd4_cmplt_pr(rsq_S3, rc2_S);
+        wco_S0           = gmx_simd4_cmplt_r(rsq_S0, rc2_S);
+        wco_S1           = gmx_simd4_cmplt_r(rsq_S1, rc2_S);
+        wco_S2           = gmx_simd4_cmplt_r(rsq_S2, rc2_S);
+        wco_S3           = gmx_simd4_cmplt_r(rsq_S3, rc2_S);
 
-        wco_any_S01      = gmx_simd4_or_pb(wco_S0, wco_S1);
-        wco_any_S23      = gmx_simd4_or_pb(wco_S2, wco_S3);
-        wco_any_S        = gmx_simd4_or_pb(wco_any_S01, wco_any_S23);
+        wco_any_S01      = gmx_simd4_or_b(wco_S0, wco_S1);
+        wco_any_S23      = gmx_simd4_or_b(wco_S2, wco_S3);
+        wco_any_S        = gmx_simd4_or_b(wco_any_S01, wco_any_S23);
 
-        if (gmx_simd4_anytrue_pb(wco_any_S))
+        if (gmx_simd4_anytrue_b(wco_any_S))
         {
             return TRUE;
         }
@@ -2328,7 +2376,7 @@ static int nbl_cj(const nbnxn_pairlist_t *nbl, int cj_ind)
 }
 
 /* Returns the i-interaction mask of the j sub-cell for index cj_ind */
-static unsigned nbl_imask0(const nbnxn_pairlist_t *nbl, int cj_ind)
+static unsigned int nbl_imask0(const nbnxn_pairlist_t *nbl, int cj_ind)
 {
     return nbl->cj4[cj_ind >> NBNXN_GPU_JGROUP_SIZE_2LOG].imei[0].imask;
 }
@@ -2511,6 +2559,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     }
 
     snew(nbl_list->nbl, nbl_list->nnbl);
+    snew(nbl_list->nbl_fep, nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
 #pragma omp parallel for num_threads(nbl_list->nnbl) schedule(static)
     for (i = 0; i < nbl_list->nnbl; i++)
@@ -2529,6 +2578,9 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
         {
             nbnxn_init_pairlist(nbl_list->nbl[i], nbl_list->bSimple, NULL, NULL);
         }
+
+        snew(nbl_list->nbl_fep[i], 1);
+        nbnxn_init_pairlist_fep(nbl_list->nbl_fep[i]);
     }
 }
 
@@ -2655,7 +2707,7 @@ static void low_get_nbl_exclusions(nbnxn_pairlist_t *nbl, int cj4,
 }
 
 /* Returns a pointer to the exclusion mask for cj4-unit cj4, warp warp,
- * allocates extra memory, if necessary.
+ * generates a new element and allocates extra memory, if necessary.
  */
 static void get_nbl_exclusions_1(nbnxn_pairlist_t *nbl, int cj4,
                                  int warp, nbnxn_excl_t **excl)
@@ -2669,7 +2721,7 @@ static void get_nbl_exclusions_1(nbnxn_pairlist_t *nbl, int cj4,
 }
 
 /* Returns pointers to the exclusion mask for cj4-unit cj4 for both warps,
- * allocates extra memory, if necessary.
+ * generates a new element and allocates extra memory, if necessary.
  */
 static void get_nbl_exclusions_2(nbnxn_pairlist_t *nbl, int cj4,
                                  nbnxn_excl_t **excl_w0,
@@ -2735,17 +2787,17 @@ static unsigned int get_imask_simd_j8(gmx_bool rdiag, int ci, int cj)
 }
 
 #ifdef GMX_NBNXN_SIMD
-#if GMX_SIMD_WIDTH_HERE == 2
+#if GMX_SIMD_REAL_WIDTH == 2
 #define get_imask_simd_4xn  get_imask_simd_j2
 #endif
-#if GMX_SIMD_WIDTH_HERE == 4
+#if GMX_SIMD_REAL_WIDTH == 4
 #define get_imask_simd_4xn  get_imask_simd_j4
 #endif
-#if GMX_SIMD_WIDTH_HERE == 8
+#if GMX_SIMD_REAL_WIDTH == 8
 #define get_imask_simd_4xn  get_imask_simd_j8
 #define get_imask_simd_2xnn get_imask_simd_j4
 #endif
-#if GMX_SIMD_WIDTH_HERE == 16
+#if GMX_SIMD_REAL_WIDTH == 16
 #define get_imask_simd_2xnn get_imask_simd_j8
 #endif
 #endif
@@ -2892,7 +2944,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
     int               npair;
     int               cjo, ci1, ci, cj, cj_gl;
     int               cj4_ind, cj_offset;
-    unsigned          imask;
+    unsigned int      imask;
     nbnxn_cj4_t      *cj4;
 #ifdef NBNXN_BBXXXX
     const float      *pbb_ci;
@@ -3188,10 +3240,413 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
 /* The next code line is usually not needed. We do not want to version
  * away the above line, because there is logic that relies on being
  * able to detect easily whether any exclusions exist. */
-#if (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if (defined GMX_SIMD_IBM_QPX)
                         nbl->cj[found].interaction_mask_indices[inner_i] &= ~(1U << inner_e);
 #endif
                     }
+                }
+            }
+        }
+    }
+}
+
+/* Add a new i-entry to the FEP list and copy the i-properties */
+static gmx_inline void fep_list_new_nri_copy(t_nblist *nlist)
+{
+    /* Add a new i-entry */
+    nlist->nri++;
+
+    assert(nlist->nri < nlist->maxnri);
+
+    /* Duplicate the last i-entry, except for jindex, which continues */
+    nlist->iinr[nlist->nri]   = nlist->iinr[nlist->nri-1];
+    nlist->shift[nlist->nri]  = nlist->shift[nlist->nri-1];
+    nlist->gid[nlist->nri]    = nlist->gid[nlist->nri-1];
+    nlist->jindex[nlist->nri] = nlist->nrj;
+}
+
+/* For load balancing of the free-energy lists over threads, we set
+ * the maximum nrj size of an i-entry to 40. This leads to good
+ * load balancing in the worst case scenario of a single perturbed
+ * particle on 16 threads, while not introducing significant overhead.
+ * Note that half of the perturbed pairs will anyhow end up in very small lists,
+ * since non perturbed i-particles will see few perturbed j-particles).
+ */
+const int max_nrj_fep = 40;
+
+/* Exclude the perturbed pairs from the Verlet list. This is only done to avoid
+ * singularities for overlapping particles (0/0), since the charges and
+ * LJ parameters have been zeroed in the nbnxn data structure.
+ * Simultaneously make a group pair list for the perturbed pairs.
+ */
+static void make_fep_list(const nbnxn_search_t    nbs,
+                          const nbnxn_atomdata_t *nbat,
+                          nbnxn_pairlist_t       *nbl,
+                          gmx_bool                bDiagRemoved,
+                          nbnxn_ci_t             *nbl_ci,
+                          const nbnxn_grid_t     *gridi,
+                          const nbnxn_grid_t     *gridj,
+                          t_nblist               *nlist)
+{
+    int      ci, cj_ind_start, cj_ind_end, cj_ind, cja, cjr;
+    int      nri_max;
+    int      ngid, gid_i = 0, gid_j, gid;
+    int      egp_shift, egp_mask;
+    int      gid_cj = 0;
+    int      i, j, ind_i, ind_j, ai, aj;
+    int      nri;
+    gmx_bool bFEP_i, bFEP_i_all;
+
+    if (nbl_ci->cj_ind_end == nbl_ci->cj_ind_start)
+    {
+        /* Empty list */
+        return;
+    }
+
+    ci = nbl_ci->ci;
+
+    cj_ind_start = nbl_ci->cj_ind_start;
+    cj_ind_end   = nbl_ci->cj_ind_end;
+
+    /* In worst case we have alternating energy groups
+     * and create #atom-pair lists, which means we need the size
+     * of a cluster pair (na_ci*na_cj) times the number of cj's.
+     */
+    nri_max = nbl->na_ci*nbl->na_cj*(cj_ind_end - cj_ind_start);
+    if (nlist->nri + nri_max > nlist->maxnri)
+    {
+        nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
+        reallocate_nblist(nlist);
+    }
+
+    ngid = nbat->nenergrp;
+
+    if (ngid*gridj->na_cj > sizeof(gid_cj)*8)
+    {
+        gmx_fatal(FARGS, "The Verlet scheme with %dx%d kernels and free-energy only supports up to %d energy groups",
+                  gridi->na_c, gridj->na_cj, (sizeof(gid_cj)*8)/gridj->na_cj);
+    }
+
+    egp_shift = nbat->neg_2log;
+    egp_mask  = (1<<nbat->neg_2log) - 1;
+
+    /* Loop over the atoms in the i sub-cell */
+    bFEP_i_all = TRUE;
+    for (i = 0; i < nbl->na_ci; i++)
+    {
+        ind_i = ci*nbl->na_ci + i;
+        ai    = nbs->a[ind_i];
+        if (ai >= 0)
+        {
+            nri                  = nlist->nri;
+            nlist->jindex[nri+1] = nlist->jindex[nri];
+            nlist->iinr[nri]     = ai;
+            /* The actual energy group pair index is set later */
+            nlist->gid[nri]      = 0;
+            nlist->shift[nri]    = nbl_ci->shift & NBNXN_CI_SHIFT;
+
+            bFEP_i = gridi->fep[ci - gridi->cell0] & (1 << i);
+
+            bFEP_i_all = bFEP_i_all && bFEP_i;
+
+            if ((nlist->nrj + cj_ind_end - cj_ind_start)*nbl->na_cj > nlist->maxnrj)
+            {
+                nlist->maxnrj = over_alloc_small((nlist->nrj + cj_ind_end - cj_ind_start)*nbl->na_cj);
+                srenew(nlist->jjnr,     nlist->maxnrj);
+                srenew(nlist->excl_fep, nlist->maxnrj);
+            }
+
+            if (ngid > 1)
+            {
+                gid_i = (nbat->energrp[ci] >> (egp_shift*i)) & egp_mask;
+            }
+
+            for (cj_ind = cj_ind_start; cj_ind < cj_ind_end; cj_ind++)
+            {
+                unsigned int fep_cj;
+
+                cja = nbl->cj[cj_ind].cj;
+
+                if (gridj->na_cj == gridj->na_c)
+                {
+                    cjr    = cja - gridj->cell0;
+                    fep_cj = gridj->fep[cjr];
+                    if (ngid > 1)
+                    {
+                        gid_cj = nbat->energrp[cja];
+                    }
+                }
+                else if (2*gridj->na_cj == gridj->na_c)
+                {
+                    cjr    = cja - gridj->cell0*2;
+                    /* Extract half of the ci fep/energrp mask */
+                    fep_cj = (gridj->fep[cjr>>1] >> ((cjr&1)*gridj->na_cj)) & ((1<<gridj->na_cj) - 1);
+                    if (ngid > 1)
+                    {
+                        gid_cj = nbat->energrp[cja>>1] >> ((cja&1)*gridj->na_cj*egp_shift) & ((1<<(gridj->na_cj*egp_shift)) - 1);
+                    }
+                }
+                else
+                {
+                    cjr    = cja - (gridj->cell0>>1);
+                    /* Combine two ci fep masks/energrp */
+                    fep_cj = gridj->fep[cjr*2] + (gridj->fep[cjr*2+1] << gridj->na_c);
+                    if (ngid > 1)
+                    {
+                        gid_cj = nbat->energrp[cja*2] + (nbat->energrp[cja*2+1] << (gridj->na_c*egp_shift));
+                    }
+                }
+
+                if (bFEP_i || fep_cj != 0)
+                {
+                    for (j = 0; j < nbl->na_cj; j++)
+                    {
+                        /* Is this interaction perturbed and not excluded? */
+                        ind_j = cja*nbl->na_cj + j;
+                        aj    = nbs->a[ind_j];
+                        if (aj >= 0 &&
+                            (bFEP_i || (fep_cj & (1 << j))) &&
+                            (!bDiagRemoved || ind_j >= ind_i))
+                        {
+                            if (ngid > 1)
+                            {
+                                gid_j = (gid_cj >> (j*egp_shift)) & egp_mask;
+                                gid   = GID(gid_i, gid_j, ngid);
+
+                                if (nlist->nrj > nlist->jindex[nri] &&
+                                    nlist->gid[nri] != gid)
+                                {
+                                    /* Energy group pair changed: new list */
+                                    fep_list_new_nri_copy(nlist);
+                                    nri = nlist->nri;
+                                }
+                                nlist->gid[nri] = gid;
+                            }
+
+                            if (nlist->nrj - nlist->jindex[nri] >= max_nrj_fep)
+                            {
+                                fep_list_new_nri_copy(nlist);
+                                nri = nlist->nri;
+                            }
+
+                            /* Add it to the FEP list */
+                            nlist->jjnr[nlist->nrj]     = aj;
+                            nlist->excl_fep[nlist->nrj] = (nbl->cj[cj_ind].excl >> (i*nbl->na_cj + j)) & 1;
+                            nlist->nrj++;
+
+                            /* Exclude it from the normal list.
+                             * Note that the charge has been set to zero,
+                             * but we need to avoid 0/0, as perturbed atoms
+                             * can be on top of each other.
+                             * (and the LJ parameters have not been zeroed)
+                             */
+                            nbl->cj[cj_ind].excl &= ~(1U << (i*nbl->na_cj + j));
+                        }
+                    }
+                }
+            }
+
+            if (nlist->nrj > nlist->jindex[nri])
+            {
+                /* Actually add this new, non-empty, list */
+                nlist->nri++;
+                nlist->jindex[nlist->nri] = nlist->nrj;
+            }
+        }
+    }
+
+    if (bFEP_i_all)
+    {
+        /* All interactions are perturbed, we can skip this entry */
+        nbl_ci->cj_ind_end = cj_ind_start;
+    }
+}
+
+/* Return the index of atom a within a cluster */
+static gmx_inline int cj_mod_cj4(int cj)
+{
+    return cj & (NBNXN_GPU_JGROUP_SIZE - 1);
+}
+
+/* Convert a j-cluster to a cj4 group */
+static gmx_inline int cj_to_cj4(int cj)
+{
+    return cj >> NBNXN_GPU_JGROUP_SIZE_2LOG;
+}
+
+/* Return the index of an j-atom within a warp */
+static gmx_inline int a_mod_wj(int a)
+{
+    return a & (NBNXN_GPU_CLUSTER_SIZE/2 - 1);
+}
+
+/* As make_fep_list above, but for super/sub lists. */
+static void make_fep_list_supersub(const nbnxn_search_t    nbs,
+                                   const nbnxn_atomdata_t *nbat,
+                                   nbnxn_pairlist_t       *nbl,
+                                   gmx_bool                bDiagRemoved,
+                                   const nbnxn_sci_t      *nbl_sci,
+                                   real                    shx,
+                                   real                    shy,
+                                   real                    shz,
+                                   real                    rlist_fep2,
+                                   const nbnxn_grid_t     *gridi,
+                                   const nbnxn_grid_t     *gridj,
+                                   t_nblist               *nlist)
+{
+    int                sci, cj4_ind_start, cj4_ind_end, cj4_ind, gcj, cjr;
+    int                nri_max;
+    int                c, c_abs;
+    int                i, j, ind_i, ind_j, ai, aj;
+    int                nri;
+    gmx_bool           bFEP_i;
+    real               xi, yi, zi;
+    const nbnxn_cj4_t *cj4;
+
+    if (nbl_sci->cj4_ind_end == nbl_sci->cj4_ind_start)
+    {
+        /* Empty list */
+        return;
+    }
+
+    sci = nbl_sci->sci;
+
+    cj4_ind_start = nbl_sci->cj4_ind_start;
+    cj4_ind_end   = nbl_sci->cj4_ind_end;
+
+    /* Here we process one super-cell, max #atoms na_sc, versus a list
+     * cj4 entries, each with max NBNXN_GPU_JGROUP_SIZE cj's, each
+     * of size na_cj atoms.
+     * On the GPU we don't support energy groups (yet).
+     * So for each of the na_sc i-atoms, we need max one FEP list
+     * for each max_nrj_fep j-atoms.
+     */
+    nri_max = nbl->na_sc*nbl->na_cj*(1 + ((cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE)/max_nrj_fep);
+    if (nlist->nri + nri_max > nlist->maxnri)
+    {
+        nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
+        reallocate_nblist(nlist);
+    }
+
+    /* Loop over the atoms in the i super-cluster */
+    for (c = 0; c < GPU_NSUBCELL; c++)
+    {
+        c_abs = sci*GPU_NSUBCELL + c;
+
+        for (i = 0; i < nbl->na_ci; i++)
+        {
+            ind_i = c_abs*nbl->na_ci + i;
+            ai    = nbs->a[ind_i];
+            if (ai >= 0)
+            {
+                nri                  = nlist->nri;
+                nlist->jindex[nri+1] = nlist->jindex[nri];
+                nlist->iinr[nri]     = ai;
+                /* With GPUs, energy groups are not supported */
+                nlist->gid[nri]      = 0;
+                nlist->shift[nri]    = nbl_sci->shift & NBNXN_CI_SHIFT;
+
+                bFEP_i = (gridi->fep[c_abs - gridi->cell0] & (1 << i));
+
+                xi = nbat->x[ind_i*nbat->xstride+XX] + shx;
+                yi = nbat->x[ind_i*nbat->xstride+YY] + shy;
+                zi = nbat->x[ind_i*nbat->xstride+ZZ] + shz;
+
+                if ((nlist->nrj + cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE*nbl->na_cj > nlist->maxnrj)
+                {
+                    nlist->maxnrj = over_alloc_small((nlist->nrj + cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE*nbl->na_cj);
+                    srenew(nlist->jjnr,     nlist->maxnrj);
+                    srenew(nlist->excl_fep, nlist->maxnrj);
+                }
+
+                for (cj4_ind = cj4_ind_start; cj4_ind < cj4_ind_end; cj4_ind++)
+                {
+                    cj4 = &nbl->cj4[cj4_ind];
+
+                    for (gcj = 0; gcj < NBNXN_GPU_JGROUP_SIZE; gcj++)
+                    {
+                        unsigned int fep_cj;
+
+                        if ((cj4->imei[0].imask & (1U << (gcj*GPU_NSUBCELL + c))) == 0)
+                        {
+                            /* Skip this ci for this cj */
+                            continue;
+                        }
+
+                        cjr = cj4->cj[gcj] - gridj->cell0*GPU_NSUBCELL;
+
+                        fep_cj = gridj->fep[cjr];
+
+                        if (bFEP_i || fep_cj != 0)
+                        {
+                            for (j = 0; j < nbl->na_cj; j++)
+                            {
+                                /* Is this interaction perturbed and not excluded? */
+                                ind_j = (gridj->cell0*GPU_NSUBCELL + cjr)*nbl->na_cj + j;
+                                aj    = nbs->a[ind_j];
+                                if (aj >= 0 &&
+                                    (bFEP_i || (fep_cj & (1 << j))) &&
+                                    (!bDiagRemoved || ind_j >= ind_i))
+                                {
+                                    nbnxn_excl_t *excl;
+                                    int           excl_pair;
+                                    unsigned int  excl_bit;
+                                    real          dx, dy, dz;
+
+                                    get_nbl_exclusions_1(nbl, cj4_ind, j>>2, &excl);
+
+                                    excl_pair = a_mod_wj(j)*nbl->na_ci + i;
+                                    excl_bit  = (1U << (gcj*GPU_NSUBCELL + c));
+
+                                    dx = nbat->x[ind_j*nbat->xstride+XX] - xi;
+                                    dy = nbat->x[ind_j*nbat->xstride+YY] - yi;
+                                    dz = nbat->x[ind_j*nbat->xstride+ZZ] - zi;
+
+                                    /* The unpruned GPU list has more than 2/3
+                                     * of the atom pairs beyond rlist. Using
+                                     * this list will cause a lot of overhead
+                                     * in the CPU FEP kernels, especially
+                                     * relative to the fast GPU kernels.
+                                     * So we prune the FEP list here.
+                                     */
+                                    if (dx*dx + dy*dy + dz*dz < rlist_fep2)
+                                    {
+                                        if (nlist->nrj - nlist->jindex[nri] >= max_nrj_fep)
+                                        {
+                                            fep_list_new_nri_copy(nlist);
+                                            nri = nlist->nri;
+                                        }
+
+                                        /* Add it to the FEP list */
+                                        nlist->jjnr[nlist->nrj]     = aj;
+                                        nlist->excl_fep[nlist->nrj] = (excl->pair[excl_pair] & excl_bit) ? 1 : 0;
+                                        nlist->nrj++;
+                                    }
+
+                                    /* Exclude it from the normal list.
+                                     * Note that the charge and LJ parameters have
+                                     * been set to zero, but we need to avoid 0/0,
+                                     * as perturbed atoms can be on top of each other.
+                                     */
+                                    excl->pair[excl_pair] &= ~excl_bit;
+                                }
+                            }
+
+                            /* Note that we could mask out this pair in imask
+                             * if all i- and/or all j-particles are perturbed.
+                             * But since the perturbed pairs on the CPU will
+                             * take an order of magnitude more time, the GPU
+                             * will finish before the CPU and there is no gain.
+                             */
+                        }
+                    }
+                }
+
+                if (nlist->nrj > nlist->jindex[nri])
+                {
+                    /* Actually add this new, non-empty, list */
+                    nlist->nri++;
+                    nlist->jindex[nlist->nri] = nlist->nrj;
                 }
             }
         }
@@ -3321,26 +3776,15 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
                         inner_i = i  - si*na_c;
                         inner_e = ge - se*na_c;
 
-/* Macro for getting the index of atom a within a cluster */
-#define AMODCJ4(a)  ((a) & (NBNXN_GPU_JGROUP_SIZE - 1))
-/* Macro for converting an atom number to a cluster number */
-#define A2CJ4(a)    ((a) >> NBNXN_GPU_JGROUP_SIZE_2LOG)
-/* Macro for getting the index of an i-atom within a warp */
-#define AMODWI(a)   ((a) & (NBNXN_GPU_CLUSTER_SIZE/2 - 1))
-
-                        if (nbl_imask0(nbl, found) & (1U << (AMODCJ4(found)*GPU_NSUBCELL + si)))
+                        if (nbl_imask0(nbl, found) & (1U << (cj_mod_cj4(found)*GPU_NSUBCELL + si)))
                         {
                             w       = (inner_e >> 2);
 
-                            get_nbl_exclusions_1(nbl, A2CJ4(found), w, &nbl_excl);
+                            get_nbl_exclusions_1(nbl, cj_to_cj4(found), w, &nbl_excl);
 
-                            nbl_excl->pair[AMODWI(inner_e)*nbl->na_ci+inner_i] &=
-                                ~(1U << (AMODCJ4(found)*GPU_NSUBCELL + si));
+                            nbl_excl->pair[a_mod_wj(inner_e)*nbl->na_ci+inner_i] &=
+                                ~(1U << (cj_mod_cj4(found)*GPU_NSUBCELL + si));
                         }
-
-#undef AMODCJ4
-#undef A2CJ4
-#undef AMODWI
                     }
                 }
             }
@@ -3620,6 +4064,18 @@ static void clear_pairlist(nbnxn_pairlist_t *nbl)
     nbl->work->ncj_hlj = 0;
 }
 
+/* Clears a group scheme pair list */
+static void clear_pairlist_fep(t_nblist *nl)
+{
+    nl->nri = 0;
+    nl->nrj = 0;
+    if (nl->jindex == NULL)
+    {
+        snew(nl->jindex, 1);
+    }
+    nl->jindex[0] = 0;
+}
+
 /* Sets a simple list i-cell bounding box, including PBC shift */
 static gmx_inline void set_icell_bb_simple(const nbnxn_bb_t *bb, int ci,
                                            real shx, real shy, real shz,
@@ -3698,7 +4154,7 @@ static void icell_set_x_supersub(int ci,
                                  int stride, const real *x,
                                  nbnxn_list_work_t *work)
 {
-    int  ia, i;
+    int   ia, i;
     real *x_ci;
 
     x_ci = work->x_ci;
@@ -3720,7 +4176,7 @@ static void icell_set_x_supersub_simd4(int ci,
                                        int stride, const real *x,
                                        nbnxn_list_work_t *work)
 {
-    int  si, io, ia, i, j;
+    int   si, io, ia, i, j;
     real *x_ci;
 
     x_ci = work->x_ci;
@@ -3741,6 +4197,44 @@ static void icell_set_x_supersub_simd4(int ci,
     }
 }
 #endif
+
+static real minimum_subgrid_size_xy(const nbnxn_grid_t *grid)
+{
+    if (grid->bSimple)
+    {
+        return min(grid->sx, grid->sy);
+    }
+    else
+    {
+        return min(grid->sx/GPU_NSUBCELL_X, grid->sy/GPU_NSUBCELL_Y);
+    }
+}
+
+static real effective_buffer_1x1_vs_MxN(const nbnxn_grid_t *gridi,
+                                        const nbnxn_grid_t *gridj)
+{
+    const real eff_1x1_buffer_fac_overest = 0.1;
+
+    /* Determine an atom-pair list cut-off buffer size for atom pairs,
+     * to be added to rlist (including buffer) used for MxN.
+     * This is for converting an MxN list to a 1x1 list. This means we can't
+     * use the normal buffer estimate, as we have an MxN list in which
+     * some atom pairs beyond rlist are missing. We want to capture
+     * the beneficial effect of buffering by extra pairs just outside rlist,
+     * while removing the useless pairs that are further away from rlist.
+     * (Also the buffer could have been set manually not using the estimate.)
+     * This buffer size is an overestimate.
+     * We add 10% of the smallest grid sub-cell dimensions.
+     * Note that the z-size differs per cell and we don't use this,
+     * so we overestimate.
+     * With PME, the 10% value gives a buffer that is somewhat larger
+     * than the effective buffer with a tolerance of 0.005 kJ/mol/ps.
+     * Smaller tolerances or using RF lead to a smaller effective buffer,
+     * so 10% gives a safe overestimate.
+     */
+    return eff_1x1_buffer_fac_overest*(minimum_subgrid_size_xy(gridi) +
+                                       minimum_subgrid_size_xy(gridj));
+}
 
 /* Clusters at the cut-off only increase rlist by 60% of their size */
 static real nbnxn_rlist_inc_outside_fac = 0.6;
@@ -3819,9 +4313,9 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
                             int                  min_ci_balanced)
 {
     const nbnxn_grid_t *grid;
-    rvec ls;
-    real xy_diag2, r_eff_sup, vol_est, nsp_est, nsp_est_nl;
-    int  nsubpair_max;
+    rvec                ls;
+    real                xy_diag2, r_eff_sup, vol_est, nsp_est, nsp_est_nl;
+    int                 nsubpair_max;
 
     grid = &nbs->grid[0];
 
@@ -4003,11 +4497,11 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
 #pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
     for (n = 0; n < nnbl; n++)
     {
-        int sci_offset;
-        int cj4_offset;
-        int ci_offset;
-        int excl_offset;
-        int i, j4;
+        int                     sci_offset;
+        int                     cj4_offset;
+        int                     ci_offset;
+        int                     excl_offset;
+        int                     i, j4;
         const nbnxn_pairlist_t *nbli;
 
         /* Determine the offset in the combined data for our thread */
@@ -4052,6 +4546,121 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
         nblc->ncj4    += nbl[n]->ncj4;
         nblc->nci_tot += nbl[n]->nci_tot;
         nblc->nexcl   += nbl[n]->nexcl;
+    }
+}
+
+static void balance_fep_lists(const nbnxn_search_t  nbs,
+                              nbnxn_pairlist_set_t *nbl_lists)
+{
+    int       nnbl, th;
+    int       nri_tot, nrj_tot, nrj_target;
+    int       th_dest;
+    t_nblist *nbld;
+
+    nnbl = nbl_lists->nnbl;
+
+    if (nnbl == 1)
+    {
+        /* Nothing to balance */
+        return;
+    }
+
+    /* Count the total i-lists and pairs */
+    nri_tot = 0;
+    nrj_tot = 0;
+    for (th = 0; th < nnbl; th++)
+    {
+        nri_tot += nbl_lists->nbl_fep[th]->nri;
+        nrj_tot += nbl_lists->nbl_fep[th]->nrj;
+    }
+
+    nrj_target = (nrj_tot + nnbl - 1)/nnbl;
+
+    assert(gmx_omp_nthreads_get(emntNonbonded) == nnbl);
+
+#pragma omp parallel for schedule(static) num_threads(nnbl)
+    for (th = 0; th < nnbl; th++)
+    {
+        t_nblist *nbl;
+
+        nbl = nbs->work[th].nbl_fep;
+
+        /* Note that here we allocate for the total size, instead of
+         * a per-thread esimate (which is hard to obtain).
+         */
+        if (nri_tot > nbl->maxnri)
+        {
+            nbl->maxnri = over_alloc_large(nri_tot);
+            reallocate_nblist(nbl);
+        }
+        if (nri_tot > nbl->maxnri || nrj_tot > nbl->maxnrj)
+        {
+            nbl->maxnrj = over_alloc_small(nrj_tot);
+            srenew(nbl->jjnr, nbl->maxnrj);
+            srenew(nbl->excl_fep, nbl->maxnrj);
+        }
+
+        clear_pairlist_fep(nbl);
+    }
+
+    /* Loop over the source lists and assign and copy i-entries */
+    th_dest = 0;
+    nbld    = nbs->work[th_dest].nbl_fep;
+    for (th = 0; th < nnbl; th++)
+    {
+        t_nblist *nbls;
+        int       i, j;
+
+        nbls = nbl_lists->nbl_fep[th];
+
+        for (i = 0; i < nbls->nri; i++)
+        {
+            int nrj;
+
+            /* The number of pairs in this i-entry */
+            nrj = nbls->jindex[i+1] - nbls->jindex[i];
+
+            /* Decide if list th_dest is too large and we should procede
+             * to the next destination list.
+             */
+            if (th_dest+1 < nnbl && nbld->nrj > 0 &&
+                nbld->nrj + nrj - nrj_target > nrj_target - nbld->nrj)
+            {
+                th_dest++;
+                nbld = nbs->work[th_dest].nbl_fep;
+            }
+
+            nbld->iinr[nbld->nri]  = nbls->iinr[i];
+            nbld->gid[nbld->nri]   = nbls->gid[i];
+            nbld->shift[nbld->nri] = nbls->shift[i];
+
+            for (j = nbls->jindex[i]; j < nbls->jindex[i+1]; j++)
+            {
+                nbld->jjnr[nbld->nrj]     = nbls->jjnr[j];
+                nbld->excl_fep[nbld->nrj] = nbls->excl_fep[j];
+                nbld->nrj++;
+            }
+            nbld->nri++;
+            nbld->jindex[nbld->nri] = nbld->nrj;
+        }
+    }
+
+    /* Swap the list pointers */
+    for (th = 0; th < nnbl; th++)
+    {
+        t_nblist *nbl_tmp;
+
+        nbl_tmp                = nbl_lists->nbl_fep[th];
+        nbl_lists->nbl_fep[th] = nbs->work[th].nbl_fep;
+        nbs->work[th].nbl_fep  = nbl_tmp;
+
+        if (debug)
+        {
+            fprintf(debug, "nbl_fep[%d] nri %4d nrj %4d\n",
+                    th,
+                    nbl_lists->nbl_fep[th]->nri,
+                    nbl_lists->nbl_fep[th]->nrj);
+        }
     }
 }
 
@@ -4137,7 +4746,7 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
     const int ci_block_enum      = 5;
     const int ci_block_denom     = 11;
     const int ci_block_min_atoms = 16;
-    int ci_block;
+    int       ci_block;
 
     /* Here we decide how to distribute the blocks over the threads.
      * We use prime numbers to try to avoid that the grid size becomes
@@ -4184,37 +4793,38 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      gmx_bool progBal,
                                      int min_ci_balanced,
                                      int th, int nth,
-                                     nbnxn_pairlist_t *nbl)
+                                     nbnxn_pairlist_t *nbl,
+                                     t_nblist *nbl_fep)
 {
-    int  na_cj_2log;
-    matrix box;
-    real rl2;
-    float rbb2;
-    int  d;
-    int  ci_b, ci, ci_x, ci_y, ci_xy, cj;
-    ivec shp;
-    int  tx, ty, tz;
-    int  shift;
-    gmx_bool bMakeList;
-    real shx, shy, shz;
-    int  conv_i, cell0_i;
+    int               na_cj_2log;
+    matrix            box;
+    real              rl2, rl_fep2 = 0;
+    float             rbb2;
+    int               d;
+    int               ci_b, ci, ci_x, ci_y, ci_xy, cj;
+    ivec              shp;
+    int               tx, ty, tz;
+    int               shift;
+    gmx_bool          bMakeList;
+    real              shx, shy, shz;
+    int               conv_i, cell0_i;
     const nbnxn_bb_t *bb_i = NULL;
 #ifdef NBNXN_BBXXXX
-    const float *pbb_i = NULL;
+    const float      *pbb_i = NULL;
 #endif
-    const float *bbcz_i, *bbcz_j;
-    const int *flags_i;
-    real bx0, bx1, by0, by1, bz0, bz1;
-    real bz1_frac;
-    real d2cx, d2z, d2z_cx, d2z_cy, d2zx, d2zxy, d2xy;
-    int  cxf, cxl, cyf, cyf_x, cyl;
-    int  cx, cy;
-    int  c0, c1, cs, cf, cl;
-    int  ndistc;
-    int  ncpcheck;
-    int  gridi_flag_shift = 0, gridj_flag_shift = 0;
-    unsigned *gridj_flag  = NULL;
-    int  ncj_old_i, ncj_old_j;
+    const float      *bbcz_i, *bbcz_j;
+    const int        *flags_i;
+    real              bx0, bx1, by0, by1, bz0, bz1;
+    real              bz1_frac;
+    real              d2cx, d2z, d2z_cx, d2z_cy, d2zx, d2zxy, d2xy;
+    int               cxf, cxl, cyf, cyf_x, cyl;
+    int               cx, cy;
+    int               c0, c1, cs, cf, cl;
+    int               ndistc;
+    int               ncpcheck;
+    int               gridi_flag_shift = 0, gridj_flag_shift = 0;
+    unsigned int     *gridj_flag       = NULL;
+    int               ncj_old_i, ncj_old_j;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
 
@@ -4251,6 +4861,23 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     copy_mat(nbs->box, box);
 
     rl2 = nbl->rlist*nbl->rlist;
+
+    if (nbs->bFEP && !nbl->bSimple)
+    {
+        /* Determine an atom-pair list cut-off distance for FEP atom pairs.
+         * We should not simply use rlist, since then we would not have
+         * the small, effective buffering of the NxN lists.
+         * The buffer is on overestimate, but the resulting cost for pairs
+         * beyond rlist is neglible compared to the FEP pairs within rlist.
+         */
+        rl_fep2 = nbl->rlist + effective_buffer_1x1_vs_MxN(gridi, gridj);
+
+        if (debug)
+        {
+            fprintf(debug, "nbl_fep atom-pair rlist %f\n", rl_fep2);
+        }
+        rl_fep2 = rl_fep2*rl_fep2;
+    }
 
     rbb2 = boundingbox_only_distance2(gridi, gridj, nbl->rlist, nbl->bSimple);
 
@@ -4720,6 +5347,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                          na_cj_2log,
                                          &(nbl->ci[nbl->nci]),
                                          excl);
+
+                        if (nbs->bFEP)
+                        {
+                            make_fep_list(nbs, nbat, nbl,
+                                          shift == CENTRAL && gridi == gridj,
+                                          &(nbl->ci[nbl->nci]),
+                                          gridi, gridj, nbl_fep);
+                        }
                     }
                     else
                     {
@@ -4729,6 +5364,16 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                           gridj->na_c_2log,
                                           &(nbl->sci[nbl->nsci]),
                                           excl);
+
+                        if (nbs->bFEP)
+                        {
+                            make_fep_list_supersub(nbs, nbat, nbl,
+                                                   shift == CENTRAL && gridi == gridj,
+                                                   &(nbl->sci[nbl->nsci]),
+                                                   shx, shy, shz,
+                                                   rl_fep2,
+                                                   gridi, gridj, nbl_fep);
+                        }
                     }
 
                     /* Close this ci list */
@@ -4772,6 +5417,10 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             print_nblist_statistics_supersub(debug, nbl, nbs, rlist);
         }
 
+        if (nbs->bFEP)
+        {
+            fprintf(debug, "nbl FEP list pairs: %d\n", nbl_fep->nrj);
+        }
     }
 }
 
@@ -4779,8 +5428,8 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
                                 int                         nsrc,
                                 const nbnxn_buffer_flags_t *dest)
 {
-    int s, b;
-    const unsigned *flag;
+    int                 s, b;
+    const unsigned int *flag;
 
     for (s = 0; s < nsrc; s++)
     {
@@ -4925,17 +5574,17 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          int                   nb_kernel_type,
                          t_nrnb               *nrnb)
 {
-    nbnxn_grid_t *gridi, *gridj;
-    gmx_bool bGPUCPU;
-    int nzi, zi, zj0, zj1, zj;
-    int nsubpair_max;
-    int th;
-    int nnbl;
+    nbnxn_grid_t      *gridi, *gridj;
+    gmx_bool           bGPUCPU;
+    int                nzi, zi, zj0, zj1, zj;
+    int                nsubpair_max;
+    int                th;
+    int                nnbl;
     nbnxn_pairlist_t **nbl;
-    int ci_block;
-    gmx_bool CombineNBLists;
-    gmx_bool progBal;
-    int np_tot, np_noq, np_hlj, nap;
+    int                ci_block;
+    gmx_bool           CombineNBLists;
+    gmx_bool           progBal;
+    int                np_tot, np_noq, np_hlj, nap;
 
     /* Check if we are running hybrid GPU + CPU nbnxn mode */
     bGPUCPU = (!nbs->grid[0].bSimple && nbl_list->bSimple);
@@ -5009,6 +5658,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     for (th = 0; th < nnbl; th++)
     {
         clear_pairlist(nbl[th]);
+
+        if (nbs->bFEP)
+        {
+            clear_pairlist_fep(nbl_list->nbl_fep[th]);
+        }
     }
 
     for (zi = 0; zi < nzi; zi++)
@@ -5045,6 +5699,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                 ci_block = get_ci_block_size(gridi, nbs->DomDec, nnbl);
             }
 
+            /* With GPU: generate progressively smaller lists for
+             * load balancing for local only or non-local with 2 zones.
+             */
+            progBal = (LOCAL_I(iloc) || nbs->zones->n <= 2);
+
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for (th = 0; th < nnbl; th++)
             {
@@ -5062,11 +5721,6 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                     clear_pairlist(nbl[th]);
                 }
 
-                /* With GPU: generate progressively smaller lists for
-                 * load balancing for local only or non-local with 2 zones.
-                 */
-                progBal = (LOCAL_I(iloc) || nbs->zones->n <= 2);
-
                 /* Divide the i super cell equally over the nblists */
                 nbnxn_make_pairlist_part(nbs, gridi, gridj,
                                          &nbs->work[th], nbat, excl,
@@ -5077,7 +5731,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                                          nsubpair_max,
                                          progBal, min_ci_balanced,
                                          th, nnbl,
-                                         nbl[th]);
+                                         nbl[th],
+                                         nbl_list->nbl_fep[th]);
             }
             nbs_cycle_stop(&nbs->cc[enbsCCsearch]);
 
@@ -5136,6 +5791,12 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     if (nbat->bUseBufferFlags)
     {
         reduce_buffer_flags(nbs, nnbl, &nbat->buffer_flags);
+    }
+
+    if (nbs->bFEP)
+    {
+        /* Balance the free-energy lists over all the threads */
+        balance_fep_lists(nbs, nbl_list);
     }
 
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */

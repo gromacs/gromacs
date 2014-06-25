@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2012, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2012,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -40,10 +40,12 @@
 #  This macro will also set defines necessary enable large file support, for instance
 #  _LARGE_FILES
 #  _LARGEFILE_SOURCE
-#  _FILE_OFFSET_BITS 64  
+#  _FILE_OFFSET_BITS 64
 #
 #  However, it is YOUR job to make sure these defines are set in a cmakedefine so they
 #  end up in a config.h file that is included in your source if necessary!
+
+include(CheckTypeSize)
 
 MACRO(GMX_TEST_LARGE_FILES VARIABLE)
     IF(NOT DEFINED ${VARIABLE})
@@ -54,23 +56,23 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
 
         MESSAGE(STATUS "Checking for 64-bit off_t")
 
-	# First check without any special flags
-        TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"    
+        # First check without any special flags
+        TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
                     "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.c")
         if(FILE64_OK)
-	    MESSAGE(STATUS "Checking for 64-bit off_t - present")			
-      	endif(FILE64_OK)
+            MESSAGE(STATUS "Checking for 64-bit off_t - present")
+        endif()
 
-        if(NOT FILE64_OK)	
-	    # Test with _FILE_OFFSET_BITS=64
+        if(NOT FILE64_OK)
+            # Test with _FILE_OFFSET_BITS=64
             TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
                         "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.c"
                         COMPILE_DEFINITIONS "-D_FILE_OFFSET_BITS=64" )
             if(FILE64_OK)
-	        MESSAGE(STATUS "Checking for 64-bit off_t - present with _FILE_OFFSET_BITS=64")
+                MESSAGE(STATUS "Checking for 64-bit off_t - present with _FILE_OFFSET_BITS=64")
                 set(_FILE_OFFSET_BITS 64 CACHE INTERNAL "64-bit off_t requires _FILE_OFFSET_BITS=64")
-            endif(FILE64_OK)
-        endif(NOT FILE64_OK)    
+            endif()
+        endif()
 
         if(NOT FILE64_OK)
             # Test with _LARGE_FILES
@@ -80,9 +82,9 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
             if(FILE64_OK)
                 MESSAGE(STATUS "Checking for 64-bit off_t - present with _LARGE_FILES")
                 set(_LARGE_FILES 1 CACHE INTERNAL "64-bit off_t requires _LARGE_FILES")
-            endif(FILE64_OK)
-        endif(NOT FILE64_OK)
-	
+            endif()
+        endif()
+
         if(NOT FILE64_OK)
             # Test with _LARGEFILE_SOURCE
             TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
@@ -90,35 +92,26 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
                         COMPILE_DEFINITIONS "-D_LARGEFILE_SOURCE" )
             if(FILE64_OK)
                 MESSAGE(STATUS "Checking for 64-bit off_t - present with _LARGEFILE_SOURCE")
-      		set(_LARGEFILE_SOURCE 1 CACHE INTERNAL "64-bit off_t requires _LARGEFILE_SOURCE")
-            endif(FILE64_OK)
-        endif(NOT FILE64_OK)
-
-        if(NOT FILE64_OK)
-            # now check for Windows stuff
-            TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.c")
-            if(FILE64_OK)
-                MESSAGE(STATUS "Checking for 64-bit off_t - present with _fseeki64")
-                set(HAVE__FSEEKI64 1 CACHE INTERNAL "64-bit off_t requires _fseeki64")
-            endif(FILE64_OK)
-        endif(NOT FILE64_OK)
+                set(_LARGEFILE_SOURCE 1 CACHE INTERNAL "64-bit off_t requires _LARGEFILE_SOURCE")
+            endif()
+        endif()
 
         if(NOT FILE64_OK)
             MESSAGE(STATUS "Checking for 64-bit off_t - not present")
-        else(NOT FILE64_OK)
+        else()
+            # 64-bit off_t found. Now check that ftello/fseeko is available.
 
             # Set the flags we might have determined to be required above
-            configure_file("${CMAKE_SOURCE_DIR}/cmake/TestLargeFiles.c.cmakein" 
+            configure_file("${CMAKE_SOURCE_DIR}/cmake/TestLargeFiles.c.cmakein"
                            "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.c")
 
-            MESSAGE(STATUS "Checking for fseeko/ftello")            
-	    # Test if ftello/fseeko are	available
-	    TRY_COMPILE(FSEEKO_COMPILE_OK "${CMAKE_BINARY_DIR}"
+            MESSAGE(STATUS "Checking for fseeko/ftello")
+            # Test if ftello/fseeko are available
+            TRY_COMPILE(FSEEKO_COMPILE_OK "${CMAKE_BINARY_DIR}"
                         "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.c")
-	    if(FSEEKO_COMPILE_OK)
+            if(FSEEKO_COMPILE_OK)
                 MESSAGE(STATUS "Checking for fseeko/ftello - present")
-            endif(FSEEKO_COMPILE_OK)
+            endif()
 
             if(NOT FSEEKO_COMPILE_OK)
                 # glibc 2.2 neds _LARGEFILE_SOURCE for fseeko (but not 64-bit off_t...)
@@ -128,25 +121,40 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
                 if(FSEEKO_COMPILE_OK)
                     MESSAGE(STATUS "Checking for fseeko/ftello - present with _LARGEFILE_SOURCE")
                     set(_LARGEFILE_SOURCE 1 CACHE INTERNAL "64-bit fseeko requires _LARGEFILE_SOURCE")
-                endif(FSEEKO_COMPILE_OK)
-            endif(NOT FSEEKO_COMPILE_OK)
+                else()
+                    set(FILE64_OK 0)
+                    message(STATUS "64-bit off_t present but fseeko/ftello not found!")
+                endif()
+            endif()
+        endif()
 
-        endif(NOT FILE64_OK)
+        if(NOT FILE64_OK)
+            # now check for Windows stuff
+            TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
+                        "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.c")
+            if(FILE64_OK)
+                MESSAGE(STATUS "Checking for 64-bit off_t - present with _fseeki64")
+                set(HAVE__FSEEKI64 1 CACHE INTERNAL "64-bit off_t requires _fseeki64")
+            endif()
+        endif()
 
-	if(FSEEKO_COMPILE_OK)
+        if(FSEEKO_COMPILE_OK)
             SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
             set(HAVE_FSEEKO 1 CACHE INTERNAL "64bit fseeko is available" FORCE)
-        else(FSEEKO_COMPILE_OK)
-	    if (HAVE__FSEEKI64)
-		SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
-		SET(HAVE__FSEEKI64 1 CACHE INTERNAL "Windows 64-bit fseek" FORCE)
-	    else (HAVE__FSEEKI64)
-                MESSAGE(STATUS "Checking for fseeko/ftello - not found")
+        elseif(HAVE__FSEEKI64)
+            SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
+            SET(HAVE__FSEEKI64 1 CACHE INTERNAL "Windows 64-bit fseek" FORCE)
+        else()
+            check_type_size("long int"      SIZEOF_LONG_INT)
+            if(SIZEOF_LONG_INT EQUAL 8) #standard fseek is OK for 64bit
+                SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
+            else()
                 SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
-	    endif (HAVE__FSEEKI64)
-        endif(FSEEKO_COMPILE_OK)
+                MESSAGE(FATAL_ERROR "Checking for 64bit file support failed.")
+            endif()
+        endif()
 
-    ENDIF(NOT DEFINED ${VARIABLE})
+    ENDIF()
 ENDMACRO(GMX_TEST_LARGE_FILES VARIABLE)
 
 

@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifndef _force_h
@@ -39,16 +41,19 @@
 
 #include "typedefs.h"
 #include "types/force_flags.h"
-#include "pbc.h"
 #include "network.h"
 #include "tgroup.h"
 #include "vsite.h"
 #include "genborn.h"
 
+#include "../timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_graph;
+struct t_pbc;
 
 void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda);
 
@@ -57,12 +62,12 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
 /* Calculate virial for nxf atoms, and add it to vir */
 
 void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
-                t_graph *g, rvec shift_vec[]);
+                struct t_graph *g, rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
-real RF_excl_correction(const t_forcerec *fr, t_graph *g,
+real RF_excl_correction(const t_forcerec *fr, struct t_graph *g,
                         const t_mdatoms *mdatoms, const t_blocka *excl,
-                        rvec x[], rvec f[], rvec *fshift, const t_pbc *pbc,
+                        rvec x[], rvec f[], rvec *fshift, const struct t_pbc *pbc,
                         real lambda, real *dvdlambda);
 /* Calculate the reaction-field energy correction for this node:
  * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
@@ -133,6 +138,17 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
  * and fp (if !=NULL) on the master node.
  */
 
+
+gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
+                                      const t_commrec  *cr,
+                                      const t_inputrec *ir,
+                                      gmx_bool          bGPU);
+/* Return if GPU/CPU-SIMD acceleration is supported with the given inputrec
+ * with bGPU TRUE/FALSE.
+ * If the return value is FALSE and fplog/cr != NULL, prints a fallback
+ * message to fplog/stderr.
+ */
+
 gmx_bool uses_simple_tables(int                 cutoff_scheme,
                             nonbonded_verlet_t *nbv,
                             int                 group);
@@ -171,8 +187,8 @@ void init_forcerec(FILE              *fplog,
  * print_force >= 0: print forces for atoms with force >= print_force
  */
 
-void forcerec_set_excl_load(t_forcerec *fr,
-                            const gmx_localtop_t *top, const t_commrec *cr);
+void forcerec_set_excl_load(t_forcerec           *fr,
+                            const gmx_localtop_t *top);
 /* Set the exclusion load for the local exclusions and possibly threads */
 
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
@@ -204,7 +220,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
 
 extern void do_force(FILE *log, t_commrec *cr,
                      t_inputrec *inputrec,
-                     gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                      gmx_localtop_t *top,
                      gmx_groups_t *groups,
                      matrix box, rvec x[], history_t *hist,
@@ -212,7 +228,7 @@ extern void do_force(FILE *log, t_commrec *cr,
                      tensor vir_force,
                      t_mdatoms *mdatoms,
                      gmx_enerdata_t *enerd, t_fcdata *fcd,
-                     real *lambda, t_graph *graph,
+                     real *lambda, struct t_graph *graph,
                      t_forcerec *fr,
                      gmx_vsite_t *vsite, rvec mu_tot,
                      double t, FILE *field, gmx_edsam_t ed,
@@ -241,7 +257,7 @@ void ns(FILE              *fplog,
 /* Call the neighborsearcher */
 
 extern void do_force_lowlevel(FILE         *fplog,
-                              gmx_large_int_t   step,
+                              gmx_int64_t   step,
                               t_forcerec   *fr,
                               t_inputrec   *ir,
                               t_idef       *idef,
@@ -264,7 +280,7 @@ extern void do_force_lowlevel(FILE         *fplog,
                               matrix       box,
                               t_lambda     *fepvals,
                               real         *lambda,
-                              t_graph      *graph,
+                              struct t_graph      *graph,
                               t_blocka     *excl,
                               rvec         mu_tot[2],
                               int          flags,

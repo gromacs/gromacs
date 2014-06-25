@@ -1,69 +1,66 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.3.2
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2007, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2007, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Groningen Machine for Chemical Simulation
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <math.h>
-#include <ctype.h>
 
-#include "string2.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "rmpbc.h"
-#include "statutil.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "index.h"
-#include "smalloc.h"
-#include "calcgrid.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "coulomb.h"
 #include "pme.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ana.h"
 
+#include "gromacs/utility/fatalerror.h"
 
 static void clust_size(const char *ndx, const char *trx, const char *xpm,
                        const char *xpmw, const char *ncl, const char *acl,
@@ -122,7 +119,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         read_tpxheader(tpr, &tpxh, TRUE, &version, &generation);
         if (tpxh.natoms != natoms)
         {
-            gmx_fatal(FARGS, "tpr (%d atoms) and xtc (%d atoms) do not match!",
+            gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!",
                       tpxh.natoms, natoms);
         }
         ePBC = read_tpx(tpr, NULL, NULL, &natoms, NULL, NULL, NULL, mtop);
@@ -338,16 +335,16 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     while (read_next_frame(oenv, status, &fr));
     close_trx(status);
-    ffclose(fp);
-    ffclose(gp);
-    ffclose(hp);
-    ffclose(tp);
+    gmx_ffclose(fp);
+    gmx_ffclose(gp);
+    gmx_ffclose(hp);
+    gmx_ffclose(tp);
 
     gmx_mtop_atomlookup_destroy(alook);
 
     if (max_clust_ind >= 0)
     {
-        fp = ffopen(mcn, "w");
+        fp = gmx_ffopen(mcn, "w");
         fprintf(fp, "[ max_clust ]\n");
         for (i = 0; (i < nindex); i++)
         {
@@ -366,7 +363,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                 }
             }
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     /* Print the real distribution cluster-size/numer, averaged over the trajectory. */
@@ -384,7 +381,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         nhisto += (int)((j+1)*nelem/n_x);
     }
     fprintf(fp, "%5d  %8.3f\n", j+1, 0.0);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     fprintf(stderr, "Total number of atoms in clusters =  %d\n", nhisto);
 
@@ -406,11 +403,11 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     fprintf(stderr, "cmid: %g, cmax: %g, max_size: %d\n", cmid, cmax, max_size);
     cmid = 1;
-    fp   = ffopen(xpm, "w");
+    fp   = gmx_ffopen(xpm, "w");
     write_xpm3(fp, 0, "Cluster size distribution", "# clusters", timebuf, "Size",
                n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
                rlo, rmid, rhi, &nlevels);
-    ffclose(fp);
+    gmx_ffclose(fp);
     cmid = 100.0;
     cmax = 0.0;
     for (i = 0; (i < n_x); i++)
@@ -426,11 +423,11 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         }
     }
     fprintf(stderr, "cmid: %g, cmax: %g, max_size: %d\n", cmid, cmax, max_size);
-    fp = ffopen(xpmw, "w");
+    fp = gmx_ffopen(xpmw, "w");
     write_xpm3(fp, 0, "Weighted cluster size distribution", "Fraction", timebuf,
                "Size", n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
                rlo, rmid, rhi, &nlevels);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     sfree(clust_index);
     sfree(clust_size);

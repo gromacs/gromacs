@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,12 +36,10 @@
  * \brief
  * Extra assertions for unit tests.
  *
- * This file provides assert macros to replace (ASSERT|EXPECT)(_NO)?_THROW
- * from Google Test.  They behave otherwise the same as the Google Test ones,
- * but also print details of any unexpected exceptions.  This makes it much
- * easier to see at one glance what went wrong.
- *
- * This file also provides extra floating-point assertions.
+ * This file provides assertion macros that extend/replace Google Test
+ * assertions for:
+ *  - exceptions
+ *  - floating-point comparison
  *
  * \if internal
  * \todo
@@ -56,20 +54,34 @@
 #ifndef GMX_TESTUTILS_TESTASSERTS_H
 #define GMX_TESTUTILS_TESTASSERTS_H
 
+#include <string>
+
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/maths.h"
-
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
 namespace test
 {
 
-/*! \cond internal */
-/*! \internal
- * \brief
+//! \libinternal \addtogroup module_testutils
+//! \{
+
+/*! \name Assertions for exceptions
+ *
+ * These macros replace `(ASSERT|EXPECT)(_NO)?_THROW` from Google Test.
+ * They are used exactly like the Google Test ones, but also print details of
+ * any unexpected exceptions using \Gromacs-specific routines.
+ * This makes it much easier to see at one glance what went wrong.
+ * See Google Test documentation for details on how to use the macros.
+ */
+//! \{
+
+//! \cond internal
+/*! \brief
  * Internal implementation macro for exception assertations.
  *
  * \param statement          Statements to execute.
@@ -109,8 +121,7 @@ namespace test
         GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__) : \
             fail(gmx_ar.message())
 
-/*! \internal
- * \brief
+/*! \brief
  * Internal implementation macro for exception assertations.
  *
  * \param statement          Statements to execute.
@@ -144,78 +155,321 @@ namespace test
 /*! \brief
  * Asserts that a statement throws a given exception.
  *
- * See Google Test documentation on EXPECT_THROW.
- * This macro works the same, but additionally prints details of unexpected
- * exceptions.
+ * \hideinitializer
  */
 #define EXPECT_THROW_GMX(statement, expected_exception) \
     GMX_TEST_THROW_(statement, expected_exception, GTEST_NONFATAL_FAILURE_)
 /*! \brief
  * Asserts that a statement does not throw.
  *
- * See Google Test documentation on EXPECT_NO_THROW.
- * This macro works the same, but additionally prints details of unexpected
- * exceptions.
+ * \hideinitializer
  */
 #define EXPECT_NO_THROW_GMX(statement) \
     GMX_TEST_NO_THROW_(statement, GTEST_NONFATAL_FAILURE_)
 /*! \brief
  * Asserts that a statement throws a given exception.
  *
- * See Google Test documentation on ASSERT_THROW.
- * This macro works the same, but additionally prints details of unexpected
- * exceptions.
+ * \hideinitializer
  */
 #define ASSERT_THROW_GMX(statement, expected_exception) \
     GMX_TEST_THROW_(statement, expected_exception, GTEST_FATAL_FAILURE_)
 /*! \brief
  * Asserts that a statement does not throw.
  *
- * See Google Test documentation on ASSERT_NO_THROW.
- * This macro works the same, but additionally prints details of unexpected
- * exceptions.
+ * \hideinitializer
  */
 #define ASSERT_NO_THROW_GMX(statement) \
     GMX_TEST_NO_THROW_(statement, GTEST_FATAL_FAILURE_)
 
-/*! \cond internal */
+//! \}
+
+/*! \libinternal \brief
+ * Computes and represents a floating-point difference value.
+ *
+ * Methods in this class do not throw, except for toString(), which may throw
+ * std::bad_alloc.
+ *
+ * \see FloatingPointTolerance
+ */
+class FloatingPointDifference
+{
+    public:
+        //! Initializes a single-precision difference.
+        FloatingPointDifference(float value1, float value2);
+        //! Initializes a double-precision difference.
+        FloatingPointDifference(double value1, double value2);
+
+        /*! \brief
+         * Whether one or both of the compared values were NaN.
+         *
+         * If this returns `true`, other accessors return meaningless values.
+         */
+        bool isNaN() const;
+        //! Returns the difference as an absolute number (always non-negative).
+        double asAbsolute() const { return absoluteDifference_; }
+        /*! \brief
+         * Returns the difference as ULPs (always non-negative).
+         *
+         * The ULPs are calculated for the type that corresponds to the
+         * constructor used to initialize the difference.
+         * The ULP difference between 0.0 and -0.0 is zero.
+         */
+        gmx_uint64_t asUlps() const { return ulpDifference_; }
+        /*! \brief
+         * Whether the compared values were of different sign.
+         *
+         * 0.0 and -0.0 are treated as positive and negative, respectively.
+         */
+        bool signsDiffer() const { return bSignDifference_; }
+
+        //! Formats the difference as a string for assertion failure messages.
+        std::string toString() const;
+
+    private:
+        //! Stores the absolute difference, or NaN if one or both values were NaN.
+        double       absoluteDifference_;
+        gmx_uint64_t ulpDifference_;
+        bool         bSignDifference_;
+        /*! \brief
+         * Whether the difference was computed for single or double precision.
+         *
+         * This sets the units for `ulpDifference_`.
+         */
+        bool         bDouble_;
+};
+
+/*! \libinternal \brief
+ * Specifies a floating-point comparison tolerance and checks whether a
+ * difference is within the tolerance.
+ *
+ * Several types of tolerances are possible:
+ *  - _absolute tolerance_: difference between the values must be smaller than
+ *    the given tolerance for the check to pass.
+ *    Setting the absolute tolerance to zero disables the absolute tolerance
+ *    check.
+ *  - _ULP tolerance_: ULP (units of least precision) difference between the
+ *    values must be smaller than the given tolerance for the check to pass.
+ *    Setting the ULP tolerance to zero requires exact match.
+ *    Setting the ULP tolerance to negative disables the ULP check.
+ *    `0.0` and `-0.0` are treated as equal for the ULP check.
+ *  - _sign check_: if set, any values that are of different signs fail the
+ *    check (note that this also applies to `0.0` and `-0.0`: a value with a
+ *    different sign than the zero will fail the check).
+ *
+ * Either an absolute or a ULP tolerance must always be specified.
+ * If both are specified, then the check passes if either of the tolerances is
+ * satisfied.
+ *
+ * Any combination of absolute and ULP tolerance can be combined with the sign
+ * check.  In this case, the sign check must succeed for the check to pass,
+ * even if other tolerances are satisfied.
+ *
+ * Currently, the ULP tolerance is not in any particular precision, but the
+ * interpretation depends on the compared numbers: if floats are compared, then
+ * the ULP tolerance specifies single-precision ULPs, and if doubles are
+ * compared, then the same number is interpreted as double-precision ULPs.
+ *
+ * The related functions section lists methods that can be construct methods
+ * using less parameters than the full constructor, and with more obvious
+ * semantics.
+ *
+ * Methods in this class do not throw, except for toString(), which may throw
+ * std::bad_alloc.
+ *
+ * \see FloatingPointDifference
+ */
+class FloatingPointTolerance
+{
+    public:
+        /*! \brief
+         * Creates a tolerance with the specified values.
+         *
+         * \param[in] absolute       Allowed absolute difference.
+         * \param[in] ulp            Allowed ULP difference.
+         * \param[in] bSignMustMatch Whether sign mismatch fails the comparison.
+         */
+        FloatingPointTolerance(double absolute, int ulp,
+                               bool bSignMustMatch)
+            : absoluteTolerance_(absolute), ulpTolerance_(ulp),
+              bSignMustMatch_(bSignMustMatch)
+        {
+        }
+
+        /*! \brief
+         * Checks whether a difference is within the specified tolerance.
+         *
+         * NaNs are always treated outside the tolerance.
+         */
+        bool isWithin(const FloatingPointDifference &difference) const;
+
+        //! Formats the tolerance as a string for assertion failure messages.
+        std::string toString() const;
+
+    private:
+        double       absoluteTolerance_;
+        int          ulpTolerance_;
+        bool         bSignMustMatch_;
+};
+
+/*! \brief
+ * Creates a tolerance that only allows a specified ULP difference.
+ *
+ * \related FloatingPointTolerance
+ */
+static inline FloatingPointTolerance
+ulpTolerance(gmx_int64_t ulpDiff)
+{
+    return FloatingPointTolerance(0.0, ulpDiff, false);
+}
+
+/*! \brief
+ * Creates a tolerance that allows a relative difference in a complex
+ * computation.
+ *
+ * \param[in] magnitude  Magnitude of the numbers the computation operates in.
+ * \param[in] ulpDiff    Expected accuracy of the computation (in ULPs).
+ *
+ * In addition to setting the ULP tolerance, this sets the absolute tolerance
+ * such that values close to zero (in general, smaller than \p magnitude) do
+ * not fail the check if they differ by less than \p ulpDiff evaluated at
+ * \p magniture.  This accounts for potential loss of precision for small
+ * values, and should be used when accuracy of values much less than
+ * \p magniture do not matter for correctness.
+ *
+ * \related FloatingPointTolerance
+ */
+static inline FloatingPointTolerance
+relativeRealTolerance(double magnitude, gmx_int64_t ulpDiff)
+{
+    return FloatingPointTolerance(magnitude*ulpDiff*GMX_REAL_EPS, ulpDiff, false);
+}
+
+/*! \brief
+ * Returns the default tolerance for comparing `real` numbers.
+ *
+ * \related FloatingPointTolerance
+ */
+static inline FloatingPointTolerance defaultRealTolerance()
+{
+    return relativeRealTolerance(1.0, 4);
+}
+
+/*! \name Assertions for floating-point comparison
+ *
+ * These routines extend `(EXPECT|ASSERT)_(FLOAT|DOUBLE)_EQ` and
+ * `(EXPECT|ASSERT)_NEAR` from Google Test to provide more flexible assertions
+ * for floating-point values.
+ *
+ * See gmx::test::FloatingPointTolerance for the possible ways to specify the
+ * tolerance, and gmx::test::FloatingPointDifference for some additional
+ * details of the difference calculation.
+ */
+//! \{
+
+//! \cond internal
 /*! \internal \brief
  * Assertion predicate formatter for comparing two floating-point values.
  */
-static ::testing::AssertionResult assertWithinRelativeTolerance(
+template <typename FloatType>
+static inline ::testing::AssertionResult assertEqualWithinTolerance(
         const char *expr1, const char *expr2, const char * /*exprTolerance*/,
-        real val1, real val2, real relativeTolerance)
+        FloatType value1, FloatType value2,
+        const FloatingPointTolerance &tolerance)
 {
-    if (gmx_within_tol(val1, val2, relativeTolerance))
+    FloatingPointDifference diff(value1, value2);
+    if (tolerance.isWithin(diff))
     {
         return ::testing::AssertionSuccess();
     }
     return ::testing::AssertionFailure()
-           << "Value of: " << expr2 << " not within tolerance of " << relativeTolerance << "\n"
-           << "  Actual: " << val2 << "\n"
-           << "Expected: " << expr1 << "\n"
-           << "Which is: " << val1;
+           << "  Value of: " << expr2 << std::endl
+           << "    Actual: " << value2 << std::endl
+           << "  Expected: " << expr1 << std::endl
+           << "  Which is: " << value1 << std::endl
+           << "Difference: " << diff.toString() << std::endl
+           << " Tolerance: " << tolerance.toString();
 }
 //! \endcond
 
 /*! \brief
- * Asserts that two floating-point values are within the given relative error.
+ * Asserts that two single-precision values are within the given tolerance.
  *
- * This assert works as EXPECT_NEAR from Google Test, except that it uses a
- * relative instead of a absolute tolerance.
- * See gmx_within_tol() for definition of the tolerance.
+ * \hideinitializer
  */
-#define EXPECT_NEAR_REL(val1, val2, rel_error) \
-    EXPECT_PRED_FORMAT3(::gmx::test::assertWithinRelativeTolerance, val1, val2, rel_error)
+#define EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance) \
+    EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, \
+                        value1, value2, tolerance)
 /*! \brief
- * Asserts that two floating-point values are within the given relative error.
+ * Asserts that two double-precision values are within the given tolerance.
  *
- * This assert works as ASSERT_NEAR from Google Test, except that it uses a
- * relative instead of a absolute tolerance.
- * See gmx_within_tol() for definition of the tolerance.
+ * \hideinitializer
  */
-#define ASSERT_NEAR_REL(val1, val2, rel_error) \
-    ASSERT_PRED_FORMAT3(::gmx::test::assertWithinRelativeTolerance, val1, val2, rel_error)
+#define EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance) \
+    EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, \
+                        value1, value2, tolerance)
+/*! \def EXPECT_REAL_EQ_TOL
+ * \brief
+ * Asserts that two `real` values are within the given tolerance.
+ *
+ * \hideinitializer
+ */
+/*! \brief
+ * Asserts that two single-precision values are within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance) \
+    ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, \
+                        value1, value2, tolerance)
+/*! \brief
+ * Asserts that two double-precision values are within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define ASSERT_DOUBLE_EQ_TOL(value1, value2, tolerance) \
+    ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, \
+                        value1, value2, tolerance)
+/*! \def ASSERT_REAL_EQ_TOL
+ * \brief
+ * Asserts that two `real` values are within the given tolerance.
+ *
+ * \hideinitializer
+ */
+
+#ifdef GMX_DOUBLE
+#define EXPECT_REAL_EQ_TOL(value1, value2, tolerance) \
+    EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance)
+#define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \
+    ASSERT_DOUBLE_EQ_TOL(value1, value2, tolerance)
+#else
+#define EXPECT_REAL_EQ_TOL(value1, value2, tolerance) \
+    EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance)
+#define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \
+    ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance)
+#endif
+
+//! \}
+
+/*! \name Assertions for NULL comparison
+ *
+ * These macros should be used instead of `(EXPECT|ASSERT)_EQ(NULL, ...)`,
+ * because Google Test doesn't support the NULL comparison with xlC++ 12.1 on
+ * BG/Q.
+ */
+//! \{
+
+/*! \brief
+ * Asserts that a pointer is null.
+ *
+ * Works exactly like EXPECT_EQ comparing with a null pointer. */
+#define EXPECT_NULL(val) EXPECT_EQ((void *) NULL, val)
+/*! \brief
+ * Asserts that a pointer is null.
+ *
+ * Works exactly like ASSERT_EQ comparing with a null pointer. */
+#define ASSERT_NULL(val) ASSERT_EQ((void *) NULL, val)
+
+//! \}
 
 } // namespace test
 } // namespace gmx

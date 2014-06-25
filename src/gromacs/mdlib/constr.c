@@ -1,62 +1,69 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "gromacs/fileio/confio.h"
+#include "types/commrec.h"
 #include "constr.h"
 #include "copyrite.h"
-#include "invblock.h"
-#include "main.h"
 #include "mdrun.h"
 #include "nrnb.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "physics.h"
+#include "gromacs/math/vec.h"
 #include "names.h"
 #include "txtdump.h"
 #include "domdec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "partdec.h"
 #include "splitter.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "macros.h"
 #include "gmx_omp_nthreads.h"
+#include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/pulling/pull.h"
+
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/invblock.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_constr {
     int                ncon_tot;       /* The total number of constraints    */
@@ -220,16 +227,17 @@ static void write_constr_pdb(const char *fn, const char *title,
     char         *anm, *resnm;
 
     dd = NULL;
+    if (DOMAINDECOMP(cr))
+    {
+        dd = cr->dd;
+        dd_get_constraint_range(dd, &dd_ac0, &dd_ac1);
+        start  = 0;
+        homenr = dd_ac1;
+    }
+
     if (PAR(cr))
     {
         sprintf(fname, "%s_n%d.pdb", fn, cr->sim_nodeid);
-        if (DOMAINDECOMP(cr))
-        {
-            dd = cr->dd;
-            dd_get_constraint_range(dd, &dd_ac0, &dd_ac1);
-            start  = 0;
-            homenr = dd_ac1;
-        }
     }
     else
     {
@@ -265,7 +273,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     gmx_fio_fclose(out);
 }
 
-static void dump_confs(FILE *fplog, gmx_large_int_t step, gmx_mtop_t *mtop,
+static void dump_confs(FILE *fplog, gmx_int64_t step, gmx_mtop_t *mtop,
                        int start, int homenr, t_commrec *cr,
                        rvec x[], rvec xprime[], matrix box)
 {
@@ -307,7 +315,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
                    t_idef *idef, t_inputrec *ir, gmx_ekindata_t *ekind,
                    t_commrec *cr,
-                   gmx_large_int_t step, int delta_step,
+                   gmx_int64_t step, int delta_step,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -338,7 +346,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     bOK   = TRUE;
     bDump = FALSE;
 
-    start  = md->start;
+    start  = 0;
     homenr = md->homenr;
     nrend  = start+homenr;
 
@@ -414,11 +422,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
      */
     if (cr->dd)
     {
-        dd_move_x_constraints(cr->dd, box, x, xprime);
-    }
-    else if (PARTDECOMP(cr))
-    {
-        pd_move_x_constraints(cr, x, xprime);
+        dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
     }
 
     if (constr->lincsd != NULL)
@@ -486,7 +490,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         }
         else
         {
-            calcvir_atom_end = md->start + md->homenr;
+            calcvir_atom_end = md->homenr;
         }
 
         switch (econq)
@@ -583,7 +587,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             {
                 char buf[256];
                 sprintf(buf,
-                        "\nstep " gmx_large_int_pfmt ": Water molecule starting at atom %d can not be "
+                        "\nstep " "%"GMX_PRId64 ": Water molecule starting at atom %d can not be "
                         "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
                         step, ddglatnr(cr->dd, settle->iatoms[settle_error*(1+NRAL(F_SETTLE))+1]));
                 if (fplog)
@@ -689,8 +693,8 @@ real constr_rmsd(struct gmx_constr *constr, gmx_bool bSD2)
     }
 }
 
-static void make_shake_sblock_pd(struct gmx_constr *constr,
-                                 t_idef *idef, t_mdatoms *md)
+static void make_shake_sblock_serial(struct gmx_constr *constr,
+                                     t_idef *idef, t_mdatoms *md)
 {
     int          i, j, m, ncons;
     int          bstart, bnr;
@@ -705,7 +709,7 @@ static void make_shake_sblock_pd(struct gmx_constr *constr,
     ncons = idef->il[F_CONSTR].nr/3;
 
     init_blocka(&sblocks);
-    gen_sblocks(NULL, md->start, md->start+md->homenr, idef, &sblocks, FALSE);
+    gen_sblocks(NULL, 0, md->homenr, idef, &sblocks, FALSE);
 
     /*
        bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
@@ -789,7 +793,7 @@ static void make_shake_sblock_pd(struct gmx_constr *constr,
                 j, constr->nblocks, ncons);
         for (i = 0; (i < ncons); i++)
         {
-            fprintf(stderr, "i: %5d  sb[i].blocknr: %5u\n", i, sb[i].blocknr);
+            fprintf(stderr, "i: %5d  sb[i].blocknr: %5d\n", i, sb[i].blocknr);
         }
         for (j = 0; (j <= constr->nblocks); j++)
         {
@@ -970,7 +974,7 @@ void set_constraints(struct gmx_constr *constr,
             }
             else
             {
-                make_shake_sblock_pd(constr, idef, md);
+                make_shake_sblock_serial(constr, idef, md);
             }
             if (ncons > constr->lagr_nalloc)
             {

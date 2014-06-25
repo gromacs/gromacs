@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 
 #include <string>
 
+#include "../utility/basedefinitions.h"
 #include "../utility/gmxassert.h"
 
 #include "abstractoption.h"
@@ -59,8 +60,12 @@ class BooleanOptionInfo;
 class BooleanOptionStorage;
 class IntegerOptionInfo;
 class IntegerOptionStorage;
+class Int64OptionInfo;
+class Int64OptionStorage;
 class DoubleOptionInfo;
 class DoubleOptionStorage;
+class FloatOptionInfo;
+class FloatOptionStorage;
 class StringOptionInfo;
 class StringOptionStorage;
 
@@ -93,7 +98,8 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     private:
         //! Creates a BooleanOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
 };
 
 /*! \brief
@@ -135,13 +141,44 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     private:
         //! Creates an IntegerOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
 
         /*! \brief
          * Needed to initialize IntegerOptionStorage from this class without
          * otherwise unnecessary accessors.
          */
         friend class IntegerOptionStorage;
+};
+
+/*! \brief
+ * Specifies an option that provides 64-bit integer values.
+ *
+ * Public methods in this class do not throw.
+ *
+ * \see IntegerOption
+ *
+ * \inpublicapi
+ */
+class Int64Option : public OptionTemplate<gmx_int64_t, Int64Option>
+{
+    public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef Int64OptionInfo InfoType;
+
+        //! Initializes an option with the given name.
+        explicit Int64Option(const char *name) : MyBase(name) {}
+
+    private:
+        //! Creates an Int64OptionStorage object.
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
+
+        /*! \brief
+         * Needed to initialize Int64OptionStorage from this class without
+         * otherwise unnecessary accessors.
+         */
+        friend class Int64OptionStorage;
 };
 
 /*! \brief
@@ -169,7 +206,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
          *
          * By itself, this option does nothing.  It marks the option as a time
          * value such that TimeUnitManager::scaleTimeOptions() can process it.
-         * In typical cases, Gromacs scales the time options just before
+         * In typical cases, \Gromacs scales the time options just before
          * Options::finish() has been called, so the option value is only
          * available after all option values have been processed.
          * All values in the program are in ps (including any default value);
@@ -180,7 +217,8 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         //! Creates a DoubleOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
 
         bool bTime_;
 
@@ -189,6 +227,45 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
          * otherwise unnecessary accessors.
          */
         friend class DoubleOptionStorage;
+};
+
+/*! \brief
+ * Specifies an option that provides floating-point (float) values.
+ *
+ * Public methods in this class do not throw.
+ *
+ * \see DoubleOption
+ *
+ * \inpublicapi
+ */
+class FloatOption : public OptionTemplate<float, FloatOption>
+{
+    public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef FloatOptionInfo InfoType;
+
+        //! Initializes an option with the given name.
+        explicit FloatOption(const char *name) : MyBase(name), bTime_(false)
+        {
+        }
+
+        //! \copydoc IntegerOption::vector()
+        MyClass &vector() { setVector(); return me(); }
+        //! \copydoc DoubleOption::timeValue()
+        MyClass &timeValue() { bTime_ = true; return me(); }
+
+    private:
+        //! Creates a FloatOptionStorage object.
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
+
+        bool bTime_;
+
+        /*! \brief
+         * Needed to initialize FloatOptionStorage from this class without
+         * otherwise unnecessary accessors.
+         */
+        friend class FloatOptionStorage;
 };
 
 /*! \brief
@@ -300,7 +377,8 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     private:
         //! Creates a StringOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
 
         const char *const      *enumValues_;
         int                     enumValuesCount_;
@@ -324,6 +402,12 @@ class BooleanOptionInfo : public OptionInfo
     public:
         //! Creates an option info object for the given option.
         explicit BooleanOptionInfo(BooleanOptionStorage *option);
+
+        //! Returns the default value for this option.
+        bool defaultValue() const;
+
+    private:
+        const BooleanOptionStorage &option() const;
 };
 
 /*! \brief
@@ -336,6 +420,18 @@ class IntegerOptionInfo : public OptionInfo
     public:
         //! Creates an option info object for the given option.
         explicit IntegerOptionInfo(IntegerOptionStorage *option);
+};
+
+/*! \brief
+ * Wrapper class for accessing 64-bit integer option information.
+ *
+ * \inpublicapi
+ */
+class Int64OptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit Int64OptionInfo(Int64OptionStorage *option);
 };
 
 /*! \brief
@@ -368,6 +464,28 @@ class DoubleOptionInfo : public OptionInfo
 };
 
 /*! \brief
+ * Wrapper class for accessing floating-point option information.
+ *
+ * \inpublicapi
+ */
+class FloatOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit FloatOptionInfo(FloatOptionStorage *option);
+
+        //! Whether the option specifies a time value.
+        bool isTime() const;
+
+        //! \copydoc DoubleOptionInfo::setScaleFactor()
+        void setScaleFactor(double factor);
+
+    private:
+        FloatOptionStorage &option();
+        const FloatOptionStorage &option() const;
+};
+
+/*! \brief
  * Wrapper class for accessing string option information.
  *
  * \inpublicapi
@@ -396,6 +514,28 @@ class StringOptionInfo : public OptionInfo
         StringOptionStorage &option();
         const StringOptionStorage &option() const;
 };
+
+/*! \typedef RealOption
+ * \brief
+ * Typedef for either DoubleOption or FloatOption, depending on precision.
+ *
+ * Generally, new would be better using DoubleOption, but this is provided for
+ * cases where the output value needs to be of type `real` for some reason.
+ */
+/*! \typedef RealOptionInfo
+ * \brief
+ * Typedef for either DoubleOptionInfo or FloatOptionInfo, depending on precision.
+ *
+ * Generally, new would be better using DoubleOption, but this is provided for
+ * cases where the output value needs to be of type `real` for some reason.
+ */
+#ifdef GMX_DOUBLE
+typedef DoubleOption     RealOption;
+typedef DoubleOptionInfo RealOptionInfo;
+#else
+typedef FloatOption      RealOption;
+typedef FloatOptionInfo  RealOptionInfo;
+#endif
 
 /*!\}*/
 

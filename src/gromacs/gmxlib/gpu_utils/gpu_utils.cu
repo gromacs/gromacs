@@ -1,101 +1,112 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- * 
- *                This source code is part of
- * 
- *                 G   R   O   M   A   C   S
- * 
- *          GROningen MAchine for Chemical Simulations
- * 
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010,2012 The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
- * 
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- * 
- * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
-#include "smalloc.h"
-#include "string2.h"
 #include "types/hw_info.h"
 
 #include "gpu_utils.h"
 #include "../cuda_tools/cudautils.cuh"
 #include "memtestG80_core.h"
 
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
-#define QUICK_MEM       250 /*!< Amount of memory to be used in quick memtest. */
-#define QUICK_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bit flag with type of tests
-                                                                            to run in quick memtest. */
-#define QUICK_ITER      3 /*!< Number of iterations in quick memtest. */
+/** Amount of memory to be used in quick memtest. */
+#define QUICK_MEM       250
+/** Bit flag with type of tests to run in quick memtest. */
+#define QUICK_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS
+/** Number of iterations in quick memtest. */
+#define QUICK_ITER      3
 
-#define FULL_TESTS      0x3FFF /*!<  Bitflag with all test set on for full memetest. */
-#define FULL_ITER       25 /*!< Number of iterations in full memtest. */
+/** Bitflag with all test set on for full memetest. */
+#define FULL_TESTS      0x3FFF
+/** Number of iterations in full memtest. */
+#define FULL_ITER       25
 
-#define TIMED_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bit flag with type of tests to
-                                                                            run in time constrained memtest. */
+/** Bit flag with type of tests to run in time constrained memtest. */
+#define TIMED_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS
 
-static int cuda_max_device_count = 32; /*! Max number of devices supported by CUDA (for consistency checking).
-                                           In reality it 16 with CUDA <=v5.0, but let's stay on the safe side. */
+/*! \brief
+ * Max number of devices supported by CUDA (for consistency checking).
+ *
+ * In reality it is 16 with CUDA <=v5.0, but let's stay on the safe side.
+ */
+static int cuda_max_device_count = 32;
 
-/*! Dummy kernel used for sanity checking. */
-__global__ void k_dummy_test(){}
+/** Dummy kernel used for sanity checking. */
+__global__ void k_dummy_test()
+{
+}
 
 
-/*! Bit-flags which refer to memtestG80 test types and are used in do_memtest to specify which tests to run. */
+/** Bit-flags which refer to memtestG80 test types and are used in do_memtest
+ * to specify which tests to run. */
 enum memtest_G80_test_types {
-    MOVING_INVERSIONS_10 =      0x1,
-    MOVING_INVERSIONS_RAND =    0x2,
-    WALKING_8BIT_M86 =          0x4,
-    WALKING_0_8BIT =            0x8,
-    WALKING_1_8BIT =            0x10,
-    WALKING_0_32BIT =           0x20,
-    WALKING_1_32BIT =           0x40,
-    RANDOM_BLOCKS =             0x80,
-    MOD_20_32BIT =              0x100,
-    LOGIC_1_ITER =              0x200,
-    LOGIC_4_ITER =              0x400,
-    LOGIC_1_ITER_SHMEM =        0x800,
-    LOGIC_4_ITER_SHMEM =        0x1000
+    MOVING_INVERSIONS_10   = 0x1,
+    MOVING_INVERSIONS_RAND = 0x2,
+    WALKING_8BIT_M86       = 0x4,
+    WALKING_0_8BIT         = 0x8,
+    WALKING_1_8BIT         = 0x10,
+    WALKING_0_32BIT        = 0x20,
+    WALKING_1_32BIT        = 0x40,
+    RANDOM_BLOCKS          = 0x80,
+    MOD_20_32BIT           = 0x100,
+    LOGIC_1_ITER           = 0x200,
+    LOGIC_4_ITER           = 0x400,
+    LOGIC_1_ITER_SHMEM     = 0x800,
+    LOGIC_4_ITER_SHMEM     = 0x1000
 };
 
 
-/*! 
-  * \brief Runs GPU sanity checks.
-  *
-  * Runs a series of checks to determine that the given GPU and underlying CUDA
-  * driver/runtime functions properly.
-  * Returns properties of a device with given ID or the one that has
-  * already been initialized earlier in the case if of \dev_id == -1.
-  *
-  * \param[in]  dev_id      the device ID of the GPU or -1 if the device has already been initialized
-  * \param[out] dev_prop    pointer to the structure in which the device properties will be returned
-  * \returns                0 if the device looks OK
-  *
-  * TODO: introduce errors codes and handle errors more smoothly.
-  */
+/*!
+ * \brief Runs GPU sanity checks.
+ *
+ * Runs a series of checks to determine that the given GPU and underlying CUDA
+ * driver/runtime functions properly.
+ * Returns properties of a device with given ID or the one that has
+ * already been initialized earlier in the case if of \dev_id == -1.
+ *
+ * \param[in]  dev_id      the device ID of the GPU or -1 if the device has already been initialized
+ * \param[out] dev_prop    pointer to the structure in which the device properties will be returned
+ * \returns                0 if the device looks OK
+ *
+ * TODO: introduce errors codes and handle errors more smoothly.
+ */
 static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 {
     cudaError_t cu_err;
@@ -104,18 +115,22 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     cu_err = cudaGetDeviceCount(&dev_count);
     if (cu_err != cudaSuccess)
     {
-       fprintf(stderr, "Error %d while querying device count: %s\n", cu_err,
-               cudaGetErrorString(cu_err));
+        fprintf(stderr, "Error %d while querying device count: %s\n", cu_err,
+                cudaGetErrorString(cu_err));
         return -1;
     }
 
     /* no CUDA compatible device at all */
     if (dev_count == 0)
+    {
         return -1;
+    }
 
     /* things might go horribly wrong if cudart is not compatible with the driver */
     if (dev_count < 0 || dev_count > cuda_max_device_count)
+    {
         return -1;
+    }
 
     if (dev_id == -1) /* device already selected let's not destroy the context */
     {
@@ -149,10 +164,14 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 
     /* both major & minor is 9999 if no CUDA capable devices are present */
     if (dev_prop->major == 9999 && dev_prop->minor == 9999)
+    {
         return -1;
+    }
     /* we don't care about emulation mode */
     if (dev_prop->major == 0)
+    {
         return -1;
+    }
 
     if (id != -1)
     {
@@ -166,7 +185,7 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     }
 
     /* try to execute a dummy kernel */
-    k_dummy_test<<<1, 512>>>();
+    k_dummy_test<<< 1, 512>>> ();
     if (cudaThreadSynchronize() != cudaSuccess)
     {
         return -1;
@@ -212,7 +231,9 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
 
     // let's try to allocate the mem
     while (!tester.allocate(megs) && (megs - 10 > 0))
-        { megs -= 10; tester.deallocate(); }
+    {
+        megs -= 10; tester.deallocate();
+    }
 
     if (megs <= 10)
     {
@@ -229,25 +250,31 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
         {
             tester.gpuMovingInversionsOnesZeros(err_count);
             if (err_count > 0)
+            {
                 return MOVING_INVERSIONS_10;
+            }
         }
         // Moving Inversions (random)
         if ((MOVING_INVERSIONS_RAND & which_tests) == MOVING_INVERSIONS_RAND)
         {
             tester.gpuMovingInversionsRandom(err_count);
             if (err_count > 0)
+            {
                 return MOVING_INVERSIONS_RAND;
+            }
         }
-       // Memtest86 Walking 8-bit
+        // Memtest86 Walking 8-bit
         if ((WALKING_8BIT_M86 & which_tests) == WALKING_8BIT_M86)
         {
             for (uint shift = 0; shift < 8; shift++)
             {
                 tester.gpuWalking8BitM86(err_count, shift);
                 if (err_count > 0)
+                {
                     return WALKING_8BIT_M86;
+                }
             }
-      }
+        }
         // True Walking zeros (8-bit)
         if ((WALKING_0_8BIT & which_tests) == WALKING_0_8BIT)
         {
@@ -255,7 +282,9 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
             {
                 tester.gpuWalking8Bit(err_count, false, shift);
                 if (err_count > 0)
+                {
                     return WALKING_0_8BIT;
+                }
             }
         }
         // True Walking ones (8-bit)
@@ -265,7 +294,9 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
             {
                 tester.gpuWalking8Bit(err_count, true, shift);
                 if (err_count > 0)
+                {
                     return WALKING_1_8BIT;
+                }
             }
         }
         // Memtest86 Walking zeros (32-bit)
@@ -275,25 +306,31 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
             {
                 tester.gpuWalking32Bit(err_count, false, shift);
                 if (err_count > 0)
+                {
                     return WALKING_0_32BIT;
+                }
             }
         }
-       // Memtest86 Walking ones (32-bit)
+        // Memtest86 Walking ones (32-bit)
         if ((WALKING_1_32BIT & which_tests) == WALKING_1_32BIT)
         {
             for (uint shift = 0; shift < 32; shift++)
             {
                 tester.gpuWalking32Bit(err_count, true, shift);
                 if (err_count > 0)
+                {
                     return WALKING_1_32BIT;
+                }
             }
-       }
+        }
         // Random blocks
         if ((RANDOM_BLOCKS & which_tests) == RANDOM_BLOCKS)
         {
-            tester.gpuRandomBlocks(err_count,rand());
+            tester.gpuRandomBlocks(err_count, rand());
             if (err_count > 0)
+            {
                 return RANDOM_BLOCKS;
+            }
 
         }
 
@@ -304,37 +341,47 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
             {
                 tester.gpuModuloX(err_count, shift, rand(), 20, 2);
                 if (err_count > 0)
+                {
                     return MOD_20_32BIT;
+                }
             }
         }
         // Logic (one iteration)
         if ((LOGIC_1_ITER & which_tests) == LOGIC_1_ITER)
         {
-            tester.gpuShortLCG0(err_count,1);
+            tester.gpuShortLCG0(err_count, 1);
             if (err_count > 0)
+            {
                 return LOGIC_1_ITER;
+            }
         }
         // Logic (4 iterations)
         if ((LOGIC_4_ITER & which_tests) == LOGIC_4_ITER)
         {
-            tester.gpuShortLCG0(err_count,4);
+            tester.gpuShortLCG0(err_count, 4);
             if (err_count > 0)
+            {
                 return LOGIC_4_ITER;
+            }
 
         }
         // Logic (shared memory, one iteration)
         if ((LOGIC_1_ITER_SHMEM & which_tests) == LOGIC_1_ITER_SHMEM)
         {
-            tester.gpuShortLCG0Shmem(err_count,1);
+            tester.gpuShortLCG0Shmem(err_count, 1);
             if (err_count > 0)
+            {
                 return LOGIC_1_ITER_SHMEM;
+            }
         }
         // Logic (shared-memory, 4 iterations)
         if ((LOGIC_4_ITER_SHMEM & which_tests) == LOGIC_4_ITER_SHMEM)
         {
-            tester.gpuShortLCG0Shmem(err_count,4);
+            tester.gpuShortLCG0Shmem(err_count, 4);
             if (err_count > 0)
+            {
                 return LOGIC_4_ITER_SHMEM;
+            }
         }
     }
 
@@ -353,9 +400,12 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
 int do_quick_memtest(int dev_id)
 {
     cudaDeviceProp  dev_prop;
-    int             devmem, res, time=0;
+    int             devmem, res, time = 0;
 
-    if (debug) { time = getTimeMilliseconds(); }
+    if (debug)
+    {
+        time = getTimeMilliseconds();
+    }
 
     if (do_sanity_checks(dev_id, &dev_prop) != 0)
     {
@@ -367,7 +417,7 @@ int do_quick_memtest(int dev_id)
     {
         devmem = dev_prop.totalGlobalMem/(1024*1024); // in MiB
         fprintf(debug, ">> Running QUICK memtests on %d MiB (out of total %d MiB), %d iterations\n",
-            QUICK_MEM, devmem, QUICK_ITER);
+                QUICK_MEM, devmem, QUICK_ITER);
     }
 
     res = do_memtest(QUICK_TESTS, QUICK_MEM, QUICK_ITER);
@@ -379,7 +429,10 @@ int do_quick_memtest(int dev_id)
     }
 
     /* destroy context only if we created it */
-    if (dev_id !=-1) cudaThreadExit();
+    if (dev_id != -1)
+    {
+        cudaThreadExit();
+    }
     return res;
 }
 
@@ -395,9 +448,12 @@ int do_quick_memtest(int dev_id)
 int do_full_memtest(int dev_id)
 {
     cudaDeviceProp  dev_prop;
-    int             devmem, res, time=0;
+    int             devmem, res, time = 0;
 
-    if (debug) { time = getTimeMilliseconds(); }
+    if (debug)
+    {
+        time = getTimeMilliseconds();
+    }
 
     if (do_sanity_checks(dev_id, &dev_prop) != 0)
     {
@@ -407,10 +463,10 @@ int do_full_memtest(int dev_id)
 
     devmem = dev_prop.totalGlobalMem/(1024*1024); // in MiB
 
-    if (debug) 
-    { 
+    if (debug)
+    {
         fprintf(debug, ">> Running FULL memtests on %d MiB (out of total %d MiB), %d iterations\n",
-            devmem, devmem, FULL_ITER); 
+                devmem, devmem, FULL_ITER);
     }
 
     /* do all test on the entire memory */
@@ -423,7 +479,10 @@ int do_full_memtest(int dev_id)
     }
 
     /* destroy context only if we created it */
-    if (dev_id != -1) cudaThreadExit();
+    if (dev_id != -1)
+    {
+        cudaThreadExit();
+    }
     return res;
 }
 
@@ -440,12 +499,15 @@ int do_full_memtest(int dev_id)
 int do_timed_memtest(int dev_id, int time_constr)
 {
     cudaDeviceProp  dev_prop;
-    int             devmem, res=0, time=0, startt;
+    int             devmem, res = 0, time = 0, startt;
 
-    if (debug) { time = getTimeMilliseconds(); }
+    if (debug)
+    {
+        time = getTimeMilliseconds();
+    }
 
     time_constr *= 1000;  /* convert to ms for convenience */
-    startt = getTimeMilliseconds();
+    startt       = getTimeMilliseconds();
 
     if (do_sanity_checks(dev_id, &dev_prop) != 0)
     {
@@ -455,18 +517,21 @@ int do_timed_memtest(int dev_id, int time_constr)
 
     devmem = dev_prop.totalGlobalMem/(1024*1024); // in MiB
 
-    if (debug) 
-    { 
+    if (debug)
+    {
         fprintf(debug, ">> Running time constrained memtests on %d MiB (out of total %d MiB), time limit of %d s \n",
-        devmem, devmem, time_constr); 
+                devmem, devmem, time_constr);
     }
 
-    /* do the TIMED_TESTS set, one step at a time on the entire memory 
+    /* do the TIMED_TESTS set, one step at a time on the entire memory
        that can be allocated, and stop when the given time is exceeded */
     while ( ((int)getTimeMilliseconds() - startt) < time_constr)
-    {        
+    {
         res = do_memtest(TIMED_TESTS, devmem, 1);
-        if (res != 0) break;
+        if (res != 0)
+        {
+            break;
+        }
     }
 
     if (debug)
@@ -476,7 +541,10 @@ int do_timed_memtest(int dev_id, int time_constr)
     }
 
     /* destroy context only if we created it */
-    if (dev_id != -1) cudaThreadExit();
+    if (dev_id != -1)
+    {
+        cudaThreadExit();
+    }
     return res;
 }
 
@@ -497,8 +565,8 @@ gmx_bool init_gpu(int mygpu, char *result_str,
                   const gmx_gpu_opt_t *gpu_opt)
 {
     cudaError_t stat;
-    char sbuf[STRLEN];
-    int gpuid;
+    char        sbuf[STRLEN];
+    int         gpuid;
 
     assert(gpu_info);
     assert(result_str);
@@ -507,7 +575,7 @@ gmx_bool init_gpu(int mygpu, char *result_str,
     {
         sprintf(sbuf, "Trying to initialize an inexistent GPU: "
                 "there are %d %s-selected GPU(s), but #%d was requested.",
-                 gpu_opt->ncuda_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
+                gpu_opt->ncuda_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
         gmx_incons(sbuf);
     }
 
@@ -643,9 +711,9 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
  */
 int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 {
-    int             i, ndev, checkres, retval;
-    cudaError_t     stat;
-    cudaDeviceProp  prop;
+    int              i, ndev, checkres, retval;
+    cudaError_t      stat;
+    cudaDeviceProp   prop;
     cuda_dev_info_t *devs;
 
     assert(gpu_info);
@@ -666,7 +734,7 @@ int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
          * busy in exclusive mode, or some other condition which should
          * result in us issuing a warning a falling back to CPUs. */
         retval = -1;
-        s = cudaGetErrorString(stat);
+        s      = cudaGetErrorString(stat);
         strncpy(err_str, s, STRLEN*sizeof(err_str[0]));
     }
     else
@@ -708,9 +776,9 @@ int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
  * \param[in,out] gpu_opt     pointer to structure holding GPU options
  */
 void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
-                          gmx_gpu_opt_t *gpu_opt)
+                          gmx_gpu_opt_t        *gpu_opt)
 {
-    int i, ncompat;
+    int  i, ncompat;
     int *compat;
 
     assert(gpu_info);
@@ -746,11 +814,11 @@ void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
  * \param[out]  gpu_opt     pointer to structure holding GPU options
  * \returns                 TRUE if every the requested GPUs are compatible
  */
-gmx_bool check_selected_cuda_gpus(int *checkres,
+gmx_bool check_selected_cuda_gpus(int                  *checkres,
                                   const gmx_gpu_info_t *gpu_info,
-                                  gmx_gpu_opt_t *gpu_opt)
+                                  gmx_gpu_opt_t        *gpu_opt)
 {
-    int i, id;
+    int  i, id;
     bool bAllOk;
 
     assert(checkres);
@@ -820,7 +888,7 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int ind
 
     cuda_dev_info_t *dinfo = &gpu_info->cuda_dev[index];
 
-    bool bGpuExists =
+    bool             bGpuExists =
         dinfo->stat == egpuCompatible ||
         dinfo->stat == egpuIncompatible;
 
@@ -852,8 +920,8 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int ind
  * \returns                 device ID of the requested GPU
  */
 int get_gpu_device_id(const gmx_gpu_info_t *gpu_info,
-                      const gmx_gpu_opt_t *gpu_opt,
-                      int idx)
+                      const gmx_gpu_opt_t  *gpu_opt,
+                      int                   idx)
 {
     assert(gpu_info);
     assert(gpu_opt);

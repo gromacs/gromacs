@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,12 +40,11 @@
 
 #include <math.h>
 #include "typedefs.h"
-#include "smalloc.h"
-#include "statutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/commandline/pargs.h"
 #include "macros.h"
-#include "string2.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/trxio.h"
 
 static int calc_ntype(int nft, int *ft, t_idef *idef)
@@ -116,6 +115,18 @@ static void fill_ft_ind(int nft, int *ft, t_idef *idef,
                     case F_RBDIHS:
                         sprintf(buf, "RB-A1=%.2f", idef->iparams[i].rbdihs.rbcA[1]);
                         break;
+                    case  F_RESTRANGLES:
+                        sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
+                                idef->iparams[i].harmonic.krA);
+                        break;
+                    case  F_RESTRDIHS:
+                        sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
+                                idef->iparams[i].harmonic.krA);
+                        break;
+                    case  F_CBTDIHS:
+                        sprintf(buf, "CBT-A1=%.2f", idef->iparams[i].cbtdihs.cbtcA[1]);
+                        break;
+
                     default:
                         gmx_fatal(FARGS, "Unsupported function type '%s' selected",
                                   interaction_function[ftype].longname);
@@ -305,7 +316,7 @@ int gmx_mk_angndx(int argc, char *argv[])
             fprintf(out, "\n");
         }
     }
-    ffclose(out);
+    gmx_ffclose(out);
 
     return 0;
 }

@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,9 @@
 #define GMX_FILEIO_XDRF_H
 
 #include <stdio.h>
-#include "../legacyheaders/typedefs.h"
+
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __PGI    /*Portland group compiler*/
 #define int64_t long long
@@ -71,10 +73,8 @@ int xdr_real(XDR *xdrs, real *r);
 int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision);
 
 
-int xdr_gmx_large_int(XDR *xdrs, gmx_large_int_t *i);
-/* Read or write a gmx_large_int_t value.
- * 32bit code reading a 64bit gmx_large_int_t value from xdrs could
- * lead to values out of int range.
+int xdr_int64(XDR *xdrs, gmx_int64_t *i);
+/* Read or write a gmx_int64_t value.
  * When warn!=NULL a warning will be written to stderr
  * when a value does not fit,
  * the first line is:

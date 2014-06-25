@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,17 +39,16 @@
 #endif
 
 #include <math.h>
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "typedefs.h"
 #include "names.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
-#include "xvgr.h"
-#include "vec.h"
-#include "main.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
 #include "network.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "force.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "macros.h"
@@ -132,8 +131,7 @@ typedef struct {
 #define pow4(x) ((x)*(x)*(x)*(x))
 #define pow5(x) ((x)*(x)*(x)*(x)*(x))
 
-
-static double v_ewald_lr(double beta, double r)
+double v_q_ewald_lr(double beta, double r)
 {
     if (r == 0)
     {
@@ -145,12 +143,31 @@ static double v_ewald_lr(double beta, double r)
     }
 }
 
-void table_spline3_fill_ewald_lr(real *table_f,
-                                 real *table_v,
-                                 real *table_fdv0,
-                                 int   ntab,
-                                 real  dx,
-                                 real  beta)
+double v_lj_ewald_lr(double beta, double r)
+{
+    double br, br2, br4, r6, factor;
+    if (r == 0)
+    {
+        return pow(beta, 6)/6;
+    }
+    else
+    {
+        br     = beta*r;
+        br2    = br*br;
+        br4    = br2*br2;
+        r6     = pow(r, 6.0);
+        factor = (1.0 - exp(-br2)*(1 + br2 + 0.5*br4))/r6;
+        return factor;
+    }
+}
+
+void table_spline3_fill_ewald_lr(real                                 *table_f,
+                                 real                                 *table_v,
+                                 real                                 *table_fdv0,
+                                 int                                   ntab,
+                                 real                                  dx,
+                                 real                                  beta,
+                                 real_space_grid_contribution_computer v_lr)
 {
     real     tab_max;
     int      i, i_inrange;
@@ -158,6 +175,10 @@ void table_spline3_fill_ewald_lr(real *table_f,
     gmx_bool bOutOfRange;
     double   v_r0, v_r1, v_inrange, vi, a0, a1, a2dx;
     double   x_r0;
+
+    /* This function is called using either v_ewald_lr or v_lj_ewald_lr as a function argument
+     * depending on wether we should create electrostatic or Lennard-Jones Ewald tables.
+     */
 
     if (ntab < 2)
     {
@@ -184,7 +205,7 @@ void table_spline3_fill_ewald_lr(real *table_f,
     {
         x_r0 = i*dx;
 
-        v_r0 = v_ewald_lr(beta, x_r0);
+        v_r0 = (*v_lr)(beta, x_r0);
 
         if (!bOutOfRange)
         {
@@ -210,7 +231,7 @@ void table_spline3_fill_ewald_lr(real *table_f,
         }
 
         /* Get the potential at table point i-1 */
-        v_r1 = v_ewald_lr(beta, (i-1)*dx);
+        v_r1 = (*v_lr)(beta, (i-1)*dx);
 
         if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
         {
@@ -222,7 +243,7 @@ void table_spline3_fill_ewald_lr(real *table_f,
             /* Calculate the average second derivative times dx over interval i-1 to i.
              * Using the function values at the end points and in the middle.
              */
-            a2dx = (v_r0 + v_r1 - 2*v_ewald_lr(beta, x_r0-0.5*dx))/(0.25*dx);
+            a2dx = (v_r0 + v_r1 - 2*(*v_lr)(beta, x_r0-0.5*dx))/(0.25*dx);
             /* Set the derivative of the spline to match the difference in potential
              * over the interval plus the average effect of the quadratic term.
              * This is the essential step for minimizing the error in the force.
@@ -1160,6 +1181,34 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
                 gmx_fatal(FARGS, "Invalid vdwtype %d in %s line %d", vdwtype,
                           __FILE__, __LINE__);
         }
+
+        if (!b14only && fr->vdw_modifier != eintmodNONE)
+        {
+            if (fr->vdw_modifier != eintmodPOTSHIFT &&
+                fr->vdwtype != evdwCUT)
+            {
+                gmx_incons("Potential modifiers other than potential-shift are only implemented for LJ cut-off");
+            }
+
+            switch (fr->vdw_modifier)
+            {
+                case eintmodNONE:
+                case eintmodPOTSHIFT:
+                case eintmodEXACTCUTOFF:
+                    /* No modification */
+                    break;
+                case eintmodPOTSWITCH:
+                    tabsel[etiLJ6]  = etabLJ6Switch;
+                    tabsel[etiLJ12] = etabLJ12Switch;
+                    break;
+                case eintmodFORCESWITCH:
+                    tabsel[etiLJ6]  = etabLJ6Shift;
+                    tabsel[etiLJ12] = etabLJ12Shift;
+                    break;
+                default:
+                    gmx_incons("Unsupported vdw_modifier");
+            }
+        }
     }
 }
 
@@ -1575,7 +1624,7 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
             fprintf(fp, "%15.10e  %15.10e  %15.10e\n", x0, y0, yp);
 
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     done_tabledata(&(td[0]));

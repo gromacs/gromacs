@@ -1,36 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -41,31 +43,33 @@
 #include <algorithm>
 
 #include "macros.h"
-#include "statutil.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "bondf.h"
-#include "gromacs/fileio/futil.h"
-#include "xvgr.h"
+#include "gromacs/utility/futil.h"
+#include "viewit.h"
 #include "txtdump.h"
-#include "gmx_statistics.h"
+#include "gromacs/statistics/statistics.h"
 #include "gstat.h"
-#include "index.h"
-#include "random.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/random/random.h"
 #include "names.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "calcmu.h"
 #include "gromacs/fileio/enxio.h"
-#include "nrjac.h"
-#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "copyrite.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
@@ -89,7 +93,7 @@ static t_gkrbin *mk_gkrbin(real radius, real rcmax, gmx_bool bPhi, int ndegrees)
 
     snew(gb, 1);
 
-    if ((ptr = getenv("GKRWIDTH")) != NULL)
+    if ((ptr = getenv("GMX_DIPOLE_SPACING")) != NULL)
     {
         double bw = strtod(ptr, NULL);
         gb->spacing = bw;
@@ -318,13 +322,13 @@ static void print_cmap(const char *cmap, t_gkrbin *gb, int *nlevels)
         }
         /*2.0*j/(gb->ny-1.0)-1.0;*/
     }
-    out = ffopen(cmap, "w");
+    out = gmx_ffopen(cmap, "w");
     write_xpm(out, 0,
               "Dipole Orientation Distribution", "Fraction", "r (nm)",
               gb->bPhi ? "Phi" : "Alpha",
               gb->nx, gb->ny, xaxis, yaxis,
               gb->cmap, 0, hi, rlo, rhi, nlevels);
-    ffclose(out);
+    gmx_ffclose(out);
     sfree(xaxis);
     sfree(yaxis);
 }
@@ -403,7 +407,7 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
         /* Swap x0 and x1 */
         x0 = x1;
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol,
@@ -685,7 +689,7 @@ static void dump_slab_dipoles(const char *fn, int idim, int nslice,
                 slab_dipole[i][ZZ]/nframes,
                 mutot);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     do_view(oenv, fn, "-autoscale xy -nxy");
 }
 
@@ -941,17 +945,17 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         snew(dipsp, gnx_tot);
 
         /* we need a dummy file for gnuplot */
-        dip3d = (FILE *)ffopen("dummy.dat", "w");
+        dip3d = (FILE *)gmx_ffopen("dummy.dat", "w");
         fprintf(dip3d, "%f %f %f", 0.0, 0.0, 0.0);
-        ffclose(dip3d);
+        gmx_ffclose(dip3d);
 
-        dip3d = (FILE *)ffopen(fndip3d, "w");
+        dip3d = (FILE *)gmx_ffopen(fndip3d, "w");
         try
         {
             gmx::BinaryInformationSettings settings;
             settings.generatedByHeader(true);
             settings.linePrefix("# ");
-            gmx::printBinaryInformation(dip3d, gmx::ProgramInfo::getInstance(),
+            gmx::printBinaryInformation(dip3d, gmx::getProgramContext(),
                                         settings);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -1335,18 +1339,18 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         close_trj(status);
     }
 
-    ffclose(outmtot);
-    ffclose(outaver);
-    ffclose(outeps);
+    gmx_ffclose(outmtot);
+    gmx_ffclose(outaver);
+    gmx_ffclose(outeps);
 
     if (fnadip)
     {
-        ffclose(adip);
+        gmx_ffclose(adip);
     }
 
     if (cosaver)
     {
-        ffclose(caver);
+        gmx_ffclose(caver);
     }
 
     if (dip3d)
@@ -1356,7 +1360,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         fprintf(dip3d, "set zrange [0.0:%4.2f]\n\n", box[ZZ][ZZ]);
         fprintf(dip3d, "splot 'dummy.dat' using 1:2:3 w vec\n");
         fprintf(dip3d, "pause -1 'Hit return to continue'\n");
-        ffclose(dip3d);
+        gmx_ffclose(dip3d);
     }
 
     if (bSlab)
@@ -1455,7 +1459,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             fprintf(outdd, "%10g  %10f\n",
                     (i*mu_max)/ndipbin, dipole_bin[i]/(double)teller);
         }
-        ffclose(outdd);
+        gmx_ffclose(outdd);
         sfree(dipole_bin);
     }
     if (bGkr)

@@ -1,56 +1,58 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "smalloc.h"
 #include <math.h>
+#include <stdlib.h>
+
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "typedefs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
-#include "statutil.h"
-#include "string2.h"
-#include "vec.h"
-#include "index.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "princ.h"
-#include "rmpbc.h"
-#include "do_fit.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -58,6 +60,7 @@
 #include "viewit.h"
 #include "gmx_ana.h"
 
+#include "gromacs/math/do_fit.h"
 
 static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
                        rvec *x)
@@ -227,7 +230,7 @@ int gmx_rms(int argc, char *argv[])
     int             ePBC;
     t_iatom        *iatom = NULL;
 
-    matrix          box;
+    matrix          box = {{0}};
     rvec           *x, *xp, *xm = NULL, **mat_x = NULL, **mat_x2, *mat_x2_j = NULL, vec1,
                     vec2;
     t_trxstatus    *status;
@@ -1062,11 +1065,11 @@ int gmx_rms(int argc, char *argv[])
                     del_yaxis[i] = delta_maxy*i/del_lev;
                 }
                 sprintf(buf, "%s %s vs. delta t", gn_rms[0], whatname[ewhat]);
-                fp = ffopen("delta.xpm", "w");
+                fp = gmx_ffopen("delta.xpm", "w");
                 write_xpm(fp, 0, buf, "density", output_env_get_time_label(oenv), whatlabel[ewhat],
                           delta_xsize, del_lev+1, del_xaxis, del_yaxis,
                           delta, 0.0, delta_max, rlo, rhi, &nlevels);
-                ffclose(fp);
+                gmx_ffclose(fp);
             }
             if (opt2bSet("-bin", NFILE, fnm))
             {
@@ -1079,7 +1082,7 @@ int gmx_rms(int argc, char *argv[])
                         gmx_fatal(FARGS, "Error writing to output file");
                     }
                 }
-                ffclose(fp);
+                gmx_ffclose(fp);
             }
         }
         if (bBond)
@@ -1134,7 +1137,7 @@ int gmx_rms(int argc, char *argv[])
     for (i = 0; (i < teller); i++)
     {
         if (bSplit && i > 0 &&
-            abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
+            fabs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
         {
             fprintf(fp, "&\n");
         }
@@ -1149,7 +1152,7 @@ int gmx_rms(int argc, char *argv[])
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     if (bMirror)
     {
@@ -1176,7 +1179,7 @@ int gmx_rms(int argc, char *argv[])
         }
         for (i = 0; (i < teller); i++)
         {
-            if (bSplit && i > 0 && abs(time[i]) < 1e-5)
+            if (bSplit && i > 0 && fabs(time[i]) < 1e-5)
             {
                 fprintf(fp, "&\n");
             }
@@ -1187,7 +1190,7 @@ int gmx_rms(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     if (bAv)
@@ -1199,7 +1202,7 @@ int gmx_rms(int argc, char *argv[])
         {
             fprintf(fp, "%10d  %10g\n", j, rlstot/teller);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     if (bNorm)
@@ -1209,7 +1212,7 @@ int gmx_rms(int argc, char *argv[])
         {
             fprintf(fp, "%10d  %10g\n", j, rlsnorm[j]/teller);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     do_view(oenv, opt2fn_null("-a", NFILE, fnm), "-graphtype bar");
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);

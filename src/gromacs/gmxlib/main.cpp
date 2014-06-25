@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -46,36 +47,34 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "network.h"
-#include "main.h"
-#include "macros.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "string2.h"
-#include "copyrite.h"
-
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/programinfo.h"
-
-/* The source code in this file should be thread-safe.
-         Please keep it that way. */
-
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #ifdef GMX_NATIVE_WINDOWS
 #include <process.h>
 #endif
 
-#define BUFSIZE 1024
+#include "types/commrec.h"
+#include "network.h"
+#include "main.h"
+#include "macros.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "copyrite.h"
 
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
+
+/* The source code in this file should be thread-safe.
+         Please keep it that way. */
+
+#define BUFSIZE 1024
 
 static void par_fn(char *base, int ftp, const t_commrec *cr,
                    gmx_bool bAppendSimId, gmx_bool bAppendNodeId,
@@ -164,11 +163,11 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
     sfree(ibuf);
 }
 
-void check_multi_large_int(FILE *log, const gmx_multisim_t *ms,
-                           gmx_large_int_t val, const char *name,
-                           gmx_bool bQuiet)
+void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
+                       gmx_int64_t val, const char *name,
+                       gmx_bool bQuiet)
 {
-    gmx_large_int_t  *ibuf;
+    gmx_int64_t      *ibuf;
     int               p;
     gmx_bool          bCompatible;
 
@@ -210,7 +209,7 @@ void check_multi_large_int(FILE *log, const gmx_multisim_t *ms,
                 char strbuf[255];
                 /* first make the format string */
                 snprintf(strbuf, 255, "  subsystem %%d: %s\n",
-                         gmx_large_int_pfmt);
+                         "%" GMX_PRId64);
                 fprintf(log, strbuf, p, ibuf[p]);
             }
         }
@@ -218,25 +217,6 @@ void check_multi_large_int(FILE *log, const gmx_multisim_t *ms,
     }
 
     sfree(ibuf);
-}
-
-
-char *gmx_gethostname(char *name, size_t len)
-{
-    if (len < 8)
-    {
-        gmx_incons("gmx_gethostname called with len<8");
-    }
-#ifdef HAVE_UNISTD_H
-    if (gethostname(name, len-1) != 0)
-    {
-        strncpy(name, "unknown", 8);
-    }
-#else
-    strncpy(name, "unknown", 8);
-#endif
-
-    return name;
 }
 
 
@@ -336,7 +316,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
         gmx::BinaryInformationSettings settings;
         settings.extendedInfo(true);
         settings.copyright(!bAppendFiles);
-        gmx::printBinaryInformation(fp, gmx::ProgramInfo::getInstance(), settings);
+        gmx::printBinaryInformation(fp, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(fp, "\n\n");

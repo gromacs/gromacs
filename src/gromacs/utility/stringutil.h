@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,9 +98,17 @@ bool endsWith(const std::string &str, const char *suffix);
  * Returns \p str if \p suffix is NULL or empty.
  */
 std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
+/*! \brief
+ * Removes leading and trailing whitespace from a string.
+ *
+ * \param[in] str  String to process.
+ * \returns   \p str with leading and trailing whitespaces removed.
+ * \throws    std::bad_alloc if out of memory.
+ */
+std::string stripString(const std::string &str);
 
 /*! \brief
- * Format a string (snprintf() wrapper).
+ * Formats a string (snprintf() wrapper).
  *
  * \throws  std::bad_alloc if out of memory.
  *
@@ -109,6 +117,58 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * supported.
  */
 std::string formatString(const char *fmt, ...);
+
+/*! \brief
+ * Splits a string to whitespace separated tokens.
+ *
+ * \param[in] str  String to process.
+ * \returns   \p str split into tokens at each whitespace sequence.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * This function works like `split` in Python, i.e., leading and trailing
+ * whitespace is ignored, and consecutive whitespaces are treated as a single
+ * separator.
+ */
+std::vector<std::string> splitString(const std::string &str);
+
+/*! \brief
+ * Joins strings from a range with a separator in between.
+ *
+ * \param[in] begin      Iterator the beginning of the range to join.
+ * \param[in] end        Iterator the end of the range to join.
+ * \param[in] separator  String to put in between the joined strings.
+ * \returns   All strings from (`begin`, `end`) concatenated with `separator`
+ *     between each pair.
+ * \throws    std::bad_alloc if out of memory.
+ */
+template <typename InputIterator>
+std::string joinStrings(InputIterator begin, InputIterator end,
+                        const char *separator)
+{
+    std::string result;
+    const char *currentSeparator = "";
+    for (InputIterator i = begin; i != end; ++i)
+    {
+        result.append(currentSeparator);
+        result.append(*i);
+        currentSeparator = separator;
+    }
+    return result;
+}
+/*! \brief
+ * Joins strings from a container with a separator in between.
+ *
+ * \param[in] container  Strings to join.
+ * \param[in] separator  String to put in between the joined strings.
+ * \returns   All strings from `container` concatenated with `separator`
+ *     between each pair.
+ * \throws    std::bad_alloc if out of memory.
+ */
+template <typename ContainerType>
+std::string joinStrings(const ContainerType &container, const char *separator)
+{
+    return joinStrings(container.begin(), container.end(), separator);
+}
 
 /*! \brief
  * Joins strings in an array to a single string.

@@ -1,8 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009-2011, by the VOTCA Development Team (http://www.votca.org)
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2009-2011, by the VOTCA Development Team (http://www.votca.org).
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # - Finds parts of GROMACS
-# Find the native GROMACS compents headers and libraries.
+# Find the native GROMACS components headers and libraries.
 #
 #  GROMACS_INCLUDE_DIRS   - where to find GROMACS headers.
 #  GROMACS_LIBRARIES      - List of libraries when used by GROMACS.
@@ -115,10 +115,10 @@ if (GROMACS_LIBRARY)
     message(FATAL_ERROR "Could not find init_mtop in the GROMACS library, take look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what was going wrong. This most likely means that your GROMACS version is too old, we need at least GROMACS 4.0.7.")
   endif(NOT FOUND_GROMACS_INIT_MTOP)
   set(GROMACS_VERSION 40000)
-  check_library_exists("${GROMACS_LIBRARY};${GROMACS_DEP_LIBRARIES}" output_env_init "" FOUND_GROMACS_OUTPUT_ENV_INIT)
-  if(FOUND_GROMACS_OUTPUT_ENV_INIT)
+  check_library_exists("${GROMACS_LIBRARY};${GROMACS_DEP_LIBRARIES}" output_env_done "" FOUND_GROMACS_OUTPUT_ENV_DONE)
+  if(FOUND_GROMACS_OUTPUT_ENV_DONE)
     set(GROMACS_VERSION 40500)
-  endif(FOUND_GROMACS_OUTPUT_ENV_INIT)
+  endif(FOUND_GROMACS_OUTPUT_ENV_DONE)
   check_library_exists("${GROMACS_LIBRARY};${GROMACS_DEP_LIBRARIES}" gmx_nonbonded_setup "" FOUND_GROMACS_GMX_NONBONDED_SETUP)
   if(FOUND_GROMACS_GMX_NONBONDED_SETUP)
     set(GROMACS_VERSION 40600)
@@ -144,11 +144,14 @@ if ("${GROMACS_PKG}" MATCHES "libgmx")
    find_path(GROMACS_INCLUDE_DIR gromacs/tpxio.h HINTS ${PC_GROMACS_INCLUDE_DIRS})
   endif(${GROMACS_VERSION} EQUAL 40000)
 elseif("${GROMACS_PKG}" MATCHES "libgromacs")
-  find_path(GROMACS_INCLUDE_DIR gromacs/legacyheaders/tpxio.h HINTS ${PC_GROMACS_INCLUDE_DIRS})
+  find_path(GROMACS_INCLUDE_DIR gromacs/version.h HINTS ${PC_GROMACS_INCLUDE_DIRS})
 endif("${GROMACS_PKG}" MATCHES "libgmx")
 
 set(GROMACS_LIBRARIES "${GROMACS_LIBRARY};${GROMACS_DEP_LIBRARIES}" )
 set(GROMACS_INCLUDE_DIRS ${GROMACS_INCLUDE_DIR} )
+if (PC_GROMACS_INCLUDE_DIRS)
+  list(APPEND GROMACS_INCLUDE_DIRS ${PC_GROMACS_INCLUDE_DIRS})
+endif(PC_GROMACS_INCLUDE_DIRS)
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set GROMACS_FOUND to TRUE

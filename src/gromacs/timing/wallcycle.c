@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,15 +40,17 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "md_logging.h"
-#include "string2.h"
-
-#include "gromacs/timing/cyclecounter.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "cyclecounter.h"
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last
@@ -78,7 +80,7 @@ typedef struct gmx_wallcycle
 #endif
     int               ewc_prev;
     gmx_cycles_t      cycle_prev;
-    gmx_large_int_t   reset_counters;
+    gmx_int64_t       reset_counters;
 #ifdef GMX_MPI
     MPI_Comm          mpi_comm_mygroup;
 #endif
@@ -100,7 +102,7 @@ static const char *wcn[ewcNR] =
     "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
     "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
     "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies",
-    "Enforced rotation", "Add rot. forces", "Test"
+    "Enforced rotation", "Add rot. forces", "Coordinate swapping", "IMD", "Test"
 };
 
 static const char *wcsn[ewcsNR] =
@@ -372,7 +374,7 @@ static gmx_bool is_pme_subcounter(int ewc)
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 {
     wallcc_t *wcc;
-    double   *cycles;
+    double    cycles[ewcNR+ewcsNR];
     double    cycles_n[ewcNR+ewcsNR], buf[ewcNR+ewcsNR], *cyc_all, *buf_all;
     int       i, j;
     int       nsum;
@@ -383,7 +385,6 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     }
 
     snew(wc->cycles_sum, ewcNR+ewcsNR);
-    cycles = wc->cycles_sum;
 
     wcc = wc->wcc;
 
@@ -479,12 +480,8 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         }
 #endif
 
-        MPI_Allreduce(cycles, buf, nsum, MPI_DOUBLE, MPI_SUM,
+        MPI_Allreduce(cycles, wc->cycles_sum, nsum, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
-        for (i = 0; i < nsum; i++)
-        {
-            cycles[i] = buf[i];
-        }
 
         if (wc->wcc_all != NULL)
         {
@@ -504,52 +501,59 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
             sfree(cyc_all);
         }
     }
+    else
 #endif
+    {
+        for (i = 0; i < nsum; i++)
+        {
+            wc->cycles_sum[i] = cycles[i];
+        }
+    }
 }
 
 static void print_cycles(FILE *fplog, double c2t, const char *name,
-                         int nthreads_tot,
                          int nnodes, int nthreads,
-                         int n, double c, double tot)
+                         int ncalls, double c_sum, double tot)
 {
-    char   num[11];
-    char   thstr[6];
+    char   nnodes_str[6];
+    char   nthreads_str[6];
+    char   ncalls_str[11];
     double wallt;
 
-    if (c > 0)
+    if (c_sum > 0)
     {
-        if (n > 0)
+        if (ncalls > 0)
         {
-            snprintf(num, sizeof(num), "%10d", n);
-            if (nthreads < 0)
+            snprintf(ncalls_str, sizeof(ncalls_str), "%10d", ncalls);
+            if (nnodes < 0)
             {
-                snprintf(thstr, sizeof(thstr), "N/A");
+                snprintf(nnodes_str, sizeof(nnodes_str), "N/A");
             }
             else
             {
-                snprintf(thstr, sizeof(thstr), "%4d", nthreads);
+                snprintf(nnodes_str, sizeof(nnodes_str), "%4d", nnodes);
+            }
+            if (nthreads < 0)
+            {
+                snprintf(nthreads_str, sizeof(nthreads_str), "N/A");
+            }
+            else
+            {
+                snprintf(nthreads_str, sizeof(nthreads_str), "%4d", nthreads);
             }
         }
         else
         {
-            sprintf(num, "          ");
-            sprintf(thstr, "    ");
+            nnodes_str[0]   = 0;
+            nthreads_str[0] = 0;
+            ncalls_str[0]   = 0;
         }
         /* Convert the cycle count to wallclock time for this task */
-        if (nthreads > 0)
-        {
-            /* Cycle count has been multiplied by the thread count,
-             * correct for the number of threads used.
-             */
-            wallt = c*c2t*nthreads_tot/(double)(nnodes*nthreads);
-        }
-        else
-        {
-            /* nthreads=-1 signals total run time, no correction required */
-            wallt = c*c2t;
-        }
-        fprintf(fplog, " %-19.19s %4d %4s %10s  %10.3f %12.3f   %5.1f\n",
-                name, nnodes, thstr, num, wallt, c*1e-9, 100*c/tot);
+        wallt = c_sum*c2t;
+
+        fprintf(fplog, " %-19.19s %4s %4s %10s  %10.3f %14.3f %5.1f\n",
+                name, nnodes_str, nthreads_str, ncalls_str, wallt,
+                c_sum*1e-9, 100*c_sum/tot);
     }
 }
 
@@ -581,11 +585,44 @@ static void print_gputimes(FILE *fplog, const char *name,
     }
 }
 
+static void print_header(FILE *fplog, int nrank_pp, int nth_pp, int nrank_pme, int nth_pme)
+{
+    int nrank_tot = nrank_pp + nrank_pme;
+    if (0 == nrank_pme)
+    {
+        fprintf(fplog, "On %d MPI rank%s", nrank_tot, nrank_tot == 1 ? "" : "s");
+        if (nth_pp > 1)
+        {
+            fprintf(fplog, ", each using %d OpenMP threads", nth_pp);
+        }
+        /* Don't report doing PP+PME, because we can't tell here if
+         * this is RF, etc. */
+    }
+    else
+    {
+        fprintf(fplog, "On %d MPI rank%s doing PP", nrank_pp, nrank_pp == 1 ? "" : "s");
+        if (nth_pp > 1)
+        {
+            fprintf(fplog, ",%s using %d OpenMP threads", nrank_pp > 1 ? " each" : "", nth_pp);
+        }
+        fprintf(fplog, ", and\non %d MPI rank%s doing PME", nrank_pme, nrank_pme == 1 ? "" : "s");
+        if (nth_pme > 1)
+        {
+            fprintf(fplog, ",%s using %d OpenMP threads", nrank_pme > 1 ? " each" : "", nth_pme);
+        }
+    }
+
+    fprintf(fplog, "\n\n");
+    fprintf(fplog, " Computing:          Num   Num      Call    Wall time         Giga-Cycles\n");
+    fprintf(fplog, "                     Nodes Threads  Count      (s)         total sum    %%\n");
+}
+
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                      gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t)
 {
-    double     *cycles;
-    double      c2t, tot, tot_gpu, tot_cpu_overlap, gpu_cpu_ratio, sum, tot_k;
+    double     *cyc_sum;
+    double      tot, tot_for_pp, tot_for_rest, tot_gpu, tot_cpu_overlap, gpu_cpu_ratio, tot_k;
+    double      c2t, c2t_pp, c2t_pme;
     int         i, j, npp, nth_pp, nth_pme, nth_tot;
     char        buf[STRLEN];
     const char *hline = "-----------------------------------------------------------------------------";
@@ -598,48 +635,62 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     nth_pp  = wc->nthreads_pp;
     nth_pme = wc->nthreads_pme;
 
-    cycles = wc->cycles_sum;
+    cyc_sum = wc->cycles_sum;
 
-    if (npme > 0)
-    {
-        npp = nnodes - npme;
+    npp     = nnodes - npme;
+    nth_tot = npp*nth_pp + npme*nth_pme;
 
-        nth_tot = npp*nth_pp + npme*nth_pme;
-    }
-    else
-    {
-        npp  = nnodes;
-        npme = nnodes;
-
-        nth_tot = npp*nth_pp;
-    }
-
-    tot = cycles[ewcRUN];
+    /* When using PME-only nodes, the next line is valid for both
+       PP-only and PME-only nodes because they started ewcRUN at the
+       same time. */
+    tot        = cyc_sum[ewcRUN];
+    tot_for_pp = 0;
 
     /* Conversion factor from cycles to seconds */
     if (tot > 0)
     {
-        c2t = realtime/tot;
+        c2t     = realtime/tot;
+        c2t_pp  = c2t * nth_tot / (double) (npp*nth_pp);
+        c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
     }
     else
     {
-        c2t = 0;
+        c2t     = 0;
+        c2t_pp  = 0;
+        c2t_pme = 0;
     }
 
     fprintf(fplog, "\n     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
 
-    fprintf(fplog, " Computing:         Nodes   Th.     Count  Wall t (s)     G-Cycles       %c\n", '%');
+    print_header(fplog, npp, nth_pp, npme, nth_pme);
+
     fprintf(fplog, "%s\n", hline);
-    sum = 0;
     for (i = ewcPPDURINGPME+1; i < ewcNR; i++)
     {
-        if (!is_pme_subcounter(i))
+        if (is_pme_subcounter(i))
         {
-            print_cycles(fplog, c2t, wcn[i], nth_tot,
-                         is_pme_counter(i) ? npme : npp,
-                         is_pme_counter(i) ? nth_pme : nth_pp,
-                         wc->wcc[i].n, cycles[i], tot);
-            sum += cycles[i];
+            /* Do not count these at all */
+        }
+        else if (npme > 0 && is_pme_counter(i))
+        {
+            /* Print timing information for PME-only nodes, but add an
+             * asterisk so the reader of the table can know that the
+             * walltimes are not meant to add up. The asterisk still
+             * fits in the required maximum of 19 characters. */
+            char buffer[STRLEN];
+            snprintf(buffer, STRLEN, "%s *", wcn[i]);
+            print_cycles(fplog, c2t_pme, buffer,
+                         npme, nth_pme,
+                         wc->wcc[i].n, cyc_sum[i], tot);
+        }
+        else
+        {
+            /* Print timing information when it is for a PP or PP+PME
+               node */
+            print_cycles(fplog, c2t_pp, wcn[i],
+                         npp, nth_pp,
+                         wc->wcc[i].n, cyc_sum[i], tot);
+            tot_for_pp += cyc_sum[i];
         }
     }
     if (wc->wcc_all != NULL)
@@ -649,42 +700,56 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             for (j = 0; j < ewcNR; j++)
             {
                 snprintf(buf, 20, "%-9.9s %-9.9s", wcn[i], wcn[j]);
-                print_cycles(fplog, c2t, buf, nth_tot,
-                             is_pme_counter(i) ? npme : npp,
-                             is_pme_counter(i) ? nth_pme : nth_pp,
+                print_cycles(fplog, c2t_pp, buf,
+                             npp, nth_pp,
                              wc->wcc_all[i*ewcNR+j].n,
                              wc->wcc_all[i*ewcNR+j].c,
                              tot);
             }
         }
     }
-    print_cycles(fplog, c2t, "Rest", nth_tot, npp, -1, 0, tot-sum, tot);
+    tot_for_rest = tot * (npp * nth_pp) / (double) nth_tot;
+    print_cycles(fplog, c2t_pp, "Rest",
+                 npp, nth_pp,
+                 -1, tot_for_rest - tot_for_pp, tot);
     fprintf(fplog, "%s\n", hline);
-    print_cycles(fplog, c2t, "Total", nth_tot, nnodes, -1, 0, tot, tot);
+    print_cycles(fplog, c2t, "Total",
+                 npp, nth_pp,
+                 -1, tot, tot);
     fprintf(fplog, "%s\n", hline);
+
+    if (npme > 0)
+    {
+        fprintf(fplog,
+                "(*) Note that with separate PME nodes, the walltime column actually sums to\n"
+                "    twice the total reported, but the cycle count total and %% are correct.\n"
+                "%s\n", hline);
+    }
 
     if (wc->wcc[ewcPMEMESH].n > 0)
     {
+        fprintf(fplog, " Breakdown of PME mesh computation\n");
         fprintf(fplog, "%s\n", hline);
         for (i = ewcPPDURINGPME+1; i < ewcNR; i++)
         {
             if (is_pme_subcounter(i))
             {
-                print_cycles(fplog, c2t, wcn[i], nth_tot,
-                             is_pme_counter(i) ? npme : npp,
-                             is_pme_counter(i) ? nth_pme : nth_pp,
-                             wc->wcc[i].n, cycles[i], tot);
+                print_cycles(fplog, npme > 0 ? c2t_pme : c2t_pp, wcn[i],
+                             npme > 0 ? npme : npp, nth_pme,
+                             wc->wcc[i].n, cyc_sum[i], tot);
             }
         }
         fprintf(fplog, "%s\n", hline);
     }
 
 #ifdef GMX_CYCLE_SUBCOUNTERS
+    fprintf(fplog, " Breakdown of PP computation\n");
     fprintf(fplog, "%s\n", hline);
     for (i = 0; i < ewcsNR; i++)
     {
-        print_cycles(fplog, c2t, wcsn[i], nth_tot, npp, nth_pp,
-                     wc->wcsc[i].n, cycles[ewcNR+i], tot);
+        print_cycles(fplog, c2t_pp, wcsn[i],
+                     npp, nth_pp,
+                     wc->wcsc[i].n, cyc_sum[ewcNR+i], tot);
     }
     fprintf(fplog, "%s\n", hline);
 #endif
@@ -715,7 +780,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             tot_cpu_overlap += wc->wcc[ewcPMEMESH].c;
         }
-        tot_cpu_overlap *= c2t * 1000; /* convert s to ms */
+        tot_cpu_overlap *= realtime*1000/tot; /* convert s to ms */
 
         fprintf(fplog, "\n GPU timings\n%s\n", hline);
         fprintf(fplog, " Computing:                         Count  Wall t (s)      ms/step       %c\n", '%');
@@ -790,8 +855,8 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     }
 
     if (wc->wcc[ewcNB_XF_BUF_OPS].n > 0 &&
-        (cycles[ewcDOMDEC] > tot*0.1 ||
-         cycles[ewcNS] > tot*0.1))
+        (cyc_sum[ewcDOMDEC] > tot*0.1 ||
+         cyc_sum[ewcNS] > tot*0.1))
     {
         /* Only the sim master calls this function, so always print to stderr */
         if (wc->wcc[ewcDOMDEC].n == 0)
@@ -799,7 +864,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             md_print_warn(NULL, fplog,
                           "NOTE: %d %% of the run time was spent in pair search,\n"
                           "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                          (int)(100*cycles[ewcNS]/tot+0.5));
+                          (int)(100*cyc_sum[ewcNS]/tot+0.5));
         }
         else
         {
@@ -807,22 +872,22 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                           "NOTE: %d %% of the run time was spent in domain decomposition,\n"
                           "      %d %% of the run time was spent in pair search,\n"
                           "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                          (int)(100*cycles[ewcDOMDEC]/tot+0.5),
-                          (int)(100*cycles[ewcNS]/tot+0.5));
+                          (int)(100*cyc_sum[ewcDOMDEC]/tot+0.5),
+                          (int)(100*cyc_sum[ewcNS]/tot+0.5));
         }
     }
 
-    if (cycles[ewcMoveE] > tot*0.05)
+    if (cyc_sum[ewcMoveE] > tot*0.05)
     {
         /* Only the sim master calls this function, so always print to stderr */
         md_print_warn(NULL, fplog,
                       "NOTE: %d %% of the run time was spent communicating energies,\n"
                       "      you might want to use the -gcom option of mdrun\n",
-                      (int)(100*cycles[ewcMoveE]/tot+0.5));
+                      (int)(100*cyc_sum[ewcMoveE]/tot+0.5));
     }
 }
 
-extern gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
+extern gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
 {
     if (wc == NULL)
     {
@@ -832,7 +897,7 @@ extern gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
     return wc->reset_counters;
 }
 
-extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters)
+extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters)
 {
     if (wc == NULL)
     {

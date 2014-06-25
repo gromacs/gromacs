@@ -1,58 +1,50 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "oenv.h"
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
 
 struct output_env
 {
-    output_env()
-    {
-        setDefaults();
-    }
-    output_env(int argc, const char *const argv[])
-        : programInfo(argc, argv)
-    {
-        setDefaults();
-    }
-
-    void setDefaults()
+    explicit output_env(const gmx::ProgramContextInterface &context)
+        : programContext(context)
     {
         time_unit   = time_ps;
         view        = FALSE;
@@ -61,13 +53,18 @@ struct output_env
         debug_level = 0;
     }
 
-    gmx::ProgramInfo programInfo;
+    const gmx::ProgramContextInterface  &programContext;
 
-    time_unit_t      time_unit;   /* the time unit, enum defined in oenv.h */
-    gmx_bool         view;        /* view of file requested */
-    xvg_format_t     xvg_format;  /* xvg output format, enum defined in oenv.h */
-    int              verbosity;   /* The level of verbosity for this program */
-    int              debug_level; /* the debug level */
+    /* the time unit, enum defined in oenv.h */
+    time_unit_t                          time_unit;
+    /* view of file requested */
+    gmx_bool                             view;
+    /* xvg output format, enum defined in oenv.h */
+    xvg_format_t                         xvg_format;
+    /* The level of verbosity for this program */
+    int                                  verbosity;
+    /* the debug level */
+    int                                  debug_level;
 };
 
 /* The source code in this file should be thread-safe.
@@ -95,13 +92,14 @@ static const char *time_units_xvgr[] = {
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
-void output_env_init(output_env_t *oenvp, int argc, char *argv[],
+void output_env_init(output_env_t *oenvp,
+                     const gmx::ProgramContextInterface &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level)
 {
     try
     {
-        output_env_t oenv = new output_env(argc, argv);
+        output_env_t oenv = new output_env(context);
         *oenvp            = oenv;
         oenv->time_unit   = tmu;
         oenv->view        = view;
@@ -116,7 +114,7 @@ void output_env_init_default(output_env_t *oenvp)
 {
     try
     {
-        output_env_t oenv = new output_env();
+        output_env_t oenv = new output_env(gmx::getProgramContext());
         *oenvp = oenv;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -208,7 +206,7 @@ const char *output_env_get_program_name(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.fullBinaryPath().c_str();
+        return oenv->programContext.fullBinaryPath();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -218,7 +216,7 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
     try
     {
         // TODO: Use the display name once it doesn't break anything.
-        return oenv->programInfo.programName().c_str();
+        return oenv->programContext.programName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -227,7 +225,7 @@ const char *output_env_get_cmd_line(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.commandLine().c_str();
+        return oenv->programContext.commandLine();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }

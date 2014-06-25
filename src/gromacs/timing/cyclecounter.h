@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,12 +33,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
  * High-resolution timestamp or CPU clock cycle counters.
  *
  * After reading the current value with gmx_cycles_read() you can add or
  * subtract these numbers as normal integers of type gmx_cycles_t.
+ *
+ * \inlibraryapi
  */
 #ifndef GMX_TIMING_CYCLECOUNTER_H
 #define GMX_TIMING_CYCLECOUNTER_H
@@ -201,7 +203,7 @@ typedef long
  *       one when later linking to the library it might happen that the
  *       library supports cyclecounters but not the headers, or vice versa.
  */
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
     (defined(__i386__) || defined(__x86_64__)))
 static __inline__ int gmx_cycles_have_counter(void)
 {
@@ -331,7 +333,7 @@ static int gmx_cycles_have_counter(void)
  *  routine.
  */
 #if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
-    (defined(__i386__) || defined(__x86_64__)))
+    (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* x86 with GCC inline assembly - pentium TSC register */
@@ -503,6 +505,13 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     return ret;
 }
 
+#elif defined(_CRAYC)
+#include <intrinsics.h>
+
+static __inline gmx_cycles_t gmx_cycles_read(void)
+{
+    return _rtc();
+}
 #else
 static gmx_cycles_t gmx_cycles_read(void)
 {

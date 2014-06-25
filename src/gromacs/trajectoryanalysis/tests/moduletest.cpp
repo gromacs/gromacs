@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,16 +41,17 @@
  */
 #include "moduletest.h"
 
-#include <set>
+#include <map>
 #include <string>
 #include <vector>
 
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/stringutil.h"
 
+#include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/cmdlinetest.h"
-#include "testutils/datatest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -67,6 +68,17 @@ namespace test
 class AbstractTrajectoryAnalysisModuleTestFixture::Impl
 {
     public:
+        struct DatasetInfo
+        {
+            DatasetInfo()
+                : bCheck(true), tolerance(defaultRealTolerance())
+            {
+            }
+
+            bool                   bCheck;
+            FloatingPointTolerance tolerance;
+        };
+
         struct OutputFileInfo
         {
             OutputFileInfo(const char *option, const std::string &path)
@@ -78,21 +90,21 @@ class AbstractTrajectoryAnalysisModuleTestFixture::Impl
             std::string         path;
         };
 
-        typedef std::set<std::string>       DatasetNames;
-        typedef std::vector<OutputFileInfo> OutputFileList;
+        typedef std::map<std::string, DatasetInfo> DatasetList;
+        typedef std::vector<OutputFileInfo>        OutputFileList;
 
         explicit Impl(AbstractTrajectoryAnalysisModuleTestFixture *parent);
 
         TrajectoryAnalysisModule &module();
         void ensureModuleCreated();
+        bool hasCheckedDatasets() const;
 
         AbstractTrajectoryAnalysisModuleTestFixture    &parent_;
         TrajectoryAnalysisModulePointer                 module_;
         TestReferenceData                               data_;
         CommandLine                                     cmdline_;
         TestFileManager                                 tempFiles_;
-        DatasetNames                                    moduleDatasets_;
-        DatasetNames                                    outputDatasets_;
+        DatasetList                                     datasets_;
         OutputFileList                                  outputFiles_;
         bool                                            bDatasetsIncluded_;
 };
@@ -117,11 +129,28 @@ AbstractTrajectoryAnalysisModuleTestFixture::Impl::ensureModuleCreated()
     if (module_.get() == NULL)
     {
         module_ = parent_.createModule();
-        const std::vector<std::string> &datasetNames(module_->datasetNames());
-        moduleDatasets_.clear();
-        moduleDatasets_.insert(datasetNames.begin(), datasetNames.end());
-        outputDatasets_ = moduleDatasets_;
+        const std::vector<std::string>          &datasetNames(module_->datasetNames());
+        datasets_.clear();
+        std::vector<std::string>::const_iterator i;
+        for (i = datasetNames.begin(); i != datasetNames.end(); ++i)
+        {
+            datasets_[*i] = DatasetInfo();
+        }
     }
+}
+
+bool
+AbstractTrajectoryAnalysisModuleTestFixture::Impl::hasCheckedDatasets() const
+{
+    DatasetList::const_iterator dataset;
+    for (dataset = datasets_.begin(); dataset != datasets_.end(); ++dataset)
+    {
+        if (dataset->second.bCheck)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 /********************************************************************
@@ -162,24 +191,52 @@ AbstractTrajectoryAnalysisModuleTestFixture::setOutputFile(const char *option,
 }
 
 void
+AbstractTrajectoryAnalysisModuleTestFixture::setOutputFileNoTest(
+        const char *option, const char *extension)
+{
+    std::string fullFilename = impl_->tempFiles_.getTemporaryFilePath(
+                formatString("%d.%s", impl_->cmdline_.argc(), extension));
+    impl_->cmdline_.append(option);
+    impl_->cmdline_.append(fullFilename);
+}
+
+void
 AbstractTrajectoryAnalysisModuleTestFixture::includeDataset(const char *name)
 {
     impl_->ensureModuleCreated();
     if (!impl_->bDatasetsIncluded_)
     {
-        impl_->outputDatasets_.clear();
+        Impl::DatasetList::iterator i;
+        for (i = impl_->datasets_.begin(); i != impl_->datasets_.end(); ++i)
+        {
+            i->second.bCheck = false;
+        }
     }
-    bool bFound = (impl_->moduleDatasets_.find(name) != impl_->moduleDatasets_.end());
+    Impl::DatasetList::iterator dataset = impl_->datasets_.find(name);
+    const bool                  bFound  = (dataset != impl_->datasets_.end());
     GMX_RELEASE_ASSERT(bFound, "Attempted to include a non-existent dataset");
-    impl_->outputDatasets_.insert(name);
+    dataset->second.bCheck = true;
 }
 
 void
 AbstractTrajectoryAnalysisModuleTestFixture::excludeDataset(const char *name)
 {
     impl_->ensureModuleCreated();
-    bool bFound = (impl_->outputDatasets_.erase(name) > 0);
+    Impl::DatasetList::iterator dataset = impl_->datasets_.find(name);
+    const bool                  bFound  = (dataset != impl_->datasets_.end());
     GMX_RELEASE_ASSERT(bFound, "Attempted to exclude a non-existent dataset");
+    dataset->second.bCheck = false;
+}
+
+void
+AbstractTrajectoryAnalysisModuleTestFixture::setDatasetTolerance(
+        const char *name, const FloatingPointTolerance &tolerance)
+{
+    impl_->ensureModuleCreated();
+    Impl::DatasetList::iterator dataset = impl_->datasets_.find(name);
+    const bool                  bFound  = (dataset != impl_->datasets_.end());
+    GMX_RELEASE_ASSERT(bFound, "Attempted to set a tolerance for a non-existent dataset");
+    dataset->second.tolerance = tolerance;
 }
 
 void
@@ -197,23 +254,27 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
 
     rootChecker.checkString(args.toString(), "CommandLine");
 
-    if (!impl_->outputDatasets_.empty())
+    if (impl_->hasCheckedDatasets())
     {
         TestReferenceChecker               dataChecker(
                 rootChecker.checkCompound("OutputData", "Data"));
-        Impl::DatasetNames::const_iterator dataset;
-        for (dataset = impl_->outputDatasets_.begin();
-             dataset != impl_->outputDatasets_.end();
+        Impl::DatasetList::const_iterator  dataset;
+        for (dataset = impl_->datasets_.begin();
+             dataset != impl_->datasets_.end();
              ++dataset)
         {
-            const char           *name    = dataset->c_str();
-            AbstractAnalysisData &dataset = module.datasetFromName(name);
-            AnalysisDataTestFixture::addReferenceCheckerModule(
-                    dataChecker, name, &dataset);
+            if (dataset->second.bCheck)
+            {
+                const char *const     name = dataset->first.c_str();
+                AbstractAnalysisData &data = module.datasetFromName(name);
+                AnalysisDataTestFixture::addReferenceCheckerModule(
+                        dataChecker, name, &data, dataset->second.tolerance);
+            }
         }
     }
 
     TrajectoryAnalysisCommandLineRunner runner(&module);
+    runner.setUseDefaultGroups(false);
     int rc = 0;
     EXPECT_NO_THROW_GMX(rc = runner.run(impl_->cmdline_.argc(), impl_->cmdline_.argv()));
     EXPECT_EQ(0, rc);

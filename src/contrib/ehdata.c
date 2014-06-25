@@ -39,14 +39,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "statutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "random.h"
-#include "strdb.h"
-#include "gromacs/fileio/futil.h"
-#include "physics.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/futil.h"
 #include "ehdata.h"
 
 typedef struct {
@@ -84,7 +82,7 @@ static t_p2Ddata *read_p2Ddata(char *fn)
   double  e,p,o;
   
   fprintf(stdout,"Going to read %s\n",fn);
-  fp = ffopen(fn,"r");
+  fp = gmx_ffopen(fn,"r");
 
   /* Allocate memory and set constants */
   snew(p2Ddata,1);
@@ -122,7 +120,7 @@ static t_p2Ddata *read_p2Ddata(char *fn)
   }
   fprintf(stderr,"\n");
   
-  ffclose(fp);
+  gmx_ffclose(fp);
   
   return p2Ddata;
 }
@@ -135,7 +133,7 @@ static t_pq_inel *read_pq(char *fn)
   double    e,p,o,t;
   
   fprintf(stdout,"Going to read %s\n",fn);
-  fp = ffopen(fn,"r");
+  fp = gmx_ffopen(fn,"r");
 
   /* Allocate memory and set constants */
   snew(pq,1);
@@ -179,7 +177,7 @@ static t_pq_inel *read_pq(char *fn)
   }
   fprintf(stderr,"\n");
   
-  ffclose(fp);
+  gmx_ffclose(fp);
   
   return pq;
 }

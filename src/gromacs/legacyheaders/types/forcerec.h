@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
-#include "idef.h"
+#include "../../topology/idef.h"
 #include "nb_verlet.h"
 #include "interaction_const.h"
 #include "hw_info.h"
@@ -90,20 +90,26 @@ typedef struct
     t_nblist nlist_lr[eNL_NR];
 } t_nblists;
 
-/* macros for the cginfo data in forcerec */
-/* The maximum cg size in cginfo is 63
+/* macros for the cginfo data in forcerec
+ *
+ * Since the tpx format support max 256 energy groups, we do the same here.
+ * Note that we thus have bits 8-14 still unused.
+ *
+ * The maximum cg size in cginfo is 63
  * because we only have space for 6 bits in cginfo,
  * this cg size entry is actually only read with domain decomposition.
  * But there is a smaller limit due to the t_excl data structure
  * which is defined in nblist.h.
  */
-#define SET_CGINFO_GID(cgi, gid)      (cgi) = (((cgi)  &  ~65535)  |  (gid)   )
-#define GET_CGINFO_GID(cgi)        ( (cgi)            &   65535)
+#define SET_CGINFO_GID(cgi, gid)     (cgi) = (((cgi)  &  ~255) | (gid))
+#define GET_CGINFO_GID(cgi)        ( (cgi)            &   255)
+#define SET_CGINFO_FEP(cgi)          (cgi) =  ((cgi)  |  (1<<15))
+#define GET_CGINFO_FEP(cgi)        ( (cgi)            &  (1<<15))
 #define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1<<16))
 #define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1<<16))
 #define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<17))
 #define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
-#define SET_CGINFO_SOLOPT(cgi, opt)   (cgi) = (((cgi)  & ~(3<<18)) | ((opt)<<18))
+#define SET_CGINFO_SOLOPT(cgi, opt)  (cgi) = (((cgi)  & ~(3<<18)) | ((opt)<<18))
 #define GET_CGINFO_SOLOPT(cgi)     (((cgi)>>18)       &   3)
 #define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1<<20))
 #define GET_CGINFO_CONSTR(cgi)     ( (cgi)            &  (1<<20))
@@ -116,7 +122,7 @@ typedef struct
 #define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1<<23))
 #define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1<<24))
 #define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1<<24))
-#define SET_CGINFO_NATOMS(cgi, opt)   (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
+#define SET_CGINFO_NATOMS(cgi, opt)  (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
 #define GET_CGINFO_NATOMS(cgi)     (((cgi)>>25)       &   63)
 
 
@@ -202,7 +208,7 @@ typedef struct {
 
     const gmx_hw_info_t *hwinfo;
     const gmx_gpu_opt_t *gpu_opt;
-    gmx_bool             use_cpu_acceleration;
+    gmx_bool             use_simd_kernels;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
      * the electrostatics settings in the inputrecord, but the difference is that
@@ -334,6 +340,8 @@ typedef struct {
     gmx_bool bTwinRange;
     int      nlr;
     rvec    *f_twin;
+    /* Constraint virial correction for multiple time stepping */
+    tensor   vir_twin_constr;
 
     /* Forces that should not enter into the virial summation:
      * PPPM/PME/Ewald/posres
@@ -368,6 +376,7 @@ typedef struct {
     int      ntype; /* Number of atom types */
     gmx_bool bBHAM;
     real    *nbfp;
+    real    *ljpme_c6grid; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
     int *egp_flags;

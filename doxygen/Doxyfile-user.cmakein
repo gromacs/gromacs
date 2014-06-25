@@ -1,9 +1,11 @@
 @INCLUDE               = Doxyfile-common
 
-# There is no public API documentation here;
-# exclude them from the generated file list
-EXCLUDE               += @CMAKE_SOURCE_DIR@/src/programs
-EXCLUDE               += @CMAKE_SOURCE_DIR@/src/testutils
+# These pages include documentation that does not belong to the public API
+# documentation; exclude them from the generated documentation
+EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/doxygen.md
+EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/unittesting.md
+EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/wrapperbinary.md
+EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/simd.md
 
 INTERNAL_DOCS          = NO
 HIDE_UNDOC_CLASSES     = YES
@@ -13,7 +15,4 @@ HTML_OUTPUT            = html-user
 
 ALIASES               += inpublicapi="\ingroup group_publicapi"
 ALIASES               += inlibraryapi="\ingroup group_libraryapi"
-ALIASES               += addtopublicapi="\addtogroup group_publicapi"
-ALIASES               += addtolibraryapi="\addtogroup group_libraryapi"
 ALIASES               += libinternal="\internal"
-ALIASES               += endlibinternal="\endinternal"

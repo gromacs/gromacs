@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,19 +38,18 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/futil.h"
 #include "filenm.h"
-#include "string2.h"
 #include "gmxfio.h"
 #include "md5.h"
 
@@ -79,7 +78,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     float           fvec[DIM];
     double          dvec[DIM];
     int             j, m, *iptr, idum;
-    gmx_large_int_t sdum;
+    gmx_int64_t     sdum;
     real           *ptr;
     unsigned short  us;
     double          d = 0;
@@ -147,18 +146,15 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 *(int *) item = idum;
             }
             break;
-        case eioGMX_LARGE_INT:
-            /* do_xdr will not generate a warning when a 64bit gmx_large_int_t
-             * value that is out of 32bit range is read into a 32bit gmx_large_int_t.
-             */
+        case eioINT64:
             if (item && !fio->bRead)
             {
-                sdum = *(gmx_large_int_t *) item;
+                sdum = *(gmx_int64_t *) item;
             }
-            res = xdr_gmx_large_int(fio->xdr, &sdum);
+            res = xdr_int64(fio->xdr, &sdum);
             if (item)
             {
-                *(gmx_large_int_t *) item = sdum;
+                *(gmx_int64_t *) item = sdum;
             }
             break;
         case eioUCHAR:

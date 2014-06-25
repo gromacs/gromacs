@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,24 +38,25 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
+#include <stdlib.h>
+
 #include "typedefs.h"
-#include "string2.h"
-#include "strdb.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "mshift.h"
-#include "statutil.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
-#include "gromacs/fileio/matio.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "viewit.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int strip_dssp(char *dsspfile, int nres,
                       gmx_bool bPhobres[], real t,
@@ -74,7 +75,7 @@ static int strip_dssp(char *dsspfile, int nres,
     real            iaccf, iaccb;
     t_xpmelmt       c;
 
-    tapeout = ffopen(dsspfile, "r");
+    tapeout = gmx_ffopen(dsspfile, "r");
 
     /* Skip header */
     do
@@ -179,7 +180,7 @@ static int strip_dssp(char *dsspfile, int nres,
     {
         fprintf(fTArea, "%10g  %10g  %10g\n", t, 0.01*iaccb, 0.01*iaccf);
     }
-    ffclose(tapeout);
+    gmx_ffclose(tapeout);
 
     /* Return the number of lines found in the dssp file (i.e. number
      * of redidues plus chain separator lines).
@@ -328,12 +329,12 @@ void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *
                 hi = max(hi, accr[i][j]);
             }
         }
-        fp   = ffopen(fn, "w");
+        fp   = gmx_ffopen(fn, "w");
         nlev = hi-lo+1;
         write_xpm(fp, 0, "Solvent Accessible Surface", "Surface (A^2)",
                   "Time", "Residue Index", nframe, nres,
                   mat->axis_x, mat->axis_y, accr, lo, hi, rlo, rhi, &nlev);
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 }
 
@@ -427,7 +428,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     fprintf(fp, "\n");
 
-    ffclose(fp);
+    gmx_ffclose(fp);
     sfree(leg);
     sfree(count);
 }
@@ -495,7 +496,7 @@ int gmx_do_dssp(int argc, char *argv[])
     gmx_bool          *bPhbres, bDoAccSurf;
     real               t;
     int                i, j, natoms, nframe = 0;
-    matrix             box;
+    matrix             box = {{0}};
     int                gnx;
     char              *grpnm, *ss_str;
     atom_id           *index;
@@ -623,8 +624,7 @@ int gmx_do_dssp(int argc, char *argv[])
     }
 
     mat.map  = NULL;
-    mat.nmap = getcmap(libopen(opt2fn("-map", NFILE, fnm)),
-                       opt2fn("-map", NFILE, fnm), &(mat.map));
+    mat.nmap = readcmap(opt2fn("-map", NFILE, fnm), &(mat.map));
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     if (natoms > atoms->nr)
@@ -656,9 +656,9 @@ int gmx_do_dssp(int argc, char *argv[])
             }
         }
         gmx_rmpbc(gpbc, natoms, box, x);
-        tapein = ffopen(pdbfile, "w");
+        tapein = gmx_ffopen(pdbfile, "w");
         write_pdbfile_indexed(tapein, NULL, atoms, x, ePBC, box, ' ', -1, gnx, index, NULL, TRUE);
-        ffclose(tapein);
+        gmx_ffclose(tapein);
 
 #ifdef GMX_NO_SYSTEM
         printf("Warning-- No calls to system(3) supported on this platform.");
@@ -691,7 +691,7 @@ int gmx_do_dssp(int argc, char *argv[])
     close_trj(status);
     if (fTArea)
     {
-        ffclose(fTArea);
+        gmx_ffclose(fTArea);
     }
     gmx_rmpbc_done(gpbc);
 
@@ -700,7 +700,7 @@ int gmx_do_dssp(int argc, char *argv[])
     ss        = opt2FILE("-o", NFILE, fnm, "w");
     mat.flags = 0;
     write_xpm_m(ss, mat);
-    ffclose(ss);
+    gmx_ffclose(ss);
 
     if (opt2bSet("-ssdump", NFILE, fnm))
     {
@@ -716,7 +716,7 @@ int gmx_do_dssp(int argc, char *argv[])
             ss_str[i] = '\0';
             fprintf(ss, "%s\n", ss_str);
         }
-        ffclose(ss);
+        gmx_ffclose(ss);
         sfree(ss_str);
     }
     analyse_ss(fnSCount, &mat, ss_string, oenv);
@@ -740,7 +740,7 @@ int gmx_do_dssp(int argc, char *argv[])
             {
                 fprintf(acc, "%5d  %10g %10g\n", i+1, av_area[i], norm_av_area[i]);
             }
-            ffclose(acc);
+            gmx_ffclose(acc);
         }
     }
 

@@ -2,31 +2,36 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
-Option Filename     Type         Description
----------------------------------------------------------
--f     traj.xtc     Input        Input file description
--lib   libdata.dat  Input, Opt., Lib.
-                                 Library file description
--io    inout.dat    In/Out, Opt. Input/Output file description
--o                  Output, Opt. Output file description
+SYNOPSIS
 
-Option       Type   Value  Description
----------------------------------------------------
--[no]bool    bool   yes    Boolean option
--[no]hidden  bool   yes    Hidden option
--int         int    2      Integer option
--ivec        vector 1 2 3  Integer vector option
--double      double 2.5    Double option
--dvec        vector 1.1 2.3 3.2
-                           Double vector option
--time        time   10     Time option (ps)
--string      string test   String option
--enum        enum   no     Enum option: no, opt1, or opt2
+gmx [-f [<.xtc/.trr/...>]] [-mult [<.xtc/.trr/...> [...]]] [-lib [<.dat>]]
+    [-io [<.dat>]] [-o <.xvg>] [-[no]bool] [-[no]hidden] [-int <int>]
+    [-ivec <vector>] [-double <real>] [-dvec <vector>] [-time <time>]
+    [-string <string>] [-enum <enum>]
 
-Selection  Description
------------------------------------
--sf        Provide selections from files
--sel       Selection option
+OPTIONS
+
+Options to specify input and output files:
+
+ -f     [<.xtc/.trr/...>] (traj.xtc) (Input)
+     Input file description: xtc trr cpt trj gro g96 pdb tng
+ -mult  [<.xtc/.trr/...> [...]] (traj.xtc) (Input, Opt.)
+     Multiple file description: xtc trr cpt trj gro g96 pdb tng
+ -lib   [<.dat>] (libdata.dat) (Input, Opt., Lib.) Library file description
+ -io    [<.dat>] (inout.dat) (In/Out, Opt.) Input/Output file description
+ -o     <.xvg>   (Output, Opt.) Output file description
+
+Other options:
+
+ -[no]bool       (yes)      Boolean option
+ -[no]hidden     (yes)      Hidden option
+ -int   <int>    (2)        Integer option
+ -ivec  <vector> (1 2 3)    Integer vector option
+ -double <real>  (2.5)      Double option
+ -dvec  <vector> (1.1 2.3 3.2) Double vector option
+ -time  <time>   (10)       Time option (ps)
+ -string <string> (test)    String option
+ -enum  <enum>   (no)       Enum option: no, opt1, opt2
 
 ]]></String>
 </ReferenceData>

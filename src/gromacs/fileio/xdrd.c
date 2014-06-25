@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,14 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "xdrf.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "xdrf.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 int xdr_real(XDR *xdrs, real *r)
 {
@@ -94,49 +95,24 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 #endif
 }
 
-int xdr_gmx_large_int(XDR *xdrs, gmx_large_int_t *i)
+int xdr_int64(XDR *xdrs, gmx_int64_t *i)
 {
     /* This routine stores values compatible with xdr_int64_t */
 
     int imaj, imin;
     int ret;
 
-#if ((defined SIZEOF_GMX_LARGE_INT) && SIZEOF_GMX_LARGE_INT == 8)
-    static const gmx_large_int_t two_p32_m1 = 0xFFFFFFFF;
-    gmx_large_int_t              imaj64, imin64;
+    static const gmx_int64_t two_p32_m1 = 0xFFFFFFFF;
+    gmx_int64_t              imaj64, imin64;
 
     imaj64 = ((*i)>>32) & two_p32_m1;
     imin64 = (*i) & two_p32_m1;
     imaj   = (int)imaj64;
     imin   = (int)imin64;
-#else
-    /* Our code has 4 bytes, but we should make sure that this value
-     * will be correctly read by 8 byte code.
-     */
-    if (*i >= 0)
-    {
-        imaj = 0;
-    }
-    else
-    {
-        imaj = -1;
-    }
-    imin = *i;
-#endif
-    ret = xdr_int(xdrs, &imaj);
-    ret = xdr_int(xdrs, &imin);
+    ret    = xdr_int(xdrs, &imaj);
+    ret   |= xdr_int(xdrs, &imin);
 
-#if ((defined SIZEOF_GMX_LARGE_INT) && SIZEOF_GMX_LARGE_INT == 8)
-    *i = (((gmx_large_int_t)imaj << 32) | ((gmx_large_int_t)imin & two_p32_m1));
-#else
-    *i = imin;
-
-    if (warn != NULL && (imaj < -1 || imaj > 0))
-    {
-        fprintf(stderr, "\nWARNING during %s:\n", warn);
-        fprintf(stderr, "a step value written by code supporting 64bit integers is read by code that only supports 32bit integers, out of range step value has been converted to %d\n\n", *i);
-    }
-#endif
+    *i = (((gmx_int64_t)imaj << 32) | ((gmx_int64_t)imin & two_p32_m1));
 
     return ret;
 }

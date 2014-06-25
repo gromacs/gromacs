@@ -1,62 +1,67 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "vec.h"
+#include "types/commrec.h"
 #include "txtdump.h"
 #include "force.h"
 #include "mdrun.h"
-#include "partdec.h"
 #include "mdatoms.h"
 #include "vsite.h"
 #include "network.h"
 #include "names.h"
 #include "constr.h"
 #include "domdec.h"
-#include "partdec.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "shellfc.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "chargegroup.h"
 #include "macros.h"
 
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int     nnucl;
@@ -228,6 +233,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
 }
 
 gmx_shellfc_t init_shell_flexcon(FILE *fplog,
+                                 gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x)
 {
@@ -277,7 +283,13 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 
     if (nshell == 0 && nflexcon == 0)
     {
+        /* We're not doing shells or flexible constraints */
         return NULL;
+    }
+
+    if (bCutoffSchemeIsVerlet)
+    {
+        gmx_fatal(FARGS, "The shell code does not work with the Verlet cut-off scheme.\n");
     }
 
     snew(shfc, 1);
@@ -537,18 +549,11 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
     int           a0, a1, *ind, nshell, i;
     gmx_domdec_t *dd = NULL;
 
-    if (PAR(cr))
+    if (DOMAINDECOMP(cr))
     {
-        if (DOMAINDECOMP(cr))
-        {
-            dd = cr->dd;
-            a0 = 0;
-            a1 = dd->nat_home;
-        }
-        else
-        {
-            pd_at_range(cr, &a0, &a1);
-        }
+        dd = cr->dd;
+        a0 = 0;
+        a1 = dd->nat_home;
     }
     else
     {
@@ -580,6 +585,7 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
             {
                 shell[nshell] = shfc->shell_gl[ind[i]];
             }
+
             /* With inter-cg shells we can no do shell prediction,
              * so we do not need the nuclei numbers.
              */
@@ -748,7 +754,7 @@ static void decrease_step_size(int nshell, t_shell s[])
     }
 }
 
-static void print_epot(FILE *fp, gmx_large_int_t mdstep, int count, real epot, real df,
+static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real df,
                        int ndir, real sf_dir)
 {
     char buf[22];
@@ -833,7 +839,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
 static void init_adir(FILE *log, gmx_shellfc_t shfc,
                       gmx_constr_t constr, t_idef *idef, t_inputrec *ir,
                       t_commrec *cr, int dd_ac1,
-                      gmx_large_int_t step, t_mdatoms *md, int start, int end,
+                      gmx_int64_t step, t_mdatoms *md, int start, int end,
                       rvec *x_old, rvec *x_init, rvec *x,
                       rvec *f, rvec *acc_dir,
                       gmx_bool bMolPBC, matrix box,
@@ -915,7 +921,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
 }
 
 int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
-                        gmx_large_int_t mdstep, t_inputrec *inputrec,
+                        gmx_int64_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
                         gmx_localtop_t *top,
                         gmx_constr_t constr,
@@ -945,7 +951,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     char       sbuf[22];
     gmx_bool   bCont, bInit;
     int        nat, dd_ac0, dd_ac1 = 0, i;
-    int        start = md->start, homenr = md->homenr, end = start+homenr, cg0, cg1;
+    int        start = 0, homenr = md->homenr, end = start+homenr, cg0, cg1;
     int        nflexcon, g, number_steps, d, Min = 0, count = 0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
@@ -989,25 +995,17 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         force[i] = shfc->f[i];
     }
 
-    /* With particle decomposition this code only works
-     * when all particles involved with each shell are in the same cg.
-     */
-
+    /* When we had particle decomposition, this code only worked with
+     * PD when all particles involved with each shell were in the same
+     * charge group. Not sure if this is still relevant. */
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
     {
         /* This is the only time where the coordinates are used
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        if (PARTDECOMP(cr))
-        {
-            pd_cg_range(cr, &cg0, &cg1);
-        }
-        else
-        {
-            cg0 = 0;
-            cg1 = top->cgs.nr;
-        }
+        cg0 = 0;
+        cg1 = top->cgs.nr;
         put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
                                  &(top->cgs), state->x, fr->cg_cm);
         if (graph)
@@ -1133,7 +1131,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         {
             construct_vsites(vsite, pos[Min], inputrec->delta_t, state->v,
                              idef->iparams, idef->il,
-                             fr->ePBC, fr->bMolPBC, graph, cr, state->box);
+                             fr->ePBC, fr->bMolPBC, cr, state->box);
         }
 
         if (nflexcon)

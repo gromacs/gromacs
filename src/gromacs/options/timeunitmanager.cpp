@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,10 +41,17 @@
  */
 #include "gromacs/options/timeunitmanager.h"
 
+#include <cstdlib>
+
+#include <algorithm>
+
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace
 {
@@ -108,6 +115,27 @@ double TimeUnitManager::inverseTimeScaleFactor() const
     return 1.0 / timeScaleFactor();
 }
 
+void TimeUnitManager::setTimeUnitFromEnvironment()
+{
+    const char *const value = std::getenv("GMXTIMEUNIT");
+    if (value != NULL)
+    {
+        ConstArrayRef<const char *>                 timeUnits(g_timeUnits);
+        ConstArrayRef<const char *>::const_iterator i =
+            std::find(timeUnits.begin(), timeUnits.end(), std::string(value));
+        if (i == timeUnits.end())
+        {
+            std::string message = formatString(
+                        "Time unit provided with environment variable GMXTIMEUNIT=%s "
+                        "is not recognized as a valid time unit.\n"
+                        "Possible values are: %s",
+                        value, joinStrings(timeUnits, ", ").c_str());
+            GMX_THROW(InvalidInputError(message));
+        }
+        timeUnit_ = i - timeUnits.begin();
+    }
+}
+
 void TimeUnitManager::addTimeUnitOption(Options *options, const char *name)
 {
     options->addOption(StringOption(name).enumValue(g_timeUnits)
@@ -122,9 +150,13 @@ namespace
 /*! \internal \brief
  * Option visitor that scales time options.
  *
+ * \tparam FloatingPointOptionInfo  OptionInfo type for an option that provides
+ *     isTime() and setScaleFactor() methods.
+ *
  * \ingroup module_options
  */
-class TimeOptionScaler : public OptionsModifyingTypeVisitor<DoubleOptionInfo>
+template <class FloatingPointOptionInfo>
+class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionInfo>
 {
     public:
         //! Initializes a scaler with the given factor.
@@ -137,7 +169,7 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<DoubleOptionInfo>
             iterator.acceptOptions(this);
         }
 
-        void visitOptionType(DoubleOptionInfo *option)
+        void visitOptionType(FloatingPointOptionInfo *option)
         {
             if (option->isTime())
             {
@@ -154,7 +186,8 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<DoubleOptionInfo>
 void TimeUnitManager::scaleTimeOptions(Options *options) const
 {
     double factor = timeScaleFactor();
-    TimeOptionScaler(factor).visitSubSection(options);
+    TimeOptionScaler<DoubleOptionInfo>(factor).visitSubSection(options);
+    TimeOptionScaler<FloatOptionInfo>(factor).visitSubSection(options);
 }
 
 } // namespace gmx

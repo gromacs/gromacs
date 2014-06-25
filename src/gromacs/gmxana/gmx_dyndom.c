@@ -1,54 +1,56 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "3dview.h"
-#include "statutil.h"
-#include "smalloc.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "physics.h"
-#include "random.h"
+#include "gromacs/math/units.h"
 #include "gmx_ana.h"
 #include "macros.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/3dtransforms.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
                      rvec head, rvec tail, int isize, atom_id index[],
@@ -111,31 +113,34 @@ static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
 
     /* Now the total rotation matrix: */
     /* Rotate a couple of times */
-    rotate(ZZ, -phi, Rz);
-    rotate(YY, M_PI/2-theta, Ry);
-    rotate(XX, angle*DEG2RAD, Rx);
+    gmx_mat4_init_rotation(ZZ, -phi, Rz);
+    gmx_mat4_init_rotation(YY, M_PI/2-theta, Ry);
+    gmx_mat4_init_rotation(XX, angle*DEG2RAD, Rx);
     Rx[WW][XX] = trans;
-    rotate(YY, theta-M_PI/2, Rinvy);
-    rotate(ZZ, phi, Rinvz);
+    gmx_mat4_init_rotation(YY, theta-M_PI/2, Rinvy);
+    gmx_mat4_init_rotation(ZZ, phi, Rinvz);
 
-    mult_matrix(temp1, Ry, Rz);
-    mult_matrix(temp2, Rinvy, Rx);
-    mult_matrix(temp3, temp2, temp1);
-    mult_matrix(Mtot, Rinvz, temp3);
+    gmx_mat4_mmul(temp1, Ry, Rz);
+    gmx_mat4_mmul(temp2, Rinvy, Rx);
+    gmx_mat4_mmul(temp3, temp2, temp1);
+    gmx_mat4_mmul(Mtot, Rinvz, temp3);
 
-    print_m4(debug, "Rz", Rz);
-    print_m4(debug, "Ry", Ry);
-    print_m4(debug, "Rx", Rx);
-    print_m4(debug, "Rinvy", Rinvy);
-    print_m4(debug, "Rinvz", Rinvz);
-    print_m4(debug, "Mtot", Mtot);
+    if (debug)
+    {
+        gmx_mat4_print(debug, "Rz", Rz);
+        gmx_mat4_print(debug, "Ry", Ry);
+        gmx_mat4_print(debug, "Rx", Rx);
+        gmx_mat4_print(debug, "Rinvy", Rinvy);
+        gmx_mat4_print(debug, "Rinvz", Rinvz);
+        gmx_mat4_print(debug, "Mtot", Mtot);
+    }
 
     for (i = 0; (i < isize); i++)
     {
         ai = index[i];
-        m4_op(Mtot, xout[ai], xv);
+        gmx_mat4_transform_point(Mtot, xout[ai], xv);
         rvec_add(xv, xcm, xout[ai]);
-        m4_op(Mtot, v[ai], xv);
+        gmx_mat4_transform_point(Mtot, v[ai], xv);
         copy_rvec(xv, vout[ai]);
     }
 }

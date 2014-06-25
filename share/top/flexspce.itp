@@ -1,2 +1,1 @@
-#define FLEXIBLE
-#include "spce.itp"
+#error   This top-level .itp file has been removed. Edit your topology to include it from your force field directory instead, e.g. "#define FLEXIBLE" and "oplsaa.ff/spce.itp"

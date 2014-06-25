@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -38,24 +40,20 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "sysstuff.h"
-#include "princ.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
-#include "vec.h"
-#include "smalloc.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "index.h"
-#include "symtab.h"
 #include "readinp.h"
 #include "readir.h"
-#include <string.h>
 #include "mdatoms.h"
-#include "pbc.h"
-#include "pull.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/pull.h"
 
 
 static char pulldim[STRLEN];
@@ -71,7 +69,7 @@ static void string2dvec(const char buf[], dvec nums)
 }
 
 static void init_pull_group(t_pull_group *pg,
-                            const char *wbuf)
+                            const char   *wbuf)
 {
     double d;
     int    n, m;
@@ -97,7 +95,7 @@ static void init_pull_coord(t_pull_coord *pcrd, int eGeom,
     string2dvec(origin_buf, origin);
     if (pcrd->group[0] != 0 && dnorm(origin) > 0)
     {
-        gmx_fatal(FARGS,"The pull origin can only be set with an absolute reference");
+        gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
 
     if (eGeom == epullgDIST)
@@ -234,7 +232,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     return grpbuf;
 }
 
-void make_pull_groups(t_pull *pull, 
+void make_pull_groups(t_pull *pull,
                       char **pgnames,
                       const t_blocka *grps, char **gnames)
 {
@@ -394,7 +392,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
 
     init_pull(NULL, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
     md = init_mdatoms(NULL, mtop, ir->efep);
-    atoms2md(mtop, ir, 0, NULL, 0, mtop->natoms, md);
+    atoms2md(mtop, ir, 0, NULL, mtop->natoms, md);
     if (ir->efep)
     {
         update_mdatoms(md, lambda);
@@ -412,14 +410,14 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
     {
         pcrd  = &pull->coord[c];
 
-        pgrp0 = &pull->group[pcrd->group[0]]; 
-        pgrp1 = &pull->group[pcrd->group[1]]; 
+        pgrp0 = &pull->group[pcrd->group[0]];
+        pgrp1 = &pull->group[pcrd->group[1]];
         fprintf(stderr, "%8d  %8d  %8d\n",
                 pcrd->group[0], pgrp0->nat, pgrp0->pbcatom+1);
         fprintf(stderr, "%8d  %8d  %8d ",
                 pcrd->group[1], pgrp1->nat, pgrp1->pbcatom+1);
 
-        init = pcrd->init;
+        init       = pcrd->init;
         pcrd->init = 0;
 
         if (pcrd->rate == 0)

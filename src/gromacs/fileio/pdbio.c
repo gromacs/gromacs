@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "pdbio.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "sysstuff.h"
-#include "string2.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "symtab.h"
-#include "pdbio.h"
-#include "vec.h"
-#include "copyrite.h"
-#include "futil.h"
-#include "atomprop.h"
-#include "physics.h"
-#include "pbc.h"
-#include "gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/futil.h"
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int ai, aj;
@@ -277,7 +283,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     int               nlongname = 0;
     int               chainnum, lastchainnum;
     int               lastresind, lastchainresind;
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
     const char       *p_restype;
     const char       *p_lastrestype;
 

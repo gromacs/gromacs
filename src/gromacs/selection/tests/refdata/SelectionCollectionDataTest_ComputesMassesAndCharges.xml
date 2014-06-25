@@ -35,40 +35,40 @@
             <Int Name="Length">1</Int>
             <Int>0</Int>
           </Sequence>
-          <Real Name="Mass">1.000000</Real>
-          <Real Name="Charge">-1.000000</Real>
+          <Real Name="Mass">1</Real>
+          <Real Name="Charge">-1</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>3</Int>
           </Sequence>
-          <Real Name="Mass">1.030000</Real>
-          <Real Name="Charge">-1.030000</Real>
+          <Real Name="Mass">1.03</Real>
+          <Real Name="Charge">-1.03</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>6</Int>
           </Sequence>
-          <Real Name="Mass">1.060000</Real>
-          <Real Name="Charge">-1.060000</Real>
+          <Real Name="Mass">1.0600000000000001</Real>
+          <Real Name="Charge">-1.0600000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>9</Int>
           </Sequence>
-          <Real Name="Mass">1.090000</Real>
-          <Real Name="Charge">-1.090000</Real>
+          <Real Name="Mass">1.0900000000000001</Real>
+          <Real Name="Charge">-1.0900000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>12</Int>
           </Sequence>
-          <Real Name="Mass">1.120000</Real>
-          <Real Name="Charge">-1.120000</Real>
+          <Real Name="Mass">1.1200000000000001</Real>
+          <Real Name="Charge">-1.1200000000000001</Real>
         </Position>
       </Sequence>
     </Selection>
@@ -98,120 +98,120 @@
             <Int Name="Length">1</Int>
             <Int>0</Int>
           </Sequence>
-          <Real Name="Mass">1.000000</Real>
-          <Real Name="Charge">-1.000000</Real>
+          <Real Name="Mass">1</Real>
+          <Real Name="Charge">-1</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>1</Int>
           </Sequence>
-          <Real Name="Mass">1.010000</Real>
-          <Real Name="Charge">-1.010000</Real>
+          <Real Name="Mass">1.01</Real>
+          <Real Name="Charge">-1.01</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>2</Int>
           </Sequence>
-          <Real Name="Mass">1.020000</Real>
-          <Real Name="Charge">-1.020000</Real>
+          <Real Name="Mass">1.02</Real>
+          <Real Name="Charge">-1.02</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>3</Int>
           </Sequence>
-          <Real Name="Mass">1.030000</Real>
-          <Real Name="Charge">-1.030000</Real>
+          <Real Name="Mass">1.03</Real>
+          <Real Name="Charge">-1.03</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>4</Int>
           </Sequence>
-          <Real Name="Mass">1.040000</Real>
-          <Real Name="Charge">-1.040000</Real>
+          <Real Name="Mass">1.04</Real>
+          <Real Name="Charge">-1.04</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>5</Int>
           </Sequence>
-          <Real Name="Mass">1.050000</Real>
-          <Real Name="Charge">-1.050000</Real>
+          <Real Name="Mass">1.05</Real>
+          <Real Name="Charge">-1.05</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>6</Int>
           </Sequence>
-          <Real Name="Mass">1.060000</Real>
-          <Real Name="Charge">-1.060000</Real>
+          <Real Name="Mass">1.0600000000000001</Real>
+          <Real Name="Charge">-1.0600000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>7</Int>
           </Sequence>
-          <Real Name="Mass">1.070000</Real>
-          <Real Name="Charge">-1.070000</Real>
+          <Real Name="Mass">1.0700000000000001</Real>
+          <Real Name="Charge">-1.0700000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>8</Int>
           </Sequence>
-          <Real Name="Mass">1.080000</Real>
-          <Real Name="Charge">-1.080000</Real>
+          <Real Name="Mass">1.0800000000000001</Real>
+          <Real Name="Charge">-1.0800000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>9</Int>
           </Sequence>
-          <Real Name="Mass">1.090000</Real>
-          <Real Name="Charge">-1.090000</Real>
+          <Real Name="Mass">1.0900000000000001</Real>
+          <Real Name="Charge">-1.0900000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>10</Int>
           </Sequence>
-          <Real Name="Mass">1.100000</Real>
-          <Real Name="Charge">-1.100000</Real>
+          <Real Name="Mass">1.1000000000000001</Real>
+          <Real Name="Charge">-1.1000000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>11</Int>
           </Sequence>
-          <Real Name="Mass">1.110000</Real>
-          <Real Name="Charge">-1.110000</Real>
+          <Real Name="Mass">1.1100000000000001</Real>
+          <Real Name="Charge">-1.1100000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>12</Int>
           </Sequence>
-          <Real Name="Mass">1.120000</Real>
-          <Real Name="Charge">-1.120000</Real>
+          <Real Name="Mass">1.1200000000000001</Real>
+          <Real Name="Charge">-1.1200000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>13</Int>
           </Sequence>
-          <Real Name="Mass">1.130000</Real>
-          <Real Name="Charge">-1.130000</Real>
+          <Real Name="Mass">1.1299999999999999</Real>
+          <Real Name="Charge">-1.1299999999999999</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>14</Int>
           </Sequence>
-          <Real Name="Mass">1.140000</Real>
-          <Real Name="Charge">-1.140000</Real>
+          <Real Name="Mass">1.1400000000000001</Real>
+          <Real Name="Charge">-1.1400000000000001</Real>
         </Position>
       </Sequence>
     </Selection>
@@ -243,8 +243,8 @@
             <Int>1</Int>
             <Int>2</Int>
           </Sequence>
-          <Real Name="Mass">3.030000</Real>
-          <Real Name="Charge">-3.030000</Real>
+          <Real Name="Mass">3.0299999999999998</Real>
+          <Real Name="Charge">-3.0299999999999998</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
@@ -253,8 +253,8 @@
             <Int>4</Int>
             <Int>5</Int>
           </Sequence>
-          <Real Name="Mass">3.120000</Real>
-          <Real Name="Charge">-3.120000</Real>
+          <Real Name="Mass">3.1200000000000001</Real>
+          <Real Name="Charge">-3.1200000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
@@ -263,8 +263,8 @@
             <Int>7</Int>
             <Int>8</Int>
           </Sequence>
-          <Real Name="Mass">3.210000</Real>
-          <Real Name="Charge">-3.210000</Real>
+          <Real Name="Mass">3.21</Real>
+          <Real Name="Charge">-3.21</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
@@ -273,8 +273,8 @@
             <Int>10</Int>
             <Int>11</Int>
           </Sequence>
-          <Real Name="Mass">3.300000</Real>
-          <Real Name="Charge">-3.300000</Real>
+          <Real Name="Mass">3.3000000000000007</Real>
+          <Real Name="Charge">-3.3000000000000007</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
@@ -283,8 +283,8 @@
             <Int>13</Int>
             <Int>14</Int>
           </Sequence>
-          <Real Name="Mass">3.390000</Real>
-          <Real Name="Charge">-3.390000</Real>
+          <Real Name="Mass">3.3900000000000001</Real>
+          <Real Name="Charge">-3.3900000000000001</Real>
         </Position>
       </Sequence>
     </Selection>
@@ -306,40 +306,40 @@
             <Int Name="Length">1</Int>
             <Int>0</Int>
           </Sequence>
-          <Real Name="Mass">1.000000</Real>
-          <Real Name="Charge">-1.000000</Real>
+          <Real Name="Mass">1</Real>
+          <Real Name="Charge">-1</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>3</Int>
           </Sequence>
-          <Real Name="Mass">1.030000</Real>
-          <Real Name="Charge">-1.030000</Real>
+          <Real Name="Mass">1.03</Real>
+          <Real Name="Charge">-1.03</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>6</Int>
           </Sequence>
-          <Real Name="Mass">1.060000</Real>
-          <Real Name="Charge">-1.060000</Real>
+          <Real Name="Mass">1.0600000000000001</Real>
+          <Real Name="Charge">-1.0600000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>9</Int>
           </Sequence>
-          <Real Name="Mass">1.090000</Real>
-          <Real Name="Charge">-1.090000</Real>
+          <Real Name="Mass">1.0900000000000001</Real>
+          <Real Name="Charge">-1.0900000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>12</Int>
           </Sequence>
-          <Real Name="Mass">1.120000</Real>
-          <Real Name="Charge">-1.120000</Real>
+          <Real Name="Mass">1.1200000000000001</Real>
+          <Real Name="Charge">-1.1200000000000001</Real>
         </Position>
       </Sequence>
     </Selection>
@@ -361,56 +361,56 @@
             <Int Name="Length">1</Int>
             <Int>2</Int>
           </Sequence>
-          <Real Name="Mass">1.020000</Real>
-          <Real Name="Charge">-1.020000</Real>
+          <Real Name="Mass">1.02</Real>
+          <Real Name="Charge">-1.02</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>3</Int>
           </Sequence>
-          <Real Name="Mass">1.030000</Real>
-          <Real Name="Charge">-1.030000</Real>
+          <Real Name="Mass">1.03</Real>
+          <Real Name="Charge">-1.03</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>6</Int>
           </Sequence>
-          <Real Name="Mass">1.060000</Real>
-          <Real Name="Charge">-1.060000</Real>
+          <Real Name="Mass">1.0600000000000001</Real>
+          <Real Name="Charge">-1.0600000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>7</Int>
           </Sequence>
-          <Real Name="Mass">1.070000</Real>
-          <Real Name="Charge">-1.070000</Real>
+          <Real Name="Mass">1.0700000000000001</Real>
+          <Real Name="Charge">-1.0700000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>10</Int>
           </Sequence>
-          <Real Name="Mass">1.100000</Real>
-          <Real Name="Charge">-1.100000</Real>
+          <Real Name="Mass">1.1000000000000001</Real>
+          <Real Name="Charge">-1.1000000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>11</Int>
           </Sequence>
-          <Real Name="Mass">1.110000</Real>
-          <Real Name="Charge">-1.110000</Real>
+          <Real Name="Mass">1.1100000000000001</Real>
+          <Real Name="Charge">-1.1100000000000001</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>14</Int>
           </Sequence>
-          <Real Name="Mass">1.140000</Real>
-          <Real Name="Charge">-1.140000</Real>
+          <Real Name="Mass">1.1400000000000001</Real>
+          <Real Name="Charge">-1.1400000000000001</Real>
         </Position>
       </Sequence>
     </Selection>
@@ -432,16 +432,16 @@
             <Int Name="Length">1</Int>
             <Int>2</Int>
           </Sequence>
-          <Real Name="Mass">1.020000</Real>
-          <Real Name="Charge">-1.020000</Real>
+          <Real Name="Mass">1.02</Real>
+          <Real Name="Charge">-1.02</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>3</Int>
           </Sequence>
-          <Real Name="Mass">1.030000</Real>
-          <Real Name="Charge">-1.030000</Real>
+          <Real Name="Mass">1.03</Real>
+          <Real Name="Charge">-1.03</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
@@ -449,8 +449,8 @@
             <Int>6</Int>
             <Int>7</Int>
           </Sequence>
-          <Real Name="Mass">2.130000</Real>
-          <Real Name="Charge">-2.130000</Real>
+          <Real Name="Mass">2.1299999999999999</Real>
+          <Real Name="Charge">-2.1299999999999999</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
@@ -458,16 +458,16 @@
             <Int>10</Int>
             <Int>11</Int>
           </Sequence>
-          <Real Name="Mass">2.210000</Real>
-          <Real Name="Charge">-2.210000</Real>
+          <Real Name="Mass">2.21</Real>
+          <Real Name="Charge">-2.21</Real>
         </Position>
         <Position>
           <Sequence Name="Atoms">
             <Int Name="Length">1</Int>
             <Int>14</Int>
           </Sequence>
-          <Real Name="Mass">1.140000</Real>
-          <Real Name="Charge">-1.140000</Real>
+          <Real Name="Mass">1.1400000000000001</Real>
+          <Real Name="Charge">-1.1400000000000001</Real>
         </Position>
       </Sequence>
     </Selection>

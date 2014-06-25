@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,8 +45,8 @@
  *   energy group pair energy storage
  */
 
-typedef gmx_epi32 gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
+typedef gmx_simd_int32_t gmx_exclfilter;
+static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
 static gmx_inline void
@@ -95,7 +95,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
     for (p = 0; p < UNROLLJ; p++)
     {
         /* Here we load 4 aligned floats, but we need just 2 */
-        clj_S[p] = gmx_load_pr(nbfp+type[aj+p]*nbfp_stride);
+        clj_S[p] = gmx_simd_load_r(nbfp+type[aj+p]*nbfp_stride);
     }
     gmx_shuffle_4_ps_fil01_to_2_ps(clj_S[0], clj_S[1], clj_S[2], clj_S[3], c6_S, c12_S);
 }
@@ -116,7 +116,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * AVX_256. */
 
 static gmx_inline void
-load_table_f(const real *tab_coul_FDV0, gmx_epi32 ti_S, int gmx_unused *ti,
+load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *ti,
              __m128 *ctab0_S, __m128 *ctab1_S)
 {
     int    idx[4];
@@ -125,13 +125,13 @@ load_table_f(const real *tab_coul_FDV0, gmx_epi32 ti_S, int gmx_unused *ti,
     /* Table has 4 entries, left-shift index by 2 */
     ti_S = _mm_slli_epi32(ti_S, 2);
     /* Without SSE4.1 the extract macro needs an immediate: unroll */
-    idx[0]    = gmx_mm_extract_epi32(ti_S, 0);
+    idx[0]    = gmx_simd_extract_i(ti_S, 0);
     ctab_S[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);
-    idx[1]    = gmx_mm_extract_epi32(ti_S, 1);
+    idx[1]    = gmx_simd_extract_i(ti_S, 1);
     ctab_S[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);
-    idx[2]    = gmx_mm_extract_epi32(ti_S, 2);
+    idx[2]    = gmx_simd_extract_i(ti_S, 2);
     ctab_S[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);
-    idx[3]    = gmx_mm_extract_epi32(ti_S, 3);
+    idx[3]    = gmx_simd_extract_i(ti_S, 3);
     ctab_S[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);
 
     /* Shuffle the force table entries to a convenient order */
@@ -139,7 +139,7 @@ load_table_f(const real *tab_coul_FDV0, gmx_epi32 ti_S, int gmx_unused *ti,
 }
 
 static gmx_inline void
-load_table_f_v(const real *tab_coul_FDV0, gmx_epi32 ti_S, int gmx_unused *ti,
+load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *ti,
                __m128 *ctab0_S, __m128 *ctab1_S, __m128 *ctabv_S)
 {
     int    idx[4];
@@ -148,13 +148,13 @@ load_table_f_v(const real *tab_coul_FDV0, gmx_epi32 ti_S, int gmx_unused *ti,
     /* Table has 4 entries, left-shift index by 2 */
     ti_S = _mm_slli_epi32(ti_S, 2);
     /* Without SSE4.1 the extract macro needs an immediate: unroll */
-    idx[0]    = gmx_mm_extract_epi32(ti_S, 0);
+    idx[0]    = gmx_simd_extract_i(ti_S, 0);
     ctab_S[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);
-    idx[1]    = gmx_mm_extract_epi32(ti_S, 1);
+    idx[1]    = gmx_simd_extract_i(ti_S, 1);
     ctab_S[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);
-    idx[2]    = gmx_mm_extract_epi32(ti_S, 2);
+    idx[2]    = gmx_simd_extract_i(ti_S, 2);
     ctab_S[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);
-    idx[3]    = gmx_mm_extract_epi32(ti_S, 3);
+    idx[3]    = gmx_simd_extract_i(ti_S, 3);
     ctab_S[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);
 
     /* Shuffle the force table entries to a convenient order */
@@ -172,13 +172,13 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return _mm_load_si128((__m128i *) i);
+    return gmx_simd_load_i(i);
 }
 
-static gmx_inline gmx_mm_pb
+static gmx_inline gmx_simd_bool_t
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
-    return gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
+    return _mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s128s_h_ */

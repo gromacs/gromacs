@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,13 +40,48 @@
 extern "C" {
 #endif
 
+/* Used with force switching or a constant potential shift:
+ * rsw       = max(r - r_switch, 0)
+ * force/p   = r^-(p+1) + c2*rsw^2 + c3*rsw^3
+ * potential = r^-p + c2/3*rsw^3 + c3/4*rsw^4 + cpot
+ * With a constant potential shift c2 and c3 are both 0.
+ */
+typedef struct {
+    real c2;
+    real c3;
+    real cpot;
+} shift_consts_t;
+
+/* Used with potential switching:
+ * rsw        = max(r - r_switch, 0)
+ * sw         = 1 + c3*rsw^3 + c4*rsw^4 + c5*rsw^5
+ * dsw        = 3*c3*rsw^2 + 4*c4*rsw^3 + 5*c5*rsw^4
+ * force      = force*dsw - potential*sw
+ * potential *= sw
+ */
+typedef struct {
+    real c3;
+    real c4;
+    real c5;
+} switch_consts_t;
+
 typedef struct {
     /* VdW */
-    real rvdw;
-    real sh_invrc6; /* For shifting the LJ potential */
+    int             vdwtype;
+    int             vdw_modifier;
+    real            rvdw;
+    real            rvdw_switch;
+    shift_consts_t  dispersion_shift;
+    shift_consts_t  repulsion_shift;
+    switch_consts_t vdw_switch;
+    /* TODO: remove this variable, used for not modyfing the group kernels,
+     * it is equal to -dispersion_shift->cpot
+     */
+    real sh_invrc6;
 
     /* type of electrostatics (defined in enums.h) */
     int  eeltype;
+    int  coulomb_modifier;
 
     /* Coulomb */
     real rcoulomb;
@@ -60,7 +93,9 @@ typedef struct {
     /* PME/Ewald */
     real ewaldcoeff_q;
     real ewaldcoeff_lj;
-    real sh_ewald;   /* For shifting the Ewald potential */
+    int  ljpme_comb_rule; /* LJ combination rule for the LJ PME mesh part */
+    real sh_ewald;        /* -sh_ewald is added to the direct space potential */
+    real sh_lj_ewald;     /* sh_lj_ewald is added to the correction potential */
 
     /* Dielectric constant resp. multiplication factor for charges */
     real epsilon_r;
@@ -82,6 +117,16 @@ typedef struct {
        entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
        this is used with single precision x86 SIMD for aligned loads */
     real *tabq_coul_FDV0;
+
+    /* Vdw force table for LJ-PME, size of array is tabq_size (when used) */
+    real *tabq_vdw_F;
+    /* Vdw energy table for LJ-PME, size of array is tabq_size (when used) */
+    real *tabq_vdw_V;
+    /* Vdw force+energy table for LJ-PME, size of array is tabq_size*4, entry
+       quadruplets are: F[i], F[i+1]-F[i], V[i], 0, this is used with
+       single precision x86 SIMD for aligned loads */
+    real *tabq_vdw_FDV0;
+
 } interaction_const_t;
 
 #ifdef __cplusplus

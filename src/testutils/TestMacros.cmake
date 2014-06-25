@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,6 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+function (gmx_add_unit_test_object_library NAME)
+    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+        include_directories(${GMOCK_INCLUDE_DIRS})
+        add_library(${NAME} OBJECT ${ARGN})
+    endif()
+endfunction ()
+
 function (gmx_build_unit_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         include_directories(${GMOCK_INCLUDE_DIRS})
@@ -46,7 +53,7 @@ function (gmx_build_unit_test NAME EXENAME)
         set(EXTRA_COMPILE_DEFINITIONS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}" TEST_TEMP_PATH="${_temporary_files_path}")
 
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
-    endif ()
+    endif()
 endfunction ()
 
 function (gmx_register_unit_test NAME EXENAME)
@@ -55,7 +62,7 @@ function (gmx_register_unit_test NAME EXENAME)
                  COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set_tests_properties(${NAME} PROPERTIES LABELS "GTest;UnitTest")
         add_dependencies(tests ${EXENAME})
-    endif ()
+    endif()
 endfunction ()
 
 function (gmx_register_integration_test NAME EXENAME)
@@ -69,7 +76,7 @@ function (gmx_register_integration_test NAME EXENAME)
         # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
         # some point.
         # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES})
-    endif ()
+    endif()
 endfunction ()
 
 function (gmx_add_unit_test NAME EXENAME)

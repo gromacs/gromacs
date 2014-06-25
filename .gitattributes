@@ -1,7 +1,9 @@
 # Generic rules
 *.c     filter=uncrustify
 *.cpp   filter=uncrustify
+*.cu    filter=uncrustify
 *.h     filter=uncrustify
+*.cuh   filter=uncrustify
 CMakeLists.txt  filter=copyright
 *.cmake         filter=copyright
 *.cmakein       filter=copyright
@@ -9,21 +11,30 @@ CMakeLists.txt  filter=copyright
 *.l             filter=copyright
 *.y             filter=copyright
 *.pre           filter=copyright
+*.tex           filter=copyright
+*.bm            filter=copyright
 # Exceptions: extra files to include
-admin/uncrustify.sh                     filter=copyright
+admin/*.sh                              filter=copyright
 admin/git-pre-commit                    filter=copyright
 # Exceptions: files to exclude
 *.pc.cmakein                            !filter
 cmake/CheckC*CompilerFlag.cmake         !filter
 cmake/FindBLAS.cmake                    !filter
 cmake/FindLAPACK.cmake                  !filter
+cmake/ThreadMPI.cmake                   !filter
 cmake/Platform/BluegeneQ*.cmake         !filter
 cmake/*.c                               !filter
 cmake/*.c.cmakein                       !filter
-doxygen/*.cmakein                       !filter
+doxygen/Doxyfile-*.cmakein              !filter
 doxygen/*.cpp                           !filter
+doxygen/examples/*.cpp                  filter=uncrustify_only
+doxygen/examples/*.c                    filter=uncrustify_only
 manual/UseLATEX.cmake                   !filter
+scripts/GMXRC.*                         !filter
+scripts/make_gromos_rtp.py              !filter
 src/contrib/*                           !filter
+src/gromacs/gmxlib/gpu_utils/memtestG80_core.*             !filter
+src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter
 src/gromacs/selection/parser.cpp        !filter

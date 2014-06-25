@@ -5,13 +5,13 @@
   <OutputData Name="Data">
     <AnalysisData Name="index">
       <DataFrame Name="Frame0">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <Int Name="FirstColumn">0</Int>
           <Int Name="LastColumn">0</Int>
           <DataValue>
-            <Real Name="Value">3.000000</Real>
+            <Real Name="Value">3</Real>
           </DataValue>
         </DataValues>
         <DataValues>
@@ -19,7 +19,7 @@
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
-            <Real Name="Value">2.000000</Real>
+            <Real Name="Value">2</Real>
           </DataValue>
         </DataValues>
         <DataValues>
@@ -27,7 +27,7 @@
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
-            <Real Name="Value">4.000000</Real>
+            <Real Name="Value">4</Real>
           </DataValue>
         </DataValues>
         <DataValues>
@@ -35,7 +35,7 @@
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
-            <Real Name="Value">1.000000</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
         </DataValues>
       </DataFrame>

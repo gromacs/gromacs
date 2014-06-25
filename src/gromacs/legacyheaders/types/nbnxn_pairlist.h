@@ -1,44 +1,42 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include "nblist.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,12 +73,10 @@ typedef void nbnxn_free_t (void *ptr);
  * is found, all subsequent j-entries in the i-entry also have full masks.
  */
 typedef struct {
-    int      cj;    /* The j-cluster                    */
-    unsigned excl;  /* The exclusion (interaction) bits */
-#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+    int          cj;    /* The j-cluster                    */
+    unsigned int excl;  /* The exclusion (interaction) bits */
     /* Indices into the arrays of SIMD interaction masks. */
-    char     interaction_mask_indices[4];
-#endif
+    char         interaction_mask_indices[4];
 } nbnxn_cj_t;
 
 /* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
@@ -113,8 +109,8 @@ typedef struct {
 } nbnxn_sci_t;
 
 typedef struct {
-    unsigned imask;        /* The i-cluster interactions mask for 1 warp  */
-    int      excl_ind;     /* Index into the exclusion array for 1 warp   */
+    unsigned int imask;    /* The i-cluster interactions mask for 1 warp  */
+    int          excl_ind; /* Index into the exclusion array for 1 warp   */
 } nbnxn_im_ei_t;
 
 typedef struct {
@@ -123,7 +119,7 @@ typedef struct {
 } nbnxn_cj4_t;
 
 typedef struct {
-    unsigned pair[32];     /* Topology exclusion interaction bits for one warp,
+    unsigned int pair[32]; /* Topology exclusion interaction bits for one warp,
                             * each unsigned has bitS for 4*8 i clusters
                             */
 } nbnxn_excl_t;
@@ -174,6 +170,7 @@ typedef struct {
     int                natpair_ljq; /* Total number of atom pairs for LJ+Q kernel */
     int                natpair_lj;  /* Total number of atom pairs for LJ kernel   */
     int                natpair_q;   /* Total number of atom pairs for Q kernel    */
+    t_nblist         **nbl_fep;
 } nbnxn_pairlist_set_t;
 
 enum {
@@ -215,15 +212,18 @@ typedef struct {
 
 /* Flags for telling if threads write to force output buffers */
 typedef struct {
-    int       nflag;       /* The number of flag blocks                         */
-    unsigned *flag;        /* Bit i is set when thread i writes to a cell-block */
-    int       flag_nalloc; /* Allocation size of cxy_flag                       */
+    int           nflag;       /* The number of flag blocks                         */
+    unsigned int *flag;        /* Bit i is set when thread i writes to a cell-block */
+    int           flag_nalloc; /* Allocation size of cxy_flag                       */
 } nbnxn_buffer_flags_t;
 
 /* LJ combination rules: geometric, Lorentz-Berthelot, none */
 enum {
     ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR
 };
+
+/* TODO: Remove need for forward declare */
+struct tMPI_Atomic;
 
 typedef struct {
     nbnxn_alloc_t           *alloc;
@@ -260,16 +260,16 @@ typedef struct {
     /* Filters for topology exclusion masks for the SIMD kernels.
      * filter2 is the same as filter1, but with each element duplicated.
      */
-    unsigned                *simd_exclusion_filter1;
-    unsigned                *simd_exclusion_filter2;
-#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+    unsigned int            *simd_exclusion_filter1;
+    unsigned int            *simd_exclusion_filter2;
     real                    *simd_interaction_array; /* Array of masks needed for exclusions on QPX */
-#endif
     int                      nout;                   /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;                    /* Output data structures               */
     int                      nalloc;                 /* Allocation size of all arrays (for x/f *x/fstride) */
     gmx_bool                 bUseBufferFlags;        /* Use the flags or operate on all atoms     */
     nbnxn_buffer_flags_t     buffer_flags;           /* Flags for buffer zeroing+reduc.  */
+    gmx_bool                 bUseTreeReduce;         /* Use tree for force reduction */
+    struct tMPI_Atomic      *syncStep;               /* Synchronization step for tree reduce */
 } nbnxn_atomdata_t;
 
 #ifdef __cplusplus

@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,9 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
@@ -48,16 +48,16 @@
 #include <unistd.h>
 #endif
 
-#include "gmx_fatal.h"
+#include "thread_mpi/threads.h"
+
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/futil.h"
 #include "filenm.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gmxfio.h"
 #include "md5.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include "gmxfio_int.h"
 
@@ -84,11 +84,11 @@ static tMPI_Thread_mutex_t open_file_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 /* These simple lists define the I/O type for these files */
 static const int ftpXDR[] =
-{ efTPR, efTRR, efEDR, efXTC, efMTX, efCPT };
+{ efTPR, efTRR, efEDR, efXTC, efTNG, efMTX, efCPT };
 static const int ftpASC[] =
 { efTPA, efGRO, efPDB };
 static const int ftpBIN[] =
-{ efTPB, efTRJ };
+{ efTPB, efTRJ, efTNG };
 #ifdef HAVE_XML
 static const int ftpXML[] =
 {   efXML};
@@ -513,8 +513,12 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
                     gmx_open(fn);
                 }
             }
+            if (fn2ftp(fn) == efTNG)
+            {
+                gmx_incons("gmx_fio_open may not be used to open TNG files");
+            }
             /* Open the file */
-            fio->fp = ffopen(fn, newmode);
+            fio->fp = gmx_ffopen(fn, newmode);
 
             /* determine the XDR direction */
             if (newmode[0] == 'w' || newmode[0] == 'a')
@@ -532,7 +536,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
         else
         {
             /* If it is not, open it as a regular file */
-            fio->fp = ffopen(fn, newmode);
+            fio->fp = gmx_ffopen(fn, newmode);
         }
 
         /* for appending seek to end of file to make sure ftell gives correct position
@@ -555,7 +559,6 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     fio->bDouble           = (sizeof(real) == sizeof(double));
     fio->bDebug            = FALSE;
     fio->bOpen             = TRUE;
-    fio->bLargerThan_off_t = FALSE;
 
     /* set the reader/writer functions */
     gmx_fio_set_iotype(fio);
@@ -583,7 +586,7 @@ static int gmx_fio_close_locked(t_fileio *fio)
     /* Don't close stdin and stdout! */
     if (!fio->bStdio && fio->fp != NULL)
     {
-        rc = ffclose(fio->fp); /* fclose returns 0 if happy */
+        rc = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
 
     }
     fio->bOpen = FALSE;
@@ -599,6 +602,10 @@ int gmx_fio_close(t_fileio *fio)
     /* We don't want two processes operating on the list at the same time */
     tMPI_Thread_mutex_lock(&open_file_mutex);
 
+    if (fio->iFTP == efTNG)
+    {
+        gmx_incons("gmx_fio_close should not be called on a TNG file");
+    }
     gmx_fio_lock(fio);
     /* first remove it from the list */
     gmx_fio_remove(fio);
@@ -620,7 +627,7 @@ int gmx_fio_fp_close(t_fileio *fio)
     gmx_fio_lock(fio);
     if (!in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR) && !fio->bStdio)
     {
-        rc      = ffclose(fio->fp); /* fclose returns 0 if happy */
+        rc      = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
         fio->fp = NULL;
     }
     gmx_fio_unlock(fio);
@@ -671,11 +678,11 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
 {
     /*1MB: large size important to catch almost identical files */
 #define CPT_CHK_LEN  1048576
-    md5_state_t   state;
-    unsigned char buf[CPT_CHK_LEN];
-    gmx_off_t     read_len;
-    gmx_off_t     seek_offset;
-    int           ret = -1;
+    md5_state_t    state;
+    unsigned char *buf;
+    gmx_off_t      read_len;
+    gmx_off_t      seek_offset;
+    int            ret = -1;
 
     seek_offset = offset - CPT_CHK_LEN;
     if (seek_offset < 0)
@@ -698,6 +705,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         return -1;
     }
 
+    snew(buf, CPT_CHK_LEN);
     /* the read puts the file position back to offset */
     if ((gmx_off_t)fread(buf, 1, read_len, fio->fp) != read_len)
     {
@@ -746,12 +754,10 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         md5_init(&state);
         md5_append(&state, buf, read_len);
         md5_finish(&state, digest);
-        return read_len;
+        ret = read_len;
     }
-    else
-    {
-        return ret;
-    }
+    sfree(buf);
+    return ret;
 }
 
 
@@ -799,29 +805,6 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
     return 0;
 }
 
-int gmx_fio_check_file_position(t_fileio gmx_unused *fio)
-{
-    /* If gmx_off_t is 4 bytes we can not store file offset > 2 GB.
-     * If we do not have ftello, we will play it safe.
-     */
-#if (SIZEOF_GMX_OFF_T == 4 || !defined HAVE_FSEEKO)
-    gmx_off_t offset;
-
-    gmx_fio_lock(fio);
-    gmx_fio_int_get_file_position(fio, &offset);
-    /* We have a 4 byte offset,
-     * make sure that we will detect out of range for all possible cases.
-     */
-    if (offset < 0 || offset > 2147483647)
-    {
-        fio->bLargerThan_off_t = TRUE;
-    }
-    gmx_fio_unlock(fio);
-#endif
-
-    return 0;
-}
-
 int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
                                       int                  *p_nfiles)
 {
@@ -861,23 +844,13 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             strncpy(outputfiles[nfiles].filename, cur->fn, STRLEN - 1);
 
             /* Get the file position */
-            if (cur->bLargerThan_off_t)
-            {
-                /* -1 signals out of range */
-                outputfiles[nfiles].offset      = -1;
-                outputfiles[nfiles].chksum_size = -1;
-            }
-            else
-            {
-                gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
+            gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
 #ifndef GMX_FAHCORE
-                outputfiles[nfiles].chksum_size
-                    = gmx_fio_int_get_file_md5(cur,
-                                               outputfiles[nfiles].offset,
-                                               outputfiles[nfiles].chksum);
+            outputfiles[nfiles].chksum_size
+                = gmx_fio_int_get_file_md5(cur,
+                                           outputfiles[nfiles].offset,
+                                           outputfiles[nfiles].chksum);
 #endif
-            }
-
             nfiles++;
         }
 

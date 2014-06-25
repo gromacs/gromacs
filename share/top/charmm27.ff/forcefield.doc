@@ -1,4 +1,4 @@
-CHARMM27 all-atom force field (with CMAP) - version 2.0
+CHARMM27 all-atom force field (CHARM22 plus CMAP for proteins)
 
 *******************************************************************************
 *                    CHARMM port writted by                                   *

@@ -1,90 +1,82 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <math.h>
-#include "sysstuff.h"
-#include "string2.h"
+
 #include "network.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
-#include "main.h"
 #include "chargegroup.h"
 #include "force.h"
 #include "macros.h"
-#include "random.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "update.h"
-#include "random.h"
 #include "constr.h"
-#include "vec.h"
-#include "statutil.h"
+#include "gromacs/math/vec.h"
 #include "tgroup.h"
 #include "mdebin.h"
 #include "vsite.h"
 #include "force.h"
 #include "mdrun.h"
 #include "domdec.h"
-#include "partdec.h"
-#include "gmx_random.h"
-#include "physics.h"
-#include "xvgr.h"
+#include "gromacs/random/random.h"
+#include "gromacs/math/units.h"
+#include "gromacs/fileio/xvgr.h"
 #include "mdatoms.h"
 #include "ns.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "pme.h"
-#include "gbutil.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
-
-#ifdef GMX_X86_SSE2
-#include "gromacs/simd/general_x86_sse2.h"
-#endif
-
 
 static void global_max(t_commrec *cr, int *n)
 {
@@ -133,6 +125,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               gmx_membed_t gmx_unused membed,
               real gmx_unused cpt_period, real gmx_unused max_hours,
               const char gmx_unused *deviceOptions,
+              int gmx_unused imdport,
               unsigned long gmx_unused Flags,
               gmx_walltime_accounting_t walltime_accounting)
 {
@@ -145,14 +138,18 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     double          embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
     t_trxstatus    *status;
     t_trxframe      rerun_fr;
-    gmx_bool        bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS, bOurStep;
+    gmx_bool        bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
     tensor          force_vir, shake_vir, vir, pres;
     int             cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
     rvec           *x_mol;
     rvec            mu_tot, x_init, dx, x_tp;
-    int             nnodes, frame, nsteps, step;
+    int             nnodes, frame;
+    gmx_int64_t     frame_step_prev, frame_step;
+    gmx_int64_t     nsteps, stepblocksize = 0, step;
+    gmx_int64_t     rnd_count_stride, rnd_count;
+    gmx_int64_t     seed;
+    double          rnd[4];
     int             i, start, end;
-    gmx_rng_t       tpi_rand;
     FILE           *fp_tpi = NULL;
     char           *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
     double          dbl, dump_ener;
@@ -249,7 +246,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
         sscanf(dump_pdb, "%lf", &dump_ener);
     }
 
-    atoms2md(top_global, inputrec, 0, NULL, 0, top_global->natoms, mdatoms);
+    atoms2md(top_global, inputrec, 0, NULL, top_global->natoms, mdatoms);
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
     snew(enerd, 1);
@@ -258,10 +255,8 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     /* Print to log file  */
     walltime_accounting_start(walltime_accounting);
-    print_date_and_time(fplog, cr->nodeid,
-                        "Started Test Particle Insertion",
-                        walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
+    print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */
     cg_tp = top->cgs.nr - 1;
@@ -315,7 +310,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                 a_tp1-a_tp0, bCharge ? "with" : "without");
 
         fprintf(fplog, "\nWill insert %d times in each frame of %s\n",
-                nsteps, opt2fn("-rerun", nfile, fnm));
+                (int)nsteps, opt2fn("-rerun", nfile, fnm));
     }
 
     if (!bCavity)
@@ -361,8 +356,17 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     }
     snew(sum_UgembU, nener);
 
-    /* Initialize random generator */
-    tpi_rand = gmx_rng_init(inputrec->ld_seed);
+    /* Copy the random seed set by the user */
+    seed = inputrec->ld_seed;
+    /* We use the frame step number as one random counter.
+     * The second counter use the insertion (step) count. But we
+     * need multiple random numbers per insertion. This number is
+     * not fixed, since we generate random locations in a sphere
+     * by putting locations in a cube and some of these fail.
+     * A count of 20 is already extremely unlikely, so 10000 is
+     * a safe margin for random numbers per insertion.
+     */
+    rnd_count_stride = 10000;
 
     if (MASTER(cr))
     {
@@ -427,6 +431,9 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     nbin    = 10;
     snew(bin, nbin);
 
+    /* Avoid frame step numbers <= -1 */
+    frame_step_prev = -1;
+
     bNotLastFrame = read_first_frame(oenv, &status, opt2fn("-rerun", nfile, fnm),
                                      &rerun_fr, TRX_NEED_X);
     frame = 0;
@@ -443,13 +450,37 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     refvolshift = log(det(rerun_fr.box));
 
-#ifdef GMX_X86_SSE2
-    /* Make sure we don't detect SSE overflow generated before this point */
-    gmx_mm_check_and_reset_overflow();
+    switch (inputrec->eI)
+    {
+        case eiTPI:
+            stepblocksize = inputrec->nstlist;
+            break;
+        case eiTPIC:
+            stepblocksize = 1;
+            break;
+        default:
+            gmx_fatal(FARGS, "Unknown integrator %s", ei_names[inputrec->eI]);
+    }
+
+#ifdef GMX_SIMD
+    /* Make sure we don't detect SIMD overflow generated before this point */
+    gmx_simd_check_and_reset_overflow();
 #endif
 
     while (bNotLastFrame)
     {
+        frame_step      = rerun_fr.step;
+        if (frame_step <= frame_step_prev)
+        {
+            /* We don't have step number in the trajectory file,
+             * or we have constant or decreasing step numbers.
+             * Ensure we have increasing step numbers, since we use
+             * the step numbers as a counter for random numbers.
+             */
+            frame_step  = frame_step_prev + 1;
+        }
+        frame_step_prev = frame_step;
+
         lambda = rerun_fr.lambda;
         t      = rerun_fr.time;
 
@@ -471,11 +502,18 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
         bStateChanged = TRUE;
         bNS           = TRUE;
-        for (step = 0; step < nsteps; step++)
+
+        step = cr->nodeid*stepblocksize;
+        while (step < nsteps)
         {
-            /* In parallel all nodes generate all random configurations.
-             * In that way the result is identical to a single cpu tpi run.
+            /* Initialize the second counter for random numbers using
+             * the insertion step index. This ensures that we get
+             * the same random numbers independently of how many
+             * MPI ranks we use. Also for the same seed, we get
+             * the same initial random sequence for different nsteps.
              */
+            rnd_count = step*rnd_count_stride;
+
             if (!bCavity)
             {
                 /* Random insertion in the whole volume */
@@ -483,9 +521,12 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                 if (bNS)
                 {
                     /* Generate a random position in the box */
-                    x_init[XX] = gmx_rng_uniform_real(tpi_rand)*state->box[XX][XX];
-                    x_init[YY] = gmx_rng_uniform_real(tpi_rand)*state->box[YY][YY];
-                    x_init[ZZ] = gmx_rng_uniform_real(tpi_rand)*state->box[ZZ][ZZ];
+                    gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd);
+                    gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd+2);
+                    for (d = 0; d < DIM; d++)
+                    {
+                        x_init[d] = rnd[d]*state->box[d][d];
+                    }
                 }
                 if (inputrec->nstlist == 1)
                 {
@@ -496,9 +537,12 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                     /* Generate coordinates within |dx|=drmax of x_init */
                     do
                     {
-                        dx[XX] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
-                        dx[YY] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
-                        dx[ZZ] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
+                        gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd);
+                        gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd+2);
+                        for (d = 0; d < DIM; d++)
+                        {
+                            dx[d] = (2*rnd[d] - 1)*drmax;
+                        }
                     }
                     while (norm2(dx) > drmax*drmax);
                     rvec_add(x_init, dx, x_tp);
@@ -539,9 +583,12 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                 /* Generate coordinates within |dx|=drmax of x_init */
                 do
                 {
-                    dx[XX] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
-                    dx[YY] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
-                    dx[ZZ] = (2*gmx_rng_uniform_real(tpi_rand) - 1)*drmax;
+                    gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd);
+                    gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd+2);
+                    for (d = 0; d < DIM; d++)
+                    {
+                        dx[d] = (2*rnd[d] - 1)*drmax;
+                    }
                 }
                 while (norm2(dx) > drmax*drmax);
                 rvec_add(x_init, dx, x_tp);
@@ -560,10 +607,12 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                     copy_rvec(x_mol[i-a_tp0], state->x[i]);
                 }
                 /* Rotate the molecule randomly */
+                gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd);
+                gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd+2);
                 rotate_conf(a_tp1-a_tp0, state->x+a_tp0, NULL,
-                            2*M_PI*gmx_rng_uniform_real(tpi_rand),
-                            2*M_PI*gmx_rng_uniform_real(tpi_rand),
-                            2*M_PI*gmx_rng_uniform_real(tpi_rand));
+                            2*M_PI*rnd[0],
+                            2*M_PI*rnd[1],
+                            2*M_PI*rnd[2]);
                 /* Shift to the insertion location */
                 for (i = a_tp0; i < a_tp1; i++)
                 {
@@ -571,188 +620,176 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                 }
             }
 
-            /* Check if this insertion belongs to this node */
-            bOurStep = TRUE;
-            if (PAR(cr))
+            /* Clear some matrix variables  */
+            clear_mat(force_vir);
+            clear_mat(shake_vir);
+            clear_mat(vir);
+            clear_mat(pres);
+
+            /* Set the charge group center of mass of the test particle */
+            copy_rvec(x_init, fr->cg_cm[top->cgs.nr-1]);
+
+            /* Calc energy (no forces) on new positions.
+             * Since we only need the intermolecular energy
+             * and the RF exclusion terms of the inserted molecule occur
+             * within a single charge group we can pass NULL for the graph.
+             * This also avoids shifts that would move charge groups
+             * out of the box.
+             *
+             * Some checks above ensure than we can not have
+             * twin-range interactions together with nstlist > 1,
+             * therefore we do not need to remember the LR energies.
+             */
+            /* Make do_force do a single node force calculation */
+            cr->nnodes = 1;
+            do_force(fplog, cr, inputrec,
+                     step, nrnb, wcycle, top, &top_global->groups,
+                     state->box, state->x, &state->hist,
+                     f, force_vir, mdatoms, enerd, fcd,
+                     state->lambda,
+                     NULL, fr, NULL, mu_tot, t, NULL, NULL, FALSE,
+                     GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
+                     (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DO_LR : 0) |
+                     (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
+            cr->nnodes    = nnodes;
+            bStateChanged = FALSE;
+            bNS           = FALSE;
+
+            /* Calculate long range corrections to pressure and energy */
+            calc_dispcorr(fplog, inputrec, fr, step, top_global->natoms, state->box,
+                          lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
+            /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
+            enerd->term[F_DISPCORR]  = enercorr;
+            enerd->term[F_EPOT]     += enercorr;
+            enerd->term[F_PRES]     += prescorr;
+            enerd->term[F_DVDL_VDW] += dvdlcorr;
+
+            epot               = enerd->term[F_EPOT];
+            bEnergyOutOfBounds = FALSE;
+#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
+            /* With SSE the energy can overflow, check for this */
+            if (gmx_mm_check_and_reset_overflow())
             {
-                switch (inputrec->eI)
-                {
-                    case eiTPI:
-                        bOurStep = ((step / inputrec->nstlist) % nnodes == cr->nodeid);
-                        break;
-                    case eiTPIC:
-                        bOurStep = (step % nnodes == cr->nodeid);
-                        break;
-                    default:
-                        gmx_fatal(FARGS, "Unknown integrator %s", ei_names[inputrec->eI]);
-                }
-            }
-            if (bOurStep)
-            {
-                /* Clear some matrix variables  */
-                clear_mat(force_vir);
-                clear_mat(shake_vir);
-                clear_mat(vir);
-                clear_mat(pres);
-
-                /* Set the charge group center of mass of the test particle */
-                copy_rvec(x_init, fr->cg_cm[top->cgs.nr-1]);
-
-                /* Calc energy (no forces) on new positions.
-                 * Since we only need the intermolecular energy
-                 * and the RF exclusion terms of the inserted molecule occur
-                 * within a single charge group we can pass NULL for the graph.
-                 * This also avoids shifts that would move charge groups
-                 * out of the box.
-                 *
-                 * Some checks above ensure than we can not have
-                 * twin-range interactions together with nstlist > 1,
-                 * therefore we do not need to remember the LR energies.
-                 */
-                /* Make do_force do a single node force calculation */
-                cr->nnodes = 1;
-                do_force(fplog, cr, inputrec,
-                         step, nrnb, wcycle, top, &top_global->groups,
-                         state->box, state->x, &state->hist,
-                         f, NULL, NULL, force_vir, mdatoms, enerd, fcd,
-                         state->lambda,
-                         NULL, fr, NULL, mu_tot, t, NULL, NULL, FALSE,
-                         GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
-                         (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DO_LR : 0) |
-                         (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
-                cr->nnodes    = nnodes;
-                bStateChanged = FALSE;
-                bNS           = FALSE;
-
-                /* Calculate long range corrections to pressure and energy */
-                calc_dispcorr(fplog, inputrec, fr, step, top_global->natoms, state->box,
-                              lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
-                /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
-                enerd->term[F_DISPCORR]  = enercorr;
-                enerd->term[F_EPOT]     += enercorr;
-                enerd->term[F_PRES]     += prescorr;
-                enerd->term[F_DVDL_VDW] += dvdlcorr;
-
-                epot               = enerd->term[F_EPOT];
-                bEnergyOutOfBounds = FALSE;
-#ifdef GMX_X86_SSE2
-                /* With SSE the energy can overflow, check for this */
-                if (gmx_mm_check_and_reset_overflow())
-                {
-                    if (debug)
-                    {
-                        fprintf(debug, "Found an SSE overflow, assuming the energy is out of bounds\n");
-                    }
-                    bEnergyOutOfBounds = TRUE;
-                }
-#endif
-                /* If the compiler doesn't optimize this check away
-                 * we catch the NAN energies.
-                 * The epot>GMX_REAL_MAX check catches inf values,
-                 * which should nicely result in embU=0 through the exp below,
-                 * but it does not hurt to check anyhow.
-                 */
-                /* Non-bonded Interaction usually diverge at r=0.
-                 * With tabulated interaction functions the first few entries
-                 * should be capped in a consistent fashion between
-                 * repulsion, dispersion and Coulomb to avoid accidental
-                 * negative values in the total energy.
-                 * The table generation code in tables.c does this.
-                 * With user tbales the user should take care of this.
-                 */
-                if (epot != epot || epot > GMX_REAL_MAX)
-                {
-                    bEnergyOutOfBounds = TRUE;
-                }
-                if (bEnergyOutOfBounds)
-                {
-                    if (debug)
-                    {
-                        fprintf(debug, "\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n", t, step, epot);
-                    }
-                    embU = 0;
-                }
-                else
-                {
-                    embU      = exp(-beta*epot);
-                    sum_embU += embU;
-                    /* Determine the weighted energy contributions of each energy group */
-                    e                = 0;
-                    sum_UgembU[e++] += epot*embU;
-                    if (fr->bBHAM)
-                    {
-                        for (i = 0; i < ngid; i++)
-                        {
-                            sum_UgembU[e++] +=
-                                (enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)] +
-                                 enerd->grpp.ener[egBHAMLR][GID(i, gid_tp, ngid)])*embU;
-                        }
-                    }
-                    else
-                    {
-                        for (i = 0; i < ngid; i++)
-                        {
-                            sum_UgembU[e++] +=
-                                (enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)] +
-                                 enerd->grpp.ener[egLJLR][GID(i, gid_tp, ngid)])*embU;
-                        }
-                    }
-                    if (bDispCorr)
-                    {
-                        sum_UgembU[e++] += enerd->term[F_DISPCORR]*embU;
-                    }
-                    if (bCharge)
-                    {
-                        for (i = 0; i < ngid; i++)
-                        {
-                            sum_UgembU[e++] +=
-                                (enerd->grpp.ener[egCOULSR][GID(i, gid_tp, ngid)] +
-                                 enerd->grpp.ener[egCOULLR][GID(i, gid_tp, ngid)])*embU;
-                        }
-                        if (bRFExcl)
-                        {
-                            sum_UgembU[e++] += enerd->term[F_RF_EXCL]*embU;
-                        }
-                        if (EEL_FULL(fr->eeltype))
-                        {
-                            sum_UgembU[e++] += enerd->term[F_COUL_RECIP]*embU;
-                        }
-                    }
-                }
-
-                if (embU == 0 || beta*epot > bU_bin_limit)
-                {
-                    bin[0]++;
-                }
-                else
-                {
-                    i = (int)((bU_logV_bin_limit
-                               - (beta*epot - logV + refvolshift))*invbinw
-                              + 0.5);
-                    if (i < 0)
-                    {
-                        i = 0;
-                    }
-                    if (i >= nbin)
-                    {
-                        realloc_bins(&bin, &nbin, i+10);
-                    }
-                    bin[i]++;
-                }
-
                 if (debug)
                 {
-                    fprintf(debug, "TPI %7d %12.5e %12.5f %12.5f %12.5f\n",
-                            step, epot, x_tp[XX], x_tp[YY], x_tp[ZZ]);
+                    fprintf(debug, "Found an SSE overflow, assuming the energy is out of bounds\n");
                 }
-
-                if (dump_pdb && epot <= dump_ener)
+                bEnergyOutOfBounds = TRUE;
+            }
+#endif
+            /* If the compiler doesn't optimize this check away
+             * we catch the NAN energies.
+             * The epot>GMX_REAL_MAX check catches inf values,
+             * which should nicely result in embU=0 through the exp below,
+             * but it does not hurt to check anyhow.
+             */
+            /* Non-bonded Interaction usually diverge at r=0.
+             * With tabulated interaction functions the first few entries
+             * should be capped in a consistent fashion between
+             * repulsion, dispersion and Coulomb to avoid accidental
+             * negative values in the total energy.
+             * The table generation code in tables.c does this.
+             * With user tbales the user should take care of this.
+             */
+            if (epot != epot || epot > GMX_REAL_MAX)
+            {
+                bEnergyOutOfBounds = TRUE;
+            }
+            if (bEnergyOutOfBounds)
+            {
+                if (debug)
                 {
-                    sprintf(str, "t%g_step%d.pdb", t, step);
-                    sprintf(str2, "t: %f step %d ener: %f", t, step, epot);
-                    write_sto_conf_mtop(str, str2, top_global, state->x, state->v,
-                                        inputrec->ePBC, state->box);
+                    fprintf(debug, "\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n", t, (int)step, epot);
                 }
+                embU = 0;
+            }
+            else
+            {
+                embU      = exp(-beta*epot);
+                sum_embU += embU;
+                /* Determine the weighted energy contributions of each energy group */
+                e                = 0;
+                sum_UgembU[e++] += epot*embU;
+                if (fr->bBHAM)
+                {
+                    for (i = 0; i < ngid; i++)
+                    {
+                        sum_UgembU[e++] +=
+                            (enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)] +
+                             enerd->grpp.ener[egBHAMLR][GID(i, gid_tp, ngid)])*embU;
+                    }
+                }
+                else
+                {
+                    for (i = 0; i < ngid; i++)
+                    {
+                        sum_UgembU[e++] +=
+                            (enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)] +
+                             enerd->grpp.ener[egLJLR][GID(i, gid_tp, ngid)])*embU;
+                    }
+                }
+                if (bDispCorr)
+                {
+                    sum_UgembU[e++] += enerd->term[F_DISPCORR]*embU;
+                }
+                if (bCharge)
+                {
+                    for (i = 0; i < ngid; i++)
+                    {
+                        sum_UgembU[e++] +=
+                            (enerd->grpp.ener[egCOULSR][GID(i, gid_tp, ngid)] +
+                             enerd->grpp.ener[egCOULLR][GID(i, gid_tp, ngid)])*embU;
+                    }
+                    if (bRFExcl)
+                    {
+                        sum_UgembU[e++] += enerd->term[F_RF_EXCL]*embU;
+                    }
+                    if (EEL_FULL(fr->eeltype))
+                    {
+                        sum_UgembU[e++] += enerd->term[F_COUL_RECIP]*embU;
+                    }
+                }
+            }
+
+            if (embU == 0 || beta*epot > bU_bin_limit)
+            {
+                bin[0]++;
+            }
+            else
+            {
+                i = (int)((bU_logV_bin_limit
+                           - (beta*epot - logV + refvolshift))*invbinw
+                          + 0.5);
+                if (i < 0)
+                {
+                    i = 0;
+                }
+                if (i >= nbin)
+                {
+                    realloc_bins(&bin, &nbin, i+10);
+                }
+                bin[i]++;
+            }
+
+            if (debug)
+            {
+                fprintf(debug, "TPI %7d %12.5e %12.5f %12.5f %12.5f\n",
+                        (int)step, epot, x_tp[XX], x_tp[YY], x_tp[ZZ]);
+            }
+
+            if (dump_pdb && epot <= dump_ener)
+            {
+                sprintf(str, "t%g_step%d.pdb", t, (int)step);
+                sprintf(str2, "t: %f step %d ener: %f", t, (int)step, epot);
+                write_sto_conf_mtop(str, str2, top_global, state->x, state->v,
+                                    inputrec->ePBC, state->box);
+            }
+
+            step++;
+            if ((step/stepblocksize) % cr->nnodes != cr->nodeid)
+            {
+                /* Skip all steps assigned to the other MPI ranks */
+                step += (cr->nnodes - 1)*stepblocksize;
             }
         }
 

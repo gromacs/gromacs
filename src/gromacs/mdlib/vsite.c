@@ -1,177 +1,65 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <stdio.h>
+
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vsite.h"
 #include "macros.h"
-#include "smalloc.h"
 #include "nrnb.h"
-#include "vec.h"
-#include "mvdata.h"
+#include "gromacs/math/vec.h"
 #include "network.h"
-#include "mshift.h"
-#include "pbc.h"
 #include "domdec.h"
-#include "partdec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Routines to send/recieve coordinates and force
  * of constructing atoms.
  */
-
-static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
-{
-    rvec *sendbuf;
-    rvec *recvbuf;
-    int   i, ia;
-
-    sendbuf = vsitecomm->send_buf;
-    recvbuf = vsitecomm->recv_buf;
-
-
-    /* Prepare pulse left by copying to send buffer */
-    for (i = 0; i < vsitecomm->left_export_nconstruct; i++)
-    {
-        ia = vsitecomm->left_export_construct[i];
-        copy_rvec(x[ia], sendbuf[i]);
-    }
-
-    /* Pulse coordinates left */
-    gmx_tx_rx_real(cr, GMX_LEFT, (real *)sendbuf, 3*vsitecomm->left_export_nconstruct, GMX_RIGHT, (real *)recvbuf, 3*vsitecomm->right_import_nconstruct);
-
-    /* Copy from receive buffer to coordinate array */
-    for (i = 0; i < vsitecomm->right_import_nconstruct; i++)
-    {
-        ia = vsitecomm->right_import_construct[i];
-        copy_rvec(recvbuf[i], x[ia]);
-    }
-
-    /* Prepare pulse right by copying to send buffer */
-    for (i = 0; i < vsitecomm->right_export_nconstruct; i++)
-    {
-        ia = vsitecomm->right_export_construct[i];
-        copy_rvec(x[ia], sendbuf[i]);
-    }
-
-    /* Pulse coordinates right */
-    gmx_tx_rx_real(cr, GMX_RIGHT, (real *)sendbuf, 3*vsitecomm->right_export_nconstruct, GMX_LEFT, (real *)recvbuf, 3*vsitecomm->left_import_nconstruct);
-
-    /* Copy from receive buffer to coordinate array */
-    for (i = 0; i < vsitecomm->left_import_nconstruct; i++)
-    {
-        ia = vsitecomm->left_import_construct[i];
-        copy_rvec(recvbuf[i], x[ia]);
-    }
-}
-
-
-static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
-{
-    rvec *sendbuf;
-    rvec *recvbuf;
-    int   i, ia;
-
-    sendbuf = vsitecomm->send_buf;
-    recvbuf = vsitecomm->recv_buf;
-
-    /* Prepare pulse right by copying to send buffer */
-    for (i = 0; i < vsitecomm->right_import_nconstruct; i++)
-    {
-        ia = vsitecomm->right_import_construct[i];
-        copy_rvec(f[ia], sendbuf[i]);
-        clear_rvec(f[ia]);     /* Zero it here after moving, just to simplify debug book-keeping... */
-    }
-
-    /* Pulse forces right */
-    gmx_tx_rx_real(cr, GMX_RIGHT, (real *)sendbuf, 3*vsitecomm->right_import_nconstruct, GMX_LEFT, (real *)recvbuf, 3*vsitecomm->left_export_nconstruct);
-
-    /* Copy from receive buffer to coordinate array */
-    for (i = 0; i < vsitecomm->left_export_nconstruct; i++)
-    {
-        ia = vsitecomm->left_export_construct[i];
-        rvec_inc(f[ia], recvbuf[i]);
-    }
-
-    /* Prepare pulse left by copying to send buffer */
-    for (i = 0; i < vsitecomm->left_import_nconstruct; i++)
-    {
-        ia = vsitecomm->left_import_construct[i];
-        copy_rvec(f[ia], sendbuf[i]);
-        clear_rvec(f[ia]);     /* Zero it here after moving, just to simplify debug book-keeping... */
-    }
-
-    /* Pulse coordinates left */
-    gmx_tx_rx_real(cr, GMX_LEFT, (real *)sendbuf, 3*vsitecomm->left_import_nconstruct, GMX_RIGHT, (real *)recvbuf, 3*vsitecomm->right_export_nconstruct);
-
-    /* Copy from receive buffer to coordinate array */
-    for (i = 0; i < vsitecomm->right_export_nconstruct; i++)
-    {
-        ia = vsitecomm->right_export_construct[i];
-        rvec_inc(f[ia], recvbuf[i]);
-    }
-
-    /* All forces are now on the home processors */
-}
-
-
-static void
-pd_clear_nonlocal_constructs(t_comm_vsites *vsitecomm, rvec f[])
-{
-    int i, ia;
-
-    for (i = 0; i < vsitecomm->left_import_nconstruct; i++)
-    {
-        ia = vsitecomm->left_import_construct[i];
-        clear_rvec(f[ia]);
-    }
-    for (i = 0; i < vsitecomm->right_import_nconstruct; i++)
-    {
-        ia = vsitecomm->right_import_construct[i];
-        clear_rvec(f[ia]);
-    }
-}
-
-
 
 static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
@@ -599,7 +487,7 @@ void construct_vsites(gmx_vsite_t *vsite,
                       rvec x[],
                       real dt, rvec *v,
                       t_iparams ip[], t_ilist ilist[],
-                      int ePBC, gmx_bool bMolPBC, t_graph *graph,
+                      int ePBC, gmx_bool bMolPBC,
                       t_commrec *cr, matrix box)
 {
     t_pbc     pbc, *pbc_null;
@@ -621,32 +509,9 @@ void construct_vsites(gmx_vsite_t *vsite,
         pbc_null = NULL;
     }
 
-    if (cr)
+    if (bDomDec)
     {
-        if (bDomDec)
-        {
-            dd_move_x_vsites(cr->dd, box, x);
-        }
-        else if (vsite->bPDvsitecomm)
-        {
-            /* I'm not sure whether the periodicity and shift are guaranteed
-             * to be consistent between different nodes when running e.g. polymers
-             * in parallel. In this special case we thus unshift/shift,
-             * but only when necessary. This is to make sure the coordinates
-             * we move don't end up a box away...
-             */
-            if (graph != NULL)
-            {
-                unshift_self(graph, box, x);
-            }
-
-            move_construct_x(vsite->vsitecomm, x, cr);
-
-            if (graph != NULL)
-            {
-                shift_self(graph, box, x);
-            }
-        }
+        dd_move_x_vsites(cr->dd, box, x);
     }
 
     if (vsite->nthreads == 1)
@@ -739,7 +604,7 @@ void construct_vsites_mtop(gmx_vsite_t *vsite,
         {
             construct_vsites(vsite, x+as, 0.0, NULL,
                              mtop->ffparams.iparams, molt->ilist,
-                             epbcNONE, TRUE, NULL, NULL, NULL);
+                             epbcNONE, TRUE, NULL, NULL);
             as += molt->atoms.nr;
         }
     }
@@ -1579,10 +1444,6 @@ void spread_vsite_f(gmx_vsite_t *vsite,
     {
         dd_clear_f_vsites(cr->dd, f);
     }
-    else if (PARTDECOMP(cr) && vsite->vsitecomm != NULL)
-    {
-        pd_clear_nonlocal_constructs(vsite->vsitecomm, f);
-    }
 
     if (vsite->nthreads == 1)
     {
@@ -1666,11 +1527,6 @@ void spread_vsite_f(gmx_vsite_t *vsite,
     if (DOMAINDECOMP(cr))
     {
         dd_move_f_vsites(cr->dd, f, fshift);
-    }
-    else if (vsite->bPDvsitecomm)
-    {
-        /* We only move forces here, and they are independent of shifts */
-        move_construct_f(vsite->vsitecomm, f, cr);
     }
 
     inc_nrnb(nrnb, eNR_VSITE2,   vsite_count(idef->il, F_VSITE2));
@@ -2169,19 +2025,13 @@ void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
             sfree(a2cg);
         }
 
-        if (PARTDECOMP(cr))
-        {
-            snew(vsite->vsitecomm, 1);
-            vsite->bPDvsitecomm =
-                setup_parallel_vsites(&(top->idef), cr, vsite->vsitecomm);
-        }
     }
 
     if (vsite->nthreads > 1)
     {
-        if (vsite->bHaveChargeGroups || PARTDECOMP(cr))
+        if (vsite->bHaveChargeGroups)
         {
-            gmx_incons("Can not use threads virtual sites combined with charge groups or particle decomposition");
+            gmx_fatal(FARGS, "The combination of threading, virtual sites and charge groups is not implemented");
         }
 
         split_vsites_over_threads(top->idef.il, md, !DOMAINDECOMP(cr), vsite);

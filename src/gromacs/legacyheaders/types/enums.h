@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,7 @@ enum {
  * Exactcutoff is only used by Reaction-field-zero, and is not user-selectable.
  */
 enum eintmod {
-    eintmodPOTSHIFT_VERLET, eintmodPOTSHIFT, eintmodNONE, eintmodPOTSWITCH, eintmodEXACTCUTOFF, eintmodNR
+    eintmodPOTSHIFT_VERLET, eintmodPOTSHIFT, eintmodNONE, eintmodPOTSWITCH, eintmodEXACTCUTOFF, eintmodFORCESWITCH, eintmodNR
 };
 
 /*
@@ -112,16 +112,10 @@ enum {
 #define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC || (e) == eelRF_ZERO )
 
 #define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)
-#define EEL_EWALD(e)  (EEL_PME(e) || (e) == eelEWALD)
-#define EEL_FULL(e) (EEL_PME(e) || (e) == eelPOISSON || (e) == eelEWALD)
-
-#define EEL_SWITCHED(e) ((e) == eelSWITCH || (e) == eelSHIFT || (e) == eelENCADSHIFT || (e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
+#define EEL_PME_EWALD(e) (EEL_PME(e) || (e) == eelEWALD)
+#define EEL_FULL(e) (EEL_PME_EWALD(e) || (e) == eelPOISSON)
 
 #define EEL_USER(e) ((e) == eelUSER || (e) == eelPMEUSER || (e) == (eelPMEUSERSWITCH))
-
-#define EEL_IS_ZERO_AT_CUTOFF(e) (EEL_SWITCHED(e) || (e) == eelRF_ZERO)
-
-#define EEL_MIGHT_BE_ZERO_AT_CUTOFF(e) (EEL_IS_ZERO_AT_CUTOFF(e) || (e) == eelUSER || (e) == eelPMEUSER)
 
 enum {
     evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT,
@@ -133,12 +127,6 @@ enum {
 };
 
 #define EVDW_PME(e) ((e) == evdwPME)
-
-#define EVDW_SWITCHED(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT)
-
-#define EVDW_IS_ZERO_AT_CUTOFF(e) EVDW_SWITCHED(e)
-
-#define EVDW_MIGHT_BE_ZERO_AT_CUTOFF(e) (EVDW_IS_ZERO_AT_CUTOFF(e) || (e) == evdwUSER)
 
 enum {
     ensGRID, ensSIMPLE, ensNR
@@ -320,6 +308,12 @@ enum {
     erotgFitRMSD, erotgFitNORM, erotgFitPOT, erotgFitNR
 };
 
+/* Direction along which ion/water swaps happen in "Computational
+ * Electrophysiology" (CompEL) setups */
+enum eSwaptype {
+    eswapNO, eswapX, eswapY, eswapZ, eSwapTypesNR
+};
+
 /* QMMM */
 enum {
     eQMmethodAM1, eQMmethodPM3, eQMmethodRHF,
@@ -435,6 +429,7 @@ enum gmx_nbkernel_vdw
     GMX_NBKERNEL_VDW_LENNARDJONES,
     GMX_NBKERNEL_VDW_BUCKINGHAM,
     GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
+    GMX_NBKERNEL_VDW_LJEWALD,
     GMX_NBKERNEL_VDW_NR
 };
 /* Types of interactions inside the neighborlist

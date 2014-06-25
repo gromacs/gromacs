@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,14 +91,18 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         //! Returns true if values have been allocated.
         bool isAllocated() const { return !value_.empty(); }
         //! Returns the x value of the first frame.
-        real xstart() const { return xstart_; }
+        real xstart() const { return xvalue_[0]; }
         //! Returns the step between frame x values.
-        real xstep() const { return xstep_; }
+        real xstep() const
+        {
+            GMX_ASSERT(bUniformX_, "Accessing x step for non-uniform data");
+            return xstep_;
+        }
         //! Returns the x value of a row.
         real xvalue(int row) const
         {
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-            return xstart() + row * xstep();
+            return xvalue_[row];
         }
         //! Returns a given array element.
         const AnalysisDataValue &value(int row, int col) const
@@ -154,10 +158,22 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          * \param[in] step   Step between x values of successive frames.
          *
          * Must not be called after valuesReady().
+         * Any values set with setXAxisValue() are overwritten.
          *
          * Does not throw.
          */
         void setXAxis(real start, real step);
+        /*! \brief
+         * Sets a single value reported as x value for frames.
+         *
+         * \param[in] row    Row/frame for which to set the value.
+         * \param[in] value  x value for the frame specified by \p row.
+         *
+         * Must not be called after valuesReady().
+         *
+         * Does not throw.
+         */
+        void setXAxisValue(int row, real value);
         //! Returns a reference to a given array element.
         AnalysisDataValue &value(int row, int col)
         {
@@ -197,8 +213,9 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         int                            rowCount_;
         AnalysisDataPointSetInfo       pointSetInfo_;
         std::vector<AnalysisDataValue> value_;
-        real                           xstart_;
+        std::vector<real>              xvalue_;
         real                           xstep_;
+        bool                           bUniformX_;
         bool                           bReady_;
 
         // Copy and assign disallowed by base.
@@ -237,6 +254,7 @@ class AnalysisArrayData : public AbstractAnalysisArrayData
         using AbstractAnalysisArrayData::setRowCount;
         using AbstractAnalysisArrayData::allocateValues;
         using AbstractAnalysisArrayData::setXAxis;
+        using AbstractAnalysisArrayData::setXAxisValue;
         using AbstractAnalysisArrayData::value;
         using AbstractAnalysisArrayData::valuesReady;
 

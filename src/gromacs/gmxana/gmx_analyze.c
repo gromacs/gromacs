@@ -1,58 +1,61 @@
-/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
-#include "statutil.h"
-#include "sysstuff.h"
+
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "readinp.h"
-#include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
-#include "gmx_statistics.h"
-#include "xvgr.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gmx_ana.h"
 #include "geminate.h"
 
@@ -153,7 +156,7 @@ static void plot_coscont(const char *ccfile, int n, int nset, real **val,
     }
     fprintf(stdout, "\n");
 
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static void regression_analysis(int n, gmx_bool bXYdy,
@@ -243,11 +246,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
     int            i, s;
     double         min, max;
     int            nbin;
-#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
-    long long int *histo;
-#else
-    double        *histo;
-#endif
+    gmx_int64_t   *histo;
 
     min = val[0][0];
     max = val[0][0];
@@ -297,7 +296,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
             fprintf(fp, "&\n");
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static int real_comp(const void *a, const void *b)
@@ -326,7 +325,7 @@ static void average(const char *avfile, int avbar_opt,
     double  av, var, err;
     real   *tmp = NULL;
 
-    fp = ffopen(avfile, "w");
+    fp = gmx_ffopen(avfile, "w");
     if ((avbar_opt == avbarERROR) && (nset == 1))
     {
         avbar_opt = avbarNONE;
@@ -387,7 +386,7 @@ static void average(const char *avfile, int avbar_opt,
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     if (avbar_opt == avbar90)
     {
@@ -689,7 +688,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
     sfree(fitsig);
     sfree(ybs);
     sfree(tbs);
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static void luzar_correl(int nn, real *time, int nset, real **val, real temp,
@@ -1269,7 +1268,7 @@ int gmx_analyze(int argc, char *argv[])
 
     if (fitfile != NULL)
     {
-        out_fit = ffopen(fitfile, "w");
+        out_fit = gmx_ffopen(fitfile, "w");
         if (bXYdy && nset >= 2)
         {
             do_fit(out_fit, 0, TRUE, n, t, val, npargs, ppa, oenv);
@@ -1281,7 +1280,7 @@ int gmx_analyze(int argc, char *argv[])
                 do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv);
             }
         }
-        ffclose(out_fit);
+        gmx_ffclose(out_fit);
     }
 
     printf("                                      std. dev.    relative deviation of\n");
@@ -1359,7 +1358,7 @@ int gmx_analyze(int argc, char *argv[])
                 fprintf(out, "&\n");
             }
         }
-        ffclose(out);
+        gmx_ffclose(out);
         fprintf(stderr, "\r%d, time=%g\n", j-1, (j-1)*dt);
     }
     if (ccfile)

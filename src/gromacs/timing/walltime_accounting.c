@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,9 +39,6 @@
 #include <config.h>
 #endif
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/types/simple.h"
-
 #include <time.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -49,6 +46,9 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/smalloc.h"
 
 /* TODO in future: convert gmx_walltime_accounting to a class,
  * resolve who should have responsibility for recording the number of
@@ -82,7 +82,7 @@ typedef struct gmx_walltime_accounting {
      * with respect to parallelism implementation. */
     int             numOpenMPThreads;
     //! Set by integrators to report the amount of work they did
-    gmx_large_int_t nsteps_done;
+    gmx_int64_t     nsteps_done;
 } t_gmx_walltime_accounting;
 
 /*! \brief Calls system timing routines (e.g. clock_gettime) to get
@@ -184,7 +184,7 @@ walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accountin
 
 void
 walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_accounting,
-                                    gmx_large_int_t             nsteps_done)
+                                    gmx_int64_t                 nsteps_done)
 {
     walltime_accounting->nsteps_done = nsteps_done;
 }

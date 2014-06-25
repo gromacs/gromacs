@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,24 +39,21 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "typedefs.h"
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "vec.h"
-#include "statutil.h"
+#include "types/commrec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "main.h"
-#include "gromacs/fileio/futil.h"
-#include "edsam.h"
-#include "index.h"
-#include "physics.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/topology/index.h"
 #include "names.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "membed.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "readinp.h"
-#include "readir.h"
+#include "gromacs/gmxpreprocess/readir.h"
 
 /* information about scaling center */
 typedef struct {
@@ -896,8 +893,8 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     char       buf[STRLEN], buf2[STRLEN], *temp;
     int        i, *nmol_rm, nmol, line;
 
-    fpin  = ffopen(topfile, "r");
-    fpout = ffopen(TEMP_FILENM, "w");
+    fpin  = gmx_ffopen(topfile, "r");
+    fpout = gmx_ffopen(TEMP_FILENM, "w");
 
     snew(nmol_rm, mtop->nmoltype);
     for (i = 0; i < rm_p->nr; i++)
@@ -962,10 +959,10 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
         }
     }
 
-    ffclose(fpout);
-    /* use ffopen to generate backup of topinout */
-    fpout = ffopen(topfile, "w");
-    ffclose(fpout);
+    gmx_ffclose(fpout);
+    /* use gmx_ffopen to generate backup of topinout */
+    fpout = gmx_ffopen(topfile, "w");
+    gmx_ffclose(fpout);
     rename(TEMP_FILENM, topfile);
 #undef TEMP_FILENM
 }

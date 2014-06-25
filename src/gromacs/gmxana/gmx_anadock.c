@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,17 +38,20 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "gromacs/fileio/confio.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "string2.h"
-#include "vec.h"
-#include "gmx_statistics.h"
-#include "statutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "macros.h"
 
 static const char *etitles[] = { "E-docked", "Free Energy" };
@@ -75,7 +78,7 @@ static t_pdbfile *read_pdbf(const char *fn)
     init_t_atoms(&(pdbf->atoms), natoms, FALSE);
     snew(pdbf->x, natoms);
     read_stx_conf(fn, buf, &pdbf->atoms, pdbf->x, NULL, &pdbf->ePBC, pdbf->box);
-    fp = ffopen(fn, "r");
+    fp = gmx_ffopen(fn, "r");
     do
     {
         ptr = fgets2(buf, 255, fp);
@@ -96,7 +99,7 @@ static t_pdbfile *read_pdbf(const char *fn)
         }
     }
     while (ptr != NULL);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     return pdbf;
 }
@@ -195,7 +198,7 @@ static void analyse_em_all(int npdb, t_pdbfile *pdbf[], const char *edocked,
         {
             fprintf(fp, "%12lf\n", bFreeSort ? pdbf[i]->efree : pdbf[i]->edocked);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 }
 
@@ -380,7 +383,7 @@ int gmx_anadock(int argc, char *argv[])
         return 0;
     }
 
-    fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
+    fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
     please_cite(stdout, "Hetenyi2002b");
     please_cite(fp, "Hetenyi2002b");
 
@@ -392,7 +395,7 @@ int gmx_anadock(int argc, char *argv[])
     cluster_em_all(fp, npdbf, pdbf, bFree, bRMS, cutoff);
 
     gmx_thanx(fp);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     return 0;
 }

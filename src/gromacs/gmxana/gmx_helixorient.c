@@ -1,59 +1,61 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <typedefs.h>
 
-#include "smalloc.h"
-#include "macros.h"
 #include <math.h>
-#include "xvgr.h"
-#include "statutil.h"
-#include "string2.h"
-#include "vec.h"
-#include "index.h"
-#include "pbc.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
-#include "gstat.h"
-#include "pbc.h"
-#include "do_fit.h"
-#include "gmx_ana.h"
-#include "gromacs/fileio/trxio.h"
 
+#include "typedefs.h"
+#include "macros.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gstat.h"
+#include "gmx_ana.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_helixorient(int argc, char *argv[])
 {
@@ -220,16 +222,16 @@ int gmx_helixorient(int argc, char *argv[])
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    fpaxis    = ffopen(opt2fn("-oaxis", NFILE, fnm), "w");
-    fpcenter  = ffopen(opt2fn("-ocenter", NFILE, fnm), "w");
-    fprise    = ffopen(opt2fn("-orise", NFILE, fnm), "w");
-    fpradius  = ffopen(opt2fn("-oradius", NFILE, fnm), "w");
-    fptwist   = ffopen(opt2fn("-otwist", NFILE, fnm), "w");
-    fpbending = ffopen(opt2fn("-obending", NFILE, fnm), "w");
+    fpaxis    = gmx_ffopen(opt2fn("-oaxis", NFILE, fnm), "w");
+    fpcenter  = gmx_ffopen(opt2fn("-ocenter", NFILE, fnm), "w");
+    fprise    = gmx_ffopen(opt2fn("-orise", NFILE, fnm), "w");
+    fpradius  = gmx_ffopen(opt2fn("-oradius", NFILE, fnm), "w");
+    fptwist   = gmx_ffopen(opt2fn("-otwist", NFILE, fnm), "w");
+    fpbending = gmx_ffopen(opt2fn("-obending", NFILE, fnm), "w");
 
-    fptheta1 = ffopen("theta1.xvg", "w");
-    fptheta2 = ffopen("theta2.xvg", "w");
-    fptheta3 = ffopen("theta3.xvg", "w");
+    fptheta1 = gmx_ffopen("theta1.xvg", "w");
+    fptheta2 = gmx_ffopen("theta2.xvg", "w");
+    fptheta3 = gmx_ffopen("theta3.xvg", "w");
 
     if (bIncremental)
     {
@@ -510,17 +512,17 @@ int gmx_helixorient(int argc, char *argv[])
 
     gmx_rmpbc_done(gpbc);
 
-    ffclose(fpaxis);
-    ffclose(fpcenter);
-    ffclose(fptilt);
-    ffclose(fprotation);
-    ffclose(fprise);
-    ffclose(fpradius);
-    ffclose(fptwist);
-    ffclose(fpbending);
-    ffclose(fptheta1);
-    ffclose(fptheta2);
-    ffclose(fptheta3);
+    gmx_ffclose(fpaxis);
+    gmx_ffclose(fpcenter);
+    gmx_ffclose(fptilt);
+    gmx_ffclose(fprotation);
+    gmx_ffclose(fprise);
+    gmx_ffclose(fpradius);
+    gmx_ffclose(fptwist);
+    gmx_ffclose(fpbending);
+    gmx_ffclose(fptheta1);
+    gmx_ffclose(fptheta2);
+    gmx_ffclose(fptheta3);
 
     close_trj(status);
 

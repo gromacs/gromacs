@@ -3,8 +3,15 @@
 #define _gmx_sel_yyIN_HEADER 1
 
 #line 6 "scanner_flex.h"
+#line 50 "scanner.l"
+// Required before flex definitions, since it includes <stdint.h>.
+// Otherwise, compilers not strictly C99 get macro redefinition errors,
+// since flex defines INT32_MAX etc. in such cases.
+#include "gromacs/utility/basedefinitions.h"
 
-#line 8 "scanner_flex.h"
+
+
+#line 15 "scanner_flex.h"
 
 #define  YY_INT_ALIGNED short int
 
@@ -222,7 +229,6 @@ void _gmx_sel_yyfree (void * ,yyscan_t yyscanner );
 #define matchof 1
 #define matchbool 2
 #define cmdstart 3
-#define help 4
 
 #endif
 
@@ -334,8 +340,8 @@ extern int _gmx_sel_yylex (yyscan_t yyscanner);
 #undef YY_DECL
 #endif
 
-#line 166 "scanner.l"
+#line 163 "scanner.l"
 
-#line 340 "scanner_flex.h"
+#line 346 "scanner_flex.h"
 #undef _gmx_sel_yyIN_HEADER
 #endif /* _gmx_sel_yyHEADER_H */

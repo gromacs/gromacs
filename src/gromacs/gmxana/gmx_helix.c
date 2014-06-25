@@ -1,98 +1,66 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <math.h>
+#include <string.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gmx_fatal.h"
 #include "fitahx.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
-#include "gromacs/fileio/g87io.h"
 #include "hxprops.h"
 #include "macros.h"
-#include "maths.h"
-#include "pbc.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
-#include "statutil.h"
-#include <string.h>
-#include "sysstuff.h"
+#include "gromacs/utility/smalloc.h"
 #include "txtdump.h"
 #include "typedefs.h"
-#include "vec.h"
-#include "xvgr.h"
+#include "gromacs/math/vec.h"
+#include "viewit.h"
 #include "gmx_ana.h"
 
-void dump_otrj(FILE *otrj, int natoms, atom_id all_index[], rvec x[],
-               real fac, rvec xav[])
-{
-    static FILE *fp   = NULL;
-    static real  fac0 = 1.0;
-
-    int          i, ai, m;
-    real         xa, xm;
-
-    if (fp == NULL)
-    {
-        fp   = ffopen("WEDGAMMA10.DAT", "w");
-        fac0 = fac;
-    }
-    fac /= fac0;
-
-    fprintf(fp, "%10g\n", fac);
-
-    for (i = 0; (i < natoms); i++)
-    {
-        ai = all_index[i];
-        for (m = 0; (m < DIM); m++)
-        {
-            xa         = xav[ai][m];
-            xm         = x[ai][m]*fac;
-            xav[ai][m] = xa+xm;
-            x[ai][m]   = xm;
-        }
-    }
-    write_g87_ndx(otrj, natoms, all_index, x, NULL);
-}
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_helix(int argc, char *argv[])
 {
@@ -126,10 +94,6 @@ int gmx_helix(int argc, char *argv[])
         "[BB]9.[bb] Ellipticity at 222 nm according to Hirst and Brooks.",
         "[PAR]"
     };
-    static const char *ppp[efhNR+2] = {
-        NULL, "RAD", "TWIST", "RISE", "LEN", "NHX", "DIP", "RMS", "CPHI",
-        "RMSA", "PHI", "PSI", "HB3", "HB4", "HB5", "CD222", NULL
-    };
     static gmx_bool    bCheck = FALSE, bFit = TRUE, bDBG = FALSE, bEV = FALSE;
     static int         rStart = 0, rEnd = 0, r0 = 1;
     t_pargs            pa []  = {
@@ -141,8 +105,6 @@ int gmx_helix(int argc, char *argv[])
           "Toggle fit to a perfect helix" },
         { "-db", FALSE, etBOOL, {&bDBG},
           "Print debug info" },
-        { "-prop", FALSE, etENUM, {ppp},
-          "Select property to weight eigenvectors with. WARNING experimental stuff" },
         { "-ev", FALSE, etBOOL, {&bEV},
           "Write a new 'trajectory' file for ED" },
         { "-ahxstart", FALSE, etINT, {&rStart},
@@ -182,18 +144,17 @@ int gmx_helix(int argc, char *argv[])
     };
 
     output_env_t   oenv;
-    FILE          *otrj;
-    char           buf[54], prop[256];
+    char           buf[54];
     t_trxstatus   *status;
     int            natoms, nre, nres;
     t_bb          *bb;
-    int            i, j, ai, m, nall, nbb, nca, teller, nSel = 0;
+    int            i, j, m, nall, nbb, nca, teller, nSel = 0;
     atom_id       *bbindex, *caindex, *allindex;
     t_topology    *top;
     int            ePBC;
-    rvec          *x, *xref, *xav;
+    rvec          *x, *xref;
     real           t;
-    real           rms, fac;
+    real           rms;
     matrix         box;
     gmx_rmpbc_t    gpbc = NULL;
     gmx_bool       bRange;
@@ -201,9 +162,7 @@ int gmx_helix(int argc, char *argv[])
         { efTPX, NULL,  NULL,   ffREAD  },
         { efNDX, NULL,  NULL,   ffREAD  },
         { efTRX, "-f",  NULL,   ffREAD  },
-        { efG87, "-to", NULL,   ffOPTWR },
         { efSTO, "-cz", "zconf", ffWRITE },
-        { efSTO, "-co", "waver", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -219,17 +178,6 @@ int gmx_helix(int argc, char *argv[])
     top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
-
-    if (opt2bSet("-to", NFILE, fnm))
-    {
-        otrj = opt2FILE("-to", NFILE, fnm, "w");
-        strcpy(prop, ppp[0]);
-        fprintf(otrj, "%s Weighted Trajectory: %d atoms, NO box\n", prop, natoms);
-    }
-    else
-    {
-        otrj = NULL;
-    }
 
     if (natoms != top->atoms.nr)
     {
@@ -256,7 +204,7 @@ int gmx_helix(int argc, char *argv[])
         {
             sprintf(buf, "%s.out", xf[i].filenm);
             remove(buf);
-            xf[i].fp2 = ffopen(buf, "w");
+            xf[i].fp2 = gmx_ffopen(buf, "w");
         }
     }
 
@@ -275,7 +223,6 @@ int gmx_helix(int argc, char *argv[])
 
     gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
-    snew(xav, natoms);
     teller = 0;
     do
     {
@@ -323,11 +270,6 @@ int gmx_helix(int argc, char *argv[])
                      xf[efhHB4].fp, xf[efhHB4].fp2,
                      xf[efhHB5].fp, xf[efhHB5].fp2,
                      t, nres, bb);
-
-            if (otrj)
-            {
-                dump_otrj(otrj, nall, allindex, x, xf[nSel].val, xav);
-            }
         }
     }
     while (read_next_x(oenv, status, &t, x, box));
@@ -336,23 +278,6 @@ int gmx_helix(int argc, char *argv[])
     gmx_rmpbc_done(gpbc);
 
     close_trj(status);
-
-    if (otrj)
-    {
-        ffclose(otrj);
-        fac = 1.0/teller;
-        for (i = 0; (i < nall); i++)
-        {
-            ai = allindex[i];
-            for (m = 0; (m < DIM); m++)
-            {
-                xav[ai][m] *= fac;
-            }
-        }
-        write_sto_conf_indexed(opt2fn("-co", NFILE, fnm),
-                               "Weighted and Averaged conformation",
-                               &(top->atoms), xav, NULL, ePBC, box, nall, allindex);
-    }
 
     for (i = 0; (i < nres); i++)
     {
@@ -367,10 +292,10 @@ int gmx_helix(int argc, char *argv[])
 
     for (i = 0; (i < efhNR); i++)
     {
-        ffclose(xf[i].fp);
+        gmx_ffclose(xf[i].fp);
         if (xf[i].bfp2)
         {
-            ffclose(xf[i].fp2);
+            gmx_ffclose(xf[i].fp2);
         }
         do_view(oenv, xf[i].filenm, "-nxy");
     }

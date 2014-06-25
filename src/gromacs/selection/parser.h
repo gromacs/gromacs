@@ -46,7 +46,7 @@ extern int _gmx_sel_yydebug;
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,38 +95,36 @@ extern int _gmx_sel_yydebug;
       know about them.  */
    enum yytokentype {
      INVALID = 258,
-     HELP = 259,
-     HELP_TOPIC = 260,
-     TOK_INT = 261,
-     TOK_REAL = 262,
-     STR = 263,
-     IDENTIFIER = 264,
-     CMD_SEP = 265,
-     GROUP = 266,
-     TO = 267,
-     VARIABLE_NUMERIC = 268,
-     VARIABLE_GROUP = 269,
-     VARIABLE_POS = 270,
-     KEYWORD_NUMERIC = 271,
-     KEYWORD_STR = 272,
-     KEYWORD_POS = 273,
-     KEYWORD_GROUP = 274,
-     METHOD_NUMERIC = 275,
-     METHOD_GROUP = 276,
-     METHOD_POS = 277,
-     MODIFIER = 278,
-     EMPTY_POSMOD = 279,
-     PARAM = 280,
-     END_OF_METHOD = 281,
-     OF = 282,
-     CMP_OP = 283,
-     PARAM_REDUCT = 284,
-     XOR = 285,
-     OR = 286,
-     AND = 287,
-     NOT = 288,
-     UNARY_NEG = 289,
-     NUM_REDUCT = 290
+     TOK_INT = 259,
+     TOK_REAL = 260,
+     STR = 261,
+     IDENTIFIER = 262,
+     CMD_SEP = 263,
+     GROUP = 264,
+     TO = 265,
+     VARIABLE_NUMERIC = 266,
+     VARIABLE_GROUP = 267,
+     VARIABLE_POS = 268,
+     KEYWORD_NUMERIC = 269,
+     KEYWORD_STR = 270,
+     KEYWORD_POS = 271,
+     KEYWORD_GROUP = 272,
+     METHOD_NUMERIC = 273,
+     METHOD_GROUP = 274,
+     METHOD_POS = 275,
+     MODIFIER = 276,
+     EMPTY_POSMOD = 277,
+     PARAM = 278,
+     END_OF_METHOD = 279,
+     OF = 280,
+     CMP_OP = 281,
+     PARAM_REDUCT = 282,
+     XOR = 283,
+     OR = 284,
+     AND = 285,
+     NOT = 286,
+     UNARY_NEG = 287,
+     NUM_REDUCT = 288
    };
 #endif
 
@@ -152,7 +150,7 @@ typedef union YYSTYPE
 
 
 /* Line 2049 of yacc.c  */
-#line 156 "parser.h"
+#line 154 "parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

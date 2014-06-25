@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 
 #include "../nb_kernel.h"
 #include "types/simple.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
 
 #include "kernelutil_sparc64_hpc_ace_double.h"
@@ -147,6 +147,15 @@ void
     _fjsp_v2r8       rt,vfeps,vftabscale,Y,F,G,H,Heps,Fp,VV,FF,twovfeps;
     real             *vftab;
     /* #endif */
+    /* #if 'LJEwald' in KERNEL_VDW */
+    /* #for I,J in PAIRS_IJ */
+    _fjsp_v2r8           c6grid_{I}{J};
+    /* #endfor */
+    real                 *vdwgridparam;
+    _fjsp_v2r8           ewclj,ewclj2,ewclj6,ewcljrsq,poly,exponent,f6A,f6B,sh_lj_ewald;
+    _fjsp_v2r8           one_half = gmx_fjsp_set1_v2r8(0.5);
+    _fjsp_v2r8           minus_one = gmx_fjsp_set1_v2r8(-1.0);
+    /* #endif */
     /* #if 'Ewald' in KERNEL_ELEC */
     _fjsp_v2r8       ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace,ewtabF,ewtabFn,ewtabD,ewtabV;
     real             *ewtab;
@@ -185,6 +194,12 @@ void
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
+    /* #endif */
+    /* #if 'LJEwald' in KERNEL_VDW */
+    vdwgridparam     = fr->ljpme_c6grid;
+    sh_lj_ewald	     = gmx_fjsp_set1_v2r8(fr->ic->sh_lj_ewald);
+    ewclj            = gmx_fjsp_set1_v2r8(fr->ewaldcoeff_lj);
+    ewclj2           = _fjsp_mul_v2r8(minus_one,_fjsp_mul_v2r8(ewclj,ewclj));
     /* #endif */
 
     /* #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW */
@@ -242,8 +257,14 @@ void
     qq{I}{J}             = _fjsp_mul_v2r8(iq{I},jq{J});
     /*         #endif */
     /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
+    /*             #if 'LJEwald' in KERNEL_VDW */
     c6_{I}{J}            = gmx_fjsp_set1_v2r8(vdwparam[vdwioffset{I}+vdwjidx{J}A]);
     c12_{I}{J}           = gmx_fjsp_set1_v2r8(vdwparam[vdwioffset{I}+vdwjidx{J}A+1]);
+    c6grid_{I}{J}        = gmx_fjsp_set1_v2r8(vdwgridparam[vdwioffset{I}+vdwjidx{J}A]);
+    /*             #else */
+    c6_{I}{J}            = gmx_fjsp_set1_v2r8(vdwparam[vdwioffset{I}+vdwjidx{J}A]);
+    c12_{I}{J}           = gmx_fjsp_set1_v2r8(vdwparam[vdwioffset{I}+vdwjidx{J}A+1]);
+    /*             #endif */
     /*         #endif */
     /*     #endfor */
     /* #endif */
@@ -525,8 +546,17 @@ void
             /*             #if ROUND == 'Loop' */
             gmx_fjsp_load_2pair_swizzle_v2r8(vdwparam+vdwioffset{I}+vdwjidx{J}A,
                                          vdwparam+vdwioffset{I}+vdwjidx{J}B,&c6_{I}{J},&c12_{I}{J});
+
+	    /*                 #if 'LJEwald' in KERNEL_VDW */
+            c6grid_{I}{J}       = gmx_fjsp_load_2real_swizzle_v2r8(vdwgridparam+vdwioffset{I}+vdwjidx{J}A,
+                                                                   vdwgridparam+vdwioffset{I}+vdwjidx{J}B);
+            /*                 #endif */
             /*             #else */
             gmx_fjsp_load_1pair_swizzle_v2r8(vdwparam+vdwioffset{I}+vdwjidx{J}A,&c6_{I}{J},&c12_{I}{J});
+
+            /*                 #if 'LJEwald' in KERNEL_VDW */
+            c6grid_{I}{J}       = gmx_fjsp_load_1real_swizzle_v2r8(vdwgridparam+vdwioffset{I}+vdwjidx{J}A);
+            /*                 #endif */
             /*             #endif */
             /*         #endif */
             /*     #endif */
@@ -821,6 +851,45 @@ void
             fvdw             = _fjsp_neg_v2r8(_fjsp_mul_v2r8(_fjsp_add_v2r8(fvdw6,fvdw12),_fjsp_mul_v2r8(vftabscale,rinv{I}{J})));
             /*                 #define INNERFLOPS INNERFLOPS+4 */
             /*             #endif */
+
+            /*         #elif KERNEL_VDW=='LJEwald' */
+
+            /* Analytical LJ-PME */
+            rinvsix          = _fjsp_mul_v2r8(_fjsp_mul_v2r8(rinvsq{I}{J},rinvsq{I}{J}),rinvsq{I}{J});
+            ewcljrsq         = _fjsp_mul_v2r8(ewclj2,rsq{I}{J});
+            ewclj6           = _fjsp_mul_v2r8(ewclj2,_fjsp_mul_v2r8(ewclj2,ewclj2));
+            exponent         = gmx_simd_exp_d(-ewcljrsq);
+            /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
+	    poly             = _fjsp_mul_v2r8(exponent,_fjsp_madd_v2r8(_fjsp_mul_v2r8(ewcljrsq,ewcljrsq),one_half,_fjsp_sub_v2r8(one,ewcljrsq)));
+            /*                 #define INNERFLOPS INNERFLOPS+9 */
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_VDW=='PotentialSwitch' */
+            /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
+            vvdw6            = _fjsp_mul_v2r8(_fjsp_madd_v2r8(-c6grid_{I}{J},_fjsp_sub_v2r8(one,poly),c6_{I}{J}),rinvsix);
+            vvdw12           = _fjsp_mul_v2r8(c12_{I}{J},_fjsp_mul_v2r8(rinvsix,rinvsix));
+            /*                 #define INNERFLOPS INNERFLOPS+5 */
+            /*                 #if KERNEL_MOD_VDW=='PotentialShift' */
+            vvdw             = _fjsp_msub_v2r8(_fjsp_nmsub_v2r8(c12_{I}{J},_fjsp_mul_v2r8(sh_vdw_invrcut6,sh_vdw_invrcut6),vvdw12),one_twelfth,
+                               _fjsp_mul_v2r8(_fjsp_sub_v2r8(vvdw6,_fjsp_madd_v2r8(c6grid_{I}{J},sh_lj_ewald,_fjsp_mul_v2r8(c6_{I}{J},sh_vdw_invrcut6))),one_sixth));
+            /*                     #define INNERFLOPS INNERFLOPS+7 */
+            /*                 #else */
+	    vvdw	     = _fjsp_msub_v2r8(vvdw12,one_twelfth,_fjsp_mul_v2r8(vvdw6,one_sixth));	    
+            /*                 #define INNERFLOPS INNERFLOPS+2 */
+	    /*                 #endif */
+            /*                  ## Check for force inside potential check, i.e. this means we already did the potential part */
+            /*                  #if 'Force' in KERNEL_VF */
+            /* fvdw = vvdw12/r - (vvdw6/r + (C6grid * exponent * beta^6)/r) */
+	    fvdw             = _fjsp_mul_v2r8(_fjsp_add_v2r8(vvdw12,_fjsp_msub_v2r8(_fjsp_mul_v2r8(c6grid_{I}{J},one_sixth),_fjsp_mul_v2r8(exponent,ewclj6),vvdw6)),rinvsq{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+6 */
+            /*                  #endif */
+            /*              #elif KERNEL_VF=='Force' */
+            /* f6A = 6 * C6grid * (1 - poly) */
+            f6A              = _fjsp_mul_v2r8(c6grid_{I}{J},_fjsp_msub_v2r8(one,poly));
+            /* f6B = C6grid * exponent * beta^6 */
+            f6B              = _fjsp_mul_v2r8(_fjsp_mul_v2r8(c6grid_{I}{J},one_sixth),_fjsp_mul_v2r8(exponent,ewclj6));
+            /* fvdw = 12*C12/r13 - ((6*C6 - f6A)/r6 + f6B)/r */
+            fvdw              = _fjsp_mul_v2r8(_fjsp_madd_v2r8(_fjsp_msub_v2r8(c12_{I}{J},rinvsix,_fjsp_sub_v2r8(c6_{I}{J},f6A)),rinvsix,f6B),rinvsq{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+12 */
+            /*              #endif */
             /*         #endif */
             /*         ## End of check for vdw interaction forms */
             /*     #endif */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,11 +64,18 @@ namespace gmx
 class TextTableFormatter::Impl
 {
     public:
+        /*! \internal \brief
+         * Manages a single column for TextTableFormatter.
+         *
+         * \ingroup module_onlinehelp
+         */
         struct ColumnData
         {
+            //! Initializes a text table column with given values.
             ColumnData(const char *title, int width, bool bWrap)
                 : title_(title != NULL ? title : ""),
-                  width_(width), bWrap_(bWrap), firstLine_(0)
+                  width_(width), bWrap_(bWrap), firstLine_(0),
+                  nextLineIndex_(0), nextLineOffset_(0)
             {
                 GMX_ASSERT(width >= 0, "Negative width not possible");
                 GMX_ASSERT(title_.length() <= static_cast<size_t>(width),
@@ -86,34 +93,61 @@ class TextTableFormatter::Impl
              * there is no text.
              */
             int firstLine() const { return firstLine_; }
+
             /*! \brief
-             * Returns the index of the last line with text for the current row.
+             * Resets the formatting state.
              *
-             * If there is no text, returns -1.
+             * After this call, textForNextLine() and hasLinesRemaining() can
+             * be used to format the lines for the column.
              */
-            int lastLine() const
+            void startFormatting()
             {
-                if (lines_.empty())
-                {
-                    return -1;
-                }
-                return firstLine_ + static_cast<int>(lines_.size()) - 1;
+                nextLineIndex_  = (!lines_.empty() ? -firstLine_ : 0);
+                nextLineOffset_ = 0;
+            }
+            //! Whether there are lines remaining for textForNextLine().
+            bool hasLinesRemaining() const
+            {
+                return nextLineIndex_ < static_cast<int>(lines_.size());
             }
             /*! \brief
-             * Returns the text for a line.
+             * Returns the text for the next line.
              *
-             * \param[in] line  Zero-based line index.
-             * \returns   Text for line \p line, or empty string if \p line has
-             *     no text for this column.
+             * \param[in] columnWidth  Width to wrap the text to.
+             * \returns   Text for the next line, or empty string if there is
+             *   no text for this column.
              */
-            std::string textForLine(int line) const
+            std::string textForNextLine(int columnWidth)
             {
-                // The second conditional matches if there are no lines
-                if (line < firstLine() || line > lastLine())
+                if (nextLineIndex_ < 0 || !hasLinesRemaining())
                 {
+                    ++nextLineIndex_;
                     return std::string();
                 }
-                return lines_[line - firstLine()];
+                if (bWrap_)
+                {
+                    TextLineWrapperSettings  settings;
+                    settings.setLineLength(columnWidth);
+                    TextLineWrapper          wrapper(settings);
+                    const std::string       &currentLine = lines_[nextLineIndex_];
+                    const size_t             prevOffset  = nextLineOffset_;
+                    const size_t             nextOffset
+                        = wrapper.findNextLine(currentLine, prevOffset);
+                    if (nextOffset >= currentLine.size())
+                    {
+                        ++nextLineIndex_;
+                        nextLineOffset_ = 0;
+                    }
+                    else
+                    {
+                        nextLineOffset_ = nextOffset;
+                    }
+                    return wrapper.formatLine(currentLine, prevOffset, nextOffset);
+                }
+                else
+                {
+                    return lines_[nextLineIndex_++];
+                }
             }
 
             //! Statit data: title of the column.
@@ -126,6 +160,10 @@ class TextTableFormatter::Impl
             int                         firstLine_;
             //! Text lines for the current row.
             std::vector<std::string>    lines_;
+            //! Formatting state: index in `lines_` for the next line.
+            int                         nextLineIndex_;
+            //! Formatting state: offset within line `nextLineIndex_` for the next line.
+            size_t                      nextLineOffset_;
         };
 
         //! Container type for column data.
@@ -156,6 +194,8 @@ class TextTableFormatter::Impl
         ColumnList              columns_;
         //! Indentation before the first column.
         int                     firstColumnIndent_;
+        //! Indentation before the last column if folded.
+        int                     foldLastColumnToNextLineIndent_;
         //! If true, no output has yet been produced.
         bool                    bFirstRow_;
         //! If true, a header will be printed before the first row.
@@ -163,7 +203,8 @@ class TextTableFormatter::Impl
 };
 
 TextTableFormatter::Impl::Impl()
-    : firstColumnIndent_(0), bFirstRow_(true), bPrintHeader_(false)
+    : firstColumnIndent_(0), foldLastColumnToNextLineIndent_(-1),
+      bFirstRow_(true), bPrintHeader_(false)
 {
 }
 
@@ -195,6 +236,11 @@ void TextTableFormatter::setFirstColumnIndent(int indent)
     impl_->firstColumnIndent_ = indent;
 }
 
+void TextTableFormatter::setFoldLastColumnToNextLine(int indent)
+{
+    impl_->foldLastColumnToNextLineIndent_ = indent;
+}
+
 bool TextTableFormatter::didOutput() const
 {
     return !impl_->bFirstRow_;
@@ -212,12 +258,8 @@ void TextTableFormatter::clear()
 
 void TextTableFormatter::addColumnLine(int index, const std::string &text)
 {
-    Impl::ColumnData &column = impl_->columnData(index);
-    TextLineWrapper   wrapper;
-    if (column.bWrap_)
-    {
-        wrapper.settings().setLineLength(column.width());
-    }
+    Impl::ColumnData        &column = impl_->columnData(index);
+    TextLineWrapper          wrapper;
     std::vector<std::string> lines(wrapper.wrapToVector(text));
     column.lines_.insert(column.lines_.end(), lines.begin(), lines.end());
 }
@@ -227,10 +269,9 @@ void TextTableFormatter::addColumnHelpTextBlock(
 {
     Impl::ColumnData       &column = impl_->columnData(index);
     TextLineWrapperSettings settings;
-    if (column.bWrap_)
-    {
-        settings.setLineLength(column.width());
-    }
+    // TODO: If in the future, there is actually a coupling between the markup
+    // and the wrapping, this must be postponed into formatRow(), where we do
+    // the actual line wrapping.
     std::vector<std::string> lines(
             context.substituteMarkupAndWrapToVector(settings, text));
     column.lines_.insert(column.lines_.end(), lines.begin(), lines.end());
@@ -243,15 +284,10 @@ void TextTableFormatter::setColumnFirstLineOffset(int index, int firstLine)
     column.firstLine_ = firstLine;
 }
 
-int TextTableFormatter::lastColumnLine(int index) const
-{
-    return impl_->columnData(index).lastLine();
-}
-
 std::string TextTableFormatter::formatRow()
 {
-    std::string result;
-    Impl::ColumnList::const_iterator column;
+    std::string                result;
+    Impl::ColumnList::iterator column;
     // Print a header if this is the first line.
     if (impl_->bPrintHeader_ && impl_->bFirstRow_)
     {
@@ -280,45 +316,87 @@ std::string TextTableFormatter::formatRow()
         result.append("\n");
     }
 
-    // Compute the last applicable line.
-    int lastLine = -1;
+    // Format all the lines, one column at a time.
+    std::vector<std::string> lines;
+    std::vector<std::string> columnLines;
+    int                      currentWidth    = 0;
+    bool                     bFoldLastColumn = false;
     for (column  = impl_->columns_.begin();
          column != impl_->columns_.end();
          ++column)
     {
-        lastLine = std::max(lastLine, column->lastLine());
-    }
-
-    // Format the actual row data.
-    for (int line = 0; line <= lastLine; ++line)
-    {
-        std::string lineResult;
-        size_t      currentWidth = 0;
-        for (column  = impl_->columns_.begin();
-             column != impl_->columns_.end();
-             ++column)
+        // Format the column into columnLines.
+        column->startFormatting();
+        columnLines.clear();
+        columnLines.reserve(lines.size());
+        for (size_t line = 0; column->hasLinesRemaining(); ++line)
         {
-            std::string value(column->textForLine(line));
-            if (column != impl_->columns_.begin())
+            int columnWidth = column->width();
+            if (line < lines.size())
             {
-                ++currentWidth;
-                if (!value.empty())
+                const int overflow = static_cast<int>(lines[line].length()) - currentWidth;
+                if (overflow > 0)
                 {
-                    lineResult.append(" ");
-                    if (lineResult.length() < currentWidth)
+                    if (overflow > columnWidth && column->bWrap_)
                     {
-                        lineResult.resize(currentWidth, ' ');
+                        columnLines.push_back(std::string());
+                        continue;
                     }
+                    columnWidth -= overflow;
                 }
             }
-            // TODO: Rewrap the text if wrapping is on and the previous columns
-            // overflow.
-            lineResult.append(value);
-            currentWidth += column->width();
+            columnLines.push_back(column->textForNextLine(columnWidth));
         }
+        if (column == impl_->columns_.end() - 1
+            && impl_->foldLastColumnToNextLineIndent_ >= 0
+            && columnLines.size() >= lines.size() + column->lines_.size())
+        {
+            bFoldLastColumn = true;
+            currentWidth   += column->width();
+            break;
+        }
+        // Add columnLines into lines.
+        if (lines.size() < columnLines.size())
+        {
+            lines.resize(columnLines.size());
+        }
+        for (size_t line = 0; line < columnLines.size(); ++line)
+        {
+            if (column != impl_->columns_.begin() && !columnLines[line].empty())
+            {
+                lines[line].append(" ");
+                if (static_cast<int>(lines[line].length()) < currentWidth)
+                {
+                    lines[line].resize(currentWidth, ' ');
+                }
+            }
+            lines[line].append(columnLines[line]);
+        }
+        currentWidth += column->width() + 1;
+    }
+
+    // Construct the result by concatenating all the lines.
+    std::vector<std::string>::const_iterator line;
+    for (line = lines.begin(); line != lines.end(); ++line)
+    {
         result.append(impl_->firstColumnIndent_, ' ');
-        result.append(lineResult);
+        result.append(*line);
         result.append("\n");
+    }
+
+    if (bFoldLastColumn)
+    {
+        Impl::ColumnList::reference lastColumn = impl_->columns_.back();
+        const int                   totalIndent
+            = impl_->firstColumnIndent_ + impl_->foldLastColumnToNextLineIndent_;
+        lastColumn.startFormatting();
+        currentWidth -= impl_->foldLastColumnToNextLineIndent_;
+        while (lastColumn.hasLinesRemaining())
+        {
+            result.append(totalIndent, ' ');
+            result.append(lastColumn.textForNextLine(currentWidth));
+            result.append("\n");
+        }
     }
 
     impl_->bFirstRow_ = false;

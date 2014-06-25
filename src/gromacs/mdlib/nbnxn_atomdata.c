@@ -1,48 +1,59 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
-#include "smalloc.h"
+
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nbnxn_consts.h"
 #include "nbnxn_internal.h"
+#include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "gmx_omp_nthreads.h"
+#include "thread_mpi/atomic.h"
+
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Default nbnxn allocation routine, allocates NBNXN_MEM_ALIGN byte aligned */
 void nbnxn_alloc_aligned(void **ptr, size_t nbytes)
@@ -354,24 +365,47 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
     }
 }
 
-/* Determines the combination rule (or none) to be used, stores it,
- * and sets the LJ parameters required with the rule.
- */
-static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
+/* Stores the LJ parameter data in a format convenient for different kernels */
+static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
 {
     int  nt, i, j;
     real c6, c12;
 
     nt = nbat->ntype;
 
+    if (bSIMD)
+    {
+        /* nbfp_s4 stores two parameters using a stride of 4,
+         * because this would suit x86 SIMD single-precision
+         * quad-load intrinsics. There's a slight inefficiency in
+         * allocating and initializing nbfp_s4 when it might not
+         * be used, but introducing the conditional code is not
+         * really worth it. */
+        nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
+        for (i = 0; i < nt; i++)
+        {
+            for (j = 0; j < nt; j++)
+            {
+                nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
+                nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
+                nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
+                nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
+            }
+        }
+    }
+
+    /* We use combination rule data for SIMD combination rule kernels
+     * and with LJ-PME kernels. We then only need parameters per atom type,
+     * not per pair of atom types.
+     */
     switch (nbat->comb_rule)
     {
-        case  ljcrGEOM:
+        case ljcrGEOM:
             nbat->comb_rule = ljcrGEOM;
 
             for (i = 0; i < nt; i++)
             {
-                /* Copy the diagonal from the nbfp matrix */
+                /* Store the sqrt of the diagonal from the nbfp matrix */
                 nbat->nbfp_comb[i*2  ] = sqrt(nbat->nbfp[(i*nt+i)*2  ]);
                 nbat->nbfp_comb[i*2+1] = sqrt(nbat->nbfp[(i*nt+i)*2+1]);
             }
@@ -398,23 +432,7 @@ static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
             }
             break;
         case ljcrNONE:
-            /* nbfp_s4 stores two parameters using a stride of 4,
-             * because this would suit x86 SIMD single-precision
-             * quad-load intrinsics. There's a slight inefficiency in
-             * allocating and initializing nbfp_s4 when it might not
-             * be used, but introducing the conditional code is not
-             * really worth it. */
-            nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
-            for (i = 0; i < nt; i++)
-            {
-                for (j = 0; j < nt; j++)
-                {
-                    nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
-                    nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
-                    nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
-                    nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
-                }
-            }
+            /* We always store the full matrix (see code above) */
             break;
         default:
             gmx_incons("Unknown combination rule");
@@ -427,7 +445,7 @@ static void
 nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 {
     int       i, j;
-    const int simd_width = GMX_SIMD_WIDTH_HERE;
+    const int simd_width = GMX_SIMD_REAL_WIDTH;
     int       simd_excl_size;
     /* Set the diagonal cluster pair exclusion mask setup data.
      * In the kernel we check 0 < j - i to generate the masks.
@@ -477,7 +495,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
         nbat->simd_exclusion_filter2[j*2 + 1] = (1U << j);
     }
 
-#if (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if (defined GMX_SIMD_IBM_QPX)
     /* The QPX kernels shouldn't do the bit masking that is done on
      * x86, because the SIMD units lack bit-wise operations. Instead,
      * we generate a vector of all 2^4 possible ways an i atom
@@ -492,7 +510,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
      * indices are used in the kernels. */
 
     simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
-    const int qpx_simd_width = GMX_SIMD_WIDTH_HERE;
+    const int qpx_simd_width = GMX_SIMD_REAL_WIDTH;
     snew_aligned(simd_interaction_array, simd_excl_size * qpx_simd_width, NBNXN_MEM_ALIGN);
     for (j = 0; j < simd_excl_size; j++)
     {
@@ -511,16 +529,17 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 void nbnxn_atomdata_init(FILE *fp,
                          nbnxn_atomdata_t *nbat,
                          int nb_kernel_type,
+                         int enbnxninitcombrule,
                          int ntype, const real *nbfp,
                          int n_energygroups,
                          int nout,
                          nbnxn_alloc_t *alloc,
                          nbnxn_free_t  *free)
 {
-    int      i, j;
+    int      i, j, nth;
     real     c6, c12, tol;
     char    *ptr;
-    gmx_bool simple, bCombGeom, bCombLB;
+    gmx_bool simple, bCombGeom, bCombLB, bSIMD;
 
     if (alloc == NULL)
     {
@@ -632,47 +651,59 @@ void nbnxn_atomdata_init(FILE *fp,
 
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
-    if (simple)
+    switch (enbnxninitcombrule)
     {
-        /* We prefer the geometic combination rule,
-         * as that gives a slightly faster kernel than the LB rule.
-         */
-        if (bCombGeom)
-        {
-            nbat->comb_rule = ljcrGEOM;
-        }
-        else if (bCombLB)
-        {
-            nbat->comb_rule = ljcrLB;
-        }
-        else
-        {
-            nbat->comb_rule = ljcrNONE;
-
-            nbat->free(nbat->nbfp_comb);
-        }
-
-        if (fp)
-        {
-            if (nbat->comb_rule == ljcrNONE)
+        case enbnxninitcombruleDETECT:
+            /* We prefer the geometic combination rule,
+             * as that gives a slightly faster kernel than the LB rule.
+             */
+            if (bCombGeom)
             {
-                fprintf(fp, "Using full Lennard-Jones parameter combination matrix\n\n");
+                nbat->comb_rule = ljcrGEOM;
+            }
+            else if (bCombLB)
+            {
+                nbat->comb_rule = ljcrLB;
             }
             else
             {
-                fprintf(fp, "Using %s Lennard-Jones combination rule\n\n",
-                        nbat->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
+                nbat->comb_rule = ljcrNONE;
+
+                nbat->free(nbat->nbfp_comb);
             }
-        }
 
-        set_combination_rule_data(nbat);
-    }
-    else
-    {
-        nbat->comb_rule = ljcrNONE;
+            if (fp)
+            {
+                if (nbat->comb_rule == ljcrNONE)
+                {
+                    fprintf(fp, "Using full Lennard-Jones parameter combination matrix\n\n");
+                }
+                else
+                {
+                    fprintf(fp, "Using %s Lennard-Jones combination rule\n\n",
+                            nbat->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
+                }
+            }
+            break;
+        case enbnxninitcombruleGEOM:
+            nbat->comb_rule = ljcrGEOM;
+            break;
+        case enbnxninitcombruleLB:
+            nbat->comb_rule = ljcrLB;
+            break;
+        case enbnxninitcombruleNONE:
+            nbat->comb_rule = ljcrNONE;
 
-        nbat->free(nbat->nbfp_comb);
+            nbat->free(nbat->nbfp_comb);
+            break;
+        default:
+            gmx_incons("Unknown enbnxninitcombrule");
     }
+
+    bSIMD = (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
+             nb_kernel_type == nbnxnk4xN_SIMD_2xNN);
+
+    set_lj_parameter_data(nbat, bSIMD);
 
     nbat->natoms  = 0;
     nbat->type    = NULL;
@@ -681,27 +712,25 @@ void nbnxn_atomdata_init(FILE *fp,
     {
         int pack_x;
 
-        switch (nb_kernel_type)
+        if (bSIMD)
         {
-            case nbnxnk4xN_SIMD_4xN:
-            case nbnxnk4xN_SIMD_2xNN:
-                pack_x = max(NBNXN_CPU_CLUSTER_I_SIZE,
-                             nbnxn_kernel_to_cj_size(nb_kernel_type));
-                switch (pack_x)
-                {
-                    case 4:
-                        nbat->XFormat = nbatX4;
-                        break;
-                    case 8:
-                        nbat->XFormat = nbatX8;
-                        break;
-                    default:
-                        gmx_incons("Unsupported packing width");
-                }
-                break;
-            default:
-                nbat->XFormat = nbatXYZ;
-                break;
+            pack_x = max(NBNXN_CPU_CLUSTER_I_SIZE,
+                         nbnxn_kernel_to_cj_size(nb_kernel_type));
+            switch (pack_x)
+            {
+                case 4:
+                    nbat->XFormat = nbatX4;
+                    break;
+                case 8:
+                    nbat->XFormat = nbatX8;
+                    break;
+                default:
+                    gmx_incons("Unsupported packing width");
+            }
+        }
+        else
+        {
+            nbat->XFormat = nbatXYZ;
         }
 
         nbat->FFormat = nbat->XFormat;
@@ -758,6 +787,32 @@ void nbnxn_atomdata_init(FILE *fp,
     }
     nbat->buffer_flags.flag        = NULL;
     nbat->buffer_flags.flag_nalloc = 0;
+
+    nth = gmx_omp_nthreads_get(emntNonbonded);
+
+    ptr = getenv("GMX_USE_TREEREDUCE");
+    if (ptr != NULL)
+    {
+        nbat->bUseTreeReduce = strtol(ptr, 0, 10);
+    }
+#if defined __MIC__
+    else if (nth > 8) /*on the CPU we currently don't benefit even at 32*/
+    {
+        nbat->bUseTreeReduce = 1;
+    }
+#endif
+    else
+    {
+        nbat->bUseTreeReduce = 0;
+    }
+    if (nbat->bUseTreeReduce)
+    {
+        if (fp)
+        {
+            fprintf(fp, "Using tree force reduction\n\n");
+        }
+        snew(nbat->syncStep, nth);
+    }
 }
 
 static void copy_lj_to_nbat_lj_comb_x4(const real *ljparam_type,
@@ -896,6 +951,67 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
     }
 }
 
+/* Set the charges of perturbed atoms in nbnxn_atomdata_t to 0.
+ * This is to automatically remove the RF/PME self term in the nbnxn kernels.
+ * Part of the zero interactions are still calculated in the normal kernels.
+ * All perturbed interactions are calculated in the free energy kernel,
+ * using the original charge and LJ data, not nbnxn_atomdata_t.
+ */
+static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
+                                    int                  ngrid,
+                                    const nbnxn_search_t nbs)
+{
+    real               *q;
+    int                 stride_q, g, nsubc, c_offset, c, subc, i, ind;
+    const nbnxn_grid_t *grid;
+
+    if (nbat->XFormat == nbatXYZQ)
+    {
+        q        = nbat->x + ZZ + 1;
+        stride_q = STRIDE_XYZQ;
+    }
+    else
+    {
+        q        = nbat->q;
+        stride_q = 1;
+    }
+
+    for (g = 0; g < ngrid; g++)
+    {
+        grid = &nbs->grid[g];
+        if (grid->bSimple)
+        {
+            nsubc = 1;
+        }
+        else
+        {
+            nsubc = GPU_NSUBCELL;
+        }
+
+        c_offset = grid->cell0*grid->na_sc;
+
+        /* Loop over all columns and copy and fill */
+        for (c = 0; c < grid->nc*nsubc; c++)
+        {
+            /* Does this cluster contain perturbed particles? */
+            if (grid->fep[c] != 0)
+            {
+                for (i = 0; i < grid->na_c; i++)
+                {
+                    /* Is this a perturbed particle? */
+                    if (grid->fep[c] & (1 << i))
+                    {
+                        ind = c_offset + c*grid->na_c + i;
+                        /* Set atom type and charge to non-interacting */
+                        nbat->type[ind] = nbat->ntype - 1;
+                        q[ind*stride_q] = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* Copies the energy group indices to a reordered and packed array */
 static void copy_egp_to_nbat_egps(const int *a, int na, int na_round,
                                   int na_c, int bit_shift,
@@ -934,6 +1050,11 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
 {
     int                 g, i, ncz, ash;
     const nbnxn_grid_t *grid;
+
+    if (nbat->nenergrp == 1)
+    {
+        return;
+    }
 
     for (g = 0; g < ngrid; g++)
     {
@@ -974,10 +1095,12 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
 
     nbnxn_atomdata_set_charges(nbat, ngrid, nbs, mdatoms->chargeA);
 
-    if (nbat->nenergrp > 1)
+    if (nbs->bFEP)
     {
-        nbnxn_atomdata_set_energygroups(nbat, ngrid, nbs, atinfo);
+        nbnxn_atomdata_mask_fep(nbat, ngrid, nbs);
     }
+
+    nbnxn_atomdata_set_energygroups(nbat, ngrid, nbs, atinfo);
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */
@@ -1127,33 +1250,33 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
 /* The SIMD width here is actually independent of that in the kernels,
  * but we use the same width for simplicity (usually optimal anyhow).
  */
-    int       i, s;
-    gmx_mm_pr dest_SSE, src_SSE;
+    int             i, s;
+    gmx_simd_real_t dest_SSE, src_SSE;
 
     if (bDestSet)
     {
-        for (i = i0; i < i1; i += GMX_SIMD_WIDTH_HERE)
+        for (i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
         {
-            dest_SSE = gmx_load_pr(dest+i);
+            dest_SSE = gmx_simd_load_r(dest+i);
             for (s = 0; s < nsrc; s++)
             {
-                src_SSE  = gmx_load_pr(src[s]+i);
-                dest_SSE = gmx_add_pr(dest_SSE, src_SSE);
+                src_SSE  = gmx_simd_load_r(src[s]+i);
+                dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
             }
-            gmx_store_pr(dest+i, dest_SSE);
+            gmx_simd_store_r(dest+i, dest_SSE);
         }
     }
     else
     {
-        for (i = i0; i < i1; i += GMX_SIMD_WIDTH_HERE)
+        for (i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
         {
-            dest_SSE = gmx_load_pr(src[0]+i);
+            dest_SSE = gmx_simd_load_r(src[0]+i);
             for (s = 1; s < nsrc; s++)
             {
-                src_SSE  = gmx_load_pr(src[s]+i);
-                dest_SSE = gmx_add_pr(dest_SSE, src_SSE);
+                src_SSE  = gmx_simd_load_r(src[s]+i);
+                dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
             }
-            gmx_store_pr(dest+i, dest_SSE);
+            gmx_simd_store_r(dest+i, dest_SSE);
         }
     }
 #endif
@@ -1270,6 +1393,189 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
     }
 }
 
+static gmx_inline unsigned char reverse_bits(unsigned char b)
+{
+    /* http://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64BitsDiv */
+    return (b * 0x0202020202ULL & 0x010884422010ULL) % 1023;
+}
+
+static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nbat,
+                                                      int                     nth)
+{
+    const nbnxn_buffer_flags_t *flags = &nbat->buffer_flags;
+
+    int next_pow2 = 1<<(gmx_log2i(nth-1)+1);
+
+    assert(nbat->nout == nth); /* tree-reduce currently only works for nout==nth */
+
+    memset(nbat->syncStep, 0, sizeof(*(nbat->syncStep))*nth);
+
+#pragma omp parallel num_threads(nth)
+    {
+        int   b0, b1, b;
+        int   i0, i1;
+        int   group_size, th;
+
+        th = gmx_omp_get_thread_num();
+
+        for (group_size = 2; group_size < 2*next_pow2; group_size *= 2)
+        {
+            int index[2], group_pos, partner_pos, wu;
+            int partner_th = th ^ (group_size/2);
+
+            if (group_size > 2)
+            {
+#ifdef TMPI_ATOMICS
+                /* wait on partner thread - replaces full barrier */
+                int sync_th, sync_group_size;
+
+                tMPI_Atomic_memory_barrier();                         /* gurantee data is saved before marking work as done */
+                tMPI_Atomic_set(&(nbat->syncStep[th]), group_size/2); /* mark previous step as completed */
+
+                /* find thread to sync with. Equal to partner_th unless nth is not a power of two. */
+                for (sync_th = partner_th, sync_group_size = group_size; sync_th >= nth && sync_group_size > 2; sync_group_size /= 2)
+                {
+                    sync_th &= ~(sync_group_size/4);
+                }
+                if (sync_th < nth) /* otherwise nothing to sync index[1] will be >=nout */
+                {
+                    /* wait on the thread which computed input data in previous step */
+                    while (tMPI_Atomic_get((volatile tMPI_Atomic_t*)&(nbat->syncStep[sync_th])) < group_size/2)
+                    {
+                        gmx_pause();
+                    }
+                    /* guarantee that no later load happens before wait loop is finisehd */
+                    tMPI_Atomic_memory_barrier();
+                }
+#else           /* TMPI_ATOMICS */
+#pragma omp barrier
+#endif
+            }
+
+            /* Calculate buffers to sum (result goes into first buffer) */
+            group_pos = th % group_size;
+            index[0]  = th - group_pos;
+            index[1]  = index[0] + group_size/2;
+
+            /* If no second buffer, nothing to do */
+            if (index[1] >= nbat->nout && group_size > 2)
+            {
+                continue;
+            }
+
+#if NBNXN_BUFFERFLAG_MAX_THREADS > 256
+#error reverse_bits assumes max 256 threads
+#endif
+            /* Position is permuted so that one of the 2 vectors being added was computed on the same thread in the previous step.
+               This improves locality and enables to sync with just a single thread between steps (=the levels in the btree).
+               The permutation which allows this corresponds to reversing the bits of the group position.
+             */
+            group_pos = reverse_bits(group_pos)/(256/group_size);
+
+            partner_pos = group_pos ^ 1;
+
+            /* loop over two work-units (own and partner) */
+            for (wu = 0; wu < 2; wu++)
+            {
+                if (wu == 1)
+                {
+                    if (partner_th < nth)
+                    {
+                        break; /* partner exists we don't have to do his work */
+                    }
+                    else
+                    {
+                        group_pos = partner_pos;
+                    }
+                }
+
+                /* Calculate the cell-block range for our thread */
+                b0 = (flags->nflag* group_pos   )/group_size;
+                b1 = (flags->nflag*(group_pos+1))/group_size;
+
+                for (b = b0; b < b1; b++)
+                {
+                    i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+                    i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+
+                    if ((flags->flag[b] & (1ULL<<index[1])) || group_size > 2)
+                    {
+#ifdef GMX_NBNXN_SIMD
+                        nbnxn_atomdata_reduce_reals_simd
+#else
+                        nbnxn_atomdata_reduce_reals
+#endif
+                            (nbat->out[index[0]].f,
+                            (flags->flag[b] & (1ULL<<index[0])) || group_size > 2,
+                            &(nbat->out[index[1]].f), 1, i0, i1);
+
+                    }
+                    else if (!(flags->flag[b] & (1ULL<<index[0])))
+                    {
+                        nbnxn_atomdata_clear_reals(nbat->out[index[0]].f,
+                                                   i0, i1);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nbat,
+                                                     int                     nth)
+{
+    int th;
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (th = 0; th < nth; th++)
+    {
+        const nbnxn_buffer_flags_t *flags;
+        int   b0, b1, b;
+        int   i0, i1;
+        int   nfptr;
+        real *fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
+        int   out;
+
+        flags = &nbat->buffer_flags;
+
+        /* Calculate the cell-block range for our thread */
+        b0 = (flags->nflag* th   )/nth;
+        b1 = (flags->nflag*(th+1))/nth;
+
+        for (b = b0; b < b1; b++)
+        {
+            i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+            i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+
+            nfptr = 0;
+            for (out = 1; out < nbat->nout; out++)
+            {
+                if (flags->flag[b] & (1U<<out))
+                {
+                    fptr[nfptr++] = nbat->out[out].f;
+                }
+            }
+            if (nfptr > 0)
+            {
+#ifdef GMX_NBNXN_SIMD
+                nbnxn_atomdata_reduce_reals_simd
+#else
+                nbnxn_atomdata_reduce_reals
+#endif
+                    (nbat->out[0].f,
+                    flags->flag[b] & (1U<<0),
+                    fptr, nfptr,
+                    i0, i1);
+            }
+            else if (!(flags->flag[b] & (1U<<0)))
+            {
+                nbnxn_atomdata_clear_reals(nbat->out[0].f,
+                                           i0, i1);
+            }
+        }
+    }
+}
+
 /* Add the force array(s) from nbnxn_atomdata_t to f */
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                     int                     locality,
@@ -1309,56 +1615,15 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
         /* Reduce the force thread output buffers into buffer 0, before adding
          * them to the, differently ordered, "real" force buffer.
          */
-#pragma omp parallel for num_threads(nth) schedule(static)
-        for (th = 0; th < nth; th++)
+        if (nbat->bUseTreeReduce)
         {
-            const nbnxn_buffer_flags_t *flags;
-            int   b0, b1, b;
-            int   i0, i1;
-            int   nfptr;
-            real *fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
-            int   out;
-
-            flags = &nbat->buffer_flags;
-
-            /* Calculate the cell-block range for our thread */
-            b0 = (flags->nflag* th   )/nth;
-            b1 = (flags->nflag*(th+1))/nth;
-
-            for (b = b0; b < b1; b++)
-            {
-                i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
-                i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
-
-                nfptr = 0;
-                for (out = 1; out < nbat->nout; out++)
-                {
-                    if (flags->flag[b] & (1U<<out))
-                    {
-                        fptr[nfptr++] = nbat->out[out].f;
-                    }
-                }
-                if (nfptr > 0)
-                {
-#ifdef GMX_NBNXN_SIMD
-                    nbnxn_atomdata_reduce_reals_simd
-#else
-                    nbnxn_atomdata_reduce_reals
-#endif
-                        (nbat->out[0].f,
-                        flags->flag[b] & (1U<<0),
-                        fptr, nfptr,
-                        i0, i1);
-                }
-                else if (!(flags->flag[b] & (1U<<0)))
-                {
-                    nbnxn_atomdata_clear_reals(nbat->out[0].f,
-                                               i0, i1);
-                }
-            }
+            nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat, nth);
+        }
+        else
+        {
+            nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
         }
     }
-
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (th = 0; th < nth; th++)
     {

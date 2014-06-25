@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
@@ -39,22 +40,25 @@
 #endif
 
 #include <math.h>
-#include "main.h"
+#include <stdlib.h>
+
+#include "types/commrec.h"
 #include "constr.h"
 #include "copyrite.h"
-#include "physics.h"
-#include "vec.h"
-#include "pbc.h"
-#include "smalloc.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"
-#include "partdec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int    b0;         /* first constraint for this thread */
@@ -531,10 +535,6 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     {
         nlocat = dd_constraints_nlocalatoms(cr->dd);
     }
-    else if (PARTDECOMP(cr))
-    {
-        nlocat = pd_constraints_nlocalatoms(cr->pd);
-    }
     else
     {
         nlocat = NULL;
@@ -621,8 +621,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 
     for (iter = 0; iter < lincsd->nIter; iter++)
     {
-        if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints) ||
-            PARTDECOMP(cr))
+        if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints))
         {
 #pragma omp barrier
 #pragma omp master
@@ -630,11 +629,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                 /* Communicate the corrected non-local coordinates */
                 if (DOMAINDECOMP(cr))
                 {
-                    dd_move_x_constraints(cr->dd, box, xp, NULL);
-                }
-                else
-                {
-                    pd_move_x_constraints(cr, xp, NULL);
+                    dd_move_x_constraints(cr->dd, box, xp, NULL, FALSE);
                 }
             }
         }
@@ -1204,13 +1199,9 @@ void set_lincs(t_idef *idef, t_mdatoms *md,
         }
         start = 0;
     }
-    else if (PARTDECOMP(cr))
-    {
-        pd_get_constraint_range(cr->pd, &start, &natoms);
-    }
     else
     {
-        start  = md->start;
+        start  = 0;
         natoms = md->homenr;
     }
     at2con = make_at2con(start, natoms, idef->il, idef->iparams, bDynamics,
@@ -1471,7 +1462,7 @@ static void cconerr(gmx_domdec_t *dd,
 
 gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          t_inputrec *ir,
-                         gmx_large_int_t step,
+                         gmx_int64_t step,
                          struct gmx_lincsdata *lincsd, t_mdatoms *md,
                          t_commrec *cr,
                          rvec *x, rvec *xprime, rvec *min_proj,

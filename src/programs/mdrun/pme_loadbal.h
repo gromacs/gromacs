@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,10 @@
 #ifndef _pme_loadbal_h
 #define _pme_loadbal_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct pme_load_balancing *pme_load_balancing_t;
 
 /* Initialze the PP-PME load balacing data and infrastructure */
@@ -66,7 +70,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
                           interaction_const_t *ic,
                           nonbonded_verlet_t  *nbv,
                           gmx_pme_t           *pmedata,
-                          gmx_large_int_t      step);
+                          gmx_int64_t          step);
 
 /* Restart the PME load balancing discarding all timings gathered up till now */
 void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
@@ -75,5 +79,9 @@ void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
 void pme_loadbal_done(pme_load_balancing_t pme_lb,
                       t_commrec *cr, FILE *fplog,
                       gmx_bool bNonBondedOnGPU);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _pme_loadbal_h */

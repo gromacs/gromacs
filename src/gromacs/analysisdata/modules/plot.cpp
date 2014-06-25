@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,18 +49,19 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/vec.h"
-#include "gromacs/legacyheaders/xvgr.h"
 
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace
@@ -330,7 +331,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
                    : exvgNONE);
             output_env_t                  oenv;
-            output_env_init(&oenv, 0, NULL, time_unit, FALSE, xvg_format, 0, 0);
+            output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0, 0);
             boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
                                   impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),

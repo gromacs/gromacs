@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,8 @@
 #ifndef GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
 #define GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
 
+#include <string>
+
 #include "../options/optionstoragetemplate.h"
 #include "selection.h"
 #include "selectionenums.h"
@@ -67,15 +69,14 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
+         * \param     manager    Manager for this object.
          */
-        SelectionOptionStorage(const SelectionOption &settings);
+        SelectionOptionStorage(const SelectionOption  &settings,
+                               SelectionOptionManager *manager);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return "sel"; }
+        virtual std::string typeString() const { return "selection"; }
         virtual std::string formatSingleValue(const Selection &value) const;
-
-        //! \copydoc SelectionOptionInfo::setManager()
-        void setManager(SelectionOptionManager *manager);
 
         /*! \brief
          * Adds selections to the storage.
@@ -125,7 +126,8 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         virtual void processAll();
 
         SelectionOptionInfo     info_;
-        SelectionOptionManager *manager_;
+        SelectionOptionManager &manager_;
+        std::string             defaultText_;
         SelectionFlags          selectionFlags_;
 };
 

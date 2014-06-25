@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,39 +35,39 @@
 # Sources that should always be built
 file(GLOB NONBONDED_SOURCES *.c nb_kernel_c/*.c)
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "SSE2" AND NOT GMX_DOUBLE)
+if("${GMX_SIMD}" STREQUAL "SSE2" AND NOT GMX_DOUBLE)
     file(GLOB NONBONDED_SSE2_SINGLE_SOURCES nb_kernel_sse2_single/*.c)
 endif()
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "SSE4.1" AND NOT GMX_DOUBLE)
+if("${GMX_SIMD}" STREQUAL "SSE4.1" AND NOT GMX_DOUBLE)
     file(GLOB NONBONDED_SSE4_1_SINGLE_SOURCES nb_kernel_sse4_1_single/*.c)
 endif()
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "AVX_128_FMA" AND NOT GMX_DOUBLE)
+if("${GMX_SIMD}" STREQUAL "AVX_128_FMA" AND NOT GMX_DOUBLE)
     file(GLOB NONBONDED_AVX_128_FMA_SINGLE_SOURCES nb_kernel_avx_128_fma_single/*.c)
 endif()
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "AVX_256" AND NOT GMX_DOUBLE)
+if((("${GMX_SIMD}" STREQUAL "AVX_256") OR ("${GMX_SIMD}" STREQUAL "AVX2_256")) AND NOT GMX_DOUBLE)
     file(GLOB NONBONDED_AVX_256_SINGLE_SOURCES nb_kernel_avx_256_single/*.c)
 endif()
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "SSE2" AND GMX_DOUBLE)
+if("${GMX_SIMD}" STREQUAL "SSE2" AND GMX_DOUBLE)
     file(GLOB NONBONDED_SSE2_DOUBLE_SOURCES nb_kernel_sse2_double/*.c)
 endif()
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "SSE4.1" AND GMX_DOUBLE)
+if("${GMX_SIMD}" STREQUAL "SSE4.1" AND GMX_DOUBLE)
     file(GLOB NONBONDED_SSE4_1_DOUBLE_SOURCES nb_kernel_sse4_1_double/*.c)
 endif()
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "AVX_128_FMA" AND GMX_DOUBLE)
+if("${GMX_SIMD}" STREQUAL "AVX_128_FMA" AND GMX_DOUBLE)
     file(GLOB NONBONDED_AVX_128_FMA_DOUBLE_SOURCES nb_kernel_avx_128_fma_double/*.c)
 endif()
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "AVX_256" AND GMX_DOUBLE)
+if((("${GMX_SIMD}" STREQUAL "AVX_256") OR ("${GMX_SIMD}" STREQUAL "AVX2_256")) AND GMX_DOUBLE)
     file(GLOB NONBONDED_AVX_256_DOUBLE_SOURCES nb_kernel_avx_256_double/*.c)
 endif()
 
-if("${GMX_CPU_ACCELERATION}" STREQUAL "Sparc64_HPC_ACE" AND GMX_DOUBLE)
+if("${GMX_SIMD}" STREQUAL "SPARC64_HPC_ACE" AND GMX_DOUBLE)
     file(GLOB NONBONDED_SPARC64_HPC_ACE_DOUBLE_SOURCES nb_kernel_sparc64_hpc_ace_double/*.c)
 endif()
 

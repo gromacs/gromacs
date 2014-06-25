@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,12 +39,12 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
+#include "testutils/refdata.h"
+
 #include <vector>
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
-
-#include "testutils/refdata.h"
 
 namespace
 {
@@ -69,6 +69,30 @@ TEST(ReferenceDataTest, HandlesSimpleData)
         checker.checkInteger(1, "int");
         checker.checkDouble(0.5, "real");
         checker.checkString("Test", "string");
+    }
+}
+
+TEST(ReferenceDataTest, HandlesFloatingPointData)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+    const float  floatValue  = 4.0f/3.0f;
+    const double doubleValue = 4.0/3.0;
+
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkDouble(doubleValue, "double");
+        checker.checkReal(doubleValue, "real");
+        checker.checkFloat(floatValue, "float");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkDouble(doubleValue, "double");
+        checker.checkReal(floatValue, "real");
+        checker.checkReal(doubleValue, "real");
+        checker.checkFloat(floatValue, "float");
     }
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include <string>
 
+#include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
@@ -59,25 +60,18 @@ namespace gmx
  * SelectionOptionStorage
  */
 
-SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
+SelectionOptionStorage::SelectionOptionStorage(const SelectionOption  &settings,
+                                               SelectionOptionManager *manager)
     : MyBase(settings, OptionFlags() | efOption_NoDefaultValue
              | efOption_DontCheckMinimumCount),
-      info_(this), manager_(NULL), selectionFlags_(settings.selectionFlags_)
+      info_(this), manager_(*manager), defaultText_(settings.defaultText_),
+      selectionFlags_(settings.selectionFlags_)
 {
+    GMX_RELEASE_ASSERT(manager != NULL,
+                       "SelectionOptionManager must be added before SelectionOption");
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for selection options");
-}
-
-
-void SelectionOptionStorage::setManager(SelectionOptionManager *manager)
-{
-    GMX_RELEASE_ASSERT(manager_ == NULL || manager_ == manager,
-                       "Manager cannot be changed once set");
-    if (manager_ == NULL)
-    {
-        manager->registerOption(this);
-        manager_ = manager;
-    }
+    manager_.registerOption(this);
 }
 
 
@@ -123,18 +117,14 @@ void SelectionOptionStorage::addSelections(
 
 void SelectionOptionStorage::convertValue(const std::string &value)
 {
-    GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
-
-    manager_->convertOptionValue(this, value);
+    manager_.convertOptionValue(this, value, false);
 }
 
 void SelectionOptionStorage::processSetValues(ValueList *values)
 {
-    GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
-
     if (values->size() == 0)
     {
-        manager_->requestOptionDelayedParsing(this);
+        manager_.requestOptionDelayedParsing(this);
     }
     else if (values->size() < static_cast<size_t>(minValueCount()))
     {
@@ -144,11 +134,13 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
 
 void SelectionOptionStorage::processAll()
 {
+    if (!isSet() && !defaultText_.empty())
+    {
+        manager_.convertOptionValue(this, defaultText_, true);
+    }
     if (isRequired() && !isSet())
     {
-        GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
-
-        manager_->requestOptionDelayedParsing(this);
+        manager_.requestOptionDelayedParsing(this);
         markAsSet();
     }
 }
@@ -223,11 +215,6 @@ const SelectionOptionStorage &SelectionOptionInfo::option() const
     return static_cast<const SelectionOptionStorage &>(OptionInfo::option());
 }
 
-void SelectionOptionInfo::setManager(SelectionOptionManager *manager)
-{
-    option().setManager(manager);
-}
-
 void SelectionOptionInfo::setValueCount(int count)
 {
     option().setAllowedValueCount(count);
@@ -263,9 +250,12 @@ void SelectionOptionInfo::setDynamicMask(bool bEnabled)
  * SelectionOption
  */
 
-AbstractOptionStoragePointer SelectionOption::createStorage() const
+AbstractOptionStoragePointer
+SelectionOption::createStorage(const OptionManagerContainer &managers) const
 {
-    return AbstractOptionStoragePointer(new SelectionOptionStorage(*this));
+    return AbstractOptionStoragePointer(
+            new SelectionOptionStorage(
+                    *this, managers.get<SelectionOptionManager>()));
 }
 
 
@@ -273,11 +263,14 @@ AbstractOptionStoragePointer SelectionOption::createStorage() const
  * SelectionFileOptionStorage
  */
 
-SelectionFileOptionStorage::SelectionFileOptionStorage(const SelectionFileOption &settings)
+SelectionFileOptionStorage::SelectionFileOptionStorage(
+        const SelectionFileOption &settings, SelectionOptionManager *manager)
     : AbstractOptionStorage(settings, OptionFlags() | efOption_MultipleTimes
                             | efOption_DontCheckMinimumCount),
-      info_(this), manager_(NULL), bValueParsed_(false)
+      info_(this), manager_(*manager), bValueParsed_(false)
 {
+    GMX_RELEASE_ASSERT(manager != NULL,
+                       "SelectionOptionManager must be added before SelectionFileOption");
 }
 
 void SelectionFileOptionStorage::clearSet()
@@ -287,15 +280,13 @@ void SelectionFileOptionStorage::clearSet()
 
 void SelectionFileOptionStorage::convertValue(const std::string &value)
 {
-    GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
-
     if (bValueParsed_)
     {
         GMX_THROW(InvalidInputError("More than one file name provided"));
     }
     bValueParsed_ = true;
     // TODO: Should we throw an InvalidInputError if the file does not exist?
-    manager_->parseRequestedFromFile(value);
+    manager_.parseRequestedFromFile(value);
 }
 
 void SelectionFileOptionStorage::processSet()
@@ -316,21 +307,6 @@ SelectionFileOptionInfo::SelectionFileOptionInfo(SelectionFileOptionStorage *opt
 {
 }
 
-SelectionFileOptionStorage &SelectionFileOptionInfo::option()
-{
-    return static_cast<SelectionFileOptionStorage &>(OptionInfo::option());
-}
-
-const SelectionFileOptionStorage &SelectionFileOptionInfo::option() const
-{
-    return static_cast<const SelectionFileOptionStorage &>(OptionInfo::option());
-}
-
-void SelectionFileOptionInfo::setManager(SelectionOptionManager *manager)
-{
-    option().setManager(manager);
-}
-
 
 /********************************************************************
  * SelectionFileOption
@@ -342,9 +318,12 @@ SelectionFileOption::SelectionFileOption(const char *name)
     setDescription("Provide selections from files");
 }
 
-AbstractOptionStoragePointer SelectionFileOption::createStorage() const
+AbstractOptionStoragePointer
+SelectionFileOption::createStorage(const OptionManagerContainer &managers) const
 {
-    return AbstractOptionStoragePointer(new SelectionFileOptionStorage(*this));
+    return AbstractOptionStoragePointer(
+            new SelectionFileOptionStorage(
+                    *this, managers.get<SelectionOptionManager>()));
 }
 
 } // namespace gmx

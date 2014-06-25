@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,10 +44,12 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/options/filenameoptionmanager.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/path.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -95,6 +97,43 @@ TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
     EXPECT_EQ("testfile.dat", value);
 }
 
+TEST(FileNameOptionTest, HandlesRequiredOptionWithoutValue)
+{
+    gmx::Options           options(NULL, NULL);
+    std::string            value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value).required()
+                                    .filetype(gmx::eftGenericData).outputFile()
+                                    .defaultBasename("testfile")));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ("testfile.dat", value);
+}
+
+TEST(FileNameOptionTest, HandlesOptionalUnsetOption)
+{
+    gmx::Options           options(NULL, NULL);
+    std::string            value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value)
+                                    .filetype(gmx::eftTrajectory).outputFile()
+                                    .defaultBasename("testfile")));
+    EXPECT_TRUE(value.empty());
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_TRUE(value.empty());
+}
+
 TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 {
     gmx::Options           options(NULL, NULL);
@@ -117,20 +156,129 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 
 TEST(FileNameOptionTest, AddsMissingExtensionBasedOnExistingFile)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
-    ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value)
-                                    .filetype(gmx::eftTrajectory).inputFile()));
     TestFileManager      tempFiles;
     std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
     gmx::File::writeFileFromString(filename, "Dummy trajectory file");
-    std::string          inputValue(filename.substr(0, filename.length() - 4));
+    std::string          inputValue(gmx::Path::stripExtension(filename));
+
+    gmx::Options         options(NULL, NULL);
+    std::string          value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value)
+                                    .filetype(gmx::eftTrajectory).inputFile()));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());
     EXPECT_NO_THROW_GMX(assigner.startOption("f"));
     EXPECT_NO_THROW_GMX(assigner.appendValue(inputValue));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ(filename, value);
+}
+
+TEST(FileNameOptionTest, AddsMissingExtensionForRequiredDefaultNameBasedOnExistingFile)
+{
+    TestFileManager      tempFiles;
+    std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
+    gmx::File::writeFileFromString(filename, "Dummy trajectory file");
+    std::string          inputValue(gmx::Path::stripExtension(filename));
+
+    gmx::Options         options(NULL, NULL);
+    std::string          value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value).required()
+                                    .filetype(gmx::eftTrajectory).inputFile()
+                                    .defaultBasename(inputValue.c_str())));
+    EXPECT_EQ(inputValue + ".xtc", value);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ(filename, value);
+}
+
+TEST(FileNameOptionTest, AddsMissingExtensionForOptionalDefaultNameBasedOnExistingFile)
+{
+    TestFileManager      tempFiles;
+    std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
+    gmx::File::writeFileFromString(filename, "Dummy trajectory file");
+    std::string          inputValue(gmx::Path::stripExtension(filename));
+
+    gmx::Options         options(NULL, NULL);
+    std::string          value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value)
+                                    .filetype(gmx::eftTrajectory).inputFile()
+                                    .defaultBasename(inputValue.c_str())));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ(filename, value);
+}
+
+TEST(FileNameOptionTest, AddsMissingExtensionForRequiredFromDefaultNameOptionBasedOnExistingFile)
+{
+    TestFileManager            tempFiles;
+    std::string                filename(tempFiles.getTemporaryFilePath(".trr"));
+    gmx::File::writeFileFromString(filename, "Dummy trajectory file");
+    std::string                inputValue(gmx::Path::stripExtension(filename));
+
+    gmx::FileNameOptionManager manager;
+    gmx::Options               options(NULL, NULL);
+    std::string                value;
+    ASSERT_NO_THROW_GMX(options.addManager(&manager));
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value).required()
+                                    .filetype(gmx::eftTrajectory).inputFile()
+                                    .defaultBasename("foo")));
+    ASSERT_NO_THROW_GMX(manager.addDefaultFileNameOption(&options, "deffnm"));
+    EXPECT_EQ("foo.xtc", value);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("deffnm"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(inputValue));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ(filename, value);
+}
+
+TEST(FileNameOptionTest, AddsMissingExtensionForOptionalFromDefaultNameOptionBasedOnExistingFile)
+{
+    TestFileManager            tempFiles;
+    std::string                filename(tempFiles.getTemporaryFilePath(".trr"));
+    gmx::File::writeFileFromString(filename, "Dummy trajectory file");
+    std::string                inputValue(gmx::Path::stripExtension(filename));
+
+    gmx::FileNameOptionManager manager;
+    gmx::Options               options(NULL, NULL);
+    std::string                value;
+    ASSERT_NO_THROW_GMX(options.addManager(&manager));
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value)
+                                    .filetype(gmx::eftTrajectory).inputFile()
+                                    .defaultBasename("foo")));
+    ASSERT_NO_THROW_GMX(manager.addDefaultFileNameOption(&options, "deffnm"));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("deffnm"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(inputValue));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
     EXPECT_NO_THROW_GMX(assigner.finishOption());
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options.finish());

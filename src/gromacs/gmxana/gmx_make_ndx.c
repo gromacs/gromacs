@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,21 +39,26 @@
 #endif
 
 #include <ctype.h>
-#include "sysstuff.h"
-#include "strdb.h"
-#include "gromacs/fileio/futil.h"
+#include <string.h>
+
+#include "gromacs/utility/futil.h"
 #include "macros.h"
-#include "string2.h"
-#include "statutil.h"
 #include "gromacs/fileio/confio.h"
 #include "typedefs.h"
-#include "index.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/math/vec.h"
 
-#define MAXNAMES 30
-#define NAME_LEN 30
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
+/* It's not nice to have size limits, but we should not spend more time
+ * on this ancient tool, but instead use the new selection library.
+ */
+#define MAXNAMES 1024
+#define NAME_LEN 1024
 
 gmx_bool bCase = FALSE;
 
@@ -844,8 +849,12 @@ static int split_chain(t_atoms *atoms, rvec *x,
                 {
                     rvec_sub(x[ca_end], x[i], vec);
                 }
+                else
+                {
+                    break;
+                }
             }
-            while ((i < natoms) && (norm(vec) < 0.45));
+            while (norm(vec) < 0.45);
 
             end[nchain] = ca_end;
             while ((end[nchain]+1 < natoms) &&
@@ -1512,14 +1521,20 @@ int gmx_make_ndx(int argc, char *argv[])
         "When a run input file is supplied you can also select on atom type.",
         "You can use NOT, AND and OR, you can split groups",
         "into chains, residues or atoms. You can delete and rename groups.[PAR]",
-        "The atom numbering in the editor and the index file starts at 1."
+        "The atom numbering in the editor and the index file starts at 1.[PAR]",
+        "The [TT]-twin[tt] switch duplicates all index groups with an offset of",
+        "[TT]-natoms[tt], which is useful for Computational Electrophysiology",
+        "double-layer membrane setups."
     };
 
-    static int      natoms   = 0;
-    static gmx_bool bVerbose = FALSE;
-    t_pargs         pa[]     = {
+    static int      natoms     = 0;
+    static gmx_bool bVerbose   = FALSE;
+    static gmx_bool bDuplicate = FALSE;
+    t_pargs         pa[]       = {
         { "-natoms",  FALSE, etINT, {&natoms},
           "set number of atoms (default: read from coordinate or index file)" },
+        { "-twin",     FALSE, etBOOL, {&bDuplicate},
+          "Duplicate all index groups with an offset of -natoms" },
         { "-verbose", FALSE, etBOOL, {&bVerbose},
           "HIDDENVerbose output" }
     };
@@ -1623,7 +1638,7 @@ int gmx_make_ndx(int argc, char *argv[])
 
     edit_index(natoms, atoms, x, block, &gnames, bVerbose);
 
-    write_index(ndxoutfile, block, gnames);
+    write_index(ndxoutfile, block, gnames, bDuplicate, natoms);
 
     return 0;
 }

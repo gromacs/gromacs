@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,8 +40,10 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "gmxcomplex.h"
-#include "sim_util.h"
+#include "../math/gmxcomplex.h"
+#include "../timing/wallcycle.h"
+#include "../timing/walltime_accounting.h"
+#include "../legacyheaders/network.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,7 +52,7 @@ extern "C" {
 typedef real *splinevec[DIM];
 
 enum {
-    GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD
+    GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
 };
 
 int gmx_pme_init(gmx_pme_t *pmedata, t_commrec *cr,
@@ -74,7 +76,7 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-#define GMX_PME_SPREAD_Q      (1<<0)
+#define GMX_PME_SPREAD        (1<<0)
 #define GMX_PME_SOLVE         (1<<1)
 #define GMX_PME_CALC_F        (1<<2)
 #define GMX_PME_CALC_ENER_VIR (1<<3)
@@ -86,9 +88,8 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
  */
 #define GMX_PME_DO_COULOMB    (1<<13)
 #define GMX_PME_DO_LJ         (1<<14)
-#define GMX_PME_LJ_LB         (1<<15)
 
-#define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
+#define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 int gmx_pme_do(gmx_pme_t pme,
                int start,       int homenr,
@@ -122,7 +123,7 @@ int gmx_pmeonly(gmx_pme_t pme,
 void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V);
 /* Calculate the PME grid energy V for n charges with a potential
  * in the pme struct determined before with a call to gmx_pme_do
- * with at least GMX_PME_SPREAD_Q and GMX_PME_SOLVE specified.
+ * with at least GMX_PME_SPREAD and GMX_PME_SOLVE specified.
  * Note that the charges are not spread on the grid in the pme struct.
  * Currently does not work in parallel or with free energy.
  */
@@ -154,7 +155,8 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 void gmx_pme_send_parameters(t_commrec *cr,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
-                             real *c6A, real *c6B, real *sigmaA, real *sigmaB,
+                             real *sqrt_c6A, real *sqrt_c6B,
+                             real *sigmaA, real *sigmaB,
                              int maxshift_x, int maxshift_y);
 /* Send the charges and maxshift to out PME-only node. */
 
@@ -162,7 +164,7 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
                               gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir, int pme_flags,
-                              gmx_large_int_t step);
+                              gmx_int64_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
 void gmx_pme_send_finish(t_commrec *cr);
@@ -171,7 +173,7 @@ void gmx_pme_send_finish(t_commrec *cr);
 void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj);
 /* Tell our PME-only node to switch to a new grid size */
 
-void gmx_pme_send_resetcounters(t_commrec *cr, gmx_large_int_t step);
+void gmx_pme_send_resetcounters(t_commrec *cr, gmx_int64_t step);
 /* Tell our PME-only node to reset all cycle and flop counters */
 
 void gmx_pme_receive_f(t_commrec *cr,
@@ -189,17 +191,17 @@ enum {
     pmerecvqxRESETCOUNTERS /* reset the cycle and flop counters            */
 };
 
-int gmx_pme_recv_params_coords(gmx_pme_pp_t pme_pp,
+int gmx_pme_recv_coeffs_coords(gmx_pme_pp_t pme_pp,
                                int *natoms,
                                real **chargeA, real **chargeB,
-                               real **c6A, real **c6B,
+                               real **sqrt_c6A, real **sqrt_c6B,
                                real **sigmaA, real **sigmaB,
                                matrix box, rvec **x, rvec **f,
                                int *maxshift_x, int *maxshift_y,
                                gmx_bool *bFreeEnergy_q, gmx_bool *bFreeEnergy_lj,
                                real *lambda_q, real *lambda_lj,
                                gmx_bool *bEnerVir, int *pme_flags,
-                               gmx_large_int_t *step,
+                               gmx_int64_t *step,
                                ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
 ;
 /* With return value:

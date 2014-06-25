@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,22 +38,21 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+
 #include "typedefs.h"
-#include "statutil.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "pbc.h"
-#include "physics.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/units.h"
 #include "names.h"
 #include "txtdump.h"
 #include "gromacs/fileio/trnio.h"
-#include "symtab.h"
 #include "gromacs/fileio/confio.h"
 
 real pot(real x, real qq, real c6, real cn, int npow)
@@ -190,7 +189,7 @@ int gmx_sigeps(int argc, char *argv[])
         oldx = x;
 
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
 

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -56,26 +56,37 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS) # FFTW doesn
 endif()
 
 # Testing shows FFTW configured with --enable-avx is never better than --enable-sse2, so we do the latter always.
-if(${GMX_CPU_ACCELERATION} MATCHES "^(SSE|AVX)")
+if(${GMX_SIMD} MATCHES "^(SSE|AVX)")
     set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION --enable-sse2 CACHE INTERNAL "Optimization flags for FFTW compilation")
 endif()
 
+# Allow cross-compiles
+if (TARGET_HOST)
+    set(GMX_BUILD_OWN_FFTW_TARGET_HOST --host=${TARGET_HOST})
+endif()
+
 # Machinery for running the external project
-set(EXTERNAL_FFTW_VERSION 3.3.2)
+set(EXTERNAL_FFTW_VERSION 3.3.3)
+# cmake make eats slashes //// -> //
+set(GMX_BUILD_OWN_FFTW_URL "http:////www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE PATH "URL from where to download fftw, (use an absolute path when offline)")
+mark_as_advanced(GMX_BUILD_OWN_FFTW_URL)
+set(EXTERNAL_FFTW_MD5SUM 0a05ca9c7b3bfddc8278e7c40791a1c2)
+set (EXTERNAL_FFTW_BUILD_TARGET fftwBuild)
 include(ExternalProject)
 # TODO in master branch - show this warning only on the first run
 # by using gmx_check_if_changed_result from I21b791ab8e4f3 when
 # that becomes available
-message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} as requested, but it will not know the file it receives is correct. GROMACS will build and link to FFTW anyway, but there is a possible security risk if you execute a GROMACS tool that calls this library. You can use\nmake gmxfftw\n to do the download and build, and then run\nmd5sum src/contrib/fftw/gmxfftw-prefix/src/fftw-3.3.2.tar.gz\nto see if it matches 6977ee770ed68c85698c7168ffa6e178. If so, everything is OK and you should proceed with the rest of the GROMACS build. Alternatively, you can follow the GROMACS installation instructions to build FFTW yourself.")
+message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} as requested, but it will not know the file it receives is correct. If you now use\nmake\n GROMACS will build and link to FFTW anyway, but there is a possible security risk if you execute a GROMACS tool that calls this library. Instead, you can use\nmake ${EXTERNAL_FFTW_BUILD_TARGET}\n to do just the download and build of FFTW, and then run\nmd5sum src/contrib/fftw/${EXTERNAL_FFTW_BUILD_TARGET}-prefix/src/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz\nto see if it matches ${EXTERNAL_FFTW_MD5SUM}. If so, everything is OK and you should use \nmake\n to proceed with the rest of the GROMACS build. Alternatively, you could stop using GMX_BUILD_OWN_FFTW, and instead follow the GROMACS installation instructions to build FFTW yourself.")
 # TODO if/when CMake fixes http://www.cmake.org/Bug/view.php?id=14330
 # (ie. at least version > 2.8.11.2), consider reverting to using an
 # md5sum check to avoid needing the above warning
-    ExternalProject_add(fftwBuild
-        URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib
+    ExternalProject_add(${EXTERNAL_FFTW_BUILD_TARGET}
+        URL "${GMX_BUILD_OWN_FFTW_URL}"
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
         ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
-        ${GMX_BUILD_OWN_FFTW_PREC})
-externalproject_get_property(fftwBuild INSTALL_DIR)
+        ${GMX_BUILD_OWN_FFTW_PREC}
+        ${GMX_BUILD_OWN_FFTW_TARGET_HOST})
+externalproject_get_property(${EXTERNAL_FFTW_BUILD_TARGET} INSTALL_DIR)
 
 string(TOUPPER "${FFTW}" UPPERFFTW)
 string(TOLOWER "${FFTW}" LOWERFFTW)
@@ -88,6 +99,6 @@ set(${UPPERFFTW}_HAVE_SIMD TRUE PARENT_SCOPE)
 add_library(gmxfftw STATIC IMPORTED GLOBAL)
 set_target_properties(gmxfftw PROPERTIES IMPORTED_LOCATION ${${UPPERFFTW}_LIBRARIES})
 set(${UPPERFFTW}_LIBRARIES gmxfftw PARENT_SCOPE)
-add_dependencies(gmxfftw fftwBuild)
+add_dependencies(gmxfftw ${EXTERNAL_FFTW_BUILD_TARGET})
 
 message(STATUS "The GROMACS-managed build of FFTW 3 will configure with the following optimizations: ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}")

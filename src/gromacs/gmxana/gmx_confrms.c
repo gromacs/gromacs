@@ -1,63 +1,64 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "gromacs/fileio/filenm.h"
-#include "smalloc.h"
-#include "macros.h"
 #include <math.h>
+#include <string.h>
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/utility/smalloc.h"
+#include "macros.h"
 #include "typedefs.h"
-#include "xvgr.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
-#include "vec.h"
-#include "index.h"
-#include "pbc.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "txtdump.h"
-#include "do_fit.h"
 #include "viewit.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gmx_ana.h"
 
+#include "gromacs/math/do_fit.h"
 
 void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
@@ -174,7 +175,7 @@ int find_next_match_atoms_in_res(int *i1, atom_id index1[],
     {
         if (debug)
         {
-            fprintf(debug, "{%d %d}", *i1+bFW ? dx : dy, *i2+bFW ? dy : dx );
+            fprintf(debug, "{%d %d}", *i1 + (bFW ? dx : dy), *i2 + (bFW ? dy : dx) );
         }
         if (bFW)
         {
@@ -607,7 +608,7 @@ int gmx_confrms(int argc, char *argv[])
         find_matching_names(&isize1, index1, atoms1, &isize2, index2, atoms2);
         if (matchndxfile)
         {
-            fp = ffopen(matchndxfile, "w");
+            fp = gmx_ffopen(matchndxfile, "w");
             fprintf(fp, "; Matching atoms between %s from %s and %s from %s\n",
                     groupnames1, conf1file, groupnames2, conf2file);
             fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1);
@@ -796,26 +797,26 @@ int gmx_confrms(int argc, char *argv[])
 /*    atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B'; */
                 }
             }
-            fp = ffopen(outfile, "w");
+            fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
                 write_pdbfile(fp, title1, atoms1, x1, ePBC1, box1, ' ', 1, NULL, TRUE);
             }
             write_pdbfile(fp, title2, atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, NULL, TRUE);
-            ffclose(fp);
+            gmx_ffclose(fp);
             break;
         case efGRO:
             if (bBfac)
             {
                 fprintf(stderr, "WARNING: cannot write B-factor values to gro file\n");
             }
-            fp = ffopen(outfile, "w");
+            fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
                 write_hconf_p(fp, title1, atoms1, 3, x1, v1, box1);
             }
             write_hconf_p(fp, title2, atoms2, 3, x2, v2, box2);
-            ffclose(fp);
+            gmx_ffclose(fp);
             break;
         default:
             if (bBfac)

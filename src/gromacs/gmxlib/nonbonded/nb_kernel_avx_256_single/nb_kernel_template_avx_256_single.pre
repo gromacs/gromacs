@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 
 #include "../nb_kernel.h"
 #include "types/simple.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
 
 #include "gromacs/simd/math_x86_avx_256_single.h"
@@ -83,6 +83,9 @@
 /* ##                        we only calculate values absolutely needed for each case.   */
 
 /* ## Calculate the size and offset for (merged/interleaved) table data */
+
+
+
 
 /*
  * Gromacs nonbonded kernel:   {KERNEL_NAME}
@@ -124,6 +127,9 @@ void
     __m256           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     /* #for I in PARTICLES_I */
     real *           vdwioffsetptr{I};
+    /* #if 'LJEwald' in KERNEL_VDW */
+    real *           vdwgridioffsetptr{I};
+    /* #endif                      */
     __m256           ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I};
     /* #endfor */
     /* #for J in PARTICLES_J */
@@ -158,6 +164,15 @@ void
     __m128i          ifour       = _mm_set1_epi32(4);
     __m256           rt,vfeps,vftabscale,Y,F,G,H,Heps,Fp,VV,FF;
     real             *vftab;
+    /* #endif */
+    /* #if 'LJEwald' in KERNEL_VDW */
+    /* #for I,J in PAIRS_IJ */
+    __m256           c6grid_{I}{J};
+    /* #endfor */
+    real             *vdwgridparam;
+    __m256           ewclj,ewclj2,ewclj6,ewcljrsq,poly,exponent,f6A,f6B,sh_lj_ewald;
+    __m256           one_half  = _mm256_set1_ps(0.5);
+    __m256           minus_one = _mm256_set1_ps(-1.0);
     /* #endif */
     /* #if 'Ewald' in KERNEL_ELEC */
     __m256i          ewitab;
@@ -198,6 +213,12 @@ void
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
+    /* #endif */
+    /* #if 'LJEwald' in KERNEL_VDW */
+    vdwgridparam     = fr->ljpme_c6grid;
+    sh_lj_ewald	     = _mm256_set1_ps(fr->ic->sh_lj_ewald);
+    ewclj            = _mm256_set1_ps(fr->ewaldcoeff_lj);
+    ewclj2           = _mm256_mul_ps(minus_one,_mm256_mul_ps(ewclj,ewclj));
     /* #endif */
 
     /* #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW */
@@ -244,6 +265,9 @@ void
     /*     #endfor */
     /*     #for I in PARTICLES_VDW_I */
     vdwioffsetptr{I}   = vdwparam+2*nvdwtype*vdwtype[inr+{I}];
+    /*         #if 'LJEwald' in KERNEL_VDW */
+    vdwgridioffsetptr{I} = vdwgridparam+2*nvdwtype*vdwtype[inr+{I}];
+    /*         #endif */
     /*     #endfor */
     /* #endif */
 
@@ -259,8 +283,14 @@ void
     qq{I}{J}             = _mm256_mul_ps(iq{I},jq{J});
     /*         #endif */
     /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
+        /*         #if 'LJEwald' in KERNEL_VDW */
     c6_{I}{J}            = _mm256_set1_ps(vdwioffsetptr{I}[vdwjidx{J}A]);
     c12_{I}{J}           = _mm256_set1_ps(vdwioffsetptr{I}[vdwjidx{J}A+1]);
+    c6grid_{I}{J}        = _mm256_set1_ps(vdwgridioffsetptr{I}[vdwjidx{J}A]);
+        /*         #else */
+    c6_{I}{J}            = _mm256_set1_ps(vdwioffsetptr{I}[vdwjidx{J}A]);
+    c12_{I}{J}           = _mm256_set1_ps(vdwioffsetptr{I}[vdwjidx{J}A+1]);
+        /*         #endif */
     /*         #endif */
     /*     #endfor */
     /* #endif */
@@ -373,6 +403,9 @@ void
         /*     #endfor */
         /*     #for I in PARTICLES_VDW_I */
         vdwioffsetptr{I}   = vdwparam+2*nvdwtype*vdwtype[inr+{I}];
+        /*         #if 'LJEwald' in KERNEL_VDW */
+        vdwgridioffsetptr{I} = vdwgridparam+2*nvdwtype*vdwtype[inr+{I}];
+        /*         #endif */
         /*     #endfor */
         /* #endif */
 
@@ -593,6 +626,17 @@ void
                                             vdwioffsetptr{I}+vdwjidx{J}G,
                                             vdwioffsetptr{I}+vdwjidx{J}H,
                                             &c6_{I}{J},&c12_{I}{J});
+
+            /*         #if 'LJEwald' in KERNEL_VDW */
+            c6grid_{I}{J}       = gmx_mm256_load_8real_swizzle_ps(vdwgridioffsetptr{I}+vdwjidx{J}A,
+                                                                  vdwgridioffsetptr{I}+vdwjidx{J}B,
+                                                                  vdwgridioffsetptr{I}+vdwjidx{J}C,
+                                                                  vdwgridioffsetptr{I}+vdwjidx{J}D,
+                                                                  vdwgridioffsetptr{I}+vdwjidx{J}E,
+                                                                  vdwgridioffsetptr{I}+vdwjidx{J}F,
+                                                                  vdwgridioffsetptr{I}+vdwjidx{J}G,
+                                                                  vdwgridioffsetptr{I}+vdwjidx{J}H);
+            /*          #endif */
             /*         #endif */
             /*     #endif */
 
@@ -605,7 +649,7 @@ void
             /*         AVX1 does not support 256-bit integer operations, so now we go to 128-bit mode... */
             vfitab_lo        = _mm256_extractf128_si256(vfitab,0x0);
             vfitab_hi        = _mm256_extractf128_si256(vfitab,0x1);
-            /*         #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW     */
+            /*         #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW */
             /*             ## 3 tables, 4 bytes per point: multiply index by 12 */
             vfitab_lo        = _mm_slli_epi32(_mm_add_epi32(vfitab_lo,_mm_slli_epi32(vfitab_lo,1)),2);
             vfitab_hi        = _mm_slli_epi32(_mm_add_epi32(vfitab_hi,_mm_slli_epi32(vfitab_hi,1)),2);
@@ -613,7 +657,7 @@ void
             /*             ## 1 table, 4 bytes per point: multiply index by 4   */
             vfitab_lo        = _mm_slli_epi32(vfitab_lo,2);
             vfitab_hi        = _mm_slli_epi32(vfitab_hi,2);
-            /*         #elif 'Table' in KERNEL_VDW                              */
+            /*         #elif 'Table' in KERNEL_VDW */
             /*             ## 2 tables, 4 bytes per point: multiply index by 8  */
             vfitab_lo        = _mm_slli_epi32(vfitab_lo,3);
             vfitab_hi        = _mm_slli_epi32(vfitab_hi,3);
@@ -867,7 +911,46 @@ void
             fvdw             = _mm256_xor_ps(signbit,_mm256_mul_ps(_mm256_add_ps(fvdw6,fvdw12),_mm256_mul_ps(vftabscale,rinv{I}{J})));
             /*                 #define INNERFLOPS INNERFLOPS+4 */
             /*             #endif */
-            /*         #endif */
+
+            /*         #elif KERNEL_VDW=='LJEwald' */
+
+            /* Analytical LJ-PME */
+            rinvsix          = _mm256_mul_ps(_mm256_mul_ps(rinvsq{I}{J},rinvsq{I}{J}),rinvsq{I}{J});
+            ewcljrsq         = _mm256_mul_ps(ewclj2,rsq{I}{J});
+            ewclj6           = _mm256_mul_ps(ewclj2,_mm256_mul_ps(ewclj2,ewclj2));
+            exponent         = gmx_simd_exp_r(ewcljrsq);
+            /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
+            poly             = _mm256_mul_ps(exponent,_mm256_add_ps(_mm256_sub_ps(one,ewcljrsq),_mm256_mul_ps(_mm256_mul_ps(ewcljrsq,ewcljrsq),one_half)));
+            /*                 #define INNERFLOPS INNERFLOPS+11 */
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_VDW=='PotentialSwitch' */
+            /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
+            vvdw6            = _mm256_mul_ps(_mm256_sub_ps(c6_{I}{J},_mm256_mul_ps(c6grid_{I}{J},_mm256_sub_ps(one,poly))),rinvsix);
+            vvdw12           = _mm256_mul_ps(c12_{I}{J},_mm256_mul_ps(rinvsix,rinvsix));
+	    /*                 #define INNERFLOPS INNERFLOPS+6 */
+	    /*                 #if KERNEL_MOD_VDW=='PotentialShift' */
+	    vvdw             = _mm256_sub_ps(_mm256_mul_ps( _mm256_sub_ps(vvdw12 , _mm256_mul_ps(c12_{I}{J},_mm256_mul_ps(sh_vdw_invrcut6,sh_vdw_invrcut6))), one_twelfth) ,
+                                          _mm256_mul_ps( _mm256_sub_ps(vvdw6,_mm256_add_ps(_mm256_mul_ps(c6_{I}{J},sh_vdw_invrcut6),_mm256_mul_ps(c6grid_{I}{J},sh_lj_ewald))),one_sixth));
+            /*                     #define INNERFLOPS INNERFLOPS+10 */
+	    /*                 #else */
+            vvdw             = _mm256_sub_ps(_mm256_mul_ps(vvdw12,one_twelfth),_mm256_mul_ps(vvdw6,one_sixth));
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+	    /*                 #endif */
+            /*                  ## Check for force inside potential check, i.e. this means we already did the potential part */
+            /*                  #if 'Force' in KERNEL_VF */
+            /* fvdw = vvdw12/r - (vvdw6/r + (C6grid * exponent * beta^6)/r) */
+            fvdw             = _mm256_mul_ps(_mm256_sub_ps(vvdw12,_mm256_sub_ps(vvdw6,_mm256_mul_ps(_mm256_mul_ps(c6grid_{I}{J},one_sixth),_mm256_mul_ps(exponent,ewclj6)))),rinvsq{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+6 */
+            /*                  #endif */
+            /*              #elif KERNEL_VF=='Force' */
+            /* f6A = 6 * C6grid * (1 - poly) */
+            f6A              = _mm256_mul_ps(c6grid_{I}{J},_mm256_sub_ps(one,poly));
+            /* f6B = C6grid * exponent * beta^6 */
+            f6B              = _mm256_mul_ps(_mm256_mul_ps(c6grid_{I}{J},one_sixth),_mm256_mul_ps(exponent,ewclj6));
+            /* fvdw = 12*C12/r13 - ((6*C6 - f6A)/r6 + f6B)/r */
+	    fvdw	      = _mm256_mul_ps(_mm256_add_ps(_mm256_mul_ps(_mm256_sub_ps(_mm256_mul_ps(c12_{I}{J},rinvsix),_mm256_sub_ps(c6_{I}{J},f6A)),rinvsix),f6B),rinvsq{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+11 */
+            /*              #endif */
+	    /*         #endif */
             /*         ## End of check for vdw interaction forms */
             /*     #endif */
             /*     ## END OF VDW INTERACTION CHECK FOR PAIR I-J */

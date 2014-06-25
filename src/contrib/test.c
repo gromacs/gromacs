@@ -39,20 +39,19 @@
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "pbc.h"
-#include "physics.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/units.h"
 #include "names.h"
 #include "txtdump.h"
 #include "gromacs/fileio/trnio.h"
-#include "symtab.h"
 #include "gromacs/fileio/confio.h"
 
 real pot(real x,real qq,real c6,real c12)
@@ -135,7 +134,7 @@ int main(int argc,char *argv[])
     oldx = x;
       
   }
-  ffclose(fp);
+  gmx_ffclose(fp);
   
   do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
 

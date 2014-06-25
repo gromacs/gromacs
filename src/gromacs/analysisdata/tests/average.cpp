@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 
-#include "testutils/datatest.h"
+#include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/testasserts.h"
 
 using gmx::test::AnalysisDataTestInput;
@@ -225,6 +225,24 @@ TEST_F(AverageModuleTest, CanCustomizeXAxis)
     gmx::AnalysisDataAverageModulePointer module(new gmx::AnalysisDataAverageModule());
     data.addModule(module);
     module->setXAxis(0.5, 0.5);
+
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("Average", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+}
+
+TEST_F(AverageModuleTest, CanCustomizeNonUniformXAxis)
+{
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
+    gmx::AnalysisDataAverageModulePointer module(new gmx::AnalysisDataAverageModule());
+    data.addModule(module);
+    module->setXAxisValue(0, 2.0);
+    module->setXAxisValue(1, 3.0);
+    module->setXAxisValue(2, 5.0);
 
     ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));

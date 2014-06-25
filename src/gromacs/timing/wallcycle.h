@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,16 @@
 #define GMX_TIMING_WALLCYCLE_H
 
 #include <stdio.h>
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+
+#include "../legacyheaders/types/commrec_fwd.h"
+#include "../legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
@@ -51,9 +55,10 @@ enum {
     ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
     ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcLJPME, ewcPME_SOLVE,
     ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
-    ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd,
+    ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcSWAP, ewcIMD,
     ewcTEST, ewcNR
 };
+
 
 enum {
     ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
@@ -93,10 +98,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                      gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
-gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
+gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 /* Return reset_counters from wc struct */
 
-void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters);
+void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters);
 /* Set reset_counters */
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);

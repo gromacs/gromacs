@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,17 +44,23 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdio.h>
+
+#include "thread_mpi/threads.h"
+
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "types/hw_info.h"
+#include "copyrite.h"
 #include "gmx_cpuid.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
-#include "statutil.h"
 #include "gmx_thread_affinity.h"
 
-#include "thread_mpi/threads.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 static int
 get_thread_affinity_layout(FILE *fplog,
@@ -233,7 +239,8 @@ gmx_set_thread_affinity(FILE                *fplog,
          */
         MPI_Comm comm_intra;
 
-        MPI_Comm_split(MPI_COMM_WORLD, gmx_hostname_num(), cr->rank_intranode,
+        MPI_Comm_split(MPI_COMM_WORLD,
+                       gmx_physicalnode_id_hash(), cr->rank_intranode,
                        &comm_intra);
         MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
         /* MPI_Scan is inclusive, but here we need exclusive */
@@ -365,18 +372,53 @@ gmx_set_thread_affinity(FILE                *fplog,
  * Note that this will only work on Linux as we use a GNU feature.
  */
 void
-gmx_check_thread_affinity_set(FILE            gmx_unused *fplog,
-                              const t_commrec gmx_unused *cr,
-                              gmx_hw_opt_t    gmx_unused *hw_opt,
-                              int             gmx_unused  ncpus,
-                              gmx_bool        gmx_unused  bAfterOpenmpInit)
+gmx_check_thread_affinity_set(FILE            *fplog,
+                              const t_commrec *cr,
+                              gmx_hw_opt_t    *hw_opt,
+                              int  gmx_unused  ncpus,
+                              gmx_bool         bAfterOpenmpInit)
 {
 #ifdef HAVE_SCHED_GETAFFINITY
     cpu_set_t mask_current;
     int       i, ret, cpu_count, cpu_set;
     gmx_bool  bAllSet;
+#endif
 
     assert(hw_opt);
+    if (!bAfterOpenmpInit)
+    {
+        /* Check for externally set OpenMP affinity and turn off internal
+         * pinning if any is found. We need to do this check early to tell
+         * thread-MPI whether it should do pinning when spawning threads.
+         * TODO: the above no longer holds, we should move these checks later
+         */
+        if (hw_opt->thread_affinity != threadaffOFF)
+        {
+            char *message;
+            if (!gmx_omp_check_thread_affinity(&message))
+            {
+                /* TODO: with -pin auto we should only warn when using all cores */
+                md_print_warn(cr, fplog, "%s", message);
+                sfree(message);
+                hw_opt->thread_affinity = threadaffOFF;
+            }
+        }
+
+        /* With thread-MPI this is needed as pinning might get turned off,
+         * which needs to be known before starting thread-MPI.
+         * With thread-MPI hw_opt is processed here on the master rank
+         * and passed to the other ranks later, so we only do this on master.
+         */
+        if (!SIMMASTER(cr))
+        {
+            return;
+        }
+#ifndef GMX_THREAD_MPI
+        return;
+#endif
+    }
+
+#ifdef HAVE_SCHED_GETAFFINITY
     if (hw_opt->thread_affinity == threadaffOFF)
     {
         /* internal affinity setting is off, don't bother checking process affinity */

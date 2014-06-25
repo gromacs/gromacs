@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,7 @@ TEST_F(SelectModuleTest, BasicTest)
     setOutputFile("-oi", "index.dat");
     setOutputFile("-on", "index.ndx");
     excludeDataset("cfrac");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SelectModuleTest, HandlesPDBOutputWithNonPDBInput)
@@ -92,7 +92,7 @@ TEST_F(SelectModuleTest, HandlesPDBOutputWithNonPDBInput)
     setTrajectory("simple.gro");
     includeDataset("occupancy");
     setOutputFile("-ofpdb", "occupancy.pdb");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SelectModuleTest, HandlesPDBOutputWithPDBInput)
@@ -105,7 +105,7 @@ TEST_F(SelectModuleTest, HandlesPDBOutputWithPDBInput)
     setTrajectory("simple.gro");
     includeDataset("occupancy");
     setOutputFile("-ofpdb", "occupancy.pdb");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
@@ -119,7 +119,7 @@ TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
     setTrajectory("simple.gro");
     includeDataset("occupancy");
     setOutputFile("-ofpdb", "occupancy.pdb");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
@@ -133,7 +133,7 @@ TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
     setTrajectory("simple.gro");
     includeDataset("occupancy");
     setOutputFile("-ofpdb", "occupancy.pdb");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SelectModuleTest, NormalizesSizes)
@@ -145,7 +145,7 @@ TEST_F(SelectModuleTest, NormalizesSizes)
     };
     setTopology("simple.gro");
     includeDataset("size");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SelectModuleTest, WritesResidueNumbers)
@@ -156,7 +156,7 @@ TEST_F(SelectModuleTest, WritesResidueNumbers)
     };
     setTopology("simple.gro");
     includeDataset("index");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SelectModuleTest, WritesResidueIndices)
@@ -168,7 +168,7 @@ TEST_F(SelectModuleTest, WritesResidueIndices)
     };
     setTopology("simple.gro");
     includeDataset("index");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 } // namespace

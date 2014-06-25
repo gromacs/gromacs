@@ -1,37 +1,40 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdlib.h>
 #include <assert.h>
@@ -42,10 +45,9 @@
 
 #include <cuda.h>
 
-#include "types/simple.h" 
+#include "types/simple.h"
 #include "types/nbnxn_pairlist.h"
 #include "types/nb_verlet.h"
-#include "types/ishift.h"
 #include "types/force_flags.h"
 #include "../nbnxn_consts.h"
 
@@ -58,12 +60,18 @@
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/cstringutil.h"
+
 #if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
 #define USE_TEXOBJ
 #endif
 
-/*! Texture reference for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
+/*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
 texture<float, 1, cudaReadModeElementType> nbfp_texref;
+
+/*! Texture reference for LJ-PME parameters; bound to cu_nbparam_t.nbfp_comb */
+texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
@@ -143,40 +151,93 @@ static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
 /* Constant arrays listing all kernel function pointers and enabling selection
    of a kernel in an elegant manner. */
 
-static const int nEnergyKernelTypes = 2; /* 0 - no energy, 1 - energy */
-static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
-
-/*! Pointers to the default kernels organized in a 3 dim array by:
- *  electrostatics type, energy calculation on/off, and pruning on/off.
+/*! Pointers to the non-bonded kernels organized in 2-dim arrays by:
+ *  electrostatics and VDW type.
  *
- *  Note that the order of electrostatics (1st dimension) has to match the
- *  order of corresponding enumerated types defined in nbnxn_cuda_types.h.
+ *  Note that the row- and column-order of function pointers has to match the
+ *  order of corresponding enumerated electrostatics and vdw types, resp.,
+ *  defined in nbnxn_cuda_types.h.
  */
-static const nbnxn_cu_kfunc_ptr_t
-nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
+
+/*! Force-only kernel function pointers. */
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[eelCuNR][evdwCuNR] =
 {
-    { { k_nbnxn_cutoff,                     k_nbnxn_cutoff_prune },
-      { k_nbnxn_cutoff_ener,                k_nbnxn_cutoff_ener_prune } },
-    { { k_nbnxn_rf,                         k_nbnxn_rf_prune },
-      { k_nbnxn_rf_ener,                    k_nbnxn_rf_ener_prune } },
-    { { k_nbnxn_ewald_tab,                  k_nbnxn_ewald_tab_prune },
-      { k_nbnxn_ewald_tab_ener,             k_nbnxn_ewald_tab_ener_prune } },
-    { { k_nbnxn_ewald_tab_twin,             k_nbnxn_ewald_tab_twin_prune },
-      { k_nbnxn_ewald_tab_twin_ener,        k_nbnxn_ewald_twin_ener_prune } },
-    { { k_nbnxn_ewald,                      k_nbnxn_ewald_prune },
-      { k_nbnxn_ewald_ener,                 k_nbnxn_ewald_ener_prune } },
-    { { k_nbnxn_ewald_twin,                 k_nbnxn_ewald_twin_prune },
-      { k_nbnxn_ewald_twin_ener,            k_nbnxn_ewald_twin_ener_prune } },
+    { nbnxn_kernel_ElecCut_VdwLJ_F_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_F_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_F_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_F_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_F_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_F_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_F_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_F_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_F_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_cuda      }
+};
+
+/*! Force + energy kernel function pointers. */
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[eelCuNR][evdwCuNR] =
+{
+    { nbnxn_kernel_ElecCut_VdwLJ_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_cuda              },
+    { nbnxn_kernel_ElecRF_VdwLJ_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_cuda               },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_cuda          },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_cuda     },
+    { nbnxn_kernel_ElecEw_VdwLJ_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_cuda               },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_cuda        }
+};
+
+/*! Force + pruning kernel function pointers. */
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[eelCuNR][evdwCuNR] =
+{
+    { nbnxn_kernel_ElecCut_VdwLJ_F_prune_cuda,             nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_prune_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_F_prune_cuda,              nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_prune_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_cuda,         nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_prune_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_cuda,  nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_prune_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_F_prune_cuda,              nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_prune_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_cuda,       nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_cuda      }
+};
+
+/*! Force + energy + pruning kernel function pointers. */
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelCuNR][evdwCuNR] =
+{
+    { nbnxn_kernel_ElecCut_VdwLJ_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_prune_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_prune_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_prune_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_prune_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_cuda      }
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
 static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
+                                                       int  evdwtype,
                                                        bool bDoEne,
                                                        bool bDoPrune)
 {
-    assert(eeltype < eelCuNR);
+    nbnxn_cu_kfunc_ptr_t res;
 
-    return nb_default_kfunc_ptr[eeltype][bDoEne][bDoPrune];
+    assert(eeltype < eelCuNR);
+    assert(evdwtype < eelCuNR);
+
+    if (bDoEne)
+    {
+        if (bDoPrune)
+        {
+            res = nb_kfunc_ener_prune_ptr[eeltype][evdwtype];
+        }
+        else
+        {
+            res = nb_kfunc_ener_noprune_ptr[eeltype][evdwtype];
+        }
+    }
+    else
+    {
+        if (bDoPrune)
+        {
+            res = nb_kfunc_noener_prune_ptr[eeltype][evdwtype];
+        }
+        else
+        {
+            res = nb_kfunc_noener_noprune_ptr[eeltype][evdwtype];
+        }
+    }
+
+    return res;
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
@@ -202,7 +263,7 @@ static inline int calc_shmem_required()
     return shmem;
 }
 
-/*! As we execute nonbonded workload in separate streams, before launching 
+/*! As we execute nonbonded workload in separate streams, before launching
    the kernel we need to make sure that he following operations have completed:
    - atomdata allocation and related H2D transfers (every nstlist step);
    - pair list H2D transfer (every nstlist step);
@@ -217,28 +278,28 @@ static inline int calc_shmem_required()
    However, for the sake of having a future-proof implementation, we use the
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
-*/
-void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
+ */
+void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
                               const nbnxn_atomdata_t *nbatom,
-                              int flags,
-                              int iloc)
+                              int                     flags,
+                              int                     iloc)
 {
-    cudaError_t stat;
-    int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
+    cudaError_t          stat;
+    int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     /* CUDA kernel launch-related stuff */
-    int  shmem, nblock;
-    dim3 dim_block, dim_grid;
+    int                  shmem, nblock;
+    dim3                 dim_block, dim_grid;
     nbnxn_cu_kfunc_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
 
-    cu_atomdata_t   *adat   = cu_nb->atdat;
-    cu_nbparam_t    *nbp    = cu_nb->nbparam;
-    cu_plist_t      *plist  = cu_nb->plist[iloc];
-    cu_timers_t     *t      = cu_nb->timers;
-    cudaStream_t    stream  = cu_nb->stream[iloc];
+    cu_atomdata_t       *adat    = cu_nb->atdat;
+    cu_nbparam_t        *nbp     = cu_nb->nbparam;
+    cu_plist_t          *plist   = cu_nb->plist[iloc];
+    cu_timers_t         *t       = cu_nb->timers;
+    cudaStream_t         stream  = cu_nb->stream[iloc];
 
-    bool bCalcEner   = flags & GMX_FORCE_VIRIAL;
-    bool bCalcFshift = flags & GMX_FORCE_VIRIAL;
-    bool bDoTime     = cu_nb->bDoTime;
+    bool                 bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                 bDoTime     = cu_nb->bDoTime;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
@@ -286,7 +347,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
 
     /* HtoD x, q */
     cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
-                      adat_len * sizeof(*adat->xq), stream); 
+                      adat_len * sizeof(*adat->xq), stream);
 
     if (bDoTime)
     {
@@ -302,7 +363,9 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* get the pointer to the kernel flavor we need to use */
-    nb_kernel = select_nbnxn_kernel(nbp->eeltype, bCalcEner,
+    nb_kernel = select_nbnxn_kernel(nbp->eeltype,
+                                    nbp->vdwtype,
+                                    bCalcEner,
                                     plist->bDoPrune || always_prune);
 
     /* kernel launch config */
@@ -320,7 +383,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
                 NCL_PER_SUPERCL, plist->na_c);
     }
 
-    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist, bCalcFshift);
+    nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
     CU_LAUNCH_ERR("k_calc_nb");
 
     if (bDoTime)
@@ -330,14 +393,14 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
                                const nbnxn_atomdata_t *nbatom,
-                               int flags,
-                               int aloc)
+                               int                     flags,
+                               int                     aloc)
 {
     cudaError_t stat;
-    int adat_begin, adat_len, adat_end;  /* local/nonlocal offset and length used for xq and f */
-    int iloc = -1;
+    int         adat_begin, adat_len, adat_end; /* local/nonlocal offset and length used for xq and f */
+    int         iloc = -1;
 
     /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
@@ -356,13 +419,13 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
         gmx_incons(stmp);
     }
 
-    cu_atomdata_t   *adat   = cu_nb->atdat;
-    cu_timers_t     *t      = cu_nb->timers;
-    bool            bDoTime = cu_nb->bDoTime;
-    cudaStream_t    stream  = cu_nb->stream[iloc];
+    cu_atomdata_t   *adat    = cu_nb->atdat;
+    cu_timers_t     *t       = cu_nb->timers;
+    bool             bDoTime = cu_nb->bDoTime;
+    cudaStream_t     stream  = cu_nb->stream[iloc];
 
-    bool bCalcEner   = flags & GMX_FORCE_VIRIAL;
-    bool bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* don't launch copy-back if there was no work to do */
     if (cu_nb->plist[iloc]->nsci == 0)
@@ -419,7 +482,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
         *(unsigned int*)&nbatom->out[0].f[adat_end*3 - 1] = poll_wait_pattern;
     }
 
-    /* With DD the local D2H transfer can only start after the non-local 
+    /* With DD the local D2H transfer can only start after the non-local
        has been launched. */
     if (iloc == eintLocal && cu_nb->bUseTwoStreams)
     {
@@ -428,7 +491,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* DtoH f */
-    cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f + adat_begin, 
+    cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f + adat_begin,
                       (adat_len)*sizeof(*adat->f), stream);
 
     /* After the non-local D2H is launched the nonlocal_done event can be
@@ -472,8 +535,8 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
  * polling wait for the GPU.
  */
 static inline bool atomic_cas(volatile unsigned int *ptr,
-                              unsigned int oldval,
-                              unsigned int newval)
+                              unsigned int           oldval,
+                              unsigned int           newval)
 {
     assert(ptr);
 
@@ -491,8 +554,8 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
                          real *e_lj, real *e_el, rvec *fshift)
 {
     /* NOTE:  only implemented for single-precision at this time */
-    cudaError_t stat;
-    int i, adat_end, iloc = -1;
+    cudaError_t            stat;
+    int                    i, adat_end, iloc = -1;
     volatile unsigned int *poll_word;
 
     /* determine interaction locality from atom locality */
@@ -512,16 +575,16 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         gmx_incons(stmp);
     }
 
-    cu_plist_t      *plist   = cu_nb->plist[iloc];
-    cu_timers_t     *timers  = cu_nb->timers;
-    wallclock_gpu_t *timings = cu_nb->timings;
-    nb_staging      nbst     = cu_nb->nbst;
+    cu_plist_t      *plist    = cu_nb->plist[iloc];
+    cu_timers_t     *timers   = cu_nb->timers;
+    wallclock_gpu_t *timings  = cu_nb->timings;
+    nb_staging       nbst     = cu_nb->nbst;
 
-    bool    bCalcEner   = flags & GMX_FORCE_VIRIAL;
-    bool    bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
-    bCalcEner = (bCalcEner || always_ener) && !never_ener; 
+    bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
     /* don't launch wait/update timers & counters if there was no work to do
 
@@ -548,7 +611,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         stat = cudaStreamSynchronize(cu_nb->stream[iloc]);
         CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
     }
-    else 
+    else
     {
         /* Busy-wait until we get the signal pattern set in last byte
          * of the l/nl float vector. This pattern corresponds to a floating
@@ -557,7 +620,9 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
          * The polling uses atomic compare-exchange.
          */
         poll_word = (volatile unsigned int*)&nbatom->out[0].f[adat_end*3 - 1];
-        while (atomic_cas(poll_word, poll_wait_pattern, poll_wait_pattern)) {}
+        while (atomic_cas(poll_word, poll_wait_pattern, poll_wait_pattern))
+        {
+        }
     }
 
     /* timing data accumulation */
@@ -576,9 +641,9 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 
         /* X/q H2D and F D2H timings */
         timings->nb_h2d_t += cu_event_elapsed(timers->start_nb_h2d[iloc],
-                                                 timers->stop_nb_h2d[iloc]);
+                                              timers->stop_nb_h2d[iloc]);
         timings->nb_d2h_t += cu_event_elapsed(timers->start_nb_d2h[iloc],
-                                                 timers->stop_nb_d2h[iloc]);
+                                              timers->stop_nb_d2h[iloc]);
 
         /* only count atdat and pair-list H2D at pair-search step */
         if (plist->bDoPrune)
@@ -588,11 +653,11 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
             {
                 timings->pl_h2d_c++;
                 timings->pl_h2d_t += cu_event_elapsed(timers->start_atdat,
-                                                         timers->stop_atdat);
+                                                      timers->stop_atdat);
             }
 
             timings->pl_h2d_t += cu_event_elapsed(timers->start_pl_h2d[iloc],
-                                                     timers->stop_pl_h2d[iloc]);
+                                                  timers->stop_pl_h2d[iloc]);
         }
     }
 
@@ -621,13 +686,19 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 }
 
 /*! Return the reference to the nbfp texture. */
-const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref()
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
 {
     return nbfp_texref;
 }
 
+/*! Return the reference to the nbfp_comb texture. */
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref()
+{
+    return nbfp_comb_texref;
+}
+
 /*! Return the reference to the coulomb_tab. */
-const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref()
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref()
 {
     return coulomb_tab_texref;
 }
@@ -640,23 +711,26 @@ void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo)
 
     for (int i = 0; i < eelCuNR; i++)
     {
-        for (int j = 0; j < nEnergyKernelTypes; j++)
+        for (int j = 0; j < evdwCuNR; j++)
         {
-            for (int k = 0; k < nPruneKernelTypes; k++)
+            if (devinfo->prop.major >= 3)
             {
-                if (devinfo->prop.major >= 3)
-                {
-                    /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
-                    stat = cudaFuncSetCacheConfig(nb_default_kfunc_ptr[i][j][k], cudaFuncCachePreferShared);
-                }
-                else
-                {
-                    /* On Fermi prefer L1 gives 2% higher performance */
-                    /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
-                    stat = cudaFuncSetCacheConfig(nb_default_kfunc_ptr[i][j][k], cudaFuncCachePreferL1);
-                }
-                CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
+                /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
+                cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferShared);
+                cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferShared);
+                cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferShared);
+                stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferShared);
             }
+            else
+            {
+                /* On Fermi prefer L1 gives 2% higher performance */
+                /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
+                cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferL1);
+                cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferL1);
+                cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferL1);
+                stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferL1);
+            }
+            CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
         }
     }
 }

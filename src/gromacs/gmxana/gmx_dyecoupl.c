@@ -1,43 +1,50 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "copyrite.h"
 #include "gromacs/fileio/filenm.h"
 #include "macros.h"
-#include "pbc.h"
-#include "smalloc.h"
-#include "statutil.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "gromacs/fileio/trxio.h"
+#include "gromacs/math/vec.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_dyecoupl(int argc, char *argv[])
 {
@@ -93,7 +100,6 @@ int gmx_dyecoupl(int argc, char *argv[])
     int          ndon, nacc;
     atom_id     *donindex, *accindex;
     char        *grpnm;
-    t_atoms     *atoms = NULL;
     t_trxstatus *status;
     t_trxframe   fr;
 
@@ -157,10 +163,10 @@ int gmx_dyecoupl(int argc, char *argv[])
     }
 
     printf("Select group with donor atom pairs defining the transition moment\n");
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
+    get_index(NULL, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
 
     printf("Select group with acceptor atom pairs defining the transition moment\n");
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
+    get_index(NULL, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
 
     /*check if groups are identical*/
     grident = TRUE;
@@ -350,17 +356,17 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             if (bRKout)
             {
-                ffclose(rkfp);
+                gmx_ffclose(rkfp);
             }
 
             if (bDatout)
             {
-                ffclose(datfp);
+                gmx_ffclose(datfp);
             }
 
             if (bInstEffout)
             {
-                ffclose(iefp);
+                gmx_ffclose(iefp);
             }
 
 
@@ -411,7 +417,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                     fprintf(rhfp, "%12.7f %12.7f\n", (i + 0.5) * rincr + rmin,
                             rhist[i]);
                 }
-                ffclose(rhfp);
+                gmx_ffclose(rhfp);
             }
 
             if (bKhistout)
@@ -448,7 +454,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                     fprintf(khfp, "%12.7f %12.7f\n", (i + 0.5) * kincr + kmin,
                             khist[i]);
                 }
-                ffclose(khfp);
+                gmx_ffclose(khfp);
             }
 
             printf("\nAverages:\n");

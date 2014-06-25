@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include <string>
 
+#include "../options/options.h"
 #include "../utility/common.h"
 
 namespace gmx
@@ -62,6 +63,8 @@ class SelectionOptionStorage;
  * require actions outside options parsing.
  * It also implements the coupling between SelectionOption and
  * SelectionFileOption.
+ * It needs to be added using Options::addManager() before SelectionOption or
+ * SelectionFileOption options can be added to an Options collection.
  *
  * The main features of this class are:
  *  - convertOptionValue(), which is used to convert string values into
@@ -73,12 +76,10 @@ class SelectionOptionStorage;
  *    parseRequestedFromStdin(), parseRequestedFromFile() or
  *    parseRequstedFromString().
  *
- * \see setManagerForSelectionOptions()
- *
  * \inpublicapi
  * \ingroup module_selection
  */
-class SelectionOptionManager
+class SelectionOptionManager : public OptionManagerInterface
 {
     public:
         /*! \brief
@@ -87,7 +88,7 @@ class SelectionOptionManager
          * \throws  std::bad_alloc if out of memory.
          */
         explicit SelectionOptionManager(SelectionCollection *selections);
-        ~SelectionOptionManager();
+        virtual ~SelectionOptionManager();
 
         /*! \brief
          * Adds a selection option to be managed.
@@ -107,6 +108,8 @@ class SelectionOptionManager
          *
          * \param     storage  Storage object to receive the selections.
          * \param[in] value    Value to convert.
+         * \param[in] bFullValue  If true, the provided selections are the full
+         *      value of the option, and additional checks are performed.
          * \throws    std::bad_alloc if out of memory.
          * \throws    InvalidInputError if the selection string is not valid,
          *      or uses a feature not supported by the option.
@@ -116,7 +119,8 @@ class SelectionOptionManager
          * through any public or library API.
          */
         void convertOptionValue(SelectionOptionStorage *storage,
-                                const std::string      &value);
+                                const std::string      &value,
+                                bool                    bFullValue);
         /*! \brief
          * Adds a selection option for delayed user input.
          *
@@ -205,20 +209,6 @@ class SelectionOptionManager
          */
         friend class SelectionOptionStorage;
 };
-
-/*! \brief
- * Set manager for all selection options.
- *
- * Recursively sets the manager to \p manager for all selection options in
- * \p options.
- * Must be called before value assignment starts for \p options.
- *
- * Does not throw.
- *
- * \inpublicapi
- */
-void setManagerForSelectionOptions(Options                *options,
-                                   SelectionOptionManager *manager);
 
 } // namespace gmx
 

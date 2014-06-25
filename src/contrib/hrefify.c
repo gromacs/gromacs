@@ -39,16 +39,16 @@
 #include <math.h>
 #include <string.h> 
 #include <ctype.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
-#include "vec.h"
-#include "statutil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "strdb.h"
+#include "gromacs/fileio/strdb.h"
 
 gmx_bool isword(char c)
 {
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
   else
     fprintf(stderr,"Adding '%s' to href's\n",link_text);
 
-  fp=ffopen(out,"w");
+  fp=gmx_ffopen(out,"w");
 
   n_repl=0;
   i_str=-1;
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
     fprintf(fp,"%s\n",line);
   }
 
-  ffclose(fp);
+  gmx_ffclose(fp);
   
   fprintf(stderr,"Added %d HTML references\n",n_repl);
 

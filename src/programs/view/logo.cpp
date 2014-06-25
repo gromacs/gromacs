@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,13 +38,16 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
+#include <stdlib.h>
+
 #include "macros.h"
 #include "xutil.h"
 #include "Xstuff.h"
-#include "smalloc.h"
 #include "copyrite.h"
 #include "logo.h"
+
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int            x, y, rad;
@@ -111,7 +114,6 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     };
 #define NMESS asize(Mess)
     int             i;
-    real            wfac, hfac;
     t_logo         *logo;
     t_windata      *wd;
 
@@ -119,8 +121,8 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     wd   = &(logo->wd);
     if (bFirst)
     {
-        wfac = wd->width/110.0;
-        hfac = wd->height/110.0;
+        const real wfac = wd->width/110.0;
+        const real hfac = wd->height/110.0;
         for (i = 0; (i < asize(c)); i++)
         {
             c[i].x *= wfac;
@@ -199,7 +201,7 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
     logo->bQuitOnClick = bQuitOnClick;
     InitWin(&logo->wd, 0, 0, 360, 270, 1, "GROMACS");
     bg = LIGHTGREY;
-    if ((newcol = getenv("LOGO")) != NULL)
+    if ((newcol = getenv("GMX_LOGO_COLOR")) != NULL)
     {
         GetNamedColor(x11, newcol, &bg);
     }

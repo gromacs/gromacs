@@ -1,36 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013,2014,  by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 /* Note that floating-point constants in CUDA code should be suffixed
@@ -48,8 +48,258 @@
 #define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
 #define FBUF_STRIDE                 (CL_SIZE_SQ)
 
+#define ONE_SIXTH_F     0.16666667f
+#define ONE_TWELVETH_F  0.08333333f
+
+
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
+
+/*! Apply force switch,  force + energy version. */
+static inline __device__
+void calculate_force_switch_F(const  cu_nbparam_t nbparam,
+                              float               c6,
+                              float               c12,
+                              float               inv_r,
+                              float               r2,
+                              float              *F_invr)
+{
+    float r, r_switch;
+
+    /* force switch constants */
+    float disp_shift_V2 = nbparam.dispersion_shift.c2;
+    float disp_shift_V3 = nbparam.dispersion_shift.c3;
+    float repu_shift_V2 = nbparam.repulsion_shift.c2;
+    float repu_shift_V3 = nbparam.repulsion_shift.c3;
+
+    r         = r2 * inv_r;
+    r_switch  = r - nbparam.rvdw_switch;
+    r_switch  = r_switch >= 0.0f ? r_switch : 0.0f;
+
+    *F_invr  +=
+        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
+        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+}
+
+/*! Apply force switch, force-only version. */
+static inline __device__
+void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
+                                float               c6,
+                                float               c12,
+                                float               inv_r,
+                                float               r2,
+                                float              *F_invr,
+                                float              *E_lj)
+{
+    float r, r_switch;
+
+    /* force switch constants */
+    float disp_shift_V2 = nbparam.dispersion_shift.c2;
+    float disp_shift_V3 = nbparam.dispersion_shift.c3;
+    float repu_shift_V2 = nbparam.repulsion_shift.c2;
+    float repu_shift_V3 = nbparam.repulsion_shift.c3;
+
+    float disp_shift_F2 = nbparam.dispersion_shift.c2/3;
+    float disp_shift_F3 = nbparam.dispersion_shift.c3/4;
+    float repu_shift_F2 = nbparam.repulsion_shift.c2/3;
+    float repu_shift_F3 = nbparam.repulsion_shift.c3/4;
+
+    r         = r2 * inv_r;
+    r_switch  = r - nbparam.rvdw_switch;
+    r_switch  = r_switch >= 0.0f ? r_switch : 0.0f;
+
+    *F_invr  +=
+        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
+        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+    *E_lj    +=
+        c6*(disp_shift_F2 + disp_shift_F3*r_switch)*r_switch*r_switch*r_switch -
+        c12*(repu_shift_F2 + repu_shift_F3*r_switch)*r_switch*r_switch*r_switch;
+}
+
+/*! Apply potential switch, force-only version. */
+static inline __device__
+void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
+                                  float               c6,
+                                  float               c12,
+                                  float               inv_r,
+                                  float               r2,
+                                  float              *F_invr,
+                                  float              *E_lj)
+{
+    float r, r_switch;
+    float sw, dsw;
+
+    /* potential switch constants */
+    float switch_V3 = nbparam.vdw_switch.c3;
+    float switch_V4 = nbparam.vdw_switch.c4;
+    float switch_V5 = nbparam.vdw_switch.c5;
+    float switch_F2 = 3*nbparam.vdw_switch.c3;
+    float switch_F3 = 4*nbparam.vdw_switch.c4;
+    float switch_F4 = 5*nbparam.vdw_switch.c5;
+
+    r        = r2 * inv_r;
+    r_switch = r - nbparam.rvdw_switch;
+
+    /* Unlike in the F+E kernel, conditional is faster here */
+    if (r_switch > 0.0f)
+    {
+        sw      = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
+        dsw     = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+
+        *F_invr = (*F_invr)*sw - inv_r*(*E_lj)*dsw;
+    }
+}
+
+/*! Apply potential switch, force + energy version. */
+static inline __device__
+void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
+                                    float               c6,
+                                    float               c12,
+                                    float               inv_r,
+                                    float               r2,
+                                    float              *F_invr,
+                                    float              *E_lj)
+{
+    float r, r_switch;
+    float sw, dsw;
+
+    /* potential switch constants */
+    float switch_V3 = nbparam.vdw_switch.c3;
+    float switch_V4 = nbparam.vdw_switch.c4;
+    float switch_V5 = nbparam.vdw_switch.c5;
+    float switch_F2 = 3*nbparam.vdw_switch.c3;
+    float switch_F3 = 4*nbparam.vdw_switch.c4;
+    float switch_F4 = 5*nbparam.vdw_switch.c5;
+
+    r        = r2 * inv_r;
+    r_switch = r - nbparam.rvdw_switch;
+    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
+
+    /* Unlike in the F-only kernel, masking is faster here */
+    sw       = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
+    dsw      = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+
+    *F_invr  = (*F_invr)*sw - inv_r*(*E_lj)*dsw;
+    *E_lj   *= sw;
+}
+
+/*! Calculate LJ-PME grid force contribution with
+ *  geometric combination rule.
+ */
+static inline __device__
+void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
+                                    int                typei,
+                                    int                typej,
+                                    float              r2,
+                                    float              inv_r2,
+                                    float              lje_coeff2,
+                                    float              lje_coeff6_6,
+                                    float             *F_invr)
+{
+    float c6grid, inv_r6_nm, cr2, expmcr2, poly;
+
+#ifdef USE_TEXOBJ
+    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
+#else
+    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
+#endif /* USE_TEXOBJ */
+
+    /* Recalculate inv_r6 without exclusion mask */
+    inv_r6_nm = inv_r2*inv_r2*inv_r2;
+    cr2       = lje_coeff2*r2;
+    expmcr2   = expf(-cr2);
+    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+
+    /* Subtract the grid force from the total LJ force */
+    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+}
+
+/*! Calculate LJ-PME grid force + energy contribution with
+ *  geometric combination rule.
+ */
+static inline __device__
+void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
+                                      int                typei,
+                                      int                typej,
+                                      float              r2,
+                                      float              inv_r2,
+                                      float              lje_coeff2,
+                                      float              lje_coeff6_6,
+                                      float              int_bit,
+                                      float             *F_invr,
+                                      float             *E_lj)
+{
+    float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
+
+#ifdef USE_TEXOBJ
+    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
+#else
+    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
+#endif /* USE_TEXOBJ */
+
+    /* Recalculate inv_r6 without exclusion mask */
+    inv_r6_nm = inv_r2*inv_r2*inv_r2;
+    cr2       = lje_coeff2*r2;
+    expmcr2   = expf(-cr2);
+    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+
+    /* Subtract the grid force from the total LJ force */
+    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+
+    /* Shift should be applied only to real LJ pairs */
+    sh_mask   = nbparam.sh_lj_ewald*int_bit;
+    *E_lj    += ONE_SIXTH_F*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+}
+
+/*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
+ *  Lorentz-Berthelot combination rule.
+ *  We use a single F+E kernel with conditional because the performance impact
+ *  of this is pretty small and LB on the CPU is anyway very slow.
+ */
+static inline __device__
+void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
+                                    int                typei,
+                                    int                typej,
+                                    float              r2,
+                                    float              inv_r2,
+                                    float              lje_coeff2,
+                                    float              lje_coeff6_6,
+                                    float              int_bit,
+                                    float             *F_invr,
+                                    float             *E_lj)
+{
+    float c6grid, inv_r6_nm, cr2, expmcr2, poly;
+    float sigma, sigma2, epsilon;
+
+    /* sigma and epsilon are scaled to give 6*C6 */
+#ifdef USE_TEXOBJ
+    sigma   = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei    ) + tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej    );
+    epsilon = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei + 1) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej + 1);
+#else
+    sigma   = tex1Dfetch(nbfp_comb_texref, 2*typei    ) + tex1Dfetch(nbfp_comb_texref, 2*typej    );
+    epsilon = tex1Dfetch(nbfp_comb_texref, 2*typei + 1) * tex1Dfetch(nbfp_comb_texref, 2*typej + 1);
+#endif /* USE_TEXOBJ */
+    sigma2  = sigma*sigma;
+    c6grid  = epsilon*sigma2*sigma2*sigma2;
+
+    /* Recalculate inv_r6 without exclusion mask */
+    inv_r6_nm = inv_r2*inv_r2*inv_r2;
+    cr2       = lje_coeff2*r2;
+    expmcr2   = expf(-cr2);
+    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+
+    /* Subtract the grid force from the total LJ force */
+    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+
+    if (E_lj != NULL)
+    {
+        float sh_mask;
+
+        /* Shift should be applied only to real LJ pairs */
+        sh_mask   = nbparam.sh_lj_ewald*int_bit;
+        *E_lj    += ONE_SIXTH_F*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+    }
+}
 
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
  *  Original idea: from the OpenMM project
@@ -58,12 +308,12 @@ static inline __device__
 float interpolate_coulomb_force_r(float r, float scale)
 {
     float   normalized = scale * r;
-    int     index = (int) normalized;
-    float   fract2 = normalized - index;
-    float   fract1 = 1.0f - fract2;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
 
-    return  fract1 * tex1Dfetch(coulomb_tab_texref, index)
-            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
+    return fract1 * tex1Dfetch(coulomb_tab_texref, index)
+           + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
 }
 
 #ifdef TEXOBJ_SUPPORTED
@@ -72,12 +322,12 @@ float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)
 {
     float   normalized = scale * r;
-    int     index = (int) normalized;
-    float   fract2 = normalized - index;
-    float   fract1 = 1.0f - fract2;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
 
-    return  fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
-            fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
+    return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
+           fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
 }
 #endif
 
@@ -101,7 +351,7 @@ float pmecorrF(float z2)
     const float FD0 = 1.0f;
 
     float       z4;
-    float       polyFN0,polyFN1,polyFD0,polyFD1;
+    float       polyFN0, polyFN1, polyFD0, polyFD1;
 
     z4          = z2*z2;
 
@@ -344,16 +594,16 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
 #pragma unroll 5
     for (i = 0; i < 5; i++)
     {
-        E_lj += __shfl_down(E_lj,sh);
-        E_el += __shfl_down(E_el,sh);
-        sh += sh;
+        E_lj += __shfl_down(E_lj, sh);
+        E_el += __shfl_down(E_el, sh);
+        sh   += sh;
     }
 
     /* The first thread in the warp writes the reduced energies */
     if (tidx == 0 || tidx == WARP_SIZE)
     {
-        atomicAdd(e_lj,E_lj);
-        atomicAdd(e_el,E_el);
+        atomicAdd(e_lj, E_lj);
+        atomicAdd(e_el, E_el);
     }
 }
 #endif /* __CUDA_ARCH__ */

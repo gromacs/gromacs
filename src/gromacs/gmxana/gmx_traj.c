@@ -1,64 +1,65 @@
-/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
-#include "statutil.h"
-#include "sysstuff.h"
+
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
-#include "index.h"
-#include "mshift.h"
-#include "xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "rmpbc.h"
-#include "physics.h"
-#include "nrjac.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void low_print_data(FILE *fp, real time, rvec x[], int n, atom_id *index,
                            gmx_bool bDim[], const char *sffmt)
@@ -466,7 +467,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
             fprintf(fp, "%-5d  %10.3f  %10.3f  %10.3f\n", 1+i,
                     sum[index[i]][XX], sum[index[i]][YY], sum[index[i]][ZZ]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         max  = 0;
         maxi = 0;
         for (i = 0; i < isize; i++)
@@ -586,7 +587,7 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
     {
         fprintf(fp, "%10.3e  %10d\n", i*binwidth, histo[i]);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 int gmx_traj(int argc, char *argv[])
@@ -1051,7 +1052,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (bOX)
     {
-        ffclose(outx);
+        gmx_ffclose(outx);
     }
     if (bOXT)
     {
@@ -1059,27 +1060,27 @@ int gmx_traj(int argc, char *argv[])
     }
     if (bOV)
     {
-        ffclose(outv);
+        gmx_ffclose(outv);
     }
     if (bOF)
     {
-        ffclose(outf);
+        gmx_ffclose(outf);
     }
     if (bOB)
     {
-        ffclose(outb);
+        gmx_ffclose(outb);
     }
     if (bOT)
     {
-        ffclose(outt);
+        gmx_ffclose(outt);
     }
     if (bEKT)
     {
-        ffclose(outekt);
+        gmx_ffclose(outekt);
     }
     if (bEKR)
     {
-        ffclose(outekr);
+        gmx_ffclose(outekr);
     }
 
     if (bVD)

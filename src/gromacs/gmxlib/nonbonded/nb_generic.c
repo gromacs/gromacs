@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -39,14 +41,15 @@
 #include <math.h>
 
 #include "types/simple.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "nb_generic.h"
 #include "nrnb.h"
 
+#include "gromacs/utility/fatalerror.h"
+
 #include "nonbonded.h"
 #include "nb_kernel.h"
-
 
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,
@@ -76,10 +79,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          ix, iy, iz, fix, fiy, fiz, Aix, Aiy, Aiz, phii, qjr, qjr3, qir, qir3;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
-    real          c6, c12, cexp1, cexp2, br;
+    real          c6, c12, c6grid, cexp1, cexp2, br;
     real *        charge;
     real *        shiftvec;
-    real *        vdwparam;
+    real *        vdwparam, *vdwgridparam;
     int *         shift;
     int *         type;
     real *        fshift;
@@ -93,11 +96,12 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     int           ewitab;
     real          ewtabscale, eweps, sh_ewald, ewrt, ewtabhalfspace;
     real *        ewtab;
-    real          rcoulomb2, rvdw, rvdw2, sh_invrc6;
+    real          rcoulomb2, rvdw, rvdw2, sh_dispersion, sh_repulsion;
     real          rcutoff, rcutoff2;
     real          rswitch_elec, rswitch_vdw, d, d2, sw, dsw, rinvcorr;
     real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
     real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
+    real          ewclj, ewclj2, ewclj6, ewcljrsq, poly, exponent, sh_lj_ewald;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
 
     x                   = xx[0];
@@ -123,7 +127,13 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     rcoulomb2           = fr->rcoulomb*fr->rcoulomb;
     rvdw                = fr->rvdw;
     rvdw2               = rvdw*rvdw;
-    sh_invrc6           = fr->ic->sh_invrc6;
+    sh_dispersion       = fr->ic->dispersion_shift.cpot;
+    sh_repulsion        = fr->ic->repulsion_shift.cpot;
+    sh_lj_ewald         = fr->ic->sh_lj_ewald;
+
+    ewclj               = fr->ewaldcoeff_lj;
+    ewclj2              = ewclj*ewclj;
+    ewclj6              = ewclj2*ewclj2*ewclj2;
 
     if (fr->coulomb_modifier == eintmodPOTSWITCH)
     {
@@ -158,7 +168,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
     bExactElecCutoff    = (fr->coulomb_modifier != eintmodNONE) || fr->eeltype == eelRF_ZERO;
     bExactVdwCutoff     = (fr->vdw_modifier != eintmodNONE);
-    bExactCutoff        = bExactElecCutoff || bExactVdwCutoff;
+    bExactCutoff        = bExactElecCutoff && bExactVdwCutoff;
 
     if (bExactCutoff)
     {
@@ -176,7 +186,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     eps                 = 0.0;
     eps2                = 0.0;
 
-    /* 3 VdW parameters for buckingham, otherwise 2 */
+    /* 3 VdW parameters for Buckingham, otherwise 2 */
     nvdwparam           = (ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM) ? 3 : 2;
     table_nelements     = 12;
 
@@ -186,6 +196,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     shiftvec            = fr->shift_vec[0];
     vdwparam            = fr->nbfp;
     ntype               = fr->ntype;
+    vdwgridparam        = fr->ljpme_c6grid;
 
     for (n = 0; (n < nlist->nri); n++)
     {
@@ -225,8 +236,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             fvdw             = 0;
             velec            = 0;
             vvdw             = 0;
-            
-            if (bExactCutoff && rsq > rcutoff2)
+
+            if (bExactCutoff && rsq >= rcutoff2)
             {
                 continue;
             }
@@ -269,6 +280,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         /* Vanilla cutoff coulomb */
                         velec            = qq*rinv;
                         felec            = velec*rinvsq;
+                        /* The shift for the Coulomb potential is stored in
+                         * the RF parameter c_rf, which is 0 without shift
+                         */
+                        velec           -= qq*fr->ic->c_rf;
                         break;
 
                     case GMX_NBKERNEL_ELEC_REACTIONFIELD:
@@ -327,8 +342,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 }
                 if (bExactElecCutoff)
                 {
-                    felec            = (rsq <= rcoulomb2) ? felec : 0.0;
-                    velec            = (rsq <= rcoulomb2) ? velec : 0.0;
+                    felec            = (rsq < rcoulomb2) ? felec : 0.0;
+                    velec            = (rsq < rcoulomb2) ? velec : 0.0;
                 }
                 vctot           += velec;
             } /* End of coulomb interactions */
@@ -354,7 +369,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fvdw             = (vvdw_rep-vvdw_disp)*rinvsq;
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
-                            vvdw             = (vvdw_rep-c12*sh_invrc6*sh_invrc6)*(1.0/12.0)-(vvdw_disp-c6*sh_invrc6)*(1.0/6.0);
+                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion)/6.0;
                         }
                         else
                         {
@@ -375,7 +390,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fvdw             = (br*vvdw_rep-vvdw_disp)*rinvsq;
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
-                            vvdw             = (vvdw_rep-cexp1*exp(-cexp2*rvdw))-(vvdw_disp-c6*sh_invrc6)/6.0;
+                            vvdw             = (vvdw_rep-cexp1*exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
                         }
                         else
                         {
@@ -409,6 +424,29 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         vvdw             = vvdw_disp + vvdw_rep;
                         break;
 
+
+                    case GMX_NBKERNEL_VDW_LJEWALD:
+                        /* LJ-PME */
+                        rinvsix          = rinvsq*rinvsq*rinvsq;
+                        ewcljrsq         = ewclj2*rsq;
+                        exponent         = exp(-ewcljrsq);
+                        poly             = exponent*(1.0 + ewcljrsq + ewcljrsq*ewcljrsq*0.5);
+                        c6               = vdwparam[tj];
+                        c12              = vdwparam[tj+1];
+                        c6grid           = vdwgridparam[tj];
+                        vvdw_disp        = (c6-c6grid*(1.0-poly))*rinvsix;
+                        vvdw_rep         = c12*rinvsix*rinvsix;
+                        fvdw             = (vvdw_rep - vvdw_disp - c6grid*(1.0/6.0)*exponent*ewclj6)*rinvsq;
+                        if (fr->vdw_modifier == eintmodPOTSHIFT)
+                        {
+                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion + c6grid*sh_lj_ewald)/6.0;
+                        }
+                        else
+                        {
+                            vvdw             = vvdw_rep/12.0-vvdw_disp/6.0;
+                        }
+                        break;
+
                     default:
                         gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
                         break;
@@ -426,8 +464,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 }
                 if (bExactVdwCutoff)
                 {
-                    fvdw             = (rsq <= rvdw2) ? fvdw : 0.0;
-                    vvdw             = (rsq <= rvdw2) ? vvdw : 0.0;
+                    fvdw             = (rsq < rvdw2) ? fvdw : 0.0;
+                    vvdw             = (rsq < rvdw2) ? vvdw : 0.0;
                 }
                 vvdwtot         += vvdw;
             } /* end VdW interactions */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,11 +51,6 @@
 namespace gmx
 {
 
-class BooleanOption;
-class IntegerOption;
-class DoubleOption;
-class StringOption;
-
 /*! \addtogroup module_options
  * \{
  */
@@ -77,8 +72,11 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
         }
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return "bool"; }
+        virtual std::string typeString() const { return "bool"; }
         virtual std::string formatSingleValue(const bool &value) const;
+
+        //! \copydoc BooleanOptionInfo::defaultValue()
+        bool defaultValue() const { return valueCount() > 0 && values()[0]; }
 
     private:
         virtual void convertValue(const std::string &value);
@@ -99,7 +97,7 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
         }
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const
+        virtual std::string typeString() const
         { return isVector() ? "vector" : "int"; }
         virtual std::string formatSingleValue(const int &value) const;
 
@@ -108,6 +106,28 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
         virtual void processSetValues(ValueList *values);
 
         IntegerOptionInfo       info_;
+};
+
+/*! \internal \brief
+ * Converts, validates, and stores integer values.
+ */
+class Int64OptionStorage : public OptionStorageTemplate<gmx_int64_t>
+{
+    public:
+        //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
+        explicit Int64OptionStorage(const Int64Option &settings)
+            : MyBase(settings), info_(this)
+        {
+        }
+
+        virtual OptionInfo &optionInfo() { return info_; }
+        virtual std::string typeString() const { return "int"; }
+        virtual std::string formatSingleValue(const gmx_int64_t &value) const;
+
+    private:
+        virtual void convertValue(const std::string &value);
+
+        Int64OptionInfo       info_;
 };
 
 /*! \internal \brief
@@ -120,7 +140,7 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         explicit DoubleOptionStorage(const DoubleOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const;
+        virtual std::string typeString() const;
         virtual std::string formatSingleValue(const double &value) const;
 
         //! \copydoc DoubleOptionInfo::isTime()
@@ -131,9 +151,35 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
     private:
         virtual void convertValue(const std::string &value);
         virtual void processSetValues(ValueList *values);
-        virtual void processAll();
 
         DoubleOptionInfo        info_;
+        bool                    bTime_;
+        double                  factor_;
+};
+
+/*! \internal \brief
+ * Converts, validates, and stores floating-point (float) values.
+ */
+class FloatOptionStorage : public OptionStorageTemplate<float>
+{
+    public:
+        //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
+        explicit FloatOptionStorage(const FloatOption &settings);
+
+        virtual OptionInfo &optionInfo() { return info_; }
+        virtual std::string typeString() const;
+        virtual std::string formatSingleValue(const float &value) const;
+
+        //! \copydoc DoubleOptionStorage::isTime()
+        bool isTime() const { return bTime_; }
+        //! \copydoc DoubleOptionStorage::setScaleFactor()
+        void setScaleFactor(double factor);
+
+    private:
+        virtual void convertValue(const std::string &value);
+        virtual void processSetValues(ValueList *values);
+
+        FloatOptionInfo         info_;
         bool                    bTime_;
         double                  factor_;
 };
@@ -148,7 +194,9 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         explicit StringOptionStorage(const StringOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return allowed_.empty() ? "string" : "enum"; }
+        virtual std::string typeString() const
+        { return allowed_.empty() ? "string" : "enum"; }
+        virtual std::string formatExtraDescription() const;
         virtual std::string formatSingleValue(const std::string &value) const;
 
         //! \copydoc StringOptionInfo::allowedValues()

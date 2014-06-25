@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@ mark_as_advanced( CMAKE_CXX_FLAGS_REFERENCE CMAKE_C_FLAGS_REFERENCE)
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
     set(GMX_GPU OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
     set(GMX_OPENMP OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
-    set(GMX_CPU_ACCELERATION "None" CACHE STRING "Disabled for regressiontests reference builds" FORCE)
+    set(GMX_SIMD "None" CACHE STRING "Disabled for regressiontests reference builds" FORCE)
     set(GMX_FFT_LIBRARY "fftpack" CACHE STRING "Use fftpack for regressiontests reference builds" FORCE)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)

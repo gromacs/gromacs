@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.3.3
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Groningen Machine for Chemical Simulation
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -40,25 +41,25 @@
 
 /*#define HAVE_NN_LOOPS*/
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "sysstuff.h"
 #include "txtdump.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "index.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "xvgr.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gstat.h"
-#include "string2.h"
-#include "pbc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "geminate.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -1182,7 +1183,7 @@ static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *databl
 {
     int i;
 
-    if (ISDON(datable[id]) || !datable)
+    if (!datable || ISDON(datable[id]))
     {
         if (ddd->dptr[id] == NOTSET)   /* New donor */
         {
@@ -1646,15 +1647,15 @@ static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
  * This could be implemented slightly more efficient, but the code
  * would get much more complicated.
  */
-static inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static gmx_inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? 0     : (x-1));
 }
-static inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static gmx_inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? (n-1) : (x+1));
 }
-static inline int grid_mod(int j, int n)
+static gmx_inline int grid_mod(int j, int n)
 {
     return (j+n) % (n);
 }
@@ -2228,7 +2229,7 @@ static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bC
         integral += x1;
     }
     integral *= dt;
-    ffclose(fp);
+    gmx_ffclose(fp);
     printf("%s lifetime = %.2f ps\n", bContact ? "Contact" : "HB", integral);
     printf("Note that the lifetime obtained in this manner is close to useless\n");
     printf("Use the -ac option instead and check the Forward lifetime\n");
@@ -2252,7 +2253,7 @@ static void dump_ac(t_hbdata *hb, gmx_bool oneHB, int nDump)
     {
         return;
     }
-    fp = ffopen("debug-ac.xvg", "w");
+    fp = gmx_ffopen("debug-ac.xvg", "w");
     for (j = 0; (j < nframes); j++)
     {
         fprintf(fp, "%10.3f", hb->time[j]);
@@ -2292,7 +2293,7 @@ static void dump_ac(t_hbdata *hb, gmx_bool oneHB, int nDump)
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static real calc_dg(real tau, real temp)
@@ -2315,157 +2316,6 @@ typedef struct {
     real  kkk[2];
     real *t, *ct, *nt, *kt, *sigma_ct, *sigma_nt, *sigma_kt;
 } t_luzar;
-
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_sf.h>
-#include <gsl/gsl_version.h>
-
-static double my_f(const gsl_vector *v, void *params)
-{
-    t_luzar *tl = (t_luzar *)params;
-    int      i;
-    double   tol = 1e-16, chi2 = 0;
-    double   di;
-    real     k, kp;
-
-    for (i = 0; (i < tl->nparams); i++)
-    {
-        tl->kkk[i] = gsl_vector_get(v, i);
-    }
-    k  = tl->kkk[0];
-    kp = tl->kkk[1];
-
-    for (i = tl->n0; (i < tl->n1); i += tl->ndelta)
-    {
-        di = sqr(k*tl->sigma_ct[i]) + sqr(kp*tl->sigma_nt[i]) + sqr(tl->sigma_kt[i]);
-        /*di = 1;*/
-        if (di > tol)
-        {
-            chi2 += sqr(k*tl->ct[i]-kp*tl->nt[i]-tl->kt[i])/di;
-        }
-
-        else
-        {
-            fprintf(stderr, "WARNING: sigma_ct = %g, sigma_nt = %g, sigma_kt = %g\n"
-                    "di = %g k = %g kp = %g\n", tl->sigma_ct[i],
-                    tl->sigma_nt[i], tl->sigma_kt[i], di, k, kp);
-        }
-    }
-#ifdef DEBUG
-    chi2 = 0.3*sqr(k-0.6)+0.7*sqr(kp-1.3);
-#endif
-    return chi2;
-}
-
-static real optimize_luzar_parameters(FILE *fp, t_luzar *tl, int maxiter,
-                                      real tol)
-{
-    real   size, d2;
-    int    iter   = 0;
-    int    status = 0;
-    int    i;
-
-    const gsl_multimin_fminimizer_type *T;
-    gsl_multimin_fminimizer            *s;
-
-    gsl_vector                         *x, *dx;
-    gsl_multimin_function               my_func;
-
-    my_func.f      = &my_f;
-    my_func.n      = tl->nparams;
-    my_func.params = (void *) tl;
-
-    /* Starting point */
-    x = gsl_vector_alloc (my_func.n);
-    for (i = 0; (i < my_func.n); i++)
-    {
-        gsl_vector_set (x, i, tl->kkk[i]);
-    }
-
-    /* Step size, different for each of the parameters */
-    dx = gsl_vector_alloc (my_func.n);
-    for (i = 0; (i < my_func.n); i++)
-    {
-        gsl_vector_set (dx, i, 0.01*tl->kkk[i]);
-    }
-
-    T = gsl_multimin_fminimizer_nmsimplex;
-    s = gsl_multimin_fminimizer_alloc (T, my_func.n);
-
-    gsl_multimin_fminimizer_set (s, &my_func, x, dx);
-    gsl_vector_free (x);
-    gsl_vector_free (dx);
-
-    if (fp)
-    {
-        fprintf(fp, "%5s %12s %12s %12s %12s\n", "Iter", "k", "kp", "NM Size", "Chi2");
-    }
-
-    do
-    {
-        iter++;
-        status = gsl_multimin_fminimizer_iterate (s);
-
-        if (status != 0)
-        {
-            gmx_fatal(FARGS, "Something went wrong in the iteration in minimizer %s",
-                      gsl_multimin_fminimizer_name(s));
-        }
-
-        d2     = gsl_multimin_fminimizer_minimum(s);
-        size   = gsl_multimin_fminimizer_size(s);
-        status = gsl_multimin_test_size(size, tol);
-
-        if (status == GSL_SUCCESS)
-        {
-            if (fp)
-            {
-                fprintf(fp, "Minimum found using %s at:\n",
-                        gsl_multimin_fminimizer_name(s));
-            }
-        }
-
-        if (fp)
-        {
-            fprintf(fp, "%5d", iter);
-            for (i = 0; (i < my_func.n); i++)
-            {
-                fprintf(fp, " %12.4e", gsl_vector_get (s->x, i));
-            }
-            fprintf (fp, " %12.4e %12.4e\n", size, d2);
-        }
-    }
-    while ((status == GSL_CONTINUE) && (iter < maxiter));
-
-    gsl_multimin_fminimizer_free (s);
-
-    return d2;
-}
-
-static real quality_of_fit(real chi2, int N)
-{
-    return gsl_sf_gamma_inc_Q((N-2)/2.0, chi2/2.0);
-}
-
-#else
-static real optimize_luzar_parameters(FILE gmx_unused    *fp,
-                                      t_luzar gmx_unused *tl,
-                                      int gmx_unused      maxiter,
-                                      real gmx_unused     tol)
-{
-    fprintf(stderr, "This program needs the GNU scientific library to work.\n");
-
-    return -1;
-}
-static real quality_of_fit(real gmx_unused chi2, int gmx_unused N)
-{
-    fprintf(stderr, "This program needs the GNU scientific library to work.\n");
-
-    return -1;
-}
-
-#endif
 
 static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
                                    real kt[], real sigma_ct[], real sigma_nt[],
@@ -2502,13 +2352,13 @@ static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
     tl.kkk[0]   = *k;
     tl.kkk[1]   = *kp;
 
-    chi2      = optimize_luzar_parameters(debug, &tl, 1000, 1e-3);
+    chi2      = 0; /*optimize_luzar_parameters(debug, &tl, 1000, 1e-3); */
     *k        = tl.kkk[0];
     *kp       = tl.kkk[1] = *kp;
     tl.ndelta = NK;
     for (j = 0; (j < NK); j++)
     {
-        (void) optimize_luzar_parameters(debug, &tl, 1000, 1e-3);
+        /* (void) optimize_luzar_parameters(debug, &tl, 1000, 1e-3); */
         kkk += tl.kkk[0];
         kkp += tl.kkk[1];
         kk2 += sqr(tl.kkk[0]);
@@ -2596,7 +2446,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                 chi22 = compute_weighted_rates(n, t, ct, nt, kt, sigma_ct, sigma_nt,
                                                sigma_kt, &k, &kp,
                                                &sigma_k, &sigma_kp, fit_start);
-                Q   = quality_of_fit(chi2, 2);
+                Q   = 0; /* quality_of_fit(chi2, 2);*/
                 ddg = BOLTZ*temp*sigma_k/k;
                 printf("Fitting paramaters chi^2 = %10g, Quality of fit = %10g\n",
                        chi2, Q);
@@ -2693,13 +2543,16 @@ static void parallel_print(int *data, int nThreads)
 
 static void normalizeACF(real *ct, real *gt, int nhb, int len)
 {
-    real ct_fac, gt_fac;
+    real ct_fac, gt_fac = 0;
     int  i;
 
     /* Xu and Berne use the same normalization constant */
 
     ct_fac = 1.0/ct[0];
-    gt_fac = (nhb == 0) ? 0 : 1.0/(real)nhb;
+    if (nhb != 0)
+    {
+        gt_fac = 1.0/(real)nhb;
+    }
 
     printf("Normalization for c(t) = %g for gh(t) = %g\n", ct_fac, gt_fac);
     for (i = 0; i < len; i++)
@@ -3414,7 +3267,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                 fprintf(fp, "%10g  %10g  %10g  %10g  %10g\n",
                         hb->time[j]-hb->time[0], ct[j], cct[j], ght[j], kt[j]);
             }
-            ffclose(fp);
+            gmx_ffclose(fp);
 
             analyse_corr(nn, hb->time, ct, ght, kt, NULL, NULL, NULL,
                          fit_start, temp, smooth_tail_start, oenv);
@@ -3520,7 +3373,7 @@ static void dump_hbmap(t_hbdata *hb,
     fp = opt2FILE("-hbn", nfile, fnm, "w");
     if (opt2bSet("-g", nfile, fnm))
     {
-        fplog = ffopen(opt2fn("-g", nfile, fnm), "w");
+        fplog = gmx_ffopen(opt2fn("-g", nfile, fnm), "w");
         fprintf(fplog, "# %10s  %12s  %12s\n", "Donor", "Hydrogen", "Acceptor");
     }
     else
@@ -3613,10 +3466,10 @@ static void dump_hbmap(t_hbdata *hb,
             }
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     if (fplog)
     {
-        ffclose(fplog);
+        gmx_ffclose(fplog);
     }
 }
 
@@ -3758,7 +3611,7 @@ int gmx_hbond(int argc, char *argv[])
           "one particle" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
           "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With [TT]-gemfit[tt] we suggest [TT]-fitstart 0[tt]" },
-        { "-fitstart", FALSE, etREAL, {&fit_start},
+        { "-fitend", FALSE, etREAL, {&fit_end},
           "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with [TT]-gemfit[tt])" },
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
@@ -3771,9 +3624,9 @@ int gmx_hbond(int argc, char *argv[])
         { "-merge", FALSE, etBOOL, {&bMerge},
           "H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF." },
         { "-geminate", FALSE, etENUM, {gemType},
-          "Use reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details."},
+          "HIDDENUse reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details."},
         { "-diff", FALSE, etREAL, {&D},
-          "Dffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd."},
+          "HIDDENDffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd."},
 #ifdef GMX_OPENMP
         { "-nthreads", FALSE, etINT, {&nThreads},
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
@@ -3901,9 +3754,6 @@ int gmx_hbond(int argc, char *argv[])
     if (bGem)
     {
         printf("Geminate recombination: %s\n", gemType[gemmode]);
-#ifndef HAVE_LIBGSL
-        printf("Note that some aspects of reversible geminate recombination won't work without gsl.\n");
-#endif
         if (bContact)
         {
             if (gemmode != gemDD)
@@ -4594,7 +4444,7 @@ int gmx_hbond(int argc, char *argv[])
     close_trj(status);
     if (fpnhb)
     {
-        ffclose(fpnhb);
+        gmx_ffclose(fpnhb);
     }
 
     /* Compute maximum possible number of different hbonds */
@@ -4660,7 +4510,7 @@ int gmx_hbond(int argc, char *argv[])
         aver_nhb  += hb->nhb[i];
         aver_dist += hb->ndist[i];
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     aver_nhb  /= nframes;
     aver_dist /= nframes;
     /* Print HB distance distribution */
@@ -4683,7 +4533,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             fprintf(fp, "%10g %10g\n", (i+0.5)*rbin, rdist[i]/(rbin*(real)sum));
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     /* Print HB angle distribution */
@@ -4704,7 +4554,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             fprintf(fp, "%10g %10g\n", (i+0.5)*abin, adist[i]/(abin*(real)sum));
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     /* Print HB in alpha-helix */
@@ -4722,7 +4572,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     if (!bNN)
     {
@@ -4770,6 +4620,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             t_matrix mat;
             int      id, ia, hh, x, y;
+            mat.flags = mat.y0 = 0;
 
             if ((nframes > 0) && (hb->nrhb > 0))
             {
@@ -4833,7 +4684,7 @@ int gmx_hbond(int argc, char *argv[])
                 }
                 fp = opt2FILE("-hbm", NFILE, fnm, "w");
                 write_xpm_m(fp, mat);
-                ffclose(fp);
+                gmx_ffclose(fp);
                 for (x = 0; x < mat.nx; x++)
                 {
                     sfree(mat.matrix[x]);
@@ -4918,7 +4769,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     return 0;

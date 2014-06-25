@@ -28,7 +28,7 @@
 #include <boost/smart_ptr/detail/sp_counted_base.hpp>
 
 #if defined(BOOST_SP_USE_QUICK_ALLOCATOR)
-#error GMX_REMOVED: #include <boost/smart_ptr/detail/quick_allocator.hpp>
+//GMX_REMOVED: #include <boost/smart_ptr/detail/quick_allocator.hpp>
 #endif
 
 #if defined(BOOST_SP_USE_STD_ALLOCATOR)
@@ -41,7 +41,7 @@ namespace boost
 {
 
 #if defined(BOOST_SP_ENABLE_DEBUG_HOOKS)
-#error GMX_REMOVED
+
 void sp_scalar_constructor_hook( void * px, std::size_t size, void * pn );
 void sp_scalar_destructor_hook( void * px, std::size_t size, void * pn );
 
@@ -79,6 +79,11 @@ public:
     }
 
     virtual void * get_deleter( detail::sp_typeinfo const & )
+    {
+        return 0;
+    }
+
+    virtual void * get_untyped_deleter()
     {
         return 0;
     }
@@ -153,6 +158,11 @@ public:
         return ti == BOOST_SP_TYPEID(D)? &reinterpret_cast<char&>( del ): 0;
     }
 
+    virtual void * get_untyped_deleter()
+    {
+        return &reinterpret_cast<char&>( del );
+    }
+
 #if defined(BOOST_SP_USE_STD_ALLOCATOR)
 
     void * operator new( std::size_t )
@@ -225,6 +235,11 @@ public:
     virtual void * get_deleter( detail::sp_typeinfo const & ti )
     {
         return ti == BOOST_SP_TYPEID( D )? &reinterpret_cast<char&>( d_ ): 0;
+    }
+
+    virtual void * get_untyped_deleter()
+    {
+        return &reinterpret_cast<char&>( d_ );
     }
 };
 

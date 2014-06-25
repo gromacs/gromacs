@@ -1,64 +1,68 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "smalloc.h"
+
 #include "macros.h"
-#include "maths.h"
-#include "vec.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "nsgrid.h"
 #include "force.h"
 #include "nonbonded.h"
 #include "ns.h"
-#include "pbc.h"
 #include "names.h"
-#include "gmx_fatal.h"
 #include "nrnb.h"
 #include "txtdump.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 
 #include "domdec.h"
 #include "adress.h"
 
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /*
  *    E X C L U S I O N   H A N D L I N G
@@ -103,7 +107,7 @@ round_up_to_simd_width(int length, int simd_width)
  *
  ************************************************/
 
-static void reallocate_nblist(t_nblist *nl)
+void reallocate_nblist(t_nblist *nl)
 {
     if (gmx_debug_at)
     {
@@ -168,13 +172,14 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
          */
         nl->maxnri      = homenr*4;
         nl->maxnrj      = 0;
-        nl->maxlen      = 0;
         nl->nri         = -1;
         nl->nrj         = 0;
         nl->iinr        = NULL;
         nl->gid         = NULL;
         nl->shift       = NULL;
         nl->jindex      = NULL;
+        nl->jjnr        = NULL;
+        nl->excl_fep    = NULL;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
 
@@ -288,7 +293,10 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
             )
         {
             fr->solvent_opt = esolNO;
-            fprintf(log, "Note: The available nonbonded kernels do not support water optimization - disabling.\n");
+            if (log != NULL)
+            {
+                fprintf(log, "Note: The available nonbonded kernels do not support water optimization - disabling.\n");
+            }
         }
 
         if (fr->efep != efepNO)
@@ -331,7 +339,6 @@ static void reset_nblist(t_nblist *nl)
 {
     nl->nri       = -1;
     nl->nrj       = 0;
-    nl->maxlen    = 0;
     if (nl->jindex)
     {
         nl->jindex[0] = 0;
@@ -367,7 +374,7 @@ static void reset_neighbor_lists(t_forcerec *fr, gmx_bool bResetSR, gmx_bool bRe
 
 
 
-static inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int gid)
+static gmx_inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int gid)
 {
     int    i, k, nri, nshift;
 
@@ -404,9 +411,9 @@ static inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int 
     else
     {
         /* Adding to previous list. First remove possible previous padding */
-        if(nlist->simd_padding_width>1)
+        if (nlist->simd_padding_width > 1)
         {
-            while(nlist->nrj>0 && nlist->jjnr[nlist->nrj-1]<0)
+            while (nlist->nrj > 0 && nlist->jjnr[nlist->nrj-1] < 0)
             {
                 nlist->nrj--;
             }
@@ -414,7 +421,7 @@ static inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int 
     }
 }
 
-static inline void close_i_nblist(t_nblist *nlist)
+static gmx_inline void close_i_nblist(t_nblist *nlist)
 {
     int nri = nlist->nri;
     int len;
@@ -433,18 +440,10 @@ static inline void close_i_nblist(t_nblist *nlist)
         nlist->jindex[nri+1] = nlist->nrj;
 
         len = nlist->nrj -  nlist->jindex[nri];
-
-        /* nlist length for water i molecules is treated statically
-         * in the innerloops
-         */
-        if (len > nlist->maxlen)
-        {
-            nlist->maxlen = len;
-        }
     }
 }
 
-static inline void close_nblist(t_nblist *nlist)
+static gmx_inline void close_nblist(t_nblist *nlist)
 {
     /* Only close this nblist when it has been initialized.
      * Avoid the creation of i-lists with no j-particles.
@@ -466,7 +465,7 @@ static inline void close_nblist(t_nblist *nlist)
     }
 }
 
-static inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist)
+static gmx_inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist)
 {
     int n, i;
 
@@ -486,7 +485,7 @@ static inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist
 }
 
 
-static inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool bLR)
+static gmx_inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool bLR)
 {
     int nrj = nlist->nrj;
 
@@ -507,10 +506,10 @@ static inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool bLR
     nlist->nrj++;
 }
 
-static inline void add_j_to_nblist_cg(t_nblist *nlist,
-                                      atom_id j_start, int j_end,
-                                      t_excl *bexcl, gmx_bool i_is_j,
-                                      gmx_bool bLR)
+static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
+                                          atom_id j_start, int j_end,
+                                          t_excl *bexcl, gmx_bool i_is_j,
+                                          gmx_bool bLR)
 {
     int nrj = nlist->nrj;
     int j;
@@ -1884,8 +1883,8 @@ static int ns_simple_core(t_forcerec *fr,
  *
  ************************************************/
 
-static inline void get_dx(int Nx, real gridx, real rc2, int xgi, real x,
-                          int *dx0, int *dx1, real *dcx2)
+static gmx_inline void get_dx(int Nx, real gridx, real rc2, int xgi, real x,
+                              int *dx0, int *dx1, real *dcx2)
 {
     real dcx, tmp;
     int  xgi0, xgi1, i;
@@ -1937,9 +1936,9 @@ static inline void get_dx(int Nx, real gridx, real rc2, int xgi, real x,
     }
 }
 
-static inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
-                             int ncpddc, int shift_min, int shift_max,
-                             int *g0, int *g1, real *dcx2)
+static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
+                                 int ncpddc, int shift_min, int shift_max,
+                                 int *g0, int *g1, real *dcx2)
 {
     real dcx, tmp;
     int  g_min, g_max, shift_home;
@@ -2045,26 +2044,36 @@ static void get_cutoff2(t_forcerec *fr, gmx_bool bDoLongRange,
 
     if (bDoLongRange && fr->bTwinRange)
     {
-        /* The VdW and elec. LR cut-off's could be different,
+        /* With plain cut-off or RF we need to make the list exactly
+         * up to the cut-off and the cut-off's can be different,
          * so we can not simply set them to rlistlong.
+         * To keep this code compatible with (exotic) old cases,
+         * we also create lists up to rvdw/rcoulomb for PME and Ewald.
+         * The interaction check should correspond to:
+         * !ir_vdw/coulomb_might_be_zero_at_cutoff from inputrec.c.
          */
-        if (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(fr->vdwtype) &&
-            fr->rvdw > fr->rlist)
-        {
-            *rvdw2  = sqr(fr->rlistlong);
-        }
-        else
+        if (((fr->vdwtype == evdwCUT || fr->vdwtype == evdwPME) &&
+             fr->vdw_modifier == eintmodNONE) ||
+            fr->rvdw <= fr->rlist)
         {
             *rvdw2  = sqr(fr->rvdw);
         }
-        if (EEL_MIGHT_BE_ZERO_AT_CUTOFF(fr->eeltype) &&
-            fr->rcoulomb > fr->rlist)
+        else
         {
-            *rcoul2 = sqr(fr->rlistlong);
+            *rvdw2  = sqr(fr->rlistlong);
+        }
+        if (((fr->eeltype == eelCUT ||
+              (EEL_RF(fr->eeltype) && fr->eeltype != eelRF_ZERO) ||
+              fr->eeltype == eelPME ||
+              fr->eeltype == eelEWALD) &&
+             fr->coulomb_modifier == eintmodNONE) ||
+            fr->rcoulomb <= fr->rlist)
+        {
+            *rcoul2 = sqr(fr->rcoulomb);
         }
         else
         {
-            *rcoul2 = sqr(fr->rcoulomb);
+            *rcoul2 = sqr(fr->rlistlong);
         }
     }
     else
@@ -2124,7 +2133,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     gmx_ns_t     *ns;
     atom_id     **nl_lr_ljc, **nl_lr_one, **nl_sr;
     int          *nlr_ljc, *nlr_one, *nsr;
-    gmx_domdec_t *dd     = NULL;
+    gmx_domdec_t *dd;
     t_block      *cgs    = &(top->cgs);
     int          *cginfo = fr->cginfo;
     /* atom_id *i_atoms,*cgsindex=cgs->index; */
@@ -2152,10 +2161,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     ns = &fr->ns;
 
     bDomDec = DOMAINDECOMP(cr);
-    if (bDomDec)
-    {
-        dd = cr->dd;
-    }
+    dd      = cr->dd;
 
     bTriclinicX = ((YY < grid->npbcdim &&
                     (!bDomDec || dd->nc[YY] == 1) && box[YY][XX] != 0) ||
@@ -2666,7 +2672,6 @@ void init_ns(FILE *fplog, const t_commrec *cr,
     ns->bexcl     = NULL;
     if (!DOMAINDECOMP(cr))
     {
-        /* This could be reduced with particle decomposition */
         ns_realloc_natoms(ns, mtop->natoms);
     }
 
@@ -2770,14 +2775,8 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         }
         debug_gmx();
 
-        /* Don't know why this all is... (DvdS 3/99) */
-#ifndef SEGV
         start = 0;
         end   = cgs->nr;
-#else
-        start = fr->cg0;
-        end   = (cgs->nr+1)/2;
-#endif
 
         if (DOMAINDECOMP(cr))
         {
@@ -2791,12 +2790,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             fill_grid(NULL, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
             grid->icg0 = fr->cg0;
             grid->icg1 = fr->hcg;
-            debug_gmx();
-
-            if (PARTDECOMP(cr))
-            {
-                mv_grid(cr, grid);
-            }
             debug_gmx();
         }
 

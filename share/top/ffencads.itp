@@ -1,3 +1,0 @@
-; This file is for backward compatibility only.
-; Please directly include the file below in your .top file.
-#include "encads.ff/forcefield.itp"

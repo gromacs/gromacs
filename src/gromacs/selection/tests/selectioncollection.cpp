@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
 #include "gromacs/utility/gmxregex.h"
@@ -91,12 +93,15 @@ class SelectionCollectionTest : public ::testing::Test
 
 int SelectionCollectionTest::s_debugLevel = 0;
 
+// \cond/\endcond do not seem to work here with Doxygen 1.8.5 parser.
+#ifndef DOXYGEN
 GMX_TEST_OPTIONS(SelectionCollectionTestOptions, options)
 {
     options->addOption(gmx::IntegerOption("seldebug")
                            .store(&SelectionCollectionTest::s_debugLevel)
                            .description("Set selection debug level"));
 }
+#endif
 
 SelectionCollectionTest::SelectionCollectionTest()
     : top_(NULL), frame_(NULL), grps_(NULL)
@@ -170,35 +175,19 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 
         void setFlags(TestFlags flags) { flags_ = flags; }
 
-        template <size_t count>
-        void runTest(int natoms, const char *const (&selections)[count])
-        {
-            runTest(natoms, selections, count);
-        }
-        template <size_t count>
-        void runTest(const char *filename, const char *const (&selections)[count])
-        {
-            runTest(filename, selections, count);
-        }
-
-        template <size_t count>
-        void runParser(const char *const (&selections)[count])
-        {
-            runParser(selections, count);
-        }
-
+        void runParser(const gmx::ConstArrayRef<const char *> &selections);
         void runCompiler();
         void runEvaluate();
         void runEvaluateFinal();
 
+        void runTest(int                                     natoms,
+                     const gmx::ConstArrayRef<const char *> &selections);
+        void runTest(const char                             *filename,
+                     const gmx::ConstArrayRef<const char *> &selections);
+
     private:
         static void checkSelection(gmx::test::TestReferenceChecker *checker,
                                    const gmx::Selection &sel, TestFlags flags);
-
-        void runTest(int natoms, const char *const *selections, size_t count);
-        void runTest(const char *filename, const char *const *selections,
-                     size_t count);
-        void runParser(const char *const *selections, size_t count);
 
         void checkCompiled();
 
@@ -261,15 +250,15 @@ SelectionCollectionDataTest::checkSelection(
 
 
 void
-SelectionCollectionDataTest::runParser(const char *const *selections,
-                                       size_t             count)
+SelectionCollectionDataTest::runParser(
+        const gmx::ConstArrayRef<const char *> &selections)
 {
     using gmx::test::TestReferenceChecker;
 
     TestReferenceChecker compound(checker_.checkCompound("ParsedSelections", "Parsed"));
     size_t               varcount = 0;
     count_ = 0;
-    for (size_t i = 0; i < count; ++i)
+    for (size_t i = 0; i < selections.size(); ++i)
     {
         SCOPED_TRACE(std::string("Parsing selection \"")
                      + selections[i] + "\"");
@@ -368,21 +357,20 @@ SelectionCollectionDataTest::runEvaluateFinal()
 
 
 void
-SelectionCollectionDataTest::runTest(int natoms, const char * const *selections,
-                                     size_t count)
+SelectionCollectionDataTest::runTest(
+        int natoms, const gmx::ConstArrayRef<const char *> &selections)
 {
-    ASSERT_NO_FATAL_FAILURE(runParser(selections, count));
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(natoms));
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
 
 void
-SelectionCollectionDataTest::runTest(const char         *filename,
-                                     const char * const *selections,
-                                     size_t              count)
+SelectionCollectionDataTest::runTest(
+        const char *filename, const gmx::ConstArrayRef<const char *> &selections)
 {
-    ASSERT_NO_FATAL_FAILURE(runParser(selections, count));
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(loadTopology(filename));
     ASSERT_NO_FATAL_FAILURE(runCompiler());
     if (flags_.test(efTestEvaluation))
@@ -465,12 +453,6 @@ TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue2)
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
 {
     EXPECT_THROW_GMX(sc_.parseFromString("within of atomnr 1"),
-                     gmx::InvalidInputError);
-}
-
-TEST_F(SelectionCollectionTest, HandlesHelpKeywordInInvalidContext)
-{
-    EXPECT_THROW_GMX(sc_.parseFromString("resname help"),
                      gmx::InvalidInputError);
 }
 

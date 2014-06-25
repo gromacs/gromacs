@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,24 +43,26 @@
 
 #include <string>
 
-#include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_random.h"
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -163,7 +165,7 @@ FreeVolume::initOptions(Options                    *options,
                         TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
-        "[THISMODULE] can calculate the free volume in a box as",
+        "[THISMODULE] calculates the free volume in a box as",
         "a function of time. The free volume is",
         "plotted as a fraction of the total volume.",
         "The program tries to insert a probe with a given radius,",
@@ -194,7 +196,7 @@ FreeVolume::initOptions(Options                    *options,
     };
 
     // Add the descriptive text (program help text) to the options
-    options->setDescription(concatenateStrings(desc));
+    options->setDescription(desc);
 
     // Add option for optional output file
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
@@ -202,8 +204,8 @@ FreeVolume::initOptions(Options                    *options,
                            .description("Computed free volume"));
 
     // Add option for selecting a subset of atoms
-    options->addOption(SelectionOption("select").required().valueCount(1)
-                           .store(&sel_)
+    options->addOption(SelectionOption("select")
+                           .store(&sel_).defaultSelectionText("all")
                            .onlyAtoms());
 
     // Add option for the probe radius and initialize it

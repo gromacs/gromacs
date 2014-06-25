@@ -1,9 +1,10 @@
+%
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
-% David van der Spoel, Berk Hess, Erik Lindahl, and including many
-% others, as listed in the AUTHORS file in the top-level source
-% directory and at http://www.gromacs.org.
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
 %
 % GROMACS is free software; you can redistribute it and/or
 % modify it under the terms of the GNU Lesser General Public License
@@ -12,7 +13,7 @@
 %
 % GROMACS is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 % Lesser General Public License for more details.
 %
 % You should have received a copy of the GNU Lesser General Public
@@ -29,7 +30,7 @@
 % official version at http://www.gromacs.org.
 %
 % To help us fund GROMACS development, we humbly ask that you cite
-% the research papers on the package. Check out http://www.gromacs.org
+% the research papers on the package. Check out http://www.gromacs.org.
 
 \chapter{Interaction function and force fields\index{force field}}
 \label{ch:ff}
@@ -176,6 +177,8 @@ The force derived from this potential is:
 \beq
 \ve{F}_i(\rvij) = f \frac{q_i q_j}{\epsr\rij^2}\rnorm
 \eeq
+
+A plain Coulomb interaction should only be used without cut-off or when all pairs fall within the cut-off, since there is an abrupt, large change in the force at the cut-off. In case you do want to use a cut-off, the potential can be shifted by a constant to make the potential the integral of the force. With the group cut-off scheme, this shift is only applied to non-excluded pairs. With the Verlet cut-off scheme, the shift is also applied to excluded pairs and self interactions, which makes the potential equivalent to a reaction-field with $\epsrf=1$ (see below).
 
 In {\gromacs} the  relative \swapindex{dielectric}{constant} 
 \normindex{$\epsr$}
@@ -565,6 +568,7 @@ In the \gromosv{96} force field a simplified function is used to represent angle
 vibrations:
 \beq
 V_a(\tijk) = \half k^{\theta}_{ijk}\left(\cos(\tijk) - \cos(\tijk^0)\right)^2
+\label{eq:G96angle}
 \eeq
 where 
 \beq
@@ -582,6 +586,56 @@ which is temperature dependent. The formulas are equivalent at 0 K
 and the differences at 300 K are on the order of 0.1 to 0.2\%.
 {\bf Note} that in the input in topology files, angles are given in degrees and
 force constants in kJ/mol.
+
+\subsection{Restricted bending potential}
+\label{subsec:ReB}
+The restricted bending (ReB) potential~\cite{MonicaGoga2013} prevents the bending angle $\theta$
+from reaching the $180^{\circ}$ value. In this way, the numerical instabilities
+due to the calculation of the torsion angle and potential are eliminated when
+performing coarse-grained molecular dynamics simulations.
+
+To systematically hinder the bending angles from reaching the $180^{\circ}$ value,
+the bending potential \ref{eq:G96angle} is divided by a $\sin^2\theta$ factor:
+%
+\beq
+V_{\rm ReB}(\theta_i) = \frac{1}{2} k_{\theta} \frac{(\cos\theta_i - \cos\theta_0)^2}{\sin^2\theta_i}.
+\label{eq:ReB}
+\eeq
+%
+Figure ~\figref{ReB} shows the comparison between the ReB potential, \ref{eq:ReB},
+and the standard one \ref{eq:G96angle}.
+%
+\begin{figure}
+\centerline{\includegraphics[width=10cm]{plots/fig-02}}
+\vspace*{8pt}
+\caption{Bending angle potentials: cosine harmonic (solid black line), angle harmonic
+(dashed black line) and restricted bending (red) with the same bending constant
+$k_{\theta}=85$ kJ mol$^{-1}$ and equilibrium angle $\theta_0=130^{\circ}$.
+The orange line represents the sum of a cosine harmonic ($k =50$ kJ mol$^{-1}$)
+with a restricted bending ($k =25$ kJ mol$^{-1}$) potential, both with $\theta_0=130^{\circ}$.}
+\label{fig:ReB}
+\end{figure}
+%
+The wall of the ReB potential is very repulsive in the region close to $180^{\circ}$ and,
+as a result, the bending angles are kept within a safe interval, far from instabilities.
+The power $2$ of $\sin\theta_i$ in the denominator has been chosen to guarantee this behavior
+and allows an elegant differentiation:
+%
+\beq
+F_{\rm ReB}(\theta_i) = \frac{2k_{\theta}}{\sin^4\theta_i}(\cos\theta_i - \cos\theta_0) (1 - \cos\theta_i\cos\theta_0) \frac{\partial \cos\theta_i}{\partial \vec r_{k}}.
+\label{eq:diff_ReB}
+\eeq
+%
+Due to its construction, the restricted bending potential cannot be used for equilibrium
+$\theta_0$ values too close to $0^{\circ}$ or $180^{\circ}$ (from experience, at least $10^{\circ}$
+difference is recommended). It is very important that, in the starting configuration,
+all the bending angles have to be in the safe interval to avoid initial instabilities.
+This bending potential can be used in combination with any form of torsion potential.
+It will always prevent three consecutive particles from becoming collinear and,
+as a result, any torsion potential will remain free of singularities.
+It can be also added to a standard bending potential to affect the angle around $180^{\circ}$,
+but to keep its original form around the minimum (see the orange curve in \figref{ReB}).
+
 
 \subsection{Urey-Bradley potential}
 \label{subsec:Urey-Bradley}
@@ -809,6 +863,96 @@ uses the Ryckaert-Bellemans code
 to compute Fourier dihedrals (see above), because this is more efficient.\\
 \noindent{\bf Note:} Mind the conversion from {\emph kcal mol$^{-1}$} for 
 literature OPLS parameters to {\bf kJ mol$^{-1}$} in {\gromacs}.\\
+
+\subsubsection{Proper dihedrals: Restricted torsion potential}
+\label{subsec:ReT}
+In a manner very similar to the restricted bending potential (see \ref{subsec:ReB}),
+a restricted torsion/dihedral potential is introduced:
+%
+\beq
+V_{\rm ReT}(\phi_i) = \frac{1}{2} k_{\phi} \frac{(\cos\phi_i - \cos\phi_0)^2}{\sin^2\phi_i}
+\label{eq:ReT}
+\eeq
+%
+with the advantages of being a function of $\cos\phi$ (no problems taking the derivative of $\sin\phi$)
+and of keeping the torsion angle at only one minimum value. In this case, the factor $\sin^2\phi$ does
+not allow the dihedral angle to move from the [$-180^{\circ}$:0] to [0:$180^{\circ}$] interval, i.e. it cannot have maxima both at $-\phi_0$ and $+\phi_0$ maxima, but only one of them.
+For this reason, all the dihedral angles of the starting configuration should have their values in the
+desired angles interval and the the equilibrium $\phi_0$ value should not be too close to the interval limits
+(as for the restricted bending potential, described in \ref{subsec:ReB}, at least $10^{\circ}$ difference is recommended).
+
+\subsubsection{Proper dihedrals: Combined bending-torsion potential}
+\label{subsec:CBT}
+When the four particles forming the dihedral angle become collinear (this situation will never happen in
+atomistic simulations, but it can occur in coarse-grained simulations) the calculation of the
+torsion angle and potential leads to numerical instabilities.
+One way to avoid this is to use the restricted bending potential (see \ref{subsec:ReB})
+that prevents the dihedral
+from reaching the $180^{\circ}$ value.
+
+Another way is to disregard any effects of the dihedral becoming ill-defined,
+keeping the dihedral force and potential calculation continuous in entire angle range
+by coupling the torsion potential (in a cosine form) with the bending potentials of the
+adjacent bending angles in a unique expression:
+%
+\beq
+V_{\rm CBT}(\theta_{i-1}, \theta_i, \phi_i) = k_{\phi} \sin^3\theta_{i-1} \sin^3\theta_{i} \sum_{n=0}^4 { a_n \cos^n\phi_i}.
+\label{eq:CBT}
+\eeq
+%
+This combined bending-torsion (CBT) potential has been proposed by~\cite{BulacuGiessen2005}
+for polymer melt simulations and is extensively described in~\cite{MonicaGoga2013}.
+
+This potential has two main advantages:
+\begin{itemize}
+\item
+it does not only depend on the dihedral angle $\phi_i$ (between the $i-2$, $i-1$, $i$ and $i+1$ beads)
+but also on the bending angles $\theta_{i-1}$ and $\theta_i$ defined from three adjacent beads
+($i-2$, $i-1$ and $i$, and $i-1$, $i$ and $i+1$, respectively).
+The two $\sin^3\theta$ pre-factors, tentatively suggested by~\cite{ScottScheragator1966} and theoretically
+discussed by~\cite{PaulingBond}, cancel the torsion potential and force when either of the two bending angles
+approaches the value of $180^\circ$.
+\item
+its dependence on $\phi_i$ is expressed through a polynomial in $\cos\phi_i$ that avoids the singularities in
+$\phi=0^\circ$ or $180^\circ$ in calculating the torsional force.
+\end{itemize}
+
+These two  properties make the CBT potential well-behaved for MD simulations with weak constraints
+on the bending angles or even for steered / non-equilibrium MD in which the bending and torsion angles suffer major
+modifications.
+When using the CBT potential, the bending potentials for the adjacent $\theta_{i-1}$ and $\theta_i$ may have any form.
+It is also possible to leave out the two angle bending terms ($\theta_{i-1}$ and $\theta_{i}$) completely.
+\figref{CBT} illustrates the difference between a torsion potential with and without the $\sin^{3}\theta$ factors
+(blue and gray curves, respectively).
+%
+\begin{figure}
+\centerline{\includegraphics[width=10cm]{plots/fig-04}}
+\caption{Blue: surface plot of the combined bending-torsion potential
+(\ref{eq:CBT} with $k = 10$ kJ mol$^{-1}$, $a_0=2.41$, $a_1=-2.95$, $a_2=0.36$, $a_3=1.33$)
+when, for simplicity, the bending angles behave the same ($\theta_1=\theta_2=\theta$).
+Gray: the same torsion potential without the $\sin^{3}\theta$ terms (Ryckaert-Bellemans type).
+$\phi$ is the dihedral angle.}
+\label{fig:CBT}
+\end{figure}
+%
+Additionally, the derivative of $V_{CBT}$ with respect to the Cartesian variables is straightforward:
+%
+\begin{equation}
+\frac{\partial V_{\rm CBT}(\theta_{i-1},\theta_i,\phi_i)} {\partial \vec r_{l}} = \frac{\partial V_{\rm CBT}}{\partial \theta_{i-1}} \frac{\partial \theta_{i-1}}{\partial \vec r_{l}} +
+                                                                                  \frac{\partial V_{\rm CBT}}{\partial \theta_{i  }} \frac{\partial \theta_{i  }}{\partial \vec r_{l}} +
+                                                                                  \frac{\partial V_{\rm CBT}}{\partial \phi_{i    }} \frac{\partial \phi_{i    }}{\partial \vec r_{l}}
+\label{eq:force_cbt}
+\end{equation}
+%
+The CBT is based on a cosine form without multiplicity, so it can only be symmetrical around $0^{\circ}$.
+To obtain an asymmetrical dihedral angle distribution (e.g. only one maximum in [$-180^{\circ}$:$180^{\circ}$] interval),
+a standard torsion potential such as harmonic angle  or  periodic cosine potentials should be used instead of a CBT potential.
+However, these two forms have the inconveniences of the force derivation ($1/\sin\phi$) and of the alignment of beads
+($\theta_i$ or $\theta_{i-1} = 0^{\circ}, 180^{\circ}$).
+Coupling such non-$\cos\phi$ potentials with $\sin^3\theta$ factors does not improve simulation stability since there are
+cases in which $\theta$ and $\phi$ are simultaneously $180^{\circ}$. The integration at this step would be possible
+(due to the cancelling of the torsion potential) but the next step would be singular
+($\theta$ is not $180^{\circ}$ and $\phi$ is very close to $180^{\circ}$).
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{Tabulated bonded interaction functions\index{tabulated bonded interaction function}}
@@ -2659,16 +2803,11 @@ to be the so-called ``{\gromacs} force field,'' which was based on
 \gromosv{87}~\cite{biomos}\index{GROMOS87}, with a small modification
 concerning the interaction between water oxygens and carbon
 atoms~\cite{Buuren93b,Mark94}, as well as 10 extra atom
-types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}. Whenever
-using this force field, please cite the above references, and {\bf do not}
-call it the ``{\gromacs} force field,'' instead name it
-\gromosv{87}~\cite{biomos} with corrections as detailed
-in~\cite{Buuren93b,Mark94}.  As noted by {\tt pdb2gmx}, this force field is
-``deprecated,'' indicating that newer, perhaps more reliable, versions of this
-parameter set are available.  For backwards compatibility, it is maintained 
-in the current release.  Should you have a justifiable reason to use this
-force field, all necessary files are provided in the {\tt gmx.ff} sub-directory
-of the {\gromacs} library.  See also the note in~\ssecref{atomtype}.
+types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}.
+
+Since version 5.0 this force field has been ``deprecated''. Should 
+you have a justifiable reason to use this force field please 
+use eariler versions of {\gromacs}.
 
 \subsubsection{All-hydrogen force field}
 The \gromosv{87}-based all-hydrogen force field is almost identical to the
@@ -2759,6 +2898,7 @@ As of version 4.5, {\gromacs} provides native support for the following AMBER fo
 \end{itemize}
 
 \subsection{CHARMM\index{CHARMM force field}}
+\label{subsec:charmmff}
 
 As of version 4.5, {\gromacs} supports the CHARMM27 force field for proteins~\cite{mackerell04, mackerell98}, lipids~\cite{feller00} and nucleic acids~\cite{foloppe00}. The protein parameters (and to some extent the lipid and nucleic acid parameters) were thoroughly tested -- both by comparing potential energies between the port and the standard parameter set in the CHARMM molecular simulation package, as well by how the protein force field behaves together with {\gromacs}-specific techniques such as virtual sites (enabling long time steps) and a fast implicit solvent recently implemented~\cite{Larsson10} -- and the details and results are presented in the paper by Bjelkmar et al.~\cite{Bjelkmar10}. The nucleic acid parameters, as well as the ones for HEME, were converted and tested by Michel Cuendet.
 

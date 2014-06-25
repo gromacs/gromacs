@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 #define _commrec_h
 
 #include "../../utility/gmxmpi.h"
-#include "idef.h"
+#include "../typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +67,7 @@ typedef struct {
     rvec bb_x1;  /* Zone bounding box upper corner in Cartesian coords */
 } gmx_domdec_zone_size_t;
 
-typedef struct {
+struct gmx_domdec_zones_t {
     /* The number of zones including the home zone */
     int                    n;
     /* The shift of the zones with respect to the home zone */
@@ -82,7 +82,7 @@ typedef struct {
     gmx_domdec_zone_size_t size[DD_MAXZONE];
     /* The cg density of the home zone */
     real                   dens_zone0;
-} gmx_domdec_zones_t;
+};
 
 typedef struct gmx_ga2la *gmx_ga2la_t;
 
@@ -98,7 +98,7 @@ typedef struct gmx_domdec_comm *gmx_domdec_comm_p_t;
 
 typedef struct gmx_pme_comm_n_box *gmx_pme_comm_n_box_p_t;
 
-typedef struct {
+struct gmx_ddbox_t {
     int  npbcdim;
     int  nboundeddim;
     rvec box0;
@@ -110,7 +110,7 @@ typedef struct {
     rvec v[DIM][DIM];
     /* Normal vectors for the cells walls */
     rvec normal[DIM];
-} gmx_ddbox_t;
+};
 
 
 typedef struct {
@@ -119,7 +119,7 @@ typedef struct {
     int             *ibuf; /* for ints */
     int              ibuf_alloc;
 
-    gmx_large_int_t *libuf;
+    gmx_int64_t     *libuf;
     int              libuf_alloc;
 
     float           *fbuf; /* for floats */
@@ -130,7 +130,7 @@ typedef struct {
 } mpi_in_place_buf_t;
 
 
-typedef struct {
+struct gmx_domdec_t {
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c
@@ -215,18 +215,16 @@ typedef struct {
     gmx_domdec_comm_p_t comm;
 
     /* The partioning count, to keep track of the state */
-    gmx_large_int_t ddp_count;
+    gmx_int64_t ddp_count;
 
 
     /* gmx_pme_recv_f buffer */
     int   pme_recv_f_alloc;
     rvec *pme_recv_f_buf;
 
-} gmx_domdec_t;
+};
 
-typedef struct gmx_partdec *gmx_partdec_p_t;
-
-typedef struct {
+struct gmx_multisim_t {
     int       nsim;
     int       sim;
     MPI_Group mpi_group_masters;
@@ -234,7 +232,7 @@ typedef struct {
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/
     mpi_in_place_buf_t *mpb;
-} gmx_multisim_t;
+};
 
 #define DUTY_PP  (1<<0)
 #define DUTY_PME (1<<1)
@@ -247,7 +245,7 @@ typedef struct {
 
 } gmx_nodecomm_t;
 
-typedef struct {
+struct t_commrec {
     /* The nodeids in one sim are numbered sequentially from 0.
      * All communication within some simulation should happen
      * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
@@ -272,9 +270,6 @@ typedef struct {
     /* For domain decomposition */
     gmx_domdec_t *dd;
 
-    /* For particle decomposition */
-    gmx_partdec_p_t pd;
-
     /* The duties of this node, see the defines above */
     int             duty;
 
@@ -283,7 +278,7 @@ typedef struct {
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/
     mpi_in_place_buf_t *mpb;
-} t_commrec;
+};
 
 #define MASTERNODE(cr)     (((cr)->nodeid == 0) || !PAR(cr))
 /* #define MASTERTHREAD(cr)   ((cr)->threadid == 0) */
@@ -297,10 +292,13 @@ typedef struct {
 #define RANK(cr, nodeid)    (nodeid)
 #define MASTERRANK(cr)     (0)
 
+/* Note that even with particle decomposition removed, the use of
+ * non-DD parallelization in TPI, NM and multi-simulations means that
+ * PAR(cr) and DOMAINDECOMP(cr) are not universally synonymous. In
+ * particular, DOMAINDECOMP(cr) == true indicates that there is more
+ * than one domain, not just that the dd algorithm is active. */
 #define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
-
-#define PARTDECOMP(cr)     ((cr)->pd != NULL)
 
 #define MULTISIM(cr)       ((cr)->ms)
 #define MSRANK(ms, nodeid)  (nodeid)

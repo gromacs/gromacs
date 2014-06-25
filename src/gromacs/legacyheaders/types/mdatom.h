@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,8 @@ typedef struct {
     gmx_bool               bOrires;
     real                  *massA, *massB, *massT, *invmass;
     real                  *chargeA, *chargeB;
-    real                  *c6A, *c6B, *sigmaA, *sigmaB, *sigma3A, *sigma3B;
+    real                  *sqrt_c6A, *sqrt_c6B;
+    real                  *sigmaA, *sigmaB, *sigma3A, *sigma3B;
     gmx_bool              *bPerturbed;
     int                   *typeA, *typeB;
     unsigned short        *ptype;
@@ -70,7 +71,6 @@ typedef struct {
     /* for QMMM, atomnumber contains atomic number of the atoms */
     gmx_bool              *bQM;
     /* The range of home atoms */
-    int                    start;
     int                    homenr;
     /* The lambda value used to create the contents of the struct */
     real                   lambda;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
  */
 
 #include "typedefs.h"
+
+#include "gromacs/mdlib/nbnxn_simd.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,53 +85,98 @@ typedef void (nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
 typedef nbk_func_noener *p_nbk_func_noener;
 #endif
 
-nbk_func_ener         nbnxn_kernel_simd_4xn_rf_comb_geom_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_rf_comb_lb_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_rf_comb_none_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_comb_geom_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_comb_lb_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_comb_none_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_twin_comb_geom_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_twin_comb_lb_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_twin_comb_none_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_comb_geom_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_comb_lb_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_comb_none_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_twin_comb_geom_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_twin_comb_lb_energrp;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_twin_comb_none_energrp;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJCombLB_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJ_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJFSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJPSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJCombLB_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJ_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJFSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJPSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJCombLB_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJ_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJFSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJPSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJ_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_VgrpF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VgrpF_4xn;
 
-nbk_func_noener       nbnxn_kernel_simd_4xn_rf_comb_geom_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_rf_comb_lb_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_rf_comb_none_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_tab_comb_geom_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_tab_comb_lb_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_tab_comb_none_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_tab_twin_comb_geom_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_tab_twin_comb_lb_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_tab_twin_comb_none_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_ewald_comb_geom_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_ewald_comb_lb_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_ewald_comb_none_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_ewald_twin_comb_geom_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_ewald_twin_comb_lb_noener;
-nbk_func_noener       nbnxn_kernel_simd_4xn_ewald_twin_comb_none_noener;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJCombLB_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJ_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJFSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJPSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJCombLB_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJ_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJFSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJPSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJCombLB_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJ_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJFSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJPSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_VF_4xn;
+nbk_func_ener         nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_4xn;
 
-nbk_func_ener         nbnxn_kernel_simd_4xn_rf_comb_geom_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_rf_comb_lb_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_rf_comb_none_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_comb_geom_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_comb_lb_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_comb_none_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_twin_comb_geom_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_twin_comb_lb_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_tab_twin_comb_none_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_comb_geom_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_comb_lb_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_comb_none_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_twin_comb_geom_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_twin_comb_lb_ener;
-nbk_func_ener         nbnxn_kernel_simd_4xn_ewald_twin_comb_none_ener;
+nbk_func_noener       nbnxn_kernel_ElecRF_VdwLJCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecRF_VdwLJCombLB_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecRF_VdwLJ_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecRF_VdwLJFSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecRF_VdwLJPSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTab_VdwLJCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTab_VdwLJCombLB_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTab_VdwLJ_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTab_VdwLJFSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTab_VdwLJPSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEw_VdwLJCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEw_VdwLJCombLB_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEw_VdwLJ_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEw_VdwLJFSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEw_VdwLJPSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_F_4xn;
+nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_4xn;
 
 
 

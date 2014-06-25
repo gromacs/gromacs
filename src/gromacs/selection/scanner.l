@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,15 +46,21 @@
  *
  * \ingroup module_selection
  */
+%top{
+// Required before flex definitions, since it includes <stdint.h>.
+// Otherwise, compilers not strictly C99 get macro redefinition errors,
+// since flex defines INT32_MAX etc. in such cases.
+#include "gromacs/utility/basedefinitions.h"
+}
 %{
-#include "gromacs/legacyheaders/string2.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "parser.h"
 #include "scanner.h"
 #include "scanner_internal.h"
 
-/* This macro is here to make the actions a bit shorter, since nearly every
- * action needs this call. */
+// This macro makes the actions a bit shorter, since nearly every action needs
+// this call.
 #define ADD_TOKEN _gmx_sel_lexer_add_token(yytext, yyleng, state)
 
 %}
@@ -80,7 +86,6 @@ COMMENT    (#.*)
 %s matchof
 %s matchbool
 %s cmdstart
-%x help
 
 %%
 
@@ -109,7 +114,7 @@ COMMENT    (#.*)
         BEGIN(cmdstart);
         state->bCmdStart = false;
     }
-    else if (YYSTATE != help)
+    else
     {
         BEGIN(0);
     }
@@ -136,14 +141,6 @@ COMMENT    (#.*)
 
 <cmdstart><<EOF>> { state->bCmdStart = true; yyterminate(); }
 <<EOF>>         { state->bCmdStart = true; return CMD_SEP; }
-
-help            { if (YYSTATE == cmdstart) { BEGIN(help); } return HELP; }
-<help>{
-[[:blank:]]+
-{IDENTIFIER}    { yylval->str = gmx_strndup(yytext, yyleng); return HELP_TOPIC; }
-";"|\n          { state->bCmdStart = true; return CMD_SEP; }
-.               { return INVALID; }
-}
 
 <matchbool>{
 yes|on          { ADD_TOKEN; yylval->i = 1; return TOK_INT; }

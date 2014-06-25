@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,25 +49,27 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/statutil.h"
-
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/lifetime.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/scoped_ptr_sfree.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -387,7 +389,7 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "dynamic selections."
     };
 
-    options->setDescription(concatenateStrings(desc));
+    options->setDescription(desc);
 
     options->addOption(FileNameOption("os").filetype(eftPlot).outputFile()
                            .store(&fnSize_).defaultBasename("size")

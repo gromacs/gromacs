@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,9 @@
  * \brief
  * Tests utilities for fft calculations.
  *
+ * Current reference data is generated in double precision using the Reference
+ * build type, except for the compiler (Apple Clang).
+ *
  * \author Roland Schulz <roland@utk.edu>
  * \ingroup module_fft
  */
@@ -46,7 +49,9 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/utility/stringutil.h"
+
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 
 namespace
 {
@@ -79,16 +84,27 @@ const real inputdata[] = { //print ",\n".join([",".join(["%4s"%(random.randint(-
 class BaseFFTTest : public ::testing::Test
 {
     public:
-        BaseFFTTest() : checker_(data_.rootChecker())
+        BaseFFTTest()
+            : checker_(data_.rootChecker()), flags_(GMX_FFT_FLAG_CONSERVATIVE)
         {
+            // TODO: These tolerances are just something that has been observed
+            // to be sufficient to pass the tests.  It would be nicer to
+            // actually argue about why they are sufficient (or what is).
+#ifdef GMX_DOUBLE
+            checker_.setDefaultTolerance(gmx::test::relativeRealTolerance(10.0, 512));
+#else
+            checker_.setDefaultTolerance(gmx::test::relativeRealTolerance(10.0, 64));
+#endif
         }
         ~BaseFFTTest()
         {
             gmx_fft_cleanup();
         }
+
         gmx::test::TestReferenceData    data_;
         gmx::test::TestReferenceChecker checker_;
         std::vector<real>               in_, out_;
+        int                             flags_;
 };
 
 class FFTTest : public BaseFFTTest
@@ -158,7 +174,7 @@ TEST_P(FFTTest1D, Complex)
     real* in  = &in_[0];
     real* out = &out_[0];
 
-    gmx_fft_init_1d(&fft_, nx, 0);
+    gmx_fft_init_1d(&fft_, nx, flags_);
 
     gmx_fft_1d(fft_, GMX_FFT_FORWARD, in, out);
     checker_.checkSequenceArray(nx*2, out, "forward");
@@ -177,7 +193,7 @@ TEST_P(FFTTest1D, Real)
     real* in  = &in_[0];
     real* out = &out_[0];
 
-    gmx_fft_init_1d_real(&fft_, rx, 0);
+    gmx_fft_init_1d_real(&fft_, rx, flags_);
 
     gmx_fft_1d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
     checker_.checkSequenceArray(cx*2, out, "forward");
@@ -199,7 +215,7 @@ TEST_F(ManyFFTTest, Complex1DLength48Multi5Test)
     real* in  = &in_[0];
     real* out = &out_[0];
 
-    gmx_fft_init_many_1d(&fft_, nx, N, 0);
+    gmx_fft_init_many_1d(&fft_, nx, N, flags_);
 
     gmx_fft_many_1d(fft_, GMX_FFT_FORWARD, in, out);
     checker_.checkSequenceArray(nx*2*N, out, "forward");
@@ -218,7 +234,7 @@ TEST_F(ManyFFTTest, Real1DLength48Multi5Test)
     real* in  = &in_[0];
     real* out = &out_[0];
 
-    gmx_fft_init_many_1d_real(&fft_, rx, N, 0);
+    gmx_fft_init_many_1d_real(&fft_, rx, N, flags_);
 
     gmx_fft_many_1d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
     checker_.checkSequenceArray(cx*2*N, out, "forward");
@@ -237,7 +253,7 @@ TEST_F(FFTTest, Real2DLength18_15Test)
     real* in  = &in_[0];
     real* out = &out_[0];
 
-    gmx_fft_init_2d_real(&fft_, rx, ny, 0);
+    gmx_fft_init_2d_real(&fft_, rx, ny, flags_);
 
     gmx_fft_2d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
     checker_.checkSequenceArray(cx*2*ny, out, "forward");

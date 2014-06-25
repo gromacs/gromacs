@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,12 @@
 #ifndef GMX_FILEIO_TRXIO_H
 #define GMX_FILEIO_TRXIO_H
 
-#include "../legacyheaders/typedefs.h"
-#include "filenm.h"
 #include "../legacyheaders/readinp.h"
-#include "pdbio.h"
 #include "../legacyheaders/oenv.h"
+
+#include "filenm.h"
 #include "gmxfio.h"
+#include "pdbio.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,6 +51,11 @@ extern "C" {
 #if 0 /* avoid screwing up indentation */
 }
 #endif
+
+struct gmx_mtop_t;
+struct t_atoms;
+struct t_topology;
+struct t_trxframe;
 
 /* a dedicated status type contains fp, etc. */
 typedef struct t_trxstatus t_trxstatus;
@@ -64,23 +69,27 @@ typedef struct t_trxstatus t_trxstatus;
 int prec2ndec(real prec);
 /* Convert precision in 1/(nm) to number of decimal places */
 
-void clear_trxframe(t_trxframe *fr, gmx_bool bFirst);
+/*! \brief Convert number of decimal places to trajectory precision in
+ * 1/(nm) */
+real ndec2prec(int ndec);
+
+void clear_trxframe(struct t_trxframe *fr, gmx_bool bFirst);
 /* Set all content gmx_booleans to FALSE.
  * When bFirst = TRUE, set natoms=-1, all pointers to NULL
  *                     and all data to zero.
  */
 
-void set_trxframe_ePBC(t_trxframe *fr, int ePBC);
+void set_trxframe_ePBC(struct t_trxframe *fr, int ePBC);
 /* Set the type of periodic boundary conditions, ePBC=-1 is not set */
 
 int nframes_read(t_trxstatus *status);
 /* Returns the number of frames read from the trajectory */
 
-int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
+int write_trxframe_indexed(t_trxstatus *status, struct t_trxframe *fr, int nind,
                            const atom_id *ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
-int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc);
+int write_trxframe(t_trxstatus *status, struct t_trxframe *fr, gmx_conect gc);
 /* Write a frame to a TRX file.
  * Only entries for which the gmx_boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
@@ -90,13 +99,43 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc);
  * gc is important for pdb file writing only and may be NULL.
  */
 
-int write_trx(t_trxstatus *status, int nind, const atom_id *ind, t_atoms *atoms,
+int write_trx(t_trxstatus *status, int nind, const atom_id *ind, struct t_atoms *atoms,
               int step, real time, matrix box, rvec x[], rvec *v,
               gmx_conect gc);
 /* Write an indexed frame to a TRX file.
  * v can be NULL.
  * atoms can be NULL for file types which don't need atom names.
  */
+
+void trjtools_gmx_prepare_tng_writing(const char               *filename,
+                                      char                      filemode,
+                                      t_trxstatus              *in,
+                                      t_trxstatus             **out,
+                                      const char               *infile,
+                                      const int                 natoms,
+                                      const struct gmx_mtop_t  *mtop,
+                                      const atom_id            *index,
+                                      const char               *index_group_name);
+/* Sets up *out for writing TNG. If *in != NULL and contains a TNG trajectory
+ * some data, e.g. molecule system, will be copied over from *in to *out.
+ * If *in == NULL a file name (infile) of a TNG file can be provided instead
+ * and used for copying data to *out.
+ * If there is no TNG input natoms is used to create "implicit atoms" (no atom
+ * or molecular data present). If natoms == -1 the number of atoms are
+ * not known (or there is already a TNG molecule system to copy, in which case
+ * natoms is not required anyhow). If an group of indexed atoms are written
+ * natoms must be the length of index. index_group_name is the name of the
+ * index group.
+ */
+
+/*! \brief Write a trxframe to the TNG file in status.
+ *
+ * This function is needed because both t_trxstatus and
+ * tng_trajectory_t are encapsulated, so client trajectory-writing
+ * code with a t_trxstatus can't just call the TNG writing
+ * function. */
+void write_tng_frame(t_trxstatus        *status,
+                     struct t_trxframe  *fr);
 
 void close_trx(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
@@ -106,9 +145,11 @@ void close_trx(t_trxstatus *status);
 t_trxstatus *open_trx(const char *outfile, const char *filemode);
 /* Open a TRX file and return an allocated status pointer */
 
-/* get a fileio from a trxstatus */
 t_fileio *trx_get_fileio(t_trxstatus *status);
+/* get a fileio from a trxstatus */
 
+float trx_get_time_of_final_frame(t_trxstatus *status);
+/* get time of final frame. Only supported for TNG and XTC */
 
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
@@ -163,7 +204,7 @@ int check_times(real t);
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
 int read_first_frame(const output_env_t oenv, t_trxstatus **status,
-                     const char *fn, t_trxframe *fr, int flags);
+                     const char *fn, struct t_trxframe *fr, int flags);
 /* Read the first frame which is in accordance with flags, which are
  * defined further up in this file.
  * Returns natoms when succeeded, 0 otherwise.
@@ -173,7 +214,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
  */
 
 gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status,
-                         t_trxframe *fr);
+                         struct t_trxframe *fr);
 /* Reads the next frame which is in accordance with fr->flags.
  * Returns TRUE when succeeded, FALSE otherwise.
  */
@@ -200,7 +241,7 @@ void close_trj(t_trxstatus *status);
 void rewind_trj(t_trxstatus *status);
 /* Rewind trj file as opened with read_first_x */
 
-t_topology *read_top(const char *fn, int *ePBC);
+struct t_topology *read_top(const char *fn, int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
  */

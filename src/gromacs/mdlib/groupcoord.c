@@ -1,36 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 4.5
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Groningen Machine for Chemical Simulation
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -39,9 +41,9 @@
 
 #include "groupcoord.h"
 #include "network.h"
-#include "pbc.h"
-#include "vec.h"
-#include "smalloc.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_ga2la.h"
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -194,18 +196,19 @@ static void shift_positions_group(
  * The atom indices are retrieved from anrs_loc[0..nr_loc]
  * Note that coll_ind[i] = i is needed in the serial case */
 extern void communicate_group_positions(
-        t_commrec     *cr,
-        rvec          *xcoll,        /* OUT: Collective array of positions */
-        ivec          *shifts,       /* IN+OUT: Collective array of shifts for xcoll */
-        ivec          *extra_shifts, /* BUF: Extra shifts since last time step */
-        const gmx_bool bNS,          /* IN:  NS step, the shifts have changed */
-        rvec          *x_loc,        /* IN:  Local positions on this node */
-        const int      nr,           /* IN:  Total number of atoms in the group */
-        const int      nr_loc,       /* IN:  Local number of atoms in the group */
-        int           *anrs_loc,     /* IN:  Local atom numbers */
-        int           *coll_ind,     /* IN:  Collective index */
-        rvec          *xcoll_old,    /* IN+OUT: Positions from the last time step, used to make group whole */
-        matrix         box)
+        t_commrec     *cr,           /* Pointer to MPI communication data */
+        rvec          *xcoll,        /* Collective array of positions */
+        ivec          *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
+        ivec          *extra_shifts, /* (optional) Extra shifts since last time step */
+        const gmx_bool bNS,          /* (optional) NS step, the shifts have changed */
+        rvec          *x_loc,        /* Local positions on this node */
+        const int      nr,           /* Total number of atoms in the group */
+        const int      nr_loc,       /* Local number of atoms in the group */
+        int           *anrs_loc,     /* Local atom numbers */
+        int           *coll_ind,     /* Collective index */
+        rvec          *xcoll_old,    /* (optional) Positions from the last time step,
+                                        used to make group whole */
+        matrix         box)          /* (optional) The box */
 {
     int i;
 
@@ -225,34 +228,43 @@ extern void communicate_group_positions(
         /* Add the arrays from all nodes together */
         gmx_sum(nr*3, xcoll[0], cr);
     }
-    /* To make the group whole, start with a whole group and each
-     * step move the assembled positions at closest distance to the positions
-     * from the last step. First shift the positions with the saved shift
-     * vectors (these are 0 when this routine is called for the first time!) */
-    shift_positions_group(box, xcoll, shifts, nr);
-
-    /* Now check if some shifts changed since the last step.
-     * This only needs to be done when the shifts are expected to have changed,
-     * i.e. after neighboursearching */
-    if (bNS)
+    /* Now we have all the positions of the group in the xcoll array present on all
+     * nodes.
+     *
+     * The rest of the code is for making the group whole again in case atoms changed
+     * their PBC representation / crossed a box boundary. We only do that if the
+     * shifts array is allocated. */
+    if (NULL != shifts)
     {
-        get_shifts_group(3, box, xcoll, nr, xcoll_old, extra_shifts);
+        /* To make the group whole, start with a whole group and each
+         * step move the assembled positions at closest distance to the positions
+         * from the last step. First shift the positions with the saved shift
+         * vectors (these are 0 when this routine is called for the first time!) */
+        shift_positions_group(box, xcoll, shifts, nr);
 
-        /* Shift with the additional shifts such that we get a whole group now */
-        shift_positions_group(box, xcoll, extra_shifts, nr);
-
-        /* Add the shift vectors together for the next time step */
-        for (i = 0; i < nr; i++)
+        /* Now check if some shifts changed since the last step.
+         * This only needs to be done when the shifts are expected to have changed,
+         * i.e. after neighbor searching */
+        if (bNS)
         {
-            shifts[i][XX] += extra_shifts[i][XX];
-            shifts[i][YY] += extra_shifts[i][YY];
-            shifts[i][ZZ] += extra_shifts[i][ZZ];
-        }
+            get_shifts_group(3, box, xcoll, nr, xcoll_old, extra_shifts);
 
-        /* Store current correctly-shifted positions for comparison in the next NS time step */
-        for (i = 0; i < nr; i++)
-        {
-            copy_rvec(xcoll[i], xcoll_old[i]);
+            /* Shift with the additional shifts such that we get a whole group now */
+            shift_positions_group(box, xcoll, extra_shifts, nr);
+
+            /* Add the shift vectors together for the next time step */
+            for (i = 0; i < nr; i++)
+            {
+                shifts[i][XX] += extra_shifts[i][XX];
+                shifts[i][YY] += extra_shifts[i][YY];
+                shifts[i][ZZ] += extra_shifts[i][ZZ];
+            }
+
+            /* Store current correctly-shifted positions for comparison in the next NS time step */
+            for (i = 0; i < nr; i++)
+            {
+                copy_rvec(xcoll[i], xcoll_old[i]);
+            }
         }
     }
 }

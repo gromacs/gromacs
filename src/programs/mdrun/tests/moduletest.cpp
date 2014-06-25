@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,16 +45,18 @@
 #  include <config.h>
 #endif
 
+#include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/file.h"
+
+#include "programs/mdrun/mdrun_main.h"
+
 #include "testutils/integrationtests.h"
 #include "testutils/testoptions.h"
 #include "testutils/cmdlinetest.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/utility/file.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "programs/mdrun/mdrun_main.h"
-#include "programs/gmx/legacycmainfunctions.h"
 
 namespace gmx
 {
@@ -65,39 +67,42 @@ namespace test
  * MdrunTestFixture
  */
 
-
-/*! /brief Number of tMPI threads for child mdrun call */
-static int gmx_unused numThreads = 1;
-/*! /brief Number of OpenMP threads for child mdrun call */
-static int gmx_unused numOpenMPThreads = 1;
-
 namespace
 {
 
+//! Number of tMPI threads for child mdrun call.
+int gmx_unused g_numThreads = 1;
+//! Number of OpenMP threads for child mdrun call.
+int gmx_unused g_numOpenMPThreads = 1;
+
+//! \cond
 GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
 #ifdef GMX_THREAD_MPI
-    options->addOption(IntegerOption("nt").store(&numThreads)
+    options->addOption(IntegerOption("nt").store(&g_numThreads)
                            .description("Number of thread-MPI threads/ranks for child mdrun call"));
 #endif
 #ifdef GMX_OPENMP
-    options->addOption(IntegerOption("nt_omp").store(&numOpenMPThreads)
+    options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
                            .description("Number of OpenMP threads for child mdrun call"));
 #endif
 }
+//! \endcond
 
 }
 
 MdrunTestFixture::MdrunTestFixture() :
     topFileName(),
     groFileName(),
-    trrFileName(),
+    fullPrecisionTrajectoryFileName(),
+    ndxFileName(),
     mdpInputFileName(fileManager_.getTemporaryFilePath("input.mdp")),
     mdpOutputFileName(fileManager_.getTemporaryFilePath("output.mdp")),
     tprFileName(fileManager_.getTemporaryFilePath(".tpr")),
     logFileName(fileManager_.getTemporaryFilePath(".log")),
-    edrFileName(fileManager_.getTemporaryFilePath(".edr"))
+    edrFileName(fileManager_.getTemporaryFilePath(".edr")),
+    nsteps(-2)
 {
 #ifdef GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
@@ -121,30 +126,36 @@ MdrunTestFixture::useEmptyMdpFile()
 void
 MdrunTestFixture::useStringAsMdpFile(const char *mdpString)
 {
+    useStringAsMdpFile(std::string(mdpString));
+}
+
+void
+MdrunTestFixture::useStringAsMdpFile(const std::string &mdpString)
+{
     gmx::File::writeFileFromString(mdpInputFileName, mdpString);
 }
 
 void
-MdrunTestFixture::useTopAndGroFromDatabase(const char *name)
+MdrunTestFixture::useStringAsNdxFile(const char *ndxString)
+{
+    gmx::File::writeFileFromString(ndxFileName, ndxString);
+}
+
+void
+MdrunTestFixture::useTopGroAndNdxFromDatabase(const char *name)
 {
     topFileName = fileManager_.getInputFilePath((std::string(name) + ".top").c_str());
     groFileName = fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
+    ndxFileName = fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
 }
 
 int
-MdrunTestFixture::callGrompp()
+MdrunTestFixture::callGromppOnThisRank()
 {
-#ifdef GMX_LIB_MPI
-    // When compiled with external MPI, only call one instance of the grompp function
-    if (0 != gmx_node_rank())
-    {
-        return 0;
-    }
-#endif
-
     CommandLine caller;
     caller.append("grompp");
     caller.addOption("-f", mdpInputFileName);
+    caller.addOption("-n", ndxFileName);
     caller.addOption("-p", topFileName);
     caller.addOption("-c", groFileName);
 
@@ -155,27 +166,57 @@ MdrunTestFixture::callGrompp()
 }
 
 int
+MdrunTestFixture::callGrompp()
+{
+#ifdef GMX_LIB_MPI
+    // When compiled with external MPI, only call one instance of the
+    // grompp function
+    if (0 != gmx_node_rank())
+    {
+        return 0;
+    }
+#endif
+    return callGromppOnThisRank();
+}
+
+int
+MdrunTestFixture::callMdrun(const CommandLine &callerRef)
+{
+    /* Conforming to style guide by not passing a non-const reference
+       to this function. Passing a non-const reference might make it
+       easier to write code that incorrectly re-uses callerRef after
+       the call to this function. */
+    CommandLine caller(callerRef);
+    caller.addOption("-s", tprFileName);
+
+    caller.addOption("-g", logFileName);
+    caller.addOption("-e", edrFileName);
+    caller.addOption("-o", fullPrecisionTrajectoryFileName);
+    caller.addOption("-x", reducedPrecisionTrajectoryFileName);
+
+    caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
+
+    if (nsteps > -2)
+    {
+        caller.addOption("-nsteps", nsteps);
+    }
+
+#ifdef GMX_THREAD_MPI
+    caller.addOption("-nt", g_numThreads);
+#endif
+#ifdef GMX_OPENMP
+    caller.addOption("-ntomp", g_numOpenMPThreads);
+#endif
+
+    return gmx_mdrun(caller.argc(), caller.argv());
+}
+
+int
 MdrunTestFixture::callMdrun()
 {
     CommandLine caller;
     caller.append("mdrun");
-
-    caller.addOption("-s", tprFileName);
-    caller.addOption("-rerun", rerunFileName);
-
-    caller.addOption("-g", logFileName);
-    caller.addOption("-e", edrFileName);
-    caller.addOption("-o", trrFileName);
-    caller.addOption("-x", xtcFileName);
-
-#ifdef GMX_THREAD_MPI
-    caller.addOption("-nt", numThreads);
-#endif
-#ifdef GMX_OPENMP
-    caller.addOption("-ntomp", numOpenMPThreads);
-#endif
-
-    return gmx_mdrun(caller.argc(), caller.argv());
+    return callMdrun(caller);
 }
 
 } // namespace test

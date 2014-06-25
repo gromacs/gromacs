@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include "modules/angle.h"
 #include "modules/distance.h"
 #include "modules/freevolume.h"
+#include "modules/sasa.h"
 #include "modules/select.h"
 
 namespace gmx
@@ -79,6 +80,7 @@ void registerModule(CommandLineModuleManager *manager,
 
 }   // namespace
 
+//! \cond libapi
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
     using namespace gmx::analysismodules;
@@ -86,7 +88,9 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<AngleInfo>(manager, group);
     registerModule<DistanceInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
+    registerModule<SasaInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
 }
+//! \endcond
 
 } // namespace gmx

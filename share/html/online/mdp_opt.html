@@ -20,7 +20,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#shellmd"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
-<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxtcout, xtc-precision, xtc-grps, energygrps)
+<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxout-compressed, compressed-x-precision, compressed-x-grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-tolerance, rlist, rlistlong)
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, coulomb-modifier, rcoulomb-switch, rcoulomb, epsilon-r, epsilon-rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, vdw-modifier, rvdw-switch, rvdw, DispCorr)
@@ -233,7 +233,7 @@ The free-energy lambda is calculated as: lambda = <tt>init-lambda</tt> + <tt>del
 Also non-equilibrium MD parameters can depend on the step number.
 Thus for exact restarts or redoing part of a run it might be necessary to
 set <tt>init-step</tt> to the step number of the restart frame.
-<tt>tpbconv</tt> does this automatically.
+<tt>gmx convert-tpr</tt> does this automatically.
 </dd>
 <dt><b>comm-mode:</b></dt>
 <dd><dl compact>
@@ -260,10 +260,10 @@ set <tt>init-step</tt> to the step number of the restart frame.
 <dd>Brownian dynamics friction coefficient.
 When <b>bd-fric</b><tt>=0</tt>, the friction coefficient for each
 particle is calculated as mass/<b><A HREF="#tc">tau-t</A></b>.</dd>
-<dt><b>ld-seed: (1993) [integer]</b></dt>
+<dt><b>ld-seed: (-1) [integer]</b></dt>
 <dd>used to initialize random generator for thermal noise
 for stochastic and Brownian dynamics.
-When <b>ld-seed</b> is set to -1, the seed is calculated from the process ID.
+When <b>ld-seed</b> is set to -1, a pseudo random seed is used.
 When running BD or SD on multiple processors, each processor uses a seed equal
 to <b>ld-seed</b> plus the processor number.</dd>
 </dl>
@@ -326,18 +326,18 @@ Try several values!</dd>
 <h3>Output control</h3>
 <dl>
 <dt><b>nstxout: (0) [steps]</b></dt>
-<dd>frequency to write coordinates to output 
+<dd>number of steps that elapse between writing coordinates to output
 <!--Idx-->trajectory file<!--EIdx-->, the last coordinates are always written</dd>
 <dt><b>nstvout: (0) [steps]</b></dt>
-<dd>frequency  to write velocities to output trajectory,
+<dd>number of steps that elapse between writing velocities to output trajectory,
 the last velocities are always written</dd>
 <dt><b>nstfout: (0) [steps]</b></dt>
-<dd>frequency to write forces to output trajectory.</dd>
+<dd>number of steps that elapse between writing forces to output trajectory.</dd>
 <dt><b>nstlog: (1000) [steps]</b></dt>
-<dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
+<dd>number of steps that elapse between writing energies to the <!--Idx-->log file<!--EIdx-->,
 the last energies are always written</dd>
 <dt><b>nstcalcenergy: (100)</b></dt>
-<dd>frequency for calculating the energies, 0 is never.
+<dd>number of steps that elapse between calculating the energies, 0 is never.
 This option is only relevant with dynamics.
 With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
 or a multiple of <b>nstlist</b>.
@@ -346,20 +346,20 @@ because calculating energies requires global communication between all
 processes which can become a bottleneck at high parallelization.
 </dd>
 <dt><b>nstenergy: (1000) [steps]</b></dt>
-<dd>frequency to write energies to energy file,
+<dd>number of steps that else between writing energies to energy file,
 the last energies are always written,
 should be a multiple of <b>nstcalcenergy</b>.
 Note that the exact sums and fluctuations over all MD steps
 modulo <b>nstcalcenergy</b> are stored in the energy file,
 so <tt>g_energy</tt> can report exact
 energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
-<dt><b>nstxtcout: (0) [steps]</b></dt>
-<dd>frequency to write coordinates to xtc trajectory</dd>
-<dt><b>xtc-precision: (1000) [real]</b></dt>
-<dd>precision to write to xtc trajectory</dd>
-<dt><b>xtc-grps:</b></dt>
-<dd>group(s) to write to xtc trajectory, default the whole system is written
-(if <b>nstxtcout</b> &gt; 0)</dd>
+<dt><b>nstxout-compressed: (0) [steps]</b></dt>
+<dd>number of steps that elapse between writing position coordinates using lossy compression</dd>
+<dt><b>compressed-x-precision: (1000) [real]</b></dt>
+<dd>precision with which to write to the compressed trajectory file</dd>
+<dt><b>compressed-x-grps:</b></dt>
+<dd>group(s) to write to the compressed trajectory file, by default the whole system is written
+(if <b>nstxout-compressed</b> &gt; 0)</dd>
 <dt><b>energygrps:</b></dt>
 <dd>group(s) to write to energy file</dd>
 </dl>
@@ -403,7 +403,7 @@ the neighbor list is made only once.
 With energy minimization the neighborlist will be updated for every
 energy evaluation when <b>nstlist</b><tt>&gt;0</tt>.
 With <b>cutoff-scheme=Verlet</b> and <b>verlet-buffer-tolerance</b> set,
-<b>nstlist</b> is actually a minimum value and <tt>mdrun</tt> might increase it.
+<b>nstlist</b> is actually a minimum value and <tt>mdrun</tt> might increase it, unless it is set to 1.
 With parallel simulations and/or non-bonded force calculation on the GPU,
 a value of 20 or 40 often gives the best performance.
 With <b>cutoff-scheme=Group</b> and non-exact cut-off's, <b>nstlist</b> will
@@ -488,9 +488,8 @@ every <b>nstlist</b> steps (only with <b>cutoff-scheme=group</b>).</dd>
 <dt><b>no</b></dt>
 <dd>Use no periodic boundary conditions, ignore the box.
 To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b><tt>=0</tt>.
-For best performance without cut-offs, use <b>nstlist</b><tt>=0</tt>,
-<b>ns-type</b><tt>=simple</tt>
-and particle decomposition instead of domain decomposition.</dd>
+For best performance without cut-offs on a single MPI rank,
+use <b>nstlist</b><tt>=0</tt>, <b>ns-type</b><tt>=simple</tt></dd>
 <dt><b>xy</b></dt>
 <dd>Use periodic boundary conditions in x and y directions only.
 This works only with <b>ns-type</b><tt>=grid</tt> and can be used
@@ -531,7 +530,10 @@ Note that the generated buffer size takes into account that
 the GROMACS pair-list setup leads to a reduction in the drift by
 a factor 10, compared to a simple particle-pair based list.
 Without dynamics (energy minimization etc.), the buffer is 5% of the cut-off.
-For dynamics without temperature coupling or to override the buffer size,
+For NVE simulations the initial temperature is used, unless this is zero,
+in which case a buffer of 10% is used. For NVE simulations the tolerance
+usually needs to be lowered to achieve proper energy conservation on
+the nanosecond time scale. To override the automated buffer setting,
 use <b>verlet-buffer-tolerance</b>=-1 and set <b>rlist</b> manually.</dd>
 
 <dt><b>rlist: (1) [nm]</b></dt>
@@ -707,7 +709,7 @@ affect the forces or the sampling.</dd>
 
 <A NAME="el2">
 <dt><b>rcoulomb-switch: (0) [nm]</b></dt>
-<dd>where to start switching the Coulomb potential</dd>
+<dd>where to start switching the Coulomb potential, only relevant when force or potential switching is used</dd>
 
 <dt><b>rcoulomb: (1) [nm]</b></dt>
 <dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx--></dd>
@@ -743,7 +745,8 @@ combination rules that are to be used by the reciprocal routine are
 set using <b>lj-pme-comb-rule</b>.</dd>
 
 <dt><b>Shift</b></dt>
-<dd>The LJ (not Buckingham) potential is decreased over the whole
+<dd>This functionality is deprecated and replaced by <b>vdw-modifier = Force-switch</b>.
+The LJ (not Buckingham) potential is decreased over the whole
 range and the forces decay smoothly to zero between <b>rvdw-switch</b>
 and <b>rvdw</b>.  The neighbor search cut-off <b>rlist</b> should be
 0.1 to 0.3 nm larger than <b>rvdw</b> to accommodate for the size of
@@ -751,7 +754,8 @@ charge groups and diffusion between neighbor list
 updates.</dd>
 
 <dt><b>Switch</b></dt>
-<dd>The LJ (not Buckingham)
+<dd>This functionality is deprecated and replaced by <b>vdw-modifier = Potential-switch</b>.
+The LJ (not Buckingham)
 potential is normal out to <b>rvdw-switch</b>, after which it is switched
 off to reach zero at <b>rvdw</b>. Both the potential and force functions
 are continuously smooth, but be aware that all switch functions will give rise
@@ -785,10 +789,14 @@ This makes the potential the integral of the force. Note that this does not
 affect the forces or the sampling.</dd>
 <dt><b>None</b></dt>
 <dd>Use an unmodified Van der Waals potential. With the group scheme this means no exact cut-off is used, energies and forces are calculated for all pairs in the neighborlist.</dd>
+<dt><b>Force-switch</b></dt>
+<dd>Smoothly switches the forces to zero between <b>rvdw-switch</b> and <b>rvdw</b>. This shifts the potential shift over the whole range and switches it to zero at the cut-off. Note that this is more expensive to calculate than a plain cut-off and it is not required for energy conservation, since <b>Potential-shift</b> conserves energy just as well.</dd>
+<dt><b>Potential-switch</b></dt>
+<dd>Smoothly switches the potential to zero between <b>rvdw-switch</b> and <b>rvdw</b>. Note that this introduces articifically large forces in the switching region and is much more expensive to calculate. This option should only be used if the force field you are using requires this.</dd>
 </dl></dd>
 
 <dt><b>rvdw-switch: (0) [nm]</b></dt>
-<dd>where to start switching the LJ potential</dd>
+<dd>where to start switching the LJ force and possibly the potential, only relevant when force or potential switching is used</dd>
 
 <dt><b>rvdw: (1) [nm]</b></dt>
 <dd>distance for the LJ or Buckingham <!--Idx-->cut-off<!--EIdx--></dd>
@@ -817,7 +825,8 @@ and the diffusion between neighbor-list updates.
 Without user defined potential the same table length is used
 for the lookup tables for the 1-4 interactions,
 which are always tabulated irrespective of the use of
-tables for the non-bonded interactions. </dd>
+tables for the non-bonded interactions. The value of <b>table-extension</b> in no way
+affects the values of <b>rlist</b>, <b>rcoulomb</b>, or <b>rvdw</b>. </dd>
 
 <dt><b>energygrp-table:</b></dt>
 <dd>When user tables are used for electrostatics and/or VdW,
@@ -938,6 +947,18 @@ of the temperature fluctuations at equilibrium, which is slightly
 different from a relaxation time.
 For NVT simulations the conserved energy quantity is written
 to energy and log file.</dd>
+<dt><b>andersen</b></dt>
+<dd>Temperature coupling by randomizing a fraction of the particles
+at each timestep. Reference temperature and coupling groups are selected
+as above. <b>tau-t</b> is the average time between randomization of each molecule.
+Inhibits particle dynamics somewhat, but little or no ergodicity issues. Currently
+only implemented with velocity Verlet, and not implemented with constraints.</dd>
+<dt><b>andersen-massive</b></dt>
+<dd>Temperature coupling by randomizing all particles at infrequent timesteps.
+Reference temperature and coupling groups are selected
+as above. <b>tau-t</b> is the time between randomization of all molecules.
+Inhibits particle dynamics somewhat, but little or no ergodicity issues. Currently
+only implemented with velocity Verlet.</dd>
 <dt><b>v-rescale</b></dt>
 <dd>Temperature coupling using velocity rescaling with a stochastic term
 (JCP 126, 014101).
@@ -1116,10 +1137,9 @@ This is only meaningful with integrator <b><A HREF="#run">md</A></b>.</dd>
 </dl></dd>
 <dt><b>gen-temp: (300) [K]</b></dt>
 <dd>temperature for Maxwell distribution</dd>
-<dt><b>gen-seed: (173529) [integer]</b></dt>
+<dt><b>gen-seed: (-1) [integer]</b></dt>
 <dd>used to initialize random generator for random velocities,
-when <b>gen-seed</b> is set to -1, the seed is calculated from
-the process ID number.
+when <b>gen-seed</b> is set to -1, a pseudo random seed is used.
 </dl>
 
 <A NAME="bond"><br>
@@ -1669,8 +1689,8 @@ decide which state to move to.</dd>
 decide which state to move to, EXCLUDING the current state, then uses a rejection step to ensure detailed
 balance. Always more efficient that Gibbs, though only marginally so in many situations, such as when only the nearest neighbors have decent phase space overlap.</dd>
 </dl>
-<dt><b>lmc-seed:</b></dt>
-<dd> random seed to use for Monte Carlo moves in state space.  If not specified, <b>ld-seed</b> is used instead.</dd>
+<dt><b>lmc-seed: (-1)</b></dt>
+<dd> random seed to use for Monte Carlo moves in state space. When <b>lmc-seed</b> is set to -1, a pseudo random seed is us</dd>
 <dt><b>mc-temperature:</b></dt>
 <dd> Temperature used for acceptance/rejection for Monte Carlo moves. If not specified, the temperature of the
 simulation specified in the first group of <b>ref_t</b> is used.</dd>
@@ -2118,7 +2138,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#tc">nsttcouple</A><br>
 <A HREF="#out">nstvout</A><br>
 <A HREF="#out">nstxout</A><br>
-<A HREF="#out">nstxtcout</A><br>
+<A HREF="#out">nstxout-compressed</A><br>
 <A HREF="#expanded">nst-transition-matrix</A><br>
 <A HREF="#nl">ns-type</A><br>
 <A HREF="#wall">nwall</A><br>
@@ -2173,8 +2193,8 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#vdw">vdwtype</A><br>
 <A HREF="#vdw">vdw-modifier</A><br>
 <A HREF="#nl">verlet-buffer-tolerance</A><br>
-<A HREF="#out">xtc-grps</A><br>
-<A HREF="#out">xtc-precision</A><br>
+<A HREF="#out">compressed-x-grps</A><br>
+<A HREF="#out">compressed-x-precision</A><br>
 <A HREF="#sa">zero-temp-time</A><br>
 <A HREF="#walls">wall-atomtype</A><br>
 <A HREF="#walls">wall-density</A><br>

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,14 +38,16 @@
 #include <config.h>
 #endif
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include "string2.h"
-#include "smalloc.h"
+
 #include "fgrid.h"
-#include "gromacs/fileio/futil.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *type[] = {
     "button", "radiobuttons", "groupbox", "checkbox",
@@ -303,12 +305,12 @@ void DoneFGrid(t_fgrid *fgrid)
 static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
 {
     char     set[STRLEN], get[STRLEN], help[STRLEN], def[STRLEN];
-    edlgitem edlg;
+    int      edlg;
     t_fitem *fitem;
 
     fitem = NewFItem();
 
-    for (edlg = (edlgitem)0; (edlg < edlgNR+1); edlg = (edlgitem)(edlg + 1))
+    for (edlg = 0; (edlg < edlgNR+1); edlg++)
     {
         if (strcmp(buf, type[edlg]) == 0)
         {
@@ -326,7 +328,7 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
         ReadDlgErr(infile, eITEMEXP, buf);
     }
 
-    fitem->edlg = edlg;
+    fitem->edlg = (edlgitem)edlg;
     switch (edlg)
     {
         case edlgBN:
@@ -438,7 +440,7 @@ t_fgrid *FGridFromFile(const char *infile)
         }
         fscanf(in, "%15s", buf);
     }
-    ffclose(in);
+    gmx_ffclose(in);
 
     return fgrid;
 }

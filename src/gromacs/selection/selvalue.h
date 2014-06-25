@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
  * Declares ::gmx_ana_selvalue_t.
  *
@@ -45,7 +45,7 @@
 #ifndef GMX_SELECTION_SELVALUE_H
 #define GMX_SELECTION_SELVALUE_H
 
-#include "../legacyheaders/types/simple.h"
+#include "../utility/real.h"
 
 /** Defines the value type of a different selection objects. */
 typedef enum
@@ -59,7 +59,8 @@ typedef enum
     GROUP_VALUE         /**< One group of atoms. */
 } e_selvalue_t;
 
-/*! \brief
+/*! \internal
+ * \brief
  * Describes a value of a selection expression or of a selection method
  * parameter.
  *

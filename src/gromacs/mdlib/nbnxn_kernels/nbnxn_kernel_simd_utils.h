@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,20 +54,20 @@
 #error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
 #endif
 
-#ifdef GMX_SIMD_REFERENCE_PLAIN_C
+#ifdef GMX_SIMD_REFERENCE
 
 /* Align a stack-based thread-local working array. */
 static gmx_inline int *
-prepare_table_load_buffer(const int *array)
+prepare_table_load_buffer(const int gmx_unused *array)
 {
     return NULL;
 }
 
 #include "nbnxn_kernel_simd_utils_ref.h"
 
-#else /* GMX_SIMD_REFERENCE_PLAIN_C */
+#else /* GMX_SIMD_REFERENCE */
 
-#ifdef GMX_X86_SSE2
+#if defined  GMX_TARGET_X86 && !defined __MIC__
 /* Include x86 SSE2 compatible SIMD functions */
 
 /* Set the stride for the lookup of the two LJ parameters from their
@@ -80,125 +80,76 @@ static const int nbfp_stride = 4;
 #endif
 
 /* Align a stack-based thread-local working array. Table loads on
- * full-width AVX_256 use the array, but other implementations do
- * not. */
+ * 256-bit AVX use the array, but other implementations do not.
+ */
 static gmx_inline int *
-prepare_table_load_buffer(const int gmx_unused *array)
+prepare_table_load_buffer(int gmx_unused *array)
 {
-#if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
-    return gmx_simd_align_int(array);
+#if GMX_SIMD_REAL_WIDTH >= 8 || (defined GMX_DOUBLE && GMX_SIMD_REAL_WIDTH >= 4)
+    return gmx_simd_align_i(array);
 #else
     return NULL;
 #endif
 }
 
-#if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
-
-/* With full AVX-256 SIMD, half SIMD-width table loads are optimal */
-#if GMX_SIMD_WIDTH_HERE == 8
-#define TAB_FDV0
-#endif
-
 #ifdef GMX_DOUBLE
-#include "nbnxn_kernel_simd_utils_x86_256d.h"
-#else  /* GMX_DOUBLE */
-#include "nbnxn_kernel_simd_utils_x86_256s.h"
-#endif /* GMX_DOUBLE */
-
-#else  /* defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE */
-
-/* We use the FDV0 table layout when we can use aligned table loads */
-#if GMX_SIMD_WIDTH_HERE == 4
-#define TAB_FDV0
-#endif
-
-#ifdef GMX_DOUBLE
+#if GMX_SIMD_REAL_WIDTH == 2
 #include "nbnxn_kernel_simd_utils_x86_128d.h"
-#else  /* GMX_DOUBLE */
+#else
+#include "nbnxn_kernel_simd_utils_x86_256d.h"
+#endif
+#else /* GMX_DOUBLE */
+/* In single precision aligned FDV0 table loads are optimal */
+#define TAB_FDV0
+#if GMX_SIMD_REAL_WIDTH == 4
 #include "nbnxn_kernel_simd_utils_x86_128s.h"
+#else
+#include "nbnxn_kernel_simd_utils_x86_256s.h"
+#endif
 #endif /* GMX_DOUBLE */
 
-#endif /* defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE */
+#else  /* GMX_TARGET_X86 && !__MIC__ */
 
-#else  /* GMX_X86_SSE2 */
-
-#if GMX_SIMD_WIDTH_HERE > 4
-static const int nbfp_stride = 4;
+#if GMX_SIMD_REAL_WIDTH > 4
+/* For width>4 we use unaligned loads. And thus we can use the minimal stride */
+static const int nbfp_stride = 2;
 #else
-static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
+static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
 #endif
 
 /* We use the FDV0 table layout when we can use aligned table loads */
-#if GMX_SIMD_WIDTH_HERE == 4
+#if GMX_SIMD_REAL_WIDTH == 4
 #define TAB_FDV0
 #endif
 
-#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+#ifdef GMX_SIMD_IBM_QPX
 #include "nbnxn_kernel_simd_utils_ibm_qpx.h"
-#endif /* GMX_CPU_ACCELERATION_IBM_QPX */
+#endif /* GMX_SIMD_IBM_QPX */
 
-#endif /* GMX_X86_SSE2 */
-#endif /* GMX_SIMD_REFERENCE_PLAIN_C */
-
-#if GMX_SIMD_WIDTH_HERE == 4 && !defined GMX_SIMD_REFERENCE_PLAIN_C
-#define gmx_mm_pr4    gmx_mm_pr
-#define gmx_load_pr4  gmx_load_pr
-#define gmx_store_pr4 gmx_store_pr
-#define gmx_add_pr4   gmx_add_pr
+#ifdef __MIC__
+#include "nbnxn_kernel_simd_utils_x86_mic.h"
 #endif
 
-#ifndef HAVE_GMX_SUM_SIMD /* should be defined for arch with hardware reduce */
-static gmx_inline real
-gmx_sum_simd2(gmx_mm_pr x, real* b)
-{
-    gmx_store_pr(b, x);
-    return b[0]+b[1];
-}
+#endif /* GMX_TARGET_X86 && !__MIC__ */
 
-#if GMX_SIMD_WIDTH_HERE>=4
-static gmx_inline real
-gmx_sum_simd4(gmx_mm_pr4 x, real* b)
-{
-    gmx_store_pr4(b, x);
-    return b[0]+b[1]+b[2]+b[3];
-}
-#endif
+#endif /* GMX_SIMD_REFERENCE */
 
-#if GMX_SIMD_WIDTH_HERE == 2
-static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
-{
-    gmx_store_pr(b, x);
-    return b[0]+b[1];
-}
-#elif GMX_SIMD_WIDTH_HERE == 4
-static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
-{
-    gmx_store_pr(b, x);
-    return b[0]+b[1]+b[2]+b[3];
-}
-#elif GMX_SIMD_WIDTH_HERE == 8
-static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
-{
-    gmx_store_pr(b, x);
-    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7];
-}
-#elif GMX_SIMD_WIDTH_HERE == 16
-/* This is getting ridiculous, SIMD horizontal adds would help,
- * but this is not performance critical (only used to reduce energies)
+/* If the simd width is 4, but simd4 instructions are not defined,
+ * reuse the simd real type and the four instructions we need.
  */
-static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
-{
-    gmx_store_pr(b, x);
-    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]+b[9]+b[10]+b[11]+b[12]+b[13]+b[14]+b[15];
-}
-#else
-#error "unsupported kernel configuration"
+#if GMX_SIMD_REAL_WIDTH == 4 && \
+    !((!defined GMX_DOUBLE && defined GMX_SIMD4_HAVE_FLOAT) || \
+    (defined GMX_DOUBLE && defined GMX_SIMD4_HAVE_DOUBLE))
+#define gmx_simd4_real_t    gmx_simd_real_t
+#define gmx_simd4_load_r    gmx_simd_load_r
+#define gmx_simd4_store_r   gmx_simd_store_r
+#define gmx_simd4_add_r     gmx_simd_add_r
+#define gmx_simd4_reduce_r  gmx_simd_reduce_r
 #endif
-#endif //HAVE_GMX_SUM_SIMD
 
 #ifdef UNROLLJ
 /* Add energy register to possibly multiple terms in the energy array */
-static inline void add_ener_grp(gmx_mm_pr e_S, real *v, const int *offset_jj)
+static gmx_inline void add_ener_grp(gmx_simd_real_t e_S, real *v, const int *offset_jj)
 {
     int jj;
 
@@ -208,10 +159,10 @@ static inline void add_ener_grp(gmx_mm_pr e_S, real *v, const int *offset_jj)
      */
     for (jj = 0; jj < (UNROLLJ/2); jj++)
     {
-        gmx_mm_pr v_S;
+        gmx_simd_real_t v_S;
 
-        v_S = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
-        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE, gmx_add_pr(v_S, e_S));
+        v_S = gmx_simd_load_r(v+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH);
+        gmx_simd_store_r(v+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH, gmx_simd_add_r(v_S, e_S));
     }
 }
 #endif
@@ -220,8 +171,8 @@ static inline void add_ener_grp(gmx_mm_pr e_S, real *v, const int *offset_jj)
 /* As add_ener_grp, but for two groups of UNROLLJ/2 stored in
  * a single SIMD register.
  */
-static inline void
-add_ener_grp_halves(gmx_mm_pr e_S, real *v0, real *v1, const int *offset_jj)
+static gmx_inline void
+add_ener_grp_halves(gmx_simd_real_t e_S, real *v0, real *v1, const int *offset_jj)
 {
     gmx_mm_hpr e_S0, e_S1;
     int        jj;
@@ -232,15 +183,15 @@ add_ener_grp_halves(gmx_mm_pr e_S, real *v0, real *v1, const int *offset_jj)
     {
         gmx_mm_hpr v_S;
 
-        gmx_load_hpr(&v_S, v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
-        gmx_store_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2, gmx_add_hpr(v_S, e_S0));
+        gmx_load_hpr(&v_S, v0+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH/2);
+        gmx_store_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH/2, gmx_add_hpr(v_S, e_S0));
     }
     for (jj = 0; jj < (UNROLLJ/2); jj++)
     {
         gmx_mm_hpr v_S;
 
-        gmx_load_hpr(&v_S, v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
-        gmx_store_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2, gmx_add_hpr(v_S, e_S1));
+        gmx_load_hpr(&v_S, v1+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH/2);
+        gmx_store_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH/2, gmx_add_hpr(v_S, e_S1));
     }
 }
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,13 +49,16 @@
 #include <string>
 #include <vector>
 
+#include "config.h"
+
 #include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "gmx_header_config.h"
 
 namespace gmx
 {
@@ -128,7 +131,7 @@ void File::open(const char *filename, const char *mode)
 {
     GMX_RELEASE_ASSERT(impl_->fp_ == NULL,
                        "Attempted to open the same file object twice");
-    // TODO: Port all necessary functionality from ffopen() here.
+    // TODO: Port all necessary functionality from gmx_ffopen() here.
     impl_->fp_ = fopen(filename, mode);
     if (impl_->fp_ == NULL)
     {
@@ -156,6 +159,17 @@ void File::close()
         GMX_THROW_WITH_ERRNO(
                 FileIOError("Error while closing file"), "fclose", errno);
     }
+}
+
+bool File::isInteractive() const
+{
+    GMX_RELEASE_ASSERT(impl_->fp_ != NULL,
+                       "Attempted to access a file object that is not open");
+#ifdef HAVE_UNISTD_H
+    return isatty(fileno(impl_->fp_));
+#else
+    return true;
+#endif
 }
 
 FILE *File::handle()

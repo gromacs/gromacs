@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,15 +44,17 @@
 
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_mdrun(int argc, char *argv[])
 {
@@ -96,10 +98,16 @@ int gmx_mdrun(int argc, char *argv[])
         "With thread-MPI there are additional options [TT]-nt[tt], which sets",
         "the total number of threads, and [TT]-ntmpi[tt], which sets the number",
         "of thread-MPI threads.",
-        "Note that using combined MPI+OpenMP parallelization is almost always",
-        "slower than single parallelization, except at the scaling limit, where",
-        "especially OpenMP parallelization of PME reduces the communication cost.",
-        "OpenMP-only parallelization is much faster than MPI-only parallelization",
+        "The number of OpenMP threads used by [TT]mdrun[tt] can also be set with",
+        "the standard environment variable, [TT]OMP_NUM_THREADS[tt].",
+        "The [TT]GMX_PME_NUM_THREADS[tt] environment variable can be used to specify",
+        "the number of threads used by the PME-only processes.[PAR]",
+        "Note that combined MPI+OpenMP parallelization is in many cases",
+        "slower than either on its own. However, at high parallelization, using the",
+        "combination is often beneficial as it reduces the number of domains and/or",
+        "the number of MPI ranks. (Less and larger domains can improve scaling,",
+        "with separate PME processes fewer MPI ranks reduces communication cost.)",
+        "OpenMP-only parallelization is typically faster than MPI-only parallelization",
         "on a single CPU(-die). Since we currently don't have proper hardware",
         "topology detection, [TT]mdrun[tt] compiled with thread-MPI will only",
         "automatically use OpenMP-only parallelization when you use up to 4",
@@ -135,11 +143,12 @@ int gmx_mdrun(int argc, char *argv[])
         "With the Verlet cut-off scheme and verlet-buffer-tolerance set,",
         "the pair-list update interval nstlist can be chosen freely with",
         "the option [TT]-nstlist[tt]. [TT]mdrun[tt] will then adjust",
-        "the pair-list cut-off to maintain accuracy.",
-        "By default [TT]mdrun[tt] will try to increase nstlist to improve",
-        "the performance. For CPU runs nstlist might increase to 20, for GPU",
-        "runs up till 40. But for medium to high parallelization or with",
-        "fast GPUs, a (user supplied) larger nstlist value can give much",
+        "the pair-list cut-off to maintain accuracy, and not adjust nstlist.",
+        "Otherwise, by default, [TT]mdrun[tt] will try to increase the",
+        "value of nstlist set in the [TT].mdp[tt] file to improve the",
+        "performance. For CPU-only runs, nstlist might increase to 20, for",
+        "GPU runs up to 40. For medium to high parallelization or with",
+        "fast GPUs, a (user-supplied) larger nstlist value can give much",
         "better performance.",
         "[PAR]",
         "When using PME with separate PME nodes or with a GPU, the two major",
@@ -179,8 +188,7 @@ int gmx_mdrun(int argc, char *argv[])
         "[PAR]",
         "When [TT]mdrun[tt] is started using MPI with more than 1 process",
         "or with thread-MPI with more than 1 thread, MPI parallelization is used.",
-        "By default domain decomposition is used, unless the [TT]-pd[tt]",
-        "option is set, which selects particle decomposition.",
+        "Domain decomposition is always used with MPI parallelism.",
         "[PAR]",
         "With domain decomposition, the spatial decomposition can be set",
         "with option [TT]-dd[tt]. By default [TT]mdrun[tt] selects a good decomposition.",
@@ -375,13 +383,22 @@ int gmx_mdrun(int argc, char *argv[])
         "is sufficient, this signal should not be sent to mpirun or",
         "the [TT]mdrun[tt] process that is the parent of the others.",
         "[PAR]",
+        "Interactive molecular dynamics (IMD) can be activated by using at least one",
+        "of the three IMD switches: The [TT]-imdterm[tt] switch allows to terminate the",
+        "simulation from the molecular viewer (e.g. VMD). With [TT]-imdwait[tt],",
+        "[TT]mdrun[tt] pauses whenever no IMD client is connected. Pulling from the",
+        "IMD remote can be turned on by [TT]-imdpull[tt].",
+        "The port [TT]mdrun[tt] listens to can be altered by [TT]-imdport[tt].The",
+        "file pointed to by [TT]-if[tt] contains atom indices and forces if IMD",
+        "pulling is used."
+        "[PAR]",
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
     t_commrec    *cr;
     t_filenm      fnm[] = {
         { efTPX, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
-        { efXTC, "-x",      NULL,       ffOPTWR },
+        { efCOMPRESSED, "-x", NULL,     ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },
         { efCPT, "-cpo",    NULL,       ffOPTWR },
         { efSTO, "-c",      "confout",  ffWRITE },
@@ -411,12 +428,13 @@ int gmx_mdrun(int argc, char *argv[])
         { efRND, "-multidir", NULL,      ffOPTRDMULT},
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
-        { efNDX, "-mn",     "membed",   ffOPTRD }
+        { efNDX, "-mn",     "membed",   ffOPTRD },
+        { efXVG, "-if",     "imdforces", ffOPTWR },
+        { efXVG, "-swap",   "swapions", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     /* Command line options ! */
-    gmx_bool        bPartDec      = FALSE;
     gmx_bool        bDDBondCheck  = TRUE;
     gmx_bool        bDDBondComm   = TRUE;
     gmx_bool        bTunePME      = TRUE;
@@ -427,6 +445,9 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bRerunVSite   = FALSE;
     gmx_bool        bConfout      = TRUE;
     gmx_bool        bReproducible = FALSE;
+    gmx_bool        bIMDwait      = FALSE;
+    gmx_bool        bIMDterm      = FALSE;
+    gmx_bool        bIMDpull      = FALSE;
 
     int             npme          = -1;
     int             nstlist       = 0;
@@ -437,7 +458,8 @@ int gmx_mdrun(int argc, char *argv[])
     int             repl_ex_nex   = 0;
     int             nstepout      = 100;
     int             resetstep     = -1;
-    gmx_large_int_t nsteps        = -2; /* the value -2 means that the mdp option will be used */
+    gmx_int64_t     nsteps        = -2;   /* the value -2 means that the mdp option will be used */
+    int             imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
 
     rvec            realddxyz          = {0, 0, 0};
     const char     *ddno_opt[ddnoNR+1] =
@@ -468,8 +490,6 @@ int gmx_mdrun(int argc, char *argv[])
 
     t_pargs         pa[] = {
 
-        { "-pd",      FALSE, etBOOL, {&bPartDec},
-          "Use particle decompostion" },
         { "-dd",      FALSE, etRVEC, {&realddxyz},
           "Domain decomposition grid, 0 is optimize" },
         { "-ddorder", FALSE, etENUM, {ddno_opt},
@@ -503,13 +523,20 @@ int gmx_mdrun(int argc, char *argv[])
         { "-dlb",     FALSE, etENUM, {dddlb_opt},
           "Dynamic load balancing (with DD)" },
         { "-dds",     FALSE, etREAL, {&dlb_scale},
-          "Minimum allowed dlb scaling of the DD cell size" },
+          "Fraction in (0,1) by whose reciprocal the initial DD cell size will be increased in order to "
+          "provide a margin in which dynamic load balancing can act while preserving the minimum cell size." },
         { "-ddcsx",   FALSE, etSTR, {&ddcsx},
-          "HIDDENThe DD cell sizes in x" },
+          "HIDDENA string containing a vector of the relative sizes in the x "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
         { "-ddcsy",   FALSE, etSTR, {&ddcsy},
-          "HIDDENThe DD cell sizes in y" },
+          "HIDDENA string containing a vector of the relative sizes in the y "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
         { "-ddcsz",   FALSE, etSTR, {&ddcsz},
-          "HIDDENThe DD cell sizes in z" },
+          "HIDDENA string containing a vector of the relative sizes in the z "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
         { "-gcom",    FALSE, etINT, {&nstglobalcomm},
           "Global communication frequency" },
         { "-nb",      FALSE, etENUM, {&nbpu_opt},
@@ -536,7 +563,7 @@ int gmx_mdrun(int argc, char *argv[])
           "Keep and number checkpoint files" },
         { "-append",  FALSE, etBOOL, {&bAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-        { "-nsteps",  FALSE, etGMX_LARGE_INT, {&nsteps},
+        { "-nsteps",  FALSE, etINT64, {&nsteps},
           "Run this number of steps, overrides .mdp file option" },
         { "-maxh",   FALSE, etREAL, {&max_hours},
           "Terminate after 0.99 times this time (hours)" },
@@ -548,6 +575,14 @@ int gmx_mdrun(int argc, char *argv[])
           "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
         { "-reseed",  FALSE, etINT, {&repl_ex_seed},
           "Seed for replica exchange, -1 is generate a seed" },
+        { "-imdport",    FALSE, etINT, {&imdport},
+          "HIDDENIMD listening port" },
+        { "-imdwait",  FALSE, etBOOL, {&bIMDwait},
+          "HIDDENPause the simulation while no IMD client is connected" },
+        { "-imdterm",  FALSE, etBOOL, {&bIMDterm},
+          "HIDDENAllow termination of the simulation from IMD client" },
+        { "-imdpull",  FALSE, etBOOL, {&bIMDpull},
+          "HIDDENAllow pulling in the simulation from IMD client" },
         { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
         { "-confout", FALSE, etBOOL, {&bConfout},
@@ -702,7 +737,6 @@ int gmx_mdrun(int argc, char *argv[])
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
     Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
-    Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
     Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
@@ -715,7 +749,9 @@ int gmx_mdrun(int argc, char *argv[])
     Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0);
     Flags = Flags | (sim_part > 1    ? MD_STARTFROMCPT : 0);
     Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
-
+    Flags = Flags | (bIMDwait      ? MD_IMDWAIT      : 0);
+    Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
+    Flags = Flags | (bIMDpull      ? MD_IMDPULL      : 0);
 
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
@@ -748,7 +784,7 @@ int gmx_mdrun(int argc, char *argv[])
                   nbpu_opt[0], nstlist,
                   nsteps, nstepout, resetstep,
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
-                  pforce, cpt_period, max_hours, deviceOptions, Flags);
+                  pforce, cpt_period, max_hours, deviceOptions, imdport, Flags);
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */

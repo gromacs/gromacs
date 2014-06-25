@@ -1,19 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- * This file is part of Gromacs        Copyright (c) 1991-2008
- * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -23,12 +40,12 @@
 #include <stdio.h>
 #include <assert.h>
 #include "domdec.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "perf_est.h"
-#include "physics.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "names.h"
 
 /* Margin for setting up the DD grid */
@@ -341,8 +358,13 @@ static float comm_cost_est(real limit, real cutoff,
     {
         bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
 
-        /* Without PBC there are no cell size limits with 2 cells */
+        /* Without PBC and with 2 cells, there are no lower limits on the cell size */
         if (!(i >= ddbox->npbcdim && nc[i] <= 2) && bt[i] < nc[i]*limit)
+        {
+            return -1;
+        }
+        /* With PBC, check if the cut-off fits in nc[i]-1 cells */
+        if (i < ddbox->npbcdim && nc[i] > 1 && (nc[i] - 1)*bt[i] < nc[i]*cutoff)
         {
             return -1;
         }
@@ -663,7 +685,7 @@ real dd_choose_grid(FILE *fplog,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds)
 {
-    gmx_large_int_t nnodes_div, ldiv;
+    gmx_int64_t     nnodes_div, ldiv;
     real            limit;
 
     if (MASTER(cr))
@@ -696,7 +718,7 @@ real dd_choose_grid(FILE *fplog,
             cr->npmenodes = 0;
         }
 
-        if (cr->nnodes > 12)
+        if (nnodes_div > 12)
         {
             ldiv = largest_divisor(nnodes_div);
             /* Check if the largest divisor is more than nnodes^2/3 */

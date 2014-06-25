@@ -1,4 +1,4 @@
-# This is a Gromacs 4.5 template makefile for your own utility programs using pkg-config.
+# This is a Gromacs template makefile for your own utility programs using pkg-config.
 #
 # Copy this file to whatever directory you are using for your own software
 #
@@ -9,7 +9,7 @@
 #change the name of the program here
 NAME=template
 
-#add extra c file to compile here
+#add extra c++ file(s) to compile here
 EXTRA_SRC=
 
 ###############################################################3
@@ -27,14 +27,15 @@ else
 endif
 
 #get CPPFLAGS and LDFLAGS from pkg-config
-CPPFLAGS=`pkg-config --cflags libgmx`
-LDFLAGS=`pkg-config --libs libgmx`
+CPPFLAGS=`pkg-config --cflags libgromacs`
+LDFLAGS=`pkg-config --libs libgromacs`
 
 #generate a list of object (.o) files
-OBJS=$(patsubst %.c,%.o,$(NAME).c $(EXTRA_SRC))
+OBJS=$(patsubst %.cpp,%.o,$(NAME).cpp $(EXTRA_SRC))
 
 #main program depend on all objects, rest is done by implicit rules
 $(NAME): $(OBJS)
+	$(CXX) $(LDFLAGS) -o $@ $^
 
 #clean up rule
 clean:

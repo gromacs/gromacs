@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,13 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         ${CMAKE_SOURCE_DIR}/src/gromacs/linearalgebra/gmx_lapack/*.c
         ${CMAKE_SOURCE_DIR}/src/contrib/*.c
         ${CMAKE_SOURCE_DIR}/src/contrib/*.cpp
-        ${CMAKE_SOURCE_DIR}/src/contrib/*.cu)
+        ${CMAKE_SOURCE_DIR}/src/contrib/*.cu
+        ${CMAKE_SOURCE_DIR}/src/external/*.c
+        ${CMAKE_SOURCE_DIR}/src/external/*.cpp
+        ${CMAKE_SOURCE_DIR}/src/external/*.cu
+        ${CMAKE_SOURCE_DIR}/src/gromacs/selection/scanner.cpp
+        ${CMAKE_SOURCE_DIR}/src/gromacs/selection/parser.cpp
+        )
     list(REMOVE_ITEM _inputfiles ${_files_to_ignore})
 
     # Set flags for cppcheck
@@ -64,15 +70,14 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         set(_outputopt --xml)
     endif()
     set(_common_flags
-        --enable=style
-        -DSIZEOF_LONG_LONG_INT=8 -DSIZEOF_INT=4 -DLINUX
+        --enable=style -DLINUX -DHAVE_UNISTD_H
         -I src/gromacs/legacyheaders -I src
+        -I src/external/thread_mpi/include
         -I ${CMAKE_BINARY_DIR}/src -I ${CMAKE_BINARY_DIR}/src/gromacs/utility
         --quiet
+        --inline-suppr
         ${_outputopt})
     set(_c_flags
-        -I src/gromacs/gmxpreprocess
-        -I src/programs/mdrun
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
         --suppress=unusedVariable
@@ -81,15 +86,20 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidscanf
         --suppress=sizeofCalculation
         --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
-        --inline-suppr)
+        --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
+        --suppress=assignIfError:src/gromacs/mdlib/nbnxn_atomdata.c #Ticket 5695
+        --suppress=invalidPointerCast:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
+        --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
+        --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh
+        ) 
     set(_cxx_flags
         -D__cplusplus
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
         --suppress=invalidscanf:src/gromacs/fileio/matio.cpp
-        --suppress=invalidscanf:src/gromacs/gmxlib/xvgr.cpp
-        --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp
-        --suppress=*:src/gromacs/selection/scanner.cpp)
+        --suppress=invalidscanf:src/gromacs/fileio/xvgr.cpp
+        --suppress=invalidscanf:src/gromacs/topology/index.cpp
+        --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp)
 
     # This list will hold the list of all files with cppcheck errors
     # (one per input file)

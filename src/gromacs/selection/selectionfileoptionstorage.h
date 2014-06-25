@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,19 +63,15 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
+         * \param     manager    Manager for this object.
          */
-        SelectionFileOptionStorage(const SelectionFileOption &settings);
+        SelectionFileOptionStorage(const SelectionFileOption &settings,
+                                   SelectionOptionManager    *manager);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return "file"; }
+        virtual std::string typeString() const { return "file"; }
         virtual int valueCount() const { return 0; }
         virtual std::string formatValue(int /*i*/) const { return ""; }
-
-        //! \copydoc SelectionFileOptionInfo::setManager()
-        void setManager(SelectionOptionManager *manager)
-        {
-            manager_ = manager;
-        }
 
     private:
         virtual void clearSet();
@@ -83,9 +79,9 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         virtual void processSet();
         virtual void processAll() {}
 
-        SelectionFileOptionInfo info_;
-        SelectionOptionManager *manager_;
-        bool                    bValueParsed_;
+        SelectionFileOptionInfo  info_;
+        SelectionOptionManager  &manager_;
+        bool                     bValueParsed_;
 };
 
 } // namespace gmx

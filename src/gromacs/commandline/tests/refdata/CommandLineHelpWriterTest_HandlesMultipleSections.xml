@@ -2,28 +2,27 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
-DESCRIPTION
------------
+SYNOPSIS
 
-Main Title
+gmx [-sub1 <int>] [-sub2 <int>] [-main <int>]
+
+DESCRIPTION
 
 Description for main section.
 
-Subsection 1 Title
-
 Description for subsection 1.
-
-Subsection 2 Title
 
 Description for subsection 2.
 
 Description for subsection 3.
 
-Option       Type   Value  Description
----------------------------------------------------
--sub1        int           Option in subsection 1
--sub2        int           Option in subsection 2
--main        int           Option in main section
+OPTIONS
+
+Other options:
+
+ -sub1  <int>               Option in subsection 1
+ -sub2  <int>               Option in subsection 2
+ -main  <int>               Option in main section
 
 ]]></String>
 </ReferenceData>

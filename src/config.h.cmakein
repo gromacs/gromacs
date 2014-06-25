@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,22 +45,6 @@
 
 /* TODO: For now, disable Doxygen warnings from here */
 /*! \cond */
-
-/* Disable warnings about double-to-float conversion accuracy loss on MSVC */
-#ifdef _MSC_VER
-#pragma warning (disable : 4305)
-#pragma warning (disable : 4244)
-#pragma warning (disable : 4101)
-#pragma warning (disable : 4996)
-#pragma warning (disable : 4267)
-#pragma warning (disable : 4090)
-#endif
-
-/* Version number of package (translate from cmake to autoconf macro name) */
-#define VERSION  "@PROJECT_VERSION@"
-
-/* Use extra version information generated with git */
-#cmakedefine GMX_GIT_VERSION_INFO
 
 /* Default location of data files */
 #define GMXLIB_SEARCH_DIR "@GMXLIB_SEARCH_DIR@"
@@ -109,47 +93,47 @@
 /* Target platform is BlueGene/Q */
 #cmakedefine GMX_TARGET_BGQ
 
-/* SSE2 instructions available */
-#cmakedefine GMX_X86_SSE2
-
-/* SSE4.1 instructions available */
-#cmakedefine GMX_X86_SSE4_1
-
-/* AVX 128-bit FMA instructions available */
-#cmakedefine GMX_X86_AVX_128_FMA
-
-/* AVX 256-bit instructions available */
-#cmakedefine GMX_X86_AVX_256
-
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
-#cmakedefine GMX_X86_AVX_GCC_MASKLOAD_BUG
+#cmakedefine GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 
-/* SSE2 was selected as CPU acceleration level */
-#cmakedefine GMX_CPU_ACCELERATION_X86_SSE2
+/* SSE2 was selected for SIMD instruction set level */
+#cmakedefine GMX_SIMD_X86_SSE2
 
-/* SSE4.1 was selected as CPU acceleration level */
-#cmakedefine GMX_CPU_ACCELERATION_X86_SSE4_1
+/* SSE4.1 was selected as SIMD instructions */
+#cmakedefine GMX_SIMD_X86_SSE4_1
 
-/* AVX 128-bit FMA was selected as CPU acceleration level */
-#cmakedefine GMX_CPU_ACCELERATION_X86_AVX_128_FMA
+/* AVX 128-bit FMA was selected as SIMD instructions */
+#cmakedefine GMX_SIMD_X86_AVX_128_FMA
 
-/* AVX 256-bit was selected as CPU acceleration level */
-#cmakedefine GMX_CPU_ACCELERATION_X86_AVX_256
+/* AVX 256-bit was selected as SIMD instructions */
+#cmakedefine GMX_SIMD_X86_AVX_256
 
-/* IBM QPX was selected as CPU acceleration type (e.g. BlueGene/Q) */
-#cmakedefine GMX_CPU_ACCELERATION_IBM_QPX
+/* AVX2 256-bit SIMD instruction set level was selected */
+#cmakedefine GMX_SIMD_X86_AVX2_256
+
+/* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
+#cmakedefine GMX_SIMD_IBM_QPX
 
 /* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
-#cmakedefine GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
+#cmakedefine GMX_SIMD_SPARC64_HPC_ACE
 
-/* String for CPU acceleration choice (for writing to log files and stdout) */
-#define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
+/* Reference SIMD implementation for testing */
+#cmakedefine GMX_SIMD_REFERENCE
+
+/* String for SIMD instruction choice (for writing to log files and stdout) */
+#define GMX_SIMD_STRING "@GMX_SIMD@"
 
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN
 
 /* Use our own instead of system XDR libraries */
 #cmakedefine GMX_INTERNAL_XDR
+
+/* Compile to use TNG library */
+#cmakedefine GMX_USE_TNG
+
+/* Add support for tracing using Extrae */
+#cmakedefine HAVE_EXTRAE
 
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
@@ -169,6 +153,9 @@
 
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
+
+/* Use if can't rename checkpoints */
+#cmakedefine GMX_NO_RENAME
 
 /* Ignore calls to system(3) */
 #cmakedefine GMX_NO_SYSTEM
@@ -235,9 +222,6 @@
 
 /* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
 #cmakedefine HAVE__FSEEKI64
-
-/* Define to 1 if you have the gsl library (-lgsl). */
-#cmakedefine HAVE_LIBGSL
 
 /* Have io.h (windows)*/
 #cmakedefine HAVE_IO_H
@@ -341,21 +325,6 @@
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
 
-/* The size of int, as computed by sizeof. */
-#cmakedefine SIZEOF_INT @SIZEOF_INT@
-
-/* The size of long int, as computed by sizeof. */
-#cmakedefine SIZEOF_LONG_INT @SIZEOF_LONG_INT@
-
-/* The size of long long int, as computed by sizeof. */
-#cmakedefine SIZEOF_LONG_LONG_INT @SIZEOF_LONG_LONG_INT@
-
-/* The size of off_t, as computed by sizeof. */
-#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
-
-/* The size of void*, as computed by sizeof. */
-#cmakedefine SIZEOF_VOIDP @SIZEOF_VOIDP@
-
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 #cmakedefine _LARGEFILE_SOURCE
 
@@ -365,24 +334,6 @@
 /* Some systems requires this to be set to 64 for large file support */
 #cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
 
-/* Define to __inline__ or __inline if that is what the C compiler
-   calls it, or to nothing if inline is not supported under any name.
-   Please do NOT remove the gmx_inline keyword from here. The classical
-   C++ inline keyword is merely a recommendation to the compiler, and
-   many compilers support stronger alternatives (e.g. __forceinline)
-   that we might want to use. */
-#define gmx_inline ${INLINE_KEYWORD}
-#ifndef __cplusplus
-#define inline ${INLINE_KEYWORD}
-#endif
-
-/* Define to __restrict__ or __restrict if that is what the C compiler
-   calls it, unless we are on C99 when it is simply called restrict.
-   Since restrict is a reserved key word in C99 we are not allowed to
-   redefine the word itself, so call this gmx_restrict to avoid having
-   to identify the language standard level. If it is not supported, it
-   is still defined to an empty string here. */
-#define gmx_restrict ${RESTRICT_KEYWORD}
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
 
@@ -400,17 +351,5 @@
 
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
-
-/* Catch stupid CMake problems on OS X */
-#ifdef __APPLE__
-#  if ((defined(__LP64__) && __LP64__ && defined(SIZEOF_VOIDP) && SIZEOF_VOIDP<8) || ( (!defined(__LP64__) || __LP64__==0) && (defined(SIZEOF_VOIDP) && SIZEOF_VOIDP>4)))
-#    error "Inconsistency between current OS X architecture and the one used to generate original" 
-#    error "CMake configuration. This is probably caused by starting CMake with the default value"
-#    error "for CMAKE_OSX_ARCHITECTURES (blank), and then changing it. In this case all the tests"
-#    error "will have been performed with the original (now incorrect) architecture."
-#    error "To fix this, set CMAKE_OSX_ARCHITECTURES on the _command_line_ before starting CMake,"
-#    error "or create a new such entry with your choice in the GUI _before_ hitting 'configure'."
-#  endif
-#endif
 
 /*! \endcond */

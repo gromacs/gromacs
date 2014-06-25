@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,18 +41,19 @@
 #endif
 
 #include <ctype.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/futil.h"
 #include "filenm.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gmxfio.h"
 #include "md5.h"
 
@@ -103,7 +104,7 @@ static void encode_string(int maxlen, char dst[], const char src[])
 {
     int i;
 
-    for (i = 0; (src[i] != '\0') && (i < maxlen - 1); i++)
+    for (i = 0; (i < maxlen - 1) && (src[i] != '\0'); i++)
     {
         if ((src[i] == ' ') || (src[i] == '\t'))
         {
@@ -126,7 +127,7 @@ static void decode_string(int maxlen, char dst[], const char src[])
 {
     int i;
 
-    for (i = 0; (src[i] != '\0') && (i < maxlen - 1); i++)
+    for (i = 0; (i < maxlen - 1) && (src[i] != '\0'); i++)
     {
         if (src[i] == '_')
         {
@@ -170,9 +171,9 @@ static gmx_bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio,
                                                                           desc,
                                                                           buf));
             break;
-        case eioGMX_LARGE_INT:
-            sprintf(strbuf, "%s%s%s", "%", gmx_large_int_fmt, "\n");
-            res = fprintf(fp, strbuf, *((gmx_large_int_t *) item),
+        case eioINT64:
+            sprintf(strbuf, "%s%s%s", "%", GMX_PRId64, "\n");
+            res = fprintf(fp, strbuf, *((gmx_int64_t *) item),
                           gmx_fio_dbgstr(fio, desc, buf));
             break;
         case eioUCHAR:
@@ -292,7 +293,7 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
 {
     FILE           *fp = fio->fp;
     int             i, m, res = 0, *iptr, ix;
-    gmx_large_int_t s;
+    gmx_int64_t     s;
     double          d, x;
     real           *ptr;
     unsigned char   uc, *ucptr;
@@ -319,12 +320,12 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
                 *((int *) item) = i;
             }
             break;
-        case eioGMX_LARGE_INT:
+        case eioINT64:
             res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN),
-                         gmx_large_int_pfmt, &s);
+                         "%"GMX_SCNd64, &s);
             if (item)
             {
-                *((gmx_large_int_t *) item) = s;
+                *((gmx_int64_t *) item) = s;
             }
             break;
         case eioUCHAR:

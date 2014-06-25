@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <string>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/stringutil.h"
@@ -60,7 +61,7 @@ namespace
  * Tests for simple string utilities
  */
 
-TEST(StringUtilityTest, StartsWithWorks)
+TEST(StringUtilityTest, StartsWith)
 {
     EXPECT_TRUE(gmx::startsWith("foobar", "foo"));
     EXPECT_TRUE(gmx::startsWith("foobar", ""));
@@ -76,7 +77,7 @@ TEST(StringUtilityTest, StartsWithWorks)
     EXPECT_FALSE(gmx::startsWith(std::string("foobar"), "oob"));
 }
 
-TEST(StringUtilityTest, EndsWithWorks)
+TEST(StringUtilityTest, EndsWith)
 {
     EXPECT_TRUE(gmx::endsWith("foobar", "bar"));
     EXPECT_TRUE(gmx::endsWith("foobar", NULL));
@@ -96,6 +97,29 @@ TEST(StringUtilityTest, StripSuffixIfPresent)
     EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "bbar"));
     EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "barr"));
     EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "foofoobar"));
+}
+
+TEST(StringUtilityTest, StripString)
+{
+    EXPECT_EQ("", gmx::stripString(""));
+    EXPECT_EQ("foo", gmx::stripString("foo"));
+    EXPECT_EQ("foo", gmx::stripString("  foo"));
+    EXPECT_EQ("foo", gmx::stripString("foo "));
+    EXPECT_EQ("f o o", gmx::stripString(" f o o  "));
+}
+
+TEST(StringUtilityTest, SplitString)
+{
+    using ::testing::ElementsAre;
+    using ::testing::IsEmpty;
+    using ::testing::Matcher;
+    Matcher<std::vector<std::string> > matcher = ElementsAre("foo", "bar");
+    EXPECT_THAT(gmx::splitString("foo bar"), matcher);
+    EXPECT_THAT(gmx::splitString("  foo bar"), matcher);
+    EXPECT_THAT(gmx::splitString("foo bar  "), matcher);
+    EXPECT_THAT(gmx::splitString(" foo \t bar  "), matcher);
+    EXPECT_THAT(gmx::splitString(""), IsEmpty());
+    EXPECT_THAT(gmx::splitString("   "), IsEmpty());
 }
 
 /********************************************************************

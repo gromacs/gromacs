@@ -18,6 +18,7 @@ This file contains the licenses for the following bodies of code:
 8. Subset of Boost C++ library
 9. Google Test and Google Mock
 10. Sun XDR implementation (External Data Representation)
+11. Sun FDLIBM (Freely Distributable Maths Library)
 
 Our chosen method for packaging distributions (CPack) only permits a
 package to have a single license file, so we are unfortunately forced
@@ -994,8 +995,7 @@ available at http://www.gnu.org/licenses/lgpl-3.0.txt.
 5. thread_mpi
 =============
 
-   Files: src/gromacs/legacyheaders/thread_mpi/
-          src/gromacs/gmxlib/thread_mpi/
+   Files: src/external/thread_mpi/
 
 Copyright (c) 2009-2012, Sander Pronk & Erik Lindahl.
 All rights reserved.
@@ -1172,3 +1172,16 @@ Sun has been advised of the possibility of such damages.
 Sun Microsystems, Inc.
 2550 Garcia Avenue
 Mountain View, California  94043
+
+
+11. Sun FDLIBM (Freely Distributable Maths Library)
+===================================================
+
+    Files: src/gromacs/math/utilities.c
+
+Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+
+Developed at SunSoft, a Sun Microsystems, Inc. business.
+Permission to use, copy, modify, and distribute this
+software is freely granted, provided that this notice
+is preserved.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,12 +52,11 @@
 #include <set>
 #include <vector>
 
-#include "gromacs/legacyheaders/gmx_random.h"
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/vec.h"
-
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "testutils/testasserts.h"
 
@@ -269,7 +268,8 @@ void NeighborhoodSearchTest::testMinimumDistance(
     for (i = data.testPositions_.begin(); i != data.testPositions_.end(); ++i)
     {
         const real refDist = i->refMinDist;
-        EXPECT_NEAR_REL(refDist, search->minimumDistance(i->x), 20*GMX_REAL_EPS);
+        EXPECT_REAL_EQ_TOL(refDist, search->minimumDistance(i->x),
+                           gmx::test::ulpTolerance(20));
     }
 }
 

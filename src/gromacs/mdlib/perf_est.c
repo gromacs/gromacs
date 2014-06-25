@@ -1,36 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -38,14 +40,14 @@
 
 #include <math.h>
 
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
+
 #include "perf_est.h"
-#include "physics.h"
-#include "vec.h"
-#include "mtop_util.h"
 #include "types/commrec.h"
 #include "nbnxn_search.h"
 #include "nbnxn_consts.h"
-
 
 /* Computational cost of bonded, non-bonded and PME calculations.
  * This will be machine dependent.
@@ -54,24 +56,26 @@
  * although not so much that the numbers need to be adjusted.
  */
 
-/* Cost of a pair interaction in the "group" cut-off scheme" */
-#define C_GR_FQ       1.5
-#define C_GR_QLJ_CUT  1.5
-#define C_GR_QLJ_TAB  2.0
-#define C_GR_LJ_CUT   1.0
-#define C_GR_LJ_TAB   1.75
+/* Cost of a pair interaction in the "group" cut-off scheme */
+#define C_GR_FQ        1.5
+#define C_GR_QLJ_CUT   1.5
+#define C_GR_QLJ_TAB   2.0
+#define C_GR_LJ_CUT    1.0
+#define C_GR_LJ_TAB    1.75
 /* Cost of 1 water with one Q/LJ atom */
-#define C_GR_QLJW_CUT 2.0
-#define C_GR_QLJW_TAB 2.25
+#define C_GR_QLJW_CUT  2.0
+#define C_GR_QLJW_TAB  2.25
 /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
-#define C_GR_QW       1.75
+#define C_GR_QW        1.75
 
-/* Cost of a pair interaction in the "Verlet" cut-off scheme" */
-#define C_VT_LJ       0.30
-#define C_VT_QLJ_RF   0.40
-#define C_VT_Q_RF     0.30
-#define C_VT_QLJ_TAB  0.55
-#define C_VT_Q_TAB    0.50
+/* Cost of a pair interaction in the "Verlet" cut-off scheme, QEXP is Ewald */
+#define C_VT_LJ        0.30
+#define C_VT_QRF_LJ    0.40
+#define C_VT_QRF       0.30
+#define C_VT_QEXP_LJ   0.55
+#define C_VT_QEXP      0.50
+/* Extra cost for expensive LJ interaction, e.g. pot-switch or LJ-PME */
+#define C_VT_LJEXP_ADD 0.20
 
 /* Cost of PME, with all components running with SSE instructions */
 /* Cost of particle reordering and redistribution */
@@ -136,9 +140,9 @@ int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
 }
 
 static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
-                          int *nq_tot,
+                          int *nq_tot, int *nlj_tot,
                           double *cost_pp,
-                          gmx_bool *bChargePerturbed)
+                          gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
 {
     t_atom        *atom;
     int            mb, nmol, atnr, cg, a, a0, ncqlj, ncq, nclj;
@@ -195,6 +199,10 @@ static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                 {
                     *bChargePerturbed = TRUE;
                 }
+                if (atom[a].type != atom[a].typeB)
+                {
+                    *bTypePerturbed = TRUE;
+                }
                 /* This if this atom fits into water optimization */
                 if (!((a == a0   &&  bQ &&  bLJ) ||
                       (a == a0+1 &&  bQ && !bLJ) ||
@@ -233,7 +241,8 @@ static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
         }
     }
 
-    *nq_tot = nq + nqlj + nw*3;
+    *nq_tot  = nq  + nqlj + nw*3;
+    *nlj_tot = nlj + nqlj + nw;
 
     if (debug)
     {
@@ -254,17 +263,26 @@ static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
 }
 
 static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
-                           int *nq_tot,
+                           int *nq_tot, int *nlj_tot,
                            double *cost_pp,
-                           gmx_bool *bChargePerturbed)
+                           gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
 {
     t_atom        *atom;
     int            mb, nmol, atnr, cg, a, a0, nqlj, nq, nlj;
     gmx_bool       bQRF;
     t_iparams     *iparams;
     gmx_moltype_t *molt;
-    float          r_eff;
+    real           r_eff;
+    double         c_qlj, c_q, c_lj;
     double         nat;
+    /* Conversion factor for reference vs SIMD kernel performance.
+     * The factor is about right for SSE2/4, but should be 2 higher for AVX256.
+     */
+#ifdef GMX_DOUBLE
+    const real     nbnxn_refkernel_fac = 4.0;
+#else
+    const real     nbnxn_refkernel_fac = 8.0;
+#endif
 
     bQRF = (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT);
 
@@ -297,12 +315,17 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
             {
                 *bChargePerturbed = TRUE;
             }
+            if (atom[a].type != atom[a].typeB)
+            {
+                *bTypePerturbed = TRUE;
+            }
         }
     }
 
     nlj = mtop->natoms - nqlj - nq;
 
-    *nq_tot = nqlj + nq;
+    *nq_tot  = nqlj + nq;
+    *nlj_tot = nqlj + nlj;
 
     /* Effective cut-off for cluster pair list of 4x4 atoms */
     r_eff = ir->rlist + nbnxn_get_rlist_effective_inc(NBNXN_CPU_CLUSTER_I_SIZE, mtop->natoms/det(box));
@@ -313,22 +336,38 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                 nqlj, nq, nlj, ir->rlist, r_eff);
     }
 
+    /* Determine the cost per pair interaction */
+    c_qlj = (bQRF ? C_VT_QRF_LJ : C_VT_QEXP_LJ);
+    c_q   = (bQRF ? C_VT_QRF    : C_VT_QEXP);
+    c_lj  = C_VT_LJ;
+    if (ir->vdw_modifier == eintmodPOTSWITCH || EVDW_PME(ir->vdwtype))
+    {
+        c_qlj += C_VT_LJEXP_ADD;
+        c_lj  += C_VT_LJEXP_ADD;
+    }
+    if (EVDW_PME(ir->vdwtype) && ir->ljpme_combination_rule == eljpmeLB)
+    {
+        /* We don't have LJ-PME LB comb. rule kernels, we use slow kernels */
+        c_qlj *= nbnxn_refkernel_fac;
+        c_q   *= nbnxn_refkernel_fac;
+        c_lj  *= nbnxn_refkernel_fac;
+    }
+
     /* For the PP non-bonded cost it is (unrealistically) assumed
      * that all atoms are distributed homogeneously in space.
      */
     /* Convert mtop->natoms to double to avoid int overflow */
     nat      = mtop->natoms;
-    *cost_pp = 0.5*(nqlj*nat*(bQRF ? C_VT_QLJ_RF : C_VT_QLJ_TAB) +
-                    nq*nat*(bQRF ? C_VT_Q_RF : C_VT_Q_TAB) +
-                    nlj*nat*C_VT_LJ)
+    *cost_pp = 0.5*nat*(nqlj*c_qlj + nq*c_q + nlj*c_lj)
         *4/3*M_PI*r_eff*r_eff*r_eff/det(box);
 }
 
 float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
 {
     t_atom        *atom;
-    int            mb, nmol, atnr, cg, a, a0, nq_tot;
-    gmx_bool       bBHAM, bLJcut, bChargePerturbed, bWater, bQ, bLJ;
+    int            mb, nmol, atnr, cg, a, a0, nq_tot, nlj_tot, f;
+    gmx_bool       bBHAM, bLJcut, bChargePerturbed, bTypePerturbed;
+    gmx_bool       bWater, bQ, bLJ;
     double         cost_bond, cost_pp, cost_redist, cost_spread, cost_fft, cost_solve, cost_pme;
     float          ratio;
     t_iparams     *iparams;
@@ -348,24 +387,43 @@ float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        pp_group_load(mtop, ir, box, &nq_tot, &cost_pp, &bChargePerturbed);
+        pp_group_load(mtop, ir, box,
+                      &nq_tot, &nlj_tot, &cost_pp,
+                      &bChargePerturbed, &bTypePerturbed);
     }
     else
     {
-        pp_verlet_load(mtop, ir, box, &nq_tot, &cost_pp, &bChargePerturbed);
+        pp_verlet_load(mtop, ir, box,
+                       &nq_tot, &nlj_tot, &cost_pp,
+                       &bChargePerturbed, &bTypePerturbed);
     }
 
-    cost_redist = C_PME_REDIST*nq_tot;
-    cost_spread = C_PME_SPREAD*nq_tot*pow(ir->pme_order, 3);
-    cost_fft    = C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
-    cost_solve  = C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
+    cost_redist = 0;
+    cost_spread = 0;
+    cost_fft    = 0;
+    cost_solve  = 0;
 
-    if (ir->efep != efepNO && bChargePerturbed)
+    if (EEL_PME(ir->coulombtype))
     {
-        /* All PME work, except redist & spline coefficient calculation, doubles */
-        cost_spread *= 2;
-        cost_fft    *= 2;
-        cost_solve  *= 2;
+        f            = ((ir->efep != efepNO && bChargePerturbed) ? 2 : 1);
+        cost_redist +=   C_PME_REDIST*nq_tot;
+        cost_spread += f*C_PME_SPREAD*nq_tot*pow(ir->pme_order, 3);
+        cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
+        cost_solve  += f*C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
+    }
+
+    if (EVDW_PME(ir->vdwtype))
+    {
+        f            = ((ir->efep != efepNO && bTypePerturbed) ? 2 : 1);
+        if (ir->ljpme_combination_rule == eljpmeLB)
+        {
+            /* LB combination rule: we have 7 mesh terms */
+            f       *= 7;
+        }
+        cost_redist +=   C_PME_REDIST*nlj_tot;
+        cost_spread += f*C_PME_SPREAD*nlj_tot*pow(ir->pme_order, 3);
+        cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
+        cost_solve  += f*C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
     }
 
     cost_pme = cost_redist + cost_spread + cost_fft + cost_solve;

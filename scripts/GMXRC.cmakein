@@ -4,9 +4,10 @@
 #
 # If you only use one shell you can copy that GMXRC.* instead.
 
-
 # only csh/tcsh set the variable $shell (note: lower case!)
-test $shell && goto CSH
+# but check for the contents to be sure, since some environments may
+# set it also for other shells
+echo $shell | grep -q csh && goto CSH
 
 # if we got here, shell is bsh/bash/zsh/ksh
 . @CMAKE_INSTALL_PREFIX@/@BIN_INSTALL_DIR@/GMXRC.bash

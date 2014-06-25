@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,13 +37,20 @@
 
 #include <math.h>
 
-#include "gromacs/simd/general_x86_sse2.h"
 
 #include <stdio.h>
 
 
 /* Normal sum of four ymm registers */
 #define gmx_mm_sum4_pd(t0, t1, t2, t3)  _mm_add_pd(_mm_add_pd(t0, t1), _mm_add_pd(t2, t3))
+#define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
+#define gmx_mm_castsi128_pd(a) _mm_castsi128_pd(a)
+
+#define GMX_MM_TRANSPOSE2_PD(row0, row1) {           \
+        __m128d __gmx_t1 = row0;                         \
+        row0           = _mm_unpacklo_pd(row0, row1);     \
+        row1           = _mm_unpackhi_pd(__gmx_t1, row1); \
+}
 
 static int
 gmx_mm_any_lt(__m128d a, __m128d b)

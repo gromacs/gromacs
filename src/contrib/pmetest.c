@@ -38,24 +38,22 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
-#include "main.h"
 #include "nrnb.h"
 #include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"
-#include "statutil.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
-#include "vec.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
 #include "mdatoms.h"
 #include "coulomb.h"
 #include "nsb.h"
-#include "rmpbc.h"
 #include "pme.h"
 #include "force.h"
-#include "xvgr.h"
-#include "pbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #include "gromacs/utility/gmxmpi.h"
 
@@ -271,7 +269,7 @@ int main(int argc,char *argv[])
    * init_par (see above)
    */
   parse_common_args(&argc,argv,
-		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
+		    PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
@@ -453,7 +451,7 @@ int main(int argc,char *argv[])
     /* Finish I/O, close files */
     if (MASTER(cr)) {
       close_trx(status);
-      ffclose(fp);
+      gmx_ffclose(fp);
     }
   }
   

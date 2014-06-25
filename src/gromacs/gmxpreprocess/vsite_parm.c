@@ -1,57 +1,58 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <math.h>
 #include <assert.h>
+#include <math.h>
+#include <stdio.h>
 #include <string.h>
+
 #include "vsite_parm.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "resall.h"
 #include "add_par.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "toputil.h"
-#include "physics.h"
-#include "index.h"
+#include "gromacs/math/units.h"
 #include "names.h"
-#include "gmx_fatal.h"
-#include "string2.h"
-#include "physics.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/cstringutil.h"
 #include "macros.h"
 
 typedef struct {
@@ -1402,18 +1403,21 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
 static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                              int cftype, int vsite_type[])
 {
-    int          ftype, i, parnr, k, l, m, n, nvsite, kept_i, vsnral;
-    atom_id      atom, constr;
-    atom_id      vsiteatoms[4];
-    gmx_bool     bKeep, bUsed, bPresent;
-    t_params    *ps;
+    int       i, kept_i;
+    t_params *ps;
 
     ps = &(plist[cftype]);
 
-    vsnral = 0;
     kept_i = 0;
     for (i = 0; (i < ps->nr); i++) /* for all dihedrals in the plist */
     {
+        int      ftype, parnr, k, l, m, n, nvsite;
+        int      vsnral = 0;            /* keep the compiler happy */
+        atom_id  atom, constr;
+        atom_id  vsiteatoms[4] = { 0 }; /* init to zero to make gcc4.8 happy */
+        gmx_bool bKeep, bUsed, bPresent;
+
+
         bKeep = FALSE;
         /* check if all virtual sites are constructed from the same atoms */
         nvsite = 0;
@@ -1422,8 +1426,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
             atom = ps->param[i].a[k];
             if (vsite_type[atom] != NOTSET)
             {
-                nvsite++;
-                if (nvsite == 1)
+                if (nvsite == 0)
                 {
                     /* store construction atoms of first vsite */
                     vsnral = NRAL(pindex[atom].ftype)-1;
@@ -1443,27 +1446,30 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                     }
                 }
                 else
-                /* check if this vsite is constructed from the same atoms */
-                if (vsnral == NRAL(pindex[atom].ftype)-1)
                 {
-                    for (m = 0; (m < vsnral) && !bKeep; m++)
+                    /* check if this vsite is constructed from the same atoms */
+                    if (vsnral == NRAL(pindex[atom].ftype)-1)
                     {
-                        bPresent = FALSE;
-                        constr   =
-                            plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-                        for (n = 0; (n < vsnral) && !bPresent; n++)
+                        for (m = 0; (m < vsnral) && !bKeep; m++)
                         {
-                            if (constr == vsiteatoms[n])
+                            bPresent = FALSE;
+                            constr   =
+                                plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+                            for (n = 0; (n < vsnral) && !bPresent; n++)
                             {
-                                bPresent = TRUE;
+                                if (constr == vsiteatoms[n])
+                                {
+                                    bPresent = TRUE;
+                                }
                             }
-                        }
-                        if (!bPresent)
-                        {
-                            bKeep = TRUE;
+                            if (!bPresent)
+                            {
+                                bKeep = TRUE;
+                            }
                         }
                     }
                 }
+                nvsite++;
             }
         }
 
@@ -1480,6 +1486,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
             atom = ps->param[i].a[k];
             if (vsite_type[atom] == NOTSET)
             {
+                /* vsnral will be set here, we don't get here with nvsite==0 */
                 bUsed = FALSE;
                 for (m = 0; (m < vsnral) && !bUsed; m++)
                 {

@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
@@ -39,22 +40,27 @@
 #endif
 
 #include <math.h>
+#include <stdlib.h>
+
 #include "typedefs.h"
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "types/commrec.h"
 #include "macros.h"
-#include "vec.h"
-#include "gromacs/fileio/futil.h"
-#include "xvgr.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/futil.h"
 #include "bondf.h"
 #include "copyrite.h"
 #include "disre.h"
 #include "main.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
-                 t_inputrec *ir, const t_commrec *cr, gmx_bool bPartDecomp,
+                 t_inputrec *ir, const t_commrec *cr,
                  t_fcdata *fcd, t_state *state, gmx_bool bIsREMD)
 {
     int                  fa, nmol, i, npair, np;
@@ -128,10 +134,10 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
         }
     }
 
-    if (cr && PAR(cr) && !bPartDecomp)
+    if (cr && PAR(cr))
     {
         /* Temporary check, will be removed when disre is implemented with DD */
-        const char *notestr = "NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
+        const char *notestr = "NOTE: atoms involved in distance restraints should be within the same domain. If this is not the case mdrun generates a fatal error. If you encounter this, use a single MPI rank (Verlet+OpenMP+GPUs work fine).";
 
         if (MASTER(cr))
         {
@@ -145,7 +151,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
         if (dd->dr_tau != 0 || ir->eDisre == edrEnsemble || cr->ms != NULL ||
             dd->nres != dd->npair)
         {
-            gmx_fatal(FARGS, "Time or ensemble averaged or multiple pair distance restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+            gmx_fatal(FARGS, "Time or ensemble averaged or multiple pair distance restraints do not work (yet) with domain decomposition, use a single MPI rank%s", cr->ms ? " per simulation" : "");
         }
         if (ir->nstdisreout != 0)
         {

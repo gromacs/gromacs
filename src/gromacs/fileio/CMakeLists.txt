@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,16 +33,23 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB FILEIO_SOURCES *.cpp *.c)
+
+if(GMX_USE_PLUGINS)
+  set(FILEIO_SOURCES ${FILEIO_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
+else()
+  list(REMOVE_ITEM FILEIO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vmdio.c)
+endif()
+
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
 
 set(FILEIO_PUBLIC_HEADERS
     confio.h
     enxio.h
     filenm.h
-    futil.h
     gmxfio.h
     matio.h
     mdoutf.h
+    mtxio.h
     pdbio.h
     tpxio.h
     trajectory_writing.h
@@ -51,9 +58,19 @@ set(FILEIO_PUBLIC_HEADERS
     trxio.h
     xdr_datatype.h
     xtcio.h
+    xvgr.h
     )
 gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
 
+# These files include tng_io.h from the TNG library. That header needs to know
+# whether inttypes.h exists or not.
+include(CheckIncludeFiles)
+check_include_file(inttypes.h   HAVE_INTTYPES_H)
+if(HAVE_INTTYPES_H)
+  set_property(SOURCE tngio.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
+  set_property(SOURCE tngio_for_tools.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
+endif()
+
 if (BUILD_TESTING)
-#    add_subdirectory(tests)
-endif (BUILD_TESTING)
+     add_subdirectory(tests)
+endif()

@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,25 +34,27 @@
  */
 #include <algorithm>
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "types/commrec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
 #include "readinp.h"
 #include "calcgrid.h"
 #include "checkpoint.h"
 #include "gmx_ana.h"
-#include "gmx_random.h"
-#include "physics.h"
+#include "gromacs/random/random.h"
+#include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "coulomb.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "network.h"
 #include "main.h"
 #include "macros.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
@@ -79,7 +79,7 @@ enum {
 
 typedef struct
 {
-    gmx_large_int_t orig_sim_steps;  /* Number of steps to be done in the real simulation  */
+    gmx_int64_t     orig_sim_steps;  /* Number of steps to be done in the real simulation  */
     int             n_entries;       /* Number of entries in arrays                        */
     real            volume;          /* The volume of the box                              */
     matrix          recipbox;        /* The reciprocal box                                 */

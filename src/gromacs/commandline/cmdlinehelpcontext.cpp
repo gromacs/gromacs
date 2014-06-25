@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
  */
 #include "cmdlinehelpcontext.h"
 
+#include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -72,22 +73,43 @@ class CommandLineHelpContext::Impl
         //! Creates the implementation class and the low-level context.
         Impl(File *file, HelpOutputFormat format, const HelpLinks *links)
             : writerContext_(file, format, links), moduleDisplayName_("gmx"),
-              bHidden_(false)
+              completionWriter_(NULL), bHidden_(false)
+        {
+        }
+        //! Creates an implementation class from a low-level context.
+        explicit Impl(const HelpWriterContext &writerContext)
+            : writerContext_(writerContext),
+              completionWriter_(NULL), bHidden_(false)
         {
         }
 
         //! Wrapped lower-level context.
-        HelpWriterContext  writerContext_;
+        HelpWriterContext      writerContext_;
         //! Display name for the module for which help is written.
-        std::string        moduleDisplayName_;
+        std::string            moduleDisplayName_;
+        //! Shell completion writer (`NULL` if not doing completions).
+        ShellCompletionWriter *completionWriter_;
         //! Whether hidden options should be shown in help output.
-        bool               bHidden_;
+        bool                   bHidden_;
 };
 
 CommandLineHelpContext::CommandLineHelpContext(
         File *file, HelpOutputFormat format, const HelpLinks *links)
     : impl_(new Impl(file, format, links))
 {
+}
+
+CommandLineHelpContext::CommandLineHelpContext(
+        const HelpWriterContext &writerContext)
+    : impl_(new Impl(writerContext))
+{
+}
+
+CommandLineHelpContext::CommandLineHelpContext(
+        ShellCompletionWriter *writer)
+    : impl_(new Impl(writer->outputFile(), eHelpOutputFormat_Other, NULL))
+{
+    impl_->completionWriter_ = writer;
 }
 
 CommandLineHelpContext::CommandLineHelpContext(
@@ -124,6 +146,18 @@ const char *CommandLineHelpContext::moduleDisplayName() const
 bool CommandLineHelpContext::showHidden() const
 {
     return impl_->bHidden_;
+}
+
+bool CommandLineHelpContext::isCompletionExport() const
+{
+    return impl_->completionWriter_ != NULL;
+}
+
+ShellCompletionWriter &CommandLineHelpContext::shellCompletionWriter() const
+{
+    GMX_RELEASE_ASSERT(isCompletionExport(),
+                       "Invalid call when not writing shell completions");
+    return *impl_->completionWriter_;
 }
 
 /********************************************************************

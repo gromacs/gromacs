@@ -9,6 +9,7 @@ ASN1  	Protein
 ASP	Protein
 ASP1	Protein
 ASPH	Protein
+ASPP    Protein
 ASH 	Protein
 CT3 	Protein
 CYS 	Protein
@@ -19,6 +20,7 @@ DALA	Protein
 GLN  	Protein
 GLU  	Protein
 GLUH 	Protein
+GLUP    Protein
 GLH	Protein
 GLY	Protein
 HIS 	Protein
@@ -186,7 +188,7 @@ T3H	Water
 K	Ion
 NA	Ion
 CA	Ion
-MK	Ion
+MG	Ion
 CL	Ion
 ZN	Ion
 CU1	Ion

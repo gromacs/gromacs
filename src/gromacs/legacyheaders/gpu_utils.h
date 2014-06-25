@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,15 +38,21 @@
 #ifndef _GPU_UTILS_H_
 #define _GPU_UTILS_H_
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "types/simple.h"
 #include "types/hw_info.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM_INT ;
+#define FUNC_TERM_SIZE_T ;
 #define FUNC_TERM_VOID ;
 #define FUNC_QUALIFIER
 #else
 #define FUNC_TERM_INT {return -1; }
+#define FUNC_TERM_SIZE_T {return 0; }
 #define FUNC_TERM_VOID {}
 #define FUNC_QUALIFIER static
 #endif
@@ -100,7 +106,7 @@ FUNC_QUALIFIER
 void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unused *gpu_info, int gmx_unused index) FUNC_TERM_VOID
 
 FUNC_QUALIFIER
-size_t sizeof_cuda_dev_info(void) FUNC_TERM_INT
+size_t sizeof_cuda_dev_info(void) FUNC_TERM_SIZE_T
 
 #ifdef __cplusplus
 }

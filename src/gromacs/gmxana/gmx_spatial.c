@@ -1,65 +1,57 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.0
- *
- * Copyright (c) 1991-2001
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
- * University of Groningen, The Netherlands
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
- *
- * And Hey:
- * Gyas ROwers Mature At Cryogenic Speed
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <math.h>
+#include <stdlib.h>
 
-
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "statutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include <math.h>
-#include "index.h"
-#include "pbc.h"
-#include "rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gmx_ana.h"
 #include "macros.h"
 
-
 static const double bohr = 0.529177249;  /* conversion factor to compensate for VMD plugin conversion... */
-
-static void mequit(void)
-{
-    printf("Memory allocation error\n");
-    exit(1);
-}
 
 int gmx_spatial(int argc, char *argv[])
 {
@@ -69,7 +61,7 @@ int gmx_spatial(int argc, char *argv[])
         "For a system of 32,000 atoms and a 50 ns trajectory, the SDF can be generated ",
         "in about 30 minutes, with most of the time dedicated to the two runs through ",
         "[TT]trjconv[tt] that are required to center everything properly. ",
-        "This also takes a whole bunch of space (3 copies of the [TT].xtc[tt] file). ",
+        "This also takes a whole bunch of space (3 copies of the trajectory file). ",
         "Still, the pictures are pretty and very informative when the fitted selection is properly made. ",
         "3-4 atoms in a widely mobile group (like a free amino acid in solution) works ",
         "well, or select the protein backbone in a stable folded structure to get the SDF ",
@@ -78,9 +70,9 @@ int gmx_spatial(int argc, char *argv[])
         "Cartesian coordinate. To do that, simply omit the preliminary [gmx-trjconv] steps. \n",
         "USAGE: \n",
         "1. Use [gmx-make_ndx] to create a group containing the atoms around which you want the SDF \n",
-        "2. [TT]gmx trjconv -s a.tpr -f a.xtc -o b.xtc -boxcenter tric -ur compact -pbc none[tt] \n",
-        "3. [TT]gmx trjconv -s a.tpr -f b.xtc -o c.xtc -fit rot+trans[tt] \n",
-        "4. run [THISMODULE] on the [TT].xtc[tt] output of step #3. \n",
+        "2. [TT]gmx trjconv -s a.tpr -f a.tng -o b.tng -boxcenter tric -ur compact -pbc none[tt] \n",
+        "3. [TT]gmx trjconv -s a.tpr -f b.tng -o c.tng -fit rot+trans[tt] \n",
+        "4. run [THISMODULE] on the [TT]c.tng[tt] output of step #3. \n",
         "5. Load [TT]grid.cube[tt] into VMD and view as an isosurface. \n",
         "[BB]Note[bb] that systems such as micelles will require [TT]gmx trjconv -pbc cluster[tt] between steps 1 and 2\n",
         "WARNINGS:[BR]",
@@ -219,25 +211,13 @@ int gmx_spatial(int argc, char *argv[])
         MINBIN[i] -= (double)iNAB*rBINWIDTH;
         nbin[i]    = (long)ceil((MAXBIN[i]-MINBIN[i])/rBINWIDTH);
     }
-    bin = (long ***)malloc(nbin[XX]*sizeof(long **));
-    if (!bin)
-    {
-        mequit();
-    }
+    snew(bin, nbin[XX]);
     for (i = 0; i < nbin[XX]; ++i)
     {
-        bin[i] = (long **)malloc(nbin[YY]*sizeof(long *));
-        if (!bin[i])
-        {
-            mequit();
-        }
+        snew(bin[i], nbin[YY]);
         for (j = 0; j < nbin[YY]; ++j)
         {
-            bin[i][j] = (long *)calloc(nbin[ZZ], sizeof(long));
-            if (!bin[i][j])
-            {
-                mequit();
-            }
+            snew(bin[i][j], nbin[ZZ]);
         }
     }
     copy_mat(box, box_pbc);
@@ -321,7 +301,7 @@ int gmx_spatial(int argc, char *argv[])
     }
 
     /* OUTPUT */
-    flp = ffopen("grid.cube", "w");
+    flp = gmx_ffopen("grid.cube", "w");
     fprintf(flp, "Spatial Distribution Function\n");
     fprintf(flp, "test\n");
     fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", nidxp, (MINBIN[XX]+(minx+iIGNOREOUTER)*rBINWIDTH)*10./bohr, (MINBIN[YY]+(miny+iIGNOREOUTER)*rBINWIDTH)*10./bohr, (MINBIN[ZZ]+(minz+iIGNOREOUTER)*rBINWIDTH)*10./bohr);
@@ -450,7 +430,7 @@ int gmx_spatial(int argc, char *argv[])
         }
         fprintf(flp, "\n");
     }
-    ffclose(flp);
+    gmx_ffclose(flp);
 
     /* printf("x=%d to %d\n",minx,maxx); */
     /* printf("y=%d to %d\n",miny,maxy); */

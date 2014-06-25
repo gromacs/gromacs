@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -38,28 +40,27 @@
 #endif
 
 #include <math.h>
-#include <ctype.h>
-#include "string2.h"
-#include "sysstuff.h"
+
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "viewit.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
-#include "calcgrid.h"
+#include "gromacs/topology/index.h"
 #include "nrnb.h"
 #include "coulomb.h"
 #include "gstat.h"
-#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "names.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void check_box_c(matrix box)
 {
@@ -189,11 +190,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
     char         **grpname;
     int           *isize, isize_cm = 0, nrdf = 0, max_i, isize0, isize_g;
     atom_id      **index, *index_cm = NULL;
-#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
-    long long int *sum;
-#else
-    double        *sum;
-#endif
+    gmx_int64_t   *sum;
     real           t, rmax2, cut2, r, r2, r2ii, invhbinw, normfac;
     real           segvol, spherevol, prev_spherevol, **rdf;
     rvec          *x, dx, *x0 = NULL, *x_i1, xi;
@@ -744,7 +741,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     do_view(oenv, fnRDF, NULL);
 
@@ -775,7 +772,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
         {
             fprintf(fp, "%10g %10g\n", i*0.5, hq[i]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         do_view(oenv, fnHQ, NULL);
         sfree(hq);
         sfree(integrand);
@@ -814,7 +811,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         sfree(sum);
 
         do_view(oenv, fnCNRDF, NULL);

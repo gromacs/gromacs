@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ TEST_F(AngleModuleTest, ComputesSimpleAngles)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesDihedrals)
@@ -79,7 +79,7 @@ TEST_F(AngleModuleTest, ComputesDihedrals)
         "-binw", "120"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesVectorPairAngles)
@@ -91,7 +91,7 @@ TEST_F(AngleModuleTest, ComputesVectorPairAngles)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesVectorPlanePairAngles)
@@ -103,7 +103,7 @@ TEST_F(AngleModuleTest, ComputesVectorPlanePairAngles)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesPlaneZAxisAngles)
@@ -115,7 +115,7 @@ TEST_F(AngleModuleTest, ComputesPlaneZAxisAngles)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesVectorSphereNormalZAxisAngles)
@@ -127,7 +127,7 @@ TEST_F(AngleModuleTest, ComputesVectorSphereNormalZAxisAngles)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesVectorTimeZeroAngles)
@@ -140,7 +140,7 @@ TEST_F(AngleModuleTest, ComputesVectorTimeZeroAngles)
     };
     setTopology("angle.gro");
     setTrajectory("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesMultipleAngles)
@@ -158,7 +158,7 @@ TEST_F(AngleModuleTest, ComputesMultipleAngles)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, HandlesDynamicSelections)
@@ -169,7 +169,7 @@ TEST_F(AngleModuleTest, HandlesDynamicSelections)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorAngles)
@@ -181,7 +181,7 @@ TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorAngles)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorGroupsAngles)
@@ -198,7 +198,7 @@ TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorGroupsAngles)
         "-binw", "60"
     };
     setTopology("angle.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 } // namespace

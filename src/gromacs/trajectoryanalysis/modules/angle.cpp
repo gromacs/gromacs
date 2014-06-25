@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,19 +45,20 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
-
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -354,7 +355,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "With [TT]-g2 t0[tt], [TT]-group2[tt] is not necessary, and angles",
         "are calculated from the vectors as they are in the first frame.[PAR]",
         "There are three options for output:",
-        "[TT]-oav[tt] writes an xvgr file with the time and the average angle",
+        "[TT]-oav[tt] writes an xvg file with the time and the average angle",
         "for each frame.",
         "[TT]-oall[tt] writes all the individual angles.",
         "[TT]-oh[tt] writes a histogram of the angles. The bin width can be",
@@ -367,7 +368,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     static const char *const cGroup2TypeEnum[] =
     { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
-    options->setDescription(concatenateStrings(desc));
+    options->setDescription(desc);
 
     options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
                            .store(&fnAverage_).defaultBasename("angaver")

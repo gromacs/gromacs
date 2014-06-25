@@ -39,8 +39,8 @@
 #include "copyrite.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
-#include "statutil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/commandline/pargs.h"
 #include "coulomb.h"
 
 enum { mGuillot2001a, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
@@ -453,7 +453,7 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
 	  ((strcmp(atype[j],"OW") == 0) && (strcmp(atype[k],"HW") == 0)) ||
 	  ((strcmp(atype[j],"OW") == 0) && (strcmp(atype[k],"OW") == 0))) {
 
-	fp = ffopen(buf,"w");
+	fp = gmx_ffopen(buf,"w");
   
 	imax = 3*pts_nm;
 	for(i=0; (i<=imax); i++) {
@@ -473,7 +473,7 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
 		  r,vc,fc,vd,fd,vr,fr);
 	  
 	}
-	ffclose(fp);
+	gmx_ffclose(fp);
      
 	/* Guillot eqn 4 and 5 */
       } else if (((strcmp(atype[j],"HWd") == 0) && (strcmp(atype[k],"HW") == 0)) ||
@@ -481,7 +481,7 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
 		 ((strcmp(atype[j],"OWd") == 0) && (strcmp(atype[k],"HW") == 0)) ||
 		 ((strcmp(atype[j],"OWd") == 0) && (strcmp(atype[k],"OW") == 0))) {
 	
-	fp = ffopen(buf,"w");
+	fp = gmx_ffopen(buf,"w");
   
 	imax = 3*pts_nm;
 	for(i=0; (i<=imax); i++) {
@@ -501,14 +501,14 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
 		  r,vc,fc,vd,fd,vr,fr);
 	  
 	}
-	ffclose(fp);
+	gmx_ffclose(fp);
 
 	/* Guillot2001a eqn 3 */
       } else if (((strcmp(atype[j],"HWd") == 0) && (strcmp(atype[k],"HWd") == 0)) ||
 		 ((strcmp(atype[j],"OWd") == 0) && (strcmp(atype[k],"HWd") == 0)) ||
 		 ((strcmp(atype[j],"OWd") == 0) && (strcmp(atype[k],"OWd") == 0))) {
 
-	fp = ffopen(buf,"w");
+	fp = gmx_ffopen(buf,"w");
   
 	imax = 3*pts_nm;
 	for(i=0; (i<=imax); i++) {
@@ -528,7 +528,7 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
 		  r,vc,fc,vd,fd,vr,fr);
 	  
 	}
-	ffclose(fp);
+	gmx_ffclose(fp);
 
       } else 
 	gmx_fatal(FARGS,"Invalid atom type: %s %s", atype[j], atype[k]);
@@ -795,7 +795,7 @@ int main(int argc,char *argv[])
     
   fn = opt2fn("-o",NFILE,fnm);
   if ((m != mGuillot2001a)) 
-    fp = ffopen(fn,"w");
+    fp = gmx_ffopen(fn,"w");
   switch (m) {
   case mGuillot2001a:
     do_guillot2001a(fn,eel,pts_nm,rc,rtol,xi,xir);
@@ -840,7 +840,7 @@ int main(int argc,char *argv[])
     gmx_fatal(FARGS,"Model %s not supported yet",model[0]);
   }  
   if ((m != mGuillot2001a)) 
-    ffclose(fp);
+    gmx_ffclose(fp);
   
   gmx_thanx(stdout);
   

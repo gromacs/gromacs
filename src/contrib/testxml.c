@@ -33,9 +33,9 @@
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "xmlio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 
 int cmain(int argc,char *argv[])

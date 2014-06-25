@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,8 @@
 namespace gmx
 {
 
+class ShellCompletionWriter;
+
 /*! \libinternal \brief
  * Context information for writing out command-line help.
  *
@@ -68,12 +70,18 @@ class CommandLineHelpContext
 {
     public:
         /*! \brief
-         * Creates the context.
+         * Creates a context for help export.
          *
          * Wraps the constructor of HelpWriterContext.
          */
         CommandLineHelpContext(File *file, HelpOutputFormat format,
                                const HelpLinks *links);
+        //! Creates a context for a particular HelpWriterContext.
+        explicit CommandLineHelpContext(const HelpWriterContext &writerContext);
+        /*! \brief
+         * Creates a context for shell completion.
+         */
+        explicit CommandLineHelpContext(ShellCompletionWriter *writer);
         //! Creates a copy of the context.
         explicit CommandLineHelpContext(const CommandLineHelpContext &other);
         ~CommandLineHelpContext();
@@ -97,6 +105,14 @@ class CommandLineHelpContext
         const char *moduleDisplayName() const;
         //! Returns whether hidden options should be shown in help output.
         bool showHidden() const;
+        //! Returns whether this context is for exporting shell completions.
+        bool isCompletionExport() const;
+        /*! \brief
+         * Returns the shell completion writer for this context.
+         *
+         * Can only be called if isCompletionExport() returns `true`.
+         */
+        ShellCompletionWriter &shellCompletionWriter() const;
 
     private:
         class Impl;

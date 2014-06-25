@@ -1,36 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -38,16 +40,17 @@
 #include <assert.h>
 
 #include "typedefs.h"
-#include "smalloc.h"
+#include "types/commrec.h"
+#include "gromacs/utility/smalloc.h"
 #include "update.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "nrnb.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "update.h"
 #include "mdrun.h"
 
@@ -326,7 +329,7 @@ real calc_temp(real ekin, real nrdf)
     }
 }
 
-void parrinellorahman_pcoupl(FILE *fplog, gmx_large_int_t step,
+void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                              t_inputrec *ir, real dt, tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu, gmx_bool bFirstStep)
@@ -524,7 +527,7 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_large_int_t step,
     mmul_ur0(invbox, t1, mu);
 }
 
-void berendsen_pcoupl(FILE *fplog, gmx_large_int_t step,
+void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
                       t_inputrec *ir, real dt, tensor pres, matrix box,
                       matrix mu)
 {
@@ -720,203 +723,50 @@ void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
     }
 }
 
-static int poisson_variate(real lambda, gmx_rng_t rng)
+void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
+                     const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac)
 {
-
-    real L;
-    int  k = 0;
-    real p = 1.0;
-
-    L = exp(-lambda);
-
-    do
-    {
-        k  = k+1;
-        p *= gmx_rng_uniform_real(rng);
-    }
-    while (p > L);
-
-    return k-1;
-}
-
-void andersen_tcoupl(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock, gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac)
-{
-    t_grpopts *opts;
-    int        i, j, k, d, len, n, ngtc, gc = 0;
-    int        nshake, nsettle, nrandom, nrand_group;
-    real       boltz, scal, reft, prand;
-    t_iatom   *iatoms;
-
-    /* convenience variables */
-    opts = &ir->opts;
-    ngtc = opts->ngtc;
-
-    /* idef is only passed in if it's chance-per-particle andersen, so
-       it essentially serves as a boolean to determine which type of
-       andersen is being used */
-    if (idef)
-    {
-
-        /* randomly atoms to randomize.  However, all constraint
-           groups have to have either all of the atoms or none of the
-           atoms randomize.
-
-           Algorithm:
-           1. Select whether or not to randomize each atom to get the correct probability.
-           2. Cycle through the constraint groups.
-              2a. for each constraint group, determine the fraction f of that constraint group that are
-                  chosen to be randomized.
-              2b. all atoms in the constraint group are randomized with probability f.
-         */
-
-        nrandom = 0;
-        if ((rate < 0.05) && (md->homenr > 50))
-        {
-            /* if the rate is relatively high, use a standard method, if low rate,
-             * use poisson */
-            /* poisson distributions approxmation, more efficient for
-             * low rates, fewer random numbers required */
-            nrandom = poisson_variate(md->homenr*rate, rng);  /* how many do we randomize? Use Poisson. */
-            /* now we know how many, choose them randomly. No worries about repeats, at this rate, it's negligible.
-               worst thing that happens, it lowers the true rate an negligible amount */
-            for (i = 0; i < nrandom; i++)
-            {
-                randatom[(int)(gmx_rng_uniform_real(rng)*md->homenr)] = TRUE;
-            }
-        }
-        else
-        {
-            for (i = 0; i < md->homenr; i++)
-            {
-                if (gmx_rng_uniform_real(rng) < rate)
-                {
-                    randatom[i] = TRUE;
-                    nrandom++;
-                }
-            }
-        }
-
-        /* instead of looping over the constraint groups, if we had a
-           list of which atoms were in which constraint groups, we
-           could then loop over only the groups that are randomized
-           now.  But that is not available now.  Create later after
-           determining whether there actually is any slowing. */
-
-        /* first, loop through the settles to make sure all groups either entirely randomized, or not randomized. */
-
-        nsettle  = idef->il[F_SETTLE].nr/2;
-        for (i = 0; i < nsettle; i++)
-        {
-            iatoms      = idef->il[F_SETTLE].iatoms;
-            nrand_group = 0;
-            for (k = 0; k < 3; k++)  /* settles are always 3 atoms, hardcoded */
-            {
-                if (randatom[iatoms[2*i+1]+k])
-                {
-                    nrand_group++;     /* count the number of atoms to be shaken in the settles group */
-                    randatom[iatoms[2*i+1]+k] = FALSE;
-                    nrandom--;
-                }
-            }
-            if (nrand_group > 0)
-            {
-                prand = (nrand_group)/3.0;  /* use this fraction to compute the probability the
-                                               whole group is randomized */
-                if (gmx_rng_uniform_real(rng) < prand)
-                {
-                    for (k = 0; k < 3; k++)
-                    {
-                        randatom[iatoms[2*i+1]+k] = TRUE;   /* mark them all to be randomized */
-                    }
-                    nrandom += 3;
-                }
-            }
-        }
-
-        /* now loop through the shake groups */
-        nshake = nblocks;
-        for (i = 0; i < nshake; i++)
-        {
-            iatoms      = &(idef->il[F_CONSTR].iatoms[sblock[i]]);
-            len         = sblock[i+1]-sblock[i];
-            nrand_group = 0;
-            for (k = 0; k < len; k++)
-            {
-                if (k%3 != 0)
-                {   /* only 2/3 of the sblock items are atoms, the others are labels */
-                    if (randatom[iatoms[k]])
-                    {
-                        nrand_group++;
-                        randatom[iatoms[k]] = FALSE;  /* need to mark it false here in case the atom is in more than
-                                                         one group in the shake block */
-                        nrandom--;
-                    }
-                }
-            }
-            if (nrand_group > 0)
-            {
-                prand = (nrand_group)/(1.0*(2*len/3));
-                if (gmx_rng_uniform_real(rng) < prand)
-                {
-                    for (k = 0; k < len; k++)
-                    {
-                        if (k%3 != 0)
-                        {                               /* only 2/3 of the sblock items are atoms, the others are labels */
-                            randatom[iatoms[k]] = TRUE; /* randomize all of them */
-                            nrandom++;
-                        }
-                    }
-                }
-            }
-        }
-        if (nrandom > 0)
-        {
-            n = 0;
-            for (i = 0; i < md->homenr; i++)  /* now loop over the list of atoms */
-            {
-                if (randatom[i])
-                {
-                    randatom_list[n] = i;
-                    n++;
-                }
-            }
-            nrandom = n;  /* there are some values of nrandom for which
-                             this algorithm won't work; for example all
-                             water molecules and nrandom =/= 3.  Better to
-                             recount and use this number (which we
-                             calculate anyway: it will not affect
-                             the average number of atoms accepted.
-                           */
-        }
-    }
-    else
-    {
-        /* if it's andersen-massive, then randomize all the atoms */
-        nrandom = md->homenr;
-        for (i = 0; i < nrandom; i++)
-        {
-            randatom_list[i] = i;
-        }
-    }
+    const int *gatindex = (DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+    int        i;
+    int        gc = 0;
 
     /* randomize the velocities of the selected particles */
 
-    for (i = 0; i < nrandom; i++)  /* now loop over the list of atoms */
+    for (i = 0; i < md->homenr; i++)  /* now loop over the list of atoms */
     {
-        n = randatom_list[i];
+        int      ng = gatindex ? gatindex[i] : i;
+        gmx_bool bRandomize;
+
         if (md->cTC)
         {
-            gc   = md->cTC[n];  /* assign the atom to a temperature group if there are more than one */
+            gc = md->cTC[i];  /* assign the atom to a temperature group if there are more than one */
         }
         if (randomize[gc])
         {
-            scal = sqrt(boltzfac[gc]*md->invmass[n]);
-            for (d = 0; d < DIM; d++)
+            if (ir->etc == etcANDERSEN)
             {
-                state->v[n][d] = scal*gmx_rng_gaussian_table(rng);
+                bRandomize = TRUE;
+            }
+            else
+            {
+                double uniform[2];
+
+                gmx_rng_cycle_2uniform(step*2, ng, ir->andersen_seed, RND_SEED_ANDERSEN, uniform);
+                bRandomize = (uniform[0] < rate);
+            }
+            if (bRandomize)
+            {
+                real scal, gauss[3];
+                int  d;
+
+                scal = sqrt(boltzfac[gc]*md->invmass[i]);
+                gmx_rng_cycle_3gaussian_table(step*2+1, ng, ir->andersen_seed, RND_SEED_ANDERSEN, gauss);
+                for (d = 0; d < DIM; d++)
+                {
+                    state->v[i][d] = scal*gauss[d];
+                }
             }
         }
-        randatom[n] = FALSE; /* unmark this atom for randomization */
     }
 }
 
@@ -964,7 +814,7 @@ void destroy_bufstate(t_state *state)
     sfree(state);
 }
 
-void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
+void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state,
                     tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
@@ -973,7 +823,7 @@ void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
     int             n, i, j, d, ntgrp, ngtc, gc = 0;
     t_grp_tcstat   *tcstat;
     t_grpopts      *opts;
-    gmx_large_int_t step_eff;
+    gmx_int64_t     step_eff;
     real            ecorr, pcorr, dvdlcorr;
     real            bmass, qmass, reft, kT, dt, nd;
     tensor          dumpres, dumvir;
@@ -1057,7 +907,7 @@ void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
                 /* but do we actually need the total? */
 
                 /* modify the velocities as well */
-                for (n = md->start; n < md->start+md->homenr; n++)
+                for (n = 0; n < md->homenr; n++)
                 {
                     if (md->cTC) /* does this conditional need to be here? is this always true?*/
                     {
@@ -1505,86 +1355,109 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
     return ener_npt;
 }
 
-static real vrescale_gamdev(int ia, gmx_rng_t rng)
+static real vrescale_gamdev(real ia,
+                            gmx_int64_t step, gmx_int64_t *count,
+                            gmx_int64_t seed1, gmx_int64_t seed2)
 /* Gamma distribution, adapted from numerical recipes */
 {
-    int  j;
-    real am, e, s, v1, v2, x, y;
+    real   am, e, s, v1, v2, x, y;
+    double rnd[2];
 
-    if (ia < 6)
-    {
-        do
-        {
-            x = 1.0;
-            for (j = 1; j <= ia; j++)
-            {
-                x *= gmx_rng_uniform_real(rng);
-            }
-        }
-        while (x == 0);
-        x = -log(x);
-    }
-    else
+    assert(ia > 1);
+
+    do
     {
         do
         {
             do
             {
-                do
-                {
-                    v1 = gmx_rng_uniform_real(rng);
-                    v2 = 2.0*gmx_rng_uniform_real(rng)-1.0;
-                }
-                while (v1*v1 + v2*v2 > 1.0 ||
-                       v1*v1*GMX_REAL_MAX < 3.0*ia);
-                /* The last check above ensures that both x (3.0 > 2.0 in s)
-                 * and the pre-factor for e do not go out of range.
-                 */
-                y  = v2/v1;
-                am = ia - 1;
-                s  = sqrt(2.0*am + 1.0);
-                x  = s*y + am;
+                gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
+                v1 = rnd[0];
+                v2 = 2.0*rnd[1] - 1.0;
             }
-            while (x <= 0.0);
-            e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
+            while (v1*v1 + v2*v2 > 1.0 ||
+                   v1*v1*GMX_REAL_MAX < 3.0*ia);
+            /* The last check above ensures that both x (3.0 > 2.0 in s)
+             * and the pre-factor for e do not go out of range.
+             */
+            y  = v2/v1;
+            am = ia - 1;
+            s  = sqrt(2.0*am + 1.0);
+            x  = s*y + am;
         }
-        while (gmx_rng_uniform_real(rng) > e);
+        while (x <= 0.0);
+
+        e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
+
+        gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
     }
+    while (rnd[0] > e);
 
     return x;
 }
 
-static real vrescale_sumnoises(int nn, gmx_rng_t rng)
+static real gaussian_count(gmx_int64_t step, gmx_int64_t *count,
+                           gmx_int64_t seed1, gmx_int64_t seed2)
+{
+    double rnd[2], x, y, r;
+
+    do
+    {
+        gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
+        x = 2.0*rnd[0] - 1.0;
+        y = 2.0*rnd[1] - 1.0;
+        r = x*x + y*y;
+    }
+    while (r > 1.0 || r == 0.0);
+
+    r = sqrt(-2.0*log(r)/r);
+
+    return x*r;
+}
+
+static real vrescale_sumnoises(real nn,
+                               gmx_int64_t step, gmx_int64_t *count,
+                               gmx_int64_t seed1, gmx_int64_t seed2)
 {
 /*
- * Returns the sum of n independent gaussian noises squared
+ * Returns the sum of nn independent gaussian noises squared
  * (i.e. equivalent to summing the square of the return values
- * of nn calls to gmx_rng_gaussian_real).xs
+ * of nn calls to gmx_rng_gaussian_real).
  */
-    real rr;
+    const real ndeg_tol = 0.0001;
+    real       r;
 
-    if (nn == 0)
+    if (nn < 2 + ndeg_tol)
     {
-        return 0.0;
-    }
-    else if (nn == 1)
-    {
-        rr = gmx_rng_gaussian_real(rng);
-        return rr*rr;
-    }
-    else if (nn % 2 == 0)
-    {
-        return 2.0*vrescale_gamdev(nn/2, rng);
+        int  nn_int, i;
+        real gauss;
+
+        nn_int = (int)(nn + 0.5);
+
+        if (nn - nn_int < -ndeg_tol || nn - nn_int > ndeg_tol)
+        {
+            gmx_fatal(FARGS, "The v-rescale thermostat was called with a group with #DOF=%f, but for #DOF<3 only integer #DOF are supported", nn + 1);
+        }
+
+        r = 0;
+        for (i = 0; i < nn_int; i++)
+        {
+            gauss = gaussian_count(step, count, seed1, seed2);
+
+            r += gauss*gauss;
+        }
     }
     else
     {
-        rr = gmx_rng_gaussian_real(rng);
-        return 2.0*vrescale_gamdev((nn-1)/2, rng) + rr*rr;
+        /* Use a gamma distribution for any real nn > 2 */
+        r = 2.0*vrescale_gamdev(0.5*nn, step, count, seed1, seed2);
     }
+
+    return r;
 }
 
-static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
-                                 gmx_rng_t rng)
+static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
+                                 gmx_int64_t step, gmx_int64_t seed)
 {
 /*
  * Generates a new value for the kinetic energy,
@@ -1594,7 +1467,11 @@ static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
  * ndeg:  number of degrees of freedom of the atoms to be thermalized
  * taut:  relaxation time of the thermostat, in units of 'how often this routine is called'
  */
-    real factor, rr;
+    /* rnd_count tracks the step-local state for the cycle random
+     * number generator.
+     */
+    gmx_int64_t rnd_count = 0;
+    real        factor, rr, ekin_new;
 
     if (taut > 0.1)
     {
@@ -1604,15 +1481,20 @@ static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
     {
         factor = 0.0;
     }
-    rr = gmx_rng_gaussian_real(rng);
-    return
+
+    rr = gaussian_count(step, &rnd_count, seed, RND_SEED_VRESCALE);
+
+    ekin_new =
         kk +
-        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, rng) + rr*rr)/ndeg - kk) +
+        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, step, &rnd_count, seed, RND_SEED_VRESCALE) + rr*rr)/ndeg - kk) +
         2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
+
+    return ekin_new;
 }
 
-void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
-                     double therm_integral[], gmx_rng_t rng)
+void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
+                     gmx_ekindata_t *ekind, real dt,
+                     double therm_integral[])
 {
     t_grpopts *opts;
     int        i;
@@ -1637,7 +1519,8 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
             Ek_ref  = Ek_ref1*opts->nrdf[i];
 
             Ek_new  = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i],
-                                           opts->tau_t[i]/dt, rng);
+                                           opts->tau_t[i]/dt,
+                                           step, ir->ld_seed);
 
             /* Analytically Ek_new>=0, but we check for rounding errors */
             if (Ek_new <= 0)

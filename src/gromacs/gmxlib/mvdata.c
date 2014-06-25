@@ -1,53 +1,57 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <sysstuff.h>
 #include <string.h>
+
 #include "typedefs.h"
 #include "main.h"
 #include "mvdata.h"
+#include "types/commrec.h"
 #include "network.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "symtab.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "tgroup.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 /* Probably the test for (nr) > 0 in the next macro is only needed
@@ -239,34 +243,43 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
     }
 }
 
-void bcast_state_setup(const t_commrec *cr, t_state *state)
+void bcast_state(const t_commrec *cr, t_state *state)
 {
+    int      i, nnht, nnhtp;
+    gmx_bool bAlloc;
+
+    if (!PAR(cr))
+    {
+        return;
+    }
+
+    /* Broadcasts the state sizes and flags from the master to all nodes
+     * in cr->mpi_comm_mygroup. The arrays are not broadcasted. */
     block_bc(cr, state->natoms);
     block_bc(cr, state->ngtc);
     block_bc(cr, state->nnhpres);
     block_bc(cr, state->nhchainlength);
-    block_bc(cr, state->nrng);
-    block_bc(cr, state->nrngi);
     block_bc(cr, state->flags);
     if (state->lambda == NULL)
     {
         snew_bc(cr, state->lambda, efptNR)
     }
-}
 
-void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc)
-{
-    int i, nnht, nnhtp;
-
-    bcast_state_setup(cr, state);
+    if (cr->dd)
+    {
+        /* We allocate dynamically in dd_partition_system. */
+        return;
+    }
+    /* The code below is reachable only by TPI and NM, so it is not
+       tested by anything. */
 
     nnht  = (state->ngtc)*(state->nhchainlength);
     nnhtp = (state->nnhpres)*(state->nhchainlength);
 
-    if (MASTER(cr))
-    {
-        bAlloc = FALSE;
-    }
+    /* We still need to allocate the arrays in state for non-master
+     * ranks, which is done (implicitly via bAlloc) in the dirty,
+     * dirty nblock_abc macro. */
+    bAlloc = !MASTER(cr);
     if (bAlloc)
     {
         state->nalloc = state->natoms;
@@ -296,16 +309,6 @@ void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc)
                 case estV:       nblock_abc(cr, state->natoms, state->v); break;
                 case estSDX:     nblock_abc(cr, state->natoms, state->sd_X); break;
                 case estCGP:     nblock_abc(cr, state->natoms, state->cg_p); break;
-                case estLD_RNG:  if (state->nrngi == 1)
-                    {
-                        nblock_abc(cr, state->nrng, state->ld_rng);
-                    }
-                    break;
-                case estLD_RNGI: if (state->nrngi == 1)
-                    {
-                        nblock_abc(cr, state->nrngi, state->ld_rngi);
-                    }
-                    break;
                 case estDISRE_INITF: block_bc(cr, state->hist.disre_initf); break;
                 case estDISRE_RM3TAV:
                     block_bc(cr, state->hist.ndisrepairs);
@@ -553,6 +556,16 @@ static void bc_adress(const t_commrec *cr, t_adress *adress)
         nblock_bc(cr, adress->n_energy_grps, adress->group_explicit);
     }
 }
+
+static void bc_imd(const t_commrec *cr, t_IMD *imd)
+{
+    int g;
+
+    block_bc(cr, *imd);
+    snew_bc(cr, imd->ind, imd->nat);
+    nblock_bc(cr, imd->nat, imd->ind);
+}
+
 static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
 {
     gmx_bool bAlloc = TRUE;
@@ -642,6 +655,31 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
     }
 }
 
+
+static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
+{
+    int i;
+
+
+    block_bc(cr, *swap);
+
+    /* Broadcast ion group atom indices */
+    snew_bc(cr, swap->ind, swap->nat);
+    nblock_bc(cr, swap->nat, swap->ind);
+
+    /* Broadcast split groups atom indices */
+    for (i = 0; i < 2; i++)
+    {
+        snew_bc(cr, swap->ind_split[i], swap->nat_split[i]);
+        nblock_bc(cr, swap->nat_split[i], swap->ind_split[i]);
+    }
+
+    /* Broadcast solvent group atom indices */
+    snew_bc(cr, swap->ind_sol, swap->nat_sol);
+    nblock_bc(cr, swap->nat_sol, swap->ind_sol);
+}
+
+
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
     gmx_bool bAlloc = TRUE;
@@ -680,10 +718,20 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->rot, 1);
         bc_rot(cr, inputrec->rot);
     }
+    if (inputrec->bIMD)
+    {
+        snew_bc(cr, inputrec->imd, 1);
+        bc_imd(cr, inputrec->imd);
+    }
     for (i = 0; (i < DIM); i++)
     {
         bc_cosines(cr, &(inputrec->ex[i]));
         bc_cosines(cr, &(inputrec->et[i]));
+    }
+    if (inputrec->eSwapCoords != eswapNO)
+    {
+        snew_bc(cr, inputrec->swap, 1);
+        bc_swapions(cr, inputrec->swap);
     }
     if (inputrec->bAdress)
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,13 +39,15 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gromacs/legacyheaders/maths.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/smalloc.h"
+#include <cmath>
 
+#include "gromacs/legacyheaders/macros.h"
+
+#include "gromacs/math/utilities.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
 
 /** Defines the comparison operator for comparison expressions. */
 typedef enum
@@ -375,17 +377,17 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
         {
             case CMP_LESS:
             case CMP_GEQ:
-                iv[i] = (int)ceil(val->r[i]);
+                iv[i] = static_cast<int>(std::ceil(val->r[i]));
                 break;
             case CMP_GTR:
             case CMP_LEQ:
-                iv[i] = (int)floor(val->r[i]);
+                iv[i] = static_cast<int>(std::floor(val->r[i]));
                 break;
             case CMP_EQUAL:
             case CMP_NEQ:
                 sfree(iv);
                 /* TODO: Implement, although it isn't typically very useful.
-                 * Implementation is only a matter or proper initialization,
+                 * Implementation is only a matter of proper initialization,
                  * the evaluation function can already handle this case with
                  * proper preparations. */
                 GMX_THROW(gmx::NotImplementedError("Equality comparison between dynamic integer and static real expressions not implemented"));

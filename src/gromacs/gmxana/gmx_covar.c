@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -44,31 +46,27 @@
 #include <sys/time.h>
 #endif
 
-#include "statutil.h"
-#include "sysstuff.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
-#include "index.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trnio.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "do_fit.h"
-#include "rmpbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "txtdump.h"
 #include "gromacs/fileio/matio.h"
 #include "eigio.h"
-#include "physics.h"
 #include "gmx_ana.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/trxio.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_covar(int argc, char *argv[])
 {
@@ -133,7 +131,7 @@ int gmx_covar(int argc, char *argv[])
     real            min, max, *axis;
     int             ntopatoms, step;
     int             natoms, nat, count, nframes0, nframes, nlevels;
-    gmx_large_int_t ndim, i, j, k, l;
+    gmx_int64_t     ndim, i, j, k, l;
     int             WriteXref;
     const char     *fitfile, *trxfile, *ndxfile;
     const char     *eigvalfile, *eigvecfile, *averfile, *logfile;
@@ -267,7 +265,7 @@ int gmx_covar(int argc, char *argv[])
     snew(x, natoms);
     snew(xav, natoms);
     ndim = natoms*DIM;
-    if (sqrt(GMX_LARGE_INT_MAX) < ndim)
+    if (sqrt(GMX_INT64_MAX) < ndim)
     {
         gmx_fatal(FARGS, "Number of degrees of freedoms to large for matrix.\n");
     }
@@ -421,7 +419,7 @@ int gmx_covar(int argc, char *argv[])
 
     if (asciifile)
     {
-        out = ffopen(asciifile, "w");
+        out = gmx_ffopen(asciifile, "w");
         for (j = 0; j < ndim; j++)
         {
             for (i = 0; i < ndim; i += 3)
@@ -430,7 +428,7 @@ int gmx_covar(int argc, char *argv[])
                         mat[ndim*j+i], mat[ndim*j+i+1], mat[ndim*j+i+2]);
             }
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
 
     if (xpmfile)
@@ -461,12 +459,12 @@ int gmx_covar(int argc, char *argv[])
         rlo.r   = 0; rlo.g = 0; rlo.b = 1;
         rmi.r   = 1; rmi.g = 1; rmi.b = 1;
         rhi.r   = 1; rhi.g = 0; rhi.b = 0;
-        out     = ffopen(xpmfile, "w");
+        out     = gmx_ffopen(xpmfile, "w");
         nlevels = 80;
         write_xpm3(out, 0, "Covariance", bM ? "u nm^2" : "nm^2",
                    "dim", "dim", ndim, ndim, axis, axis,
                    mat2, min, 0.0, max, rlo, rmi, rhi, &nlevels);
-        ffclose(out);
+        gmx_ffclose(out);
         sfree(axis);
         sfree(mat2);
     }
@@ -508,12 +506,12 @@ int gmx_covar(int argc, char *argv[])
         rlo.r   = 0; rlo.g = 0; rlo.b = 1;
         rmi.r   = 1; rmi.g = 1; rmi.b = 1;
         rhi.r   = 1; rhi.g = 0; rhi.b = 0;
-        out     = ffopen(xpmafile, "w");
+        out     = gmx_ffopen(xpmafile, "w");
         nlevels = 80;
         write_xpm3(out, 0, "Covariance", bM ? "u nm^2" : "nm^2",
                    "atom", "atom", ndim/DIM, ndim/DIM, axis, axis,
                    mat2, min, 0.0, max, rlo, rmi, rhi, &nlevels);
-        ffclose(out);
+        gmx_ffclose(out);
         sfree(axis);
         for (i = 0; i < ndim/DIM; i++)
         {
@@ -554,17 +552,20 @@ int gmx_covar(int argc, char *argv[])
     out = xvgropen(eigvalfile,
                    "Eigenvalues of the covariance matrix",
                    "Eigenvector index", str, oenv);
-    for (i = 0; (i < ndim); i++)
+    for (i = 0; (i < end); i++)
     {
         fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
     }
-    ffclose(out);
+    gmx_ffclose(out);
 
     if (end == -1)
     {
         if (nframes-1 < ndim)
         {
             end = nframes-1;
+            fprintf(out, "WARNING: there are fewer frames in your trajectory than there are\n");
+            fprintf(out, "degrees of freedom in your system. Only generating the first\n");
+            fprintf(out, "%d out of %d eigenvectors and eigenvalues.\n", end, (int)ndim);
         }
         else
         {
@@ -596,7 +597,7 @@ int gmx_covar(int argc, char *argv[])
     write_eigenvectors(eigvecfile, natoms, mat, TRUE, 1, end,
                        WriteXref, x, bDiffMass1, xproj, bM, eigenvalues);
 
-    out = ffopen(logfile, "w");
+    out = gmx_ffopen(logfile, "w");
 
     time(&now);
     gmx_ctime_r(&now, timebuf, STRLEN);
@@ -639,7 +640,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(out, "Trace of the covariance matrix after diagonalizing: %g\n\n",
             sum);
 
-    fprintf(out, "Wrote %d eigenvalues to %s\n", (int)ndim, eigvalfile);
+    fprintf(out, "Wrote %d eigenvalues to %s\n", (int)end, eigvalfile);
     if (WriteXref == eWXR_YES)
     {
         fprintf(out, "Wrote reference structure to %s\n", eigvecfile);
@@ -647,7 +648,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(out, "Wrote average structure to %s and %s\n", averfile, eigvecfile);
     fprintf(out, "Wrote eigenvectors %d to %d to %s\n", 1, end, eigvecfile);
 
-    ffclose(out);
+    gmx_ffclose(out);
 
     fprintf(stderr, "Wrote the log to %s\n", logfile);
 

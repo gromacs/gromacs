@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,29 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+set(EXECUTABLE_EXTENSION "")
+if (GMX_NATIVE_WINDOWS OR GMX_CYGWIN)
+    set(EXECUTABLE_EXTENSION ".exe")
+endif()
+set(PATH_SEARCH_TEST_DIR ${CMAKE_CURRENT_BINARY_DIR}/test-bin)
+file(MAKE_DIRECTORY ${PATH_SEARCH_TEST_DIR}/bin)
+file(WRITE ${PATH_SEARCH_TEST_DIR}/bin/test-exe${EXECUTABLE_EXTENSION}
+     "Test executable for path searching")
+if (UNIX)
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            test-exe
+            ${PATH_SEARCH_TEST_DIR}/bin/test-rel-link)
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            ${PATH_SEARCH_TEST_DIR}/bin/test-exe
+            ${PATH_SEARCH_TEST_DIR}/bin/test-abs-link)
+endif()
+
 gmx_add_unit_test(CommandLineUnitTests commandline-test
                   cmdlinehelpwriter.cpp
                   cmdlinemodulemanager.cpp
-                  cmdlineparser.cpp)
+                  cmdlineparser.cpp
+                  cmdlineprogramcontext.cpp
+                  pargs.cpp
+                  $<TARGET_OBJECTS:onlinehelp-test-shared>)

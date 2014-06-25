@@ -1,59 +1,62 @@
-/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <ctype.h>
 #include <math.h>
+#include <stdlib.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
 #include "macros.h"
-#include "string2.h"
 #include "names.h"
 #include "toputil.h"
 #include "toppush.h"
 #include "topdirs.h"
 #include "readir.h"
-#include "symtab.h"
-#include "gmx_fatal.h"
 #include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atype,
                        warninp_t wi)
@@ -950,6 +953,7 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
         /* When the B topology parameters are not set,
          * copy them from topology A
          */
+        assert(nrfp <= 4);
         for (i = n; i < nrfp; i++)
         {
             c[i] = c[i-2];
@@ -1821,7 +1825,8 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         bFoundA = default_params(ftype, bondtype, at, atype, &param, FALSE, &param_defA, &nparam_defA);
         if (bFoundA)
         {
-            /* Copy the A-state and B-state default parameters */
+            /* Copy the A-state and B-state default parameters. */
+            assert(NRFPA(ftype)+NRFPB(ftype) <= MAXFORCEPARAM);
             for (j = 0; (j < NRFPA(ftype)+NRFPB(ftype)); j++)
             {
                 param.c[j] = param_defA->c[j];
@@ -2513,14 +2518,14 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,
 static void convert_pairs_to_pairsQ(t_params *plist,
                                     real fudgeQQ, t_atoms *atoms)
 {
-    t_param *paramp1,*paramp2,*paramnew;
-    int      i,j,p1nr,p2nr,p2newnr;
+    t_param *paramp1, *paramp2, *paramnew;
+    int      i, j, p1nr, p2nr, p2newnr;
 
     /* Add the pair list to the pairQ list */
-    p1nr = plist[F_LJ14].nr;
-    p2nr = plist[F_LJC14_Q].nr;
+    p1nr    = plist[F_LJ14].nr;
+    p2nr    = plist[F_LJC14_Q].nr;
     p2newnr = p1nr + p2nr;
-    snew(paramnew,p2newnr);
+    snew(paramnew, p2newnr);
 
     paramp1             = plist[F_LJ14].param;
     paramp2             = plist[F_LJC14_Q].param;
@@ -2529,18 +2534,18 @@ static void convert_pairs_to_pairsQ(t_params *plist,
        it may be possible to just ADD the converted F_LJ14 array
        to the old F_LJC14_Q array, but since we have to create
        a new sized memory structure, better just to deep copy it all.
-    */
+     */
 
     for (i = 0; i < p2nr; i++)
     {
         /* Copy over parameters */
-        for (j=0;j<5;j++) /* entries are 0-4 for F_LJC14_Q */
+        for (j = 0; j < 5; j++) /* entries are 0-4 for F_LJC14_Q */
         {
             paramnew[i].c[j] = paramp2[i].c[j];
         }
 
         /* copy over atoms */
-        for (j=0;j<2;j++)
+        for (j = 0; j < 2; j++)
         {
             paramnew[i].a[j] = paramp2[i].a[j];
         }

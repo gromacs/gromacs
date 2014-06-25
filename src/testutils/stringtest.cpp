@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,7 @@ bool g_bWriteToStdOut = false;
 // TODO: Only add this option to those test binaries that actually need it
 // (depending on the linker, it may or may not appear right now),
 // or replace by a generic mechanism in TestReferenceData.
+//! \cond
 GMX_TEST_OPTIONS(StringTestOptions, options)
 {
     options->addOption(
@@ -68,6 +69,7 @@ GMX_TEST_OPTIONS(StringTestOptions, options)
                 .store(&g_bWriteToStdOut)
                 .description("Print the test string to stdout instead of checking against reference data"));
 }
+//! \endcond
 
 StringTestBase::StringTestBase()
 {

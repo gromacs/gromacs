@@ -1,67 +1,71 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <math.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <ctype.h>
 #include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "gromacs/fileio/futil.h"
-#include "sysstuff.h"
+#include <sys/types.h>
+
+#include "gromacs/utility/futil.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "txtdump.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
 #include "names.h"
-#include "string2.h"
-#include "symtab.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "vsite_parm.h"
 
-#include "grompp.h"
+#include "grompp-impl.h"
 #include "toputil.h"
 #include "toppush.h"
 #include "topdirs.h"
@@ -71,15 +75,10 @@
 #include "gmxcpp.h"
 #include "gpp_bond_atomtype.h"
 #include "genborn.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 
-#define CPPMARK     '#' /* mark from cpp			*/
-#define OPENDIR     '[' /* starting sign for directive		*/
-#define CLOSEDIR    ']' /* ending sign for directive		*/
-
-#define PM()  \
-    printf("line: %d, maxavail: %d\n", __LINE__, maxavail()); \
-    fflush(stdout)
+#define OPENDIR     '[' /* starting sign for directive */
+#define CLOSEDIR    ']' /* ending sign for directive   */
 
 static void free_nbparam(t_nbparam **param, int nr)
 {
@@ -177,7 +176,7 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
     char     buf[256];
     int      i, mb, nmol, ri, pt;
     double   q;
-    real     m;
+    real     m, mB;
     t_atoms *atoms;
 
     /* Check mass and charge */
@@ -191,30 +190,31 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
         {
             q += nmol*atoms->atom[i].q;
             m  = atoms->atom[i].m;
+            mB = atoms->atom[i].mB;
             pt = atoms->atom[i].ptype;
             /* If the particle is an atom or a nucleus it must have a mass,
              * else, if it is a shell, a vsite or a bondshell it can have mass zero
              */
-            if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus)))
+            if (((m <= 0.0) || (mB <= 0.0)) && ((pt == eptAtom) || (pt == eptNucleus)))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "atom %s (Res %s-%d) has mass %g\n",
+                sprintf(buf, "atom %s (Res %s-%d) has mass %g (state A) / %g (state B)\n",
                         *(atoms->atomname[i]),
                         *(atoms->resinfo[ri].name),
                         atoms->resinfo[ri].nr,
-                        m);
+                        m, mB);
                 warning_error(wi, buf);
             }
             else
-            if ((m != 0) && (pt == eptVSite))
+            if (((m != 0) || (mB != 0)) && (pt == eptVSite))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g\n"
+                sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g (state A) / %g (state B)\n"
                         "     Check your topology.\n",
                         *(atoms->atomname[i]),
                         *(atoms->resinfo[ri].name),
                         atoms->resinfo[ri].nr,
-                        m);
+                        m, mB);
                 warning_error(wi, buf);
                 /* The following statements make LINCS break! */
                 /* atoms->atom[i].m=0; */
@@ -914,7 +914,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                       bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
                             break;
                         case d_cmap:
-                            push_cmap(d, plist, mi0->plist, &(mi0->atoms), atype, pline,wi);
+                            push_cmap(d, plist, mi0->plist, &(mi0->atoms), atype, pline, wi);
                             break;
 
                         case d_vsitesn:
@@ -999,7 +999,7 @@ static char **read_topol(const char *infile, const char *outfile,
                         }
                         default:
                             fprintf (stderr, "case: %d\n", d);
-                            invalid_case();
+                            gmx_incons("unknown directive");
                     }
                 }
             }
@@ -1013,6 +1013,7 @@ static char **read_topol(const char *infile, const char *outfile,
     {
         gmx_fatal(FARGS, cpp_error(&handle, status));
     }
+    cpp_done();
     if (out)
     {
         gmx_fio_fclose(out);
@@ -1362,7 +1363,6 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
         j       = 0;
         while (j < molt->ilist[i].nr)
         {
-            bexcl = FALSE;
             a1    = molt->ilist[i].iatoms[j+1];
             a2    = molt->ilist[i].iatoms[j+2];
             bexcl = ((bQMMM[a1] && bQMMM[a2]) ||

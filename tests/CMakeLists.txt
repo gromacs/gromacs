@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,25 +35,14 @@
 set(REGRESSIONTEST_PATH "" CACHE PATH "Directory containing regressiontests")
 mark_as_advanced(REGRESSIONTEST_PATH)
 option(REGRESSIONTEST_DOWNLOAD
-    "Automatically download regressiontests. Tests can be run with ctest." no)
-if(REGRESSIONTEST_DOWNLOAD AND CMAKE_VERSION VERSION_LESS "2.8.2")
-    message(WARNING "REGRESSIONTEST_DOWNLOAD requires cmake >=2.8.2. Please update cmake or manually download the regressiontests.")
-    set(REGRESSIONTEST_DOWNLOAD FALSE CACHE BOOL 
-        "REGRESSIONTEST_DOWNLOAD not supported with cmake ${CMAKE_VERSION}" FORCE)
-endif()
+    "Automatically download regressiontests. Tests can be run with ctest." OFF)
+
 if(REGRESSIONTEST_DOWNLOAD)
     if("${PROJECT_VERSION}" MATCHES "-dev")
-       if("${PROJECT_VERSION}" MATCHES "^5[.]")
-          set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/refs/heads/master)
-       else()
-          set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/refs/heads/release-4-6)
-      endif()
+      set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/${REGRESSIONTEST_BRANCH})
       set(REGRESSIONTEST_PATH "${CMAKE_CURRENT_BINARY_DIR}/regressiontests"
            CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
     else()
-        if(NOT REGRESSIONTEST_VERSION)
-          message(FATAL_ERROR "The configuration files do not specify what regressiontests tarball is suitable for automated download and testing. Please obtain and use a suitable set of tests yourself.")
-        endif()
         set(REGRESSIONTEST_URL http://gerrit.gromacs.org/download/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
         set(REGRESSIONTEST_PATH
            "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"
@@ -81,11 +70,14 @@ log: ${log}")
     set(REGRESSIONTEST_DOWNLOAD OFF CACHE BOOL "Tests already downloaded. Set to yes to download again" FORCE)
 endif()
 
-if(REGRESSIONTEST_PATH AND (GMX_BLUEGENE OR CMAKE_CROSSCOMPILING OR CMAKE_CONFIGURATION_TYPES))
-    #Bluegene requires us to compile both front-end and back-end binaries (single build is insufficient)
-    message(WARNING 
-        "With cross-compiling or multi-configuration generators (e.g. Visual Studio), running regressiontests from build system is not supported. Please run gmxtest.pl directly.")
-    set(REGRESSIONTEST_PATH OFF CACHE BOOL 
+if(REGRESSIONTEST_PATH AND (GMX_BLUEGENE OR CMAKE_CROSSCOMPILING OR CMAKE_CONFIGURATION_TYPES OR GMX_BUILD_MDRUN_ONLY))
+    # TODO: It would be nicer to do these before potentially downloading the tests.
+    # Bluegene requires us to compile both front-end and back-end binaries
+    # (single build is insufficient)
+    # Testing an mdrun-only builds require supporting binaries from a full build
+    message(WARNING
+        "With cross-compiling, multi-configuration generators (e.g. Visual Studio), or with mdrun-only builds, running regressiontests from build system is not supported. Please run gmxtest.pl directly.")
+    set(REGRESSIONTEST_PATH OFF CACHE BOOL
         "With cross-compiling or multi-configuration generators, running regressiontests from build system is not supported." FORCE)
 endif()
 
@@ -94,6 +86,11 @@ if(REGRESSIONTEST_PATH)
         message(FATAL_ERROR
             "REGRESSIONTEST_PATH invalid. The path needs to contain gmxtest.pl.")
     endif()
+
+    # gmxtests target builds all binaries required for running gmxtest
+    add_custom_target(gmxtests DEPENDS gmx)
+    add_dependencies(check gmxtests)
+
     if(GMX_DOUBLE)
         list(APPEND ARGS -double)
     endif()
@@ -159,6 +156,12 @@ if(REGRESSIONTEST_PATH)
         set_tests_properties(regressiontests/${subtest} PROPERTIES
             ENVIRONMENT "PATH=${PATH}")
     endforeach()
+else()
+    add_custom_target(regressiontests-notice
+        ${CMAKE_COMMAND} -E echo "NOTE: Regression tests have not been run. If you want to run them from the build system, get the correct version of the regression tests package and set REGRESSIONTEST_PATH in CMake to point to it, or set REGRESSIONTEST_DOWNLOAD=ON."
+        DEPENDS run-ctest
+        COMMENT "Regression tests not available" VERBATIM)
+    add_dependencies(check regressiontests-notice)
 endif()
 
 include(CppCheck.cmake)

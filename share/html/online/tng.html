@@ -1,0 +1,23 @@
+<title>tng file format</title>
+<h3>Description</h3>
+Files with the .tng file extension can contain all kinds of data
+related to the trajectory of a simulation. For example, it might
+contain coordinates, velocities, forces and/or energies. Various .mdp
+file options control which of these are written by mdrun, whether data
+is written with compression, and how lossy that compression can be.
+This file is in portable binary format an can be read
+with <a href="../programs/gmx-dump.html">gmx dump</a>.
+<PRE>
+% <a href="../programs/gmx-dump.html">gmx dump</a> -f traj.tng
+</PRE>
+or if you're not such a fast reader:
+<PRE>
+% gmxdump -f traj.tng | more
+</PRE>
+
+<p>
+You can also get a quick look in the contents of the file (number of 
+frames etc.) using:
+<PRE>
+% <a href="../programs/gmx-check.html">gmx check</a> -f traj.tng
+</PRE>

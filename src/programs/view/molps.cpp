@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,18 +39,20 @@
 #endif
 
 #include <math.h>
-#include "sysstuff.h"
+#include <stdlib.h>
 #include <string.h>
-#include "smalloc.h"
+
 #include "macros.h"
-#include "xutil.h"
+
+#include "gromacs/fileio/writeps.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "3dview.h"
-#include "gmx_fatal.h"
 #include "buttons.h"
 #include "manager.h"
-#include "nmol.h"
-#include "writeps.h"
 #include "nleg.h"
+#include "nmol.h"
+#include "xutil.h"
 
 #define MSIZE 4
 
@@ -196,7 +198,7 @@ static void draw_box(t_psdata ps, t_3dview *view, matrix box,
         {
             corner[i][j] = ivec[i][j]*box[j][j];
         }
-        m4_op(view->proj, corner[i], x4);
+        gmx_mat4_transform_point(view->proj, corner[i], x4);
         v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
     }
     ps_color(ps, 0, 0, 0.5);
@@ -236,13 +238,11 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
 
     init_pbc(man->box);
 
-    /* create_visibility(man); */
-
     for (i = 0; (i < man->natom); i++)
     {
         if (man->bVis[i])
         {
-            m4_op(view->proj, man->x[i], x4);
+            gmx_mat4_transform_point(view->proj, man->x[i], x4);
             man->zz[i] = x4[ZZ];
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }

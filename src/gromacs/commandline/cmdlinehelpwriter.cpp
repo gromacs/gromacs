@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,9 +41,15 @@
  */
 #include "cmdlinehelpwriter.h"
 
+#include <cstring>
+
+#include <algorithm>
 #include <string>
 
+#include <boost/scoped_ptr.hpp>
+
 #include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -51,8 +57,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/options/timeunitmanager.h"
-#include "gromacs/selection/selectionfileoption.h"
-#include "gromacs/selection/selectionoption.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
@@ -63,6 +68,72 @@ namespace gmx
 namespace
 {
 
+//! \addtogroup module_commandline
+//! \{
+
+/********************************************************************
+ * DescriptionsFormatter
+ */
+
+class DescriptionsFormatter : public OptionsVisitor
+{
+    public:
+        /*! \brief
+         * Creates a new description formatter.
+         *
+         * \param[in] context   Help context to use to write the help.
+         */
+        explicit DescriptionsFormatter(const HelpWriterContext &context)
+            : context_(context), title_(NULL), bDidOutput_(false)
+        {
+        }
+
+        //! Formats all section descriptions from a given options.
+        void format(const Options &options, const char *title)
+        {
+            title_      = title;
+            bDidOutput_ = false;
+            visitSubSection(options);
+            if (bDidOutput_)
+            {
+                context_.outputFile().writeLine();
+            }
+        }
+
+        //! Formats the description for a single subsection and handles recursion.
+        virtual void visitSubSection(const Options &section);
+        // This method is not used and never called.
+        virtual void visitOption(const OptionInfo & /*option*/) {}
+
+    private:
+        const HelpWriterContext &context_;
+        const char              *title_;
+        bool                     bDidOutput_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(DescriptionsFormatter);
+};
+
+void DescriptionsFormatter::visitSubSection(const Options &section)
+{
+    if (!section.description().empty())
+    {
+        if (bDidOutput_)
+        {
+            context_.outputFile().writeLine();
+        }
+        else if (title_ != NULL)
+        {
+            context_.writeTitle(title_);
+        }
+        // TODO: Print title for the section?
+        context_.writeTextBlock(section.description());
+        bDidOutput_ = true;
+    }
+
+    OptionsIterator iterator(section);
+    iterator.acceptSubSections(this);
+}
+
 /********************************************************************
  * OptionsFormatterInterface
  */
@@ -71,26 +142,14 @@ namespace
  * Interface for output format specific formatting of options.
  *
  * \see OptionsFilter
- *
- * \ingroup module_commandline
  */
 class OptionsFormatterInterface
 {
     public:
         virtual ~OptionsFormatterInterface() {}
 
-        //! Formats the description text block for a section.
-        virtual void formatDescription(const HelpWriterContext &context,
-                                       const Options           &section) = 0;
-        //! Formats a single file option.
-        virtual void formatFileOption(const HelpWriterContext  &context,
-                                      const FileNameOptionInfo &option) = 0;
-        //! Formats a single non-file, non-selection option.
-        virtual void formatOption(const HelpWriterContext &context,
-                                  const OptionInfo        &option) = 0;
-        //! Formats a single selection option.
-        virtual void formatSelectionOption(const HelpWriterContext &context,
-                                           const OptionInfo        &option) = 0;
+        //! Formats a single option option.
+        virtual void formatOption(const OptionInfo &option) = 0;
 };
 
 /********************************************************************
@@ -105,8 +164,6 @@ class OptionsFormatterInterface
  * An object implementing the OptionsFormatterInterface must be provided to the
  * constructor, and does the actual formatting that is specific to the output
  * format.
- *
- * \ingroup module_commandline
  */
 class OptionsFilter : public OptionsVisitor
 {
@@ -114,25 +171,18 @@ class OptionsFilter : public OptionsVisitor
         //! Specifies the type of output that formatSelected() produces.
         enum FilterType
         {
-            eSelectDescriptions,
             eSelectFileOptions,
-            eSelectSelectionOptions,
             eSelectOtherOptions
         };
 
         /*! \brief
          * Creates a new filtering object.
          *
-         * \param[in] context   Help context to use to write the help.
-         * \param[in] formatter Output format specific formatter.
-         *
          * Does not throw.
          */
-        OptionsFilter(const HelpWriterContext   &context,
-                      OptionsFormatterInterface *formatter)
-            : context_(context), formatter_(*formatter),
-              filterType_(eSelectOtherOptions), bShowHidden_(false),
-              bDidOutput_(false)
+        OptionsFilter()
+            : formatter_(NULL), filterType_(eSelectOtherOptions),
+              bShowHidden_(false)
         {
         }
 
@@ -143,42 +193,32 @@ class OptionsFilter : public OptionsVisitor
         }
 
         //! Formats selected options using the formatter.
-        void formatSelected(FilterType type, const Options &options);
+        void formatSelected(FilterType                 type,
+                            OptionsFormatterInterface *formatter,
+                            const Options             &options);
 
         virtual void visitSubSection(const Options &section);
         virtual void visitOption(const OptionInfo &option);
 
     private:
-        const HelpWriterContext        &context_;
-        OptionsFormatterInterface      &formatter_;
+        OptionsFormatterInterface      *formatter_;
         FilterType                      filterType_;
         bool                            bShowHidden_;
-        bool                            bDidOutput_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsFilter);
 };
 
-void OptionsFilter::formatSelected(FilterType type, const Options &options)
+void OptionsFilter::formatSelected(FilterType                 type,
+                                   OptionsFormatterInterface *formatter,
+                                   const Options             &options)
 {
+    formatter_  = formatter;
     filterType_ = type;
-    bDidOutput_ = false;
     visitSubSection(options);
-    if (bDidOutput_)
-    {
-        context_.outputFile().writeLine();
-    }
 }
 
 void OptionsFilter::visitSubSection(const Options &section)
 {
-    if (filterType_ == eSelectDescriptions)
-    {
-        if (bDidOutput_)
-        {
-            context_.outputFile().writeLine();
-        }
-        formatter_.formatDescription(context_, section);
-        bDidOutput_ = true;
-    }
-
     OptionsIterator iterator(section);
     iterator.acceptSubSections(this);
     iterator.acceptOptions(this);
@@ -194,26 +234,13 @@ void OptionsFilter::visitOption(const OptionInfo &option)
     {
         if (filterType_ == eSelectFileOptions)
         {
-            formatter_.formatFileOption(context_,
-                                        *option.toType<FileNameOptionInfo>());
-            bDidOutput_ = true;
-        }
-        return;
-    }
-    if (option.isType<SelectionFileOptionInfo>()
-        || option.isType<SelectionOptionInfo>())
-    {
-        if (filterType_ == eSelectSelectionOptions)
-        {
-            formatter_.formatSelectionOption(context_, option);
-            bDidOutput_ = true;
+            formatter_->formatOption(option);
         }
         return;
     }
     if (filterType_ == eSelectOtherOptions)
     {
-        formatter_.formatOption(context_, option);
-        bDidOutput_ = true;
+        formatter_->formatOption(option);
         return;
     }
 }
@@ -234,110 +261,68 @@ class CommonFormatterData
 };
 
 /********************************************************************
- * OptionsConsoleFormatter
+ * Helper functions
  */
 
-/*! \brief
- * Formatter implementation for console help.
- *
- * \ingroup module_commandline
- */
-class OptionsConsoleFormatter : public OptionsFormatterInterface
+//! Formats option name and value.
+void formatOptionNameAndValue(const OptionInfo &option, std::string *name,
+                              std::string *value)
 {
-    public:
-        //! Creates a helper object for formatting options help for console.
-        explicit OptionsConsoleFormatter(const CommonFormatterData &common);
-
-        virtual void formatDescription(const HelpWriterContext &context,
-                                       const Options           &section);
-        virtual void formatFileOption(const HelpWriterContext  &context,
-                                      const FileNameOptionInfo &option);
-        virtual void formatOption(const HelpWriterContext &context,
-                                  const OptionInfo        &option);
-        virtual void formatSelectionOption(const HelpWriterContext &context,
-                                           const OptionInfo        &option);
-
-    private:
-        const CommonFormatterData &common_;
-        TextTableFormatter         fileOptionFormatter_;
-        TextTableFormatter         genericOptionFormatter_;
-        TextTableFormatter         selectionOptionFormatter_;
-};
-
-OptionsConsoleFormatter::OptionsConsoleFormatter(const CommonFormatterData &common)
-    : common_(common)
-{
-    fileOptionFormatter_.addColumn("Option",      6, false);
-    fileOptionFormatter_.addColumn("Filename",    12, false);
-    fileOptionFormatter_.addColumn("Type",        12, false);
-    fileOptionFormatter_.addColumn("Description", 45, true);
-
-    genericOptionFormatter_.addColumn("Option",      12, false);
-    genericOptionFormatter_.addColumn("Type",         6, false);
-    genericOptionFormatter_.addColumn("Value",        6, false);
-    genericOptionFormatter_.addColumn("Description", 51, true);
-
-    selectionOptionFormatter_.addColumn("Selection",   10, false);
-    selectionOptionFormatter_.addColumn("Description", 67, true);
-}
-
-void OptionsConsoleFormatter::formatDescription(
-        const HelpWriterContext &context, const Options &section)
-{
-    if (!section.description().empty())
+    *name  = option.name();
+    *value = "<" + option.type() + ">";
+    if (option.isType<FileNameOptionInfo>())
     {
-        File              &file  = context.outputFile();
-        const std::string &title = section.title();
-        if (!title.empty())
+        // TODO: Make these work also for other option types.
+        if (option.maxValueCount() != 1)
         {
-            file.writeLine(title);
-            file.writeLine();
+            *value += " [...]";
         }
-        context.writeTextBlock(section.description());
+        if (option.minValueCount() == 0)
+        {
+            *value = "[" + *value + "]";
+        }
+    }
+    if (option.isType<BooleanOptionInfo>())
+    {
+        *name = "[no]" + *name;
+        // Old command-line parser doesn't accept any values for these.
+        // value = "[" + value + "]";
+        value->clear();
     }
 }
 
-void OptionsConsoleFormatter::formatFileOption(
-        const HelpWriterContext &context, const FileNameOptionInfo &option)
+//! Formats the default option value as a string.
+std::string
+defaultOptionValue(const OptionInfo &option)
 {
-    int firstShortValue = 0;  // The first value after which the type fits.
-    int firstLongValue  = -1; // First value that overlaps description column.
-    int lastLongValue   = -1; // Last value like the above.
-
-    // Get the values to write and check where text overflows the columns.
-    fileOptionFormatter_.clear();
-    std::string name(formatString("-%s", option.name().c_str()));
-    fileOptionFormatter_.addColumnLine(0, name);
-    for (int i = 0; i < option.valueCount() || i == 0; ++i)
+    if (option.valueCount() == 0
+        || (option.valueCount() == 1 && option.formatValue(0).empty()))
     {
-        std::string value;
-        if (option.valueCount() == 0
-            || (option.valueCount() == 1 && option.formatValue(0).empty()))
+        return option.formatDefaultValueIfSet();
+    }
+    else
+    {
+        std::string result;
+        for (int i = 0; i < option.valueCount(); ++i)
         {
-            value = option.formatDefaultValueIfSet();
-        }
-        else
-        {
-            value = option.formatValue(i);
-        }
-        fileOptionFormatter_.addColumnLine(1, value);
-        if (value.length() > 12U && i == firstShortValue)
-        {
-            firstShortValue = i + 1;
-        }
-        if (value.length() > 25U)
-        {
-            if (firstLongValue == -1)
+            if (i != 0)
             {
-                firstLongValue = i;
+                result.append(" ");
             }
-            lastLongValue = i;
+            result.append(option.formatValue(i));
         }
+        return result;
     }
+}
+
+//! Formats the flags for a file option as a string.
+std::string
+fileOptionFlagsAsString(const FileNameOptionInfo &option, bool bAbbrev)
+{
     std::string type;
     if (option.isInputOutputFile())
     {
-        type = "In/Out";
+        type = bAbbrev ? "In/Out" : "Input/Output";
     }
     else if (option.isInputFile())
     {
@@ -349,126 +334,260 @@ void OptionsConsoleFormatter::formatFileOption(
     }
     if (!option.isRequired())
     {
-        type += ", Opt.";
+        type += bAbbrev ? ", Opt." : ", Optional";
     }
     if (option.isLibraryFile())
     {
-        type += ", Lib.";
+        type += bAbbrev ? ", Lib." : ", Library";
     }
-    bool bLongType = (type.length() > 12U);
-    fileOptionFormatter_.addColumnLine(2, type);
-    fileOptionFormatter_.addColumnHelpTextBlock(3, context, option.description());
-
-    // Compute layout.
-    if (name.length() > 6U || firstShortValue > 0)
-    {
-        fileOptionFormatter_.setColumnFirstLineOffset(1, 1);
-        // Assume that the name is <20 chars, so that the type fits
-        if (firstLongValue >= 0)
-        {
-            ++firstLongValue;
-            ++lastLongValue;
-        }
-    }
-    int firstDescriptionLine = 0;
-    if (bLongType)
-    {
-        firstDescriptionLine = 1;
-    }
-    fileOptionFormatter_.setColumnFirstLineOffset(3, firstDescriptionLine);
-    if (firstLongValue >= 0
-        && fileOptionFormatter_.lastColumnLine(3) >= firstLongValue)
-    {
-        firstDescriptionLine = lastLongValue + 1;
-        fileOptionFormatter_.setColumnFirstLineOffset(3, firstDescriptionLine);
-    }
-
-    // Do the formatting.
-    context.outputFile().writeString(fileOptionFormatter_.formatRow());
+    return type;
 }
 
-void OptionsConsoleFormatter::formatOption(
-        const HelpWriterContext &context, const OptionInfo &option)
+//! Formats the description for an option as a string.
+std::string
+descriptionWithOptionDetails(const CommonFormatterData &common,
+                             const OptionInfo          &option)
 {
-    genericOptionFormatter_.clear();
-    bool        bIsBool = option.isType<BooleanOptionInfo>();
-    std::string name(formatString("-%s%s", bIsBool ? "[no]" : "",
-                                  option.name().c_str()));
-    genericOptionFormatter_.addColumnLine(0, name);
-    genericOptionFormatter_.addColumnLine(1, option.type());
-    if (name.length() > 12U)
-    {
-        genericOptionFormatter_.setColumnFirstLineOffset(1, 1);
-    }
+    std::string             description(option.formatDescription());
 
-    // TODO: Better handling of multiple long values
-    std::string values;
-    for (int i = 0; i < option.valueCount(); ++i)
-    {
-        if (i != 0)
-        {
-            values.append(" ");
-        }
-        values.append(option.formatValue(i));
-    }
-    genericOptionFormatter_.addColumnLine(2, values);
-
-    std::string             description(option.description());
+    const FloatOptionInfo  *floatOption  = option.toType<FloatOptionInfo>();
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
-    if (doubleOption != NULL && doubleOption->isTime())
+    if ((floatOption != NULL && floatOption->isTime())
+        || (doubleOption != NULL && doubleOption->isTime()))
     {
-        description = replaceAll(description, "%t", common_.timeUnit);
-    }
-    const StringOptionInfo *stringOption = option.toType<StringOptionInfo>();
-    if (stringOption != NULL && stringOption->isEnumerated())
-    {
-        const std::vector<std::string> &allowedValues
-            = stringOption->allowedValues();
-        description.append(": ");
-        for (size_t i = 0; i < allowedValues.size(); ++i)
-        {
-            if (i > 0)
-            {
-                description.append(i + 1 < allowedValues.size()
-                                   ? ", " : ", or ");
-            }
-            description.append(allowedValues[i]);
-        }
-    }
-    genericOptionFormatter_.addColumnHelpTextBlock(3, context, description);
-    if (values.length() > 6U)
-    {
-        genericOptionFormatter_.setColumnFirstLineOffset(3, 1);
+        // TODO: It could be nicer to have this in basicoptions.cpp.
+        description = replaceAll(description, "%t", common.timeUnit);
     }
 
-    context.outputFile().writeString(genericOptionFormatter_.formatRow());
+    return description;
 }
 
-void OptionsConsoleFormatter::formatSelectionOption(
-        const HelpWriterContext &context, const OptionInfo &option)
+/********************************************************************
+ * OptionsSynopsisFormatter
+ */
+
+/*! \brief
+ * Formatter implementation for synopsis.
+ */
+class SynopsisFormatter : public OptionsFormatterInterface
 {
-    File &file = context.outputFile();
+    public:
+        //! Creates a helper object for formatting the synopsis.
+        explicit SynopsisFormatter(const HelpWriterContext &context)
+            : context_(context), lineLength_(0), indent_(0), currentLength_(0)
+        {
+        }
 
-    selectionOptionFormatter_.clear();
-    std::string name(formatString("-%s", option.name().c_str()));
-    selectionOptionFormatter_.addColumnLine(0, name);
-    selectionOptionFormatter_.addColumnHelpTextBlock(1, context,
-                                                     option.description());
-    file.writeString(selectionOptionFormatter_.formatRow());
+        //! Starts formatting the synopsis.
+        void start(const char *name);
+        //! Finishes formatting the synopsis.
+        void finish();
 
-    TextLineWrapper wrapper;
-    wrapper.settings().setLineLength(77);
-    wrapper.settings().setFirstLineIndent(4);
-    wrapper.settings().setIndent(8);
-    wrapper.settings().setContinuationChar('\\');
-    // TODO: What to do with selection variables?
-    // They are not printed as values for any option.
-    for (int i = 0; i < option.valueCount(); ++i)
+        virtual void formatOption(const OptionInfo &option);
+
+    private:
+        const HelpWriterContext &context_;
+        int                      lineLength_;
+        int                      indent_;
+        int                      currentLength_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(SynopsisFormatter);
+};
+
+void SynopsisFormatter::start(const char *name)
+{
+    currentLength_ = std::strlen(name) + 1;
+    indent_        = std::min(currentLength_, 13);
+    File &file = context_.outputFile();
+    switch (context_.outputFormat())
     {
-        std::string value(option.formatValue(i));
-        file.writeLine(wrapper.wrapToString(value));
+        case eHelpOutputFormat_Console:
+            lineLength_ = 78;
+            file.writeString(name);
+            break;
+        case eHelpOutputFormat_Man:
+            lineLength_ = 70;
+            file.writeString(name);
+            break;
+        case eHelpOutputFormat_Html:
+            lineLength_ = 78;
+            file.writeLine("<pre>");
+            file.writeString(name);
+            break;
+        default:
+            GMX_THROW(NotImplementedError("Synopsis formatting not implemented for this output format"));
     }
 }
+
+void SynopsisFormatter::finish()
+{
+    File &file = context_.outputFile();
+    file.writeLine();
+    if (context_.outputFormat() == eHelpOutputFormat_Html)
+    {
+        file.writeLine("</pre>");
+    }
+    file.writeLine();
+}
+
+void SynopsisFormatter::formatOption(const OptionInfo &option)
+{
+    std::string name, value;
+    formatOptionNameAndValue(option, &name, &value);
+    std::string fullOptionText(" [-" + name);
+    if (!value.empty())
+    {
+        fullOptionText.append(" ");
+        fullOptionText.append(value);
+    }
+    fullOptionText.append("]");
+    const int   totalLength = fullOptionText.size();
+
+    if (context_.outputFormat() == eHelpOutputFormat_Html)
+    {
+        value = replaceAll(value, "<", "&lt;");
+        value = replaceAll(value, ">", "&gt;");
+    }
+
+    File &file = context_.outputFile();
+    currentLength_ += totalLength;
+    if (currentLength_ >= lineLength_)
+    {
+        file.writeString(formatString("\n%*c", indent_ - 1, ' '));
+        currentLength_ = indent_ - 1 + totalLength;
+    }
+    file.writeString(fullOptionText);
+}
+
+/********************************************************************
+ * OptionsListFormatter
+ */
+
+/*! \brief
+ * Formatter implementation for help export.
+ */
+class OptionsListFormatter : public OptionsFormatterInterface
+{
+    public:
+        //! Creates a helper object for formatting options.
+        OptionsListFormatter(const HelpWriterContext   &context,
+                             const CommonFormatterData &common,
+                             const char                *title);
+
+        //! Initiates a new section in the options list.
+        void startSection(const char *header)
+        {
+            header_     = header;
+            bDidOutput_ = false;
+        }
+        //! Finishes a section in the options list.
+        void finishSection()
+        {
+            if (bDidOutput_)
+            {
+                context_.writeOptionListEnd();
+                context_.outputFile().writeLine();
+            }
+        }
+
+        virtual void formatOption(const OptionInfo &option);
+
+    private:
+        void writeSectionStartIfNecessary()
+        {
+            if (title_ != NULL)
+            {
+                context_.writeTitle(title_);
+                title_ = NULL;
+            }
+            if (!bDidOutput_)
+            {
+                if (header_ != NULL)
+                {
+                    context_.writeTextBlock(header_);
+                }
+                context_.writeOptionListStart();
+            }
+            bDidOutput_ = true;
+        }
+
+        const HelpWriterContext               &context_;
+        const CommonFormatterData             &common_;
+        boost::scoped_ptr<TextTableFormatter>  consoleFormatter_;
+        const char                            *title_;
+        const char                            *header_;
+        bool                                   bDidOutput_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsListFormatter);
+};
+
+OptionsListFormatter::OptionsListFormatter(
+        const HelpWriterContext   &context,
+        const CommonFormatterData &common,
+        const char                *title)
+    : context_(context), common_(common),
+      title_(title), header_(NULL), bDidOutput_(false)
+{
+    if (context.outputFormat() == eHelpOutputFormat_Console)
+    {
+        consoleFormatter_.reset(new TextTableFormatter());
+        consoleFormatter_->setFirstColumnIndent(1);
+        consoleFormatter_->setFoldLastColumnToNextLine(4);
+        consoleFormatter_->addColumn(NULL, 6, false);
+        consoleFormatter_->addColumn(NULL, 8, false);
+        consoleFormatter_->addColumn(NULL, 10, false);
+        consoleFormatter_->addColumn(NULL, 50, true);
+    }
+}
+
+void OptionsListFormatter::formatOption(const OptionInfo &option)
+{
+    writeSectionStartIfNecessary();
+    std::string name, value;
+    formatOptionNameAndValue(option, &name, &value);
+    std::string defaultValue(defaultOptionValue(option));
+    std::string info;
+    if (!defaultValue.empty())
+    {
+        info = "(" + defaultValue + ")";
+    }
+    const FileNameOptionInfo *fileOption = option.toType<FileNameOptionInfo>();
+    if (fileOption != NULL)
+    {
+        const bool bAbbrev = (context_.outputFormat() == eHelpOutputFormat_Console);
+        if (!info.empty())
+        {
+            info.append(" ");
+        }
+        info.append("(");
+        info.append(fileOptionFlagsAsString(*fileOption, bAbbrev));
+        info.append(")");
+    }
+    std::string description(descriptionWithOptionDetails(common_, option));
+    if (context_.outputFormat() == eHelpOutputFormat_Console)
+    {
+        consoleFormatter_->clear();
+        consoleFormatter_->addColumnLine(0, "-" + name);
+        consoleFormatter_->addColumnLine(1, value);
+        if (!info.empty())
+        {
+            consoleFormatter_->addColumnLine(2, info);
+        }
+        consoleFormatter_->addColumnHelpTextBlock(3, context_, description);
+        context_.outputFile().writeString(consoleFormatter_->formatRow());
+    }
+    else
+    {
+        if (!info.empty())
+        {
+            value.append(" ");
+            value.append(info);
+        }
+        context_.writeOptionItem("-" + name, value, description);
+    }
+}
+
+//! \}
 
 }   // namespace
 
@@ -487,12 +606,17 @@ class CommandLineHelpWriter::Impl
         //! Sets the Options object to use for generating help.
         explicit Impl(const Options &options);
 
+        //! Format the list of known issues.
+        void formatBugs(const HelpWriterContext &context);
+
         //! Options object to use for generating help.
-        const Options          &options_;
+        const Options               &options_;
+        //! List of bugs/knows issues.
+        ConstArrayRef<const char *>  bugs_;
         //! Time unit to show in descriptions.
-        std::string             timeUnit_;
+        std::string                  timeUnit_;
         //! Whether to write descriptions to output.
-        bool                    bShowDescriptions_;
+        bool                         bShowDescriptions_;
 };
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
@@ -500,6 +624,45 @@ CommandLineHelpWriter::Impl::Impl(const Options &options)
       bShowDescriptions_(false)
 {
 }
+
+void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
+{
+    if (bugs_.empty())
+    {
+        return;
+    }
+    context.writeTitle("Known Issues");
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        context.writeTextBlock("[UL]");
+    }
+    ConstArrayRef<const char *>::const_iterator i;
+    for (i = bugs_.begin(); i != bugs_.end(); ++i)
+    {
+        const char *const bug = *i;
+        // TODO: The context should be able to do this also for console output, but
+        // that requires a lot more elaborate parser for the markup.
+        if (context.outputFormat() == eHelpOutputFormat_Console)
+        {
+            TextLineWrapperSettings settings;
+            settings.setIndent(2);
+            settings.setFirstLineIndent(0);
+            settings.setLineLength(78);
+            context.outputFile().writeLine(
+                    context.substituteMarkupAndWrapToString(
+                            settings, formatString("* %s", bug)));
+        }
+        else
+        {
+            context.writeTextBlock(formatString("[LI]%s", bug));
+        }
+    }
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        context.writeTextBlock("[ul]");
+    }
+}
+
 
 /********************************************************************
  * CommandLineHelpWriter
@@ -514,52 +677,67 @@ CommandLineHelpWriter::~CommandLineHelpWriter()
 {
 }
 
-CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
+CommandLineHelpWriter &
+CommandLineHelpWriter::setShowDescriptions(bool bSet)
 {
     impl_->bShowDescriptions_ = bSet;
     return *this;
 }
 
-CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
+CommandLineHelpWriter &
+CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
 {
     impl_->timeUnit_ = timeUnit;
     return *this;
 }
 
+CommandLineHelpWriter &
+CommandLineHelpWriter::setKnownIssues(const ConstArrayRef<const char *> &bugs)
+{
+    impl_->bugs_ = bugs;
+    return *this;
+}
+
 void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
 {
-    boost::scoped_ptr<OptionsFormatterInterface> formatter;
-    const HelpWriterContext                     &writerContext = context.writerContext();
-    CommonFormatterData                          common(impl_->timeUnit_.c_str());
-    switch (writerContext.outputFormat())
+    if (context.isCompletionExport())
     {
-        case eHelpOutputFormat_Console:
-            formatter.reset(new OptionsConsoleFormatter(common));
-            break;
-        default:
-            // TODO: Implement once the situation with Redmine issue #969 is
-            // more clear.
-            GMX_THROW(NotImplementedError(
-                              "Command-line help is not implemented for this output format"));
+        context.shellCompletionWriter().writeModuleCompletions(
+                context.moduleDisplayName(), impl_->options_);
+        return;
     }
-    OptionsFilter filter(writerContext, formatter.get());
+    const HelpWriterContext &writerContext = context.writerContext();
+    OptionsFilter            filter;
     filter.setShowHidden(context.showHidden());
+
+    {
+        writerContext.writeTitle("Synopsis");
+        SynopsisFormatter synopsisFormatter(writerContext);
+        synopsisFormatter.start(context.moduleDisplayName());
+        filter.formatSelected(OptionsFilter::eSelectFileOptions,
+                              &synopsisFormatter, impl_->options_);
+        filter.formatSelected(OptionsFilter::eSelectOtherOptions,
+                              &synopsisFormatter, impl_->options_);
+        synopsisFormatter.finish();
+    }
 
     if (impl_->bShowDescriptions_)
     {
-        File &file = writerContext.outputFile();
-        file.writeLine("DESCRIPTION");
-        file.writeLine("-----------");
-        file.writeLine();
-        filter.formatSelected(OptionsFilter::eSelectDescriptions,
-                              impl_->options_);
+        DescriptionsFormatter descriptionFormatter(writerContext);
+        descriptionFormatter.format(impl_->options_, "Description");
     }
+    CommonFormatterData    common(impl_->timeUnit_.c_str());
+    OptionsListFormatter   formatter(writerContext, common, "Options");
+    formatter.startSection("Options to specify input and output files:[PAR]");
     filter.formatSelected(OptionsFilter::eSelectFileOptions,
-                          impl_->options_);
+                          &formatter, impl_->options_);
+    formatter.finishSection();
+    formatter.startSection("Other options:[PAR]");
     filter.formatSelected(OptionsFilter::eSelectOtherOptions,
-                          impl_->options_);
-    filter.formatSelected(OptionsFilter::eSelectSelectionOptions,
-                          impl_->options_);
+                          &formatter, impl_->options_);
+    formatter.finishSection();
+
+    impl_->formatBugs(writerContext);
 }
 
 } // namespace gmx

@@ -1,10 +1,10 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -32,27 +32,47 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(DOXYGEN_EXECUTABLE   @DOXYGEN_EXECUTABLE@)
+set(DOXYGEN_EXECUTABLE   "@DOXYGEN_EXECUTABLE@")
+set(DOXYGEN_VERSION      "@DOXYGEN_VERSION@")
 set(DOXYGEN_MSCGEN_FOUND @DOXYGEN_MSCGEN_FOUND@)
+
+set(EXPECTED_VERSION 1.8.5)
+
+if (NOT DOXYGEN_VERSION VERSION_EQUAL EXPECTED_VERSION)
+    message("NOTE: You are using Doxygen version ${DOXYGEN_VERSION}. "
+            "The documentation is designed for ${EXPECTED_VERSION}. "
+            "Other versions may or may not work, but very likely produce extra warnings.")
+endif()
 
 message("Running Doxygen...")
 # The standard output shows a lot of progress information, but obscures errors
 # that may appear.  CMake-introduced buffering also makes it appear sluggish,
 # so disable it.
 execute_process(COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile-${DOCTYPE}
-                OUTPUT_QUIET)
+                OUTPUT_QUIET RESULT_VARIABLE result)
+if (result)
+    message(FATAL_ERROR "Doxygen failed. "
+            "Please run '${DOXYGEN_EXECUTABLE} Doxyfile-${DOCTYPE}' "
+            "in the doxygen/ subdirectory in the build tree to see the details.")
+endif()
+
 file(READ doxygen-${DOCTYPE}.log DOXYGEN_WARNINGS)
 if (DOXYGEN_WARNINGS)
     string(STRIP "${DOXYGEN_WARNINGS}" STRIPPED_WARNINGS)
     message("The following warnings were produced by Doxygen:")
     message("${STRIPPED_WARNINGS}")
+    # Remove some useless/hard-to-suppress warnings from the file to avoid
+    # Jenkins complaining.
+    string(REGEX REPLACE
+           "warning:[^\n]*Consider increasing DOT_GRAPH_MAX_NODES.\n" ""
+           DOXYGEN_WARNINGS "${DOXYGEN_WARNINGS}")
+    # Add a note to the warnings that identify the documentation type that
+    # produces them.  This makes it easier to see in Jenkins if a warning type
+    # is produced only from some documentation types.
+    string(REGEX REPLACE "\n" " (in doc-${DOCTYPE})\n"
+           DOXYGEN_WARNINGS "${DOXYGEN_WARNINGS}")
+    file(WRITE doxygen-${DOCTYPE}.log "${DOXYGEN_WARNINGS}")
 endif ()
-# Remove some useless/hard-to-suppress warnings from the file to avoid Jenkins
-# complaining.
-string(REGEX REPLACE
-       "warning:[^\n]*Consider increasing DOT_GRAPH_MAX_NODES.\n" ""
-       DOXYGEN_WARNINGS "${DOXYGEN_WARNINGS}")
-file(WRITE doxygen-${DOCTYPE}.log "${DOXYGEN_WARNINGS}")
 if (NOT DOXYGEN_MSCGEN_FOUND)
     message("NOTE: mscgen was not available. "
             "Please install it to produce graphs in the documentation.")

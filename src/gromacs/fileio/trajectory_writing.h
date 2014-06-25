@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,54 +39,52 @@
 #define GMX_FILEIO_TRAJECTORY_WRITING_H
 
 #include <stdio.h>
+
+#include "../legacyheaders/types/commrec_fwd.h"
+#include "../legacyheaders/mdebin.h"
+#include "../timing/wallcycle.h"
+
 #include "filenm.h"
 #include "mdoutf.h"
-#include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/types/commrec.h"
-#include "../legacyheaders/update.h"
-#include "../legacyheaders/mdebin.h"
 
-void
-do_trajectory_writing(FILE           *fplog,
-                      t_commrec      *cr,
-                      int             nfile,
-                      const t_filenm  fnm[],
-                      gmx_large_int_t step,
-                      gmx_large_int_t step_rel,
-                      double          t,
-                      t_inputrec     *ir,
-                      t_state        *state,
-                      t_state        *state_global,
-                      gmx_mtop_t     *top_global,
-                      t_forcerec     *fr,
-                      gmx_update_t    upd,
-                      gmx_mdoutf_t   *outf,
-                      t_mdebin       *mdebin,
-                      gmx_ekindata_t *ekind,
-                      rvec           *f,
-                      rvec           *f_global,
-                      gmx_wallcycle_t wcycle,
-                      gmx_rng_t       mcrng,
-                      int            *nchkpt,
-                      gmx_bool        bCPT,
-                      gmx_bool        bRerunMD,
-                      gmx_bool        bLastStep,
-                      gmx_bool        bDoConfOut,
-                      gmx_bool        bSumEkinhOld
-                      );
-/* Wrapper routine for trajectory writing */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void write_traj(FILE *fplog, t_commrec *cr,
-                gmx_mdoutf_t *of,
-                int mdof_flags,
-                gmx_mtop_t *top_global,
-                gmx_large_int_t step, double t,
-                t_state *state_local, t_state *state_global,
-                rvec *f_local, rvec *f_global,
-                int *n_xtc, rvec **x_xtc);
-/* Routine that writes frames to trn, xtc and/or checkpoint.
- * What is written is determined by the mdof_flags defined above.
- * Data is collected to the master node only when necessary.
+/*! \brief Wrapper routine for writing trajectories during mdrun
+ *
+ * This routine does communication (e.g. collecting distributed coordinates)
  */
+void
+do_md_trajectory_writing(FILE           *fplog,
+                         t_commrec      *cr,
+                         int             nfile,
+                         const t_filenm  fnm[],
+                         gmx_int64_t     step,
+                         gmx_int64_t     step_rel,
+                         double          t,
+                         t_inputrec     *ir,
+                         t_state        *state,
+                         t_state        *state_global,
+                         gmx_mtop_t     *top_global,
+                         t_forcerec     *fr,
+                         gmx_mdoutf_t    outf,
+                         t_mdebin       *mdebin,
+                         gmx_ekindata_t *ekind,
+                         rvec           *f,
+                         rvec           *f_global,
+                         gmx_wallcycle_t wcycle,
+                         int            *nchkpt,
+                         gmx_bool        bCPT,
+                         gmx_bool        bRerunMD,
+                         gmx_bool        bLastStep,
+                         gmx_bool        bDoConfOut,
+                         gmx_bool        bSumEkinhOld
+                         );
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GMX_FILEIO_TRAJECTORY_WRITING_H */

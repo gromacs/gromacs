@@ -1,69 +1,77 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <math.h>
-#include "sysstuff.h"
-#include "statutil.h"
 #include <string.h>
-#include "smalloc.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "macros.h"
-#include "vec.h"
-#include "index.h"
-#include "gmx_fatal.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gmx_ana.h"
 
 int gmx_genpr(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[THISMODULE] produces an include file for a topology containing",
+        "[THISMODULE] produces an #include file for a topology containing",
         "a list of atom numbers and three force constants for the",
-        "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-direction. A single isotropic force constant may",
+        "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-direction based on",
+        "the contents of the [TT]-f[tt] file. A single isotropic force constant may",
         "be given on the command line instead of three components.[PAR]",
-        "WARNING: position restraints only work for the one molecule at a time.",
-        "Position restraints are interactions within molecules, therefore",
-        "they should be included within the correct [TT][ moleculetype ][tt]",
-        "block in the topology. Since the atom numbers in every moleculetype",
-        "in the topology start at 1 and the numbers in the input file for",
-        "[THISMODULE] number consecutively from 1, [THISMODULE] will only",
-        "produce a useful file for the first molecule.[PAR]",
+        "WARNING: Position restraints are interactions within molecules, therefore",
+        "they must be included within the correct [TT][ moleculetype ][tt]",
+        "block in the topology. The atom indices within the",
+        "[TT][ position_restraints ][tt] block must be within the range of the",
+        "atom indices for that molecule type. Since the atom numbers in every",
+        "moleculetype in the topology start at 1 and the numbers in the input file",
+        "for [THISMODULE] number consecutively from 1, [THISMODULE] will only",
+        "produce a useful file for the first molecule. You may wish to",
+        "edit the resulting index file to remove the lines for later atoms,",
+        "or construct a suitable index group to provide",
+        "as input to [THISMODULE].[PAR]",
         "The [TT]-of[tt] option produces an index file that can be used for",
         "freezing atoms. In this case, the input file must be a [TT].pdb[tt] file.[PAR]",
         "With the [TT]-disre[tt] option, half a matrix of distance restraints",
@@ -176,7 +184,7 @@ int gmx_genpr(int argc, char *argv[])
                 fprintf(out, "%d\n", i+1);
             }
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     else if ((bDisre || bConstr) && x)
     {
@@ -229,7 +237,7 @@ int gmx_genpr(int argc, char *argv[])
                 }
             }
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     else
     {
@@ -245,7 +253,7 @@ int gmx_genpr(int argc, char *argv[])
             fprintf(out, "%4d %4d %10g %10g %10g\n",
                     ind_grp[i]+1, 1, fc[XX], fc[YY], fc[ZZ]);
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     if (xfn)
     {

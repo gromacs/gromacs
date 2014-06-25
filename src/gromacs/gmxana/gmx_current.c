@@ -1,64 +1,63 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *                        VERSION 3.0
- *
- * Copyright (c) 1991-2001
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
- * University of Groningen, The Netherlands
- *
- * This program is free software; you can redistribute it and/or
- *
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
- *
- * And Hey:
- * Gyas ROwers Mature At Cryogenic Speed
- *
- * finished FD 09/07/08
- *
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <stdlib.h>
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "statutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "xvgr.h"
-#include "rmpbc.h"
-#include "pbc.h"
-#include "physics.h"
-#include "index.h"
-#include "gmx_statistics.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/math/units.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/statistics/statistics.h"
 #include "gmx_ana.h"
 #include "macros.h"
 
+#include "gromacs/utility/fatalerror.h"
+
 #define SQR(x) (pow(x, 2.0))
 #define EPSI0 (EPSILON0*E_CHARGE*E_CHARGE*AVOGADRO/(KILO*NANO)) /* EPSILON0 in SI units */
-
 
 static void index_atom2mol(int *n, int *index, t_block *mols)
 {
@@ -142,7 +141,7 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
         }
     }
 
-    if (abs(qall) > 0.01)
+    if (fabs(qall) > 0.01)
     {
         printf("\n\nSystem not neutral (q=%f) will not calculate translational part of the dipole moment.\n", qall);
         bNEU = FALSE;
@@ -473,7 +472,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                 xshfr[i] = 0.0;
             }
         }
-
+        assert(time != NULL);
 
 
         if (nfr == 0)
@@ -996,16 +995,16 @@ int gmx_current(int argc, char *argv[])
                temp, trust, bfit, efit, bvit, evit, status, isize, nmols, nshift,
                index0, indexm, mass2, qmol, eps_rf, oenv);
 
-    ffclose(fmj);
-    ffclose(fmd);
-    ffclose(fmjdsp);
+    gmx_ffclose(fmj);
+    gmx_ffclose(fmd);
+    gmx_ffclose(fmjdsp);
     if (bACF)
     {
-        ffclose(outf);
+        gmx_ffclose(outf);
     }
     if (bINT)
     {
-        ffclose(mcor);
+        gmx_ffclose(mcor);
     }
 
     return 0;

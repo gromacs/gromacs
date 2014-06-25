@@ -1,68 +1,77 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "typedefs.h"
 #include "macros.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "vec.h"
-#include "do_fit.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "smalloc.h"
 #include "nrnb.h"
 #include "disre.h"
-#include "statutil.h"
 #include "force.h"
 #include "gstat.h"
 #include "main.h"
 #include "gromacs/fileio/pdbio.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "mdatoms.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "mdrun.h"
 #include "names.h"
-#include "gromacs/fileio/matio.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ana.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int  n;
@@ -637,10 +646,10 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
         hi = max_dr;
     }
     printf("Highest level in the matrix will be %g\n", hi);
-    fp = ffopen(fn, "w");
+    fp = gmx_ffopen(fn, "w");
     write_xpm(fp, 0, "Distance Violations", "<V> (nm)", "Residue", "Residue",
               n_res, n_res, t_res, t_res, matrix, 0, hi, rlo, rhi, &nlevels);
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 int gmx_disre(int argc, char *argv[])
@@ -799,7 +808,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     ir.dr_tau = 0.0;
-    init_disres(fplog, &mtop, &ir, NULL, FALSE, &fcd, NULL, FALSE);
+    init_disres(fplog, &mtop, &ir, NULL, &fcd, NULL, FALSE);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5*natoms);
@@ -827,7 +836,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     mdatoms = init_mdatoms(fplog, &mtop, ir.efep != efepNO);
-    atoms2md(&mtop, &ir, 0, NULL, 0, mtop.natoms, mdatoms);
+    atoms2md(&mtop, &ir, 0, NULL, mtop.natoms, mdatoms);
     update_mdatoms(mdatoms, ir.fepvals->init_lambda);
     init_nrnb(&nrnb);
     if (ir.ePBC != epbcNONE)
@@ -927,13 +936,13 @@ int gmx_disre(int argc, char *argv[])
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres,
                           j, &top->idef, &mtop, max_dr, nlevels, bThird);
-        ffclose(out);
-        ffclose(aver);
-        ffclose(numv);
-        ffclose(maxxv);
+        gmx_ffclose(out);
+        gmx_ffclose(aver);
+        gmx_ffclose(numv);
+        gmx_ffclose(maxxv);
         if (isize > 0)
         {
-            ffclose(xvg);
+            gmx_ffclose(xvg);
             do_view(oenv, opt2fn("-dr", NFILE, fnm), "-nxy");
         }
         do_view(oenv, opt2fn("-dn", NFILE, fnm), "-nxy");

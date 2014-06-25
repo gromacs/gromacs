@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,4 +51,4 @@ set(GMX_DOUBLE ON CACHE BOOL "Use double by default on Fujitsu Sparc64 (due to H
 set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on Fujitsu Sparc64" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Use static linking by default on Fujitsu Sparc64" FORCE)
 
-set(GMX_CPU_ACCELERATION "Sparc64_HPC_ACE" CACHE STRING "Enabling Sparc64 HPC-ACE acceleration when using Fujitsu Sparc64 toolchain")
+set(GMX_SIMD "Sparc64_HPC_ACE" CACHE STRING "Enabling Sparc64 HPC-ACE SIMD when using Fujitsu Sparc64 toolchain")

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,49 +51,79 @@ add_subdirectory(gmxpreprocess)
 add_subdirectory(commandline)
 add_subdirectory(fft)
 add_subdirectory(linearalgebra)
+add_subdirectory(math)
+add_subdirectory(random)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
+<<<<<<< HEAD
 add_subdirectory(qmmm)
 add_subdirectory(mmslave)
+=======
+add_subdirectory(pbcutil)
+>>>>>>> master
 add_subdirectory(timing)
+add_subdirectory(topology)
 add_subdirectory(utility)
 add_subdirectory(fileio)
+add_subdirectory(swap)
+add_subdirectory(essentialdynamics)
+add_subdirectory(pulling)
+add_subdirectory(simd)
+add_subdirectory(imd)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
+    add_subdirectory(statistics)
     add_subdirectory(analysisdata)
     add_subdirectory(selection)
     add_subdirectory(trajectoryanalysis)
-endif ()
+    add_subdirectory(tools)
+endif()
 
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
+
+# This would be the standard way to include thread_mpi, but
+# we want libgromacs to link the functions directly
+#if(GMX_THREAD_MPI)
+#    add_subdirectory(thread_mpi)
+#endif()
+#target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
+
+tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
+list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
 
 file(GLOB LIBGROMACS_HEADERS *.h)
 configure_file(version.h.cmakein version.h)
 gmx_install_headers("" ${LIBGROMACS_HEADERS})
 gmx_install_headers("" ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
-# Add target that generates gitversion.c every time make is run
-# if git version info is requested
+# Add target that generates baseversion-gen.c every time make is run
+# if git version info is requested, or create it statically.
 # This code is here instead of utility/CMakeLists.txt because CMake
 # ignores set_source_file_properties from subdirectories.
+set(GENERATED_VERSION_FILE
+    ${CMAKE_CURRENT_BINARY_DIR}/utility/baseversion-gen.c)
+set(GENERATED_VERSION_FILE_SOURCE
+    ${CMAKE_CURRENT_SOURCE_DIR}/utility/baseversion-gen.c.cmakein)
 if (GMX_GIT_VERSION_INFO)
-    set(GENERATED_VERSION_FILE ${CMAKE_CURRENT_BINARY_DIR}/utility/gitversion.c)
     add_custom_target(gmx-version ALL
             COMMAND ${CMAKE_COMMAND}
                 -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-                -D VERSION_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein"
+                -D VERSION_CMAKEIN=${GENERATED_VERSION_FILE_SOURCE}
                 -D VERSION_OUT=${GENERATED_VERSION_FILE}
                 -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein
+            DEPENDS ${GENERATED_VERSION_FILE_SOURCE}
             COMMENT "Generating git version information")
     set_source_files_properties(${GENERATED_VERSION_FILE}
                                 PROPERTIES GENERATED true)
-    list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
+else()
+    set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
+    configure_file(${GENERATED_VERSION_FILE_SOURCE} ${GENERATED_VERSION_FILE})
 endif()
+list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
 # apply gcc 4.4.x bug workaround
 if(GMX_USE_GCC44_BUG_WORKAROUND)
@@ -106,7 +136,7 @@ endif()
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx-version)
-endif ()
+endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
@@ -116,23 +146,31 @@ endif ()
 # used with add_library().
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-Wno-unused-parameter HAS_NO_UNUSED_PARAMETER)
-check_cxx_compiler_flag(-Wno-deprecated-register HAS_NO_DEPRECATED_REGISTER)
 if (HAS_NO_UNUSED_PARAMETER)
     set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-unused-parameter")
 endif()
+check_cxx_compiler_flag(-Wno-deprecated-register HAS_NO_DEPRECATED_REGISTER)
 if (HAS_NO_DEPRECATED_REGISTER)
     set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-deprecated-register")
+else()
+    check_cxx_compiler_flag(-Wno-deprecated HAS_NO_DEPRECATED)
+    if (HAS_NO_DEPRECATED)
+        set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-deprecated")
+    endif()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
+                      ${GMX_TNG_LIBRARIES}
+                      ${EXTRAE_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
-                      ${XML_LIBRARIES} ${GSL_LIBRARIES}
+                      ${XML_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
-                      SOVERSION ${SOVERSION}
+                      SOVERSION ${LIBRARY_SOVERSION}
+                      VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 # Only install the library in mdrun-only mode if it is actually necessary
@@ -164,4 +202,4 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
     else()
         message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_GPU")
     endif()
-endif ()
+endif()

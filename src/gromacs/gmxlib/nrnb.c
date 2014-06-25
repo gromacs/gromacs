@@ -1,50 +1,51 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
+
 #include "types/commrec.h"
-#include "sysstuff.h"
-#include "gmx_fatal.h"
 #include "names.h"
 #include "macros.h"
 #include "nrnb.h"
-#include "main.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     const char *name;
@@ -97,20 +98,27 @@ static const t_nrnb_data nbdata[eNRNB] = {
      * - GPU always does exclusions, which requires 2-4 flops, but as invsqrt
      *   is always counted as 6 flops, this roughly compensates.
      */
-    { "NxN RF Elec. + VdW [F]",         38 }, /* nbnxn kernel LJ+RF, no ener */
-    { "NxN RF Elec. + VdW [V&F]",       54 },
-    { "NxN QSTab Elec. + VdW [F]",      41 }, /* nbnxn kernel LJ+tab, no en */
-    { "NxN QSTab Elec. + VdW [V&F]",    59 },
-    { "NxN Ewald Elec. + VdW [F]",      66 }, /* nbnxn kernel LJ+Ewald, no en */
-    { "NxN Ewald Elec. + VdW [V&F]",   107 },
-    { "NxN VdW [F]",                    33 }, /* nbnxn kernel LJ, no ener */
-    { "NxN VdW [V&F]",                  43 },
+    { "NxN RF Elec. + LJ [F]",          38 }, /* nbnxn kernel LJ+RF, no ener */
+    { "NxN RF Elec. + LJ [V&F]",        54 },
+    { "NxN QSTab Elec. + LJ [F]",       41 }, /* nbnxn kernel LJ+tab, no en */
+    { "NxN QSTab Elec. + LJ [V&F]",     59 },
+    { "NxN Ewald Elec. + LJ [F]",       66 }, /* nbnxn kernel LJ+Ewald, no en */
+    { "NxN Ewald Elec. + LJ [V&F]",    107 },
+    { "NxN LJ [F]",                     33 }, /* nbnxn kernel LJ, no ener */
+    { "NxN LJ [V&F]",                   43 },
     { "NxN RF Electrostatics [F]",      31 }, /* nbnxn kernel RF, no ener */
     { "NxN RF Electrostatics [V&F]",    36 },
     { "NxN QSTab Elec. [F]",            34 }, /* nbnxn kernel tab, no ener */
     { "NxN QSTab Elec. [V&F]",          41 },
     { "NxN Ewald Elec. [F]",            61 }, /* nbnxn kernel Ewald, no ener */
     { "NxN Ewald Elec. [V&F]",          84 },
+    /* The switch function flops should be added to the LJ kernels above */
+    { "NxN LJ add F-switch [F]",        12 }, /* extra cost for LJ F-switch */
+    { "NxN LJ add F-switch [V&F]",      22 },
+    { "NxN LJ add P-switch [F]",        27 }, /* extra cost for LJ P-switch */
+    { "NxN LJ add P-switch [V&F]",      20 },
+    { "NxN LJ add LJ Ewald [F]",        36 }, /* extra cost for LJ Ewald */
+    { "NxN LJ add LJ Ewald [V&F]",      33 },
     { "1,4 nonbonded interactions",     90 },
     { "Born radii (Still)",             47 },
     { "Born radii (HCT/OBC)",          183 },
@@ -303,9 +311,21 @@ void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char gmx_unused *file, int gmx_un
 #endif
 }
 
+/* Returns in enr is the index of a full nbnxn VdW kernel */
+static gmx_bool nrnb_is_nbnxn_vdw_kernel(int enr)
+{
+    return (enr >= eNR_NBNXN_LJ_RF && enr <= eNR_NBNXN_LJ_E);
+}
+
+/* Returns in enr is the index of an nbnxn kernel addition (LJ modification) */
+static gmx_bool nrnb_is_nbnxn_kernel_addition(int enr)
+{
+    return (enr >= eNR_NBNXN_ADD_LJ_FSW && enr <= eNR_NBNXN_ADD_LJ_EWALD_E);
+}
+
 void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
 {
-    int           i;
+    int           i, j;
     double        mni, frac, tfrac, tflop;
     const char   *myline = "-----------------------------------------------------------------------------";
 
@@ -365,13 +385,38 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
     for (i = 0; (i < eNRNB); i++)
     {
         mni     = 1e-6*nrnb->n[i];
-        *mflop += mni*nbdata[i].flop;
-        frac    = 100.0*mni*nbdata[i].flop/tflop;
-        tfrac  += frac;
-        if (out && mni != 0)
+        /* Skip empty entries and nbnxn additional flops,
+         * which have been added to the kernel entry.
+         */
+        if (mni > 0 && !nrnb_is_nbnxn_kernel_addition(i))
         {
-            fprintf(out, " %-32s %16.6f %15.3f  %6.1f\n",
-                    nbdata[i].name, mni, mni*nbdata[i].flop, frac);
+            int flop;
+
+            flop    = nbdata[i].flop;
+            if (nrnb_is_nbnxn_vdw_kernel(i))
+            {
+                /* Possibly add the cost of an LJ switch/Ewald function */
+                for (j = eNR_NBNXN_ADD_LJ_FSW; j <= eNR_NBNXN_ADD_LJ_EWALD; j += 2)
+                {
+                    int e_kernel_add;
+
+                    /* Select the force or energy flop count */
+                    e_kernel_add = j + ((i - eNR_NBNXN_LJ_RF) % 2);
+
+                    if (nrnb->n[e_kernel_add] > 0)
+                    {
+                        flop += nbdata[e_kernel_add].flop;
+                    }
+                }
+            }
+            *mflop += mni*flop;
+            frac    = 100.0*mni*flop/tflop;
+            tfrac  += frac;
+            if (out != NULL)
+            {
+                fprintf(out, " %-32s %16.6f %15.3f  %6.1f\n",
+                        nbdata[i].name, mni, mni*flop, frac);
+            }
         }
     }
     if (out)
@@ -380,11 +425,20 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
         fprintf(out, " %-32s %16s %15.3f  %6.1f\n",
                 "Total", "", *mflop, tfrac);
         fprintf(out, "%s\n\n", myline);
+
+        if (nrnb->n[eNR_NBKERNEL_GENERIC] > 0)
+        {
+            fprintf(out,
+                    "WARNING: Using the slow generic C kernel. This is fine if you are\n"
+                    "comparing different implementations or MD software. Routine\n"
+                    "simulations should use a different non-bonded setup for much better\n"
+                    "performance.\n\n");
+        }
     }
 }
 
 void print_perf(FILE *out, double time_per_thread, double time_per_node,
-                gmx_large_int_t nsteps, real delta_t,
+                gmx_int64_t nsteps, real delta_t,
                 double nbfs, double mflop)
 {
     real wallclocktime;

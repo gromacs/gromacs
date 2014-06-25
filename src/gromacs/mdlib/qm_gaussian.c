@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -39,30 +41,25 @@
 #ifdef GMX_QMMM_GAUSSIAN
 
 #include <math.h>
-#include "sysstuff.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "physics.h"
-#include "macros.h"
-#include "vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "force.h"
-#include "invblock.h"
 #include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "network.h"
-#include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"
-#include "mshift.h"
 #include "txtdump.h"
 #include "qmmm.h"
-#include <stdio.h>
-#include <string.h>
-#include "gmx_fatal.h"
-#include "typedefs.h"
-#include <stdlib.h>
+#include "gromacs/utility/fatalerror.h"
 
 
 /* TODO: this should be made thread-safe */
@@ -116,7 +113,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         /* we read the number of cpus and environment from the environment
          * if set.
          */
-        buf = getenv("NCPUS");
+        buf = getenv("GMX_QM_GAUSSIAN_NCPUS");
         if (buf)
         {
             sscanf(buf, "%d", &qm->nQMcpus);
@@ -126,7 +123,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             qm->nQMcpus = 1;
         }
         fprintf(stderr, "number of CPUs for gaussian = %d\n", qm->nQMcpus);
-        buf = getenv("MEM");
+        buf = getenv("GMX_QM_GAUSSIAN_MEMORY");
         if (buf)
         {
             sscanf(buf, "%d", &qm->QMmem);
@@ -136,7 +133,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             qm->QMmem = 50000000;
         }
         fprintf(stderr, "memory for gaussian = %d\n", qm->QMmem);
-        buf = getenv("ACC");
+        buf = getenv("GMX_QM_ACCURACY");
         if (buf)
         {
             sscanf(buf, "%d", &qm->accuracy);
@@ -147,7 +144,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         }
         fprintf(stderr, "accuracy in l510 = %d\n", qm->accuracy);
 
-        buf = getenv("CPMCSCF");
+        buf = getenv("GMX_QM_CPMCSCF");
         if (buf)
         {
             sscanf(buf, "%d", &i);
@@ -165,7 +162,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         {
             fprintf(stderr, "NOT using cp-mcscf in l1003\n");
         }
-        buf = getenv("SASTEP");
+        buf = getenv("GMX_QM_SA_STEP");
         if (buf)
         {
             sscanf(buf, "%d", &qm->SAstep);
@@ -200,7 +197,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             fclose(out);
         }
         /* gaussian settings on the system */
-        buf = getenv("GAUSS_DIR");
+        buf = getenv("GMX_QM_GAUSS_DIR");
         fprintf(stderr, "%s", buf);
 
         if (buf)
@@ -209,26 +206,26 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         }
         else
         {
-            gmx_fatal(FARGS, "no $GAUSS_DIR, check gaussian manual\n");
+            gmx_fatal(FARGS, "no $GMX_QM_GAUSS_DIR, check gaussian manual\n");
         }
 
-        buf = getenv("GAUSS_EXE");
+        buf = getenv("GMX_QM_GAUSS_EXE");
         if (buf)
         {
             qm->gauss_exe = strdup(buf);
         }
         else
         {
-            gmx_fatal(FARGS, "no $GAUSS_EXE, check gaussian manual\n");
+            gmx_fatal(FARGS, "no $GMX_QM_GAUSS_EXE set, check gaussian manual\n");
         }
-        buf = getenv("DEVEL_DIR");
+        buf = getenv("GMX_QM_MODIFIED_LINKS_DIR");
         if (buf)
         {
             qm->devel_dir = strdup (buf);
         }
         else
         {
-            gmx_fatal(FARGS, "no $DEVEL_DIR, this is were the modified links reside.\n");
+            gmx_fatal(FARGS, "no $GMX_QM_MODIFIED_LINKS_DIR, this is were the modified links reside.\n");
         }
 
         /*  if(fr->bRF){*/
@@ -1110,7 +1107,7 @@ real call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     if (!step)
     {
         snew(buf, 20);
-        buf = getenv("STATE");
+        buf = getenv("GMX_QM_GROUND_STATE");
         if (buf)
         {
             sscanf(buf, "%d", &state);

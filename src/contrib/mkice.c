@@ -39,21 +39,20 @@
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "pbc.h"
-#include "physics.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/math/units.h"
 #include "names.h"
 #include "txtdump.h"
 #include "gromacs/fileio/trnio.h"
-#include "symtab.h"
-#include "strdb.h"
-#include "atomprop.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/confio.h"
 
 #define TET   109.47
@@ -635,7 +634,7 @@ int main(int argc,char *argv[])
 
   fn = ftp2fn(efSTO,NFILE,fnm);
   if (fn2ftp(fn) == efPDB) {
-    fp = ffopen(fn,"w");
+    fp = gmx_ffopen(fn,"w");
     if (bDiamond)
       fprintf(fp,"HEADER    This is a *diamond*\n");
     else
@@ -645,7 +644,7 @@ int main(int argc,char *argv[])
 	    nx,ny,nz,odist,hdist);
 	bromacs(quote,255);
     write_pdbfile(fp,quote,pdba,xx,boxje,' ',-1);
-    ffclose(fp);
+    gmx_ffclose(fp);
   }
   else {
     bromacs(quote,255);

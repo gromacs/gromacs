@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,34 +38,35 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
-#include "sysstuff.h"
+
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "physics.h"
 #include "force.h"
 #include "nonbonded.h"
 #include "names.h"
 #include "network.h"
-#include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"
-#include "mshift.h"
 #include "txtdump.h"
 #include "coulomb.h"
 #include "pme.h"
 #include "mdrun.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "qmmm.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void ns(FILE              *fp,
         t_forcerec        *fr,
@@ -143,7 +144,7 @@ void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda)
     fprintf(fplog, "  %-30s V %12.5e  dVdl %12.5e\n", s, v, dvdlambda);
 }
 
-void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
+void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                        t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
@@ -264,9 +265,14 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         /* Add short-range interactions */
         donb_flags |= GMX_NONBONDED_DO_SR;
 
+        /* Currently all group scheme kernels always calculate (shift-)forces */
         if (flags & GMX_FORCE_FORCES)
         {
             donb_flags |= GMX_NONBONDED_DO_FORCE;
+        }
+        if (flags & GMX_FORCE_VIRIAL)
+        {
+            donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
         }
         if (flags & GMX_FORCE_ENERGY)
         {
@@ -444,11 +450,19 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     where();
 
     *cycles_pme = 0;
+    clear_mat(fr->vir_el_recip);
+    clear_mat(fr->vir_lj_recip);
+
+    /* Do long-range electrostatics and/or LJ-PME, including related short-range
+     * corrections.
+     */
     if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
-        real Vlr             = 0, Vcorr = 0;
-        real dvdl_long_range = 0;
-        int  status          = 0;
+        real Vlr               = 0, Vcorr = 0;
+        real dvdl_long_range   = 0;
+        int  status            = 0;
+        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
+        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
 
         bSB = (ir->nwall == 2);
         if (bSB)
@@ -457,22 +471,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             svmul(ir->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
             box_size[ZZ] *= ir->wall_ewald_zfac;
         }
-    }
 
-    /* Do long-range electrostatics and/or LJ-PME, including related short-range
-     * corrections.
-     */
-
-    clear_mat(fr->vir_el_recip);
-    clear_mat(fr->vir_lj_recip);
-
-    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
-    {
-        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
-        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
-        int  status            = 0;
-
-        if (EEL_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
+        if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
             real dvdl_long_range_correction_q   = 0;
             real dvdl_long_range_correction_lj  = 0;
@@ -533,16 +533,17 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     }
                     *dvdlt_q  = 0;
                     *dvdlt_lj = 0;
+
                     ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
                                        cr, t, fr,
                                        md->chargeA,
                                        md->nChargePerturbed ? md->chargeB : NULL,
-                                       md->c6A,
-                                       md->nChargePerturbed ? md->c6B : NULL,
+                                       md->sqrt_c6A,
+                                       md->nTypePerturbed ? md->sqrt_c6B : NULL,
                                        md->sigmaA,
-                                       md->nChargePerturbed ? md->sigmaB : NULL,
+                                       md->nTypePerturbed ? md->sigmaB : NULL,
                                        md->sigma3A,
-                                       md->nChargePerturbed ? md->sigma3B : NULL,
+                                       md->nTypePerturbed ? md->sigma3B : NULL,
                                        ir->cutoff_scheme != ecutsVERLET,
                                        excl, x, bSB ? boxs : box, mu_tot,
                                        ir->ewald_geometry,
@@ -564,7 +565,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
 
-            if (fr->n_tpi == 0)
+            if (EEL_PME_EWALD(fr->eeltype) && fr->n_tpi == 0)
             {
                 Vcorr_q += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
                                                    &dvdl_long_range_correction_q,
@@ -575,17 +576,14 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             PRINT_SEPDVDL("Ewald excl. corr. LJ", Vcorr_lj, dvdl_long_range_correction_lj);
             enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction_q;
             enerd->dvdl_lin[efptVDW]  += dvdl_long_range_correction_lj;
-        }
 
-        if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)))
-        {
-            if (cr->duty & DUTY_PME)
+            if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)) && (cr->duty & DUTY_PME))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
-                    pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                    pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
                     if (EEL_PME(fr->eeltype))
                     {
                         pme_flags     |= GMX_PME_DO_COULOMB;
@@ -593,11 +591,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     if (EVDW_PME(fr->vdwtype))
                     {
                         pme_flags |= GMX_PME_DO_LJ;
-                        if (fr->ljpme_combination_rule == eljpmeLB)
-                        {
-                            /*Lorentz-Berthelot Comb. Rules in LJ-PME*/
-                            pme_flags |= GMX_PME_LJ_LB;
-                        }
                     }
                     if (flags & GMX_FORCE_FORCES)
                     {
@@ -614,10 +607,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     }
                     wallcycle_start(wcycle, ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
-                                        md->start, md->homenr - fr->n_tpi,
+                                        0, md->homenr - fr->n_tpi,
                                         x, fr->f_novirsum,
                                         md->chargeA, md->chargeB,
-                                        md->c6A, md->c6B,
+                                        md->sqrt_c6A, md->sqrt_c6B,
                                         md->sigmaA, md->sigmaB,
                                         bSB ? boxs : box, cr,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
@@ -660,7 +653,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             }
         }
 
-        if (!EEL_PME(fr->eeltype) && EEL_EWALD(fr->eeltype))
+        if (!EEL_PME(fr->eeltype) && EEL_PME_EWALD(fr->eeltype))
         {
             Vlr_q = do_ewald(ir, x, fr->f_novirsum,
                              md->chargeA, md->chargeB,
@@ -669,11 +662,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                              lambda[efptCOUL], &dvdl_long_range_q, fr->ewald_table);
             PRINT_SEPDVDL("Ewald long-range", Vlr_q, dvdl_long_range_q);
         }
-        else if (!EEL_EWALD(fr->eeltype))
-        {
-            gmx_fatal(FARGS, "No such electrostatics method implemented %s",
-                      eel_names[fr->eeltype]);
-        }
+
         /* Note that with separate PME nodes we get the real energies later */
         enerd->dvdl_lin[efptCOUL] += dvdl_long_range_q;
         enerd->dvdl_lin[efptVDW]  += dvdl_long_range_lj;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,24 +37,22 @@
  * Tests for gmx traj
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_integration_tests
  */
 
 #include "gromacs/gmxana/gmx_ana.h"
 #include "testutils/integrationtests.h"
 #include "testutils/cmdlinetest.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace
 {
 
-//! Test fixture for gmx traj
-typedef gmx::test::IntegrationTestFixture GmxTrajTest;
-
-class GmxTrajTestNoFatalError : public GmxTrajTest
+class GmxTraj : public gmx::test::IntegrationTestFixture,
+                public ::testing::WithParamInterface<const char *>
 {
     public:
-        GmxTrajTestNoFatalError() : groFileName(fileManager_.getInputFilePath("spc2.gro")),
-                                    xvgFileName(fileManager_.getTemporaryFilePath("spc2.xvg"))
+        GmxTraj() : groFileName(fileManager_.getInputFilePath("spc2.gro")),
+                    xvgFileName(fileManager_.getTemporaryFilePath("spc2.xvg"))
         {
         }
 
@@ -66,7 +64,7 @@ class GmxTrajTestNoFatalError : public GmxTrajTest
             caller.addOption("-s",  groFileName);
             caller.addOption("-ox", xvgFileName);
 
-            std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName).c_str();
+            std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
             caller.addOption("-f", inputTrajectoryFileName);
 
             redirectStringToStdin("0\n");
@@ -78,48 +76,85 @@ class GmxTrajTestNoFatalError : public GmxTrajTest
         std::string xvgFileName;
 };
 
-/* There are fancy ways to use "value-parameterized tests" to reduce
- * the duplication below, but for the handful of file formats we care
- * about, the code would probably get longer (and need fancy template
- * stuff, too).
- */
-
 /* TODO These tests are actually not very effective, because gmx-traj
  * can only return 0 or exit via gmx_fatal() (which currently also
  * exits the test binary). So, "no XDR/TNG support in the binary"
  * leads to the reading test appearing to pass. Still, no fatal error
  * and no segfault is useful information while modifying such code. */
-TEST_F(GmxTrajTestNoFatalError, TRRFile)
+
+TEST_P(GmxTraj, WithDifferentInputFormats)
 {
-    runTest("spc2-traj.trr");
+    runTest(GetParam());
 }
 
-TEST_F(GmxTrajTestNoFatalError, XTCFile)
+// ==
+
+class TrjconvWithIndexGroupSubset : public gmx::test::IntegrationTestFixture,
+                                    public ::testing::WithParamInterface<const char *>
 {
-    runTest("spc2-traj.xtc");
+    public:
+        int runTest(const char *fileName)
+        {
+            gmx::test::CommandLine caller;
+            caller.append("trjconv");
+
+            caller.addOption("-s", fileManager_.getInputFilePath("spc2.gro"));
+
+            std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
+            caller.addOption("-f", inputTrajectoryFileName);
+
+            std::string ndxFileName = fileManager_.getInputFilePath("spc2.ndx");
+            caller.addOption("-n", ndxFileName);
+
+            caller.addOption("-o", fileManager_.getTemporaryFilePath("spc-traj.tng"));
+
+            redirectStringToStdin("SecondWaterMolecule\n");
+
+            /* TODO Ideally, we would then check that the output file
+               has only 3 of the 6 atoms (which it does), but the
+               infrastructure for doing that automatically is still
+               being built. This would also fix the TODO below. */
+            return gmx_trjconv(caller.argc(), caller.argv());
+        }
+};
+/* TODO These tests are actually not very effective, because trjconv
+ * can only return 0 or exit via gmx_fatal() (which currently also
+ * exits the test binary). So, "no XDR/TNG support in the binary"
+ * leads to the reading test appearing to pass. Still, no fatal error
+ * and no segfault is useful information while modifying such code. */
+
+TEST_P(TrjconvWithIndexGroupSubset, WithDifferentInputFormats)
+{
+    runTest(GetParam());
 }
 
-TEST_F(GmxTrajTestNoFatalError, GROFile)
-{
-    runTest("spc2-traj.gro");
-}
+// ==
 
-TEST_F(GmxTrajTestNoFatalError, PDBFile)
-{
-    runTest("spc2-traj.pdb");
-}
+/*! \brief Helper array of input files present in the source repo
+ * database. These all have two identical frames of two SPC water
+ * molecules, which were generated via trjconv from the .gro
+ * version. */
+const char *trajectoryFileNames[] = {
+    "spc2-traj.trr",
+#ifdef GMX_USE_TNG
+    "spc2-traj.tng",
+#endif
+    "spc2-traj.xtc",
+    "spc2-traj.gro",
+    "spc2-traj.pdb",
+    "spc2-traj.g96"
+};
 
-TEST_F(GmxTrajTestNoFatalError, G96File)
-{
-    runTest("spc2-traj.g96");
-}
+#ifdef __INTEL_COMPILER
+#pragma warning( disable : 177 )
+#endif
 
-// .g87 file reading has been broken since at least v4.5
-// proposed on gmx-developers for removing that support
-TEST_F(GmxTrajTestNoFatalError, DISABLED_G87File)
-{
-    redirectStringToStdin("0\n4\n6\n0.0\n");
-    runTest("spc2-traj.g87");
-}
+INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
+                        GmxTraj,
+                            ::testing::ValuesIn(gmx::ArrayRef<const char*>(trajectoryFileNames)));
+
+INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
+                        TrjconvWithIndexGroupSubset,
+                            ::testing::ValuesIn(gmx::ArrayRef<const char*>(trajectoryFileNames)));
 
 } // namespace

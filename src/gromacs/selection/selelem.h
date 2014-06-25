@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,8 +53,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/utility/common.h"
+#include "gromacs/utility/real.h"
 
 #include "indexutil.h"
 #include "selvalue.h"
@@ -116,12 +116,12 @@ typedef enum
 /** Defines the arithmetic operation of gmx::SelectionTreeElement objects with type \ref SEL_ARITHMETIC. */
 typedef enum
 {
-    ARITH_PLUS,         /**< + */
-    ARITH_MINUS,        /**< - */
-    ARITH_NEG,          /**< Unary - */
-    ARITH_MULT,         /**< * */
-    ARITH_DIV,          /**< / */
-    ARITH_EXP           /**< ^ (to power) */
+    ARITH_PLUS,         /**< Addition (`+`) */
+    ARITH_MINUS,        /**< Subtraction (`-`) */
+    ARITH_NEG,          /**< Unary `-` */
+    ARITH_MULT,         /**< Multiplication (`*`) */
+    ARITH_DIV,          /**< Division (`/`) */
+    ARITH_EXP           /**< Power (`^`) */
 } e_arithmetic_t;
 
 /** Returns a string representation of the type of a gmx::SelectionTreeElement. */

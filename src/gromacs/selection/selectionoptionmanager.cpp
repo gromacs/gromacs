@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,6 @@
 
 #include <cstdio>
 
-#include "gromacs/options/optionsvisitor.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -274,10 +273,11 @@ SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
 
 void
 SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
-                                           const std::string      &value)
+                                           const std::string      &value,
+                                           bool                    bFullValue)
 {
     SelectionList selections = impl_->collection_.parseFromString(value);
-    storage->addSelections(selections, false);
+    storage->addSelections(selections, bFullValue);
 }
 
 void
@@ -296,28 +296,12 @@ SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
     for (i = impl_->requests_.begin(); i != impl_->requests_.end(); ++i)
     {
         const Impl::SelectionRequest &request = *i;
-        if (bInteractive)
-        {
-            std::fprintf(stderr, "\nSpecify ");
-            if (request.count() < 0)
-            {
-                std::fprintf(stderr, "any number of selections");
-            }
-            else if (request.count() == 1)
-            {
-                std::fprintf(stderr, "a selection");
-            }
-            else
-            {
-                std::fprintf(stderr, "%d selections", request.count());
-            }
-            std::fprintf(stderr, " for option '%s' (%s):\n",
+        std::string                   context =
+            formatString("for option '%s'\n(%s)",
                          request.name().c_str(), request.description().c_str());
-            std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
-                         request.count() < 0 ? ", Ctrl-D to end" : "");
-        }
         SelectionList selections
-            = impl_->collection_.parseFromStdin(request.count(), bInteractive);
+            = impl_->collection_.parseFromStdin(request.count(), bInteractive,
+                                                context);
         request.storage_->addSelections(selections, true);
     }
 }
@@ -344,62 +328,6 @@ SelectionOptionManager::parseRequestedFromString(const std::string &str)
 {
     SelectionList selections = impl_->collection_.parseFromString(str);
     impl_->placeSelectionsInRequests(selections);
-}
-
-/********************************************************************
- * Global functions
- */
-
-namespace
-{
-
-/*! \internal \brief
- * Visitor that sets the manager for each selection option.
- *
- * \ingroup module_selection
- */
-class SelectionOptionManagerSetter : public OptionsModifyingVisitor
-{
-    public:
-        //! Construct a visitor that sets given manager.
-        explicit SelectionOptionManagerSetter(SelectionOptionManager *manager)
-            : manager_(manager)
-        {
-        }
-
-        void visitSubSection(Options *section)
-        {
-            OptionsModifyingIterator iterator(section);
-            iterator.acceptSubSections(this);
-            iterator.acceptOptions(this);
-        }
-
-        void visitOption(OptionInfo *option)
-        {
-            SelectionOptionInfo *selOption
-                = option->toType<SelectionOptionInfo>();
-            if (selOption != NULL)
-            {
-                selOption->setManager(manager_);
-            }
-            SelectionFileOptionInfo *selFileOption
-                = option->toType<SelectionFileOptionInfo>();
-            if (selFileOption != NULL)
-            {
-                selFileOption->setManager(manager_);
-            }
-        }
-
-    private:
-        SelectionOptionManager *manager_;
-};
-
-}   // namespace
-
-void setManagerForSelectionOptions(Options                *options,
-                                   SelectionOptionManager *manager)
-{
-    SelectionOptionManagerSetter(manager).visitSubSection(options);
 }
 
 } // namespace gmx

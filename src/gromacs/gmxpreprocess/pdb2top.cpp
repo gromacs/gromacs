@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -41,13 +42,9 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "vec.h"
-#include "smalloc.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "symtab.h"
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/futil.h"
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
 #include "topdirs.h"
@@ -56,21 +53,23 @@
 #include "pgutil.h"
 #include "resall.h"
 #include "topio.h"
-#include "string2.h"
-#include "physics.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gen_ad.h"
 #include "gromacs/fileio/filenm.h"
-#include "index.h"
 #include "gen_vsite.h"
 #include "add_par.h"
 #include "toputil.h"
 #include "fflibutil.h"
-#include "strdb.h"
 #include "copyrite.h"
 
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
@@ -250,10 +249,10 @@ choose_ff(const char *ffsel,
             if (gmx_fexist(buf))
             {
                 /* We don't use fflib_open, because we don't want printf's */
-                fp = ffopen(buf, "r");
+                fp = gmx_ffopen(buf, "r");
                 snew(desc[i], STRLEN);
                 get_a_line(fp, desc[i], STRLEN);
-                ffclose(fp);
+                gmx_ffclose(fp);
             }
             else
             {
@@ -410,7 +409,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
             sfree(model[nwm]);
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     fprintf(stderr, "%2d: %s\n", nwm+1, "None");
 
     sel = -1;
@@ -443,7 +442,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 }
 
 static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
-                     t_restp restp[], gmx_residuetype_t rt)
+                     t_restp restp[], gmx_residuetype_t *rt)
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
@@ -560,8 +559,7 @@ void print_top_comment(FILE       *out,
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);
         settings.linePrefix(";\t");
-        gmx::printBinaryInformation(out, gmx::ProgramInfo::getInstance(),
-                                    settings);
+        gmx::printBinaryInformation(out, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -1428,7 +1426,7 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuetype_t rt)
+static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuetype_t *rt)
 {
     int         residx, i, j, k;
     const char *ptr;
@@ -1542,7 +1540,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     int              *vsite_type;
     int               i, nmissat;
     int               bts[ebtsNR];
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
 
     init_plist(plist);
     gmx_residuetype_init(&rt);

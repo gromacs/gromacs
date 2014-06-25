@@ -1,66 +1,68 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "macros.h"
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
-#include "statutil.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "names.h"
-#include "index.h"
-#include "vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xtcio.h"
-#include "do_fit.h"
-#include "rmpbc.h"
-#include "gromacs/fileio/g87io.h"
-#include "pbc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/xdrf.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gmx_ana.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -439,7 +441,6 @@ int gmx_trjcat(int argc, char *argv[])
         "tries to be smart. Beware."
     };
     static gmx_bool bVels           = TRUE;
-    static int      prec            = 3;
     static gmx_bool bCat            = FALSE;
     static gmx_bool bSort           = TRUE;
     static gmx_bool bKeepLast       = FALSE;
@@ -460,8 +461,6 @@ int gmx_trjcat(int argc, char *argv[])
           { &end }, "Last time to use (%t)" },
         { "-dt", FALSE, etTIME,
           { &dt }, "Only write frame when t MOD dt = first time (%t)" },
-        { "-prec", FALSE, etINT,
-          { &prec }, "Precision for [TT].xtc[tt] and [TT].gro[tt] writing in number of decimal places" },
         { "-vel", FALSE, etBOOL,
           { &bVels }, "Read and write velocities if possible" },
         { "-settime", FALSE, etBOOL,
@@ -477,13 +476,12 @@ int gmx_trjcat(int argc, char *argv[])
     };
 #define npargs asize(pa)
     int          ftpin, i, frame, frame_out, step = 0, trjout = 0;
-    t_trxstatus *status;
+    t_trxstatus *status, *trxout = NULL;
     rvec        *x, *v;
-    real         xtcpr, t_corr;
+    real         t_corr;
     t_trxframe   fr, frout;
     char       **fnms, **fnms_out, *in_file, *out_file;
     int          n_append;
-    t_trxstatus *trxout = NULL;
     gmx_bool     bNewFile, bIndex, bWrite;
     int          earliersteps, nfile_in, nfile_out, *cont_type, last_ok_step;
     real        *readtime, *timest, *settime;
@@ -493,7 +491,7 @@ int gmx_trjcat(int argc, char *argv[])
     atom_id     *index = NULL, imax;
     char        *grpname;
     real       **val = NULL, *t = NULL, dt_remd;
-    int          n, nset;
+    int          n, nset, ftpout = -1, prevEndStep = 0, filetype;
     gmx_bool     bOK;
     gmx_off_t    fpos;
     output_env_t oenv;
@@ -552,12 +550,6 @@ int gmx_trjcat(int argc, char *argv[])
             }
         }
     }
-    /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
-    xtcpr = 1;
-    for (i = 0; i < prec; i++)
-    {
-        xtcpr *= 10;
-    }
 
     nfile_in = opt2fns(&fnms, "-f", NFILE, fnm);
     if (!nfile_in)
@@ -568,6 +560,16 @@ int gmx_trjcat(int argc, char *argv[])
     if (bDeMux && (nfile_in != nset))
     {
         gmx_fatal(FARGS, "You have specified %d files and %d entries in the demux table", nfile_in, nset);
+    }
+
+    ftpin = fn2ftp(fnms[0]);
+
+    for (i = 1; i < nfile_in; i++)
+    {
+        if (ftpin != fn2ftp(fnms[i]))
+        {
+            gmx_fatal(FARGS, "All input files must be of the same format");
+        }
     }
 
     nfile_out = opt2fns(&fnms_out, "-o", NFILE, fnm);
@@ -613,6 +615,7 @@ int gmx_trjcat(int argc, char *argv[])
          * This has to be done after sorting etc.
          */
         out_file = fnms_out[0];
+        ftpout   = fn2ftp(out_file);
         n_append = -1;
         for (i = 0; ((i < nfile_in) && (n_append == -1)); i++)
         {
@@ -645,7 +648,23 @@ int gmx_trjcat(int argc, char *argv[])
 
         if (n_append == -1)
         {
-            trxout = open_trx(out_file, "w");
+            if (ftpout == efTNG)
+            {
+                if (bIndex)
+                {
+                    trjtools_gmx_prepare_tng_writing(out_file, 'w', NULL, &trxout,
+                                                     fnms[0], isize, NULL, index, grpname);
+                }
+                else
+                {
+                    trjtools_gmx_prepare_tng_writing(out_file, 'w', NULL, &trxout,
+                                                     fnms[0], -1, NULL, NULL, NULL);
+                }
+            }
+            else
+            {
+                trxout = open_trx(out_file, "w");
+            }
             memset(&frout, 0, sizeof(frout));
         }
         else
@@ -665,20 +684,14 @@ int gmx_trjcat(int argc, char *argv[])
                         "If the trajectories have an overlap and have not been written binary \n"
                         "reproducible this will produce an incorrect trajectory!\n\n");
 
+                filetype = gmx_fio_getftp(stfio);
                 /* Fails if last frame is incomplete
                  * We can't do anything about it without overwriting
                  * */
-                if (gmx_fio_getftp(stfio) == efXTC)
+                if (filetype == efXTC || filetype == efTNG)
                 {
-                    lasttime =
-                        xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
-                                                    gmx_fio_getxdr(stfio),
-                                                    fr.natoms, &bOK);
-                    fr.time = lasttime;
-                    if (!bOK)
-                    {
-                        gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
-                    }
+                    lasttime = trx_get_time_of_final_frame(status);
+                    fr.time  = lasttime;
                 }
                 else
                 {
@@ -698,14 +711,8 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     gmx_fatal(FARGS, "Overwrite only supported for XTC." );
                 }
-                last_frame_time =
-                    xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
-                                                gmx_fio_getxdr(stfio),
-                                                fr.natoms, &bOK);
-                if (!bOK)
-                {
-                    gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
-                }
+                last_frame_time = trx_get_time_of_final_frame(status);
+
                 /* xtc_seek_time broken for trajectories containing only 1 or 2 frames
                  *     or when seek time = 0 */
                 if (nfile_in > 1 && settime[1] < last_frame_time+timest[0]*0.5)
@@ -749,6 +756,13 @@ int gmx_trjcat(int argc, char *argv[])
             /* set the next time from the last frame in previous file */
             if (i > 0)
             {
+                /* When writing TNG the step determine which frame to write. Use an
+                 * offset to be able to increase steps properly when changing files. */
+                if (ftpout == efTNG)
+                {
+                    prevEndStep = frout.step;
+                }
+
                 if (frame_out >= 0)
                 {
                     if (cont_type[i] == TIME_CONTINUE)
@@ -825,6 +839,10 @@ int gmx_trjcat(int argc, char *argv[])
                 frout = fr;
                 /* set the new time by adding the correct calculated above */
                 frout.time += t_corr;
+                if (ftpout == efTNG)
+                {
+                    frout.step += prevEndStep;
+                }
                 /* quit if we have reached the end of what should be written */
                 if ((end > 0) && (frout.time > end+GMX_REAL_EPS))
                 {

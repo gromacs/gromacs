@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,10 +48,11 @@
 
 #include <gmock/gmock.h>
 
-#include "gromacs/legacyheaders/thread_mpi/mutex.h"
+#include "thread_mpi/mutex.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
+#include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -59,7 +60,7 @@
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/init.h"
+#include "gromacs/utility/programcontext.h"
 
 #include "refdata.h"
 #include "testfilemanager.h"
@@ -74,7 +75,7 @@ namespace
 {
 
 /*! \brief
- * Singleton registry for test options added with GMX_TEST_OPTIONS.
+ * Singleton registry for test options added with #GMX_TEST_OPTIONS.
  *
  * \ingroup module_testutils
  */
@@ -129,6 +130,7 @@ void printHelp(const Options &options)
                  "to control the behavior of the tests:\n\n");
     CommandLineHelpContext context(&File::standardError(),
                                    eHelpOutputFormat_Console, NULL);
+    context.setModuleDisplayName(getProgramContext().displayName());
     CommandLineHelpWriter(options).writeHelp(context);
 }
 
@@ -141,9 +143,9 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
 
 void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
 {
+    gmx::initForCommandLine(argc, argv);
     try
     {
-        gmx::init(argc, argv);
         ::testing::InitGoogleMock(argc, *argv);
         if (dataPath != NULL)
         {
@@ -151,7 +153,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
         }
         if (tempPath != NULL)
         {
-            TestFileManager::setOutputTempDirectory(tempPath);
+            TestFileManager::setGlobalOutputTempDirectory(tempPath);
         }
         bool    bHelp = false;
         Options options(NULL, NULL);
@@ -191,7 +193,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
 
 void finalizeTestUtils()
 {
-    gmx::finalize();
+    gmx::finalizeForCommandLine();
 }
 
 } // namespace test
