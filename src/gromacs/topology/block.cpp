@@ -140,7 +140,7 @@ void copy_blocka(const t_blocka *src, t_blocka *dest)
     dest->nra      = src->nra;
     dest->nalloc_a = dest->nra + 1;
     snew(dest->a, dest->nalloc_a);
-    for (int i = 0; i < dest->nra+1; ++i)
+    for (int i = 0; i < dest->nra; ++i)
     {
         dest->a[i] = src->a[i];
     }

@@ -36,33 +36,32 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <math.h>
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "physics.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "force.h"
-#include "invblock.h"
+#include "gromacs/topology/invblock.h"
 #include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "network.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "txtdump.h"
 #include "copyrite.h"
 #include "qmmmxx.h"
-#include <stdio.h>
-#include <string.h>
-#include "gmx_fatal.h"
+#include "utility/fatalerror.h"
 #include "typedefs.h"
-#include <stdlib.h>
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 
 // QMSystem will eventually take the place of QMrec.
 gmx::QMSystem::QMSystem(int grpnr, int nr, int *atomarray, gmx_mtop_t *mtop, t_inputrec *ir) : 

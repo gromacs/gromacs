@@ -57,7 +57,7 @@ typedef struct gmx_mmslave *gmx_mmslave_t;
  * Create the data structure and returns it
  * \param[in] gms  the data structure to be freed
  */
-extern gmx_mmslave_t mmslave_init(const t_commrec *cr);
+extern gmx_mmslave_t mmslave_init(const struct t_commrec *cr);
 
 /*! \brief
  * Function to clean up

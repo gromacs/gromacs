@@ -303,7 +303,7 @@ void init_em(FILE *fplog, const char *title,
              t_graph **graph, t_mdatoms *mdatoms, gmx_global_stat_t *gstat,
              gmx_vsite_t *vsite, gmx_constr_t constr,
              int nfile, const t_filenm fnm[],
-             gmx_mdoutf_t *outf, t_mdebin **mdebin,
+             gmx_mdoutf_t **outf, t_mdebin **mdebin,
              int imdport, unsigned long gmx_unused Flags)
 {
     int  i;

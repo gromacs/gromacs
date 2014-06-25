@@ -55,12 +55,9 @@ add_subdirectory(math)
 add_subdirectory(random)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
-<<<<<<< HEAD
 add_subdirectory(qmmm)
 add_subdirectory(mmslave)
-=======
 add_subdirectory(pbcutil)
->>>>>>> master
 add_subdirectory(timing)
 add_subdirectory(topology)
 add_subdirectory(utility)

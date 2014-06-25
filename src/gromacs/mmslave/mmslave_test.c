@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/mmslave.h"
+#include "gromacs/legacyheaders/network.h"
 
 int main(int argc, char *argv[])
 {
-    t_commrec *cr;
+    struct t_commrec *cr;
     int natoms, ngroups;
     rvec *x, *v, *f, *A;
     real *phi;

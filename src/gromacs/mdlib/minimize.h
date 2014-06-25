@@ -74,7 +74,8 @@ typedef struct {
                  t_graph **graph, t_mdatoms *mdatoms, gmx_global_stat_t *gstat,
                  gmx_vsite_t *vsite, gmx_constr_t constr,
                  int nfile, const t_filenm fnm[],
-                 gmx_mdoutf_t **outf, t_mdebin **mdebin);
+                 gmx_mdoutf_t **outf, t_mdebin **mdebin,
+                 int imdport, unsigned long gmx_unused Flags);
 
     void evaluate_energy(FILE *fplog, t_commrec *cr,
                          gmx_mtop_t *top_global,
@@ -87,7 +88,7 @@ typedef struct {
                          t_graph *graph, t_mdatoms *mdatoms,
                          t_forcerec *fr, rvec mu_tot,
                          gmx_enerdata_t *enerd, tensor vir, tensor pres,
-                         gmx_large_int_t count, gmx_bool bFirst);
+                         gmx_int64_t count, gmx_bool bFirst);
 
 
 

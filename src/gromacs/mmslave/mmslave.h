@@ -43,6 +43,7 @@
 #define GMX_MMSLAVE_MMSLAVE_H
 
 #include <vector>
+#include "gromacs/legacyheaders/network.h"
 
 namespace gmx
 {
@@ -114,7 +115,7 @@ class GromacsInABox
         gmx_enerdata_t *enerd_;
 
         //! Accounting
-        gmx_large_int_t count_;
+        gmx_int64_t count_;
 
         //! First time call?
         gmx_bool bFirst_;
@@ -128,7 +129,7 @@ class GromacsInABox
          * \param[in] box   The simulation box
          */
         GromacsInABox(FILE             *fplog,
-                      const t_commrec  *cr,
+                      const struct t_commrec  *cr,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       matrix            box);
@@ -143,7 +144,7 @@ class MMSlave
 {
     private:
         //! Communication data structure
-        const t_commrec *cr_;
+        const struct t_commrec *cr_;
         //! Simulation parameters
         t_inputrec       inputrec_;
         //! Simulation box
@@ -162,7 +163,7 @@ class MMSlave
         GromacsInABox   *giab_;
     public:
         //! Constructor
-        MMSlave(const t_commrec  *cr);
+        MMSlave(const struct t_commrec  *cr);
 
         //! Destructor
         ~MMSlave() {}

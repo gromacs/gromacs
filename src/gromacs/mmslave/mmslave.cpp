@@ -42,20 +42,22 @@
  */
 #include <stdlib.h>
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdlib/minimize.h"
 #include "gromacs/mmslave.h"
 #include "gromacs/mmslave/mmslave.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/timing/wallcycle.h"
@@ -66,7 +68,7 @@ namespace gmx
 {
 
 GromacsInABox::GromacsInABox(FILE             *fplog,
-                             const t_commrec  *cr,
+                             const struct t_commrec  *cr,
                              const gmx_mtop_t *mtop,
                              const t_inputrec *ir,
                              matrix            box)
@@ -83,14 +85,24 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
     };
     int nfile = sizeof(fnm)/sizeof(fnm[0]);
     int argc = 0;
-    char *argv[] = { "MM-Slave" };
+    char **argv;
+    
+    snew(argv,1);
+    argv[0] = strdup("MM-Slave");
     
     if (!parse_common_args(&argc, argv, 0, nfile, fnm, 0, NULL,
-                           0, NULL, 0, NULL, &oenv_))
+                           0, (const char **)NULL, 
+                           0, (const char **)NULL, &oenv_))
     {
         GMX_THROW(InvalidInputError("Death Horror"));
     }
-
+    if (argc > 0)
+    {
+        sfree(argv[0]);
+        sfree(argv);
+        argc = 0;
+    }
+    
     // Initiate everything
     bFirst_ = TRUE;
 
@@ -127,7 +139,7 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
     mdatoms_ = init_mdatoms(fplog, (gmx_mtop_t *)mtop, FALSE);
     atoms2md((gmx_mtop_t *)mtop, (t_inputrec *)ir,
              0, NULL,
-             0, mtop->natoms,
+             mtop->natoms,
              mdatoms_);
 
     //! Force record
@@ -148,7 +160,8 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
     init_em(NULL, "MM-Slave",(t_commrec *)cr, (t_inputrec *)ir,
             &state_, (gmx_mtop_t *)mtop, ems_, &ltop_, &f_, &f_global_,
             &nrnb_, mu_tot_, fr_, &enerd_, &graph_, mdatoms_, &gstat_, vsite_, constr_,
-            nfile, fnm, &outf, &mdebin_);
+            nfile, fnm, &outf, &mdebin_,
+            0, 0);
     fr_->print_force = -1;
     
     //! Accounting
