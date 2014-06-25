@@ -2339,7 +2339,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
         else
         {
-            warning(wi, "Can not couple a molecule with free_energy = no");
+            warning_note(wi, "Free energy is turned off, so we will not decouple the molecule listed in your input.");
         }
     }
     /* FREE ENERGY AND EXPANDED ENSEMBLE OPTIONS */
