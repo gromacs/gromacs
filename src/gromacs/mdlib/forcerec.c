@@ -218,8 +218,8 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
                 sigmaj = pow(c12j / c6j, 1.0/6.0);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = epsi * epsj * pow(0.5*(sigmai+sigmaj), 6);
-                c12    = epsi * epsj * pow(0.5*(sigmai+sigmaj), 12);
+                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+                c12    = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 12);
             }
             C6(nbfp, atnr, i, j)   = c6*6.0;
             C12(nbfp, atnr, i, j)  = c12*12.0;
