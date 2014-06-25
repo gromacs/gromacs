@@ -126,9 +126,23 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
 
+if (GMX_USE_TNG)
+    find_package(ZLIB QUIET)
+    include(gmxTestZLib)
+    gmx_test_zlib(HAVE_ZLIB)
+
+    include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
+    tng_get_source_list(TNG_SOURCES)
+    list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
+    tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
+endif()
+
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx-version)
+endif()
+if (GMX_USE_TNG AND HAVE_ZLIB)
+    target_link_libraries(libgromacs ${ZLIB_LIBRARIES})
 endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
@@ -155,7 +169,6 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${GMX_TNG_LIBRARIES}
                       ${EXTRAE_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}
