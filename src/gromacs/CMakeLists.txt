@@ -45,6 +45,13 @@ function (gmx_install_headers DESTINATION)
     endif()
 endfunction ()
 
+if (GMX_USE_TNG)
+    include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
+    tng_get_source_list(TNG_SOURCES TNG_COMPILE_DEFS)
+    list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
+    tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
+endif()
+
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(gmxpreprocess)
@@ -155,7 +162,6 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${GMX_TNG_LIBRARIES}
                       ${EXTRAE_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}
