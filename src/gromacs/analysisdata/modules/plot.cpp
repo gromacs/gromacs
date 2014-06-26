@@ -226,9 +226,22 @@ AbstractPlotModule::setTitle(const char *title)
     impl_->title_ = title;
 }
 
+void
+AbstractPlotModule::setTitle(const std::string &title)
+{
+    impl_->title_ = title;
+}
+
 
 void
 AbstractPlotModule::setSubtitle(const char *subtitle)
+{
+    impl_->subtitle_ = subtitle;
+}
+
+
+void
+AbstractPlotModule::setSubtitle(const std::string &subtitle)
 {
     impl_->subtitle_ = subtitle;
 }
