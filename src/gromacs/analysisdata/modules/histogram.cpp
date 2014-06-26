@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -338,7 +338,7 @@ AbstractAverageHistogram::normalizeProbability()
 {
     for (int c = 0; c < columnCount(); ++c)
     {
-        real sum = 0;
+        double sum = 0;
         for (int i = 0; i < rowCount(); ++i)
         {
             sum += value(i, c).value();
@@ -346,6 +346,20 @@ AbstractAverageHistogram::normalizeProbability()
         if (sum > 0.0)
         {
             scaleSingle(c, 1.0 / (sum * xstep()));
+        }
+    }
+}
+
+void
+AbstractAverageHistogram::makeCumulative()
+{
+    for (int c = 0; c < columnCount(); ++c)
+    {
+        double sum = 0;
+        for (int i = 0; i < rowCount(); ++i)
+        {
+            sum += value(i, c).value();
+            value(i, c).setValue(sum);
         }
     }
 }
