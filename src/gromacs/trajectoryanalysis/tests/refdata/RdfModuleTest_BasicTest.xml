@@ -1,0 +1,259 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">rdf -bin 0.05 -ref 'name OW' -sel 'name OW' 'not name OW'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="norm">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">3</Int>
+          <DataValue>
+            <Real Name="Value">216</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">33.455901630929986</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">66.911803261859973</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="paircount">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">37</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">274</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">360</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">226</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">234</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">270</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">332</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">420</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">456</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">548</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">588</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">632</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">660</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">696</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">822</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">922</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1060</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1084</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1276</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1260</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1260</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1416</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1468</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1560</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1668</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1774</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1578</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">37</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">217</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">114</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">163</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">87</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">52</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">103</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">266</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">618</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">751</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">703</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">722</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">772</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">821</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">946</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1065</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1229</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1281</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1402</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1518</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1640</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1844</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2058</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2137</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2412</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2451</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2650</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2886</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2928</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3101</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3374</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3623</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3288</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>

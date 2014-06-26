@@ -105,7 +105,6 @@ set(SYMLINK_NAMES
     g_potential
     g_principal
     g_rama
-    g_rdf
     g_rms
     g_rmsdist
     g_rmsf
