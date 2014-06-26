@@ -190,9 +190,6 @@ int
 gmx_rama(int argc, char *argv[]);
 
 int
-gmx_rdf(int argc, char *argv[]);
-
-int
 gmx_rotmat(int argc, char *argv[]);
 
 int
