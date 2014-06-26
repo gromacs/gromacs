@@ -296,6 +296,8 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         AverageHistogramPointer clone() const;
         //! Normalizes the histogram such that the integral over it is one.
         void normalizeProbability();
+        //! Makes the histograms cumulative by summing up each bin to all bins after it.
+        void makeCumulative();
         //! Scales a single histogram by a uniform scaling factor.
         void scaleSingle(int index, real factor);
         //! Scales all histograms by a uniform scaling factor.
