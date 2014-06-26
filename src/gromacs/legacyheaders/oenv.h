@@ -96,7 +96,7 @@ real output_env_get_time_factor(const output_env_t oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
 real output_env_get_time_invfactor(const output_env_t oenv);
-/* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
+/* return inverse time conversion factor to ps (i.e. 1e3 for ns->ps) */
 
 real output_env_conv_time(const output_env_t oenv, real time);
 /* return converted time */
