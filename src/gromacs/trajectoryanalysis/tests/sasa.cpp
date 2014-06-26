@@ -68,10 +68,10 @@ namespace
 using gmx::test::CommandLine;
 
 /********************************************************************
- * Tests for gmx::analysismodules::Sas.
+ * Tests for gmx::analysismodules::Sasa.
  */
 
-//! Test fixture for the select analysis module.
+//! Test fixture for the `sasa` analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SasaInfo>
     SasaModuleTest;
 
