@@ -323,6 +323,8 @@ class Selection
         bool isDynamic() const { return data().isDynamic(); }
         //! Returns the type of positions in the selection.
         e_index_t type() const { return data().type(); }
+        //! Returns true if the selection only contains positions with a single atom each.
+        bool hasOnlyAtoms() const { return type() == INDEX_ATOM; }
 
         //! Total number of atoms in the selection.
         int atomCount() const

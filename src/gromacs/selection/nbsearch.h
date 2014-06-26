@@ -196,7 +196,7 @@ class AnalysisNeighborhood
         ~AnalysisNeighborhood();
 
         /*! \brief
-         * Set cutoff distance for the neighborhood searching.
+         * Sets cutoff distance for the neighborhood searching.
          *
          * \param[in]  cutoff Cutoff distance for the search
          *   (<=0 stands for no cutoff).
@@ -207,6 +207,17 @@ class AnalysisNeighborhood
          * Does not throw.
          */
         void setCutoff(real cutoff);
+        /*! \brief
+         * Sets the search to only happen in the XY plane.
+         *
+         * Z component of the coordinates is not used in the searching,
+         * and returned distances are computed in the XY plane.
+         * Only boxes with the third box vector parallel to the Z axis are
+         * currently implemented.
+         *
+         * Does not throw.
+         */
+        void setXYMode(bool bXY);
         /*! \brief
          * Sets the algorithm to use for searching.
          *
@@ -257,10 +268,10 @@ class AnalysisNeighborhoodPair
 {
     public:
         //! Initializes an invalid pair.
-        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0) {}
+        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0) {}
         //! Initializes a pair object with the given data.
-        AnalysisNeighborhoodPair(int refIndex, int testIndex)
-            : refIndex_(refIndex), testIndex_(testIndex)
+        AnalysisNeighborhoodPair(int refIndex, int testIndex, real distance2)
+            : refIndex_(refIndex), testIndex_(testIndex), distance2_(distance2)
         {
         }
 
@@ -294,10 +305,19 @@ class AnalysisNeighborhoodPair
             GMX_ASSERT(isValid(), "Accessing invalid object");
             return testIndex_;
         }
+        /*! \brief
+         * Returns the squared distance between the pair of positions.
+         */
+        real distance2() const
+        {
+            GMX_ASSERT(isValid(), "Accessing invalid object");
+            return distance2_;
+        }
 
     private:
         int                     refIndex_;
         int                     testIndex_;
+        real                    distance2_;
 };
 
 /*! \brief

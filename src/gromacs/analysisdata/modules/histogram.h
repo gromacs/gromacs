@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -295,6 +295,8 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         AverageHistogramPointer clone() const;
         //! Normalizes the histogram such that the integral over it is one.
         void normalizeProbability();
+        //! Makes the histograms cumulative by summing up each bin to all bins after it.
+        void makeCumulative();
         //! Scales a single histogram by a uniform scaling factor.
         void scaleSingle(int index, real factor);
         //! Scales all histograms by a uniform scaling factor.

@@ -883,6 +883,13 @@ static gmx_inline void matrix_convert(matrix box, rvec vec, rvec angle)
 #ifdef __cplusplus
 }
 
+static gmx_inline void copy_mat(const matrix a, matrix b)
+{
+    copy_rvec(a[XX], b[XX]);
+    copy_rvec(a[YY], b[YY]);
+    copy_rvec(a[ZZ], b[ZZ]);
+}
+
 static gmx_inline real det(const matrix a)
 {
     return ( a[XX][XX]*(a[YY][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[YY][ZZ])

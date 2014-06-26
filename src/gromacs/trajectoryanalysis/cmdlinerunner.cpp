@@ -194,7 +194,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     // Load first frame.
     common.initFirstFrame();
-    module->initAfterFirstFrame(common.frame());
+    module->initAfterFirstFrame(settings, common.frame());
 
     t_pbc  pbc;
     t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
