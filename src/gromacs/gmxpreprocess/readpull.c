@@ -252,6 +252,11 @@ void make_pull_groups(t_pull *pull,
     {
         pgrp = &pull->group[g];
 
+        if (strcmp(pgnames[g], "") == 0)
+        {
+            gmx_fatal(FARGS, "Group pull_group%d required by grompp was undefined.", g);
+        }
+
         ig        = search_string(pgnames[g], grps->nr, gnames);
         pgrp->nat = grps->index[ig+1] - grps->index[ig];
 

@@ -1063,7 +1063,12 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
         }
         if (md->nPerturbed && md->bPerturbed[n])
         {
-            dekindl += 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
+            /* The minus sign here might be confusing.
+             * The kinetic contribution from dH/dl doesn't come from
+             * d m(l)/2 v^2 / dl, but rather from d p^2/2m(l) / dl,
+             * where p are the momenta. The difference is only a minus sign.
+             */
+            dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
         }
     }
     ekind->dekindl = dekindl;
