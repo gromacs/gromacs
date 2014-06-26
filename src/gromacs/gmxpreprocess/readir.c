@@ -1128,6 +1128,19 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT)
+    {
+        sprintf(err_buf,
+                "Explicit switch/shift coulomb interactions cannot be used in combination with a secondary coulomb-modifier.");
+        CHECK( ir->coulomb_modifier != eintmodNONE);
+    }
+    if (ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
+    {
+        sprintf(err_buf,
+                "Explicit switch/shift vdw interactions cannot be used in combination with a secondary vdw-modifier.");
+        CHECK( ir->vdw_modifier != eintmodNONE);
+    }
+
     if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT ||
         ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
     {
@@ -1142,7 +1155,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         if (ir->rcoulomb_switch/ir->rcoulomb < 0.9499)
         {
             real percentage  = 100*(ir->rcoulomb-ir->rcoulomb_switch)/ir->rcoulomb;
-            sprintf(warn_buf, "The switching range for should be 5%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate electrostatic energies, energy conservation will be good regardless, since ewald_rtol = %g.",
+            sprintf(warn_buf, "The switching range should be 5%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate electrostatic energies, energy conservation will be good regardless, since ewald_rtol = %g.",
                     percentage, ir->rcoulomb_switch, ir->rcoulomb, ir->ewald_rtol);
             warning(wi, warn_buf);
         }
