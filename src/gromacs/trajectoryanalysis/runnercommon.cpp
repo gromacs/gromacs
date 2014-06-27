@@ -373,17 +373,6 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
                                                      "Trajectory (%d atoms) does not match topology (%d atoms)",
                                                      impl_->fr->natoms, top.topology()->atoms.nr)));
         }
-        // TODO: Check index groups if they have been initialized based on the topology.
-        /*
-           if (top)
-           {
-            for (int i = 0; i < impl_->sel->nr(); ++i)
-            {
-                gmx_ana_index_check(impl_->sel->sel(i)->indexGroup(),
-                                    impl_->fr->natoms);
-            }
-           }
-         */
     }
     else
     {

@@ -915,8 +915,9 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
 
     if (_gmx_sel_lexer_has_groups_set(scanner))
     {
-        gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
-        sel->resolveIndexGroupReference(grps);
+        gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
+        gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
+        sel->resolveIndexGroupReference(grps, sc->gall.isize);
     }
 
     return sel;
@@ -938,8 +939,9 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
 
     if (_gmx_sel_lexer_has_groups_set(scanner))
     {
-        gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
-        sel->resolveIndexGroupReference(grps);
+        gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
+        gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
+        sel->resolveIndexGroupReference(grps, sc->gall.isize);
     }
 
     return sel;

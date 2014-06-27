@@ -366,7 +366,8 @@ void SelectionTreeElement::checkUnsortedAtoms(
     }
 }
 
-void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
+void SelectionTreeElement::resolveIndexGroupReference(
+        gmx_ana_indexgrps_t *grps, int natoms)
 {
     GMX_RELEASE_ASSERT(type == SEL_GROUPREF,
                        "Should only be called for index group reference elements");
@@ -411,6 +412,26 @@ void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
     gmx_ana_index_set(&u.cgrp, foundGroup.isize, foundGroup.index,
                       foundGroup.nalloc_index);
     setName(foundName);
+
+    if (natoms > 0)
+    {
+        checkIndexGroup(natoms);
+    }
+}
+
+void SelectionTreeElement::checkIndexGroup(int natoms)
+{
+    GMX_RELEASE_ASSERT(type == SEL_CONST && v.type == GROUP_VALUE,
+                       "Should only be called for index group elements");
+    if (!gmx_ana_index_check_range(&u.cgrp, natoms))
+    {
+        std::string message = formatString(
+                    "Group '%s' cannot be used in selections, because it "
+                    "contains negative atom indices and/or references atoms "
+                    "not present (largest allowed atom index is %d).",
+                    name().c_str(), natoms);
+        GMX_THROW(InconsistentInputError(message));
+    }
 }
 
 } // namespace gmx
