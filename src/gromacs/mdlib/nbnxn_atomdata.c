@@ -851,7 +851,7 @@ static void copy_lj_to_nbat_lj_comb_x8(const real *ljparam_type,
     }
 }
 
-/* Sets the atom type and LJ data in nbnxn_atomdata_t */
+/* Sets the atom type in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
                                          int                  ngrid,
                                          const nbnxn_search_t nbs,
@@ -872,9 +872,30 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
 
             copy_int_to_nbat_int(nbs->a+ash, grid->cxy_na[i], ncz*grid->na_sc,
                                  type, nbat->ntype-1, nbat->type+ash);
+        }
+    }
+}
 
-            if (nbat->comb_rule != ljcrNONE)
+/* Sets the LJ combination rule parameters in nbnxn_atomdata_t */
+static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
+                                            int                  ngrid,
+                                            const nbnxn_search_t nbs)
+{
+    int                 g, i, ncz, ash;
+    const nbnxn_grid_t *grid;
+
+    if (nbat->comb_rule != ljcrNONE)
+    {
+        for (g = 0; g < ngrid; g++)
+        {
+            grid = &nbs->grid[g];
+
+            /* Loop over all columns and copy and fill */
+            for (i = 0; i < grid->ncx*grid->ncy; i++)
             {
+                ncz = grid->cxy_ind[i+1] - grid->cxy_ind[i];
+                ash = (grid->cell0 + grid->cxy_ind[i])*grid->na_sc;
+
                 if (nbat->XFormat == nbatX4)
                 {
                     copy_lj_to_nbat_lj_comb_x4(nbat->nbfp_comb,
@@ -1095,6 +1116,9 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
     {
         nbnxn_atomdata_mask_fep(nbat, ngrid, nbs);
     }
+
+    /* This must be done after masking types for FEP */
+    nbnxn_atomdata_set_ljcombparams(nbat, ngrid, nbs);
 
     nbnxn_atomdata_set_energygroups(nbat, ngrid, nbs, atinfo);
 }
