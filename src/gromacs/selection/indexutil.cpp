@@ -440,6 +440,19 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
     return true;
 }
 
+bool
+gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms)
+{
+    for (int i = 0; i < g->isize; ++i)
+    {
+        if (g->index[i] < 0 || g->index[i] >= natoms)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 /********************************************************************
  * Set operations
  ********************************************************************/

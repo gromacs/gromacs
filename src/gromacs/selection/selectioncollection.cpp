@@ -423,6 +423,44 @@ early_termination:
     return result;
 }
 
+/*! \brief
+ * Checks that index groups have valid atom indices.
+ *
+ * \param[in]    root    Root of selection tree to process.
+ * \param[in]    natoms  Maximum number of atoms that the selections are set
+ *     to evaluate.
+ * \param        errors  Object for reporting any error messages.
+ * \throws std::bad_alloc if out of memory.
+ *
+ * Recursively checks the selection tree for index groups.
+ * Each found group is checked that it only contains atom indices that match
+ * the topology/maximum number of atoms set for the selection collection.
+ * Any issues are reported to \p errors.
+ */
+void checkExternalGroups(const SelectionTreeElementPointer &root,
+                         int                                natoms,
+                         ExceptionInitializer              *errors)
+{
+    if (root->type == SEL_CONST && root->v.type == GROUP_VALUE)
+    {
+        try
+        {
+            root->checkIndexGroup(natoms);
+        }
+        catch (const UserInputError &)
+        {
+            errors->addCurrentExceptionAsNested();
+        }
+    }
+
+    SelectionTreeElementPointer child = root->child;
+    while (child)
+    {
+        checkExternalGroups(child, natoms, errors);
+        child = child->next;
+    }
+}
+
 }   // namespace
 
 
@@ -435,7 +473,7 @@ void SelectionCollection::Impl::resolveExternalGroups(
     {
         try
         {
-            root->resolveIndexGroupReference(grps_);
+            root->resolveIndexGroupReference(grps_, sc_.gall.isize);
         }
         catch (const UserInputError &)
         {
@@ -551,6 +589,20 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
     if (natoms <= 0)
     {
         natoms = top->atoms.nr;
+    }
+    if (impl_->bExternalGroupsSet_)
+    {
+        ExceptionInitializer        errors("Invalid index group references encountered");
+        SelectionTreeElementPointer root = impl_->sc_.root;
+        while (root)
+        {
+            checkExternalGroups(root, natoms, &errors);
+            root = root->next;
+        }
+        if (errors.hasNestedExceptions())
+        {
+            GMX_THROW(InconsistentInputError(errors));
+        }
     }
     gmx_ana_selcollection_t *sc = &impl_->sc_;
     // Do this first, as it allocates memory, while the others don't throw.

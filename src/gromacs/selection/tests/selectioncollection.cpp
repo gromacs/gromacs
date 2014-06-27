@@ -510,6 +510,27 @@ TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReferenceDelayed)
     // EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
 }
 
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroup)
+{
+    ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, 5));
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpB\""), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroupDelayed)
+{
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"GrpB\""));
+    EXPECT_THROW_GMX(sc_.setTopology(NULL, 5), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroupDelayed2)
+{
+    ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, 5));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"GrpB\""));
+    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
+}
+
 TEST_F(SelectionCollectionTest, RecoversFromMissingMoleculeInfo)
 {
     ASSERT_NO_THROW_GMX(sc_.parseFromString("molindex 1 to 5"));
