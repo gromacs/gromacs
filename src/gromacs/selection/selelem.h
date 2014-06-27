@@ -320,14 +320,24 @@ class SelectionTreeElement
         void fillNameIfMissing(const char *selectionText);
 
         /*! \brief
-         * Resolved an unresolved reference to an index group.
+         * Resolves an unresolved reference to an index group.
          *
-         * \param[in] grps  Index groups to use to resolve the reference.
+         * \param[in] grps   Index groups to use to resolve the reference.
+         * \param[in] natoms Maximum number of atoms the selections can evaluate to
+         *     (zero if the topology/atom count is not set yet).
          * \throws    std::bad_alloc if out of memory.
          * \throws    InconsistentInputError if the reference cannot be
          *     resolved.
          */
-        void resolveIndexGroupReference(gmx_ana_indexgrps_t *grps);
+        void resolveIndexGroupReference(gmx_ana_indexgrps_t *grps, int natoms);
+        /*! \brief
+         * Checks that an index group has valid atom indices.
+         *
+         * \param[in] natoms Maximum number of atoms the selections can evaluate to.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InconsistentInputError if there are invalid atom indices.
+         */
+        void checkIndexGroup(int natoms);
 
         //! Type of the element.
         e_selelem_t                         type;
