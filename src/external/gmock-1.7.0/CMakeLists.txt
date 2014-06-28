@@ -35,6 +35,24 @@
 # As stated in README.Gromacs, this file is not part of GMock, but is written
 # specifically for the GROMACS build system from scratch.
 
+# GMock uses tuples extensively, and MSVC bundles a tuple library that
+# is not compatible with the standard. r675 of googletest works around
+# this properly, but that's not in GMock 1.7.0. That logic is
+# duplicated here. See
+# https://code.google.com/p/googletest/source/detail?r=675#, but note
+# that its summary does not represent its code correctly.
+if(MSVC)
+    if(MSVC_VERSION VERSION_LESS 1600)
+        add_definitions(/D GTEST_USE_OWN_TR1_TUPLE=1)
+    else()
+        add_definitions(/D GTEST_USE_OWN_TR1_TUPLE=0)
+        if(MSVC_VERSION VERSION_EQUAL 1700)
+            # Fixes Visual Studio 2012
+            add_definitions(/D _VARIADIC_MAX=10)
+        endif()
+    endif()
+endif()
+
 # GTest/GMock suggest linking with pthreads when available for thread safety
 set(CMAKE_THREAD_PREFER_PTHREAD 1)
 find_package(Threads)
