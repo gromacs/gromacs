@@ -943,7 +943,7 @@ int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx)
         return EINVAL;
     }
 
-    mtx->mutex = (struct tMPI_Mutex*)malloc(sizeof(struct tMPI_Mutex)*1);
+    mtx->mutex = (struct tMPI_Thread_mutex_t*)malloc(sizeof(struct tMPI_Thread_mutex_t));
     if (mtx->mutex == NULL)
     {
         return ENOMEM;
