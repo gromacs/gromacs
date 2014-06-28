@@ -210,8 +210,9 @@ not a priority.
 FFTW is likely to be available for your platform via its package
 management system, but there can be compatibility and significant
 performance issues associated with these packages. In particular,
-GROMACS simulations are normally run in single floating-point
-precision whereas the default FFTW package is normally in double
+GROMACS simulations are normally run in "mixed" floating-point
+precision, which is suited for the use of single precision in
+FFTW. The default FFTW package is normally in double
 precision, and good compiler options to use for FFTW when linked to
 GROMACS may not have been used. Accordingly, the GROMACS team
 recommends either
@@ -229,8 +230,9 @@ will see a warning that advises how you can eliminate this risk
 If you build FFTW from source yourself, get the most recent version
 and follow its [installation
 guide](http://www.fftw.org/doc/Installation-and-Customization.html#Installation-and-Customization).
-Choose the precision (i.e. single or float vs. double) to match what
-you will later require for GROMACS. There is no need to compile with
+Choose the precision for FFTW (i.e. single or float vs. double) to
+match whether you will later use mixed or double precision for
+GROMACS. There is no need to compile FFTW with
 threading or MPI support, but it does no harm. On x86 hardware,
 compile *only* with `--enable-sse2` (regardless of precision) even if
 your processors can take advantage of AVX extensions. Since GROMACS

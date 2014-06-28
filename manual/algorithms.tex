@@ -744,9 +744,10 @@ buffer calculation and results in a smaller buffer size.
   the cut-off. Error estimates due to finite Verlet buffer size are
   shown for a $1 \times 1$ atom pair list and $4 \times 4$ atom pair
   list without and with (dashed line) cancellation of positive and
-  negative errors. Real energy drift is shown for double- and
-  single-precision simulations. Single-precision rounding errors in
-  the SETTLE constraint algorithm cause the drift to become negative
+  negative errors. Real energy drift is shown for simulations using
+  double- and mixed-precision settings. Rounding errors in the SETTLE
+  constraint algorithm from the use of single precision causes
+  the drift to become negative
   at large buffer size. Note that at zero buffer size, the real drift
   is small because positive (H-H) and negative (O-H) energy errors
   cancel.}
