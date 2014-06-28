@@ -2027,7 +2027,7 @@ are evaluated during neighbor list generation.
 The \normindex{virial} is calculated from the sum of the short- and
 long-range forces.
 This means that the virial can be slightly asymmetrical at non-NS steps.
-In single precision, the virial is almost always asymmetrical because the
+When mdrun is compiled to use mixed precision, the virial is almost always asymmetrical because the
 off-diagonal elements are about as large as each element in the sum.
 In most cases this is not really a problem, since the fluctuations in the
 virial can be 2 orders of magnitude larger than the average.

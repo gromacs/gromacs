@@ -1543,9 +1543,9 @@ This results in the following errors for each interval:
 V and V' are continuous, while V'' is the first discontinuous
 derivative.
 The number of points per nanometer is 500 and 2000
-for single- and double-precision versions of {\gromacs}, respectively.
+for mixed- and double-precision versions of {\gromacs}, respectively.
 This means that the errors in the potential and force will usually
-be smaller than the single precision accuracy.
+be smaller than the mixed precision accuracy.
 
 {\gromacs} stores $A_0$, $A_1$, $A_2$ and $A_3$.
 The force routines get a table with these four parameters and
@@ -1603,7 +1603,7 @@ order: $x$, $f(x)$, $-f'(x)$, $g(x)$, $-g'(x)$, $h(x)$, $-h'(x)$.
 The $x$ should run from 0 to $r_c+1$ (the value of {\tt table_extension} can be
 changed in the {\tt .mdp} file).
 You can choose the spacing you like; for the standard tables {\gromacs}
-uses a spacing of 0.002 and 0.0005 nm when you run in single
+uses a spacing of 0.002 and 0.0005 nm when you run in mixed
 and double precision, respectively.  In this
 context, $r_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
 {\tt rcoulomb} (see above). These variables need not be the same (and

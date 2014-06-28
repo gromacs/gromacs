@@ -33,69 +33,30 @@
 % the research papers on the package. Check out http://www.gromacs.org.
 
 \chapter{Technical Details}
-\label{ch:install}
-\section{Installation}
-The entire {\gromacs} package is Free Software, licensed under the GNU
-Lesser General Public License; either version 2.1 of the License, or
-(at your option) any later version.
-The main distribution site is our WWW server at {\wwwpage}. 
 
-The package is mainly distributed as source code, but others provide
-packages for Linux and Mac. Check your Linux distribution tools
-(search for gromacs). On Mac OS X the {\bf port} tool will allow you
-to install a recent version.
-On the home page you will find all the information you need to 
-\normindex{install} the package, mailing lists with archives,
-and several additional on-line resources like contributed topologies, etc.
-%% The default installation action is simply to unpack the source code and
-%% then issue:
-%% \begin{verbatim}
-%% ./configure
-%% make
-%% make install
-%% \end{verbatim}
-%% The configuration script should automatically determine the best options
-%% for your platform, and it will tell you if anything is missing on
-%% your system. You will also find detailed step-by-step installation
-%% instructions on the website. There is a \normindex{cmake} based
-%% installation route as well:
-%% \begin{verbatim}
-%% cmake
-%% make
-%% make install
-%% \end{verbatim}
-%% which is being tested in the wild since {\gromacs} version 4.5.
-
-\section{Single or Double precision}
-{\gromacs} can be compiled in either single\index{single
-precision|see{precision, single}}\index{precision, single} or
-\pawsindex{double}{precision}. It is very important to note here that
-single precision is actually mixed precision. Using single precision
+\section{Mixed or Double precision}
+{\gromacs} can be compiled in either mixed\index{mixed
+precision|see{precision, mixed}}\index{precision, mixed} or
+\pawsindex{double}{precision}. Documentation of previous {\gromacs}
+versions referred to ``single precision'', but the implementation
+has made selective use of double precision for many years.
+Using single precision
 for all variables would lead to a significant reduction in accuracy.
-Although in single precision all state vectors, i.e. particle coordinates,
+Although in ``mixed precision'' all state vectors, i.e. particle coordinates,
 velocities and forces, are stored in single precision, critical variables
 are double precision. A typical example of the latter is the virial,
 which is a sum over all forces in the system, which have varying signs.
 In addition, in many parts of the code we managed to avoid double precision
 for arithmetic, by paying attention to summation order or reorganization
-of mathematical expressions. The default choice is single precision,
+of mathematical expressions. The default configuration uses mixed precision,
 but it is easy to turn on double precision by adding the option
 {\tt -DGMX_DOUBLE=on} to {\tt cmake}. Double precision
-will be 20 to 100\% slower than single precision depending on the
+will be 20 to 100\% slower than mixed precision depending on the
 architecture you are running on. Double precision will use somewhat
 more memory and run input, energy and full-precision trajectory files
-will be almost twice as large.  SIMD (single-instruction multiple-data)
-intrinsics non-bonded force and/or energy kernels are available for x86
-hardware in single and double precision in different SSE and AVX flavors;
-the minimum requirement is SSE2.
-IBM Blue Gene Q intrinsics will be available soon. Some other parts of
-the code, especially PME, also employ x86 SIMD intrinsics. All other
-hardware will use optimized C kernels. The Verlet non-bonded scheme
-uses SIMD non-bonded kernels that are C pre-processor macro driven,
-therefore it is straightforward to implement SIMD acceleration
-for new architectures; a guide is provided on {\wwwpage}.
+will be almost twice as large.
 
-The energies in single precision are accurate up to the last decimal,
+The energies in mixed precision are accurate up to the last decimal,
 the last one or two decimals of the forces are non-significant.
 The virial is less accurate than the forces, since the virial is only one
 order of magnitude larger than the size of each element in the sum over
@@ -105,12 +66,13 @@ virial can be two orders of magnitude larger than the average.
 Using cut-offs for the Coulomb interactions cause large errors
 in the energies, forces, and virial.
 Even when using a reaction-field or lattice sum method, the errors
-are larger than, or comparable to, the errors due to the single precision.
+are larger than, or comparable to, the errors due to the partial use of
+single precision.
 Since MD is chaotic, trajectories with very similar starting conditions will
-diverge rapidly, the divergence is faster in single precision than in double
+diverge rapidly, the divergence is faster in mixed precision than in double
 precision.
 
-For most simulations single precision is accurate enough.
+For most simulations, mixed precision is accurate enough.
 In some cases double precision is required to get reasonable results:
 \begin{itemize}
 \item normal mode analysis,
