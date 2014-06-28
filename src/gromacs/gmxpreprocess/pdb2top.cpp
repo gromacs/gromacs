@@ -441,7 +441,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     sfree(model);
 }
 
-static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
+static int name2type(t_atoms *at, int **cgnr,
                      t_restp restp[], gmx_residuetype_t *rt)
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
@@ -491,9 +491,8 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
             j                = search_jtype(&restp[resind], name, bNterm);
             at->atom[i].type = restp[resind].atom[j].type;
             at->atom[i].q    = restp[resind].atom[j].q;
-            at->atom[i].m    = get_atomtype_massA(restp[resind].atom[j].type,
-                                                  atype);
-            cg = restp[resind].cgnr[j];
+            at->atom[i].m    = restp[resind].atom[j].m;
+            cg               = restp[resind].cgnr[j];
             /* A charge group number -1 signals a separate charge group
              * for this atom.
              */
@@ -1561,7 +1560,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
                atoms, nssbonds, ssbonds,
                bAllowMissing);
 
-    nmissat = name2type(atoms, &cgnr, atype, restp, rt);
+    nmissat = name2type(atoms, &cgnr, restp, rt);
     if (nmissat)
     {
         if (bAllowMissing)

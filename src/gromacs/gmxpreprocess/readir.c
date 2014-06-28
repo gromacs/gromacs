@@ -553,6 +553,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->nsteps == 0 && !ir->bContinuation)
+    {
+        warning_note(wi, "For a correct single-point energy evaluation with nsteps = 0, use continuation = yes to avoid constraining the input coordinates.");
+    }
+
     /* LD STUFF */
     if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
         ir->bContinuation && ir->ld_seed != -1)
@@ -1124,6 +1129,19 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT)
+    {
+        sprintf(err_buf,
+                "Explicit switch/shift coulomb interactions cannot be used in combination with a secondary coulomb-modifier.");
+        CHECK( ir->coulomb_modifier != eintmodNONE);
+    }
+    if (ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
+    {
+        sprintf(err_buf,
+                "Explicit switch/shift vdw interactions cannot be used in combination with a secondary vdw-modifier.");
+        CHECK( ir->vdw_modifier != eintmodNONE);
+    }
+
     if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT ||
         ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
     {
@@ -1138,7 +1156,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         if (ir->rcoulomb_switch/ir->rcoulomb < 0.9499)
         {
             real percentage  = 100*(ir->rcoulomb-ir->rcoulomb_switch)/ir->rcoulomb;
-            sprintf(warn_buf, "The switching range for should be 5%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate electrostatic energies, energy conservation will be good regardless, since ewald_rtol = %g.",
+            sprintf(warn_buf, "The switching range should be 5%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate electrostatic energies, energy conservation will be good regardless, since ewald_rtol = %g.",
                     percentage, ir->rcoulomb_switch, ir->rcoulomb, ir->ewald_rtol);
             warning(wi, warn_buf);
         }
@@ -1774,7 +1792,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         warning_note(wi, warn_buf);
     }
 
-    /* remove the following deprecated commands */
+    /* ignore the following deprecated commands */
     REM_TYPE("title");
     REM_TYPE("cpp");
     REM_TYPE("domain-decomposition");
@@ -1784,6 +1802,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     REM_TYPE("dihre-tau");
     REM_TYPE("nstdihreout");
     REM_TYPE("nstcheckpoint");
+    REM_TYPE("optimize-fft");
 
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
@@ -1844,7 +1863,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nstxout", ir->nstxout,    0);
     ITYPE ("nstvout", ir->nstvout,    0);
     ITYPE ("nstfout", ir->nstfout,    0);
-    ir->nstcheckpoint = 1000;
     CTYPE ("Output frequency for energies to log file and energy file");
     ITYPE ("nstlog",  ir->nstlog, 1000);
     ITYPE ("nstcalcenergy", ir->nstcalcenergy, 100);
@@ -1867,8 +1885,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nstlist", ir->nstlist,    10);
     CTYPE ("ns algorithm (simple or grid)");
     EETYPE("ns-type",     ir->ns_type,    ens_names);
-    /* set ndelta to the optimal value of 2 */
-    ir->ndelta = 2;
     CTYPE ("Periodic boundary conditions: xyz, no, xy");
     EETYPE("pbc",         ir->ePBC,       epbc_names);
     EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
@@ -1917,7 +1933,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     EETYPE("lj-pme-comb-rule", ir->ljpme_combination_rule, eljpme_names);
     EETYPE("ewald-geometry", ir->ewald_geometry, eewg_names);
     RTYPE ("epsilon-surface", ir->epsilon_surface, 0.0);
-    EETYPE("optimize-fft", ir->bOptFFT,  yesno_names);
 
     CCTYPE("IMPLICIT SOLVENT ALGORITHM");
     EETYPE("implicit-solvent", ir->implicit_solvent, eis_names);
@@ -2338,7 +2353,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
         else
         {
-            warning(wi, "Can not couple a molecule with free_energy = no");
+            warning_note(wi, "Free energy is turned off, so we will not decouple the molecule listed in your input.");
         }
     }
     /* FREE ENERGY AND EXPANDED ENSEMBLE OPTIONS */

@@ -47,10 +47,19 @@ FUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
         foreach(_testflag ${ARGN} "")
             message(STATUS "Try ${DESCRIPTION} = [${_testflag}]")
             set(CMAKE_REQUIRED_FLAGS "${${CFLAGSVAR}} ${_testflag}")
-            # make a valid variable name from the flag string: replace all non-alphanumerical chars
-            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_VARIABLE "C_FLAG_${_testflag}")
-            check_c_source_compiles("${SOURCE}" ${COMPILE_VARIABLE})
-            if(${${COMPILE_VARIABLE}})
+            # make valid variable names from the flag string: replace all non-alphanumerical chars
+            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_FLAG_VARIABLE "C_FLAG_${_testflag}")
+            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_SIMD_VARIABLE "C_SIMD_COMPILES_FLAG_${_testflag}")
+
+            # Check that the flag itself is fine, and that is does not generate warnings either
+            check_c_compiler_flag("${_testflag}" ${COMPILE_FLAG_VARIABLE})
+
+            if(${COMPILE_FLAG_VARIABLE})
+                # Check that we can compile SIMD source (this does not catch warnings)
+                check_c_source_compiles("${SOURCE}" ${COMPILE_SIMD_VARIABLE})
+            endif(${COMPILE_FLAG_VARIABLE})
+
+            if(${COMPILE_FLAG_VARIABLE} AND ${COMPILE_SIMD_VARIABLE})
                 set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
                 set(${VARIABLE} 1 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
                 break()
@@ -82,10 +91,19 @@ FUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
         foreach(_testflag ${ARGN} "")
             message(STATUS "Try ${DESCRIPTION} = [${_testflag}]")
             set(CMAKE_REQUIRED_FLAGS "${${CXXFLAGSVAR}} ${_testflag}")
-            # make a valid variable name from the flag string: replace all non-alphanumerical chars
-            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_VARIABLE "CXX_FLAG_${_testflag}")
-            check_cxx_source_compiles("${SOURCE}" ${COMPILE_VARIABLE})
-            if(${${COMPILE_VARIABLE}})
+            # make valid variable names from the flag string: replace all non-alphanumerical chars
+            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_FLAG_VARIABLE "CXX_FLAG_${_testflag}")
+            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_SIMD_VARIABLE "CXX_SIMD_COMPILES_FLAG_${_testflag}")
+            
+            # Check that the flag itself is fine, and that is does not generate warnings either
+            check_cxx_compiler_flag("${_testflag}" ${COMPILE_FLAG_VARIABLE})
+
+            if(${COMPILE_FLAG_VARIABLE})
+                # Check that we can compile SIMD source (this does not catch warnings)
+                check_cxx_source_compiles("${SOURCE}" ${COMPILE_SIMD_VARIABLE})
+            endif(${COMPILE_FLAG_VARIABLE})
+
+            if(${COMPILE_FLAG_VARIABLE} AND ${COMPILE_SIMD_VARIABLE})
                 set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
                 set(${VARIABLE} 1 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
                 break()

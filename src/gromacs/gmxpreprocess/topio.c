@@ -613,8 +613,8 @@ static char **read_topol(const char *infile, const char *outfile,
     comb     = 0;
 
     /* Init the number of CMAP torsion angles  and grid spacing */
-    plist->grid_spacing = 0;
-    plist->nc           = 0;
+    plist[F_CMAP].grid_spacing = 0;
+    plist[F_CMAP].nc           = 0;
 
     bWarn_copy_A_B = bFEP;
 

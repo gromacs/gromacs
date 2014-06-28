@@ -192,6 +192,9 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
                                        gmx_int64_t          numMolecules,
                                        tng_molecule_t      *tngMol)
 {
+    tng_chain_t      tngChain = NULL;
+    tng_residue_t    tngRes   = NULL;
+
     if (tng_molecule_add(tng, moleculeName, tngMol) != TNG_SUCCESS)
     {
         gmx_file("Cannot add molecule to TNG molecular system.");
@@ -208,24 +211,32 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
         {
             const t_resinfo *resInfo        = &atoms->resinfo[at->resind];
             char             chainName[2]   = {resInfo->chainid, 0};
-            tng_chain_t      tngChain       = NULL;
-            tng_residue_t    tngRes         = NULL;
             tng_atom_t       tngAtom        = NULL;
+            t_atom          *prevAtom;
 
-            if (tng_molecule_chain_find (tng, *tngMol, chainName,
-                                         (gmx_int64_t)-1, &tngChain) !=
-                TNG_SUCCESS)
+            if (atomIndex > 0)
             {
-                tng_molecule_chain_add (tng, *tngMol, chainName,
-                                        &tngChain);
+                prevAtom = &atoms->atom[atomIndex - 1];
+            }
+            else
+            {
+                prevAtom = 0;
             }
 
-            /* FIXME: When TNG supports both residue index and residue
-             * number the latter should be used. Wait for TNG 2.0*/
-            if (tng_chain_residue_find(tng, tngChain, *resInfo->name,
-                                       at->resind + 1, &tngRes)
-                != TNG_SUCCESS)
+            /* If this is the first atom or if the residue changed add the
+             * residue to the TNG molecular system. */
+            if (!prevAtom || resInfo != &atoms->resinfo[prevAtom->resind])
             {
+                /* If this is the first atom or if the chain changed add
+                 * the chain to the TNG molecular system. */
+                if (!prevAtom || resInfo->chainid !=
+                    atoms->resinfo[prevAtom->resind].chainid)
+                {
+                    tng_molecule_chain_add(tng, *tngMol, chainName,
+                                           &tngChain);
+                }
+                /* FIXME: When TNG supports both residue index and residue
+                 * number the latter should be used. Wait for TNG 2.0*/
                 tng_chain_residue_add(tng, tngChain, *resInfo->name, &tngRes);
             }
             tng_residue_atom_add(tng, tngRes, *(atoms->atomname[atomIndex]), *(atoms->atomtype[atomIndex]), &tngAtom);

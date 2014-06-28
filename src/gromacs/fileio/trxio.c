@@ -281,6 +281,7 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
         fr->bDouble   = FALSE;
         fr->natoms    = -1;
         fr->t0        = 0;
+        fr->tf        = 0;
         fr->tpf       = 0;
         fr->tppf      = 0;
         fr->title     = NULL;
@@ -794,13 +795,13 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
     int      ftp;
 
     bRet = FALSE;
-    pt   = fr->time;
+    pt   = fr->tf;
 
     do
     {
         clear_trxframe(fr, FALSE);
         fr->tppf = fr->tpf;
-        fr->tpf  = fr->time;
+        fr->tpf  = fr->tf;
 
         if (status->tng)
         {
@@ -833,7 +834,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                 /* DvdS 2005-05-31: this has been fixed along with the increased
                  * accuracy of the control over -b and -e options.
                  */
-                if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN)))
+                if (bTimeSet(TBEGIN) && (fr->tf < rTimeValue(TBEGIN)))
                 {
                     if (xtc_seek_time(status->fio, rTimeValue(TBEGIN), fr->natoms, TRUE))
                     {
@@ -874,6 +875,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                           gmx_fio_getname(status->fio));
 #endif
         }
+        fr->tf = fr->time;
 
         if (bRet)
         {
@@ -1043,6 +1045,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
 #endif
             break;
     }
+    fr->tf = fr->time;
 
     /* Return FALSE if we read a frame that's past the set ending time. */
     if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
