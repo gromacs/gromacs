@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,17 +32,27 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_definitions(${GMOCK_COMPILE_DEFINITIONS})
-include_directories(${GMOCK_INCLUDE_DIRS})
-include_directories(${LIBXML2_INCLUDE_DIR})
-file(GLOB TESTUTILS_SOURCES *.cpp)
-
-add_library(testutils STATIC ${TESTUTILS_SOURCES})
-set(TESTUTILS_LIBS testutils ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
-target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
-
-set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)
-set(TESTUTILS_LIBS ${TESTUTILS_LIBS} PARENT_SCOPE)
-
-add_subdirectory(tests)
+# GMock uses tuples extensively, and MSVC bundles a tuple library that
+# is not compatible with the standard. r675 of googletest works around
+# this properly, but that's not in GMock 1.7.0. That logic is
+# duplicated here. See
+# https://code.google.com/p/googletest/source/detail?r=675#, but note
+# that its summary does not represent its code correctly.
+#
+# This function should be called to get the compile definitions
+# suitable for working around MSVC to compile GMock, if any.
+# Returns a string of options in VARIABLE
+function(GET_MSVC_TUPLE_WORKAROUND_DEFINITIONS VARIABLE)
+    set(${VARIABLE} "")
+    if(MSVC)
+        if(MSVC_VERSION VERSION_LESS 1600)
+            list(APPEND ${VARIABLE} "/D GTEST_USE_OWN_TR1_TUPLE=1")
+        else()
+            list(APPEND ${VARIABLE} "/D GTEST_USE_OWN_TR1_TUPLE=0")
+            if(MSVC_VERSION VERSION_EQUAL 1700)
+                # Fixes Visual Studio 2012
+                list(APPEND ${VARIABLE} "/D _VARIADIC_MAX=10")
+            endif()
+        endif()
+    endif()
+endfunction()
