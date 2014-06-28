@@ -620,15 +620,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     }
                                     Vvdw6            = c6[i]*rinv6;
                                     Vvdw12           = c12[i]*rinv6*rinv6;
-                                    if (fr->vdw_modifier == eintmodPOTSHIFT)
-                                    {
-                                        Vvdw[i]          = ( (Vvdw12-c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
-                                                             -(Vvdw6-c6[i]*sh_invrc6)*(1.0/6.0));
-                                    }
-                                    else
-                                    {
-                                        Vvdw[i]          = Vvdw12*(1.0/12.0) - Vvdw6*(1.0/6.0);
-                                    }
+
+                                    Vvdw[i]          = ( (Vvdw12 - c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
+                                                         - (Vvdw6 - c6[i]*sh_invrc6)*(1.0/6.0));
                                     FscalV[i]        = Vvdw12 - Vvdw6;
                                     break;
 
@@ -679,16 +673,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                         /* cutoff LJ */
                                         Vvdw6            = c6[i]*rinv6;
                                         Vvdw12           = c12[i]*rinv6*rinv6;
-
-                                        if (fr->vdw_modifier == eintmodPOTSHIFT)
-                                        {
-                                            Vvdw[i]          = ( (Vvdw12-c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
-                                                                 -(Vvdw6-c6[i]*sh_invrc6-c6grid*sh_lj_ewald)*(1.0/6.0));
-                                        }
-                                        else
-                                        {
-                                            Vvdw[i]          = Vvdw12*(1.0/12.0) - Vvdw6*(1.0/6.0);
-                                        }
+                                        
+                                        Vvdw[i]          = ( (Vvdw12 - c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
+                                                             - (Vvdw6 - c6[i]*sh_invrc6 - c6grid*sh_lj_ewald)*(1.0/6.0));
                                         FscalV[i]        = Vvdw12 - Vvdw6;
                                     }
                                     else
@@ -828,22 +815,25 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                  * the softcore to the entire VdW interaction,
                  * including the reciprocal-space component.
                  */
+                /* We could also use the analytical form here
+                 * iso a table, but that can cause issues for
+                 * r close to 0 for non-interacting pairs.
+                 */
                 real rs, frac, f_lr;
                 int  ri;
 
-                rinv6      = rinv*rinv;
-                rinv6      = rinv6*rinv6*rinv6;
-                ewcljrsq   = ewclj2*rsq;
-                exponent   = exp(-ewcljrsq);
-                poly       = exponent*(1.0 + ewcljrsq + ewcljrsq*ewcljrsq*0.5);
-                vvdw_disp  = -(1.0-poly)*rinv6;
-                FF         = -(-vvdw_disp -ewclj6/6.0*exponent)*rinv*rinv;
-                VV         = vvdw_disp*(1.0/6.0);
+                rs     = rsq*rinv*ewtabscale;
+                ri     = (int)rs;
+                frac   = rs - ri;
+                f_lr   = (1 - frac)*tab_ewald_F_lj[ri] + frac*tab_ewald_F_lj[ri+1];
+                /* TODO: Currently the Ewald LJ table does not contain
+                 * the factor 1/6, we should add this.
+                 */
+                FF     = f_lr*rinv/6.0;
+                VV     = (tab_ewald_V_lj[ri] - ewtabhalfspace*frac*(tab_ewald_F_lj[ri] + f_lr))/6.0;
 
                 if (ii == jnr)
                 {
-                    FF = 0;
-                    VV = -ewclj6/6.0/6.0;
                     /* If we get here, the i particle (ii) has itself (jnr)
                      * in its neighborlist. This can only happen with the Verlet
                      * scheme, and corresponds to a self-interaction that will
@@ -855,9 +845,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 for (i = 0; i < NSTATES; i++)
                 {
                     c6grid      = nbfp_grid[tj[i]];
-                    vvtot      -= LFV[i]*c6grid*VV;
-                    Fscal      -= LFV[i]*c6grid*FF;
-                    dvdl_vdw   -= (DLF[i]*c6grid)*VV;
+                    vvtot      += LFV[i]*c6grid*VV;
+                    Fscal      += LFV[i]*c6grid*FF;
+                    dvdl_vdw   += (DLF[i]*c6grid)*VV;
                 }
             }
 
