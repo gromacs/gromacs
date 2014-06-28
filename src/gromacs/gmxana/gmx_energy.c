@@ -2254,7 +2254,7 @@ int gmx_energy(int argc, char *argv[])
                 {
                     fort = xvgropen(opt2fn("-ort", NFILE, fnm), "Calculated orientations",
                                     "Time (ps)", "", oenv);
-                    if (bOrinst)
+                    if (bOrinst && output_env_get_print_xvgr_codes(oenv))
                     {
                         fprintf(fort, "%s", orinst_sub);
                     }
@@ -2265,7 +2265,7 @@ int gmx_energy(int argc, char *argv[])
                     fodt = xvgropen(opt2fn("-odt", NFILE, fnm),
                                     "Orientation restraint deviation",
                                     "Time (ps)", "", oenv);
-                    if (bOrinst)
+                    if (bOrinst && output_env_get_print_xvgr_codes(oenv))
                     {
                         fprintf(fodt, "%s", orinst_sub);
                     }
@@ -2731,7 +2731,7 @@ int gmx_energy(int argc, char *argv[])
         out = xvgropen(opt2fn("-ora", NFILE, fnm),
                        "Average calculated orientations",
                        "Restraint label", "", oenv);
-        if (bOrinst)
+        if (bOrinst && output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(out, "%s", orinst_sub);
         }
@@ -2746,7 +2746,7 @@ int gmx_energy(int argc, char *argv[])
         out = xvgropen(opt2fn("-oda", NFILE, fnm),
                        "Average restraint deviation",
                        "Restraint label", "", oenv);
-        if (bOrinst)
+        if (bOrinst && output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(out, "%s", orinst_sub);
         }
@@ -2761,7 +2761,7 @@ int gmx_energy(int argc, char *argv[])
         out = xvgropen(opt2fn("-odr", NFILE, fnm),
                        "RMS orientation restraint deviations",
                        "Restraint label", "", oenv);
-        if (bOrinst)
+        if (bOrinst && output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(out, "%s", orinst_sub);
         }

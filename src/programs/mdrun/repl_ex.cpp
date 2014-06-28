@@ -281,6 +281,16 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
             {
                 if (re->q[re->type][re->ind[j]] < re->q[re->type][re->ind[i]])
                 {
+                    /* Unordered replicas are supposed to work, but there
+                     * is still an issues somewhere.
+                     * Note that at this point still re->ind[i]=i.
+                     */
+                    gmx_fatal(FARGS, "Replicas with indices %d < %d have %ss %g > %g, please order your replicas on increasing %s",
+                              i, j,
+                              erename[re->type],
+                              re->q[re->type][i], re->q[re->type][j],
+                              erename[re->type]);
+
                     k          = re->ind[i];
                     re->ind[i] = re->ind[j];
                     re->ind[j] = k;
@@ -873,7 +883,7 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
         dpV = (beta[ap]*re->pres[ap]-beta[bp]*re->pres[bp])*(Vol[b]-Vol[a])/PRESFAC;
         if (bPrint)
         {
-            fprintf(fplog, "  dpV = %10.3e  d = %10.3e\nb", dpV, delta + dpV);
+            fprintf(fplog, "  dpV = %10.3e  d = %10.3e\n", dpV, delta + dpV);
         }
         delta += dpV;
     }
@@ -900,7 +910,7 @@ test_for_replica_exchange(FILE                 *fplog,
     gmx_bool  bVol     = FALSE;
 
     bMultiEx = (re->nex > 1);  /* multiple exchanges at each state */
-    fprintf(fplog, "Replica exchange at step " "%" GMX_PRId64 " time %g\n", step, time);
+    fprintf(fplog, "Replica exchange at step " "% "GMX_PRId64 " time %.5f\n", step, time);
 
     if (re->bNPT)
     {
@@ -1241,15 +1251,11 @@ compute_exchange_order(FILE     *fplog,
 }
 
 static void
-prepare_to_do_exchange(FILE      *fplog,
-                       const int *destinations,
-                       const int  replica_id,
-                       const int  nrepl,
-                       int       *maxswap,
-                       int      **order,
-                       int      **cyclic,
-                       int       *incycle,
-                       gmx_bool  *bThisReplicaExchanged)
+prepare_to_do_exchange(FILE               *fplog,
+                       struct gmx_repl_ex *re,
+                       const int           replica_id,
+                       int                *maxswap,
+                       gmx_bool           *bThisReplicaExchanged)
 {
     int i, j;
     /* Hold the cyclic decomposition of the (multiple) replica
@@ -1257,9 +1263,9 @@ prepare_to_do_exchange(FILE      *fplog,
     gmx_bool bAnyReplicaExchanged = FALSE;
     *bThisReplicaExchanged = FALSE;
 
-    for (i = 0; i < nrepl; i++)
+    for (i = 0; i < re->nrepl; i++)
     {
-        if (destinations[i] != i)
+        if (re->destinations[i] != re->ind[i])
         {
             /* only mark as exchanged if the index has been shuffled */
             bAnyReplicaExchanged = TRUE;
@@ -1269,27 +1275,27 @@ prepare_to_do_exchange(FILE      *fplog,
     if (bAnyReplicaExchanged)
     {
         /* reinitialize the placeholder arrays */
-        for (i = 0; i < nrepl; i++)
+        for (i = 0; i < re->nrepl; i++)
         {
-            for (j = 0; j < nrepl; j++)
+            for (j = 0; j < re->nrepl; j++)
             {
-                cyclic[i][j] = -1;
-                order[i][j]  = -1;
+                re->cyclic[i][j] = -1;
+                re->order[i][j]  = -1;
             }
         }
 
         /* Identify the cyclic decomposition of the permutation (very
          * fast if neighbor replica exchange). */
-        cyclic_decomposition(destinations, cyclic, incycle, nrepl, maxswap);
+        cyclic_decomposition(re->destinations, re->cyclic, re->incycle, re->nrepl, maxswap);
 
         /* Now translate the decomposition into a replica exchange
          * order at each step. */
-        compute_exchange_order(fplog, cyclic, order, nrepl, *maxswap);
+        compute_exchange_order(fplog, re->cyclic, re->order, re->nrepl, *maxswap);
 
         /* Did this replica do any exchange at any point? */
         for (j = 0; j < *maxswap; j++)
         {
-            if (replica_id != order[replica_id][j])
+            if (replica_id != re->order[replica_id][j])
             {
                 *bThisReplicaExchanged = TRUE;
                 break;
@@ -1316,8 +1322,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
     {
         replica_id  = re->repl;
         test_for_replica_exchange(fplog, cr->ms, re, enerd, det(state_local->box), step, time);
-        prepare_to_do_exchange(fplog, re->destinations, replica_id, re->nrepl, &maxswap,
-                               re->order, re->cyclic, re->incycle, &bThisReplicaExchanged);
+        prepare_to_do_exchange(fplog, re, replica_id, &maxswap, &bThisReplicaExchanged);
     }
     /* Do intra-simulation broadcast so all processors belonging to
      * each simulation know whether they need to participate in

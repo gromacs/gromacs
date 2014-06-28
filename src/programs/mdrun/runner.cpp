@@ -1480,8 +1480,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Initialize per-physical-node MPI process/thread ID and counters. */
     gmx_init_intranode_counters(cr);
-
 #ifdef GMX_MPI
+    if (MULTISIM(cr))
+    {
+        md_print_info(cr, fplog,
+                      "This is simulation %d out of %d running as a composite Gromacs\n"
+                      "multi-simulation job. Setup for this simulation:\n\n",
+                      cr->ms->sim, cr->ms->nsim);
+    }
     md_print_info(cr, fplog, "Using %d MPI %s\n",
                   cr->nnodes,
 #ifdef GMX_THREAD_MPI

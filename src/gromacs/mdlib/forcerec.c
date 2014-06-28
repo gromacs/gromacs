@@ -218,8 +218,8 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
                 sigmaj = pow(c12j / c6j, 1.0/6.0);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = epsi * epsj * pow(0.5*(sigmai+sigmaj), 6);
-                c12    = epsi * epsj * pow(0.5*(sigmai+sigmaj), 12);
+                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+                c12    = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 12);
             }
             C6(nbfp, atnr, i, j)   = c6*6.0;
             C12(nbfp, atnr, i, j)  = c12*12.0;
@@ -2666,6 +2666,11 @@ void init_forcerec(FILE              *fp,
     fr->nbkernel_elec_modifier    = fr->coulomb_modifier;
     fr->nbkernel_vdw_modifier     = fr->vdw_modifier;
 
+    fr->rvdw             = cutoff_inf(ir->rvdw);
+    fr->rvdw_switch      = ir->rvdw_switch;
+    fr->rcoulomb         = cutoff_inf(ir->rcoulomb);
+    fr->rcoulomb_switch  = ir->rcoulomb_switch;
+
     fr->bTwinRange = fr->rlistlong > fr->rlist;
     fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype == eelEWALD);
 
@@ -2684,12 +2689,18 @@ void init_forcerec(FILE              *fp,
 
         /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely
          * going to be faster to tabulate the interaction than calling the generic kernel.
+         * However, if generic kernels have been requested we keep things analytically.
          */
-        if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH && fr->nbkernel_vdw_modifier == eintmodPOTSWITCH)
+        if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH &&
+            fr->nbkernel_vdw_modifier == eintmodPOTSWITCH &&
+            bGenericKernelOnly == FALSE)
         {
             if ((fr->rcoulomb_switch != fr->rvdw_switch) || (fr->rcoulomb != fr->rvdw))
             {
                 fr->bcoultab = TRUE;
+                /* Once we tabulate electrostatics, we can use the switch function for LJ,
+                 * which would otherwise need two tables.
+                 */
             }
         }
         else if ((fr->nbkernel_elec_modifier == eintmodPOTSHIFT && fr->nbkernel_vdw_modifier == eintmodPOTSHIFT) ||
@@ -2697,10 +2708,19 @@ void init_forcerec(FILE              *fp,
                    fr->nbkernel_elec_modifier == eintmodEXACTCUTOFF &&
                    (fr->nbkernel_vdw_modifier == eintmodPOTSWITCH || fr->nbkernel_vdw_modifier == eintmodPOTSHIFT))))
         {
-            if (fr->rcoulomb != fr->rvdw)
+            if ((fr->rcoulomb != fr->rvdw) && (bGenericKernelOnly == FALSE))
             {
                 fr->bcoultab = TRUE;
             }
+        }
+
+        if (fr->nbkernel_elec_modifier == eintmodFORCESWITCH)
+        {
+            fr->bcoultab = TRUE;
+        }
+        if (fr->nbkernel_vdw_modifier == eintmodFORCESWITCH)
+        {
+            fr->bvdwtab = TRUE;
         }
 
         if (getenv("GMX_REQUIRE_TABLES"))
@@ -2793,8 +2813,6 @@ void init_forcerec(FILE              *fp,
     fr->epsilon_r       = ir->epsilon_r;
     fr->epsilon_rf      = ir->epsilon_rf;
     fr->fudgeQQ         = mtop->ffparams.fudgeQQ;
-    fr->rcoulomb_switch = ir->rcoulomb_switch;
-    fr->rcoulomb        = cutoff_inf(ir->rcoulomb);
 
     /* Parameters for generalized RF */
     fr->zsquare = 0.0;
@@ -2843,8 +2861,6 @@ void init_forcerec(FILE              *fp,
     fr->egp_flags = ir->opts.egp_flags;
 
     /* Van der Waals stuff */
-    fr->rvdw        = cutoff_inf(ir->rvdw);
-    fr->rvdw_switch = ir->rvdw_switch;
     if ((fr->vdwtype != evdwCUT) && (fr->vdwtype != evdwUSER) && !fr->bBHAM)
     {
         if (fr->rvdw_switch >= fr->rvdw)
@@ -2984,6 +3000,8 @@ void init_forcerec(FILE              *fp,
         (ir->eDispCorr != edispcNO && ir_vdw_switched(ir));
 
     bMakeSeparate14Table = ((!bMakeTables || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
+                             fr->coulomb_modifier != eintmodNONE ||
+                             fr->vdw_modifier != eintmodNONE ||
                              fr->bBHAM || fr->bEwald) &&
                             (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
                              gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
@@ -3102,6 +3120,17 @@ void init_forcerec(FILE              *fp,
             }
         }
     }
+    else if ((fr->eDispCorr != edispcNO) &&
+             ((fr->vdw_modifier == eintmodPOTSWITCH) ||
+              (fr->vdw_modifier == eintmodFORCESWITCH) ||
+              (fr->vdw_modifier == eintmodPOTSHIFT)))
+    {
+        /* Tables might not be used for the potential modifier interactions per se, but
+         * we still need them to evaluate switch/shift dispersion corrections in this case.
+         */
+        make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+    }
+
     if (bMakeSeparate14Table)
     {
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
