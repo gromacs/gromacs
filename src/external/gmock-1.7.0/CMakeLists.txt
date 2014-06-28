@@ -35,6 +35,10 @@
 # As stated in README.Gromacs, this file is not part of GMock, but is written
 # specifically for the GROMACS build system from scratch.
 
+include(gmxGetMsvcTupleWorkaround)
+get_msvc_tuple_workaround_definitions(TUPLE_COMPILE_DEFINITIONS)
+add_definitions("${TUPLE_COMPILE_DEFINITIONS}")
+
 # GTest/GMock suggest linking with pthreads when available for thread safety
 set(CMAKE_THREAD_PREFER_PTHREAD 1)
 find_package(Threads)
