@@ -1198,7 +1198,7 @@ set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 ################################################################
 # Shared library settings
 ################################################################
-if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (CMAKE_VERSION VERSION_GREATER 2.8.11)))
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
