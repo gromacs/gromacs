@@ -499,7 +499,16 @@ _gmx_sel_evaluate_static(gmx_sel_evaluate_t                      * /* data */,
                          const gmx::SelectionTreeElementPointer &sel,
                          gmx_ana_index_t                        *g)
 {
-    gmx_ana_index_intersection(sel->v.u.g, &sel->u.cgrp, g);
+    if (sel->flags & SEL_UNSORTED)
+    {
+        // This only works if g contains all the atoms, but that is currently
+        // the only supported case.
+        gmx_ana_index_copy(sel->v.u.g, &sel->u.cgrp, false);
+    }
+    else
+    {
+        gmx_ana_index_intersection(sel->v.u.g, &sel->u.cgrp, g);
+    }
 }
 
 

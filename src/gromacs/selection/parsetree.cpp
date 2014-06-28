@@ -410,8 +410,8 @@ _gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel,
     {
         /* Update the child */
         _gmx_selelem_update_flags(child, scanner);
-        /* Propagate the dynamic flag */
-        sel->flags |= (child->flags & SEL_DYNAMIC);
+        /* Propagate the dynamic and unsorted flags */
+        sel->flags |= (child->flags & (SEL_DYNAMIC | SEL_UNSORTED));
         /* Propagate the type flag if necessary and check for problems */
         if (bUseChildType)
         {

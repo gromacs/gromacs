@@ -168,6 +168,10 @@ _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val);
  */
 #define SEL_DYNAMIC     16
 /*! \brief
+ * The element may contain atom indices in an unsorted order.
+ */
+#define SEL_UNSORTED    32
+/*! \brief
  * Mask that covers the flags that describe the number of values.
  */
 #define SEL_VALTYPEMASK (SEL_SINGLEVAL | SEL_ATOMVAL | SEL_VARNUMVAL)
