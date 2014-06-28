@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,28 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# As stated in README.Gromacs, this file is not part of GMock, but is written
-# specifically for the GROMACS build system from scratch.
-
-include(gmxGetMsvcTupleWorkaround)
-get_msvc_tuple_workaround_definitions(GMOCK_COMPILE_DEFINITIONS)
-add_definitions(${GMOCK_COMPILE_DEFINITIONS})
-set(GMOCK_COMPILE_DEFINITIONS ${GMOCK_COMPILE_DEFINITIONS} PARENT_SCOPE)
-
-# GTest/GMock suggest linking with pthreads when available for thread safety
-set(CMAKE_THREAD_PREFER_PTHREAD 1)
-find_package(Threads)
-set(PTHREADS_LIBRARIES)
-if (CMAKE_USE_PTHREADS_INIT)
-    set(PTHREADS_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-endif()
-
-set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(GTEST_DIR ${GMOCK_DIR}/gtest)
-set(GTEST_SOURCES ${GTEST_DIR}/src/gtest-all.cc)
-set(GMOCK_SOURCES ${GMOCK_DIR}/src/gmock-all.cc)
-
-set(GTEST_INCLUDE_DIRS ${GTEST_DIR}/include)
-set(GMOCK_INCLUDE_DIRS ${GMOCK_DIR}/include ${GTEST_INCLUDE_DIRS})
-
-include_directories(${GTEST_INCLUDE_DIRS})
-include_directories(${GTEST_DIR})
-include_directories(${GMOCK_INCLUDE_DIRS})
-include_directories(${GMOCK_DIR})
-add_library(gmock STATIC ${GMOCK_SOURCES} ${GTEST_SOURCES})
-
-set(GMOCK_LIBRARIES gmock ${PTHREADS_LIBRARIES} PARENT_SCOPE)
-set(GTEST_LIBRARIES ${GMOCK_LIBRARIES} PARENT_SCOPE)
-set(GMOCK_INCLUDE_DIRS ${GMOCK_INCLUDE_DIRS} PARENT_SCOPE)
-set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIRS} PARENT_SCOPE)
+# GMock uses tuples extensively, and MSVC bundles a tuple library that
+# is not compatible with the standard. r675 of googletest works around
+# this properly, but that's not in GMock 1.7.0. That logic is
+# duplicated here. See
+# https://code.google.com/p/googletest/source/detail?r=675#, but note
+# that its summary does not represent its code correctly.
+#
+# This function should be called to get the compile definitions
+# suitable for working around MSVC to compile GMock, if any.
+# Returns a string of options in VARIABLE
+function(GET_MSVC_TUPLE_WORKAROUND_DEFINITIONS VARIABLE)
+    set(${VARIABLE} "")
+    if(MSVC)
+        if(MSVC_VERSION VERSION_LESS 1600)
+            list(APPEND ${VARIABLE} "/DGTEST_USE_OWN_TR1_TUPLE=1")
+        else()
+            list(APPEND ${VARIABLE} "/DGTEST_USE_OWN_TR1_TUPLE=0")
+            if(MSVC_VERSION VERSION_EQUAL 1700)
+                # Fixes Visual Studio 2012
+                list(APPEND ${VARIABLE} "/D_VARIADIC_MAX=10")
+            endif()
+        endif()
+    endif()
+    set(${VARIABLE} ${${VARIABLE}} PARENT_SCOPE)
+endfunction()
