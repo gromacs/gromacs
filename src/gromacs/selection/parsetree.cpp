@@ -443,6 +443,7 @@ _gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel)
     }
     /* Mark that the flags are set */
     sel->flags |= SEL_FLAGSSET;
+    sel->checkUnsortedAtoms();
 }
 
 /*!

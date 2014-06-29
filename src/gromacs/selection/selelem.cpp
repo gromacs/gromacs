@@ -53,6 +53,7 @@
 #include "keywords.h"
 #include "mempool.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 /*!
  * \param[in] sel Selection for which the string is requested
@@ -328,6 +329,38 @@ void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
     }
 }
 
+void SelectionTreeElement::checkUnsortedAtoms() const
+{
+    if (flags & SEL_UNSORTED)
+    {
+        if (type == SEL_CONST && v.type == GROUP_VALUE)
+        {
+            return;
+        }
+        if (type == SEL_ROOT || type == SEL_SUBEXPR || type == SEL_SUBEXPRREF)
+        {
+            return;
+        }
+        // TODO: Consolidate.
+        if (type == SEL_MODIFIER)
+        {
+            return;
+        }
+        if (type == SEL_EXPRESSION && (u.expr.method->flags & SMETH_ALLOW_UNSORTED))
+        {
+            return;
+        }
+        // FIXME: This does not trigger for the correct group.
+        std::string message = formatString(
+                    "Group '%s' cannot be used in selections except "
+                    "as a full value of the selection, "
+                    "because atom indices in it are not sorted and/or "
+                    "it contains duplicate atoms.",
+                    name().c_str());
+        GMX_THROW(InconsistentInputError(message));
+    }
+}
+
 void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
 {
     GMX_RELEASE_ASSERT(type == SEL_GROUPREF,
@@ -366,16 +399,6 @@ void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
     if (!gmx_ana_index_check_sorted(&foundGroup))
     {
         flags |= SEL_UNSORTED;
-        // TODO: Add this test elsewhere, where it does not break valid use cases.
-#if 0
-        gmx_ana_index_deinit(&foundGroup);
-        std::string message = formatString(
-                    "Group '%s' ('%s') cannot be used in selections, "
-                    "because atom indices in it are not sorted and/or "
-                    "it contains duplicate atoms.",
-                    foundName.c_str(), name().c_str());
-        GMX_THROW(InconsistentInputError(message));
-#endif
     }
 
     sfree(u.gref.name);

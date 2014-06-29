@@ -450,6 +450,7 @@ void SelectionCollection::Impl::resolveExternalGroups(
         root->flags |= (child->flags & SEL_UNSORTED);
         child        = child->next;
     }
+    root->checkUnsortedAtoms();
 }
 
 

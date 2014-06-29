@@ -344,6 +344,7 @@ struct gmx_ana_selcollection_t;
  * the string pointers.
  */
 #define SMETH_CHARVAL    64
+#define SMETH_ALLOW_UNSORTED 128
 /*! \brief
  * If set, the method is a selection modifier.
  *

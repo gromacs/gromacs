@@ -324,6 +324,14 @@ class SelectionTreeElement
         void fillNameIfMissing(const char *selectionText);
 
         /*! \brief
+         * Checks whether this element allows for unsorted atoms.
+         *
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InconsistentInputError if the element has unsorted atoms,
+         *     but does not support that.
+         */
+        void checkUnsortedAtoms() const;
+        /*! \brief
          * Resolved an unresolved reference to an index group.
          *
          * \param[in] grps  Index groups to use to resolve the reference.
