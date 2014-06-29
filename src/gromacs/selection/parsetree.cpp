@@ -1002,6 +1002,12 @@ _gmx_sel_init_selection(const char                             *name,
     }
     /* Update the flags */
     _gmx_selelem_update_flags(root);
+    gmx::ExceptionInitializer errors("Invalid index group reference(s)");
+    root->checkUnsortedAtoms(true, &errors);
+    if (errors.hasNestedExceptions())
+    {
+        GMX_THROW(gmx::InconsistentInputError(errors));
+    }
 
     root->fillNameIfMissing(_gmx_sel_lexer_pselstr(scanner));
 
@@ -1041,28 +1047,34 @@ _gmx_sel_assign_variable(const char                             *name,
     {
         /* If so, just assign the constant value to the variable */
         sc->symtab->addVariable(name, expr);
-        goto finish;
     }
     /* Check if we are assigning a variable to another variable */
-    if (expr->type == SEL_SUBEXPRREF)
+    else if (expr->type == SEL_SUBEXPRREF)
     {
         /* If so, make a simple alias */
         sc->symtab->addVariable(name, expr->child);
-        goto finish;
     }
-    /* Create the root element */
-    root.reset(new SelectionTreeElement(SEL_ROOT));
-    root->setName(name);
-    /* Create the subexpression element */
-    root->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
-    root->child->setName(name);
-    _gmx_selelem_set_vtype(root->child, expr->v.type);
-    root->child->child  = expr;
-    /* Update flags */
-    _gmx_selelem_update_flags(root);
-    /* Add the variable to the symbol table */
-    sc->symtab->addVariable(name, root->child);
-finish:
+    else
+    {
+        /* Create the root element */
+        root.reset(new SelectionTreeElement(SEL_ROOT));
+        root->setName(name);
+        /* Create the subexpression element */
+        root->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
+        root->child->setName(name);
+        _gmx_selelem_set_vtype(root->child, expr->v.type);
+        root->child->child  = expr;
+        /* Update flags */
+        _gmx_selelem_update_flags(root);
+        gmx::ExceptionInitializer errors("Invalid index group reference(s)");
+        root->checkUnsortedAtoms(true, &errors);
+        if (errors.hasNestedExceptions())
+        {
+            GMX_THROW(gmx::InconsistentInputError(errors));
+        }
+        /* Add the variable to the symbol table */
+        sc->symtab->addVariable(name, root->child);
+    }
     srenew(sc->varstrs, sc->nvars + 1);
     sc->varstrs[sc->nvars] = strdup(pselstr);
     ++sc->nvars;
