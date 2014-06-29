@@ -310,26 +310,86 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
     }
 }
 
+/* Returns the spacing for a function using the maximum of
+ * the third derivative, x_scale (unit 1/length)
+ * and function tolerance.
+ */
+static double spline3_table_scale(double third_deriv_max,
+                                  double x_scale,
+                                  double func_tol)
+{
+    double deriv_tol;
+    double sc_deriv, sc_func;
+
+    /* Force tolerance: single precision accuracy */
+    deriv_tol = GMX_FLOAT_EPS;
+    sc_deriv  = sqrt(third_deriv_max/(6*4*deriv_tol*x_scale))*x_scale;
+
+    /* Don't try to be more accurate on energy than the precision */
+    func_tol  = max(func_tol, GMX_REAL_EPS);
+    sc_func   = pow(third_deriv_max/(6*12*sqrt(3)*func_tol), 1.0/3.0)*x_scale;
+
+    return max(sc_deriv, sc_func);
+}
+
 /* The scale (1/spacing) for third order spline interpolation
  * of the Ewald mesh contribution which needs to be subtracted
  * from the non-bonded interactions.
+ * Since there is currently only one spacing for Coulomb and LJ,
+ * the finest spacing is used if both Ewald types are present.
+ *
+ * Note that we could also implement completely separate tables
+ * for Coulomb and LJ Ewald, each with their own spacing.
+ * The current setup with the same spacing can provide slightly
+ * faster kernels with both Coulomb and LJ Ewald, especially
+ * when interleaving both tables (currently not implemented).
  */
-real ewald_spline3_table_scale(real ewaldcoeff, real rc)
+real ewald_spline3_table_scale(const interaction_const_t *ic)
 {
-    double erf_x_d3 = 1.0522; /* max of (erf(x)/x)''' */
-    double ftol, etol;
-    double sc_f, sc_e;
+    real sc;
 
-    /* Force tolerance: single precision accuracy */
-    ftol = GMX_FLOAT_EPS;
-    sc_f = sqrt(erf_x_d3/(6*4*ftol*ewaldcoeff))*ewaldcoeff;
+    sc = 0;
 
-    /* Energy tolerance: 10x more accurate than the cut-off jump */
-    etol = 0.1*gmx_erfc(ewaldcoeff*rc);
-    etol = max(etol, GMX_REAL_EPS);
-    sc_e = pow(erf_x_d3/(6*12*sqrt(3)*etol), 1.0/3.0)*ewaldcoeff;
+    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    {
+        double erf_x_d3 = 1.0522; /* max of (erf(x)/x)''' */
+        double etol;
+        real   sc_q;
 
-    return max(sc_f, sc_e);
+        /* Energy tolerance: 0.1 times the cut-off jump */
+        etol  = 0.1*gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+
+        sc_q  = spline3_table_scale(erf_x_d3, ic->ewaldcoeff_q, etol);
+
+        if (debug)
+        {
+            fprintf(debug, "Ewald Coulomb quadratic spline table spacing: %f 1/nm\n", 1/sc_q);
+        }
+
+        sc    = max(sc, sc_q);
+    }
+
+    if (EVDW_PME(ic->vdwtype))
+    {
+        double func_d3 = 0.42888; /* max of (x^-6 (1 - exp(-x^2)(1+x^2+x^4/2)))''' */
+        double xrc2, etol;
+        real   sc_lj;
+
+        /* Energy tolerance: 0.1 times the cut-off jump */
+        xrc2  = sqr(ic->ewaldcoeff_lj*ic->rvdw);
+        etol  = 0.1*exp(-xrc2)*(1 + xrc2 + xrc2*xrc2/2.0);
+
+        sc_lj = spline3_table_scale(func_d3, ic->ewaldcoeff_lj, etol);
+
+        if (debug)
+        {
+            fprintf(debug, "Ewald LJ quadratic spline table spacing: %f 1/nm\n", 1/sc_lj);
+        }
+
+        sc = max(sc, sc_lj);
+    }
+
+    return sc;
 }
 
 /* Calculate the potential and force for an r value
