@@ -99,7 +99,7 @@ extern "C"
 #endif
 
 /* now check specifically for several architectures: */
-#if ((defined(i386) || defined(__x86_64__)) && !defined(__OPEN64__))
+#if ((defined(__i386__) || defined(__x86_64__)) && !defined(__OPEN64__))
 /* first x86: */
 #include "atomic/gcc_x86.h"
 
