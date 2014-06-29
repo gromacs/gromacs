@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedVariable Name="Variable1">
+      <String Name="Input">foo = group "GrpUnsorted"</String>
+    </ParsedVariable>
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">group "GrpUnsorted"</String>
+      <String Name="Text">group "GrpUnsorted"</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection2">
+      <String Name="Input">GrpUnsorted</String>
+      <String Name="Text">GrpUnsorted</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection3">
+      <String Name="Input">2</String>
+      <String Name="Text">2</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection4">
+      <String Name="Input">res_cog of group "GrpUnsorted"</String>
+      <String Name="Text">res_cog of group "GrpUnsorted"</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection5">
+      <String Name="Input">group "GrpUnsorted" permute 2 1</String>
+      <String Name="Text">group "GrpUnsorted" permute 2 1</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection6">
+      <String Name="Input">foo</String>
+      <String Name="Text">foo</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>2</Int>
+        <Int>1</Int>
+        <Int>8</Int>
+        <Int>6</Int>
+        <Int>4</Int>
+        <Int>2</Int>
+        <Int>11</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>2</Int>
+        <Int>1</Int>
+        <Int>8</Int>
+        <Int>6</Int>
+        <Int>4</Int>
+        <Int>2</Int>
+        <Int>11</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection3">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>2</Int>
+        <Int>1</Int>
+        <Int>8</Int>
+        <Int>6</Int>
+        <Int>4</Int>
+        <Int>2</Int>
+        <Int>11</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection4">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>2</Int>
+        <Int>1</Int>
+        <Int>8</Int>
+        <Int>6</Int>
+        <Int>4</Int>
+        <Int>2</Int>
+        <Int>11</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection5">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>2</Int>
+        <Int>0</Int>
+        <Int>8</Int>
+        <Int>1</Int>
+        <Int>4</Int>
+        <Int>6</Int>
+        <Int>11</Int>
+        <Int>2</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection6">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>2</Int>
+        <Int>1</Int>
+        <Int>8</Int>
+        <Int>6</Int>
+        <Int>4</Int>
+        <Int>2</Int>
+        <Int>11</Int>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+</ReferenceData>
