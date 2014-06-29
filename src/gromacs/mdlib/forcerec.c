@@ -1870,11 +1870,10 @@ static void init_ewald_f_table(interaction_const_t *ic,
 
     if (bUsesSimpleTables)
     {
-        /* With a spacing of 0.0005 we are at the force summation accuracy
-         * for the SSE kernels for "normal" atomistic simulations.
+        /* Get the Ewald table spacing based on Coulomb and/or LJ
+         * Ewald coefficients and rtol.
          */
-        ic->tabq_scale = ewald_spline3_table_scale(ic->ewaldcoeff_q,
-                                                   ic->rcoulomb);
+        ic->tabq_scale = ewald_spline3_table_scale(ic);
 
         maxr           = (rtab > ic->rcoulomb) ? rtab : ic->rcoulomb;
         ic->tabq_size  = (int)(maxr*ic->tabq_scale) + 2;
