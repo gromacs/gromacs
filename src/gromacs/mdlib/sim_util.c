@@ -178,7 +178,7 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
         time_string[i] = '\0';
     }
 
-    fprintf(fplog, "%s on node %d %s\n", title, nodeid, time_string);
+    fprintf(fplog, "%s on rank %d %s\n", title, nodeid, time_string);
 }
 
 void print_start(FILE *fplog, t_commrec *cr,
@@ -2130,7 +2130,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
 
     /* constrain the current position */
     constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-              ir, NULL, cr, step, 0, md,
+              ir, NULL, cr, step, 0, 1.0, md,
               state->x, state->x, NULL,
               fr->bMolPBC, state->box,
               state->lambda[efptBONDED], &dvdl_dum,
@@ -2142,7 +2142,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         /* might not yet treat veta correctly */
         constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-                  ir, NULL, cr, step, 0, md,
+                  ir, NULL, cr, step, 0, 1.0, md,
                   state->x, state->v, state->v,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
@@ -2173,7 +2173,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         }
         dvdl_dum = 0;
         constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-                  ir, NULL, cr, step, -1, md,
+                  ir, NULL, cr, step, -1, 1.0, md,
                   state->x, savex, NULL,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
@@ -2867,6 +2867,10 @@ void init_md(FILE *fplog,
         if (ir->etc == etcVRESCALE)
         {
             please_cite(fplog, "Bussi2007a");
+        }
+        if (ir->eI == eiSD1)
+        {
+            please_cite(fplog, "Goga2012");
         }
     }
 

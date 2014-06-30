@@ -1074,7 +1074,7 @@ static void free_gpu_resources(const t_forcerec *fr,
         /* uninitialize GPU (by destroying the context) */
         if (!free_gpu(gpu_err_str))
         {
-            gmx_warning("On node %d failed to free GPU #%d: %s",
+            gmx_warning("On rank %d failed to free GPU #%d: %s",
                         cr->nodeid, get_current_gpu_device_id(), gpu_err_str);
         }
     }
@@ -1206,6 +1206,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           "      Verlet cut-off scheme.\n");
 #endif
         }
+
+        if (inputrec->eI == eiSD2)
+        {
+            md_print_warn(cr, fplog, "The stochastic dynamics integrator %s is deprecated, since\n"
+                          "it is slower than integrator %s and is slightly less accurate\n"
+                          "with constraints. Use the %s integrator.",
+                          ei_names[inputrec->eI], ei_names[eiSD1], ei_names[eiSD1]);
+        }
     }
 
     /* Check and update the hardware options for internal consistency */
@@ -1220,14 +1228,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #ifdef GMX_THREAD_MPI
         if (cr->npmenodes > 0 && hw_opt->nthreads_tmpi <= 0)
         {
-            gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME nodes");
+            gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
 #endif
 
         if (hw_opt->nthreads_omp_pme != hw_opt->nthreads_omp &&
             cr->npmenodes <= 0)
         {
-            gmx_fatal(FARGS, "You need to explicitly specify the number of PME nodes (-npme) when using different number of OpenMP threads for PP and PME nodes");
+            gmx_fatal(FARGS, "You need to explicitly specify the number of PME ranks (-npme) when using different number of OpenMP threads for PP and PME ranks");
         }
     }
 
@@ -1312,7 +1320,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #ifdef GMX_THREAD_MPI
                   "but the number of threads (option -nt) is 1"
 #else
-                  "but %s was not started through mpirun/mpiexec or only one process was requested through mpirun/mpiexec"
+                  "but %s was not started through mpirun/mpiexec or only one rank was requested through mpirun/mpiexec"
 #endif
 #endif
                   , ShortProgram()
@@ -1335,7 +1343,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (cr->npmenodes > 0)
         {
             gmx_fatal_collective(FARGS, cr, NULL,
-                                 "PME nodes are requested, but the system does not use PME electrostatics or LJ-PME");
+                                 "PME-only ranks are requested, but the system does not use PME for electrostatics or LJ");
         }
 
         cr->npmenodes = 0;

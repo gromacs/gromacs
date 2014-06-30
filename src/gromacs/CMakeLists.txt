@@ -45,6 +45,39 @@ function (gmx_install_headers DESTINATION)
     endif()
 endfunction ()
 
+if(GMX_USE_TNG)
+    option(GMX_EXTERNAL_TNG "Use external TNG instead of compiling the version shipped with GROMACS."
+           OFF)
+    # Detect TNG if GMX_EXTERNAL_TNG is explicitly ON
+    if(GMX_EXTERNAL_TNG)
+        find_package(TNG_IO 1.6.0)
+        if(NOT TNG_IO_FOUND)
+            message(FATAL_ERROR
+                "TNG >= 1.6.0 not found. "
+                "You can set GMX_EXTERNAL_TNG=OFF to compile TNG.")
+        endif()
+        include_directories(${TNG_IO_INCLUDE_DIRS})
+    endif()
+    if(NOT GMX_EXTERNAL_TNG)
+        # TNG wants zlib if it is available
+        find_package(ZLIB QUIET)
+        include(gmxTestZLib)
+        gmx_test_zlib(HAVE_ZLIB)
+
+        include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
+        tng_get_source_list(TNG_SOURCES TNG_IO_DEFINITIONS)
+        list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
+        tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
+
+        if (HAVE_ZLIB)
+            list(APPEND GMX_EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
+        endif()
+    endif()
+else()
+    # We still need to get tng/tng_io_fwd.h from somewhere!
+    include_directories(${CMAKE_SOURCE_DIR}/src/external/tng_io/include)
+endif()
+
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(gmxpreprocess)
@@ -159,7 +192,7 @@ target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
                       ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${GMX_TNG_LIBRARIES}
+                      ${TNG_IO_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})

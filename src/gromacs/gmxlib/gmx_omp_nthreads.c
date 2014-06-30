@@ -442,8 +442,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                 sprintf(sbuf, "thread-MPI threads");
 #else
                 sprintf(sbuf, "MPI processes");
-                sprintf(sbuf1, " per node");
-                sprintf(sbuf2, "On node %d: o", cr->sim_nodeid);
+                sprintf(sbuf1, " per rank");
+                sprintf(sbuf2, "On rank %d: o", cr->sim_nodeid);
 #endif
             }
 #endif

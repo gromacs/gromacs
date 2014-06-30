@@ -469,7 +469,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
                 bExpanded = TRUE;
             }
             /* whether to print energies */
-            if (ir->fepvals->bPrintEnergy)
+            if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
             {
                 dhc->ndh += 1;
                 bEnergy   = TRUE;

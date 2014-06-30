@@ -744,9 +744,10 @@ buffer calculation and results in a smaller buffer size.
   the cut-off. Error estimates due to finite Verlet buffer size are
   shown for a $1 \times 1$ atom pair list and $4 \times 4$ atom pair
   list without and with (dashed line) cancellation of positive and
-  negative errors. Real energy drift is shown for double- and
-  single-precision simulations. Single-precision rounding errors in
-  the SETTLE constraint algorithm cause the drift to become negative
+  negative errors. Real energy drift is shown for simulations using
+  double- and mixed-precision settings. Rounding errors in the SETTLE
+  constraint algorithm from the use of single precision causes
+  the drift to become negative
   at large buffer size. Note that at zero buffer size, the real drift
   is small because positive (H-H) and negative (O-H) energy errors
   cancel.}
@@ -1923,7 +1924,7 @@ The trajectory file contains frames that could include positions,
 velocities and/or forces, as well as information about the dimensions
 of the simulation volume, integration step, integration time, etc. The
 interpretation of the time varies with the integrator chosen, as
-described above. For velocity-Verlet integrators, velocities labeled
+described above. For Velocity Verlet integrators, velocities labeled
 at time $t$ are for that time. For other integrators (e.g. leap-frog,
 stochastic dynamics), the velocities labeled at time $t$ are for time
 $t - \hDt$.
@@ -2298,35 +2299,34 @@ still correct.
 
 In {\gromacs} there are two algorithms to integrate equation (\ref{SDeq}):
 a simple and efficient one
-and a more complex leap-frog algorithm~\cite{Gunsteren88}.
+and a more complex leap-frog algorithm~\cite{Gunsteren88}, which is now deprecated.
 The accuracy of both integrators is equivalent to the normal MD leap-frog and
-velocity-Verlet integrator, except with constraints where the simple
-SD integrator is significantly less accurate. There is a proper way
-of applying constraints with the simple integrator, but that requires
-a second constraining step~\cite{Goga2012}, which diminishes the gain.
+Velocity Verlet integrator, except with constraints where the complex
+SD integrator samples at a temperature that is slightly too high (although that error is smaller than the one from the Velocity Verlet integrator that uses the kinetic energy from the full-step velocity). The simple integrator is nearly identical to the common way of discretizing the Langevin equation, but the friction and velocity term are applied in an impulse fashion~\cite{Goga2012}.
 The simple integrator is:
 \bea
 \label{eqn:sd_int1}
-\ve{v}(t+\hDt)  &~=~&   \alpha \, \ve{v}(t-\hDt) + \frac{1 - \alpha}{m \gamma}\ve{F}(t) + \sqrt{\frac{k_B T}{m}(1 - \alpha^2)} \, \ruis_i \\
-\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt \, \ve{v}(t+\hDt) \\
-\alpha &~=~& \left(1 - \frac{\gamma \Dt}{m} \right)
+\ve{v}'  &~=~&   \ve{v}(t-\hDt) + \frac{1}{m}\ve{F}(t)\Dt \\
+\Delta\ve{v}     &~=~&   -\alpha \, \ve{v}'(t+\hDt) + \sqrt{\frac{k_B T}{m}(1 - \alpha^2)} \, \ruis_i \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\left(\ve{v}' +\frac{1}{2}\Delta \ve{v}\right)\Dt \label{eqn:sd1_x_upd}\\
+\ve{v}(t+\hDt)  &~=~&   \ve{v}' + \Delta \ve{v} \\
+\alpha &~=~& 1 - e^{-\gamma \Dt}
 \eea
 where $\ruis_i$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
-With constraints you should only consider using the simple integrator when $\gamma \Dt/m \ll 0.01$.
+The velocity is first updated a full time step without friction and noise to get $\ve{v}'$, identical to the normal update in leap-frog. The friction and noise are then applied as an impulse at step $t+\Dt$. The advantage of this scheme is that the velocity-dependent terms act at the full time step, which makes the correct integration of forces that depend on both coordinates and velocities, such as constraints and dissipative particle dynamics (DPD, not implented yet), straightforward. With constraints, the coordinate update \eqnref{sd1_x_upd} is split into a normal leap-frog update and a $\Delta \ve{v}$. After both of these updates the constraints are applied to coordinates and velocities.
 
-In the complex algorithm four Gaussian random numbers are required
+In the deprecated complex algorithm, four Gaussian random numbers are required
 per integration step per degree of freedom, and with constraints the
 coordinates need to be constrained twice per integration step.
 Depending on the computational cost of the force calculation,
 this can take a significant part of the simulation time.
 Exact continuation of a stochastic dynamics simulation is not possible,
 because the state of the random number generator is not stored.
-When using SD as a thermostat, an appropriate value for $\gamma$ is 0.5 ps$^{-1}$,
+
+When using SD as a thermostat, an appropriate value for $\gamma$ is e.g. 0.5 ps$^{-1}$,
 since this results in a friction that is lower than the internal friction
-of water, while it is high enough to remove excess heat
-(unless plain cut-off or reaction-field electrostatics is used).
-With this value of $\gamma$ the efficient algorithm will usually be accurate
-enough.
+of water, while it still provides efficient thermostatting.
+
 
 \section{Brownian Dynamics\swapindexquiet{Brownian}{dynamics}}
 \label{sec:BD}
@@ -2747,7 +2747,7 @@ extra communication cost might affect the efficiency.
 All replica exchange variants are options of the {\tt mdrun}
 program. It will only work when MPI is installed, due to the inherent
 parallelism in the algorithm. For efficiency each replica can run on a
-separate node.  See the manual page of {\tt mdrun} on how to use these
+separate rank.  See the manual page of {\tt mdrun} on how to use these
 multinode features.
 
 % \ifthenelse{\equal{\gmxlite}{1}}{}{
@@ -2820,21 +2820,21 @@ simulation to explore many thermodynamic states.
 
 \section{Parallelization\index{parallelization}}
 The CPU time required for a simulation can be reduced by running the simulation
-in parallel over more than one processor or processor core.
-Ideally one would want to have linear scaling: running on $N$ processors/cores
+in parallel over more than one core.
+Ideally, one would want to have linear scaling: running on $N$ cores
 makes the simulation $N$ times faster. In practice this can only be
-achieved for a small number of processors. The scaling will depend
+achieved for a small number of cores. The scaling will depend
 a lot on the algorithms used. Also, different algorithms can have different
 restrictions on the interaction ranges between atoms.
 
 \section{Domain decomposition\index{domain decomposition}}
 Since most interactions in molecular simulations are local,
 domain decomposition is a natural way to decompose the system.
-In domain decomposition, a spatial domain is assigned to each processor,
+In domain decomposition, a spatial domain is assigned to each rank,
 which will then integrate the equations of motion for the particles
 that currently reside in its local domain. With domain decomposition,
 there are two choices that have to be made: the division of the unit cell
-into domains and the assignment of the forces to processors.
+into domains and the assignment of the forces to domains.
 Most molecular simulation packages use the half-shell method for assigning
 the forces. But there are two methods that always require less communication:
 the eighth shell~\cite{Liem1991} and the midpoint~\cite{Shaw2006} method.
@@ -2848,8 +2848,8 @@ in the {\gromacs} 4 paper~\cite{Hess2008b}.
 In the most general case of a triclinic unit cell,
 the space in divided with a 1-, 2-, or 3-D grid in parallelepipeds
 that we call domain decomposition cells.
-Each cell is assigned to a processor.
-The system is partitioned over the processors at the beginning
+Each cell is assigned to a particle-particle rank.
+The system is partitioned over the ranks at the beginning
 of each MD step in which neighbor searching is performed.
 Since the neighbor searching is based on charge groups, charge groups
 are also the units for the domain decomposition.
@@ -2879,11 +2879,11 @@ or multiple pulses. In \figref{ddcells} two pulses in $x$ are required,
 then one in $y$ and then one in $z$. The forces are communicated by
 reversing this procedure. See the {\gromacs} 4 paper~\cite{Hess2008b}
 for details on determining which non-bonded and bonded forces
-should be calculated on which node.
+should be calculated on which rank.
 
 \subsection{Dynamic load balancing\swapindexquiet{dynamic}{load balancing}}
-When different processors have a different computational load
-(load imbalance), all processors will have to wait for the one
+When different ranks have a different computational load
+(load imbalance), all ranks will have to wait for the one
 that takes the most time. One would like to avoid such a situation.
 Load imbalance can occur due to three reasons:
 \begin{itemize}
@@ -2904,7 +2904,7 @@ a non-bonded distance and a bonded distance check.
 \begin{figure}
 \centerline{\includegraphics[width=7cm]{plots/dd-tric}}
 \caption{
-The zones to communicate to the processor of zone 0,
+The zones to communicate to the rank of zone 0,
 see the text for details. $r_c$ and $r_b$ are the non-bonded
 and bonded cut-off radii respectively, $d$ is an example
 of a distance between following, staggered boundaries of cells.
@@ -2935,7 +2935,7 @@ option of {\tt mdrun}.
 \subsection{Constraints in parallel\index{constraints}}
 \label{subsec:plincs}
 Since with domain decomposition parts of molecules can reside
-on different processors, bond constraints can cross cell boundaries.
+on different ranks, bond constraints can cross cell boundaries.
 Therefore a parallel constraint algorithm is required.
 {\gromacs} uses the \normindex{P-LINCS} algorithm~\cite{Hess2008a},
 which is the parallel version of the \normindex{LINCS} algorithm~\cite{Hess97}
@@ -3035,14 +3035,14 @@ is required. This will usually be the limiting factor for
 scaling with domain decomposition.
 To reduce the effect of this problem, we have come up with
 a Multiple-Program, Multiple-Data approach~\cite{Hess2008b}.
-Here, some processors are selected to do only the PME mesh calculation,
-while the other processors, called particle-particle (PP) nodes,
+Here, some ranks are selected to do only the PME mesh calculation,
+while the other ranks, called particle-particle (PP) ranks,
 do all the rest of the work.
-For rectangular boxes the optimal PP to PME node ratio is usually 3:1,
+For rectangular boxes the optimal PP to PME rank ratio is usually 3:1,
 for rhombic dodecahedra usually 2:1.
-When the number of PME nodes is reduced by a factor of 4, the number
+When the number of PME ranks is reduced by a factor of 4, the number
 of communication calls is reduced by about a factor of 16.
-Or put differently, we can now scale to 4 times more nodes.
+Or put differently, we can now scale to 4 times more ranks.
 In addition, for modern 4 or 8 core machines in a network,
 the effective network bandwidth for PME is quadrupled,
 since only a quarter of the cores will be using the network connection
@@ -3051,7 +3051,7 @@ on each machine during the PME calculations.
 \begin{figure}
 \centerline{\includegraphics[width=12cm]{plots/mpmd-pme}}
 \caption{
-Example of 8 nodes without (left) and with (right) MPMD.
+Example of 8 ranks without (left) and with (right) MPMD.
 The PME communication (red arrows) is much higher on the left
 than on the right. For MPMD additional PP - PME coordinate
 and force communication (blue arrows) is required,
@@ -3060,28 +3060,28 @@ but the total communication complexity is lower.
 }
 \end{figure}
 
-{\tt mdrun} will by default interleave the PP and PME nodes.
-If the processors are not number consecutively inside the machines,
+{\tt mdrun} will by default interleave the PP and PME ranks.
+If the ranks are not number consecutively inside the machines,
 one might want to use {\tt mdrun -ddorder pp_pme}.
 For machines with a real 3-D torus and proper communication software
-that assigns the processors accordingly one should use
+that assigns the ranks accordingly one should use
 {\tt mdrun -ddorder cartesian}.
 
 To optimize the performance one should usually set up the cut-offs
 and the PME grid such that the PME load is 25 to 33\% of the total
 calculation load. {\tt grompp} will print an estimate for this load
 at the end and also {\tt mdrun} calculates the same estimate
-to determine the optimal number of PME nodes to use.
+to determine the optimal number of PME ranks to use.
 For high parallelization it might be worthwhile to optimize
 the PME load with the {\tt mdp} settings and/or the number
-of PME nodes with the {\tt -npme} option of {\tt mdrun}.
+of PME ranks with the {\tt -npme} option of {\tt mdrun}.
 For changing the electrostatics settings it is useful to know
 the accuracy of the electrostatics remains nearly constant
 when the Coulomb cut-off and the PME grid spacing are scaled
 by the same factor.
 {\bf Note} that it is usually better to overestimate than to underestimate
-the number of PME nodes, since the number of PME nodes is smaller
-than the number of PP nodes, which leads to less total waiting time.
+the number of PME ranks, since the number of PME ranks is smaller
+than the number of PP ranks, which leads to less total waiting time.
 
 The PME domain decomposition can be 1-D or 2-D along the $x$ and/or
 $y$ axis. 2-D decomposition is also known as \normindex{pencil decomposition} because of
@@ -3090,13 +3090,13 @@ the shape of the domains at high parallelization.
 the PP decomposition has only 1 domain along $x$. 2-D PME decomposition
 has to have the number of domains along $x$ equal to the number of
 the PP decomposition. {\tt mdrun} automatically chooses 1-D or 2-D
-PME decomposition (when possible with the total given number of nodes),
+PME decomposition (when possible with the total given number of ranks),
 based on the minimum amount of communication for the coordinate redistribution
 in PME plus the communication for the grid overlap and transposes.
 To avoid superfluous communication of coordinates and forces
-between the PP and PME nodes, the number of DD cells in the $x$
+between the PP and PME ranks, the number of DD cells in the $x$
 direction should ideally be the same or a multiple of the number
-of PME nodes. By default, {\tt mdrun} takes care of this issue.
+of PME ranks. By default, {\tt mdrun} takes care of this issue.
 
 \subsection{Domain decomposition flow chart}
 In \figref{dd_flow} a flow chart is shown for domain decomposition
@@ -3110,7 +3110,7 @@ the algorithms that are not used.
 \caption{
 Flow chart showing the algorithms and communication (arrows)
 for a standard MD simulation with virtual sites, constraints
-and separate PME-mesh nodes.
+and separate PME-mesh ranks.
 \label{fig:dd_flow}
 }
 \end{figure}

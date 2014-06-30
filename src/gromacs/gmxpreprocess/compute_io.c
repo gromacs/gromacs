@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
                 nchars += 5;   /* alchemical state */
             }
 
-            if (ir->fepvals->bPrintEnergy)
+            if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
             {
                 nchars += 12; /* energy for dhdl */
             }
@@ -126,7 +126,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
                 {
                     ndh_tot += 1;
                 }
-                if (ir->fepvals->bPrintEnergy)
+                if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
                 {
                     ndh_tot += 1;
                 }

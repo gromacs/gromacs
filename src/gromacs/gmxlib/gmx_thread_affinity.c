@@ -375,7 +375,7 @@ void
 gmx_check_thread_affinity_set(FILE            *fplog,
                               const t_commrec *cr,
                               gmx_hw_opt_t    *hw_opt,
-                              int  gmx_unused  ncpus,
+                              int  gmx_unused  nthreads_hw_avail,
                               gmx_bool         bAfterOpenmpInit)
 {
 #ifdef HAVE_SCHED_GETAFFINITY
@@ -440,19 +440,19 @@ gmx_check_thread_affinity_set(FILE            *fplog,
      * detected CPUs is >= the CPUs in the current set.
      * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
 #ifdef CPU_COUNT
-    if (ncpus < CPU_COUNT(&mask_current))
+    if (nthreads_hw_avail < CPU_COUNT(&mask_current))
     {
         if (debug)
         {
-            fprintf(debug, "%d CPUs detected, but %d was returned by CPU_COUNT",
-                    ncpus, CPU_COUNT(&mask_current));
+            fprintf(debug, "%d hardware threads detected, but %d was returned by CPU_COUNT",
+                    nthreads_hw_avail, CPU_COUNT(&mask_current));
         }
         return;
     }
 #endif /* CPU_COUNT */
 
     bAllSet = TRUE;
-    for (i = 0; (i < ncpus && i < CPU_SETSIZE); i++)
+    for (i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
     {
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }

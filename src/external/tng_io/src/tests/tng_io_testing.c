@@ -15,7 +15,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "../../include/tng_io.h"
+#include "tng/tng_io.h"
+#include "tng/version.h"
 
 static tng_function_status tng_test_setup_molecules(tng_trajectory_t traj)
 {
@@ -595,6 +596,17 @@ int main()
     tng_trajectory_t traj;
     tng_function_status stat;
     char time_str[TNG_MAX_DATE_STR_LEN];
+    char version_str[TNG_MAX_STR_LEN];
+
+    tng_version(traj, version_str, TNG_MAX_STR_LEN);
+    if(strncmp(TNG_VERSION, version_str, TNG_MAX_STR_LEN) == 0)
+    {
+        printf("Test version control: \t\t\t\tSucceeded.\n");
+    }
+    else
+    {
+        printf("Test version control: \t\t\t\tFailed.\n");
+    }
 
     if(tng_trajectory_init(&traj) != TNG_SUCCESS)
     {

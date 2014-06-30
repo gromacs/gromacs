@@ -728,7 +728,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 
 
 
-    if (bACF)
+    if (bACF && (ii < nvfr))
     {
         fprintf(stderr, "Integral and integrated fit to the current acf yields at t=%f:\n", time[vfr[ii]]);
         fprintf(stderr, "sigma=%8.3f (pure integral: %.3f)\n", sgk-malt*pow(time[vfr[ii]], sigma), sgk);
@@ -763,7 +763,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     }
     else
     {
-        fprintf(stderr, "Too less points for a fit.\n");
+        fprintf(stderr, "Too few points for a fit.\n");
     }
 
 

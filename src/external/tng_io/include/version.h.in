@@ -1,7 +1,0 @@
-#ifndef VERSION_CONFIG_H
-#define VERSION_CONFIG_H
-
-/* define the API version */
-#define TNG_API_VERSION @API_VERSION@
-
-#endif

@@ -536,9 +536,14 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
 
 
 /* Return the number of hardware threads supported by the current CPU.
- * We assume that this is equal with the number of CPUs reported to be
- * online by the OS at the time of the call.
- */
+ * We assume that this is equal with the number of "processors"
+ * reported to be online by the OS at the time of the call. The
+ * definition of "processor" is according to an old POSIX standard.
+ *
+ * Note that the number of hardware threads is generally greater than
+ * the number of cores (e.g. x86 hyper-threading, Power). Managing the
+ * mapping of software threads to hardware threads is managed
+ * elsewhere. */
 static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
 {
     int ret = 0;
@@ -565,21 +570,20 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
 #endif /* End of check for sysconf argument values */
 
 #else
-    /* Neither windows nor Unix. No fscking idea how many CPUs we have! */
+    /* Neither windows nor Unix. No fscking idea how many hardware threads we have! */
     ret = -1;
 #endif
 
     if (debug)
     {
-        fprintf(debug, "Detected %d processors, will use this as the number "
-                "of supported hardware threads.\n", ret);
+        fprintf(debug, "Detected %d hardware threads to use.\n", ret);
     }
 
 #ifdef GMX_OPENMP
     if (ret != gmx_omp_get_num_procs())
     {
         md_print_warn(cr, fplog,
-                      "Number of CPUs detected (%d) does not match the number reported by OpenMP (%d).\n"
+                      "Number of hardware threads detected (%d) does not match the number reported by OpenMP (%d).\n"
                       "Consider setting the launch configuration manually!",
                       ret, gmx_omp_get_num_procs());
     }

@@ -609,11 +609,11 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
     if (file_version >= 79)
     {
-        gmx_fio_do_int(fio, fepvals->bPrintEnergy);
+        gmx_fio_do_int(fio, fepvals->edHdLPrintEnergy);
     }
     else
     {
-        fepvals->bPrintEnergy = FALSE;
+        fepvals->edHdLPrintEnergy = edHdLPrintEnergyNO;
     }
 
     /* handle lambda_neighbors */

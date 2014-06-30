@@ -226,7 +226,7 @@ void ewald_LRcorrection(int start, int end,
     {
         clear_mat(dxdf_lj);
     }
-    if ((calc_excl_corr || dipole_coeff != 0 || EVDW_PME(fr->vdwtype)) && !bFreeEnergy)
+    if ((calc_excl_corr || dipole_coeff != 0) && !bFreeEnergy)
     {
         for (i = start; (i < end); i++)
         {
@@ -387,7 +387,7 @@ void ewald_LRcorrection(int start, int end,
             }
         }
     }
-    else if (calc_excl_corr || dipole_coeff != 0 || EVDW_PME(fr->vdwtype))
+    else if (calc_excl_corr || dipole_coeff != 0)
     {
         for (i = start; (i < end); i++)
         {

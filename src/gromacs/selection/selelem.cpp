@@ -365,6 +365,9 @@ void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
 
     if (!gmx_ana_index_check_sorted(&foundGroup))
     {
+        flags |= SEL_UNSORTED;
+        // TODO: Add this test elsewhere, where it does not break valid use cases.
+#if 0
         gmx_ana_index_deinit(&foundGroup);
         std::string message = formatString(
                     "Group '%s' ('%s') cannot be used in selections, "
@@ -372,6 +375,7 @@ void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
                     "it contains duplicate atoms.",
                     foundName.c_str(), name().c_str());
         GMX_THROW(InconsistentInputError(message));
+#endif
     }
 
     sfree(u.gref.name);

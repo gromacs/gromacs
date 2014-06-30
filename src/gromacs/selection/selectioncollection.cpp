@@ -447,7 +447,8 @@ void SelectionCollection::Impl::resolveExternalGroups(
     while (child)
     {
         resolveExternalGroups(child, errors);
-        child = child->next;
+        root->flags |= (child->flags & SEL_UNSORTED);
+        child        = child->next;
     }
 }
 

@@ -3438,7 +3438,6 @@ static void make_fep_list(const nbnxn_search_t    nbs,
                              * Note that the charge has been set to zero,
                              * but we need to avoid 0/0, as perturbed atoms
                              * can be on top of each other.
-                             * (and the LJ parameters have not been zeroed)
                              */
                             nbl->cj[cj_ind].excl &= ~(1U << (i*nbl->na_cj + j));
                         }

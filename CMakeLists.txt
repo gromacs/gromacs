@@ -33,6 +33,10 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 cmake_minimum_required(VERSION 2.8.8)
+# When we require cmake >= 2.8.12, it will provide
+# CMAKE_MINIMUM_REQUIRED_VERSION automatically, but in the meantime we
+# need to set a variable, and it must have a different name.
+set(GMX_CMAKE_MINIMUM_REQUIRED_VERSION "2.8.8")
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -59,7 +63,7 @@ set(PROJECT_VERSION "5.1-dev")
 # PROJECT_VERSION, and REGRESSIONTEST_VERSION specifies the version
 # number of the regressiontest tarball against which the code tarball
 # can be tested. This will be the version of the last patch release.
-set(REGRESSIONTEST_VERSION "5.0-rc1")
+set(REGRESSIONTEST_VERSION "5.0.1-dev")
 # If this is not a released tarball, "-dev" will be present in
 # PROJECT_VERSION, and REGRESSIONTEST_BRANCH specifies the name of the
 # gerrit.gromacs.org branch whose HEAD can test this code, *if* this
@@ -205,7 +209,14 @@ option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
-# decide on GPU settings based on user-settings and GPU/CUDA detection
+# Decide on GPU settings based on user-settings and GPU/CUDA detection.
+# We support CUDA >=v4.0 on *nix, but <= v4.1 doesn't work with MSVC
+if(MSVC)
+    set(REQUIRED_CUDA_VERSION 4.1)
+else()
+    set(REQUIRED_CUDA_VERSION 4.0)
+endif()
+set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 include(gmxManageGPU)
 
 # Detect the architecture the compiler is targetting, detect
@@ -806,7 +817,7 @@ include(gmxManageSuffixes)
 ################################################################
 # Shared library settings
 ################################################################
-if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (CMAKE_VERSION VERSION_GREATER 2.8.11)))
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
     if(GMX_LIB_INSTALL_DIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     endif()
@@ -849,26 +860,6 @@ else()
     endif()
 endif()
 
-if(GMX_USE_TNG)
-    find_package(ZLIB QUIET)
-    include(gmxTestZLib)
-    gmx_test_zlib(HAVE_ZLIB)
-    set(TNG_BUILD_WITH_ZLIB ${HAVE_ZLIB} CACHE BOOL  "Build TNG with zlib compression")
-    set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
-    set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
-    set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
-    set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
-    set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
-    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
-    set(GMX_TNG_LIBRARIES tng_io)
-endif()
-mark_as_advanced(TNG_BUILD_FORTRAN)
-mark_as_advanced(TNG_BUILD_EXAMPLES)
-mark_as_advanced(TNG_BUILD_COMPRESSION_TESTS)
-mark_as_advanced(TNG_BUILD_DOCUMENTATION)
-mark_as_advanced(TNG_BUILD_TEST)
-mark_as_advanced(TNG_EXAMPLE_FILES_DIR)
-
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
     # as by design most of the false branches are impossible to trigger in
@@ -895,6 +886,7 @@ endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(doxygen)
+    add_subdirectory(install-guide)
     add_subdirectory(share)
     add_subdirectory(scripts)
 endif()

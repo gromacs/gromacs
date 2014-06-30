@@ -368,7 +368,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     if (od->nr == 0)
     {
         /* This means that this is not the master node */
-        gmx_fatal(FARGS, "Orientation restraints are only supported on the master node, use less processors");
+        gmx_fatal(FARGS, "Orientation restraints are only supported on the master rank, use fewer ranks");
     }
 
     bTAV  = (od->edt != 0);

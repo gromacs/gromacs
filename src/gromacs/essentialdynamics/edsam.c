@@ -469,7 +469,7 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     char   fn[STRLEN];
 
 
-    sprintf(fn, "EDdump_node%d_edi%d", cr->nodeid, nr_edi);
+    sprintf(fn, "EDdump_rank%d_edi%d", cr->nodeid, nr_edi);
     out = gmx_ffopen(fn, "w");
 
     fprintf(out, "#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",

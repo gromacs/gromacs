@@ -1065,7 +1065,7 @@ Choose {\tt Z} if your membrane is in the $xy$-plane (\figref{compelsetup} A, B)
 Ions will be exchanged between compartments depending on their $z$-positions alone.
 {\tt swap_frequency} determines how often a swap attempt will be made.
 This step requires that the positions of the ions, solvent, and swap groups are
-communicated between the parallel processes, so if chosen too small it can decrease the simulation
+communicated between the parallel ranks, so if chosen too small it can decrease the simulation
 performance.
 {\small
 \begin{verbatim}
@@ -1256,7 +1256,7 @@ virtualized as well, {\ie} hydrogens in the aromatic residues are treated
 differently depending on the treatment of the aromatic residues.
 
 Parameters for the virtual site constructions for the hydrogen atoms are
-inferred from the force field parameters ({\em vis}. bond lengths and
+inferred from the force-field parameters ({\em vis}. bond lengths and
 angles) directly by {\tt \normindex{grompp}} while processing the
 topology file.  The constructions for the aromatic residues are based
 on the bond lengths and angles for the geometry as described in the
@@ -1543,9 +1543,9 @@ This results in the following errors for each interval:
 V and V' are continuous, while V'' is the first discontinuous
 derivative.
 The number of points per nanometer is 500 and 2000
-for single- and double-precision versions of {\gromacs}, respectively.
+for mixed- and double-precision versions of {\gromacs}, respectively.
 This means that the errors in the potential and force will usually
-be smaller than the single precision accuracy.
+be smaller than the mixed precision accuracy.
 
 {\gromacs} stores $A_0$, $A_1$, $A_2$ and $A_3$.
 The force routines get a table with these four parameters and
@@ -1603,7 +1603,7 @@ order: $x$, $f(x)$, $-f'(x)$, $g(x)$, $-g'(x)$, $h(x)$, $-h'(x)$.
 The $x$ should run from 0 to $r_c+1$ (the value of {\tt table_extension} can be
 changed in the {\tt .mdp} file).
 You can choose the spacing you like; for the standard tables {\gromacs}
-uses a spacing of 0.002 and 0.0005 nm when you run in single
+uses a spacing of 0.002 and 0.0005 nm when you run in mixed
 and double precision, respectively.  In this
 context, $r_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
 {\tt rcoulomb} (see above). These variables need not be the same (and
@@ -1678,7 +1678,7 @@ double sums is the total electrostatic interaction between the QM
 electrons and the MM atoms. The total electrostatic interaction of the
 QM nuclei with the MM atoms is given by the second double sum. Bonded
 interactions between QM and MM atoms are described at the MM level by
-the appropriate force field terms. Chemical bonds that connect the two
+the appropriate force-field terms. Chemical bonds that connect the two
 subsystems are capped by a hydrogen atom to complete the valence of
 the QM region. The force on this atom, which is present in the QM
 region only, is distributed over the two atoms of the bond. The cap
@@ -1719,7 +1719,7 @@ To make use of the QM/MM functionality in {\gromacs}, one needs to:
 At the bond that connects the QM and MM subsystems, a link atoms is
 introduced.  In {\gromacs} the link atom has special atomtype, called
 LA. This atomtype is treated as a hydrogen atom in the QM calculation,
-and as a virtual site in the force field calculation. The link atoms, if
+and as a virtual site in the force-field calculation. The link atoms, if
 any, are part of the system, but have no interaction with any other
 atom, except that the QM force working on it is distributed over the
 two atoms of the bond. In the topology, the link atom (LA), therefore,

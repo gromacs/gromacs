@@ -833,8 +833,8 @@ static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
     {
         md_print_warn(cr, fplog,
                       "NOTE: PME load balancing increased the non-bonded workload by more than 50%%.\n"
-                      "      For better performance use (more) PME nodes (mdrun -npme),\n"
-                      "      or in case you are beyond the scaling limit, use less nodes in total.\n");
+                      "      For better performance, use (more) PME ranks (mdrun -npme),\n"
+                      "      or if you are beyond the scaling limit, use fewer total ranks (or nodes).\n");
     }
     else
     {

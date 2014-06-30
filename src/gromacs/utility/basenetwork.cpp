@@ -240,7 +240,7 @@ void gmx_abort(int errorno)
     const int noderank = gmx_node_rank();
     if (nnodes > 1)
     {
-        std::fprintf(stderr, "Halting parallel program %s on node %d out of %d\n",
+        std::fprintf(stderr, "Halting parallel program %s on rank %d out of %d\n",
                      programName, noderank, nnodes);
     }
     else
