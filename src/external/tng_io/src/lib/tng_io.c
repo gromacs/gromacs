@@ -11525,7 +11525,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
     int64_t long_stride_length, medium_stride_length;
     long file_pos, orig_frame_set_file_pos;
     tng_trajectory_frame_set_t frame_set;
-    struct tng_trajectory_frame_set   orig_frame_set;
+    struct tng_trajectory_frame_set orig_frame_set;
     tng_gen_block_t block;
     tng_function_status stat;
     int64_t cnt = 0;
@@ -11539,6 +11539,12 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
 
     orig_frame_set_file_pos = tng_data->current_trajectory_frame_set_input_file_pos;
     file_pos = (long)tng_data->first_trajectory_frame_set_input_file_pos;
+
+    if(file_pos < 0)
+    {
+        *n = tng_data->n_trajectory_frame_sets = cnt;
+        return(TNG_SUCCESS);
+    }
 
     tng_block_init(&block);
     fseek(tng_data->input_file,
@@ -16903,7 +16909,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_open
         /* Read the file headers */
         tng_file_headers_read(*tng_data_p, TNG_USE_HASH);
 
-        tng_num_frame_sets_get(*tng_data_p, &(*tng_data_p)->n_trajectory_frame_sets);
+        stat = tng_num_frame_sets_get(*tng_data_p, &(*tng_data_p)->n_trajectory_frame_sets);
+
+        if(stat != TNG_SUCCESS)
+        {
+            return(stat);
+        }
     }
 
     if(mode == 'w')
