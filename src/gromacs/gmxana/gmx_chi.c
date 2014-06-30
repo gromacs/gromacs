@@ -764,16 +764,22 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                 strcpy(hhisfile, hisfile);
                 strcat(hhisfile, ".xvg");
                 fp = xvgropen(hhisfile, title, "Degrees", "", oenv);
-                fprintf(fp, "@ with g0\n");
+                if (output_env_get_print_xvgr_codes(oenv))
+                {
+                    fprintf(fp, "@ with g0\n");
+                }
                 xvgr_world(fp, -180, 0, 180, 0.1, oenv);
-                fprintf(fp, "# this effort to set graph size fails unless you run with -autoscale none or -autoscale y flags\n");
-                fprintf(fp, "@ xaxis tick on\n");
-                fprintf(fp, "@ xaxis tick major 90\n");
-                fprintf(fp, "@ xaxis tick minor 30\n");
-                fprintf(fp, "@ xaxis ticklabel prec 0\n");
-                fprintf(fp, "@ yaxis tick off\n");
-                fprintf(fp, "@ yaxis ticklabel off\n");
-                fprintf(fp, "@ type xy\n");
+                if (output_env_get_print_xvgr_codes(oenv))
+                {
+                    fprintf(fp, "# this effort to set graph size fails unless you run with -autoscale none or -autoscale y flags\n");
+                    fprintf(fp, "@ xaxis tick on\n");
+                    fprintf(fp, "@ xaxis tick major 90\n");
+                    fprintf(fp, "@ xaxis tick minor 30\n");
+                    fprintf(fp, "@ xaxis ticklabel prec 0\n");
+                    fprintf(fp, "@ yaxis tick off\n");
+                    fprintf(fp, "@ yaxis ticklabel off\n");
+                    fprintf(fp, "@ type xy\n");
+                }
                 if (bSSHisto)
                 {
                     for (k = 0; (k < 3); k++)
@@ -802,13 +808,13 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                         }
                     }
                 }
-                fprintf(fp, "&\n");
+                fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
                 gmx_ffclose(fp);
                 if (bSSHisto)
                 {
                     for (k = 0; (k < 3); k++)
                     {
-                        fprintf(ssfp[k], "&\n");
+                        fprintf(ssfp[k], "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
                         gmx_ffclose(ssfp[k]);
                     }
                 }
@@ -843,30 +849,35 @@ static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
     FILE *fp;
 
     fp = xvgropen(fn, title, xaxis, yaxis, oenv);
-    fprintf(fp, "@ with g0\n");
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(fp, "@ with g0\n");
+    }
     xvgr_world(fp, -180, -180, 180, 180, oenv);
-    fprintf(fp, "@ xaxis tick on\n");
-    fprintf(fp, "@ xaxis tick major 90\n");
-    fprintf(fp, "@ xaxis tick minor 30\n");
-    fprintf(fp, "@ xaxis ticklabel prec 0\n");
-    fprintf(fp, "@ yaxis tick on\n");
-    fprintf(fp, "@ yaxis tick major 90\n");
-    fprintf(fp, "@ yaxis tick minor 30\n");
-    fprintf(fp, "@ yaxis ticklabel prec 0\n");
-    fprintf(fp, "@    s0 type xy\n");
-    fprintf(fp, "@    s0 symbol 2\n");
-    fprintf(fp, "@    s0 symbol size 0.410000\n");
-    fprintf(fp, "@    s0 symbol fill 1\n");
-    fprintf(fp, "@    s0 symbol color 1\n");
-    fprintf(fp, "@    s0 symbol linewidth 1\n");
-    fprintf(fp, "@    s0 symbol linestyle 1\n");
-    fprintf(fp, "@    s0 symbol center false\n");
-    fprintf(fp, "@    s0 symbol char 0\n");
-    fprintf(fp, "@    s0 skip 0\n");
-    fprintf(fp, "@    s0 linestyle 0\n");
-    fprintf(fp, "@    s0 linewidth 1\n");
-    fprintf(fp, "@ type xy\n");
-
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(fp, "@ xaxis tick on\n");
+        fprintf(fp, "@ xaxis tick major 90\n");
+        fprintf(fp, "@ xaxis tick minor 30\n");
+        fprintf(fp, "@ xaxis ticklabel prec 0\n");
+        fprintf(fp, "@ yaxis tick on\n");
+        fprintf(fp, "@ yaxis tick major 90\n");
+        fprintf(fp, "@ yaxis tick minor 30\n");
+        fprintf(fp, "@ yaxis ticklabel prec 0\n");
+        fprintf(fp, "@    s0 type xy\n");
+        fprintf(fp, "@    s0 symbol 2\n");
+        fprintf(fp, "@    s0 symbol size 0.410000\n");
+        fprintf(fp, "@    s0 symbol fill 1\n");
+        fprintf(fp, "@    s0 symbol color 1\n");
+        fprintf(fp, "@    s0 symbol linewidth 1\n");
+        fprintf(fp, "@    s0 symbol linestyle 1\n");
+        fprintf(fp, "@    s0 symbol center false\n");
+        fprintf(fp, "@    s0 symbol char 0\n");
+        fprintf(fp, "@    s0 skip 0\n");
+        fprintf(fp, "@    s0 linestyle 0\n");
+        fprintf(fp, "@    s0 linewidth 1\n");
+        fprintf(fp, "@ type xy\n");
+    }
     return fp;
 }
 
@@ -1058,7 +1069,6 @@ static void order_params(FILE *log,
 {
     FILE *fp;
     int   nh[edMax];
-    char  buf[STRLEN];
     int   i, Dih, Xi;
     real  S2Max, S2Min;
 
@@ -1171,11 +1181,10 @@ static void order_params(FILE *log,
         x0 *= 10.0; /* nm -> angstrom */
         y0 *= 10.0; /* nm -> angstrom */
         z0 *= 10.0; /* nm -> angstrom */
-        sprintf(buf, "%s%%6.f%%6.2f\n", get_pdbformat());
         for (i = 0; (i < 10); i++)
         {
-            fprintf(fp, buf, "ATOM  ", atoms->nr+1+i, "CA", "LEG", ' ',
-                    atoms->nres+1, ' ', x0, y0, z0+(1.2*i), 0.0, -0.1*i);
+            gmx_fprintf_pdb_atomline(fp, epdbATOM, atoms->nr+1+i, "CA", ' ', "LEG", ' ', atoms->nres+1, ' ',
+                                     x0, y0, z0+(1.2*i), 0.0, -0.1*i, "");
         }
         gmx_ffclose(fp);
     }

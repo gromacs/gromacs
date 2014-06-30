@@ -157,10 +157,11 @@ else()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
-target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
+target_link_libraries(libgromacs
+                      ${EXTRAE_LIBRARIES}
+                      ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${GMX_TNG_LIBRARIES}
-                      ${EXTRAE_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})

@@ -439,7 +439,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fvdw             = (vvdw_rep - vvdw_disp - c6grid*(1.0/6.0)*exponent*ewclj6)*rinvsq;
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
-                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion + c6grid*sh_lj_ewald)/6.0;
+                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion - c6grid*sh_lj_ewald)/6.0;
                         }
                         else
                         {

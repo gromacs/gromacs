@@ -1190,7 +1190,7 @@ in \tabref{topfile2}} \\
 \newcommand{\ttss}{\tt \scriptsize}
 
 \begin{landscape}
-\begin{longtable}{|l|lcc>{\raggedright}p{2.5in}cc|}
+\begin{longtable}{|p{1.8in}|lcc>{\raggedright}p{2.5in}cc|}
 \caption{Details of {\tt [~moleculetype~]} directives}\\
 \dline
 Name of interaction              & Topology file directive          & num.  & func. & Order of parameters and their units                   & use in     & Cross- \\
@@ -1199,8 +1199,11 @@ Name of interaction              & Topology file directive          & num.  & fu
 \endhead
 \dline
 \endfoot
-\label{tab:topfile2}\footnotetext[1]{The required number of atom indices for this directive}\footnotetext[2]{The index to use to select this function type}\footnotetext[3]{Indicates which of the parameters for this interaction can be interpolated during free energy calculations}\footnotetext[4]{This interaction type will be used by {{\tts grompp}} for generating exclusions}\footnotetext[5]{This interaction type can be converted to constraints by {{\tts grompp}}}\footnotetext[7]{The combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\footnotetext[6]{No connection, and so no exclusions, are generated for this interaction}bond
-                                   & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 1     & $b_0$ (nm); $k_b$ (\kJmolnm{-2})                      & all        & \ssecref{harmonicbond} \\
+% The footnotetext fields only work inside the body, and not from a
+% column with ``p'' formatting'!
+bond                               & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 1     & $b_0$ (nm); $k_b$ (\kJmolnm{-2})                      & all        & \ssecref{harmonicbond}
+\label{tab:topfile2} \footnotetext[1]{The required number of atom indices for this directive}\footnotetext[2]{The index to use to select this function type}\footnotetext[3]{Indicates which of the parameters for this interaction can be interpolated during free energy calculations}\footnotetext[4]{This interaction type will be used by {{\tts grompp}} for generating exclusions}\footnotetext[5]{This interaction type can be converted to constraints by {{\tts grompp}}}\footnotetext[7]{The combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\footnotetext[6]{No connection, and so no exclusions, are generated for this interaction}
+\\
 G96 bond                           & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 2     & $b_0$ (nm); $k_b$ (\kJmolnm{-4})                      & all        & \ssecref{G96bond} \\
 Morse                              & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 3     & $b_0$ (nm); $D$ (\kJmol); $\beta$ (nm$^{-1}$)         & all        & \ssecref{Morsebond} \\
 cubic bond                         & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 4     & $b_0$ (nm); $C_{i=2,3}$ (\kJmolnm{-i})                &            & \ssecref{cubicbond} \\
@@ -1362,6 +1365,11 @@ Urea         3
    2     1     1000       0    1000 ; Restrain to a line (Y-axis)
    3     1     1000       0       0 ; Restrain to a plane (Y-Z-plane)
 
+[ dihedral_restraints ]
+; ai   aj    ak    al  type  label  phi  dphi  kfac  power
+    3    6     1    2     1      1  180     0     1      2
+    1    4     3    5     1      1  180     0     1      2
+
 ; Include TIP3P water topology
 #include "amber99/tip3p.itp"
 
@@ -1470,6 +1478,19 @@ series in combination with 1-4 interactions.
 to reference positions (\ssecref{positionrestraint}). 
 The reference positions are read from a 
 separate coordinate file by {\tt \normindex{grompp}}.
+
+
+{\bf {\tt [~dihedral_restraints~]} :} restrain selected dihedrals to a reference value.
+The implementation of dihedral restraints is described in section \ssecref{dihedralrestraint} of the manual.
+The parameters specified in the [dihedral_restraints] directive are as follows:
+\begin{itemize}
+\item {\tt type} has only one possible value which is 1
+\item {\tt label} is unused and has been removed from the code.
+\item {\tt phi} is the value of $\phi_0$ in \eqnref{dphi} and \eqnref{dihre} of the manual.
+\item {\tt dphi} is the value of $\Delta\phi$ in \eqnref{dihre} of the manual.
+\item {\tt kfac} is analogous to {\tt fac} in the implementation of distance restraints. It is the factor by which the force constant is multiplied. By doing so, different restraints can be maintained with different force constants.
+\item {\tt power} is unused and has been removed from the code.
+\end{itemize}
 
 {\bf {\tt \#include "tip3p.itp"} :} includes a topology file that was already
 constructed (see section~\ssecref{molitp}).
@@ -1863,7 +1884,7 @@ tensor, not a vector.
 \label{subsec:fffiles}
 Many force fields are available by default.
 Force fields are detected by the presence of {\tt <name>.ff} directories
-in the {\gromacs} {\tt /share/top} sub-directory and/or the working directory.
+in the {\tt \$GMXLIB/share/gromacs/top} sub-directory and/or the working directory.
 The information regarding the location of the force field files is printed
 by {\tt pdb2gmx} so you can easily keep track of which version of a force field
 is being called, in case you have made modifications in one location or another.

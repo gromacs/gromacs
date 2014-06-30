@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.8)
 
 project(TNG_IO)
 set(PROJECT_VERSION "1.5")
@@ -33,7 +33,7 @@ check_include_file(inttypes.h   HAVE_INTTYPES_H)
 
 add_subdirectory(src)
 
-install(FILES include/tng_io.h DESTINATION include/)
+install(FILES include/tng_io.h include/tng_io_fwd.h DESTINATION include/)
 
 #-- Add an Option to toggle the generation of the API documentation
 option(TNG_BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)

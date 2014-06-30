@@ -21,7 +21,7 @@ CA	N	H1	ga_10
 CA	N	H2	ga_10
 CA	N	H3	ga_10
 [ dihedrals ]
-H1	N	CA	C	gd_14
+H1	N	CA	C	gd_19
 
 [ NH2 ]
 [ replace ]
@@ -39,7 +39,7 @@ H1	N	H2	ga_9
 CA	N	H1	ga_10
 CA	N	H2	ga_10
 [ dihedrals ]
-H1	N	CA	C	gd_14
+H1	N	CA	C	gd_19
 
 [ PRO-NH2+ ]
 [ replace ]
@@ -57,7 +57,7 @@ CA	N	H2	ga_10
 CD	N	H1	ga_10
 CD	N	H2	ga_10
 [ dihedrals ]
-H1	N	CA	C	gd_14
+CD	N	CA	C	gd_19
 
 [ PRO-NH ]
 [ replace ]
@@ -70,6 +70,8 @@ N	H	gb_2
 [ angles ]
 CA	N	H	ga_10
 CD	N	H	ga_10
+[ dihedrals ]
+CD      N       CA      C       gd_19
 
 [ GLY-NH3+ ]
 [ replace ]
@@ -92,5 +94,5 @@ CA	N	H1	ga_10
 CA	N	H2	ga_10
 CA	N	H3	ga_10
 [ dihedrals ]
-H1	N	CA	C	gd_14
+H1	N	CA	C	gd_19
 

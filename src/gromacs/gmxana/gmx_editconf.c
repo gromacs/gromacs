@@ -427,10 +427,8 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
 
         for (i = 0; i < nat; i++)
         {
-            fprintf(out, get_pdbformat(), "ATOM", a0 + i, "C", "BOX", 'K' + i
-                    / NCUCVERT, r0 + i, 10 * vert[i][XX], 10 * vert[i][YY], 10
-                    * vert[i][ZZ]);
-            fprintf(out, "\n");
+            gmx_fprintf_pdb_atomline(out, epdbATOM, a0 + i, "C", ' ', "BOX", 'K' + i / NCUCVERT, r0 + i, ' ',
+                                     10*vert[i][XX], 10*vert[i][YY], 10*vert[i][ZZ], 1.0, 0.0, "");
         }
 
         edge = compact_unitcell_edges();
@@ -454,10 +452,8 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
             {
                 for (x = 0; x <= 1; x++)
                 {
-                    fprintf(out, get_pdbformat(), "ATOM", a0 + i, "C", "BOX", 'K' + i
-                            / 8, r0 + i, x * 10 * box[XX][XX],
-                            y * 10 * box[YY][YY], z * 10 * box[ZZ][ZZ]);
-                    fprintf(out, "\n");
+                    gmx_fprintf_pdb_atomline(out, epdbATOM, a0 + i, "C", ' ', "BOX", 'K' + i/8, r0+i, ' ',
+                                             x * 10 * box[XX][XX], y * 10 * box[YY][YY], z * 10 * box[ZZ][ZZ], 1.0, 0.0, "");
                     i++;
                 }
             }
@@ -1294,7 +1290,6 @@ int gmx_editconf(int argc, char *argv[])
             out = gmx_ffopen(outfile, "w");
             if (bMead)
             {
-                set_pdb_wide_format(TRUE);
                 fprintf(out, "REMARK    "
                         "The B-factors in this file hold atomic radii\n");
                 fprintf(out, "REMARK    "

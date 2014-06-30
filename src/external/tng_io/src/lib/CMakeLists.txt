@@ -29,6 +29,9 @@ if(TNG_BUILD_WITH_ZLIB)
   target_link_libraries(tng_io ${ZLIB_LIBRARIES})
 endif()
 
+# Use GNUInstallDirst to set paths on multiarch systems
+include(GNUInstallDirs)
+
 install(TARGETS tng_io
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

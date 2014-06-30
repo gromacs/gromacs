@@ -53,6 +53,7 @@
 #include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
 #include "gmx_ana.h"
 
@@ -104,16 +105,16 @@ int gmx_principal(int argc, char *argv[])
     matrix          axes, box;
     output_env_t    oenv;
     gmx_rmpbc_t     gpbc = NULL;
+    char **         legend;
 
-
-    t_filenm fnm[] = {
+    t_filenm        fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },
-        { efDAT, "-a1",  "paxis1",   ffWRITE },
-        { efDAT, "-a2",  "paxis2",   ffWRITE },
-        { efDAT, "-a3",  "paxis3",   ffWRITE },
-        { efDAT, "-om",  "moi",      ffWRITE }
+        { efXVG, "-a1",  "paxis1",   ffWRITE },
+        { efXVG, "-a2",  "paxis2",   ffWRITE },
+        { efXVG, "-a3",  "paxis3",   ffWRITE },
+        { efXVG, "-om",  "moi",      ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -124,10 +125,38 @@ int gmx_principal(int argc, char *argv[])
         return 0;
     }
 
-    axis1 = gmx_ffopen(opt2fn("-a1", NFILE, fnm), "w");
-    axis2 = gmx_ffopen(opt2fn("-a2", NFILE, fnm), "w");
-    axis3 = gmx_ffopen(opt2fn("-a3", NFILE, fnm), "w");
-    fmoi  = gmx_ffopen(opt2fn("-om", NFILE, fnm), "w");
+    snew(legend, DIM);
+    for (i = 0; i < DIM; i++)
+    {
+        snew(legend[i], STRLEN);
+        sprintf(legend[i], "%c component", 'X'+i);
+    }
+
+    axis1 = xvgropen(opt2fn("-a1", NFILE, fnm), "Principal axis 1 (major axis)",
+                     output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
+    xvgr_legend(axis1, DIM, (const char **)legend, oenv);
+
+    axis2 = xvgropen(opt2fn("-a2", NFILE, fnm), "Principal axis 2 (middle axis)",
+                     output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
+    xvgr_legend(axis2, DIM, (const char **)legend, oenv);
+
+    axis3 = xvgropen(opt2fn("-a3", NFILE, fnm), "Principal axis 3 (minor axis)",
+                     output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
+    xvgr_legend(axis3, DIM, (const char **)legend, oenv);
+
+    sprintf(legend[XX], "Axis 1 (major)");
+    sprintf(legend[YY], "Axis 2 (middle)");
+    sprintf(legend[ZZ], "Axis 3 (minor)");
+
+    fmoi  = xvgropen(opt2fn("-om", NFILE, fnm), "Moments of inertia around inertial axes",
+                     output_env_get_xvgr_tlabel(oenv), "I (au nm\\S2\\N)", oenv);
+    xvgr_legend(fmoi, DIM, (const char **)legend, oenv);
+
+    for (i = 0; i < DIM; i++)
+    {
+        sfree(legend[i]);
+    }
+    sfree(legend);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box, TRUE);
 
@@ -152,12 +181,12 @@ int gmx_principal(int argc, char *argv[])
 
     gmx_rmpbc_done(gpbc);
 
-
     close_trj(status);
-    gmx_ffclose(axis1);
-    gmx_ffclose(axis2);
-    gmx_ffclose(axis3);
-    gmx_ffclose(fmoi);
+
+    xvgrclose(axis1);
+    xvgrclose(axis2);
+    xvgrclose(axis3);
+    xvgrclose(fmoi);
 
     return 0;
 }

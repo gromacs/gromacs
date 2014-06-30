@@ -2,7 +2,7 @@
 
 [ GLY-NH3+ ]
 [ replace ]
- N	N	NH3		14.0027	-0.3
+ N	N	NH3		14.007	-0.3
  CA	CA	CT2		12.011	0.13
 [ Add ]
  3	4	H	N	CA	C
@@ -12,7 +12,7 @@
 
 [ NH3+ ]
 [ replace ]
- N	  N	NH3		14.0027 -0.3
+ N	  N	NH3		14.007  -0.3
  CA	  CA	CT1		12.011  0.21
  HA	  HA	HB		1.008	 0.10
 [ Add ]
@@ -23,7 +23,7 @@
 
 [ PRO-NH2+ ]
 [ replace ]
- N	  N	NP       14.0027 -0.07
+ N	  N	NP       14.007 -0.07
  CA	  CA	CP1      12.011  0.16
  CD	  CD	CP3      12.011  0.16
 [ add ]
@@ -33,7 +33,7 @@
 ; 
 [ NH2 ]
 [ replace ]
- N		NH2		14.0067	-0.96
+ N		NH2		14.007 -0.96
  CA		CT1		12.011	0.19
  HA		HB		1.008	0.09
 [ add ]
@@ -46,7 +46,7 @@
 ; 
 [ GLY-NH2 ]
 [ replace ]
- N		NH2		14.0067	-0.96
+ N		NH2		14.007 -0.96
  CA		CT2		12.011	0.10
 [ add ]
  2	4	HT	N	CA	C
@@ -58,7 +58,7 @@
 ; 
 [ PRO-NH ]
 [ replace ]
- N		NP	14.0027	-0.40
+ N		NP	14.007	-0.40
  CA		CP1	12.011	-0.08
  CD		CP3	12.011	-0.10
 [ add ]

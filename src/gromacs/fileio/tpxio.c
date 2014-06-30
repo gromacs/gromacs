@@ -91,7 +91,8 @@ enum tpxv {
     tpxv_ComputationalElectrophysiology = 96,                /**< support for ion/water position swaps (computational electrophysiology) */
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
-    tpxv_InteractiveMolecularDynamics                        /**< interactive molecular dynamics (IMD) */
+    tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
+    tpxv_RemoveObsoleteParameters1                           /**< remove optimize_fft, dihre_fc, nstcheckpoint */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -105,7 +106,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_InteractiveMolecularDynamics;
+static const int tpx_version = tpxv_RemoveObsoleteParameters1;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -818,7 +819,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     int      i, j, k, *tmp, idum = 0;
     real     rdum, bd_temp;
     rvec     vdum;
-    gmx_bool bSimAnn;
+    gmx_bool bSimAnn, bdum = 0;
     real     zerotemptime, finish_t, init_temp, finish_temp;
 
     if (file_version != tpx_version)
@@ -849,6 +850,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_int(fio, idum);
         ir->nsteps = idum;
     }
+
     if (file_version > 25)
     {
         if (file_version >= 62)
@@ -924,7 +926,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     gmx_fio_do_int(fio, ir->ns_type);
     gmx_fio_do_int(fio, ir->nstlist);
-    gmx_fio_do_int(fio, ir->ndelta);
+    gmx_fio_do_int(fio, idum); /* used to be ndelta; not used anymore */
     if (file_version < 41)
     {
         gmx_fio_do_int(fio, idum);
@@ -953,13 +955,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     ir->nstcomm = abs(ir->nstcomm);
 
-    if (file_version > 25)
+    /* ignore nstcheckpoint */
+    if (file_version > 25 && file_version < tpxv_RemoveObsoleteParameters1)
     {
-        gmx_fio_do_int(fio, ir->nstcheckpoint);
-    }
-    else
-    {
-        ir->nstcheckpoint = 0;
+        gmx_fio_do_int(fio, idum);
     }
 
     gmx_fio_do_int(fio, ir->nstcgsteep);
@@ -1184,7 +1183,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, ir->epsilon_surface);
     }
 
-    gmx_fio_do_gmx_bool(fio, ir->bOptFFT);
+    /* ignore bOptFFT */
+    if (file_version < tpxv_RemoveObsoleteParameters1)
+    {
+        gmx_fio_do_gmx_bool(fio, bdum);
+    }
 
     if (file_version >= 93)
     {
@@ -1388,18 +1391,16 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->orires_tau  = 0;
         ir->nstorireout = 0;
     }
+
+    /* ignore dihre_fc */
     if (file_version >= 26 && file_version < 79)
     {
-        gmx_fio_do_real(fio, ir->dihre_fc);
+        gmx_fio_do_real(fio, rdum);
         if (file_version < 56)
         {
             gmx_fio_do_real(fio, rdum);
             gmx_fio_do_int(fio, idum);
         }
-    }
-    else
-    {
-        ir->dihre_fc = 0;
     }
 
     gmx_fio_do_real(fio, ir->em_stepsize);
@@ -2383,10 +2384,52 @@ static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead,
     gmx_fio_ndo_int(fio, block->a, block->nra);
 }
 
+/* This is a primitive routine to make it possible to translate atomic numbers
+ * to element names when reading TPR files, without making the Gromacs library
+ * directory a dependency on mdrun (which is the case if we need elements.dat).
+ */
+static const char *
+atomicnumber_to_element(int atomicnumber)
+{
+    const char * p;
+
+    /* This does not have to be complete, so we only include elements likely
+     * to occur in PDB files.
+     */
+    switch (atomicnumber)
+    {
+        case 1:  p = "H";  break;
+        case 5:  p = "B";  break;
+        case 6:  p = "C";  break;
+        case 7:  p = "N";  break;
+        case 8:  p = "O";  break;
+        case 9:  p = "F";  break;
+        case 11: p = "Na"; break;
+        case 12: p = "Mg"; break;
+        case 15: p = "P";  break;
+        case 16: p = "S";  break;
+        case 17: p = "Cl"; break;
+        case 18: p = "Ar"; break;
+        case 19: p = "K";  break;
+        case 20: p = "Ca"; break;
+        case 25: p = "Mn"; break;
+        case 26: p = "Fe"; break;
+        case 28: p = "Ni"; break;
+        case 29: p = "Cu"; break;
+        case 30: p = "Zn"; break;
+        case 35: p = "Br"; break;
+        case 47: p = "Ag"; break;
+        default: p = "";   break;
+    }
+    return p;
+}
+
+
 static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
                     int file_version, gmx_groups_t *groups, int atnr)
 {
-    int i, myngrp;
+    int    i, myngrp;
+    char * p_elem;
 
     gmx_fio_do_real(fio, atom->m);
     gmx_fio_do_real(fio, atom->q);
@@ -2399,6 +2442,15 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
     if (file_version >= 52)
     {
         gmx_fio_do_int(fio, atom->atomnumber);
+        if (bRead)
+        {
+            /* Set element string from atomic number if present.
+             * This routine returns an empty string if the name is not found.
+             */
+            strncpy(atom->elem, atomicnumber_to_element(atom->atomnumber), 4);
+            /* avoid warnings about potentially unterminated string */
+            atom->elem[3] = '\0';
+        }
     }
     else if (bRead)
     {
@@ -2984,8 +3036,8 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
-    int      mt, mb, i;
-    t_blocka dumb;
+    int            mt, mb, i;
+    t_blocka       dumb;
 
     if (bRead)
     {

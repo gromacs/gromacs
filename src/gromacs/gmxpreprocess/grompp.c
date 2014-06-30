@@ -79,6 +79,7 @@
 #include "calc_verletbuf.h"
 #include "tomorse.h"
 #include "gromacs/imd/imd.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -366,6 +367,41 @@ static void check_vel(gmx_mtop_t *mtop, rvec v[])
         {
             clear_rvec(v[a]);
         }
+    }
+}
+
+static void check_shells_inputrec(gmx_mtop_t *mtop,
+                                  t_inputrec *ir,
+                                  warninp_t   wi)
+{
+    gmx_mtop_atomloop_all_t aloop;
+    t_atom                 *atom;
+    int                     a, nshells = 0;
+    char                    warn_buf[STRLEN];
+
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    {
+        if (atom->ptype == eptShell ||
+            atom->ptype == eptBond)
+        {
+            nshells++;
+        }
+    }
+    if (IR_TWINRANGE(*ir) && (nshells > 0))
+    {
+        snprintf(warn_buf, STRLEN,
+                 "The combination of using shells and a twin-range cut-off is not supported");
+        warning_error(wi, warn_buf);
+    }
+    if ((nshells > 0) && (ir->nstcalcenergy != 1))
+    {
+        set_warning_line(wi, "unknown", -1);
+        snprintf(warn_buf, STRLEN,
+                 "There are %d shells, changing nstcalcenergy from %d to 1",
+                 nshells, ir->nstcalcenergy);
+        ir->nstcalcenergy = 1;
+        warning(wi, warn_buf);
     }
 }
 
@@ -949,10 +985,10 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
     int i, j;
 
     read_posres  (mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
-    if (strcmp(fnA, fnB) != 0)
-    {
-        read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
-    }
+    /* It is safer to simply read the b-state posres rather than trying
+     * to be smart and copy the positions.
+     */
+    read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
 }
 
 static void set_wall_atomtype(gpp_atomtype_t at, t_gromppopts *opts,
@@ -1724,10 +1760,10 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
-    if (plist->ncmap > 0)
+    if (plist[F_CMAP].ncmap > 0)
     {
-        init_cmap_grid(&sys->ffparams.cmap_grid, plist->nc, plist->grid_spacing);
-        setup_cmap(plist->grid_spacing, plist->nc, plist->cmap, &sys->ffparams.cmap_grid);
+        init_cmap_grid(&sys->ffparams.cmap_grid, plist[F_CMAP].nc, plist[F_CMAP].grid_spacing);
+        setup_cmap(plist[F_CMAP].grid_spacing, plist[F_CMAP].nc, plist[F_CMAP].cmap, &sys->ffparams.cmap_grid);
     }
 
     set_wall_atomtype(atype, opts, ir, wi);
@@ -1783,6 +1819,9 @@ int gmx_grompp(int argc, char *argv[])
     {
         check_vel(sys, state.v);
     }
+
+    /* check for shells and inpurecs */
+    check_shells_inputrec(sys, ir, wi);
 
     /* check masses */
     check_mol(sys, wi);

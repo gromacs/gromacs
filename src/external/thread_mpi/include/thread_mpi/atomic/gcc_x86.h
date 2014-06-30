@@ -194,7 +194,7 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     void *volatile *ret = (void* volatile*)b;
-#ifndef __x86_64__
+#ifndef __LP64__
     __asm__ __volatile__("\txchgl %0, %1;"
                          : "+r" (ret), "+m" (a->value)
                          :
