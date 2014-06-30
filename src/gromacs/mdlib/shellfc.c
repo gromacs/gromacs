@@ -655,6 +655,11 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
                 }
             }
             shell[nshell].shell = i;
+            /* TODO: remove */
+            if (debug)
+            {
+                fprintf(debug, "MAKE LOCAL SHELLS: shell[%d].shell = %d, nucl1 = %d\n", nshell, i, shell[nshell].nucl1);
+            }
             nshell++;
         }
     }
@@ -981,16 +986,17 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * limit and the velocities along the bond vector are scaled 
  * down according to the Drude temperature set in the .mdp file
  */
-void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, gmx_localtop_t *top, t_state *state, rvec f[], tensor force_vir)
+static void apply_drude_hardwall(t_shell s[], int nshell, t_inputrec *ir, t_mdatoms *md, 
+                                 t_state *state, rvec f[], tensor force_vir)
 {
 
     if (debug)
     {
         fprintf(debug, "HARDWALL: Entering hard wall function...\n");
+        pr_shell(debug, nshell, s);
     }
 
     int     i, m, n;
-    int     nr, ftype, tmp1, tmp2;
     atom_id ia, ib;                 /* heavy atom and drude, respectively */
     real    ma, mb, mtot;           /* masses of drude and heavy atom, and their sum */
     real    dt, max_t;
@@ -1014,7 +1020,6 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, gmx_localtop_t *top, t_
     rvec    diff_vr12;
     rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
     t_pbc   pbc;
-    t_iatom *iatoms;
 
     set_pbc(&pbc, ir->ePBC, state->box);
 
@@ -1023,12 +1028,10 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, gmx_localtop_t *top, t_
      * apply the restraint, if necessary.  So the total number of bonds is larger than
      * what we actually care about, but this is the easiest way to guarantee that we're 
      * dealing with the atoms of interest. */
-    iatoms = top->idef.il[F_BONDS].iatoms;
-    nr     = top->idef.il[F_BONDS].nr;
 
     if (debug)
     {
-        fprintf(debug, "HARDWALL: nr = %d\n", nr);
+        fprintf(debug, "HARDWALL: nshell = %d, homenr = %d\n", nshell, md->homenr);
     }
 
     const real kbt = BOLTZ * ir->drude->drude_t;
@@ -1043,53 +1046,17 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, gmx_localtop_t *top, t_
     }
 
     /* find which particles are Drudes */
-    /* TODO: abort this and decide based on t_iatom entries for F_BONDS */
-    /* for (i = 1; i < md->homenr; i++) */
-    for (i = 0; (i < nr); i += 3)   /* add 3: 2 atoms + 1 ftype */
+    /* loop over nshells and find their associated nuclei/heavy atoms */
+    for (i = 0; (i < nshell); i++)
     {
-        ftype = iatoms[i];
-        tmp1 = iatoms[i+1];
-        tmp2 = iatoms[i+2];
-        if (md->ptype[tmp2] == eptShell)
-        {
-
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: Atom found before Drude\n");
-            }
-
-            /* normal order for CHARMM Drude FF */
-            ia = tmp1;   /* Atom */
-            ib = tmp2;   /* Drude */
-        }
-        else if (md->ptype[tmp1] == eptShell)
-        {
-
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: Atom found after Drude\n");
-            }
-
-            /* another possible case, maybe user-defined */
-            ib = tmp2;   /* Drude */
-            ia = tmp1;   /* Atom */
-        }
-        else
-        {
-            /* nothing to see here! */
-
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: no Drude found, i = %d, ptype[%d] = %d, ptype[%d] = %d\n",
-                        i, tmp1, md->ptype[tmp1], tmp2, md->ptype[tmp2]);
-            }
-
-            continue;
-        }
+        ia = s[i].nucl1;    /* Atom */
+        ib = s[i].shell;    /* Drude */
 
         if (debug)
         {
             fprintf(debug, "HARDWALL: Drude atom %d connected to heavy atom %d\n", (ib+1), (ia+1));
+            fprintf(debug, "HARDWALL: shell[%d], shell = %d, nucl1 = %d, nucl2 = %d, nucl3 = %d\n", i, s[i].shell,
+                    s[i].nucl1, s[i].nucl2, s[i].nucl3);
         }
 
         /* copy current positions and velocities for manipulation */
@@ -1102,8 +1069,12 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, gmx_localtop_t *top, t_
             fprintf(debug, "HARDWALL: x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xb[ZZ]);
         }
 
-        /* do_em_step() seg faults here because there are no velocities
-         * EM + hard wall explicitly disabled in grompp */ 
+        /* do_em_step() seg faults here because there are no velocities, so
+         * EM + hardwall explicitly disabled in grompp - workaround could be
+         * to simply reset state->x[ib] to state->x[ia] in case of hardwall
+         * violation during EM.  Note that CHARMM does not support the use of
+         * the hardwall function during EM, so some correction could be a nice 
+         * addition... */ 
         copy_rvec(state->v[ia], va);
         copy_rvec(state->v[ib], vb);
 
@@ -1702,7 +1673,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         /* Step 3. Apply hard wall, if requested, to make sure the Drude hasn't gone too far */
         if (inputrec->drude->bHardWall)
         {
-            apply_drude_hardwall(inputrec, md, top, state, f, force_vir);
+            apply_drude_hardwall(shell, nshell, inputrec, md, state, f, force_vir);
         }
 
         /* At this point, Drude positions have been updated and then 

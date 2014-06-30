@@ -42,9 +42,6 @@
 extern "C" {
 #endif
 
-/* Drude hard wall restraint */
-void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, gmx_localtop_t *top, t_state *state, rvec f[], tensor force_vir);
-
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
