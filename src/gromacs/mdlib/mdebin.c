@@ -299,6 +299,15 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
                             (ir->epc == epcNO || ir->epc == epcMTTK));
         }
+        /* Drude energy terms of interest */
+        else if ((i == F_ANISO_POL) && (ir->bDrude))
+        {
+            md->bEner[i] = TRUE;
+        }
+        else if ((i == F_THOLE_POL) && (ir->bDrude))
+        {
+            md->bEner[i] = TRUE;
+        }
         else
         {
             md->bEner[i] = (gmx_mtop_ftype_count(mtop, i) > 0);
