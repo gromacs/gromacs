@@ -249,6 +249,26 @@ elseif(${GMX_SIMD} STREQUAL "AVX2_256")
     set(GMX_SIMD_X86_AVX2_256 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
 
+elseif(${GMX_SIMD} STREQUAL "ARM32_NEON")
+
+    gmx_find_cflag_for_source(CFLAGS_ARM32_NEON "C compiler 32-bit ARM NEON flag"
+                              "#include<arm_neon.h>
+                              int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
+                              SIMD_C_FLAGS
+                              "-mfpu=neon-fp-armv8" "-mfpu=neon")
+    gmx_find_cxxflag_for_source(CXXFLAGS_ARM32_NEON "C++ compiler 32-bit ARM NEON flag"
+                                "#include<arm_neon.h>
+                                int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
+                                SIMD_CXX_FLAGS
+                                "-mfpu=neon-fp-armv8" "-mfpu=neon")
+
+    if(NOT CFLAGS_ARM32_NEON OR NOT CXXFLAGS_ARM32_NEON)
+        message(FATAL_ERROR "Cannot find ARM32 NEON compiler flag. Use a newer compiler, or disable NEON SIMD.")
+    endif()
+
+    set(GMX_SIMD_ARM32_NEON 1)
+    set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions")
+
 elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
 
     try_compile(TEST_QPX ${CMAKE_BINARY_DIR}

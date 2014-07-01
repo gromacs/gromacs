@@ -79,7 +79,8 @@ gmx_cpuid_vendor_string[GMX_CPUID_NVENDORS] =
     "GenuineIntel",
     "AuthenticAMD",
     "Fujitsu",
-    "IBM"
+    "IBM",
+    "ARM32"
 };
 
 const char *
@@ -90,7 +91,8 @@ gmx_cpuid_vendor_string_alternative[GMX_CPUID_NVENDORS] =
     "GenuineIntel",
     "AuthenticAMD",
     "Fujitsu",
-    "ibm" /* Used on BlueGene/Q */
+    "ibm", /* Used on BlueGene/Q */
+    "arm32"
 };
 
 const char *
@@ -130,7 +132,8 @@ gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
     "ssse3",
     "tdt",
     "x2apic",
-    "xop"
+    "xop",
+    "arm32_neon"
 };
 
 const char *
@@ -145,7 +148,8 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
     "AVX_256",
     "AVX2_256",
     "Sparc64 HPC-ACE",
-    "IBM_QPX"
+    "IBM_QPX",
+    "ARM32_NEON"
 };
 
 /* Max length of brand string */
@@ -234,6 +238,8 @@ static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_128_FMA;
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE4_1;
 #elif defined GMX_SIMD_X86_SSE2
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE2;
+#elif defined GMX_SIMD_ARM32_NEON
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_ARM32_NEON;
 #elif defined GMX_SIMD_SPARC64_HPC_ACE
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
 #elif defined GMX_SIMD_IBM_QPX
@@ -725,7 +731,6 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 
 
 
-
 static void
 chomp_substring_before_colon(const char *in, char *s, int maxlength)
 {
@@ -802,6 +807,9 @@ cpuid_check_vendor(void)
             vendor = i;
         }
     }
+#elif defined(__arm__) || defined (__arm)
+    /* This will not trigger 64-bit arm, which is identified by __aarch64__ instead */
+    vendor = GMX_CPUID_VENDOR_ARM32;
 #elif defined(__linux__) || defined(__linux)
     /* General Linux. Try to get CPU vendor from /proc/cpuinfo */
     if ( (fp = fopen("/proc/cpuinfo", "r")) != NULL)
@@ -932,6 +940,9 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
             cpuid_check_amd_x86(cpuid);
             break;
 #endif
+        case GMX_CPUID_VENDOR_ARM32:
+            cpuid->feature[GMX_CPUID_FEATURE_ARM32_NEON] = 1;
+            break;
         default:
             /* Default value */
             strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_BRAND_MAXLEN);
@@ -1090,6 +1101,13 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
         if (strstr(gmx_cpuid_brand(cpuid), "A2"))
         {
             tmpsimd = GMX_CPUID_SIMD_IBM_QPX;
+        }
+    }
+    else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_ARM32)
+    {
+        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_ARM32_NEON))
+        {
+            tmpsimd = GMX_CPUID_SIMD_ARM32_NEON;
         }
     }
     return tmpsimd;

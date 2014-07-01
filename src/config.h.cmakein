@@ -111,6 +111,9 @@
 /* AVX2 256-bit SIMD instruction set level was selected */
 #cmakedefine GMX_SIMD_X86_AVX2_256
 
+/* 32-bit ARM NEON SIMD instruction set level was selected */
+#cmakedefine GMX_SIMD_ARM32_NEON
+
 /* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
 #cmakedefine GMX_SIMD_IBM_QPX
 
