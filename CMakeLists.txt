@@ -583,14 +583,14 @@ endif()
 ########################################################################
 
 add_definitions( -DHAVE_CONFIG_H )
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
-include_directories(${CMAKE_BINARY_DIR}/src)
+include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 # Required for gmx_header_config_gen.h to be found before installation
-include_directories(${CMAKE_BINARY_DIR}/src/gromacs/utility)
+include_directories(BEFORE ${CMAKE_BINARY_DIR}/src/gromacs/utility)
 # Required for now to make old code compile
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
@@ -845,7 +845,7 @@ if(GMX_EXTERNAL_BOOST)
     include_directories(${Boost_INCLUDE_DIRS})
     set(PKG_CFLAGS "${PKG_CFLAGS} -I${Boost_INCLUDE_DIRS}")
 else()
-    include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
+    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/boost)
     # typeid not supported for minimal internal version
     # (would add significant amount of code)
     add_definitions(-DBOOST_NO_TYPEID)

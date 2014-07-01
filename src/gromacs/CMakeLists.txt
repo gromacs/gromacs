@@ -75,7 +75,7 @@ if(GMX_USE_TNG)
     endif()
 else()
     # We still need to get tng/tng_io_fwd.h from somewhere!
-    include_directories(${CMAKE_SOURCE_DIR}/src/external/tng_io/include)
+    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/tng_io/include)
 endif()
 
 add_subdirectory(gmxlib)

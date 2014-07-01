@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-include_directories(${GMOCK_INCLUDE_DIRS})
+include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
 include_directories(${LIBXML2_INCLUDE_DIR})
 file(GLOB TESTUTILS_SOURCES *.cpp)
 
