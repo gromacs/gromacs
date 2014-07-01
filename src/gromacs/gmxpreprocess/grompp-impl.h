@@ -114,7 +114,6 @@ typedef enum {
     d_angletypes,
     d_dihedraltypes,
     d_nonbond_params,
-    d_nbthole,
     d_implicit_genborn_params,
     d_implicit_surface_params,
     d_cmaptypes,
