@@ -34,14 +34,14 @@
 
 function (gmx_add_unit_test_object_library NAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        include_directories(${GMOCK_INCLUDE_DIRS})
+        include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
         add_library(${NAME} OBJECT ${ARGN})
     endif()
 endfunction ()
 
 function (gmx_build_unit_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        include_directories(${GMOCK_INCLUDE_DIRS})
+        include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
         add_executable(${EXENAME} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
         target_link_libraries(${EXENAME} libgromacs ${TESTUTILS_LIBS} ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
         set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
