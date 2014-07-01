@@ -48,7 +48,7 @@
 #include "nbnxn_consts.h"
 /* nbnxn_internal.h included gromacs/simd/macros.h */
 #include "nbnxn_internal.h"
-#ifdef GMX_NBNXN_SIMD
+#ifdef GMX_SIMD
 #include "gromacs/simd/vector_operations.h"
 #endif
 #include "nbnxn_atomdata.h"

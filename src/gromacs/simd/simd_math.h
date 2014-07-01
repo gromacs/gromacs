@@ -132,6 +132,7 @@ gmx_simd_xor_sign_f(gmx_simd_float_t a, gmx_simd_float_t b)
 #endif
 }
 
+#ifndef gmx_simd_rsqrt_iter_f
 /*! \brief Perform one Newton-Raphson iteration to improve 1/sqrt(x) for SIMD float.
  *
  * This is a low-level routine that should only be used by SIMD math routine
@@ -150,6 +151,7 @@ gmx_simd_rsqrt_iter_f(gmx_simd_float_t lu, gmx_simd_float_t x)
     return gmx_simd_mul_f(gmx_simd_set1_f(0.5f), gmx_simd_mul_f(gmx_simd_sub_f(gmx_simd_set1_f(3.0f), gmx_simd_mul_f(gmx_simd_mul_f(lu, lu), x)), lu));
 #    endif
 }
+#endif
 
 /*! \brief Calculate 1/sqrt(x) for SIMD float.
  *
@@ -194,6 +196,7 @@ gmx_simd_invsqrt_pair_f(gmx_simd_float_t x0,    gmx_simd_float_t x1,
     *out1 = gmx_simd_invsqrt_f(x1);
 }
 
+#ifndef gmx_simd_rcp_iter_f
 /*! \brief Perform one Newton-Raphson iteration to improve 1/x for SIMD float.
  *
  * This is a low-level routine that should only be used by SIMD math routine
@@ -208,6 +211,7 @@ gmx_simd_rcp_iter_f(gmx_simd_float_t lu, gmx_simd_float_t x)
 {
     return gmx_simd_mul_f(lu, gmx_simd_fnmadd_f(lu, x, gmx_simd_set1_f(2.0f)));
 }
+#endif
 
 /*! \brief Calculate 1/x for SIMD float.
  *
