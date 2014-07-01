@@ -138,7 +138,7 @@ const t_interaction_function interaction_function[F_NRE] =
     /* TODO: revisit this */
     def_bonded  ("ANISOPOL", "Aniso. Polariz.", 5, 3, 0,  eNR_ANISOPOL, aniso_pol   ),
     def_bonded  ("WATERPOL", "Water Pol.",      5, 6, 0,  eNR_WPOL,   water_pol     ),
-    def_bonded  ("THOLE",    "Thole Pol.",      4, 3, 0,  eNR_THOLE,  thole_pol     ),
+    def_bonded  ("THOLE",    "Thole Pol.",      2, 3, 0,  eNR_THOLE,  thole_pol     ),
     def_bondnb  ("ANHARM_POL", "Anharm. Pol.", 2, 3, 0, 0,          anharm_polarize      ),
     def_bonded  ("POSRES",   "Position Rest.",  1, 3, 3,  eNR_POSRES, unimplemented ),
     def_bonded  ("FBPOSRES", "Flat-bottom posres", 1, 3, 0, eNR_FBPOSRES, unimplemented ),
