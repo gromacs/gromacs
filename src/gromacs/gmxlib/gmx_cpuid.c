@@ -79,7 +79,8 @@ gmx_cpuid_vendor_string[GMX_CPUID_NVENDORS] =
     "GenuineIntel",
     "AuthenticAMD",
     "Fujitsu",
-    "IBM"
+    "IBM",
+    "ARM"
 };
 
 const char *
@@ -90,7 +91,8 @@ gmx_cpuid_vendor_string_alternative[GMX_CPUID_NVENDORS] =
     "GenuineIntel",
     "AuthenticAMD",
     "Fujitsu",
-    "ibm" /* Used on BlueGene/Q */
+    "ibm", /* Used on BlueGene/Q */
+    "arm"
 };
 
 const char *
@@ -130,7 +132,8 @@ gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
     "ssse3",
     "tdt",
     "x2apic",
-    "xop"
+    "xop",
+    "arm_neon"
 };
 
 const char *
@@ -145,18 +148,19 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
     "AVX_256",
     "AVX2_256",
     "Sparc64 HPC-ACE",
-    "IBM_QPX"
+    "IBM_QPX",
+    "ARM_NEON"
 };
 
 /* Max length of brand string */
-#define GMX_CPUID_BRAND_MAXLEN 256
+#define GMX_CPUID_STRLEN 256
 
 
 /* Contents of the abstract datatype */
 struct gmx_cpuid
 {
     enum gmx_cpuid_vendor      vendor;
-    char                       brand[GMX_CPUID_BRAND_MAXLEN];
+    char                       brand[GMX_CPUID_STRLEN];
     int                        family;
     int                        model;
     int                        stepping;
@@ -234,6 +238,8 @@ static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_128_FMA;
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE4_1;
 #elif defined GMX_SIMD_X86_SSE2
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE2;
+#elif defined GMX_SIMD_ARM_NEON
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_ARM_NEON;
 #elif defined GMX_SIMD_SPARC64_HPC_ACE
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
 #elif defined GMX_SIMD_IBM_QPX
@@ -330,7 +336,7 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
 {
     int                       fn, max_stdfn, max_extfn;
     unsigned int              eax, ebx, ecx, edx;
-    char                      str[GMX_CPUID_BRAND_MAXLEN];
+    char                      str[GMX_CPUID_STRLEN];
     char *                    p;
 
     /* Find largest standard/extended function input value */
@@ -360,11 +366,11 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
         {
             p++;
         }
-        strncpy(cpuid->brand, p, GMX_CPUID_BRAND_MAXLEN);
+        strncpy(cpuid->brand, p, GMX_CPUID_STRLEN);
     }
     else
     {
-        strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_BRAND_MAXLEN);
+        strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_STRLEN);
     }
 
     /* Find basic CPU properties */
@@ -726,7 +732,6 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 
 
 
-
 static void
 chomp_substring_before_colon(const char *in, char *s, int maxlength)
 {
@@ -771,6 +776,50 @@ chomp_substring_after_colon(const char *in, char *s, int maxlength)
     }
 }
 
+static int
+cpuid_check_arm(gmx_cpuid_t                cpuid)
+{
+#if defined(__linux__) || defined(__linux)
+    FILE *fp;
+    char  buffer[GMX_CPUID_STRLEN], buffer2[GMX_CPUID_STRLEN], buffer3[GMX_CPUID_STRLEN];
+
+    if ( (fp = fopen("/proc/cpuinfo", "r")) != NULL)
+    {
+        while ( (fgets(buffer, sizeof(buffer), fp) != NULL))
+        {
+            chomp_substring_before_colon(buffer, buffer2, GMX_CPUID_STRLEN);
+            chomp_substring_after_colon(buffer, buffer3, GMX_CPUID_STRLEN);
+
+            if (!strcmp(buffer2, "Processor"))
+            {
+                strncpy(cpuid->brand, buffer3, GMX_CPUID_STRLEN);
+            }
+            else if (!strcmp(buffer2, "CPU architecture"))
+            {
+                cpuid->family = strtol(buffer3, NULL, 10);
+            }
+            else if (!strcmp(buffer2, "CPU part"))
+            {
+                cpuid->model = strtol(buffer3, NULL, 16);
+            }
+            else if (!strcmp(buffer2, "CPU revision"))
+            {
+                cpuid->stepping = strtol(buffer3, NULL, 10);
+            }
+            else if (!strcmp(buffer2, "Features") && strstr(buffer3, "neon"))
+            {
+                cpuid->feature[GMX_CPUID_FEATURE_ARM_NEON] = 1;
+            }
+        }
+    }
+    fclose(fp);
+#else
+    /* Strange non-linux platform. We cannot assume that neon is present. */
+    cpuid->feature[GMX_CPUID_FEATURE_ARM_NEON] = 0;
+#endif
+    return 0;
+}
+
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
  */
@@ -782,7 +831,9 @@ cpuid_check_vendor(void)
     unsigned int               eax, ebx, ecx, edx;
     char                       vendorstring[13];
     FILE *                     fp;
-    char                       buffer[255], before_colon[255], after_colon[255];
+    char                       buffer[GMX_CPUID_STRLEN];
+    char                       before_colon[GMX_CPUID_STRLEN];
+    char                       after_colon[GMX_CPUID_STRLEN];
 
     /* Set default first */
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
@@ -810,11 +861,15 @@ cpuid_check_vendor(void)
         while ( (vendor == GMX_CPUID_VENDOR_UNKNOWN) && (fgets(buffer, sizeof(buffer), fp) != NULL))
         {
             chomp_substring_before_colon(buffer, before_colon, sizeof(before_colon));
-            /* Intel/AMD use "vendor_id", IBM "vendor"(?) or "model". Fujitsu "manufacture". Add others if you have them! */
+            /* Intel/AMD use "vendor_id", IBM "vendor"(?) or "model". Fujitsu "manufacture".
+             * On ARM there does not seem to be a vendor, but ARM is listed in the Processor string.
+             * Add others if you have them!
+             */
             if (!strcmp(before_colon, "vendor_id")
                 || !strcmp(before_colon, "vendor")
                 || !strcmp(before_colon, "manufacture")
-                || !strcmp(before_colon, "model"))
+                || !strcmp(before_colon, "model")
+                || !strcmp(before_colon, "Processor"))
             {
                 chomp_substring_after_colon(buffer, after_colon, sizeof(after_colon));
                 for (i = GMX_CPUID_VENDOR_UNKNOWN; i < GMX_CPUID_NVENDORS; i++)
@@ -832,6 +887,12 @@ cpuid_check_vendor(void)
         }
     }
     fclose(fp);
+#elif defined(__arm__) || defined (__arm)
+    /* If we are using ARM on something that is not linux we have to trust the compiler,
+     * and we cannot get the extra info that might be present in /proc/cpuinf.
+     * This path will not trigger 64-bit arm, which is identified by __aarch64__ instead.
+     */
+    vendor = GMX_CPUID_VENDOR_ARM;
 #endif
 
     return vendor;
@@ -899,7 +960,7 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
     gmx_cpuid_t cpuid;
     int         i;
     FILE *      fp;
-    char        buffer[255], buffer2[255];
+    char        buffer[GMX_CPUID_STRLEN], buffer2[GMX_CPUID_STRLEN];
     int         found_brand;
 
     cpuid = malloc(sizeof(*cpuid));
@@ -933,9 +994,12 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
             cpuid_check_amd_x86(cpuid);
             break;
 #endif
+        case GMX_CPUID_VENDOR_ARM:
+            cpuid_check_arm(cpuid);
+            break;
         default:
             /* Default value */
-            strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_BRAND_MAXLEN);
+            strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_STRLEN);
 #if defined(__linux__) || defined(__linux)
             /* General Linux. Try to get CPU type from /proc/cpuinfo */
             if ( (fp = fopen("/proc/cpuinfo", "r")) != NULL)
@@ -947,7 +1011,7 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
                     /* Intel uses "model name", Fujitsu and IBM "cpu". */
                     if (!strcmp(buffer2, "model name") || !strcmp(buffer2, "cpu"))
                     {
-                        chomp_substring_after_colon(buffer, cpuid->brand, GMX_CPUID_BRAND_MAXLEN);
+                        chomp_substring_after_colon(buffer, cpuid->brand, GMX_CPUID_STRLEN);
                         found_brand = 1;
                     }
                 }
@@ -1091,6 +1155,13 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
         if (strstr(gmx_cpuid_brand(cpuid), "A2"))
         {
             tmpsimd = GMX_CPUID_SIMD_IBM_QPX;
+        }
+    }
+    else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_ARM)
+    {
+        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_ARM_NEON))
+        {
+            tmpsimd = GMX_CPUID_SIMD_ARM_NEON;
         }
     }
     return tmpsimd;
