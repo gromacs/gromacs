@@ -722,11 +722,174 @@ real anharm_polarize(int nbonds,
 
 real aniso_pol(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f[], rvec gmx_unused fshift[],
-               const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
+               const rvec x[], rvec f[], rvec fshift[],
+               const t_pbc *pbc, const t_graph *g,
                real gmx_unused lambda, real gmx_unused *dvdlambda,
-               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+               const t_mdatoms *md, t_fcdata gmx_unused *fcd,
                int gmx_unused *global_atom_index)
+{
+    /* This routine implements generic anisotropic polarizibility */
+    /* The coordinate frame defined by the local geometry is converted
+     * to Cartesian space to apply forces along x, y, and z */
+    /* Mapping
+              Z1                        LP1
+             /                         /
+         X--Y-S    e.g. carbonyl   C==O--DO    
+             \                         \
+              Z2                        LP2
+     */
+    int         i, m, type, ki;
+    /* following CHARMM naming here for ease of transferring the code */
+    atom_id     ai, aj, al, am, an;
+    real        vtot, qD;
+    real        r_u1, r_u2;         /* vector lengths */
+    real        dpar, dperp;        /* Drude displacement vector lengths */
+    real        dr2;                
+    rvec        kk;                 /* force constants */
+    rvec        u1, u2;             /* unit vectors */
+    rvec        dr;                 /* Drude displacement vector */
+    ivec        dt;
+
+    /* Mapping within forceatoms[]
+     *   0 = function type
+     *   1 = shell/Drude
+     *   2 = heavy atom bonded to shell/Drude
+     *   3 = bonded to 2 (bisects the 2-4-5 angle)
+     *   4 = bonded to 2 (usually a lone pair)
+     *   5 = bonded to 2 (usually a lone pair)
+     */
+    vtot = 0.0;
+    if (nbonds > 0)
+    {
+        for (i = 0; (i < nbonds); i += 6)
+        {
+            type = forceatoms[i];
+            aj   = forceatoms[i+1];     /* the way this is laid out doesn't make a ton of sense...may want to revisit */
+            ai   = forceatoms[i+2];
+            al   = forceatoms[i+3];
+            am   = forceatoms[i+4];
+            an   = forceatoms[i+5];
+
+            qD     = md->chargeA[aj];
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: Drude: %d Atom: %d, qD = %f\n", aj+1, ai+1, qD);
+            }
+
+            /* we can get the force constants from ffpararms or just re-calculate */
+            /* TODO: multiplied by 2 in CHARMM, but do we need to do that here?
+               The internal stuff in CHARMM gets ugly, this should reproduce everything correctly */
+            /* KPAR0 */
+            kk[XX] = sqr(qD)*ONE_4PI_EPS0_CHARMM/forceparams[type].daniso.a11;
+            /* KPERP0 */
+            kk[YY] = sqr(qD)*ONE_4PI_EPS0_CHARMM/forceparams[type].daniso.a22;
+            /* KISO0 */
+            kk[ZZ] = sqr(qD)*ONE_4PI_EPS0_CHARMM/forceparams[type].daniso.a33;
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: kk = %f %f %f\n", kk[XX], kk[YY], kk[ZZ]);
+            }
+
+            /* set up parallel and perpendicular vectors */
+            pbc_rvec_sub(pbc, x[ai], x[al], u1);    /* parallel */
+            pbc_rvec_sub(pbc, x[am], x[an], u2);    /* perpendicular */
+
+            /* get u1 and u2 vector lengths */
+            r_u1 = sqrt(iprod(u1, u1));
+            r_u2 = sqrt(iprod(u2, u2));
+
+            /* normalize vectors */
+            svmul((1.0/r_u1), u1, u1);
+            svmul((1.0/r_u2), u2, u2);
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: r_u1 = %f, r_u2 = %f\n", r_u1, r_u2);
+                fprintf(debug, "ANISOPOL: u1 after scale = %f %f %f\n", u1[XX], u1[YY], u1[ZZ]);
+                fprintf(debug, "ANISOPOL: u2 after scale = %f %f %f\n", u2[XX], u2[YY], u2[ZZ]);
+            }
+
+            /* calculate Drude displacement vector */
+            /* TODO: using this to calculate ki, check */
+            ki = pbc_rvec_sub(pbc, x[aj], x[ai], dr);
+
+            /* perpendicular and parallel Drude displacement vectors */
+            dpar = iprod(dr, u1);
+            dperp = iprod(dr, u2);
+            dr2 = iprod(dr, dr);
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: dpar = %f, dperp = %f\n", dpar, dperp);
+            }
+
+            /* calculate anisotropic energy */
+            vtot += 0.5*kk[XX]*dpar*dpar + 0.5*kk[YY]*dperp*dperp + 0.5*kk[ZZ]*dr2;
+
+            /* TODO: check atom indices here */
+            if (g)
+            {
+                ivec_sub(SHIFT_IVEC(g, aj), SHIFT_IVEC(g, al), dt);
+                ki = IVEC2IS(dt);
+            }
+
+            /* Update forces */
+            for (m=0; m<DIM; m++)
+            {
+                /* isotropic spring force - updated forces on Drude and heavy atom to which it is attached */
+                f[ai][m] -= kk[ZZ]*dr[m];
+                f[aj][m] += kk[ZZ]*dr[m];
+
+                /* forces acting parallel and perpendicular */
+                /* heavy atom */
+                f[ai][m] += kk[XX]*dpar*((-1.0*u1[m]) + (dr[m]-(iprod(dr,u1))/r_u1)) - (kk[YY]*dperp*u2[m]);
+
+                /* Drude */
+                f[aj][m] += kk[XX]*dpar*u1[m] + kk[YY]*dperp*u2[m];
+
+                /* other control atoms */
+                f[al][m] += kk[XX]*dpar*((-1.0*dr[m]) + u1[m]*(iprod(dr,u1)))/r_u1;
+                f[am][m] += kk[YY]*dperp*(dr[m] - u2[m]*(iprod(dr,u2)))/r_u2;
+                f[an][m] += kk[YY]*dperp*(dr[m] + u2[m]*(iprod(dr,u2)))/r_u2;
+
+                if (debug)
+                {
+                    fprintf(debug, "ANISOPOL: f[ai][%d] = %f\n", m, f[ai][m]);
+                    fprintf(debug, "ANISOPOL: f[aj][%d] = %f\n", m, f[aj][m]);
+                    fprintf(debug, "ANISOPOL: f[al][%d] = %f\n", m, f[al][m]);
+                    fprintf(debug, "ANISOPOL: f[am][%d] = %f\n", m, f[am][m]);
+                    fprintf(debug, "ANISOPOL: f[an][%d] = %f\n", m, f[an][m]);
+                }
+
+                fshift[ki][m]       += f[ai][m];
+                fshift[ki][m]       += f[aj][m];
+                fshift[ki][m]       += f[al][m];
+                fshift[ki][m]       += f[am][m];
+                fshift[ki][m]       += f[an][m];
+
+                fshift[CENTRAL][m]  -= f[ai][m];
+                fshift[CENTRAL][m]  -= f[aj][m];
+                fshift[CENTRAL][m]  -= f[al][m];
+                fshift[CENTRAL][m]  -= f[am][m];
+                fshift[CENTRAL][m]  -= f[an][m];
+            }
+        }
+    }
+
+    /* not multiplying by 0.5 because that was already done above */
+    return vtot;
+}
+
+/* This is a hacked version of anisotropy, based on water_pol.  It does not work for some reason */
+real old_aniso_pol(int nbonds,
+                   const t_iatom forceatoms[], const t_iparams forceparams[],
+                   const rvec x[], rvec f[], rvec fshift[],
+                   const t_pbc *pbc, const t_graph *g,
+                   real gmx_unused lambda, real gmx_unused *dvdlambda,
+                   const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+                   int gmx_unused *global_atom_index)
 {
     /* This routine implements generic anisotropic polarizibility */ 
     /* The coordinate frame defined by the local geometry is converted
@@ -740,27 +903,17 @@ real aniso_pol(int nbonds,
      */
     int  i, m, aS, aX, aY, aZ1, aZ2, type, type0, ki;
     ivec dt;
-    /* TODO: changing these names - check!!! */
-    /* water_pol dOD = dyx here */
-    /* water_pol dDS = dxs here */
-    rvec dyz1, dyz2, dz1z2, dyx, dxs, nW, kk, dx, kdx, proj;
-#ifdef DEBUG
+    rvec dz1y, dz2y, dz1z2, dxy, dsx, nZ, kk, dx, kdx, proj;
     rvec df;
-#endif
-    real vtot, fij, r_22, r_11, r_nW, tx, ty, tz, qS;
-
-    /* 
-     * gmx_ffparams_t  *ffparams;
-     * ffparams = &mtop->ffparams;
-     */
+    real vtot, fij, r_22, r_11, r_33, tx, ty, tz, qS;
 
     /* Mapping within forceatoms[]
      *   0 = function type
      *   1 = shell/Drude
      *   2 = heavy atom bonded to shell/Drude
-     *   3 = bonded to 2
-     *   4 = bonded to 3 (usually a lone pair)
-     *   5 = bonded to 3 (usually a lone pair)
+     *   3 = bonded to 2 (bisects the 2-4-5 angle)
+     *   4 = bonded to 2 (usually a lone pair)
+     *   5 = bonded to 2 (usually a lone pair)
      */
     vtot = 0.0;
     if (nbonds > 0)
@@ -768,7 +921,6 @@ real aniso_pol(int nbonds,
         for (i = 0; (i < nbonds); i += 6)
         {
             type = forceatoms[i];
-
             aS   = forceatoms[i+1];
             aY   = forceatoms[i+2];
             aX   = forceatoms[i+3];
@@ -791,65 +943,104 @@ real aniso_pol(int nbonds,
 
             /* Inverse length of the 2 axis */
             r_22   = 1.0/sqrt(distance2(x[aZ1], x[aZ2]));
-            /* r_OD defines the inverse length of the 1 axis */
+            /* r_11 defines the inverse length of the 1 axis */
             r_11   = 1.0/sqrt(distance2(x[aX], x[aY]));
 
             /* Compute vectors describing the local molecular frame */
-            pbc_rvec_sub(pbc, x[aZ1], x[aY], dyz1);
-            pbc_rvec_sub(pbc, x[aZ2], x[aY], dyz2);
+            /* TODO: inverted direction relative to those in water_pol */ 
+            pbc_rvec_sub(pbc, x[aY], x[aZ1], dz1y);
+            pbc_rvec_sub(pbc, x[aY], x[aZ2], dz2y);
             pbc_rvec_sub(pbc, x[aZ2], x[aZ1], dz1z2);
-            pbc_rvec_sub(pbc, x[aX], x[aY], dyx);
-            ki = pbc_rvec_sub(pbc, x[aS], x[aX], dxs);
-            cprod(dyz1, dyz2, nW);
+            pbc_rvec_sub(pbc, x[aY], x[aX], dxy);
+            ki = pbc_rvec_sub(pbc, x[aX], x[aS], dsx);
+            cprod(dz1y, dz2y, nZ);
 
-            /* Compute inverse length of normal vector */
-            r_nW = gmx_invsqrt(iprod(nW, nW));
-            /* This is for precision, but does not make a big difference,
-             * it can go later.
-             */
-            r_11 = gmx_invsqrt(iprod(dyx, dyx));
-
-            /* Normalize the vectors in the local molecular frame */
-            svmul(r_nW, nW, nW);
-            svmul(r_22, dz1z2, dz1z2);
-            svmul(r_11, dyx, dyx);
-
-            /* Compute displacement of shell along components of the vector */
-            dx[ZZ] = iprod(dxs, dyx);
-            /* Compute projection on the XY plane: dDS - dx[ZZ]*dyx */
-            for (m = 0; (m < DIM); m++)
-            {
-                proj[m] = dxs[m]-dx[ZZ]*dyx[m];
-            }
-
-            dx[XX] = iprod(proj, nW);
-            for (m = 0; (m < DIM); m++)
-            {
-                proj[m] -= dx[XX]*nW[m];
-            }
-            dx[YY] = iprod(proj, dz1z2);
-            /*#define DEBUG*/
-#ifdef DEBUG
             if (debug)
             {
-                fprintf(debug, "ANISOPOL: dx2=%10g  dy2=%10g  dz2=%10g  sum=%10g  dDS^2=%10g\n",
-                        sqr(dx[XX]), sqr(dx[YY]), sqr(dx[ZZ]), iprod(dx, dx), iprod(dxs, dxs));
-                fprintf(debug, "ANISOPOL: dz1z2=(%10g,%10g,%10g)\n", dz1z2[XX], dz1z2[YY], dz1z2[ZZ]);
-                fprintf(debug, "ANISOPOL: dyx=(%10g,%10g,%10g), 1/r_11 = %10g\n",
-                        dyx[XX], dyx[YY], dyx[ZZ], 1/r_11);
-                fprintf(debug, "ANISOPOL: nW =(%10g,%10g,%10g), 1/r_nW = %10g\n",
-                        nW[XX], nW[YY], nW[ZZ], 1/r_nW);
-                fprintf(debug, "ANISOPOL: dx  =%10g, dy  =%10g, dz  =%10g\n",
-                        dx[XX], dx[YY], dx[ZZ]);
-                fprintf(debug, "ANISOPOL: dxsx=%10g, dxsy=%10g, dxsz=%10g\n",
-                        dxs[XX], dxs[YY], dxs[ZZ]);
+                fprintf(debug, "ANISOPOL: nZ = %f %f %f\n", nZ[XX], nZ[YY], nZ[ZZ]);
             }
-#endif
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: dz1y = %f %f %f\n", dz1y[XX], dz1y[YY], dz2y[ZZ]);
+                fprintf(debug, "ANISOPOL: dz2y = %f %f %f\n", dz2y[XX], dz2y[YY], dz2y[ZZ]);
+                fprintf(debug, "ANISOPOL: dz1z2 = %f %f %f\n", dz1z2[XX], dz1z2[YY], dz1z2[ZZ]);
+                fprintf(debug, "ANISOPOL: dxy = %f %f %f\n", dxy[XX], dxy[YY], dxy[ZZ]);
+                fprintf(debug, "ANISOPOL: dsx = %f %f %f\n", dsx[XX], dsx[YY], dsx[ZZ]);
+                fprintf(debug, "ANISOPOL: ki = %d\n", ki);
+            }
+
+            /* Compute inverse length of normal vector */
+            r_33 = gmx_invsqrt(iprod(nZ, nZ));
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: r_11 = %f, r_22 = %f, r_33 = %f\n", r_11, r_22, r_33);
+            }
+
+            /* Normalize the vectors in the local molecular frame */
+            /* TODO: testing */
+            /*
+            svmul(r_33, nZ, nZ);
+            svmul(r_22, dz1z2, dz1z2);
+            svmul(r_11, dxy, dxy);
+            */
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: after mult by r_11, dxy = %f %f %f\n", dxy[XX], dxy[YY], dxy[ZZ]);
+                fprintf(debug, "ANISOPOL: after mult by r_22, dz1z2 = %f %f %f\n", dz1z2[XX], dz1z2[YY], dz1z2[ZZ]);
+                fprintf(debug, "ANISOPOL: after mult by r_33, nZ = %f %f %f\n", nZ[XX], nZ[YY], nZ[ZZ]);
+            }
+
+            /* Compute displacement of shell along components of the vector */
+            /* TODO: check axis assignment; swapped XX and ZZ relative to original Gromacs order,
+               but based on the comment this may not be right */
+
+            /* TODO: this is returning 0.125605, full dx between Drude and LP along the bond */
+            /* But by this point, dxy is normalized and dsx is not... */
+            dx[XX] = iprod(dsx, dxy);
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: dx[XX] after iprod = %f\n", dx[XX]);
+            }
+
+            /* TODO: here, dxy is now normalized */
+            for (m = 0; (m < DIM); m++)
+            {
+                proj[m] = dsx[m]-dx[XX]*dxy[m];
+            }
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: proj after dx[XX] = %f %f %f\n", proj[XX], proj[YY], proj[ZZ]);
+            }
+
+            dx[ZZ] = iprod(proj, nZ);
+            for (m = 0; (m < DIM); m++)
+            {
+                proj[m] -= dx[ZZ]*nZ[m];
+            }
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: proj after dx[ZZ] = %f %f %f\n", proj[XX], proj[YY], proj[ZZ]);
+            }
+
+            dx[YY] = iprod(proj, dz1z2);
+
             /* Now compute the forces and energy */
             kdx[XX] = kk[XX]*dx[XX];
             kdx[YY] = kk[YY]*dx[YY];
             kdx[ZZ] = kk[ZZ]*dx[ZZ];
             vtot   += iprod(dx, kdx);
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: kdx = %f %f %f\n", kdx[XX], kdx[YY], kdx[ZZ]);
+                fprintf(debug, "ANISOPOL: vtot = %f\n", vtot);
+            }
 
             if (g)
             {
@@ -860,25 +1051,39 @@ real aniso_pol(int nbonds,
             for (m = 0; (m < DIM); m++)
             {
                 /* This is a tensor operation but written out for speed */
-                tx        = nW[m]*kdx[XX];
+                /* TODO: check this, same as above - XX and ZZ swapped */
+                tx        = dxy[m]*kdx[XX];
                 ty        = dz1z2[m]*kdx[YY];
-                tz        = dyx[m]*kdx[ZZ];
+                tz        = nZ[m]*kdx[ZZ];
                 fij       = -tx-ty-tz;
-#ifdef DEBUG
-                df[m] = fij;
-#endif
+
+                if (debug)
+                {
+                    fprintf(debug, "ANISOPOL: m = %d, tx = %f, ty = %f, tz = %f\n", m, tx, ty, tz);
+                    fprintf(debug, "ANISOPOL: m = %d, fij = %f\n", m, fij);
+                    df[m] = fij;
+                }
+
                 f[aS][m]           += fij;
                 f[aX][m]           -= fij;
+                /* TODO: fshift needed with Verlet; sign issues here? */
                 fshift[ki][m]      += fij;
                 fshift[CENTRAL][m] -= fij;
+
+                if (debug)
+                {
+                    fprintf(debug, "ANISOPOL: f[%d][%d] = %f\n", aS, m, f[aS][m]);
+                    fprintf(debug, "ANISOPOL: f[%d][%d] = %f\n", aX, m, f[aX][m]);
+                    fprintf(debug, "ANISOPOL: fshift[%d][%d] = %f\n", ki, m, fshift[ki][m]);
+                    fprintf(debug, "ANISOPOL: fshift[CENTRAL][%d] = %f\n", m, fshift[CENTRAL][m]);
+                }
             }
-#ifdef DEBUG
+
             if (debug)
             {
                 fprintf(debug, "ANISOPOL: vpol=%g\n", 0.5*iprod(dx, kdx));
                 fprintf(debug, "ANISOPOL: df = (%10g, %10g, %10g)\n", df[XX], df[YY], df[ZZ]);
             }
-#endif
         }
     }
     return 0.5*vtot;
@@ -886,10 +1091,10 @@ real aniso_pol(int nbonds,
 
 real water_pol(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f[], rvec gmx_unused fshift[],
-               const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
+               const rvec x[], rvec f[], rvec fshift[],
+               const t_pbc *pbc, const t_graph *g,
                real gmx_unused lambda, real gmx_unused *dvdlambda,
-               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+               const t_mdatoms *md, t_fcdata gmx_unused *fcd,
                int gmx_unused *global_atom_index)
 {
     /* This routine implements anisotropic polarizibility for water, through
@@ -944,7 +1149,6 @@ real water_pol(int nbonds,
             pbc_rvec_sub(pbc, x[aH2], x[aO], dOH2);
             pbc_rvec_sub(pbc, x[aH2], x[aH1], dHH);
             pbc_rvec_sub(pbc, x[aD], x[aO], dOD);
-            pbc_rvec_sub(pbc, x[aS], x[aD], dDS);
             ki = pbc_rvec_sub(pbc, x[aS], x[aD], dDS);
             cprod(dOH1, dOH2, nW);
 
