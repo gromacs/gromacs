@@ -1110,7 +1110,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
             PS("adress-do-hybridpairs", EBOOL(ir->adress->do_hybridpairs));
         }
 
-<<<<<<< HEAD
         /* Drude stuff */
         PS("drude", EBOOL(ir->bDrude));
         if (ir->bDrude)
@@ -1125,9 +1124,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
             PI("drude-tsteps", ir->drude->tsteps);
         }
 
-=======
         /* USER-DEFINED THINGIES */
->>>>>>> master
         PI("userint1", ir->userint1);
         PI("userint2", ir->userint2);
         PI("userint3", ir->userint3);

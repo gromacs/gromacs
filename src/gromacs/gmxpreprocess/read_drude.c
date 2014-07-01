@@ -34,8 +34,8 @@
 
 #include "readir.h"
 #include "names.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 
 void read_drude_opts(int *ninp_p, t_inpfile **inp_p, t_drude *drude, warninp_t wi)
 {

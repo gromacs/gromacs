@@ -1661,14 +1661,15 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     else if (inputrec->drude->drudemode==edrudeLagrangian) 
     {
         /* Step 1. Apply forces to Drudes and update their velocities */
+        /* TODO: check usage of fr->vir_twin_constr */
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
-                      f, FALSE, fr->f_twin, fcd,
+                      f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
                       ekind, NULL, upd, bInitStep, etrtVELOCITY1,
                       cr, nrnb, constr, idef, TRUE);
 
         /* Step 2. Update Drude positions */
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
-                      f, FALSE, fr->f_twin, fcd,
+                      f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
                       ekind, NULL, upd, bInitStep, etrtPOSITION,
                       cr, nrnb, constr, idef, TRUE);
 

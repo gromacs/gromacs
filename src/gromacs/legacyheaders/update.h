@@ -41,6 +41,7 @@
 #include "typedefs.h"
 #include "tgroup.h"
 #include "network.h"
+#include "vcm.h"
 
 #include "../timing/wallcycle.h"
 
