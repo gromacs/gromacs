@@ -268,6 +268,10 @@ class TestReferenceChecker::Impl
         static const xmlChar * const cStringNodeName;
         //! String constant for naming XML elements for integer values.
         static const xmlChar * const cIntegerNodeName;
+        //! String constant for naming XML elements for int64 values.
+        static const xmlChar * const cInt64NodeName;
+        //! String constant for naming XML elements for unsigned int64 values.
+        static const xmlChar * const cUInt64NodeName;
         //! String constant for naming XML elements for floating-point values.
         static const xmlChar * const cRealNodeName;
         //! String constant for naming XML attribute for value identifiers.
@@ -416,6 +420,10 @@ const xmlChar * const TestReferenceChecker::Impl::cStringNodeName =
     (const xmlChar *)"String";
 const xmlChar * const TestReferenceChecker::Impl::cIntegerNodeName  =
     (const xmlChar *)"Int";
+const xmlChar * const TestReferenceChecker::Impl::cInt64NodeName  =
+    (const xmlChar *)"Int64";
+const xmlChar * const TestReferenceChecker::Impl::cUInt64NodeName  =
+    (const xmlChar *)"UInt64";
 const xmlChar * const TestReferenceChecker::Impl::cRealNodeName =
     (const xmlChar *)"Real";
 const xmlChar * const TestReferenceChecker::Impl::cIdAttrName =
@@ -861,6 +869,39 @@ void TestReferenceChecker::checkInteger(int value, const char *id)
     }
 }
 
+void TestReferenceChecker::checkInt64(gmx_int64_t value, const char *id)
+{
+    if (impl_->shouldIgnore())
+    {
+        return;
+    }
+    SCOPED_TRACE(impl_->traceString(id));
+    bool        bFound      = false;
+    std::string strValue    = formatString("%" GMX_PRId64, value);
+    std::string refStrValue =
+        impl_->processItem(Impl::cInt64NodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        EXPECT_EQ(refStrValue, strValue);
+    }
+}
+
+void TestReferenceChecker::checkUInt64(gmx_uint64_t value, const char *id)
+{
+    if (impl_->shouldIgnore())
+    {
+        return;
+    }
+    SCOPED_TRACE(impl_->traceString(id));
+    bool        bFound      = false;
+    std::string strValue    = formatString("%" GMX_PRIu64, value);
+    std::string refStrValue =
+        impl_->processItem(Impl::cUInt64NodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        EXPECT_EQ(refStrValue, strValue);
+    }
+}
 
 void TestReferenceChecker::checkDouble(double value, const char *id)
 {

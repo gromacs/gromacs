@@ -59,6 +59,8 @@ TEST(ReferenceDataTest, HandlesSimpleData)
         TestReferenceChecker checker(data.rootChecker());
         checker.checkBoolean(true, "int");
         checker.checkInteger(1, "int");
+        checker.checkInt64(1ULL<<42, "int64");
+        checker.checkUInt64(1ULL<<42, "uint64");
         checker.checkDouble(0.5, "real");
         checker.checkString("Test", "string");
     }
@@ -67,6 +69,8 @@ TEST(ReferenceDataTest, HandlesSimpleData)
         TestReferenceChecker checker(data.rootChecker());
         checker.checkBoolean(true, "int");
         checker.checkInteger(1, "int");
+        checker.checkInt64(1ULL<<42, "int64");
+        checker.checkUInt64(1ULL<<42, "uint64");
         checker.checkDouble(0.5, "real");
         checker.checkString("Test", "string");
     }
