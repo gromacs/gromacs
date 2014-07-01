@@ -32,8 +32,5 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB RANDOM_SOURCES *.c)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${RANDOM_SOURCES} PARENT_SCOPE)
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+gmx_add_unit_test(RadnomUnitTests random-test
+                  random.cpp)
