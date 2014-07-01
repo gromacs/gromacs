@@ -17379,6 +17379,10 @@ tng_function_status DECLSPECDLLEXPORT tng_util_particle_data_next_frame_read
                 {
                     return(stat);
                 }
+                if(frame_set->first_frame + frame_set->n_frames - 1 < i)
+                {
+                    return(TNG_FAILURE);
+                }
                 i = frame_set->first_frame;
             }
         }
@@ -17538,6 +17542,10 @@ tng_function_status DECLSPECDLLEXPORT tng_util_non_particle_data_next_frame_read
                 if(stat == TNG_CRITICAL)
                 {
                     return(stat);
+                }
+                if(frame_set->first_frame + frame_set->n_frames - 1 < i)
+                {
+                    return(TNG_FAILURE);
                 }
                 i = frame_set->first_frame;
             }
