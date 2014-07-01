@@ -103,7 +103,9 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
     set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
-set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
+# CPack does not appear to provide control for creating archives that would
+# have a sensible root folder without this.
+set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix that gets prepended to relative install paths. Intended for internal use for creating binary packages with CPack")
 mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
@@ -792,21 +794,26 @@ set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 ########################################################################
 # Specify install locations
 ########################################################################
-# Use GNUInstallDirst to set paths on multiarch systems
+# Use GNUInstallDirs to set paths on multiarch systems.
 include(GNUInstallDirs)
 
+# Customization for the installation tree paths.
 set(GMX_LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING
     "Library installation directory (default: ${CMAKE_INSTALL_LIBDIR})")
 set(GMX_DATA_INSTALL_DIR gromacs CACHE STRING
     "Data installation directory under share/ (default: gromacs)")
 mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
 
+# These variables are used internally to provide a central location for
+# customizing the install locations.
 set(LIB_INSTALL_DIR  ${GMX_INSTALL_PREFIX}${GMX_LIB_INSTALL_DIR})
 set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
 set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/${GMX_DATA_INSTALL_DIR})
 set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
 set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 
+# These variables get written into config.h for use in finding the data
+# directories.
 set(GMXLIB_SEARCH_DIR share/${GMX_DATA_INSTALL_DIR}/top)
 set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 
@@ -814,12 +821,22 @@ set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 include(gmxManageSuffixes)
 
 ################################################################
-# Shared library settings
+# Shared library load path settings
 ################################################################
-if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
+# CMake supports RPATH on OS X only from 2.8.12 upwards.
+# CMAKE_SYSTEM_VERSION > 8.0 matches OS X 10.5 and above, where RPATH support
+# was added.
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
+   ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
+    # The build folder always has bin/ and lib/; if we are also going to
+    # install to lib/, then the installation RPATH works also in the build
+    # tree.  This makes installation slightly faster (no need to rewrite the
+    # RPATHs), and makes the binaries in the build tree relocatable.
     if(GMX_LIB_INSTALL_DIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     endif()
+    # Set the RPATH as relative to the executable location to make the
+    # binaries relocatable.
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     else()
@@ -828,11 +845,13 @@ if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_G
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
 else()
-    # We are on Darwin/OSX, and cmake cannot handle proper RPATHs
-    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) #rpath supported for >10.4
+    # We are on Darwin/OSX, and CMake cannot handle RPATHs automatically.
+    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0)
+        # Set the RPATH options manually.
         set(CMAKE_INSTALL_NAME_DIR "@rpath")
         set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} "-Wl,-rpath,@executable_path/../${GMX_LIB_INSTALL_DIR}")
     else()
+        # Use the old INSTALL_NAME_DIR mechanism if RPATH is not supported.
         set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
     endif()
 endif()
