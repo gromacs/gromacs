@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Threefry2x64">
+    <Int Name="Length">2</Int>
+    <UInt64>16153488019559360378</UInt64>
+    <UInt64>15016746978262092648</UInt64>
+  </Sequence>
+</ReferenceData>
