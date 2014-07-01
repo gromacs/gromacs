@@ -39,12 +39,12 @@
 #endif
 
 #include "cmat.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
-#include "xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/matio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 
 t_mat *init_mat(int n1, gmx_bool b1D)
 {

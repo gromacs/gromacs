@@ -38,9 +38,9 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
@@ -48,16 +48,16 @@
 #include <unistd.h>
 #endif
 
-#include "gmx_fatal.h"
+#include "thread_mpi/threads.h"
+
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/futil.h"
 #include "filenm.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gmxfio.h"
 #include "md5.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include "gmxfio_int.h"
 
@@ -751,9 +751,9 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
 
     if (!ret)
     {
-        md5_init(&state);
-        md5_append(&state, buf, read_len);
-        md5_finish(&state, digest);
+        gmx_md5_init(&state);
+        gmx_md5_append(&state, buf, read_len);
+        gmx_md5_finish(&state, digest);
         ret = read_len;
     }
     sfree(buf);

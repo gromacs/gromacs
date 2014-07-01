@@ -39,19 +39,22 @@
 #endif
 
 #include <math.h>
-#include "sysstuff.h"
+#include <stdlib.h>
 #include <string.h>
-#include "smalloc.h"
+
 #include "macros.h"
-#include "xutil.h"
-#include "gromacs/math/3dview.h"
-#include "gmx_fatal.h"
+#include "txtdump.h"
+#include "gromacs/pbcutil/pbc.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "3dview.h"
 #include "buttons.h"
 #include "manager.h"
 #include "nmol.h"
-#include "vec.h"
-#include "txtdump.h"
-#include "pbc.h"
+#include "xutil.h"
 
 #define MSIZE 4
 
@@ -306,29 +309,6 @@ int compare_obj(const void *a, const void *b)
     }
 }
 
-void create_visibility(t_manager *man)
-{
-    t_object *obj;
-    int       i;
-
-    for (i = 0, obj = man->obj; (i < man->nobj); i++, obj++)
-    {
-        if (obj->eV != eVHidden)
-        {
-            man->bVis[obj->ai] = true;
-            switch (obj->eO)
-            {
-                case eOBond:
-                case eOHBond:
-                    man->bVis[obj->aj] = true;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-}
-
 void z_fill(t_manager *man, real *zz)
 {
     t_object *obj;
@@ -482,7 +462,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
 
         for (i = 0; (i < NCUCEDGE); i++)
         {
-            m4_op(view->proj, corner[i], x4);
+            gmx_mat4_transform_point(view->proj, corner[i], x4);
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
         XSetForeground(x11->disp, x11->gc, YELLOW);
@@ -531,7 +511,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
                 }
             }
             rvec_inc(corner[i], box_center);
-            m4_op(view->proj, corner[i], x4);
+            gmx_mat4_transform_point(view->proj, corner[i], x4);
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
         if (debug)
@@ -591,13 +571,11 @@ void draw_mol(t_x11 *x11, t_manager *man)
 
     my_init_pbc(man->box);
 
-    /* create_visibility(man); */
-
     for (i = 0; (i < man->natom); i++)
     {
         if (man->bVis[i])
         {
-            m4_op(view->proj, man->x[i], x4);
+            gmx_mat4_transform_point(view->proj, man->x[i], x4);
             man->zz[i] = x4[ZZ];
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }

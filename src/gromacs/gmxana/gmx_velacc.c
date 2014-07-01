@@ -37,25 +37,26 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <stdio.h>
+
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
+#include "gromacs/math/units.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
-#include <string.h>
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
-#include "vec.h"
-#include "xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gmx_ana.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/trxio.h"

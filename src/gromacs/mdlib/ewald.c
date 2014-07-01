@@ -38,17 +38,20 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "typedefs.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "physics.h"
+#include "types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/units.h"
 #include "coulomb.h"
 #include "macros.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/math/gmxcomplex.h"
 
 #define TOL 2e-5

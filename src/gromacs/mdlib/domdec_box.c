@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,15 @@
 #endif
 
 #include "typedefs.h"
-#include "vec.h"
-#include "pbc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
 #include "nsgrid.h"
 #include "network.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stddev,
                                 t_commrec *cr_sum)

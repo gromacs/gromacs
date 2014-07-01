@@ -37,10 +37,11 @@
 #ifndef _inputrec_h_
 #define _inputrec_h_
 
+#include <stdio.h>
 
 #include "simple.h"
 #include "enums.h"
-#include "../sysstuff.h"
+#include "../../swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -150,7 +151,7 @@ typedef struct {
                                        valid value if positive)   */
     int      init_fep_state;        /* the initial number of the state                   */
     double   delta_lambda;          /* change of lambda per time step (fraction of (0.1) */
-    gmx_bool bPrintEnergy;          /* Whether to print the energy in the dhdl           */
+    int      edHdLPrintEnergy;      /* print no, total or potential energies in dhdl    */
     int      n_lambda;              /* The number of foreign lambda points               */
     double **all_lambda;            /* The array of all lambda values                    */
     int      lambda_neighbors;      /* The number of neighboring lambda states to
@@ -270,6 +271,14 @@ typedef struct {
     gmx_enfrot_t enfrot;     /* Stores non-inputrec enforced rotation data    */
 } t_rot;
 
+/* Abstract type for IMD only defined in IMD.c */
+typedef struct gmx_IMD *t_gmx_IMD;
+
+typedef struct {
+    int         nat;         /* Number of interactive atoms                   */
+    atom_id    *ind;         /* The global indices of the interactive atoms   */
+    t_gmx_IMD   setup;       /* Stores non-inputrec IMD data                  */
+} t_IMD;
 
 /* Abstract types for position swapping only defined in swapcoords.c */
 typedef struct swap *gmx_swapcoords_t;
@@ -343,9 +352,8 @@ typedef struct {
     int             nstlist;                 /* number of steps before pairlist is generated	*/
     int             ndelta;                  /* number of cells per rlong			*/
     int             nstcomm;                 /* number of steps after which center of mass	*/
-    /* motion is removed				*/
+                                             /* motion is removed				*/
     int             comm_mode;               /* Center of mass motion removal algorithm      */
-    int             nstcheckpoint;           /* checkpointing frequency                      */
     int             nstlog;                  /* number of steps after which print to logfile	*/
     int             nstxout;                 /* number of steps after which X is output	*/
     int             nstvout;                 /* id. for V					*/
@@ -364,7 +372,6 @@ typedef struct {
     real            ewald_rtol_lj;           /* Real space tolerance for LJ-Ewald            */
     int             ewald_geometry;          /* normal/3d ewald, or pseudo-2d LR corrections */
     real            epsilon_surface;         /* Epsilon for PME dipole correction            */
-    gmx_bool        bOptFFT;                 /* optimize the fft plan at start               */
     int             ljpme_combination_rule;  /* Type of combination rule in LJ-PME          */
     int             ePBC;                    /* Type of periodic boundary conditions		*/
     int             bPeriodicMols;           /* Periodic molecules                           */
@@ -428,7 +435,6 @@ typedef struct {
     real            orires_fc;               /* force constant for orientational restraints  */
     real            orires_tau;              /* time constant for memory function in orires    */
     int             nstorireout;             /* frequency of writing tr(SD) to enx           */
-    real            dihre_fc;                /* force constant for dihedral restraints (obsolete)	*/
     real            em_stepsize;             /* The stepsize for updating			*/
     real            em_tol;                  /* The tolerance				*/
     int             niter;                   /* Number of iterations for convergence of      */
@@ -444,7 +450,7 @@ typedef struct {
     int             nLincsIter;              /* Number of iterations in the final Lincs step */
     gmx_bool        bShakeSOR;               /* Use successive overrelaxation for shake      */
     real            bd_fric;                 /* Friction coefficient for BD (amu/ps)         */
-    int             ld_seed;                 /* Random seed for SD and BD                    */
+    gmx_int64_t     ld_seed;                 /* Random seed for SD and BD                    */
     int             nwall;                   /* The number of walls                          */
     int             wall_type;               /* The type of walls                            */
     real            wall_r_linpot;           /* The potentail is linear for r<=wall_r_linpot */
@@ -457,6 +463,8 @@ typedef struct {
     t_rot          *rot;                     /* The data for enforced rotation potentials    */
     int             eSwapCoords;             /* Do ion/water position exchanges (CompEL)?    */
     t_swapcoords   *swap;
+    gmx_bool        bIMD;                    /* Allow interactive MD sessions for this .tpr? */
+    t_IMD          *imd;                     /* Interactive molecular dynamics               */
     real            cos_accel;               /* Acceleration for viscosity calculation       */
     tensor          deform;                  /* Triclinic deformation velocities (nm/ps)     */
     int             userint1;                /* User determined parameters                   */

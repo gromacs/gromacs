@@ -42,7 +42,7 @@
 #include "../solvate.h"
 #include "testutils/integrationtests.h"
 #include "testutils/cmdlinetest.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 
 namespace
 {

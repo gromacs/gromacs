@@ -39,18 +39,21 @@
 #endif
 
 #include "macros.h"
-#include "gromacs/commandline/pargs.h"
-#include "smalloc.h"
 #include "gstat.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "pbc.h"
-#include "index.h"
+#include "viewit.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gmx_ana.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
                          atom_id index[], rvec xref, int ePBC)

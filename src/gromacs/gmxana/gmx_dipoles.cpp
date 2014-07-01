@@ -43,31 +43,33 @@
 #include <algorithm>
 
 #include "macros.h"
-#include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "bondf.h"
-#include "gromacs/fileio/futil.h"
-#include "xvgr.h"
+#include "gromacs/utility/futil.h"
+#include "viewit.h"
 #include "txtdump.h"
 #include "gromacs/statistics/statistics.h"
 #include "gstat.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/random/random.h"
 #include "names.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "calcmu.h"
 #include "gromacs/fileio/enxio.h"
-#include "nrjac.h"
-#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "copyrite.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
@@ -91,7 +93,7 @@ static t_gkrbin *mk_gkrbin(real radius, real rcmax, gmx_bool bPhi, int ndegrees)
 
     snew(gb, 1);
 
-    if ((ptr = getenv("GKRWIDTH")) != NULL)
+    if ((ptr = getenv("GMX_DIPOLE_SPACING")) != NULL)
     {
         double bw = strtod(ptr, NULL);
         gb->spacing = bw;

@@ -36,6 +36,7 @@
 # reference values in the Gromacs regression tests.
 set( CMAKE_CXX_FLAGS_REFERENCE "-O0 -g" CACHE STRING "C++ flags for regressiontests reference runs." FORCE)
 set( CMAKE_C_FLAGS_REFERENCE "-O0 -g" CACHE STRING "C flags for regressiontests reference runs." FORCE)
+set( CMAKE_EXE_LINKER_FLAGS_REFERENCE "" CACHE STRING "Linker flags for regressiontests reference runs.")
 mark_as_advanced( CMAKE_CXX_FLAGS_REFERENCE CMAKE_C_FLAGS_REFERENCE)
 
 # turn off all fancy options for the regressiontests reference build

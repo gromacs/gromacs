@@ -37,26 +37,25 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "physics.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "vec.h"
-#include "index.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
-#include "rmpbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "nrjac.h"
 #include "gmx_ana.h"
 
+#include "gromacs/linearalgebra/nrjac.h"
 
 static void gyro_eigen(double **gyr, double *eig, double **eigv, int *ord)
 {
@@ -494,7 +493,10 @@ int gmx_polystat(int argc, char *argv[])
     /* Handle printing of internal distances. */
     if (outi)
     {
-        fprintf(outi, "@    xaxes scale Logarithmic\n");
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(outi, "@    xaxes scale Logarithmic\n");
+        }
         ymax = -1;
         ymin = 1e300;
         j    = index[molind[1]-1] - index[molind[0]]; /* Polymer length -1. */

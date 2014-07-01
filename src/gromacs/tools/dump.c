@@ -38,28 +38,23 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-#include <assert.h>
-#include "main.h"
+
 #include "macros.h"
-#include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "txtdump.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
 #include "names.h"
 #include "txtdump.h"
-#include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "checkpoint.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
 
@@ -67,9 +62,12 @@
 #include <unistd.h>
 #endif
 
-#include "gromacs/linearalgebra/mtxio.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/mtxio.h"
+#include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
-
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                      gmx_bool bSysTop)
@@ -384,6 +382,9 @@ static void list_tng(const char gmx_unused *fn)
                 /* Can't write any output because we don't know what
                    arrays are valid. */
                 fprintf(stderr, "\nWARNING: Incomplete frame at time %g, will not write output\n", frame_time);
+            }
+            else
+            {
                 list_tng_inner(fn, (0 == i), values, step, frame_time,
                                n_values_per_frame, n_atoms, prec, nframe, block_name);
             }

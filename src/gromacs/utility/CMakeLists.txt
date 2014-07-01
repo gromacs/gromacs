@@ -41,16 +41,21 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gmx_header_config_gen.h.cmakein
 
 set(UTILITY_PUBLIC_HEADERS
     arrayref.h
+    basedefinitions.h
+    cstringutil.h
     common.h
     errorcodes.h
     exceptions.h
+    fatalerror.h
     file.h
     flags.h
+    futil.h
     gmx_header_config.h
     gmxassert.h
-    gmxmpi.h
     init.h
     programcontext.h
+    real.h
+    smalloc.h
     stringutil.h
     uniqueptr.h)
 gmx_install_headers(utility ${UTILITY_PUBLIC_HEADERS})
@@ -58,4 +63,4 @@ gmx_install_headers(utility ${GENERATED_HEADER_CONFIG})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
-endif (BUILD_TESTING)
+endif()

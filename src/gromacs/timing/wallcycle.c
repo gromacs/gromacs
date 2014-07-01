@@ -40,15 +40,17 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "md_logging.h"
-#include "string2.h"
-
-#include "gromacs/timing/cyclecounter.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "cyclecounter.h"
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last
@@ -100,7 +102,7 @@ static const char *wcn[ewcNR] =
     "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
     "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
     "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies",
-    "Enforced rotation", "Add rot. forces", "Coordinate swapping", "Test"
+    "Enforced rotation", "Add rot. forces", "Coordinate swapping", "IMD", "Test"
 };
 
 static const char *wcsn[ewcsNR] =
@@ -612,7 +614,7 @@ static void print_header(FILE *fplog, int nrank_pp, int nth_pp, int nrank_pme, i
 
     fprintf(fplog, "\n\n");
     fprintf(fplog, " Computing:          Num   Num      Call    Wall time         Giga-Cycles\n");
-    fprintf(fplog, "                     Nodes Threads  Count      (s)         total sum    %%\n");
+    fprintf(fplog, "                     Ranks Threads  Count      (s)         total sum    %%\n");
 }
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
@@ -719,7 +721,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     if (npme > 0)
     {
         fprintf(fplog,
-                "(*) Note that with separate PME nodes, the walltime column actually sums to\n"
+                "(*) Note that with separate PME ranks, the walltime column actually sums to\n"
                 "    twice the total reported, but the cycle count total and %% are correct.\n"
                 "%s\n", hline);
     }

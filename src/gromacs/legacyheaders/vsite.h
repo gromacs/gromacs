@@ -39,8 +39,9 @@
 #define _vsite_h
 
 #include <stdio.h>
+
 #include "typedefs.h"
-#include "types/commrec.h"
+#include "../pbcutil/ishift.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,6 +65,8 @@ typedef struct {
     int                *th_ind;               /* Work array                              */
     int                 th_ind_nalloc;        /* Size of th_ind                          */
 } gmx_vsite_t;
+
+struct t_graph;
 
 void construct_vsites(gmx_vsite_t *vsite,
                       rvec x[],
@@ -92,7 +95,7 @@ void spread_vsite_f(gmx_vsite_t *vsite,
                     rvec x[], rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, t_idef *idef,
-                    int ePBC, gmx_bool bMolPBC, t_graph *g, matrix box,
+                    int ePBC, gmx_bool bMolPBC, struct t_graph *g, matrix box,
                     t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.

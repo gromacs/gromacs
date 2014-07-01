@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,23 +38,25 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <ctype.h>
 #include <math.h>
+#include <stdlib.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
 #include "macros.h"
-#include "string2.h"
 #include "names.h"
 #include "toputil.h"
 #include "toppush.h"
 #include "topdirs.h"
 #include "readir.h"
-#include "symtab.h"
-#include "gmx_fatal.h"
 #include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atype,
                        warninp_t wi)
@@ -94,7 +96,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                     break;
 
                 case eCOMB_ARITHMETIC:
-                    /* c0 and c1 are epsilon and sigma */
+                    /* c0 and c1 are sigma and epsilon */
                     for (i = k = 0; (i < nr); i++)
                     {
                         for (j = 0; (j < nr); j++, k++)
@@ -103,14 +105,21 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             cj0                  = get_atomtype_nbparam(j, 0, atype);
                             ci1                  = get_atomtype_nbparam(i, 1, atype);
                             cj1                  = get_atomtype_nbparam(j, 1, atype);
-                            plist->param[k].c[0] = (ci0+cj0)*0.5;
+                            plist->param[k].c[0] = (fabs(ci0) + fabs(cj0))*0.5;
+                            /* Negative sigma signals that c6 should be set to zero later,
+                             * so we need to propagate that through the combination rules.
+                             */
+                            if (ci0 < 0 || cj0 < 0)
+                            {
+                                plist->param[k].c[0] *= -1;
+                            }
                             plist->param[k].c[1] = sqrt(ci1*cj1);
                         }
                     }
 
                     break;
                 case eCOMB_GEOM_SIG_EPS:
-                    /* c0 and c1 are epsilon and sigma */
+                    /* c0 and c1 are sigma and epsilon */
                     for (i = k = 0; (i < nr); i++)
                     {
                         for (j = 0; (j < nr); j++, k++)
@@ -119,7 +128,14 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             cj0                  = get_atomtype_nbparam(j, 0, atype);
                             ci1                  = get_atomtype_nbparam(i, 1, atype);
                             cj1                  = get_atomtype_nbparam(j, 1, atype);
-                            plist->param[k].c[0] = sqrt(ci0*cj0);
+                            plist->param[k].c[0] = sqrt(fabs(ci0*cj0));
+                            /* Negative sigma signals that c6 should be set to zero later,
+                             * so we need to propagate that through the combination rules.
+                             */
+                            if (ci0 < 0 || cj0 < 0)
+                            {
+                                plist->param[k].c[0] *= -1;
+                            }
                             plist->param[k].c[1] = sqrt(ci1*cj1);
                         }
                     }
@@ -960,6 +976,7 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
         /* When the B topology parameters are not set,
          * copy them from topology A
          */
+        assert(nrfp <= 4);
         for (i = n; i < nrfp; i++)
         {
             c[i] = c[i-2];
@@ -1120,8 +1137,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     nrfp   = nrfpA+nrfpB;
 
     /* Allocate memory for the CMAP grid */
-    bt->ncmap += nrfp;
-    srenew(bt->cmap, bt->ncmap);
+    bt[F_CMAP].ncmap += nrfp;
+    srenew(bt[F_CMAP].cmap, bt[F_CMAP].ncmap);
 
     /* Read in CMAP parameters */
     sl = 0;
@@ -1133,7 +1150,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
         }
         nn  = sscanf(line+start+sl, " %s ", s);
         sl += strlen(s);
-        bt->cmap[i+(bt->ncmap)-nrfp] = strtod(s, NULL);
+        bt[F_CMAP].cmap[i+(bt[F_CMAP].ncmap)-nrfp] = strtod(s, NULL);
 
         if (nn == 1)
         {
@@ -1151,7 +1168,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     {
         for (i = 0; i < ncmap; i++)
         {
-            bt->cmap[i+ncmap] = bt->cmap[i];
+            bt[F_CMAP].cmap[i+ncmap] = bt[F_CMAP].cmap[i];
         }
     }
     else
@@ -1174,12 +1191,12 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     /* Set grid spacing and the number of grids (we assume these numbers to be the same for all grids
      * so we can safely assign them each time
      */
-    bt->grid_spacing = nxcmap;     /* Or nycmap, they need to be equal */
-    bt->nc           = bt->nc + 1; /* Since we are incrementing here, we need to subtract later, see (*****) */
-    nct              = (nral+1) * bt->nc;
+    bt[F_CMAP].grid_spacing = nxcmap;            /* Or nycmap, they need to be equal */
+    bt[F_CMAP].nc           = bt[F_CMAP].nc + 1; /* Since we are incrementing here, we need to subtract later, see (*****) */
+    nct                     = (nral+1) * bt[F_CMAP].nc;
 
     /* Allocate memory for the cmap_types information */
-    srenew(bt->cmap_types, nct);
+    srenew(bt[F_CMAP].cmap_types, nct);
 
     for (i = 0; (i < nral); i++)
     {
@@ -1193,16 +1210,16 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
         }
 
         /* Assign a grid number to each cmap_type */
-        bt->cmap_types[bt->nct++] = get_bond_atomtype_type(alc[i], bat);
+        bt[F_CMAP].cmap_types[bt[F_CMAP].nct++] = get_bond_atomtype_type(alc[i], bat);
     }
 
     /* Assign a type number to this cmap */
-    bt->cmap_types[bt->nct++] = bt->nc-1; /* Since we inremented earlier, we need to subtrac here, to get the types right (****) */
+    bt[F_CMAP].cmap_types[bt[F_CMAP].nct++] = bt[F_CMAP].nc-1; /* Since we inremented earlier, we need to subtrac here, to get the types right (****) */
 
     /* Check for the correct number of atoms (again) */
-    if (bt->nct != nct)
+    if (bt[F_CMAP].nct != nct)
     {
-        gmx_fatal(FARGS, "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt->nc);
+        gmx_fatal(FARGS, "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].nc);
     }
 
     /* Is this correct?? */
@@ -1540,7 +1557,7 @@ static gmx_bool default_cmap_params(t_params bondtype[],
     ct           = 0;
 
     /* Match the current cmap angle against the list of cmap_types */
-    for (i = 0; i < bondtype->nct && !bFound; i += 6)
+    for (i = 0; i < bondtype[F_CMAP].nct && !bFound; i += 6)
     {
         if (bB)
         {
@@ -1549,15 +1566,15 @@ static gmx_bool default_cmap_params(t_params bondtype[],
         else
         {
             if (
-                (get_atomtype_batype(at->atom[p->a[0]].type, atype) == bondtype->cmap_types[i])   &&
-                (get_atomtype_batype(at->atom[p->a[1]].type, atype) == bondtype->cmap_types[i+1]) &&
-                (get_atomtype_batype(at->atom[p->a[2]].type, atype) == bondtype->cmap_types[i+2]) &&
-                (get_atomtype_batype(at->atom[p->a[3]].type, atype) == bondtype->cmap_types[i+3]) &&
-                (get_atomtype_batype(at->atom[p->a[4]].type, atype) == bondtype->cmap_types[i+4]))
+                (get_atomtype_batype(at->atom[p->a[0]].type, atype) == bondtype[F_CMAP].cmap_types[i])   &&
+                (get_atomtype_batype(at->atom[p->a[1]].type, atype) == bondtype[F_CMAP].cmap_types[i+1]) &&
+                (get_atomtype_batype(at->atom[p->a[2]].type, atype) == bondtype[F_CMAP].cmap_types[i+2]) &&
+                (get_atomtype_batype(at->atom[p->a[3]].type, atype) == bondtype[F_CMAP].cmap_types[i+3]) &&
+                (get_atomtype_batype(at->atom[p->a[4]].type, atype) == bondtype[F_CMAP].cmap_types[i+4]))
             {
                 /* Found cmap torsion */
                 bFound       = TRUE;
-                ct           = bondtype->cmap_types[i+5];
+                ct           = bondtype[F_CMAP].cmap_types[i+5];
                 nparam_found = 1;
             }
         }
@@ -1849,7 +1866,8 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         bFoundA = default_params(ftype, bondtype, at, atype, &param, FALSE, &param_defA, &nparam_defA);
         if (bFoundA)
         {
-            /* Copy the A-state and B-state default parameters */
+            /* Copy the A-state and B-state default parameters. */
+            assert(NRFPA(ftype)+NRFPB(ftype) <= MAXFORCEPARAM);
             for (j = 0; (j < NRFPA(ftype)+NRFPB(ftype)); j++)
             {
                 param.c[j] = param_defA->c[j];

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,7 @@ function(GMX_OPTION_MULTICHOICE NAME DESCRIPTION DEFAULT)
     if (_found_index EQUAL -1)
         message(FATAL_ERROR "Invalid value for ${NAME}: ${_org_value}.  "
                             "Pick one of: ${_allowed_comma_separated}")
-    endif ()
+    endif()
     # Always provide the upper-case value to the caller
     set(${NAME} "${${NAME}}" PARENT_SCOPE)
 endfunction()

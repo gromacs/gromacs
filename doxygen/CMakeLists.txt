@@ -34,7 +34,7 @@
 
 include(gmxOptionUtilities)
 
-find_package(Doxygen)
+find_package(Doxygen QUIET)
 if (DOXYGEN_FOUND)
     # This logic closely follows that found in FindDoxygen.cmake for dot,
     # except that the PATH variable is not cached.
@@ -44,9 +44,9 @@ if (DOXYGEN_FOUND)
     if (DOXYGEN_MSCGEN_EXECUTABLE)
         set(DOXYGEN_MSCGEN_FOUND TRUE)
         get_filename_component(DOXYGEN_MSCGEN_PATH "${DOXYGEN_MSCGEN_EXECUTABLE}" PATH)
-    endif (DOXYGEN_MSCGEN_EXECUTABLE)
+    endif()
     mark_as_advanced(DOXYGEN_MSCGEN_EXECUTABLE)
-endif (DOXYGEN_FOUND)
+endif()
 
 gmx_dependent_option(
     GMX_COMPACT_DOXYGEN
@@ -54,6 +54,20 @@ gmx_dependent_option(
     OFF
     DOXYGEN_FOUND)
 mark_as_advanced(GMX_COMPACT_DOXYGEN)
+
+find_package(PythonInterp)
+set(USE_PYTHON_SCRIPTS OFF)
+if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
+    set(USE_PYTHON_SCRIPTS ON)
+endif()
+
+add_custom_target(find-installed-headers
+    COMMAND ${CMAKE_COMMAND}
+        -D SRCDIR=${CMAKE_SOURCE_DIR}
+        -D BUILDDIR=${CMAKE_BINARY_DIR}
+        -D OUTFILE=${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/getInstalledHeaders.cmake
+    COMMENT "Generating installed headers list" VERBATIM)
 
 ########################################################################
 # Doxygen configuration
@@ -72,6 +86,7 @@ if (DOXYGEN_FOUND)
     CONFIGURE_FILE(Doxyfile-full.cmakein Doxyfile-full)
     CONFIGURE_FILE(Doxyfile-lib.cmakein Doxyfile-lib)
     CONFIGURE_FILE(Doxyfile-user.cmakein Doxyfile-user)
+    CONFIGURE_FILE(Doxyfile-xml.cmakein Doxyfile-xml)
 
     if (GMX_COMPACT_DOXYGEN)
         FILE(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
@@ -92,6 +107,10 @@ if (DOXYGEN_FOUND)
         ${CMAKE_COMMAND} -DDOCTYPE=user -P RunDoxygen.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating public API documentation with Doxygen" VERBATIM)
+    add_custom_target(doc-xml
+        ${CMAKE_COMMAND} -DDOCTYPE=xml -P RunDoxygen.cmake
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Extracting Doxygen documentation to XML" VERBATIM)
     add_custom_target(doc-all)
     add_dependencies(doc-all doc-full doc-lib doc-user)
 
@@ -111,51 +130,50 @@ if (DOXYGEN_FOUND)
         add_dependencies(doc-full doxygen-version)
         add_dependencies(doc-lib doxygen-version)
         add_dependencies(doc-user doxygen-version)
+        add_dependencies(doc-xml doxygen-version)
     else()
         set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
         configure_file(Doxyfile-version.cmakein Doxyfile-version)
     endif()
-endif (DOXYGEN_FOUND)
 
-find_package(PythonInterp)
+    if (USE_PYTHON_SCRIPTS)
+        # TODO: Consider whether this is the best name and location for this
+        # code, since not all of it is Doxygen-specific (but nearly all of it
+        # relies on the Doxygen XML documentation).
+        set(doc_check_command
+            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-check.py
+            -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
+            --installed ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
+            -l ${CMAKE_CURRENT_BINARY_DIR}/doxygen-check.log
+            --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt)
+        add_custom_target(doc-check COMMAND ${doc_check_command}
+            COMMENT "Checking Doxygen documentation" VERBATIM)
+        add_dependencies(doc-check doc-xml find-installed-headers)
 
-if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
-    add_custom_target(depgraphs
-        ${CMAKE_COMMAND}
-        -DSRCDIR=${CMAKE_SOURCE_DIR}
-        -DBUILDDIR=${CMAKE_BINARY_DIR}
-        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
-        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-        -DDOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
-        -DMODE=GRAPHS
-        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
-        COMMENT "Generating include dependency graphs" VERBATIM)
-    # TODO: This should be moved away from here and preferably made into
-    # a CTest test.
-    # TODO: To do the above, issues found by the script should be fixed.
-    # A suppression system would also be good to have, since it would be
-    # nice to include also legacyheaders in the checks, but those generate
-    # a lot of errors about missing documentation.  The script is also
-    # currently quite strict, so I don't know whether we really want to
-    # enforce all the rules.
-    # TODO: Would be nice to not generate the file lists for each of these,
-    # but what would be a good shared location for the intermediate files?
-    add_custom_target(depcheck
-        ${CMAKE_COMMAND}
-        -DSRCDIR=${CMAKE_SOURCE_DIR}
-        -DBUILDDIR=${CMAKE_BINARY_DIR}
-        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
-        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-        -DMODE=CHECK
-        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
-        COMMENT "Checking include dependencies" VERBATIM)
-    add_custom_target(doccheck
-        ${CMAKE_COMMAND}
-        -DSRCDIR=${CMAKE_SOURCE_DIR}
-        -DBUILDDIR=${CMAKE_BINARY_DIR}
-        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
-        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-        -DMODE=CHECKDOC
-        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
-        COMMENT "Checking some aspects of Doxygen documentation" VERBATIM)
-endif ()
+        set(graphdir ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
+        set(dep_graphs_command_python
+            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
+            -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
+            --installed ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
+            -o ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
+        set(dep_graphs_command_dot
+            ${CMAKE_COMMAND} -DGRAPHDIR=${graphdir}
+            -DDOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/generateGraphs.cmake)
+        add_custom_target(dep-graphs
+            COMMAND ${dep_graphs_command_python}
+            COMMAND ${dep_graphs_command_dot}
+            COMMENT "Generating include dependency graphs" VERBATIM)
+        add_dependencies(dep-graphs doc-xml find-installed-headers)
+
+        # These targets are the same as above, but they don't rerun the
+        # dependencies each time, making it faster and more convenient for
+        # testing.
+        add_custom_target(doc-check-fast COMMAND ${doc_check_command}
+            COMMENT "Checking Doxygen documentation" VERBATIM)
+        add_custom_target(dep-graphs-fast
+            COMMAND ${dep_graphs_command_python}
+            COMMAND ${dep_graphs_command_dot}
+            COMMENT "Generating include dependency graphs" VERBATIM)
+    endif()
+endif()

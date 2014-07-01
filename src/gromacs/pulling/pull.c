@@ -38,29 +38,29 @@
 #include <config.h>
 #endif
 
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "gromacs/fileio/futil.h"
-#include "index.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "vec.h"
-#include "typedefs.h"
-#include "network.h"
-#include "gromacs/fileio/filenm.h"
 #include <string.h>
-#include "smalloc.h"
+
+#include "gromacs/utility/futil.h"
+#include "typedefs.h"
+#include "types/commrec.h"
+#include "network.h"
 #include "pull.h"
-#include "xvgr.h"
 #include "names.h"
-#include "pbc.h"
-#include "mtop_util.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "mdrun.h"
 #include "gmx_ga2la.h"
 #include "copyrite.h"
 #include "macros.h"
-#include "vec.h"
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 static void pull_print_group_x(FILE *out, ivec dim, const t_pull_group *pgrp)
 {
@@ -330,7 +330,7 @@ static void low_get_pull_coord_dr(const t_pull *pull,
     }
     if (max_dist2 >= 0 && dr2 > 0.98*0.98*max_dist2)
     {
-        gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f)",
+        gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f).\nYou might want to consider using \"pull-geometry = direction-periodic\" instead.\n",
                   pcrd->group[0], pcrd->group[1], sqrt(dr2), sqrt(max_dist2));
     }
 
@@ -628,6 +628,7 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
         for (c = 0; c < pull->ncoord; c++)
         {
             pcrd = &pull->coord[c];
+            ref  = pcrd->init + pcrd->rate*t;
 
             low_get_pull_coord_dr(pull, pcrd, pbc, t,
                                   rnew[pcrd->group[1]],

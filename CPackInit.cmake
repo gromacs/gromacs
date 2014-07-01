@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,11 +36,13 @@
 if(CPACK_SOURCE_PACKAGE_FILE_NAME) #building source package
     get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
     if (NOT EXISTS "${CMAKE_BINARY_DIR}/share/man/man1/gmx-view.1" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/INSTALL" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/online.html")
         message(FATAL_ERROR
             "To create a complete source package all man and HTML pages need "
-            "to be generated. "
-            "You need to run 'make man html' or set GMX_BUILD_HELP=ON to get "
-            "them automatically built together with the binaries.")
+            "to be generated, and the INSTALL file generated. "
+            "Run 'make man html' to build these parts. You can also set "
+            "GMX_BUILD_HELP=ON to automatically build the HTML parts. "
+            "The latter also requires you to execute 'make install-guide'.")
     endif()
 endif()

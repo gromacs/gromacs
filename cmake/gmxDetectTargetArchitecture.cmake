@@ -49,4 +49,8 @@ function(gmx_detect_target_architecture)
         try_compile(GMX_TARGET_BGQ ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestBlueGeneQ.c")
     endif()
+    if (NOT DEFINED GMX_TARGET_MIC)
+        try_compile(GMX_TARGET_MIC ${CMAKE_BINARY_DIR}
+            "${CMAKE_SOURCE_DIR}/cmake/TestMIC.c")
+    endif()
 endfunction()

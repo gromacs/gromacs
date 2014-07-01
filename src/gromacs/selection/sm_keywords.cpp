@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,14 +48,14 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
 #include "parsetree.h"
@@ -288,7 +288,7 @@ static gmx_ana_selparam_t smparams_keyword_str[] = {
     {NULL, {STR_VALUE, -1, {NULL}}, NULL, SPAR_VARNUM},
 };
 
-/** \internal Selection method data for integer keyword evaluation. */
+/** Selection method data for integer keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_int = {
     "kw_int", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_int), smparams_keyword_int,
@@ -303,7 +303,7 @@ gmx_ana_selmethod_t sm_keyword_int = {
     {NULL, 0, NULL},
 };
 
-/** \internal Selection method data for real keyword evaluation. */
+/** Selection method data for real keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_real = {
     "kw_real", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_real), smparams_keyword_real,
@@ -318,7 +318,7 @@ gmx_ana_selmethod_t sm_keyword_real = {
     {NULL, 0, NULL},
 };
 
-/** \internal Selection method data for string keyword evaluation. */
+/** Selection method data for string keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_str = {
     "kw_str", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_str), smparams_keyword_str,

@@ -32,15 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 /*! \internal \file
  * \brief
  * Implements functions in swapcoords.h.
  *
  * \author Carsten Kutzner <ckutzne@gwdg.de>
- * \ingroup group_mdrun
+ * \ingroup module_swap
  */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -49,21 +47,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #include "typedefs.h"
-#include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/mdlib/groupcoord.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "names.h"
 #include "network.h"
 #include "mdrun.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "swapcoords.h"
+
+#include "gromacs/pbcutil/pbc.h"
 
 static char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
 static char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */
@@ -80,22 +81,26 @@ enum {
 };                                                                           /**< Group identifier */
 static char* GrpString[eGrpNr] = { "ion", "split0", "split1", "solvent" };   /**< Group name */
 
-/*! Keep track of through which channel the ions have passed */
+/** Keep track of through which channel the ions have passed */
 enum eChannelHistory {
     eChHistPassedNone, eChHistPassedCh0, eChHistPassedCh1, eChHistNr
 };
 static char* ChannelString[eChHistNr] = { "none", "channel0", "channel1" };  /**< Name for the channels */
 
-/*! Keep track of from which compartment the ions came before passing the channel */
+/*! \brief Domain identifier.
+ *
+ * Keeps track of from which compartment the ions came before passing the
+ * channel.
+ */
 enum eDomain {
     eDomainNotset, eDomainA, eDomainB, eDomainNr
-};                                                                                 /**< Domain identifier */
+};
 static char* DomainString[eDomainNr] = { "not_assigned", "Domain_A", "Domain_B" }; /**< Name for the domains */
 
 
 
 /*! \internal \brief
- * Structure containing compartment-specific data
+ * Structure containing compartment-specific data.
  */
 typedef struct swap_compartment
 {
@@ -115,7 +120,7 @@ typedef struct swap_compartment
 
 /*! \internal \brief
  * This structure contains data needed for each of the groups involved in swapping: ions, water,
- * and channels
+ * and channels.
  */
 typedef struct swap_group
 {
@@ -165,7 +170,9 @@ typedef struct swap
 
 
 
-/*! Check whether point is in channel. Channel is a cylinder defined by a disc
+/*! \brief Check whether point is in channel.
+ *
+ * A channel is a cylinder defined by a disc
  * with radius r around its center c. The thickness of the cylinder is
  * d_up - d_down.
  *
@@ -215,7 +222,7 @@ static gmx_bool is_in_channel(
 }
 
 
-/*! Prints to swap output file which ions are in which compartments. */
+/*! \brief Prints to swap output file which ions are in which compartment. */
 static void print_ionlist(
         t_swap *s,
         double  time,
@@ -253,9 +260,11 @@ static void print_ionlist(
 }
 
 
-/*! Get the center of a group of nat atoms. Since with PBC an atom group might
- * not be whole, Use the first atom as the reference atom and determine the
- * center with respect to this reference. */
+/*! \brief Get the center of a group of nat atoms.
+ *
+ * Since with PBC an atom group might not be whole, use the first atom as the
+ * reference atom and determine the center with respect to this reference.
+ */
 static void get_molecule_center(
         rvec   x[],
         int    nat,
@@ -306,7 +315,9 @@ static void get_molecule_center(
 
 
 
-/*! Returns TRUE if x is between (w1+gap) and (w2-gap)
+/*! \brief Return TRUE if ion is found in the compartment.
+ *
+ * Returns TRUE if x is between (w1+gap) and (w2-gap)
  *
  * \code
  *
@@ -357,7 +368,7 @@ static gmx_bool compartment_contains_atom(
 }
 
 
-/*! Updates the time-averaged number of ions in a compartment. */
+/*! \brief Updates the time-averaged number of ions in a compartment. */
 static void update_time_window(t_compartment *comp, int values, int replace)
 {
     real average;
@@ -381,7 +392,7 @@ static void update_time_window(t_compartment *comp, int values, int replace)
 }
 
 
-/*! Add atom with collective index ci to the list 'comp' */
+/*! \brief Add atom with collective index ci to the list 'comp'. */
 static void add_to_list(
         int            ci,       /* index of this ion in the collective array xc, qc */
         t_compartment *comp,     /* Compartment to add this atom to */
@@ -404,7 +415,7 @@ static void add_to_list(
 }
 
 
-/*! Determine the compartment boundaries from the channel centers. */
+/*! \brief Determine the compartment boundaries from the channel centers. */
 static void get_compartment_boundaries(
         int c,
         t_swap *s,
@@ -447,7 +458,9 @@ static void get_compartment_boundaries(
 }
 
 
-/*! To determine the flux through the individual channels, we
+/*! \brief Determine the per-channel ion flux.
+ *
+ * To determine the flux through the individual channels, we
  * remember the compartment and channel history of each ion. An ion can be
  * either in channel0 or channel1, or in the remaining volume of compartment
  * A or B.
@@ -600,7 +613,7 @@ static void detect_flux_per_channel(
 }
 
 
-/*! Get the lists of ions for the two compartments */
+/*! \brief Get the lists of ions for the two compartments */
 static void compartmentalize_ions(
         t_commrec      *cr,
         t_swapcoords   *sc,
@@ -700,7 +713,7 @@ static void compartmentalize_ions(
         }
         else
         {
-            fprintf(stderr, "%s node %d: Inconsistency during ion compartmentalization. !inA: %d, !inB: %d, total ions %d\n",
+            fprintf(stderr, "%s rank %d: Inconsistency during ion compartmentalization. !inA: %d, !inB: %d, total ions %d\n",
                     SwS, cr->nodeid, not_in_comp[eCompA], not_in_comp[eCompB], iong->nat);
 
         }
@@ -717,7 +730,7 @@ static void compartmentalize_ions(
         }
         else
         {
-            fprintf(stderr, "%s node %d: %d atoms are in the ion group, but altogether %d have been assigned to the compartments.\n",
+            fprintf(stderr, "%s rank %d: %d atoms are in the ion group, but altogether %d have been assigned to the compartments.\n",
                     SwS, cr->nodeid, iong->nat, sum);
         }
     }
@@ -726,7 +739,7 @@ static void compartmentalize_ions(
 }
 
 
-/*! Set up the compartments and get lists of solvent atoms in each compartment */
+/*! \brief Set up the compartments and get lists of solvent atoms in each compartment */
 static void compartmentalize_solvent(
         t_commrec    *cr,
         t_swapcoords *sc,
@@ -792,7 +805,7 @@ static void compartmentalize_solvent(
         }
         else
         {
-            fprintf(stderr, "%s node %d: Inconsistency during solvent compartmentalization. !inA: %d, !inB: %d, solvent atoms %d\n",
+            fprintf(stderr, "%s rank %d: Inconsistency during solvent compartmentalization. !inA: %d, !inB: %d, solvent atoms %d\n",
                     SwS, cr->nodeid, not_in_comp[eCompA], not_in_comp[eCompB], solg->nat);
         }
     }
@@ -807,14 +820,14 @@ static void compartmentalize_solvent(
         }
         else
         {
-            fprintf(stderr, "%s node %d: %d atoms in solvent group, but %d have been assigned to the compartments.\n",
+            fprintf(stderr, "%s rank %d: %d atoms in solvent group, but %d have been assigned to the compartments.\n",
                     SwS, cr->nodeid, solg->nat, sum);
         }
     }
 }
 
 
-/*! Find out how many group atoms are in the compartments initially */
+/*! \brief Find out how many group atoms are in the compartments initially */
 static void get_initial_ioncounts(
         t_inputrec       *ir,
         rvec              x[],   /* the initial positions */
@@ -890,7 +903,9 @@ static void get_initial_ioncounts(
 }
 
 
-/*! When called, the checkpoint file has already been read in. Here we copy
+/*! \brief Copy history of ion counts from checkpoint file.
+ *
+ * When called, the checkpoint file has already been read in. Here we copy
  * over the values from .cpt file to the swap data structure.
  */
 static void get_initial_ioncounts_from_cpt(
@@ -943,7 +958,7 @@ static void get_initial_ioncounts_from_cpt(
 }
 
 
-/*! Master node lets all other nodes know about the initial ion counts. */
+/*! \brief The master lets all others know about the initial ion counts. */
 static void bc_initial_concentrations(
         t_commrec    *cr,
         t_swapcoords *swap)
@@ -965,7 +980,7 @@ static void bc_initial_concentrations(
 }
 
 
-/*! Ensure that each atom belongs to at most one of the swap groups. */
+/*! \brief Ensure that each atom belongs to at most one of the swap groups. */
 static void check_swap_groups(t_swap *s, int nat, gmx_bool bVerbose)
 {
     t_group  *g;
@@ -1013,8 +1028,10 @@ static void check_swap_groups(t_swap *s, int nat, gmx_bool bVerbose)
 }
 
 
-/*! Get the number of atoms per molecule for this group.
- * Also ensure that all the molecules in this group have this number of atoms. */
+/*! \brief Get the number of atoms per molecule for this group.
+ *
+ * Also ensure that all the molecules in this group have this number of atoms.
+ */
 static int get_group_apm_check(
         int                         group,
         t_swap                     *s,
@@ -1057,8 +1074,10 @@ static int get_group_apm_check(
 }
 
 
-/*! Print the legend to the swapcoords output file as well as the
- * initial ion counts */
+/*! \brief Print the legend to the swap output file.
+ *
+ * Also print the initial ion counts
+ */
 static void print_ionlist_legend(t_inputrec *ir, const output_env_t oenv)
 {
     const char **legend;
@@ -1110,8 +1129,11 @@ static void print_ionlist_legend(t_inputrec *ir, const output_env_t oenv)
 }
 
 
-/*! Initialize arrays that keep track of where the ions come from and where
- * they go */
+/*! \brief Initialize channel ion flux detection routine.
+ *
+ * Initialize arrays that keep track of where the ions come from and where
+ * they go.
+ */
 static void detect_flux_per_channel_init(
         t_commrec   *cr,
         t_swap      *s,
@@ -1215,10 +1237,13 @@ static void detect_flux_per_channel_init(
 }
 
 
-/*! Output the starting structure so that in case of multimeric channels
+/*! \brief Outputs the initial structure to PDB file for debugging reasons.
+ *
+ * Output the starting structure so that in case of multimeric channels
  * the user can check whether we have the correct PBC image for all atoms.
  * If this is not correct, the ion counts per channel will be very likely
- * wrong. */
+ * wrong.
+ */
 static void outputStartStructureIfWanted(gmx_mtop_t *mtop, rvec *x, int ePBC, matrix box)
 {
     char *env = getenv("GMX_COMPELDUMP");
@@ -1234,13 +1259,16 @@ static void outputStartStructureIfWanted(gmx_mtop_t *mtop, rvec *x, int ePBC, ma
 }
 
 
-/*! The swapstate struct stores the information we need to make the channels
- * whole again after restarts from a checkpoint file. Here we do the following:
+/*! \brief Initialize the swapstate structure, used for checkpoint writing.
+ *
+ * The swapstate struct stores the information we need to make the channels
+ * whole again after restarts from a checkpoint file. Here we do the following:\n
  * a) If we did not start from .cpt, we prepare the struct for proper .cpt writing,\n
  * b) if we did start from .cpt, we copy over the last whole structures from .cpt,\n
  * c) in any case, for subsequent checkpoint writing, we set the pointers in\n
  * swapstate to the x_old arrays, which contain the correct PBC representation of
- * multimeric channels at the last time step. */
+ * multimeric channels at the last time step.
+ */
 static void init_swapstate(
         swapstate_t      *swapstate,
         t_swapcoords     *sc,
@@ -1683,8 +1711,11 @@ extern void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *sc)
 }
 
 
-/*! From the requested and average ion counts we determine whether a swap is needed
- * at this time step. */
+/*! \brief Do we need to swap ions with water molecules at this step?
+ *
+ * From the requested and average ion counts we determine whether a swap is needed
+ * at this time step.
+ */
 static gmx_bool need_swap(t_swapcoords *sc)
 {
     t_swap *s;
@@ -1706,7 +1737,9 @@ static gmx_bool need_swap(t_swapcoords *sc)
 }
 
 
-/*! Returns the index of an atom that is far off the compartment boundaries.
+/*! \brief Return index of atom that we can use for swapping.
+ *
+ * Returns the index of an atom that is far off the compartment boundaries.
  * Other atoms of the molecule (if any) will directly follow the returned index
  */
 static int get_index_of_distant_atom(
@@ -1745,7 +1778,7 @@ static int get_index_of_distant_atom(
 }
 
 
-/*! Swaps centers of mass and makes molecule whole if broken */
+/*! \brief Swaps centers of mass and makes molecule whole if broken */
 static void translate_positions(
         rvec  *x,
         int    apm,
@@ -1777,7 +1810,7 @@ static void translate_positions(
 }
 
 
-/*! Write back the the modified local positions from the collective array to the official coordinates */
+/*! \brief Write back the the modified local positions from the collective array to the official positions. */
 static void apply_modified_positions(
         t_group *g,
         rvec     x[])

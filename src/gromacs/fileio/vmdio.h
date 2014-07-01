@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,16 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_FILEIO_VMDIO_H_
-#define GMX_FILEIO_VMDIO_H_
+#ifndef GMX_FILEIO_VMDIO_H
+#define GMX_FILEIO_VMDIO_H
 
 #include "external/vmd_molfile/molfile_plugin.h"
-#include "trx.h"
+
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_trxframe;
 
 struct gmxvmdplugin
 {
@@ -51,11 +53,11 @@ struct gmxvmdplugin
     gmx_bool          bV;
 };
 
-int read_first_vmd_frame(const char *fn, struct trxframe *fr);
-gmx_bool read_next_vmd_frame(struct trxframe *fr);
+int read_first_vmd_frame(const char *fn, struct t_trxframe *fr);
+gmx_bool read_next_vmd_frame(struct t_trxframe *fr);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* GMX_FILEIO_VMDIO_H_ */
+#endif

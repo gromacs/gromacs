@@ -39,7 +39,7 @@
 #include "copyrite.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/commandline/pargs.h"
 #include "coulomb.h"
 

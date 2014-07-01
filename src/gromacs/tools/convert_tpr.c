@@ -39,23 +39,27 @@
 #endif
 
 #include <math.h>
-#include "index.h"
-#include "gmx_fatal.h"
-#include "string2.h"
-#include "sysstuff.h"
-#include "smalloc.h"
+
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/topology/index.h"
 #include "macros.h"
 #include "names.h"
-#include "typedefs.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/commandline/pargs.h"
-#include "vec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
 
@@ -461,6 +465,13 @@ int gmx_convert_tpr(int argc, char *argv[])
             fprintf(stderr, "NOTE: The simulation uses pressure coupling and/or stochastic dynamics.\n"
                     "gmx convert-tpr can not provide binary identical continuation.\n"
                     "If you want that, supply a checkpoint file to mdrun\n\n");
+        }
+
+        if (EI_SD(ir->eI) || ir->eI == eiBD)
+        {
+            fprintf(stderr, "\nChanging ld-seed from %"GMX_PRId64 " ", ir->ld_seed);
+            ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+            fprintf(stderr, "to %"GMX_PRId64 "\n\n", ir->ld_seed);
         }
 
         frame_fn = ftp2fn(efTRN, NFILE, fnm);

@@ -39,21 +39,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include "sysstuff.h"
-#include "string2.h"
-#include "gromacs/fileio/futil.h"
-#include "network.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
+#include "network.h"
 #include "fflibutil.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 const char *fflib_forcefield_dir_ext()
 {
@@ -137,109 +140,101 @@ static int low_fflib_search_file_end(const char *ffdir,
                                      char     ***filenames,
                                      char     ***filenames_short)
 {
-    char           *lib, *dir;
-    char           *libpath;
-    gmx_bool        env_is_set;
-    int             len_fe, len_name;
-    char          **fns, **fns_short;
-    char            dir_print[GMX_PATH_MAX];
-    char           *s, fn_dir[GMX_PATH_MAX];
-    gmx_directory_t dirhandle;
-    char            nextname[STRLEN];
-    int             n, n_thisdir, rc;
-
-    len_fe = strlen(file_end);
-
-    env_is_set = FALSE;
-    if (ffdir != NULL)
+    char **fns = NULL, **fns_short = NULL;
+    int    n   = 0;
+    try
     {
-        /* Search in current dir and ffdir */
-        libpath = gmxlibfn(ffdir);
-    }
-    else
-    {
-        /* GMXLIB can be a path now */
-        lib = getenv("GMXLIB");
-        snew(libpath, GMX_PATH_MAX);
-        if (bAddCWD)
+        std::vector<std::string> libPaths;
+        bool                     bEnvIsSet = false;
+
+        if (ffdir != NULL)
         {
-            sprintf(libpath, "%s%s", ".", PATH_SEPARATOR);
-        }
-        if (lib != NULL)
-        {
-            env_is_set = TRUE;
-            strncat(libpath, lib, GMX_PATH_MAX);
+            /* Search ffdir in current dir and library dirs */
+            libPaths.push_back(gmxlibfn(ffdir));
         }
         else
         {
-            get_libdir(libpath + strlen(libpath));
-        }
-    }
-    s         = libpath;
-    n         = 0;
-    fns       = NULL;
-    fns_short = NULL;
-    /* Loop over all the entries in libpath */
-    while ((dir = gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
-    {
-        rc = gmx_directory_open(&dirhandle, dir);
-        if (rc == 0)
-        {
-            strcpy(dir_print, dir);
-
-            n_thisdir = 0;
-            while (gmx_directory_nextfile(dirhandle, nextname, STRLEN-1) == 0)
+            /* GMXLIB can be a path now */
+            if (bAddCWD)
             {
-                nextname[STRLEN-1] = 0;
-                if (debug)
-                {
-                    fprintf(debug, "dir '%s' %d file '%s'\n",
-                            dir, n_thisdir, nextname);
-                }
-                len_name = strlen(nextname);
-                /* What about case sensitivity? */
-                if (len_name >= len_fe &&
-                    strcmp(nextname+len_name-len_fe, file_end) == 0)
-                {
-                    /* We have a match */
-                    srenew(fns, n+1);
-                    sprintf(fn_dir, "%s%c%s",
-                            dir_print, DIR_SEPARATOR, nextname);
-
-                    /* Copy the file name, possibly including the path. */
-                    fns[n] = strdup(fn_dir);
-
-                    if (ffdir == NULL)
-                    {
-                        /* We are searching in a path.
-                         * Use the relative path when we use share/top
-                         * from the installation.
-                         * Add the full path when we use the current
-                         * working directory of GMXLIB.
-                         */
-                        srenew(fns_short, n+1);
-                        if (strcmp(dir, ".") == 0 || env_is_set)
-                        {
-                            fns_short[n] = strdup(fn_dir);
-                        }
-                        else
-                        {
-                            fns_short[n] = strdup(nextname);
-                        }
-                    }
-                    n++;
-                    n_thisdir++;
-                }
+                libPaths.push_back(".");
             }
-            gmx_directory_close(dirhandle);
+            const char *lib = getenv("GMXLIB");
+            if (lib != NULL)
+            {
+                bEnvIsSet = true;
+                gmx::Path::splitPathEnvironment(lib, &libPaths);
+            }
+            else
+            {
+                libPaths.push_back(gmx::getProgramContext().defaultLibraryDataPath());
+            }
+        }
 
-            sort_filenames(n_thisdir,
-                           fns+n-n_thisdir,
-                           fns_short == NULL ? NULL : fns_short+n-n_thisdir);
+        const int len_fe = strlen(file_end);
+
+        std::vector<std::string>::const_iterator i;
+        for (i = libPaths.begin(); i != libPaths.end(); ++i)
+        {
+            const char      *dir = i->c_str();
+            gmx_directory_t  dirhandle;
+            const int        rc  = gmx_directory_open(&dirhandle, dir);
+            if (rc == 0)
+            {
+                char nextname[STRLEN];
+                int  n_thisdir = 0;
+                while (gmx_directory_nextfile(dirhandle, nextname, STRLEN-1) == 0)
+                {
+                    nextname[STRLEN-1] = 0;
+                    if (debug)
+                    {
+                        fprintf(debug, "dir '%s' %d file '%s'\n",
+                                dir, n_thisdir, nextname);
+                    }
+                    const int len_name = strlen(nextname);
+                    /* What about case sensitivity? */
+                    if (len_name >= len_fe &&
+                        strcmp(nextname+len_name-len_fe, file_end) == 0)
+                    {
+                        char fn_dir[GMX_PATH_MAX];
+                        /* We have a match */
+                        srenew(fns, n+1);
+                        sprintf(fn_dir, "%s%c%s", dir, DIR_SEPARATOR, nextname);
+
+                        /* Copy the file name, possibly including the path. */
+                        fns[n] = strdup(fn_dir);
+
+                        if (ffdir == NULL)
+                        {
+                            /* We are searching in a path.
+                             * Use the relative path when we use share/top
+                             * from the installation.
+                             * Add the full path when we use the current
+                             * working directory of GMXLIB.
+                             */
+                            srenew(fns_short, n+1);
+                            if (strcmp(dir, ".") == 0 || bEnvIsSet)
+                            {
+                                fns_short[n] = strdup(fn_dir);
+                            }
+                            else
+                            {
+                                fns_short[n] = strdup(nextname);
+                            }
+                        }
+                        n++;
+                        n_thisdir++;
+                    }
+                }
+                gmx_directory_close(dirhandle);
+
+                sort_filenames(n_thisdir,
+                               fns+n-n_thisdir,
+                               fns_short == NULL ? NULL : fns_short+n-n_thisdir);
+            }
         }
     }
-
-    sfree(libpath);
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if (n == 0 && bFatalError)
     {

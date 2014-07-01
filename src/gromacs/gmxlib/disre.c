@@ -40,19 +40,24 @@
 #endif
 
 #include <math.h>
+#include <stdlib.h>
+
 #include "typedefs.h"
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "types/commrec.h"
 #include "macros.h"
-#include "vec.h"
-#include "gromacs/fileio/futil.h"
-#include "xvgr.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/futil.h"
 #include "bondf.h"
 #include "copyrite.h"
 #include "disre.h"
 #include "main.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,

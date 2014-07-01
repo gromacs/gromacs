@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 
 #include <stdio.h>
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* CUDA library and hardware related defines */
 /* TODO list some constants instead that can be used for consistency checks to

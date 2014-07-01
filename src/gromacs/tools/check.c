@@ -38,25 +38,17 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include "main.h"
+
 #include "macros.h"
-#include <math.h>
-#include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "txtdump.h"
-#include "gmx_fatal.h"
-#include "atomprop.h"
-#include "vec.h"
-#include "pbc.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/topology/index.h"
 #include "names.h"
-#include "mtop_util.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/xtcio.h"
@@ -64,6 +56,14 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "compare.h"
 

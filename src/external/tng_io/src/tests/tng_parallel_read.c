@@ -2,8 +2,6 @@
 
 /* This code is part of the tng binary trajectory format.
  *
- *                      VERSION 1.0
- *
  * Written by Magnus Lundborg
  * Copyright (c) 2012-2013, The GROMACS development team.
  * Check out http://www.gromacs.org for more information.
@@ -15,7 +13,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../../include/tng_io.h"
+#include "tng/tng_io.h"
 
 
 /* N.B. this code is for testing parallel reading of trajectory frame sets. The

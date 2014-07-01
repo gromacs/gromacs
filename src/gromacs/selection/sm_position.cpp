@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,13 +40,13 @@
  * \ingroup module_selection
  */
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
 #include "selelem.h"
@@ -90,7 +90,8 @@ set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data);
  */
 static void
 init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Initializes the \p cog selection method.
+/*! \brief
+ * Initializes the \p cog selection method.
  *
  * \param[in]     top   Topology data structure.
  * \param[in]     npar  Not used.
@@ -139,7 +140,7 @@ static gmx_ana_selparam_t smparams_com[] = {
     {"pbc",  {NO_VALUE,    0, {NULL}}, NULL, 0},
 };
 
-/** \internal Selection method data for position keyword evaluation. */
+/** Selection method data for position keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_pos = {
     "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL,
     asize(smparams_keyword_pos), smparams_keyword_pos,
@@ -154,7 +155,7 @@ gmx_ana_selmethod_t sm_keyword_pos = {
     {NULL, 0, NULL},
 };
 
-/** \internal Selection method data for the \p cog method. */
+/** Selection method data for the \p cog method. */
 gmx_ana_selmethod_t sm_cog = {
     "cog", POS_VALUE, SMETH_DYNAMIC | SMETH_SINGLEVAL,
     asize(smparams_com), smparams_com,
@@ -169,7 +170,7 @@ gmx_ana_selmethod_t sm_cog = {
     {"cog of ATOM_EXPR [pbc]", 0, NULL},
 };
 
-/** \internal Selection method data for the \p com method. */
+/** Selection method data for the \p com method. */
 gmx_ana_selmethod_t sm_com = {
     "com", POS_VALUE, SMETH_REQTOP | SMETH_DYNAMIC | SMETH_SINGLEVAL,
     asize(smparams_com), smparams_com,
@@ -244,7 +245,7 @@ _gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
     }
     if (!d->type && type)
     {
-        d->type  = strdup(type);
+        d->type  = gmx_strdup(type);
         /* FIXME: It would be better not to have the string here hardcoded. */
         if (type[0] != 'a')
         {

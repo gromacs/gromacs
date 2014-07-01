@@ -38,19 +38,19 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "macros.h"
 #include "typedefs.h"
-#include "physics.h"
-#include "smalloc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
 #include "names.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "string2.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
 #include "correl.h"
 
 #define MODE(x) ((mode & (x)) == (x))

@@ -36,20 +36,16 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "random.h"
 #include "names.h"
 #include "gromacs/fileio/matio.h"
-#include "physics.h"
-#include "vec.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
 #include "copyrite.h"
-#include "xvgr.h"
-#include "string2.h"
-#include "index.h"
 #include "gromacs/fileio/tpxio.h"
 
 int main(int argc,char *argv[])

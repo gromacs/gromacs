@@ -40,12 +40,11 @@
 
 #include <math.h>
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "macros.h"
-#include "string2.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/trxio.h"
 
 static int calc_ntype(int nft, int *ft, t_idef *idef)
@@ -116,6 +115,18 @@ static void fill_ft_ind(int nft, int *ft, t_idef *idef,
                     case F_RBDIHS:
                         sprintf(buf, "RB-A1=%.2f", idef->iparams[i].rbdihs.rbcA[1]);
                         break;
+                    case  F_RESTRANGLES:
+                        sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
+                                idef->iparams[i].harmonic.krA);
+                        break;
+                    case  F_RESTRDIHS:
+                        sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
+                                idef->iparams[i].harmonic.krA);
+                        break;
+                    case  F_CBTDIHS:
+                        sprintf(buf, "CBT-A1=%.2f", idef->iparams[i].cbtdihs.cbtcA[1]);
+                        break;
+
                     default:
                         gmx_fatal(FARGS, "Unsupported function type '%s' selected",
                                   interaction_function[ftype].longname);

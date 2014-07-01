@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@
 #include <float.h>
 #include <math.h>
 #include <assert.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifndef __FLT_EPSILON__
 #define __FLT_EPSILON__ FLT_EPSILON
@@ -76,7 +76,7 @@
 FILE* debug = 0;
 #endif
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 
 #ifdef GMX_FFT_FFTW3
@@ -213,7 +213,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     if (debug)
     {
-        fprintf(debug, "FFT5D: Using %dx%d processor grid, rank %d,%d\n",
+        fprintf(debug, "FFT5D: Using %dx%d rank grid, rank %d,%d\n",
                 P[0], P[1], prank[0], prank[1]);
     }
 
@@ -1344,7 +1344,7 @@ fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int
     {
         if (prank == 0)
         {
-            printf("FFT5D: WARNING: Number of processors %d not evenly dividable by %d\n", size, P0);
+            printf("FFT5D: WARNING: Number of ranks %d not evenly divisible by %d\n", size, P0);
         }
         P0 = lfactor(size);
     }

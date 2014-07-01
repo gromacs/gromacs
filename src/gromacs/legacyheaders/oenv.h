@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,14 +69,6 @@ typedef enum {
 /* the xvg output formattings */
 
 
-void output_env_init(output_env_t *oenvp,  int argc, char *argv[],
-                     time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
-                     int verbosity, int debug_level);
-/* initialize an output_env structure, setting the command line,
-   the default time value a gmx_boolean view that is set to TRUE when the
-   user requests direct viewing of graphs,
-   the graph formatting type, the verbosity, and debug level */
-
 void output_env_init_default(output_env_t *oenvp);
 /* initialize an output_env structure, with reasonable default settings.
     (the time unit is set to time_ps, which means no conversion).  */
@@ -104,7 +96,7 @@ real output_env_get_time_factor(const output_env_t oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
 real output_env_get_time_invfactor(const output_env_t oenv);
-/* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
+/* return inverse time conversion factor to ps (i.e. 1e3 for ns->ps) */
 
 real output_env_conv_time(const output_env_t oenv, real time);
 /* return converted time */
@@ -129,6 +121,20 @@ const char *output_env_get_short_program_name(const output_env_t oenv);
 
 #ifdef __cplusplus
 }
+
+namespace gmx
+{
+class ProgramContextInterface;
+} // namespace gmx
+
+void output_env_init(output_env_t *oenvp,
+                     const gmx::ProgramContextInterface &context,
+                     time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
+                     int verbosity, int debug_level);
+/* initialize an output_env structure, setting the command line,
+   the default time value a gmx_boolean view that is set to TRUE when the
+   user requests direct viewing of graphs,
+   the graph formatting type, the verbosity, and debug level */
 #endif
 
 #endif

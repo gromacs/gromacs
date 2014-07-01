@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,8 @@
 #include <math.h>
 #include "typedefs.h"
 #include "dens_filter.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 
 #ifdef GMX_DOUBLE
 #define EXP(x) (exp(x))

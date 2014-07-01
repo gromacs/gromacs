@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,6 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "vmdio.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -101,14 +102,13 @@
 #include <windows.h>
 #include <shlobj.h>
 #endif
-#include "smalloc.h"
-#include "futil.h"
-#include "vmdio.h"
 
-
-#include "types/simple.h"
-#include "vec.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 typedef int (*initfunc)(void);

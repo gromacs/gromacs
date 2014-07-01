@@ -36,25 +36,25 @@
 #include <config.h>
 #endif
 
-#include <math.h>
-#include <string.h>
 #include <ctype.h>
-#include <math.h>
 #include <float.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "macros.h"
 #include "gromacs/fileio/enxio.h"
-#include "physics.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
+#include "gromacs/math/units.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gmx_ana.h"
 #include "gromacs/math/utilities.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "names.h"
 #include "mdebin.h"
 
@@ -234,7 +234,7 @@ static void lambda_components_add(lambda_components_t *lc,
     while (lc->N + 1 > lc->Nalloc)
     {
         lc->Nalloc = (lc->Nalloc == 0) ? 2 : 2*lc->Nalloc;
-        srealloc( lc->names, lc->Nalloc );
+        srenew(lc->names, lc->Nalloc);
     }
     snew(lc->names[lc->N], name_length+1);
     strncpy(lc->names[lc->N], name, name_length);
@@ -356,7 +356,7 @@ static void lambda_vec_print(const lambda_vec_t *lv, char *str, gmx_bool named)
         str += sprintf(str, "dH/dl");
         if (strlen(lv->lc->names[lv->dhdl]) > 0)
         {
-            str += sprintf(str, " (%s)", lv->lc->names[lv->dhdl]);
+            sprintf(str, " (%s)", lv->lc->names[lv->dhdl]);
         }
     }
 }

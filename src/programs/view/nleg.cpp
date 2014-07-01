@@ -38,10 +38,14 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
 #include <string.h>
-#include <smalloc.h>
-#include <macros.h>
+
+#include <algorithm>
+
+#include "gromacs/legacyheaders/types/rgb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "buttons.h"
 #include "nleg.h"
 

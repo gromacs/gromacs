@@ -38,24 +38,25 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
+#include <stdlib.h>
+
 #include "typedefs.h"
-#include "string2.h"
-#include "gromacs/fileio/strdb.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "mshift.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
-#include "gromacs/fileio/matio.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "viewit.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int strip_dssp(char *dsspfile, int nres,
                       gmx_bool bPhobres[], real t,
@@ -495,7 +496,7 @@ int gmx_do_dssp(int argc, char *argv[])
     gmx_bool          *bPhbres, bDoAccSurf;
     real               t;
     int                i, j, natoms, nframe = 0;
-    matrix             box;
+    matrix             box = {{0}};
     int                gnx;
     char              *grpnm, *ss_str;
     atom_id           *index;
@@ -623,8 +624,7 @@ int gmx_do_dssp(int argc, char *argv[])
     }
 
     mat.map  = NULL;
-    mat.nmap = getcmap(libopen(opt2fn("-map", NFILE, fnm)),
-                       opt2fn("-map", NFILE, fnm), &(mat.map));
+    mat.nmap = readcmap(opt2fn("-map", NFILE, fnm), &(mat.map));
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     if (natoms > atoms->nr)

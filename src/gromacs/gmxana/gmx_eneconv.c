@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,19 +37,20 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <string.h>
-#include <math.h>
 
-#include "string2.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "disre.h"
 #include "names.h"
 #include "macros.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/enxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 
@@ -67,7 +68,7 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
     int      *set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
     {
         bVerbose = FALSE;
     }
@@ -582,7 +583,6 @@ int gmx_eneconv(int argc, char *argv[])
     nset     = 0;
     timestep = 0.0;
     snew(fnms, argc);
-    nfile        = 0;
     lastfilestep = 0;
     laststep     = startstep = 0;
 

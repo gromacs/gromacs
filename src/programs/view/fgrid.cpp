@@ -38,14 +38,16 @@
 #include <config.h>
 #endif
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include "string2.h"
-#include "smalloc.h"
+
 #include "fgrid.h"
-#include "gromacs/fileio/futil.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *type[] = {
     "button", "radiobuttons", "groupbox", "checkbox",
@@ -303,12 +305,12 @@ void DoneFGrid(t_fgrid *fgrid)
 static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
 {
     char     set[STRLEN], get[STRLEN], help[STRLEN], def[STRLEN];
-    edlgitem edlg;
+    int      edlg;
     t_fitem *fitem;
 
     fitem = NewFItem();
 
-    for (edlg = (edlgitem)0; (edlg < edlgNR+1); edlg = (edlgitem)(edlg + 1))
+    for (edlg = 0; (edlg < edlgNR+1); edlg++)
     {
         if (strcmp(buf, type[edlg]) == 0)
         {
@@ -326,7 +328,7 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
         ReadDlgErr(infile, eITEMEXP, buf);
     }
 
-    fitem->edlg = edlg;
+    fitem->edlg = (edlgitem)edlg;
     switch (edlg)
     {
         case edlgBN:

@@ -53,6 +53,9 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+
+#ifndef GMX_NATIVE_WINDOWS
 /* Ugly hack because the openmp implementation below hacks into the SIMD
  * settings to decide when to use _mm_pause(). This should eventually be
  * changed into proper detection of the intrinsics uses, not SIMD.
@@ -62,9 +65,11 @@
     (defined GMX_SIMD_X86_AVX2_256)
 #    include <xmmintrin.h>
 #endif
+#else
+#include <windows.h>
+#endif
 
-#include "types/commrec.h"
-#include "mdrun.h"
+#include "basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -109,15 +114,38 @@ void gmx_omp_set_num_threads(int num_threads);
 /*! \brief
  * Check for externally set thread affinity to avoid conflicts with \Gromacs
  * internal setting.
+ *
+ * \param[out] message  Receives the message to be shown to the user.
+ * \returns `true` if we can set thread affinity ourselves.
+ *
+ * While GNU OpenMP does not set affinity by default, the Intel OpenMP library
+ * does.  This conflicts with the internal affinity (especially thread-MPI)
+ * setting, results in incorrectly locked threads, and causes dreadful performance.
+ *
+ * The KMP_AFFINITY environment variable is used by Intel, GOMP_CPU_AFFINITY
+ * by the GNU compilers (Intel also honors it well).  If any of the variables
+ * is set, we should honor it and disable the internal pinning.
+ * When using Intel OpenMP, we will disable affinity if the user did not set it
+ * manually through one of the aforementioned environment variables.
+ *
+ * Note that the Intel OpenMP affinity disabling will only take effect if this
+ * function is called before the OpenMP library gets initialized, which happens
+ * when the first call is made into a compilation unit that contains OpenMP
+ * pragmas.
+ *
+ * If this function returns `false`, the caller is responsible to disable the
+ * pinning, show the message from \p *message to the user, and free the memory
+ * allocated for \p *message.
+ * If the return value is `true`, \p *message is NULL.
  */
-void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
-                                   gmx_hw_opt_t *hw_opt);
+gmx_bool gmx_omp_check_thread_affinity(char **message);
 
 /*! \brief
  * Pause for use in a spin-wait loop.
  */
 static gmx_inline void gmx_pause()
 {
+#ifndef GMX_NATIVE_WINDOWS
     /* Ugly hack because the openmp implementation below hacks into the SIMD
      * settings to decide when to use _mm_pause(). This should eventually be
      * changed into proper detection of the intrinsics uses, not SIMD.
@@ -131,6 +159,9 @@ static gmx_inline void gmx_pause()
     _mm_delay_32(32);
 #else
     /* No wait for unknown architecture */
+#endif
+#else
+    YieldProcessor();
 #endif
 }
 

@@ -38,8 +38,8 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "xvgr.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
 #include "mdrun.h"
 #include "main.h"

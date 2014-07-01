@@ -35,23 +35,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _GMX_RANDOM_H_
-#define _GMX_RANDOM_H_
+#ifndef GMX_RANDOM_RANDOM_H
+#define GMX_RANDOM_RANDOM_H
 
-#include <stdio.h>
-#include "types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*! Fixed random number seeds for different types of RNG */
-#define RND_SEED_UPDATE    1 /*!< For coordinate update (sd, bd, ..) */
-#define RND_SEED_REPLEX    2 /*!< For replica exchange */
-#define RND_SEED_VRESCALE  3 /*!< For V-rescale thermostat */
-#define RND_SEED_ANDERSEN  4 /*!< For Andersen thermostat */
-#define RND_SEED_TPI       5 /*!< For test particle insertion */
-#define RND_SEED_EXPANDED  6 /*!< For expanded emseble methods */
+#define RND_SEED_UPDATE    1 /**< For coordinate update (sd, bd, ..) */
+#define RND_SEED_REPLEX    2 /**< For replica exchange */
+#define RND_SEED_VRESCALE  3 /**< For V-rescale thermostat */
+#define RND_SEED_ANDERSEN  4 /**< For Andersen thermostat */
+#define RND_SEED_TPI       5 /**< For test particle insertion */
+#define RND_SEED_EXPANDED  6 /**< For expanded emseble methods */
 
 /*! \brief Abstract datatype for a random number generator
  *
@@ -148,11 +148,12 @@ gmx_rng_destroy(gmx_rng_t rng);
 
 /*! \brief Get the state of a RNG
  *
- *  This routine stores the random state in mt and mti, mt should have
- *  a size of at least 624, mt of 1.
+ * This routine stores the random state in \p mt and \p mti.
  *
- *  \param rng Handle to random number generator previously returned by
- *		       gmx_rng_init() or gmx_rng_init_array().
+ * \param[in]  rng Handle to random number generator previously returned by
+ *     gmx_rng_init() or gmx_rng_init_array().
+ * \param[out] mt  Array of at least 624 integers to receive state.
+ * \param[out] mti Pointer to an integer to receive state.
  */
 void
 gmx_rng_get_state(gmx_rng_t rng, unsigned int *mt, int *mti);
@@ -160,11 +161,12 @@ gmx_rng_get_state(gmx_rng_t rng, unsigned int *mt, int *mti);
 
 /*! \brief Set the state of a RNG
  *
- *  This routine sets the random state from mt and mti, mt should have
- *  a size of at least 624.
+ * This routine sets the random state from \p mt and \p mti.
  *
- *  \param rng Handle to random number generator previously returned by
- *		       gmx_rng_init() or gmx_rng_init_array().
+ * \param rng Handle to random number generator previously returned by
+ *     gmx_rng_init() or gmx_rng_init_array().
+ * \param[in]  mt  Array of at least 624 integers.
+ * \param[in]  mti Additional integer.
  */
 void
 gmx_rng_set_state(gmx_rng_t rng, unsigned int *mt, int mti);
@@ -320,4 +322,4 @@ gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
 }
 #endif
 
-#endif /* _GMX_RANDOM_H_ */
+#endif

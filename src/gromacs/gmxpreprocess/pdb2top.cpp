@@ -42,12 +42,9 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "vec.h"
-#include "smalloc.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "symtab.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/futil.h"
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
 #include "topdirs.h"
@@ -56,12 +53,10 @@
 #include "pgutil.h"
 #include "resall.h"
 #include "topio.h"
-#include "string2.h"
-#include "physics.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gen_ad.h"
 #include "gromacs/fileio/filenm.h"
-#include "index.h"
 #include "gen_vsite.h"
 #include "add_par.h"
 #include "toputil.h"
@@ -69,8 +64,12 @@
 #include "copyrite.h"
 
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
@@ -458,8 +457,8 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     sfree(model);
 }
 
-static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
-                     t_restp restp[], gmx_residuetype_t rt)
+static int name2type(t_atoms *at, int **cgnr,
+                     t_restp restp[], gmx_residuetype_t *rt)
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
@@ -508,9 +507,8 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
             j                = search_jtype(&restp[resind], name, bNterm);
             at->atom[i].type = restp[resind].atom[j].type;
             at->atom[i].q    = restp[resind].atom[j].q;
-            at->atom[i].m    = get_atomtype_massA(restp[resind].atom[j].type,
-                                                  atype);
-            cg = restp[resind].cgnr[j];
+            at->atom[i].m    = restp[resind].atom[j].m;
+            cg               = restp[resind].cgnr[j];
             /* A charge group number -1 signals a separate charge group
              * for this atom.
              */
@@ -754,22 +752,7 @@ void write_top(FILE *out, char *pr, char *molname,
     }
 }
 
-static atom_id search_res_atom(const char *type, int resind,
-                               t_atoms *atoms,
-                               const char *bondtype, gmx_bool bAllowMissing)
-{
-    int i;
 
-    for (i = 0; (i < atoms->nr); i++)
-    {
-        if (atoms->atom[i].resind == resind)
-        {
-            return search_atom(type, i, atoms, bondtype, bAllowMissing);
-        }
-    }
-
-    return NO_ATID;
-}
 
 static void do_ssbonds(t_params *ps, t_atoms *atoms,
                        int nssbonds, t_ssbond *ssbonds, gmx_bool bAllowMissing)
@@ -836,6 +819,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
             {
                 dist2 = distance2(x[ai], x[aj]);
                 if (dist2 > long_bond_dist2)
+
                 {
                     fprintf(stderr, "Warning: Long Bond (%d-%d = %g nm)\n",
                             ai+1, aj+1, sqrt(dist2));
@@ -1860,10 +1844,11 @@ static void gen_lonepairs(t_params *ps, t_restp *restp, t_atoms *atoms, int vsty
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuetype_t rt)
+static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
 {
     int         residx, i, j, k;
     const char *ptr;
+    const char *pname;
     t_resinfo  *resinfo = atoms->resinfo;
     int         nres    = atoms->nres;
     gmx_bool    bAddCMAP;
@@ -1879,11 +1864,14 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
         ptr = "check";
     }
 
-    fprintf(stderr, "Making cmap torsions...");
+    fprintf(stderr, "Making cmap torsions...\n");
     i = 0;
-    /* End loop at nres-1, since the very last residue does not have a +N atom, and
-     * therefore we get a valgrind invalid 4 byte read error with atom am */
-    for (residx = 0; residx < nres-1; residx++)
+    /* Most cmap entries use the N atom from the next residue, so the last
+     * residue should not have its CMAP entry in that case, but for things like
+     * dipeptides we sometimes define a complete CMAP entry inside a residue,
+     * and in this case we need to process everything through the last residue.
+     */
+    for (residx = 0; residx < nres; residx++)
     {
         /* Add CMAP terms from the list of CMAP interactions */
         for (j = 0; j < restp[residx].rb[ebtsCMAP].nb; j++)
@@ -1894,7 +1882,21 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
              * from residues labelled as protein. */
             for (k = 0; k < NUM_CMAP_ATOMS && bAddCMAP; k++)
             {
-                cmap_atomid[k] = search_atom(restp[residx].rb[ebtsCMAP].b[j].a[k],
+                /* Assign the pointer to the name of the next reference atom.
+                 * This can use -/+ labels to refer to previous/next residue.
+                 */
+                pname = restp[residx].rb[ebtsCMAP].b[j].a[k];
+                /* Skip this CMAP entry if it refers to residues before the
+                 * first or after the last residue.
+                 */
+                if (((strchr(pname, '-') != NULL) && (residx == 0)) ||
+                    ((strchr(pname, '+') != NULL) && (residx == nres-1)))
+                {
+                    bAddCMAP = FALSE;
+                    break;
+                }
+
+                cmap_atomid[k] = search_atom(pname,
                                              i, atoms, ptr, TRUE);
                 bAddCMAP = bAddCMAP && (cmap_atomid[k] != NO_ATID);
                 if (!bAddCMAP)
@@ -1917,7 +1919,17 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
                     bAddCMAP = bAddCMAP &&
                         cmap_chainnum == resinfo[this_residue_index].chainnum;
                 }
-                bAddCMAP = bAddCMAP && gmx_residuetype_is_protein(rt, *(resinfo[this_residue_index].name));
+                /* Here we used to check that the residuetype was protein and
+                 * disable bAddCMAP if that was not the case. However, some
+                 * special residues (say, alanine dipeptides) might not adhere
+                 * to standard naming, and if we start calling them normal
+                 * protein residues the user will be bugged to select termini.
+                 *
+                 * Instead, I believe that the right course of action is to
+                 * keep the CMAP interaction if it is present in the RTP file
+                 * and we correctly identified all atoms (which is the case
+                 * if we got here).
+                 */
             }
 
             if (bAddCMAP)
@@ -1934,7 +1946,6 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
             }
         }
     }
-
     /* Start the next residue */
 }
 
@@ -1974,7 +1985,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     int              *vsite_type;
     int               i, nmissat;
     int               bts[ebtsNR];
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
 
     init_plist(plist);
     gmx_residuetype_init(&rt);
@@ -1996,7 +2007,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
                atoms, nssbonds, ssbonds,
                bAllowMissing);
 
-    nmissat = name2type(atoms, &cgnr, atype, restp, rt);
+    nmissat = name2type(atoms, &cgnr, restp, rt);
     if (nmissat)
     {
         if (bAllowMissing)
@@ -2044,7 +2055,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* Make CMAP */
     if (TRUE == bCmap)
     {
-        gen_cmap(&(plist[F_CMAP]), restp, atoms, rt);
+        gen_cmap(&(plist[F_CMAP]), restp, atoms);
         if (plist[F_CMAP].nr > 0)
         {
             fprintf(stderr, "There are %4d cmap torsion pairs\n",

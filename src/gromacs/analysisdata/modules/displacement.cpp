@@ -41,14 +41,13 @@
  */
 #include "gromacs/analysisdata/modules/displacement.h"
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/math/utilities.h"
-
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/modules/histogram.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {

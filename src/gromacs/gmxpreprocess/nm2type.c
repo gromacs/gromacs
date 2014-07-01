@@ -39,16 +39,15 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+
 #include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "bondf.h"
-#include "string2.h"
-#include "smalloc.h"
-#include "sysstuff.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
-#include "physics.h"
-#include "vec.h"
-#include "gromacs/math/3dview.h"
+#include "gromacs/math/vec.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
@@ -59,6 +58,8 @@
 #include "fflibutil.h"
 
 #include "nm2type.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 {
@@ -197,7 +198,7 @@ static int match_str(const char *atom, const char *template_string)
     }
 }
 
-int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
+int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
             gpp_atomtype_t atype, int *nbonds, t_params *bonds)
 {
     int      cur = 0;

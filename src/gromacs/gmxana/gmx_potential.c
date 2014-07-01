@@ -38,25 +38,26 @@
 #include <config.h>
 #endif
 
-#include <math.h>
 #include <ctype.h>
-
-#include "sysstuff.h"
+#include <math.h>
 #include <string.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "princ.h"
-#include "rmpbc.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gmx_ana.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/trxio.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19

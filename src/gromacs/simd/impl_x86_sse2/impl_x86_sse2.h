@@ -120,7 +120,7 @@
 #define gmx_simd_cvt_f2i          _mm_cvtps_epi32
 #define gmx_simd_cvtt_f2i         _mm_cvttps_epi32
 #define gmx_simd_cvt_i2f          _mm_cvtepi32_ps
-#define gmx_simd_extract_fi(x, i)  _mm_cvtsi128_si32(_mm_srli_si128((x), sizeof(int) * (i)))
+#define gmx_simd_extract_fi(x, i)  _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (i)))
 /* Integer logical ops on gmx_simd_fint32_t */
 #define gmx_simd_slli_fi          _mm_slli_epi32
 #define gmx_simd_srli_fi          _mm_srli_epi32
@@ -204,7 +204,7 @@
 #define gmx_simd_cvt_d2i           _mm_cvtpd_epi32
 #define gmx_simd_cvtt_d2i          _mm_cvttpd_epi32
 #define gmx_simd_cvt_i2d           _mm_cvtepi32_pd
-#define gmx_simd_extract_di(x, i)   _mm_cvtsi128_si32(_mm_srli_si128((x), sizeof(int) * (i)))
+#define gmx_simd_extract_di(x, i)   _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (i)))
 /* Integer logical ops on gmx_simd_dint32_t */
 #define gmx_simd_slli_di           _mm_slli_epi32
 #define gmx_simd_srli_di           _mm_srli_epi32

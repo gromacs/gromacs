@@ -1,0 +1,9 @@
+dt                       = 0.004
+nsteps                   = 2
+tcoupl                   = Berendsen
+tc-grps                  = System
+tau-t                    = 0.5
+ref-t                    = 300
+constraints              = all-bonds
+cutoff-scheme            = Verlet
+IMD-group                = SecondWaterMolecule

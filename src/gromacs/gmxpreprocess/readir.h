@@ -39,7 +39,6 @@
 #define GMX_GMXPREPROCESS_READIR_H
 
 #include "typedefs.h"
-#include "string2.h"
 #include "readinp.h"
 #include "grompp-impl.h"
 

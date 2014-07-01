@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,9 @@
 #include <stdarg.h>
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "symrec.h"
@@ -485,7 +485,7 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     return bOk;
 }
 
-/*!
+/*! \brief
  * Checks the validity of a selection method.
  *
  * \param[in]     fp     File handle to use for diagnostic messages
@@ -556,7 +556,7 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method,
     return bOk;
 }
 
-/*!
+/*! \brief
  * Checks the validity of a selection modifier method.
  *
  * \param[in]     fp     File handle to use for diagnostic messages

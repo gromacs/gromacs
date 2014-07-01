@@ -37,31 +37,33 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/matio.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "do_fit.h"
-#include "rmpbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gmx_ana.h"
+
+#include "gromacs/math/do_fit.h"
 
 static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip)
 {
@@ -256,20 +258,14 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
         {
             for (i = 0; i < n; i++)
             {
-                if (bSplit && i > 0 && abs(x[i]) < 1e-5)
+                if (bSplit && i > 0 && fabs(x[i]) < 1e-5)
                 {
-                    if (output_env_get_print_xvgr_codes(oenv))
-                    {
-                        fprintf(out, "&\n");
-                    }
+                    fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
                 }
                 fprintf(out, "%10.4f %10.5f\n",
                         x[i]*scale_x, y ? y[g][i] : sy[g][s][i]);
             }
-            if (output_env_get_print_xvgr_codes(oenv))
-            {
-                fprintf(out, "&\n");
-            }
+            fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
     }
     gmx_ffclose(out);
@@ -471,8 +467,10 @@ static void overlap(const char *outfile, int natoms,
 
     out = xvgropen(outfile, "Subspace overlap",
                    "Eigenvectors of trajectory 2", "Overlap", oenv);
-    fprintf(out, "@ subtitle \"using %d eigenvectors of trajectory 1\"\n",
-            noutvec);
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(out, "@ subtitle \"using %d eigenvectors of trajectory 1\"\n", noutvec);
+    }
     overlap = 0;
     for (x = 0; x < nvec2; x++)
     {
@@ -669,9 +667,9 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                            oenv);
         for (i = 0; i < nframes; i++)
         {
-            if (bSplit && i > 0 && abs(inprod[noutvec][i]) < 1e-5)
+            if (bSplit && i > 0 && fabs(inprod[noutvec][i]) < 1e-5)
             {
-                fprintf(xvgrout, "&\n");
+                fprintf(xvgrout, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
             fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec-1][i]);
         }
@@ -684,7 +682,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         rvec       *x;
         real       *b = NULL;
         matrix      box;
-        char       *resnm, *atnm, pdbform[STRLEN];
+        char       *resnm, *atnm;
         gmx_bool    bPDB, b4D;
         FILE       *out;
 
@@ -745,9 +743,6 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         }
         if ( ( b4D || bSplit ) && bPDB)
         {
-            strcpy(pdbform, get_pdbformat());
-            strcat(pdbform, "%8.4f%8.4f\n");
-
             out = gmx_ffopen(threedplotfile, "w");
             fprintf(out, "HEADER    %s\n", str);
             if (b4D)
@@ -757,13 +752,13 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             j = 0;
             for (i = 0; i < atoms.nr; i++)
             {
-                if (j > 0 && bSplit && abs(inprod[noutvec][i]) < 1e-5)
+                if (j > 0 && bSplit && fabs(inprod[noutvec][i]) < 1e-5)
                 {
                     fprintf(out, "TER\n");
                     j = 0;
                 }
-                fprintf(out, pdbform, "ATOM", i+1, "C", "PRJ", ' ', j+1,
-                        10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i]);
+                gmx_fprintf_pdb_atomline(out, epdbATOM, i+1, "C", ' ', "PRJ", ' ', j+1, ' ',
+                                         10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i], "");
                 if (j > 0)
                 {
                     fprintf(out, "CONECT%5d%5d\n", i, i+1);

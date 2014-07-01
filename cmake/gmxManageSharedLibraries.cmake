@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,14 +32,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Manage the Gromacs shared librar setup. 
+# Manage the Gromacs shared library setup.
 
 ########################################################################
 # Shared/static library settings
 ########################################################################
 # Determine the defaults (this block has no effect if the variables have
 # already been set)
-if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD")
+if((APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU") AND NOT GMX_BUILD_MDRUN_ONLY)
     # Maybe Solaris should be here? Patch this if you know!
     SET(SHARED_LIBS_DEFAULT ON)
 elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
@@ -66,6 +66,10 @@ endif()
 
 # Declare the user-visible options
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
+if(BUILD_SHARED_LIBS AND GMX_BUILD_MDRUN_ONLY)
+    message(WARNING "Both BUILD_SHARED_LIBS and GMX_BUILD_MDRUN_ONLY are set. Generally, an mdrun-only build should prefer to use static libraries, which is the default if you make a fresh build tree. You may be re-using an old build tree, and so may wish to set BUILD_SHARED_LIBS=off yourself.")
+endif()
+
 if (UNIX)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static archives (it will only work if static versions of external dependencies are available and found)")
@@ -87,6 +91,27 @@ if (UNIX AND GMX_PREFER_STATIC_LIBS)
     # be used, so we'll add both to the preference list.
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
+
+# ==========
+# Only things for managing shared libraries and build types on Windows follow
+
+# Change the real CMake variables so we prefer static linking. This
+# should be a function so we can have proper local variables while
+# avoiding duplicating code.
+function(gmx_manage_prefer_static_libs_flags build_type)
+    if("${build_type}" STREQUAL "")
+        set(punctuation "") # for general compiler flags (e.g.) CMAKE_CXX_FLAGS
+    else()
+        set(punctuation "_") # for build-type-specific compiler flags (e.g.) CMAKE_CXX_FLAGS_RELEASE
+    endif()
+
+    # Change the real CMake variables for the given build type in each
+    # language, in the parent scope.
+    foreach(language C CXX)
+        string(REPLACE /MD /MT CMAKE_${language}_FLAGS${punctuation}${build_type} ${CMAKE_${language}_FLAGS${punctuation}${build_type}} PARENT_SCOPE)
+    endforeach()
+endfunction()
+
 IF( WIN32 AND NOT CYGWIN)
   if (NOT BUILD_SHARED_LIBS)
       if(NOT GMX_PREFER_STATIC_LIBS)
@@ -103,11 +128,9 @@ IF( WIN32 AND NOT CYGWIN)
   endif()
 
   IF (GMX_PREFER_STATIC_LIBS)
-      #Only setting Debug and Release flags. Others configurations are current not used.
-      STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-      STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-      STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-      STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+      foreach(build_type "" ${build_types_with_explicit_flags})
+          gmx_manage_prefer_static_libs_flags("${build_type}")
+      endforeach()
   ENDIF()
   IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
     if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work

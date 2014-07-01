@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,10 @@
 #ifndef NBNXN_CUDA_H
 #define NBNXN_CUDA_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "types/nbnxn_cuda_types_ext.h"
 #include "types/simple.h"
 
@@ -49,7 +53,9 @@
 extern "C" {
 #endif
 
-/*! Launch asynchronously the nonbonded force calculations.
+/*! \brief
+ * Launch asynchronously the nonbonded force calculations.
+ *
  *  This consists of the following (async) steps launched:
  *  - upload x and q;
  *  - upload shift vector;
@@ -62,16 +68,18 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                               int                    gmx_unused  flags,
                               int                    gmx_unused  iloc) FUNC_TERM
 
-/*! Launch asynchronously the download of nonbonded forces from the GPU
- *  (and energies/shift forces if required).
+/*! \brief
+ * Launch asynchronously the download of nonbonded forces from the GPU
+ * (and energies/shift forces if required).
  */
 void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                                const nbnxn_atomdata_t gmx_unused *nbatom,
                                int                    gmx_unused  flags,
                                int                    gmx_unused  aloc) FUNC_TERM
 
-/*! Wait for the asynchronously launched nonbonded calculations and data
- *  transfers to finish.
+/*! \brief
+ * Wait for the asynchronously launched nonbonded calculations and data
+ * transfers to finish.
  */
 void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                          const nbnxn_atomdata_t gmx_unused *nbatom,

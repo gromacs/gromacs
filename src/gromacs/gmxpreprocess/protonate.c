@@ -41,24 +41,26 @@
 #endif
 
 #include <math.h>
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "genhydro.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "index.h"
-#include "vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/math/vec.h"
 #include "hackblock.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_protonate(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[THISMODULE] reads (a) conformation(s) and adds all missing",
-        "hydrogens as defined in [TT]gmx2.ff/aminoacids.hdb[tt]. If only [TT]-s[tt] is",
+        "hydrogens as defined in [TT]oplsaa.ff/aminoacids.hdb[tt]. If only [TT]-s[tt] is",
         "specified, this conformation will be protonated, if also [TT]-f[tt]",
         "is specified, the conformation(s) will be read from this file, ",
         "which can be either a single conformation or a trajectory.",

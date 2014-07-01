@@ -2,8 +2,6 @@
 
 ENABLED_SECTIONS      += libapi
 INTERNAL_DOCS          = NO
-# This includes 'static inline' functions from headers in the documentation.
-EXTRACT_STATIC         = YES
 HIDE_UNDOC_CLASSES     = YES
 WARN_LOGFILE           = doxygen-lib.log
 HTML_OUTPUT            = html-lib
@@ -11,4 +9,3 @@ HTML_OUTPUT            = html-lib
 ALIASES               += inpublicapi="\ingroup group_publicapi"
 ALIASES               += inlibraryapi="\ingroup group_libraryapi"
 ALIASES               += libinternal=
-ALIASES               += endlibinternal=

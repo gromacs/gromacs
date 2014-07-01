@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 #include "types/interaction_const.h"
 #include "types/nbnxn_cuda_types_ext.h"
 #include "types/hw_info.h"
+#include "types/nb_verlet.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;
@@ -53,7 +54,7 @@
 extern "C" {
 #endif
 
-/*! Initializes the data structures related to CUDA nonbonded calculations. */
+/** Initializes the data structures related to CUDA nonbonded calculations. */
 FUNC_QUALIFIER
 void nbnxn_cuda_init(FILE gmx_unused                 *fplog,
                      nbnxn_cuda_ptr_t gmx_unused     *p_cu_nb,
@@ -63,19 +64,19 @@ void nbnxn_cuda_init(FILE gmx_unused                 *fplog,
                      /* true of both local and non-local are don on GPU */
                      gmx_bool gmx_unused              bLocalAndNonlocal) FUNC_TERM
 
-/*! Initializes simulation constant data. */
+/** Initializes simulation constant data. */
 FUNC_QUALIFIER
 void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t               gmx_unused  cu_nb,
                            const interaction_const_t      gmx_unused *ic,
                            const nonbonded_verlet_group_t gmx_unused *nbv_group) FUNC_TERM
 
-/*! Initializes pair-list data for GPU, called at every pair search step. */
+/** Initializes pair-list data for GPU, called at every pair search step. */
 FUNC_QUALIFIER
 void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                               const nbnxn_pairlist_t gmx_unused *h_nblist,
                               int                    gmx_unused  iloc) FUNC_TERM
 
-/*! Initializes atom-data on the GPU, called at every pair search step. */
+/** Initializes atom-data on the GPU, called at every pair search step. */
 FUNC_QUALIFIER
 void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                               const nbnxn_atomdata_t gmx_unused *atomdata) FUNC_TERM
@@ -85,21 +86,21 @@ FUNC_QUALIFIER
 void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t          gmx_unused  cu_nb,
                                          const interaction_const_t gmx_unused *ic) FUNC_TERM
 
-/*! Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
+/** Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
 FUNC_QUALIFIER
 void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                                 const nbnxn_atomdata_t gmx_unused *nbatom) FUNC_TERM
 
-/*! Clears GPU outputs: nonbonded force, shift force and energy. */
+/** Clears GPU outputs: nonbonded force, shift force and energy. */
 FUNC_QUALIFIER
 void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t gmx_unused cu_nb,
                               int              gmx_unused flags) FUNC_TERM
 
-/*! Frees all GPU resources used for the nonbonded calculations. */
+/** Frees all GPU resources used for the nonbonded calculations. */
 FUNC_QUALIFIER
 void nbnxn_cuda_free(nbnxn_cuda_ptr_t gmx_unused  cu_nb) FUNC_TERM
 
-/*! Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
+/** Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
 FUNC_QUALIFIER
 wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t gmx_unused cu_nb)
 #ifdef GMX_GPU
@@ -110,12 +111,12 @@ wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t gmx_unused cu_nb)
 }
 #endif
 
-/*! Resets nonbonded GPU timings. */
+/** Resets nonbonded GPU timings. */
 FUNC_QUALIFIER
 void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t gmx_unused cu_nb) FUNC_TERM
 
-/*! Calculates the minimum size of proximity lists to improve SM load balance
-    with CUDA non-bonded kernels. */
+/** Calculates the minimum size of proximity lists to improve SM load balance
+ *  with CUDA non-bonded kernels. */
 FUNC_QUALIFIER
 int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t gmx_unused cu_nb)
 #ifdef GMX_GPU
@@ -126,7 +127,7 @@ int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t gmx_unused cu_nb)
 }
 #endif
 
-/*! Returns if analytical Ewald CUDA kernels are used. */
+/** Returns if analytical Ewald CUDA kernels are used. */
 FUNC_QUALIFIER
 gmx_bool nbnxn_cuda_is_kernel_ewald_analytical(const nbnxn_cuda_ptr_t gmx_unused cu_nb)
 #ifdef GMX_GPU

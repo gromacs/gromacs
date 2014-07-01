@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@
 #define    def_nofc(str, lstr) \
     {str, lstr,    0,     0,     0, IF_NULL,                    -1, unimplemented}
 
-/* this MUST correspond to the enum in include/types/idef.h */
+/* this MUST correspond to the enum in src/gromacs/topology/idef.h */
 const t_interaction_function interaction_function[F_NRE] =
 {
     def_bond    ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds         ),
@@ -101,6 +101,7 @@ const t_interaction_function interaction_function[F_NRE] =
     def_bonded  ("RESTRAINTPOT", "Restraint Pot.", 2, 4, 4,  eNR_RESTRBONDS,  restraint_bonds ),
     def_angle   ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles        ),
     def_angle   ("G96ANGLES", "G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
+    def_angle   ("RESTRANGLES", "Restricted Angles", 3, 2, 2,  eNR_ANGLES, restrangles),
     def_angle   ("LINEAR_ANGLES", "Lin. Angle", 3, 2, 2,  eNR_LINEAR_ANGLES, linear_angles ),
     def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0, 0,          cross_bond_bond ),
     def_bonded  ("CROSS_BOND_ANGLE", "BA-Cross",   3, 4, 0, 0,          cross_bond_angle ),
@@ -109,6 +110,8 @@ const t_interaction_function interaction_function[F_NRE] =
     def_bondedt ("TABANGLES", "Tab. Angles",    3, 2, 2,  eNR_TABANGLES, tab_angles ),
     def_bonded  ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs         ),
     def_bonded  ("RBDIHS",   "Ryckaert-Bell.",  4, 6, 6,  eNR_RB, rbdihs            ),
+    def_bonded  ("RESTRDIHS",  "Restricted Dih.",     4, 2, 2,  eNR_PROPER,  restrdihs),
+    def_bonded  ("CBTDIHS",   "CBT Dih.",  4, 6, 6,  eNR_RB, cbtdihs            ),
     def_bonded  ("FOURDIHS", "Fourier Dih.",    4, 4, 4,  eNR_FOURDIH, rbdihs       ),
     def_bonded  ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER, idihs        ),
     def_bonded  ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_IMPROPER, pdihs       ),

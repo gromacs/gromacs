@@ -2,8 +2,6 @@
  *
  *  The high-level API of the TNG API is used where appropriate.
  *
- *                      VERSION 1.0
- *
  * Written by Magnus Lundborg
  * Copyright (c) 2012-2013, The GROMACS development team.
  * Check out http://www.gromacs.org for more information.
@@ -19,7 +17,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../../include/tng_io.h"
+#include "tng/tng_io.h"
 
 int main(int argc, char **argv)
 {

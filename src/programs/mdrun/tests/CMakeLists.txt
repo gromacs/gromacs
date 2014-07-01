@@ -35,8 +35,6 @@
 set(testname "MdrunTests")
 set(exename "mdrun-test")
 
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
-
 gmx_build_unit_test(
     ${testname}
     ${exename}
@@ -48,6 +46,7 @@ gmx_build_unit_test(
     # files with code for test fixtures
     moduletest.cpp
     swapcoords.cpp
+    interactiveMD.cpp
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )

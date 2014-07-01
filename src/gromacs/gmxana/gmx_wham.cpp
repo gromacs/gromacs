@@ -44,23 +44,28 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <sstream>
 
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
 #include "names.h"
 #include "gromacs/random/random.h"
 #include "gmx_ana.h"
 #include "macros.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/fileio/xvgr.h"
 
-#include "string2.h"
-#include "xvgr.h"
+#include "gromacs/utility/fatalerror.h"
 
 //! longest file names allowed in input files
 #define WHAM_MAXFILELEN 2048
@@ -1713,13 +1718,16 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
             bsProfiles_av2[i] += tmp*tmp;
             fprintf(fp, "%e\t%e\n", (i+0.5)*opt->dz+opt->min, tmp);
         }
-        fprintf(fp, "&\n");
+        fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
     }
     gmx_ffclose(fp);
 
     /* write average and stddev */
     fp = xvgropen(fnres, "Average and stddev from bootstrapping", "z", ylabel, opt->oenv);
-    fprintf(fp, "@TYPE xydy\n");
+    if (output_env_get_print_xvgr_codes(opt->oenv))
+    {
+        fprintf(fp, "@TYPE xydy\n");
+    }
     for (i = 0; i < opt->bins; i++)
     {
         bsProfiles_av [i] /= opt->nBootStrap;
@@ -2680,7 +2688,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
                 {
                     fprintf(fpcorr, "%g  %g\n", k*dt, corr[k]);
                 }
-                fprintf(fpcorr, "&\n");
+                fprintf(fpcorr, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
             }
 
             /* esimate integrated correlation time, fitting is too unstable */
@@ -2708,16 +2716,19 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
 
     /* plot IACT along reaction coordinate */
     fp = xvgropen(fn, "Integrated autocorrelation times", "z", "IACT [ps]", opt->oenv);
-    fprintf(fp, "@    s0 symbol 1\n@    s0 symbol size 0.5\n@    s0 line linestyle 0\n");
-    fprintf(fp, "#  WIN   tau(gr1)  tau(gr2) ...\n");
-    for (i = 0; i < nwins; i++)
+    if (output_env_get_print_xvgr_codes(opt->oenv))
     {
-        fprintf(fp, "# %3d   ", i);
-        for (ig = 0; ig < window[i].nPull; ig++)
+        fprintf(fp, "@    s0 symbol 1\n@    s0 symbol size 0.5\n@    s0 line linestyle 0\n");
+        fprintf(fp, "#  WIN   tau(gr1)  tau(gr2) ...\n");
+        for (i = 0; i < nwins; i++)
         {
-            fprintf(fp, " %11g", window[i].tau[ig]);
+            fprintf(fp, "# %3d   ", i);
+            for (ig = 0; ig < window[i].nPull; ig++)
+            {
+                fprintf(fp, " %11g", window[i].tau[ig]);
+            }
+            fprintf(fp, "\n");
         }
-        fprintf(fp, "\n");
     }
     for (i = 0; i < nwins; i++)
     {
@@ -2732,8 +2743,12 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
                opt->sigSmoothIact);
         /* smooth IACT along reaction coordinate and overwrite g=1+2tau */
         smoothIact(window, nwins, opt);
-        fprintf(fp, "&\n@    s1 symbol 1\n@    s1 symbol size 0.5\n@    s1 line linestyle 0\n");
-        fprintf(fp, "@    s1 symbol color 2\n");
+        fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
+        if (output_env_get_print_xvgr_codes(opt->oenv))
+        {
+            fprintf(fp, "@    s1 symbol 1\n@    s1 symbol size 0.5\n@    s1 line linestyle 0\n");
+            fprintf(fp, "@    s1 symbol color 2\n");
+        }
         for (i = 0; i < nwins; i++)
         {
             for (ig = 0; ig < window[i].nPull; ig++)
@@ -3100,7 +3115,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 //! Boolean XOR
 #define WHAMBOOLXOR(a, b) ( ((!(a)) && (b)) || ((a) && (!(b))))
 
-/*! Number of elements in fnm (used for command line parsing) */
+//! Number of elements in fnm (used for command line parsing)
 #define NFILE asize(fnm)
 
 //! The main g_wham routine

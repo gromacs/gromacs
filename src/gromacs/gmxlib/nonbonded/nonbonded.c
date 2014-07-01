@@ -38,29 +38,31 @@
 #include <config.h>
 #endif
 
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "thread_mpi/threads.h"
+
 #include "typedefs.h"
 #include "txtdump.h"
-#include "smalloc.h"
 #include "ns.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "string2.h"
 #include "force.h"
 #include "names.h"
-#include "main.h"
-#include "xvgr.h"
-#include "gmx_fatal.h"
-#include "physics.h"
 #include "force.h"
 #include "bondf.h"
 #include "nrnb.h"
-#include "smalloc.h"
 #include "nonbonded.h"
+#include "gromacs/simd/simd.h"
+
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "nb_kernel.h"
 #include "nb_free_energy.h"
@@ -163,7 +165,7 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 
 
 void
-gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
+gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwSwitchDiffers)
 {
     const char *     elec;
     const char *     elec_mod;
@@ -284,8 +286,30 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
             }
         }
 
-        /* Give up, pick a generic one instead */
-        if (nl->kernelptr_vf == NULL)
+        /* For now, the accelerated kernels cannot handle the combination of switch functions for both
+         * electrostatics and VdW that use different switch radius or switch cutoff distances
+         * (both of them enter in the switch function calculation). This would require
+         * us to evaluate two completely separate switch functions for every interaction.
+         * Instead, we disable such kernels by setting the pointer to NULL.
+         * This will cause the generic kernel (which can handle it) to be called instead.
+         *
+         * Note that we typically already enable tabulated coulomb interactions for this case,
+         * so this is mostly a safe-guard to make sure we call the generic kernel if the
+         * tables are disabled.
+         */
+        if ((nl->ielec != GMX_NBKERNEL_ELEC_NONE) && (nl->ielecmod == eintmodPOTSWITCH) &&
+            (nl->ivdw  != GMX_NBKERNEL_VDW_NONE)  && (nl->ivdwmod  == eintmodPOTSWITCH) &&
+            bElecAndVdwSwitchDiffers)
+        {
+            nl->kernelptr_vf = NULL;
+            nl->kernelptr_f  = NULL;
+        }
+
+        /* Give up, pick a generic one instead.
+         * We only do this for particle-particle kernels; by leaving the water-optimized kernel
+         * pointers to NULL, the water optimization will automatically be disabled for this interaction.
+         */
+        if (nl->kernelptr_vf == NULL && !gmx_strcasecmp_min(geom, "Particle-Particle"))
         {
             nl->kernelptr_vf       = (void *) gmx_nb_generic_kernel;
             nl->kernelptr_f        = (void *) gmx_nb_generic_kernel;
@@ -295,13 +319,11 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
                 fprintf(debug,
                         "WARNING - Slow generic NB kernel used for neighborlist with\n"
                         "    Elec: '%s', Modifier: '%s'\n"
-                        "    Vdw:  '%s', Modifier: '%s'\n"
-                        "    Geom: '%s', Other: '%s'\n\n",
-                        elec, elec_mod, vdw, vdw_mod, geom, other);
+                        "    Vdw:  '%s', Modifier: '%s'\n",
+                        elec, elec_mod, vdw, vdw_mod);
             }
         }
     }
-
     return;
 }
 
@@ -375,7 +397,7 @@ void do_nonbonded(t_forcerec *fr,
                 nlist = nblists->nlist_sr;
                 f                                   = f_shortrange;
             }
-            else if (range == 1)
+            else
             {
                 /* Long-range */
                 if (!(flags & GMX_NONBONDED_DO_LR))
@@ -409,7 +431,15 @@ void do_nonbonded(t_forcerec *fr,
                         /* We don't need the non-perturbed interactions */
                         continue;
                     }
-                    (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                    /* Neighborlists whose kernelptr==NULL will always be empty */
+                    if (kernelptr != NULL)
+                    {
+                        (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Non-empty neighborlist does not have any kernel pointer assigned.");
+                    }
                 }
             }
         }

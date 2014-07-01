@@ -32,21 +32,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "nsfactor.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <ctype.h>
 #include <string.h>
-#include "gromacs/random/random.h"
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "vec.h"
-#include "nsfactor.h"
 
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 void check_binwidth(real binwidth)
 {

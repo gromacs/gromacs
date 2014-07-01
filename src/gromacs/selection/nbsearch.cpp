@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,15 +62,14 @@
 #include <algorithm>
 #include <vector>
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
-#include "gromacs/legacyheaders/thread_mpi/mutex.h"
+#include "thread_mpi/mutex.h"
 
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {

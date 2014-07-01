@@ -39,25 +39,30 @@
 #endif
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "atomprop.h"
-#include "names.h"
-#include "manager.h"
-#include "pbc.h"
-#include "nmol.h"
-#include "copyrite.h"
-#include "vec.h"
-#include "string2.h"
+#ifdef HAVE_UNISTD_H
+#include <unistd.h> // for usleep()
+#endif
 
-#include "gromacs/fileio/futil.h"
+#include "typedefs.h"
+#include "macros.h"
+#include "names.h"
+#include "copyrite.h"
+
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "3dview.h"
+#include "manager.h"
+#include "nmol.h"
 
 static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)
 {

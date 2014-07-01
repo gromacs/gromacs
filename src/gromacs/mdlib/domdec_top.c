@@ -38,22 +38,27 @@
 #endif
 
 #include <string.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
+#include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
 #include "names.h"
 #include "network.h"
-#include "vec.h"
-#include "pbc.h"
 #include "chargegroup.h"
-#include "gromacs/gmxlib/topsort.h"
-#include "mtop_util.h"
-#include "mshift.h"
 #include "vsite.h"
 #include "gmx_ga2la.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topsort.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* for dd_init_local_state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
@@ -783,7 +788,7 @@ void dd_make_reverse_top(FILE *fplog,
     }
 }
 
-static inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
+static gmx_inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
 {
     t_iatom *liatoms;
     int      k;

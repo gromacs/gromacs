@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "pdbio.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "sysstuff.h"
-#include "string2.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "symtab.h"
-#include "pdbio.h"
-#include "vec.h"
-#include "copyrite.h"
-#include "futil.h"
-#include "atomprop.h"
-#include "physics.h"
-#include "pbc.h"
-#include "gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/futil.h"
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int ai, aj;
@@ -72,15 +78,7 @@ static const char *pdbtp[epdbNR] = {
 };
 
 
-/* this is not very good,
-   but these are only used in gmx_trjconv and gmx_editconv */
-static gmx_bool bWideFormat = FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
-
-void set_pdb_wide_format(gmx_bool bSet)
-{
-    bWideFormat = bSet;
-}
 
 static void xlate_atomname_pdb2gmx(char *name)
 {
@@ -268,16 +266,18 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            gmx_conect conect, gmx_bool bTerSepChains)
 {
     gmx_conect_t     *gc = (gmx_conect_t *)conect;
-    char              resnm[6], nm[6], pdbform[128], pukestring[100];
+    char              resnm[6], nm[6], pukestring[100];
     atom_id           i, ii;
-    int               resind, resnr, type;
+    int               resind, resnr;
+    enum PDB_record   type;
     unsigned char     resic, ch;
+    char              altloc;
     real              occup, bfac;
     gmx_bool          bOccup;
     int               nlongname = 0;
     int               chainnum, lastchainnum;
     int               lastresind, lastchainresind;
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
     const char       *p_restype;
     const char       *p_lastrestype;
 
@@ -285,11 +285,6 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
     bromacs(pukestring, 99);
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : pukestring);
-    if (bWideFormat)
-    {
-        fprintf(out, "REMARK    This file does not adhere to the PDB standard\n");
-        fprintf(out, "REMARK    As a result of, some programs may not like it\n");
-    }
     if (box && ( norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ]) ) )
     {
         gmx_write_pdb_box(out, ePBC, box);
@@ -340,7 +335,10 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         }
 
         strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
+        resnm[sizeof(resnm)-1] = 0;
         strncpy(nm, *atoms->atomname[i], sizeof(nm)-1);
+        nm[sizeof(nm)-1] = 0;
+
         /* rename HG12 to 2HG1, etc. */
         xlate_atomname_gmx2pdb(nm);
         resnr = atoms->resinfo[resind].nr;
@@ -364,53 +362,40 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         }
         if (atoms->pdbinfo)
         {
-            type  = atoms->pdbinfo[i].type;
+            type   = (enum PDB_record)(atoms->pdbinfo[i].type);
+            altloc = atoms->pdbinfo[i].altloc;
+            if (!isalnum(altloc))
+            {
+                altloc = ' ';
+            }
             occup = bOccup ? 1.0 : atoms->pdbinfo[i].occup;
             bfac  = atoms->pdbinfo[i].bfac;
         }
         else
         {
-            type  = 0;
-            occup = 1.0;
-            bfac  = 0.0;
+            type   = epdbATOM;
+            occup  = 1.0;
+            bfac   = 0.0;
+            altloc = ' ';
         }
-        if (bWideFormat)
-        {
-            strcpy(pdbform,
-                   "%-6s%5u %-4.4s %3.3s %c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f    %2s\n");
-        }
-        else
-        {
-            /* Check whether atomname is an element name */
-            if ((strlen(nm) < 4) && (gmx_strcasecmp(nm, atoms->atom[i].elem) != 0))
-            {
-                strcpy(pdbform, get_pdbformat());
-            }
-            else
-            {
-                strcpy(pdbform, get_pdbformat4());
-                if (strlen(nm) > 4)
-                {
-                    int maxwln = 20;
-                    if (nlongname < maxwln)
-                    {
-                        fprintf(stderr, "WARNING: Writing out atom name (%s) longer than 4 characters to .pdb file\n", nm);
-                    }
-                    else if (nlongname == maxwln)
-                    {
-                        fprintf(stderr, "WARNING: More than %d long atom names, will not write more warnings\n", maxwln);
-                    }
-                    nlongname++;
-                }
-            }
-            strcat(pdbform, "%6.2f%6.2f          %2s\n");
-        }
-        fprintf(out, pdbform, pdbtp[type], (i+1)%100000, nm, resnm, ch, resnr,
-                (resic == '\0') ? ' ' : resic,
-                10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], occup, bfac, atoms->atom[i].elem);
+
+        gmx_fprintf_pdb_atomline(out,
+                                 type,
+                                 i+1,
+                                 nm,
+                                 altloc,
+                                 resnm,
+                                 ch,
+                                 resnr,
+                                 resic,
+                                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ],
+                                 occup,
+                                 bfac,
+                                 atoms->atom[i].elem);
+
         if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
         {
-            fprintf(out, "ANISOU%5u  %-4.4s%3.3s %c%4d%c %7d%7d%7d%7d%7d%7d\n",
+            fprintf(out, "ANISOU%5u  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
                     (i+1)%100000, nm, resnm, ch, resnr,
                     (resic == '\0') ? ' ' : resic,
                     atoms->pdbinfo[i].uij[0], atoms->pdbinfo[i].uij[1],
@@ -593,7 +578,7 @@ static int read_atom(t_symtab *symtab,
     t_atom       *atomn;
     int           j, k;
     char          nc = '\0';
-    char          anr[12], anm[12], anm_copy[12], altloc, resnm[12], rnr[12];
+    char          anr[12], anm[12], anm_copy[12], altloc, resnm[12], rnr[12], elem[3];
     char          xc[12], yc[12], zc[12], occup[12], bfac[12];
     unsigned char resic;
     char          chainid;
@@ -676,6 +661,17 @@ static int read_atom(t_symtab *symtab,
     }
     bfac[k] = nc;
 
+    /* 10 blanks */
+    j += 10;
+
+    /* Element name */
+    for (k = 0; (k < 2); k++, j++)
+    {
+        elem[k] = line[j];
+    }
+    elem[k] = nc;
+    trim(elem);
+
     if (atoms->atom)
     {
         atomn = &(atoms->atom[natom]);
@@ -707,7 +703,7 @@ static int read_atom(t_symtab *symtab,
         atomn->m               = 0.0;
         atomn->q               = 0.0;
         atomn->atomnumber      = atomnumber;
-        atomn->elem[0]         = '\0';
+        strncpy(atomn->elem, elem, 4);
     }
     x[natom][XX] = strtod(xc, NULL)*0.1;
     x[natom][YY] = strtod(yc, NULL)*0.1;
@@ -1087,14 +1083,83 @@ gmx_conect gmx_conect_generate(t_topology *top)
     return gc;
 }
 
-const char* get_pdbformat()
+int
+gmx_fprintf_pdb_atomline(FILE *            fp,
+                         enum PDB_record   record,
+                         int               atom_seq_number,
+                         const char *      atom_name,
+                         char              alternate_location,
+                         const char *      res_name,
+                         char              chain_id,
+                         int               res_seq_number,
+                         char              res_insertion_code,
+                         real              x,
+                         real              y,
+                         real              z,
+                         real              occupancy,
+                         real              b_factor,
+                         const char *      element)
 {
-    static const char *pdbformat = "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f";
-    return pdbformat;
-}
+    char     tmp_atomname[6], tmp_resname[6];
+    gmx_bool start_name_in_col13;
+    int      n;
 
-const char* get_pdbformat4()
-{
-    static const char *pdbformat4 = "%-6s%5u %-4.4s %3.3s %c%4d%c   %8.3f%8.3f%8.3f";
-    return pdbformat4;
+    if (record != epdbATOM && record != epdbHETATM)
+    {
+        gmx_fatal(FARGS, "Can only print PDB atom lines as ATOM or HETATM records");
+    }
+
+    /* Format atom name */
+    if (atom_name != NULL)
+    {
+        /* If the atom name is an element name with two chars, it should start already in column 13.
+         * Otherwise it should start in column 14, unless the name length is 4 chars.
+         */
+        if ( (element != NULL) && (strlen(element) >= 2) && (gmx_strncasecmp(atom_name, element, 2) == 0) )
+        {
+            start_name_in_col13 = TRUE;
+        }
+        else
+        {
+            start_name_in_col13 = (strlen(atom_name) >= 4);
+        }
+        sprintf(tmp_atomname, start_name_in_col13 ? "" : " ");
+        strncat(tmp_atomname, atom_name, 4);
+        tmp_atomname[5] = '\0';
+    }
+    else
+    {
+        tmp_atomname[0] = '\0';
+    }
+
+    /* Format residue name */
+    strncpy(tmp_resname, (res_name != NULL) ? res_name : "", 4);
+    /* Make sure the string is terminated if strlen was > 4 */
+    tmp_resname[4] = '\0';
+    /* String is properly terminated, so now we can use strcat. By adding a
+     * space we can write it right-justified, and if the original name was
+     * three characters or less there will be a space added on the right side.
+     */
+    strcat(tmp_resname, " ");
+
+    /* Truncate integers so they fit */
+    atom_seq_number = atom_seq_number % 100000;
+    res_seq_number  = res_seq_number % 10000;
+
+    n = fprintf(fp,
+                "%-6s%5d %-4.4s%c%4.4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n",
+                pdbtp[record],
+                atom_seq_number,
+                tmp_atomname,
+                alternate_location,
+                tmp_resname,
+                chain_id,
+                res_seq_number,
+                res_insertion_code,
+                x, y, z,
+                occupancy,
+                b_factor,
+                (element != NULL) ? element : "");
+
+    return n;
 }

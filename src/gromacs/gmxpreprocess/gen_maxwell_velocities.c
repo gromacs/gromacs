@@ -40,13 +40,12 @@
 
 #include <math.h>
 #include "gromacs/random/random.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "physics.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/units.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gen_maxwell_velocities.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 
 static void low_mspeed(real tempi,
                        gmx_mtop_t *mtop, rvec v[], gmx_rng_t rng, t_inputrec *ir)
@@ -137,7 +136,7 @@ void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[], t_
     if (seed == 0)
     {
         seed = gmx_rng_make_seed();
-        fprintf(stderr, "Using random seed %d for generating velocities\n", seed);
+        fprintf(stderr, "Using random seed %u for generating velocities\n", seed);
     }
 
     rng = gmx_rng_init(seed);

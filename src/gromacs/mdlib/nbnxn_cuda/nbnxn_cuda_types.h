@@ -55,7 +55,7 @@
 #if CUDA_VERSION >= 5000
 #define TEXOBJ_SUPPORTED
 #else  /* CUDA_VERSION */
-/*! This typedef allows us to define only one version of struct cu_nbparam */
+/** This typedef allows us to define only one version of struct cu_nbparam */
 typedef int cudaTextureObject_t;
 #endif /* CUDA_VERSION */
 
@@ -91,7 +91,7 @@ enum eelCu {
  * should match the order of enumerated types below.
  */
 enum evdwCu {
-    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuNR
+    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
@@ -155,7 +155,10 @@ struct cu_nbparam
     float           c_rf;             /**< Reaction-field/plain cutoff electrostatics const. */
     float           two_k_rf;         /**< Reaction-field electrostatics constant            */
     float           ewald_beta;       /**< Ewald/PME parameter                               */
-    float           sh_ewald;         /**< Ewald/PME  correction term                        */
+    float           sh_ewald;         /**< Ewald/PME correction term substracted from the direct-space potential */
+    float           sh_lj_ewald;      /**< LJ-Ewald/PME correction term added to the correction potential        */
+    float           ewaldcoeff_lj;    /**< LJ-Ewald/PME coefficient                          */
+
     float           rcoulomb_sq;      /**< Coulomb cut-off squared                           */
 
     float           rvdw_sq;          /**< VdW cut-off squared                               */
@@ -166,9 +169,11 @@ struct cu_nbparam
     shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
     switch_consts_t vdw_switch;       /**< VdW switch constants                     */
 
-    /* Non-bonded parameters - accessed through texture memory */
-    float              *nbfp;        /**< nonbonded parameter table with C6/C12 pairs  */
-    cudaTextureObject_t nbfp_texobj; /**< texture object bound to nbfp                 */
+    /* LJ non-bonded parameters - accessed through texture memory */
+    float               *nbfp;             /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
+    cudaTextureObject_t  nbfp_texobj;      /**< texture object bound to nbfp                                                       */
+    float               *nbfp_comb;        /**< nonbonded parameter table per atom type, 2*ntype elements                          */
+    cudaTextureObject_t  nbfp_comb_texobj; /**< texture object bound to nbfp_texobj                                                */
 
     /* Ewald Coulomb force table data - accessed through texture memory */
     int                  coulomb_tab_size;   /**< table size (s.t. it fits in texture cache) */

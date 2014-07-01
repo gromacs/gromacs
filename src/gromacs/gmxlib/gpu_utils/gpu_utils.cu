@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,13 +37,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "smalloc.h"
-#include "string2.h"
 #include "types/hw_info.h"
 
 #include "gpu_utils.h"
 #include "../cuda_tools/cudautils.cuh"
 #include "memtestG80_core.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 /** Amount of memory to be used in quick memtest. */
 #define QUICK_MEM       250

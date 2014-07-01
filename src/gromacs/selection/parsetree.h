@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,10 +55,10 @@
 #include <list>
 #include <string>
 
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/vec.h"
-
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/uniqueptr.h"
 
 #include "selelem.h"
@@ -383,8 +383,7 @@ _gmx_selparser_handle_exception(void *scanner, const std::exception &ex);
 
 /** Propagates the flags for selection elements. */
 void
-_gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel,
-                          void                                   *scanner);
+_gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel);
 
 /** Initializes the method parameter data of \ref SEL_EXPRESSION and
  * \ref SEL_MODIFIER elements. */
@@ -479,14 +478,6 @@ _gmx_sel_append_selection(const gmx::SelectionTreeElementPointer &sel,
 /** Check whether the parser should finish. */
 bool
 _gmx_sel_parser_should_finish(void *scanner);
-
-/** Handle empty commands. */
-void
-_gmx_sel_handle_empty_cmd(void *scanner);
-/** Process help commands. */
-void
-_gmx_sel_handle_help_cmd(const gmx::SelectionParserValueListPointer &topic,
-                         void                                       *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */

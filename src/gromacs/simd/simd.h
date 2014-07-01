@@ -34,17 +34,16 @@
  */
 
 /*! \libinternal
- *  \defgroup module_simd SIMD intrinsics interface (simd)
- *  \ingroup group_utilitymodules
+ * \defgroup module_simd SIMD intrinsics interface (simd)
+ * \ingroup group_utilitymodules
  *
- *  \brief Provides an architecture-independent way of doing SIMD coding.
+ * \brief Provides an architecture-independent way of doing SIMD coding.
  *
- *  Start by consulting the overview Doxygen SIMD module documentation which is
- *  available in the internal library documentation (but not the public API),
- *  and then the details are documented in simd.h and the reference
- *  implementation impl_reference.h.
+ * Overview of the SIMD implementation is provided in \ref page_simd.
+ * The details are documented in simd.h and the reference implementation
+ * impl_reference.h.
  *
- *  \author Erik Lindahl <erik.lindahl@scilifelab.se>
+ * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  */
 
 #ifndef GMX_SIMD_SIMD_H
@@ -76,7 +75,8 @@
 #endif
 
 #include <stddef.h>
-#include "gromacs/legacyheaders/types/simple.h"
+
+#include "gromacs/utility/basedefinitions.h"
 
 /* Forward declarations so memory allocation can be used in implementations */
 static gmx_inline float *  gmx_simd_align_f(float *p);
@@ -1502,7 +1502,7 @@ gmx_simd4_align_d(double *p)
  */
 #    define gmx_simd4_reduce_r               gmx_simd4_reduce_f
 
-/*! Align real memory for SIMD4 usage.
+/*! \brief Align real memory for SIMD4 usage.
  *
  * \copydetails gmx_simd4_align_f
  */

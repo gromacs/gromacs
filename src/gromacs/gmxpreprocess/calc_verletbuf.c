@@ -37,18 +37,21 @@
 #endif
 
 #include <assert.h>
+#include <math.h>
+#include <stdlib.h>
 
 #include <sys/types.h>
-#include <math.h>
+
 #include "typedefs.h"
-#include "physics.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "coulomb.h"
 #include "calc_verletbuf.h"
 #include "../mdlib/nbnxn_consts.h"
+
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_NBNXN_SIMD
 /* The include below sets the SIMD instruction type (precision+width)
@@ -207,7 +210,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
             for (i = 0; i < il->nr; i += 1+NRAL(ft))
             {
                 const t_iparams *ip;
-                real             cam[5], inv_mass, m_aj;
+                real             cam[5] = {0}, inv_mass, m_aj;
                 int              a1, j, aj, coeff;
 
                 ip = &ffparams->iparams[il->iatoms[i]];
@@ -411,6 +414,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             add_at(&att, &natt, &prop[a], nmol);
         }
 
+        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         sfree(vsite_m);
         sfree(prop);
     }
@@ -546,18 +550,18 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
 static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                        const gmx_ffparams_t *ffp,
                        real kT_fac,
-                       real md_ljd, real dd_ljd,
-                       real md_ljr, real dd_ljr,
-                       real md_el, real dd_el,
+                       real md1_ljd, real d2_ljd, real md3_ljd,
+                       real md1_ljr, real d2_ljr, real md3_ljr,
+                       real md1_el,  real d2_el,
                        real r_buffer,
                        real rlist, real boxvol)
 {
-    double drift_tot, pot1, pot2, pot;
+    double drift_tot, pot1, pot2, pot3, pot;
     int    i, j;
     real   s2i_2d, s2i_3d, s2j_2d, s2j_3d, s2, s;
     int    ti, tj;
-    real   md, dd;
-    real   sc_fac, rsh;
+    real   md1, d2, md3;
+    real   sc_fac, rsh, rsh2;
     double c_exp, c_erfc;
 
     drift_tot = 0;
@@ -580,16 +584,21 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
              * pairs will partially cancel.
              */
             /* -dV/dr at the cut-off for LJ + Coulomb */
-            md =
-                md_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
-                md_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
-                md_el*att[i].prop.q*att[j].prop.q;
+            md1 =
+                md1_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
+                md1_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
+                md1_el*att[i].prop.q*att[j].prop.q;
 
-            /* d2V/dr2 at the cut-off for Coulomb, we neglect LJ */
-            dd =
-                dd_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
-                dd_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
-                dd_el*att[i].prop.q*att[j].prop.q;
+            /* d2V/dr2 at the cut-off for LJ + Coulomb */
+            d2 =
+                d2_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
+                d2_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
+                d2_el*att[i].prop.q*att[j].prop.q;
+
+            /* -d3V/dr3 at the cut-off for LJ, we neglect Coulomb */
+            md3 =
+                md3_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
+                md3_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12;
 
             rsh    = r_buffer;
             sc_fac = 1.0;
@@ -625,21 +634,25 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             c_exp  = exp(-rsh*rsh/(2*s2))/sqrt(2*M_PI);
             c_erfc = 0.5*gmx_erfc(rsh/(sqrt(2*s2)));
             s      = sqrt(s2);
+            rsh2   = rsh*rsh;
 
             pot1 = sc_fac*
-                md/2*((rsh*rsh + s2)*c_erfc - rsh*s*c_exp);
+                md1/2*((rsh2 + s2)*c_erfc - rsh*s*c_exp);
             pot2 = sc_fac*
-                dd/6*(s*(rsh*rsh + 2*s2)*c_exp - rsh*(rsh*rsh + 3*s2)*c_erfc);
-            pot = pot1 + pot2;
+                d2/6*(s*(rsh2 + 2*s2)*c_exp - rsh*(rsh2 + 3*s2)*c_erfc);
+            pot3 =
+                md3/24*((rsh2*rsh2 + 6*rsh2*s2 + 3*s2*s2)*c_erfc - rsh*s*(rsh2 + 5*s2)*c_exp);
+            pot = pot1 + pot2 + pot3;
 
             if (gmx_debug_at)
             {
-                fprintf(debug, "n %d %d d s %.3f %.3f %.3f %.3f con %d md %8.1e dd %8.1e pot1 %8.1e pot2 %8.1e pot %8.1e\n",
+                fprintf(debug, "n %d %d d s %.3f %.3f %.3f %.3f con %d -d1 %8.1e d2 %8.1e -d3 %8.1e pot1 %8.1e pot2 %8.1e pot3 %8.1e pot %8.1e\n",
                         att[i].n, att[j].n,
                         sqrt(s2i_2d), sqrt(s2i_3d),
                         sqrt(s2j_2d), sqrt(s2j_3d),
                         att[i].prop.bConstr+att[j].prop.bConstr,
-                        md, dd, pot1, pot2, pot);
+                        md1, d2, md3,
+                        pot1, pot2, pot3, pot);
             }
 
             /* Multiply by the number of atom pairs */
@@ -715,6 +728,26 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
     return area_rel/cluster_size;
 }
 
+/* Returns the negative of the third derivative of a potential r^-p
+ * with a force-switch function, evaluated at the cut-off rc.
+ */
+static real md3_force_switch(real p, real rswitch, real rc)
+{
+    /* The switched force function is:
+     * p*r^-(p+1) + a*(r - rswitch)^2 + b*(r - rswitch)^3
+     */
+    real a, b;
+    real md3_pot, md3_sw;
+
+    a = -((p + 4)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*pow(rc-rswitch, 2));
+    b =  ((p + 3)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*pow(rc-rswitch, 3));
+
+    md3_pot = (p + 2)*(p + 1)*p*pow(rc, p+3);
+    md3_sw  = 2*a + 6*b*(rc - rswitch);
+
+    return md3_pot + md3_sw;
+}
+
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              const t_inputrec *ir,
                              real reference_temperature,
@@ -731,7 +764,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     verletbuf_atomtype_t *att  = NULL;
     int                   natt = -1, i;
     double                reppow;
-    real                  md_ljd,  dd_ljd, md_ljr, dd_ljr, md_el, dd_el;
+    real                  md1_ljd, d2_ljd, md3_ljd;
+    real                  md1_ljr, d2_ljr, md3_ljr;
+    real                  md1_el,  d2_el;
     real                  elfac;
     real                  kT_fac, mass_min;
     int                   ib0, ib1, ib;
@@ -807,46 +842,41 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         fprintf(debug, "energy drift atom types: %d\n", natt);
     }
 
-    reppow = mtop->ffparams.reppow;
-    md_ljd = 0;
-    dd_ljd = 0;
-    md_ljr = 0;
-    dd_ljr = 0;
+    reppow   = mtop->ffparams.reppow;
+    md1_ljd  = 0;
+    d2_ljd   = 0;
+    md3_ljd  = 0;
+    md1_ljr  = 0;
+    d2_ljr   = 0;
+    md3_ljr  = 0;
     if (ir->vdwtype == evdwCUT)
     {
-        real sw_range, sw_range2;
+        real sw_range, md3_pswf;
 
         switch (ir->vdw_modifier)
         {
             case eintmodNONE:
             case eintmodPOTSHIFT:
                 /* -dV/dr of -r^-6 and r^-reppow */
-                md_ljd =     -6*pow(ir->rvdw, -7.0);
-                md_ljr = reppow*pow(ir->rvdw, -(reppow+1));
-                /* The contribution of the second derivative is negligible */
+                md1_ljd =     -6*pow(ir->rvdw, -7.0);
+                md1_ljr = reppow*pow(ir->rvdw, -(reppow+1));
+                /* The contribution of the higher derivatives is negligible */
                 break;
             case eintmodFORCESWITCH:
-                /* At the cut-off: V=V'=V''=0.
-                 * We choose to approximate the potential over the switch
-                 * region using a linear force, thus quadratic potential.
-                 * This is a tight overestimate for too short switching
-                 * regions and not more than a factor 2 higher otherwise.
-                 */
-                sw_range = ir->rvdw - ir->rvdw_switch;
-                dd_ljd   =     -6*pow(ir->rvdw_switch, -7.0       )/sw_range;
-                dd_ljr   = reppow*pow(ir->rvdw_switch, -(reppow+1))/sw_range;
+                /* At the cut-off: V=V'=V''=0, so we use only V''' */
+                md3_ljd  = -md3_force_switch(6.0,    ir->rvdw_switch, ir->rvdw);
+                md3_ljr  =  md3_force_switch(reppow, ir->rvdw_switch, ir->rvdw);
                 break;
             case eintmodPOTSWITCH:
                 /* At the cut-off: V=V'=V''=0.
-                 * We choose to approximate the potential over the switch
-                 * region using a quadratic potential.
-                 * This is an overestimate close to the cut-off and can be
-                 * a slight underestimate close to rswitch.
+                 * V''' is given by the original potential times
+                 * the third derivative of the switch function.
                  */
                 sw_range  = ir->rvdw - ir->rvdw_switch;
-                sw_range2 = sw_range*sw_range;
-                dd_ljd    =      -12*pow(ir->rvdw_switch, -6.0   )/sw_range2;
-                dd_ljr    = 2*reppow*pow(ir->rvdw_switch, -reppow)/sw_range2;
+                md3_pswf  = 60.0*pow(sw_range, -3.0);
+
+                md3_ljd   = -pow(ir->rvdw, -6.0   )*md3_pswf;
+                md3_ljr   =  pow(ir->rvdw, -reppow)*md3_pswf;
                 break;
             default:
                 gmx_incons("Unimplemented VdW modifier");
@@ -862,9 +892,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         br4      = br2*br2;
         br6      = br4*br2;
         /* -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2), see LJ-PME equations in manual] and r^-reppow */
-        md_ljd   = -exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*pow(r, -7.0);
-        md_ljr   = reppow*pow(r, -(reppow+1));
-        /* The contribution of the second derivative is negligible */
+        md1_ljd  = -exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*pow(r, -7.0);
+        md1_ljr  = reppow*pow(r, -(reppow+1));
+        /* The contribution of the higher derivatives is negligible */
     }
     else
     {
@@ -874,8 +904,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     elfac = ONE_4PI_EPS0/ir->epsilon_r;
 
     /* Determine md=-dV/dr and dd=d^2V/dr^2 */
-    md_el = 0;
-    dd_el = 0;
+    md1_el = 0;
+    d2_el  = 0;
     if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype))
     {
         real eps_rf, k_rf;
@@ -901,19 +931,19 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
         if (eps_rf > 0)
         {
-            md_el = elfac*(pow(ir->rcoulomb, -2.0) - 2*k_rf*ir->rcoulomb);
+            md1_el = elfac*(pow(ir->rcoulomb, -2.0) - 2*k_rf*ir->rcoulomb);
         }
-        dd_el = elfac*(2*pow(ir->rcoulomb, -3.0) + 2*k_rf);
+        d2_el      = elfac*(2*pow(ir->rcoulomb, -3.0) + 2*k_rf);
     }
     else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
     {
         real b, rc, br;
 
-        b     = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
-        rc    = ir->rcoulomb;
-        br    = b*rc;
-        md_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
-        dd_el = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
+        b      = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
+        rc     = ir->rcoulomb;
+        br     = b*rc;
+        md1_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
+        d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
     }
     else
     {
@@ -974,9 +1004,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     if (debug)
     {
-        fprintf(debug, "md_ljd %9.2e dd_ljd %9.2e\n", md_ljd, dd_ljd);
-        fprintf(debug, "md_ljr %9.2e dd_ljr %9.2e\n", md_ljr, dd_ljr);
-        fprintf(debug, "md_el  %9.2e dd_el  %9.2e\n", md_el, dd_el);
+        fprintf(debug, "md1_ljd %9.2e d2_ljd %9.2e md3_ljd %9.2e\n", md1_ljd, d2_ljd, md3_ljd);
+        fprintf(debug, "md1_ljr %9.2e d2_ljr %9.2e md3_ljr %9.2e\n", md1_ljr, d2_ljr, md3_ljr);
+        fprintf(debug, "md1_el  %9.2e d2_el  %9.2e\n", md1_el, d2_el);
         fprintf(debug, "sqrt(kT_fac) %f\n", sqrt(kT_fac));
         fprintf(debug, "mass_min %f\n", mass_min);
     }
@@ -996,9 +1026,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          */
         drift = ener_drift(att, natt, &mtop->ffparams,
                            kT_fac,
-                           md_ljd, dd_ljd,
-                           md_ljr, dd_ljr,
-                           md_el, dd_el,
+                           md1_ljd, d2_ljd, md3_ljd,
+                           md1_ljr, d2_ljr, md3_ljr,
+                           md1_el,  d2_el,
                            rb,
                            rl, boxvol);
 

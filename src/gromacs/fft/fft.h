@@ -54,8 +54,8 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/simple.h"
 #include "../math/gmxcomplex.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,10 +104,10 @@ typedef struct gmx_fft *
  */
 typedef enum gmx_fft_direction
 {
-    GMX_FFT_FORWARD,         /*!< Forward complex-to-complex transform  */
-    GMX_FFT_BACKWARD,        /*!< Backward complex-to-complex transform */
-    GMX_FFT_REAL_TO_COMPLEX, /*!< Real-to-complex valued fft            */
-    GMX_FFT_COMPLEX_TO_REAL  /*!< Complex-to-real valued fft            */
+    GMX_FFT_FORWARD,         /**< Forward complex-to-complex transform  */
+    GMX_FFT_BACKWARD,        /**< Backward complex-to-complex transform */
+    GMX_FFT_REAL_TO_COMPLEX, /**< Real-to-complex valued FFT            */
+    GMX_FFT_COMPLEX_TO_REAL  /**< Complex-to-real valued FFT            */
 } gmx_fft_direction;
 
 /*! \brief Specifier for FFT flags.

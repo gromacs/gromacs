@@ -48,13 +48,12 @@ namespace
 
 using ::testing::internal::FloatingPoint;
 
-//! \addtogroup module_testutils
-//! \{
-
 /*! \brief
  * Helper to produce floating-point numbers with specified ULP difference.
  *
  * This doesn't work if the value would change sign.
+ *
+ * \ingroup module_testutils
  */
 template <typename FloatType>
 FloatType addUlps(FloatType value, int ulps)
@@ -62,8 +61,6 @@ FloatType addUlps(FloatType value, int ulps)
     return FloatingPoint<FloatType>::ReinterpretBits(
             FloatingPoint<FloatType>(value).bits() + ulps);
 }
-
-//! \}
 
 using ::gmx::test::FloatingPointDifference;
 

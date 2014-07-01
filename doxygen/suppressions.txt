@@ -1,0 +1,21 @@
+# These look like bugs in Doxygen 1.8.5
+src/gromacs/gmxlib/gmx_cpuid.c: warning: duplicate declarations for a member 'gmx_cpuid_vendor'
+src/gromacs/gmxlib/gmx_cpuid.c: warning: duplicate declarations for a member 'gmx_cpuid_x86_smt'
+src/gromacs/gmxlib/gmx_cpuid.c: warning: duplicate declarations for a member 'gmx_cpuid_simd_suggest'
+
+# The script is currently a bit too eager
+share/template/template.cpp: error: source file documentation appears outside full documentation
+
+# This module name doesn't really fall into any currently used pattern; needs some thought
+: error: no matching directory for module: module_mdrun_integration_tests
+
+# These would be nice to fix, but can wait for later
+*: warning: includes local file as <config.h>
+src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd/math_x86_*.h" is not documented as exposed outside its module
+
+# These are specific to Folding@Home, and easiest to suppress here
+*: warning: includes non-local file as "corewrap.h"
+src/config.h.cmakein: warning: includes non-local file as "swindirect.h"
+
+# These are limitations in the current script
+src/gromacs/utility/gmx_header_config.h: warning: includes non-local file as "gmx_header_config_gen.h"

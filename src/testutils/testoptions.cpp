@@ -48,7 +48,7 @@
 
 #include <gmock/gmock.h>
 
-#include "gromacs/legacyheaders/thread_mpi/mutex.h"
+#include "thread_mpi/mutex.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"

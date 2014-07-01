@@ -40,18 +40,19 @@
 
 #include <ctype.h>
 #include <string.h>
+
 #include "typedefs.h"
-#include "string2.h"
-#include "smalloc.h"
-#include "symtab.h"
-#include "index.h"
-#include "gromacs/fileio/futil.h"
 #include "fflibutil.h"
 #include "hackblock.h"
-#include "gmx_fatal.h"
 #include "xlate.h"
 
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     char *filebase;
@@ -137,7 +138,7 @@ static void done_xlatom(int nxlate, t_xlate_atom *xlatom)
 
 void rename_atoms(const char *xlfile, const char *ffdir,
                   t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
-                  gmx_bool bResname, gmx_residuetype_t rt, gmx_bool bReorderNum,
+                  gmx_bool bResname, gmx_residuetype_t *rt, gmx_bool bReorderNum,
                   gmx_bool bVerbose)
 {
     FILE         *fp;
@@ -147,6 +148,7 @@ void rename_atoms(const char *xlfile, const char *ffdir,
     char        **f;
     char          c, *rnm, atombuf[32], *ptr0, *ptr1;
     gmx_bool      bReorderedNum, bRenamed, bMatch;
+    gmx_bool      bStartTerm, bEndTerm;
 
     nxlate = 0;
     xlatom = NULL;
@@ -172,6 +174,10 @@ void rename_atoms(const char *xlfile, const char *ffdir,
     for (a = 0; (a < atoms->nr); a++)
     {
         resind = atoms->atom[a].resind;
+
+        bStartTerm = (resind == 0) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind-1].chainnum;
+        bEndTerm   = (resind >= atoms->nres-1) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind+1].chainnum;
+
         if (bResname)
         {
             rnm = *(atoms->resinfo[resind].name);
@@ -205,6 +211,10 @@ void rename_atoms(const char *xlfile, const char *ffdir,
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
+                          (gmx_strcasecmp("protein-nterm", xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_protein(rt, rnm) && bStartTerm) ||
+                          (gmx_strcasecmp("protein-cterm", xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_protein(rt, rnm) && bEndTerm) ||
                           (gmx_strcasecmp("protein", xlatom[i].res) == 0 &&
                            gmx_residuetype_is_protein(rt, rnm)) ||
                           (gmx_strcasecmp("DNA", xlatom[i].res) == 0 &&

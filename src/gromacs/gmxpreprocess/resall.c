@@ -38,19 +38,21 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
 #include <ctype.h>
-#include "string2.h"
-#include "gromacs/fileio/futil.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "symtab.h"
+#include <stdlib.h>
+#include <string.h>
+
 #include "macros.h"
 #include "resall.h"
 #include "pgutil.h"
 #include "fflibutil.h"
 
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
 {
@@ -77,20 +79,23 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
             /* Skip blank or comment-only lines */
             do
             {
-                fgets2(buf, STRLEN, in);
-                if (NULL != buf)
+                if (fgets2(buf, STRLEN, in) != NULL)
                 {
                     strip_comment(buf);
                     trim(buf);
                 }
             }
-            while (!feof(in) && NULL != buf && strlen(buf) == 0);
+            while (!feof(in) && strlen(buf) == 0);
 
-            if ((buf != NULL) && (sscanf(buf, "%s%lf", name, &m) == 2))
+            if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
                 add_atomtype(at, tab, a, name, nb, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 );
-                fprintf(stderr, "\rAtomtype %d", nratt+1);
+                fprintf(stderr, "\rAtomtype %d", ++nratt);
+            }
+            else
+            {
+                fprintf(stderr, "\nInvalid format: %s\n", buf);
             }
         }
         gmx_ffclose(in);

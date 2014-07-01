@@ -35,26 +35,27 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <stdio.h>
+
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "gromacs/fileio/confio.h"
 #include "copyrite.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
+#include "gromacs/math/units.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
-#include <string.h>
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
-#include "vec.h"
-#include "xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "gromacs/fft/fft.h"
@@ -222,8 +223,11 @@ static void dump_fy(output_env_t oenv, real toler)
     DD = pow(10.0, 0.125);
     fp = xvgropen("fy.xvg", "Fig. 2, Lin2003a", "Delta", "y or fy", oenv);
     xvgr_legend(fp, asize(leg), leg, oenv);
-    fprintf(fp, "@    world 1e-05, 0, 1000, 1\n");
-    fprintf(fp, "@    xaxes scale Logarithmic\n");
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(fp, "@    world 1e-05, 0, 1000, 1\n");
+        fprintf(fp, "@    xaxes scale Logarithmic\n");
+    }
     for (Delta = 1e-5; (Delta <= 1000); Delta *= DD)
     {
         f = calc_fluidicity(Delta, toler);

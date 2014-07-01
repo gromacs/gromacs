@@ -35,12 +35,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "../timing/wallcycle.h"
+
 #include "typedefs.h"
 #include "vsite.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_graph;
 
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
@@ -64,7 +68,7 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         tensor force_vir,
                         t_mdatoms *md,
                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                        t_graph *graph,
+                        struct t_graph *graph,
                         gmx_groups_t *groups,
                         gmx_shellfc_t shfc,
                         t_forcerec *fr,

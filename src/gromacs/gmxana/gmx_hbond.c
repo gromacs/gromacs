@@ -43,23 +43,23 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "sysstuff.h"
 #include "txtdump.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "index.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "xvgr.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gstat.h"
-#include "string2.h"
-#include "pbc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "geminate.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -1183,7 +1183,7 @@ static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *databl
 {
     int i;
 
-    if (ISDON(datable[id]) || !datable)
+    if (!datable || ISDON(datable[id]))
     {
         if (ddd->dptr[id] == NOTSET)   /* New donor */
         {
@@ -1647,15 +1647,15 @@ static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
  * This could be implemented slightly more efficient, but the code
  * would get much more complicated.
  */
-static inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static gmx_inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? 0     : (x-1));
 }
-static inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static gmx_inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? (n-1) : (x+1));
 }
-static inline int grid_mod(int j, int n)
+static gmx_inline int grid_mod(int j, int n)
 {
     return (j+n) % (n);
 }
@@ -2317,157 +2317,6 @@ typedef struct {
     real *t, *ct, *nt, *kt, *sigma_ct, *sigma_nt, *sigma_kt;
 } t_luzar;
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_sf.h>
-#include <gsl/gsl_version.h>
-
-static double my_f(const gsl_vector *v, void *params)
-{
-    t_luzar *tl = (t_luzar *)params;
-    int      i;
-    double   tol = 1e-16, chi2 = 0;
-    double   di;
-    real     k, kp;
-
-    for (i = 0; (i < tl->nparams); i++)
-    {
-        tl->kkk[i] = gsl_vector_get(v, i);
-    }
-    k  = tl->kkk[0];
-    kp = tl->kkk[1];
-
-    for (i = tl->n0; (i < tl->n1); i += tl->ndelta)
-    {
-        di = sqr(k*tl->sigma_ct[i]) + sqr(kp*tl->sigma_nt[i]) + sqr(tl->sigma_kt[i]);
-        /*di = 1;*/
-        if (di > tol)
-        {
-            chi2 += sqr(k*tl->ct[i]-kp*tl->nt[i]-tl->kt[i])/di;
-        }
-
-        else
-        {
-            fprintf(stderr, "WARNING: sigma_ct = %g, sigma_nt = %g, sigma_kt = %g\n"
-                    "di = %g k = %g kp = %g\n", tl->sigma_ct[i],
-                    tl->sigma_nt[i], tl->sigma_kt[i], di, k, kp);
-        }
-    }
-#ifdef DEBUG
-    chi2 = 0.3*sqr(k-0.6)+0.7*sqr(kp-1.3);
-#endif
-    return chi2;
-}
-
-static real optimize_luzar_parameters(FILE *fp, t_luzar *tl, int maxiter,
-                                      real tol)
-{
-    real   size, d2;
-    int    iter   = 0;
-    int    status = 0;
-    int    i;
-
-    const gsl_multimin_fminimizer_type *T;
-    gsl_multimin_fminimizer            *s;
-
-    gsl_vector                         *x, *dx;
-    gsl_multimin_function               my_func;
-
-    my_func.f      = &my_f;
-    my_func.n      = tl->nparams;
-    my_func.params = (void *) tl;
-
-    /* Starting point */
-    x = gsl_vector_alloc (my_func.n);
-    for (i = 0; (i < my_func.n); i++)
-    {
-        gsl_vector_set (x, i, tl->kkk[i]);
-    }
-
-    /* Step size, different for each of the parameters */
-    dx = gsl_vector_alloc (my_func.n);
-    for (i = 0; (i < my_func.n); i++)
-    {
-        gsl_vector_set (dx, i, 0.01*tl->kkk[i]);
-    }
-
-    T = gsl_multimin_fminimizer_nmsimplex;
-    s = gsl_multimin_fminimizer_alloc (T, my_func.n);
-
-    gsl_multimin_fminimizer_set (s, &my_func, x, dx);
-    gsl_vector_free (x);
-    gsl_vector_free (dx);
-
-    if (fp)
-    {
-        fprintf(fp, "%5s %12s %12s %12s %12s\n", "Iter", "k", "kp", "NM Size", "Chi2");
-    }
-
-    do
-    {
-        iter++;
-        status = gsl_multimin_fminimizer_iterate (s);
-
-        if (status != 0)
-        {
-            gmx_fatal(FARGS, "Something went wrong in the iteration in minimizer %s",
-                      gsl_multimin_fminimizer_name(s));
-        }
-
-        d2     = gsl_multimin_fminimizer_minimum(s);
-        size   = gsl_multimin_fminimizer_size(s);
-        status = gsl_multimin_test_size(size, tol);
-
-        if (status == GSL_SUCCESS)
-        {
-            if (fp)
-            {
-                fprintf(fp, "Minimum found using %s at:\n",
-                        gsl_multimin_fminimizer_name(s));
-            }
-        }
-
-        if (fp)
-        {
-            fprintf(fp, "%5d", iter);
-            for (i = 0; (i < my_func.n); i++)
-            {
-                fprintf(fp, " %12.4e", gsl_vector_get (s->x, i));
-            }
-            fprintf (fp, " %12.4e %12.4e\n", size, d2);
-        }
-    }
-    while ((status == GSL_CONTINUE) && (iter < maxiter));
-
-    gsl_multimin_fminimizer_free (s);
-
-    return d2;
-}
-
-static real quality_of_fit(real chi2, int N)
-{
-    return gsl_sf_gamma_inc_Q((N-2)/2.0, chi2/2.0);
-}
-
-#else
-static real optimize_luzar_parameters(FILE gmx_unused    *fp,
-                                      t_luzar gmx_unused *tl,
-                                      int gmx_unused      maxiter,
-                                      real gmx_unused     tol)
-{
-    fprintf(stderr, "This program needs the GNU scientific library to work.\n");
-
-    return -1;
-}
-static real quality_of_fit(real gmx_unused chi2, int gmx_unused N)
-{
-    fprintf(stderr, "This program needs the GNU scientific library to work.\n");
-
-    return -1;
-}
-
-#endif
-
 static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
                                    real kt[], real sigma_ct[], real sigma_nt[],
                                    real sigma_kt[], real *k, real *kp,
@@ -2503,13 +2352,13 @@ static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
     tl.kkk[0]   = *k;
     tl.kkk[1]   = *kp;
 
-    chi2      = optimize_luzar_parameters(debug, &tl, 1000, 1e-3);
+    chi2      = 0; /*optimize_luzar_parameters(debug, &tl, 1000, 1e-3); */
     *k        = tl.kkk[0];
     *kp       = tl.kkk[1] = *kp;
     tl.ndelta = NK;
     for (j = 0; (j < NK); j++)
     {
-        (void) optimize_luzar_parameters(debug, &tl, 1000, 1e-3);
+        /* (void) optimize_luzar_parameters(debug, &tl, 1000, 1e-3); */
         kkk += tl.kkk[0];
         kkp += tl.kkk[1];
         kk2 += sqr(tl.kkk[0]);
@@ -2597,7 +2446,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                 chi22 = compute_weighted_rates(n, t, ct, nt, kt, sigma_ct, sigma_nt,
                                                sigma_kt, &k, &kp,
                                                &sigma_k, &sigma_kp, fit_start);
-                Q   = quality_of_fit(chi2, 2);
+                Q   = 0; /* quality_of_fit(chi2, 2);*/
                 ddg = BOLTZ*temp*sigma_k/k;
                 printf("Fitting paramaters chi^2 = %10g, Quality of fit = %10g\n",
                        chi2, Q);
@@ -2694,13 +2543,16 @@ static void parallel_print(int *data, int nThreads)
 
 static void normalizeACF(real *ct, real *gt, int nhb, int len)
 {
-    real ct_fac, gt_fac;
+    real ct_fac, gt_fac = 0;
     int  i;
 
     /* Xu and Berne use the same normalization constant */
 
     ct_fac = 1.0/ct[0];
-    gt_fac = (nhb == 0) ? 0 : 1.0/(real)nhb;
+    if (nhb != 0)
+    {
+        gt_fac = 1.0/(real)nhb;
+    }
 
     printf("Normalization for c(t) = %g for gh(t) = %g\n", ct_fac, gt_fac);
     for (i = 0; i < len; i++)
@@ -3772,12 +3624,12 @@ int gmx_hbond(int argc, char *argv[])
         { "-merge", FALSE, etBOOL, {&bMerge},
           "H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF." },
         { "-geminate", FALSE, etENUM, {gemType},
-          "Use reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details."},
+          "HIDDENUse reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details."},
         { "-diff", FALSE, etREAL, {&D},
-          "Dffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd."},
+          "HIDDENDffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd."},
 #ifdef GMX_OPENMP
         { "-nthreads", FALSE, etINT, {&nThreads},
-          "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
+          "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of cores (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
     };
     const char *bugs[] = {
@@ -3902,9 +3754,6 @@ int gmx_hbond(int argc, char *argv[])
     if (bGem)
     {
         printf("Geminate recombination: %s\n", gemType[gemmode]);
-#ifndef HAVE_LIBGSL
-        printf("Note that some aspects of reversible geminate recombination won't work without gsl.\n");
-#endif
         if (bContact)
         {
             if (gemmode != gemDD)
@@ -4771,6 +4620,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             t_matrix mat;
             int      id, ia, hh, x, y;
+            mat.flags = mat.y0 = 0;
 
             if ((nframes > 0) && (hb->nrhb > 0))
             {

@@ -38,25 +38,24 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <math.h>
-#include "sysstuff.h"
-#include "string2.h"
+
 #include "network.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
-#include "main.h"
 #include "chargegroup.h"
 #include "force.h"
 #include "macros.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "update.h"
 #include "constr.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "tgroup.h"
 #include "mdebin.h"
 #include "vsite.h"
@@ -64,14 +63,15 @@
 #include "mdrun.h"
 #include "domdec.h"
 #include "gromacs/random/random.h"
-#include "physics.h"
-#include "xvgr.h"
+#include "gromacs/math/units.h"
+#include "gromacs/fileio/xvgr.h"
 #include "mdatoms.h"
 #include "ns.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "pme.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
@@ -125,6 +125,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               gmx_membed_t gmx_unused membed,
               real gmx_unused cpt_period, real gmx_unused max_hours,
               const char gmx_unused *deviceOptions,
+              int gmx_unused imdport,
               unsigned long gmx_unused Flags,
               gmx_walltime_accounting_t walltime_accounting)
 {

@@ -40,14 +40,16 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
-#include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 #include "specbond.h"
 #include "pdb2top.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
 
 gmx_bool yesno(void)
@@ -215,7 +217,7 @@ static void rename_1res(t_atoms *pdba, int resind, char *newres, gmx_bool bVerbo
                *pdba->resinfo[resind].name,
                pdba->resinfo[resind].nr);
     }
-    /* this used to free *resname, which fucks up the symtab! */
+    /* this used to free *resname, which messes up the symtab! */
     snew(pdba->resinfo[resind].rtp, 1);
     *pdba->resinfo[resind].rtp = strdup(newres);
 }

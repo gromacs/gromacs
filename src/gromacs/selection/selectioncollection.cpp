@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,21 +41,27 @@
  */
 #include "selectioncollection.h"
 
+#include <cctype>
 #include <cstdio>
+
+#include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/xvgr.h"
 
+#include "gromacs/onlinehelp/helpmanager.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "compiler.h"
@@ -207,6 +213,106 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
 }
 
 /*! \brief
+ * Print current status in response to empty line in interactive input.
+ *
+ * \param[in] sc             Selection collection data structure.
+ * \param[in] grps           Available index groups.
+ * \param[in] firstSelection Index of first selection from this interactive
+ *     session.
+ * \param[in] maxCount       Maximum number of selections.
+ * \param[in] context        Context to print for what the selections are for.
+ * \param[in] bFirst         Whether this is the header that is printed before
+ *     any user input.
+ *
+ * Prints the available index groups and currently provided selections.
+ */
+void printCurrentStatus(gmx_ana_selcollection_t *sc, gmx_ana_indexgrps_t *grps,
+                        size_t firstSelection, int maxCount,
+                        const std::string &context, bool bFirst)
+{
+    if (grps != NULL)
+    {
+        std::fprintf(stderr, "Available static index groups:\n");
+        gmx_ana_indexgrps_print(stderr, grps, 0);
+    }
+    std::fprintf(stderr, "Specify ");
+    if (maxCount < 0)
+    {
+        std::fprintf(stderr, "any number of selections");
+    }
+    else if (maxCount == 1)
+    {
+        std::fprintf(stderr, "a selection");
+    }
+    else
+    {
+        std::fprintf(stderr, "%d selections", maxCount);
+    }
+    std::fprintf(stderr, "%s%s:\n",
+                 context.empty() ? "" : " ", context.c_str());
+    std::fprintf(stderr,
+                 "(one per line, <enter> for status/groups, 'help' for help%s)\n",
+                 maxCount < 0 ? ", Ctrl-D to end" : "");
+    if (!bFirst && (sc->nvars > 0 || sc->sel.size() > firstSelection))
+    {
+        std::fprintf(stderr, "Currently provided selections:\n");
+        for (int i = 0; i < sc->nvars; ++i)
+        {
+            std::fprintf(stderr, "     %s\n", sc->varstrs[i]);
+        }
+        for (size_t i = firstSelection; i < sc->sel.size(); ++i)
+        {
+            std::fprintf(stderr, " %2d. %s\n",
+                         static_cast<int>(i - firstSelection + 1),
+                         sc->sel[i]->selectionText());
+        }
+        if (maxCount > 0)
+        {
+            const int remaining
+                = maxCount - static_cast<int>(sc->sel.size() - firstSelection);
+            std::fprintf(stderr, "(%d more selection%s required)\n",
+                         remaining, remaining > 1 ? "s" : "");
+        }
+    }
+}
+
+/*! \brief
+ * Prints selection help in interactive selection input.
+ *
+ * \param[in] sc    Selection collection data structure.
+ * \param[in] line  Line of user input requesting help (starting with `help`).
+ *
+ * Initializes the selection help if not yet initialized, and finds the help
+ * topic based on words on the input line.
+ */
+void printHelp(gmx_ana_selcollection_t *sc, const std::string &line)
+{
+    if (sc->rootHelp.get() == NULL)
+    {
+        sc->rootHelp = createSelectionHelpTopic();
+    }
+    HelpWriterContext context(&File::standardError(),
+                              eHelpOutputFormat_Console);
+    HelpManager       manager(*sc->rootHelp, context);
+    try
+    {
+        std::vector<std::string>                 topic = splitString(line);
+        std::vector<std::string>::const_iterator value;
+        // First item in the list is the 'help' token.
+        for (value = topic.begin() + 1; value != topic.end(); ++value)
+        {
+            manager.enterTopic(*value);
+        }
+    }
+    catch (const InvalidInputError &ex)
+    {
+        fprintf(stderr, "%s\n", ex.what());
+        return;
+    }
+    manager.writeCurrentTopic();
+}
+
+/*! \brief
  * Helper function that runs the parser once the tokenizer has been
  * initialized.
  *
@@ -215,6 +321,7 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
  *      algorithm designed for interactive input.
  * \param[in]     maxnr   Maximum number of selections to parse
  *      (if -1, parse as many as provided by the user).
+ * \param[in]     context Context to print for what the selections are for.
  * \returns       Vector of parsed selections.
  * \throws        std::bad_alloc if out of memory.
  * \throws        InvalidInputError if there is a parsing error.
@@ -222,27 +329,48 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
  * Used internally to implement parseFromStdin(), parseFromFile() and
  * parseFromString().
  */
-SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr)
+SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
+                        const std::string &context)
 {
     boost::shared_ptr<void>  scannerGuard(scanner, &_gmx_sel_free_lexer);
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
 
     MessageStringCollector   errors;
     _gmx_sel_set_lexer_error_reporter(scanner, &errors);
 
-    int  oldCount = sc->sel.size();
-    bool bOk      = false;
+    size_t oldCount = sc->sel.size();
+    bool   bOk      = false;
     {
         boost::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
         if (bStdIn)
         {
             File       &stdinFile(File::standardInput());
-            bool        bInteractive = _gmx_sel_is_lexer_interactive(scanner);
+            const bool  bInteractive = _gmx_sel_is_lexer_interactive(scanner);
+            if (bInteractive)
+            {
+                printCurrentStatus(sc, grps, oldCount, maxnr, context, true);
+            }
             std::string line;
             int         status;
             while (promptLine(&stdinFile, bInteractive, &line))
             {
+                if (bInteractive)
+                {
+                    line = stripString(line);
+                    if (line.empty())
+                    {
+                        printCurrentStatus(sc, grps, oldCount, maxnr, context, false);
+                        continue;
+                    }
+                    if (startsWith(line, "help")
+                        && (line[4] == 0 || std::isspace(line[4])))
+                    {
+                        printHelp(sc, line);
+                        continue;
+                    }
+                }
                 line.append("\n");
                 _gmx_sel_set_lex_input_str(scanner, line.c_str());
                 status = runParserLoop(scanner, parserState.get(), true);
@@ -319,7 +447,8 @@ void SelectionCollection::Impl::resolveExternalGroups(
     while (child)
     {
         resolveExternalGroups(child, errors);
-        child = child->next;
+        root->flags |= (child->flags & SEL_UNSORTED);
+        child        = child->next;
     }
 }
 
@@ -500,14 +629,15 @@ SelectionCollection::requiresTopology() const
 
 
 SelectionList
-SelectionCollection::parseFromStdin(int nr, bool bInteractive)
+SelectionCollection::parseFromStdin(int nr, bool bInteractive,
+                                    const std::string &context)
 {
     yyscan_t scanner;
 
     _gmx_sel_init_lexer(&scanner, &impl_->sc_, bInteractive, nr,
                         impl_->bExternalGroupsSet_,
                         impl_->grps_);
-    return runParser(scanner, true, nr);
+    return runParser(scanner, true, nr, context);
 }
 
 
@@ -524,7 +654,7 @@ SelectionCollection::parseFromFile(const std::string &filename)
                             impl_->bExternalGroupsSet_,
                             impl_->grps_);
         _gmx_sel_set_lex_input_file(scanner, file.handle());
-        return runParser(scanner, false, -1);
+        return runParser(scanner, false, -1, std::string());
     }
     catch (GromacsException &ex)
     {
@@ -545,7 +675,7 @@ SelectionCollection::parseFromString(const std::string &str)
                         impl_->bExternalGroupsSet_,
                         impl_->grps_);
     _gmx_sel_set_lex_input_str(scanner, str.c_str());
-    return runParser(scanner, false, -1);
+    return runParser(scanner, false, -1, std::string());
 }
 
 

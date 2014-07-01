@@ -36,8 +36,8 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "xvgr.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/xvgr.h"
 #include "complex.h"
 #include "fftgrid.h"
 #include "mdrun.h"

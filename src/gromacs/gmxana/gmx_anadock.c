@@ -38,17 +38,20 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "gromacs/fileio/confio.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "string2.h"
-#include "vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "macros.h"
 
 static const char *etitles[] = { "E-docked", "Free Energy" };

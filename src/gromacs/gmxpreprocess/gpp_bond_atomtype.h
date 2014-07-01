@@ -64,7 +64,7 @@ t_bond_atomtype init_bond_atomtype(void);
 void done_bond_atomtype(t_bond_atomtype *at);
 /* Free the memory in the structure */
 
-void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
+void add_bond_atomtype(t_bond_atomtype at, struct t_symtab *tab,
                        char *name);
 /* Add a complete new atom type to an existing atomtype structure */
 

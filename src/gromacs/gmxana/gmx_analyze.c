@@ -37,22 +37,25 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "readinp.h"
 #include "txtdump.h"
 #include "gstat.h"
 #include "gromacs/statistics/statistics.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gmx_ana.h"
 #include "geminate.h"
 
@@ -290,7 +293,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
         }
         if (s < nset-1)
         {
-            fprintf(fp, "&\n");
+            fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
     }
     gmx_ffclose(fp);
@@ -610,9 +613,16 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
         }
         fprintf(stdout, "Set %3d:  err.est. %g  a %g  tau1 %g  tau2 %g\n",
                 s+1, ee, a, tau1, tau2);
-        fprintf(fp, "@ legend string %d \"av %f\"\n", 2*s, av[s]);
-        fprintf(fp, "@ legend string %d \"ee %6g\"\n",
-                2*s+1, sig[s]*anal_ee_inf(fitparm, n*dt));
+        if (output_env_get_xvg_format(oenv) == exvgXMGR)
+        {
+            fprintf(fp, "@ legend string %d \"av %f\"\n", 2*s, av[s]);
+            fprintf(fp, "@ legend string %d \"ee %6g\"\n", 2*s+1, sig[s]*anal_ee_inf(fitparm, n*dt));
+        }
+        else if (output_env_get_xvg_format(oenv) == exvgXMGRACE)
+        {
+            fprintf(fp, "@ s%d legend \"av %f\"\n", 2*s, av[s]);
+            fprintf(fp, "@ s%d legend \"ee %6g\"\n", 2*s+1, sig[s]*anal_ee_inf(fitparm, n*dt));
+        }
         for (i = 0; i < nbs; i++)
         {
             fprintf(fp, "%g %g %g\n", tbs[i], sig[s]*sqrt(ybs[i]/(n*dt)),
@@ -668,7 +678,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
                     s+1, sig[s]*anal_ee_inf(ac_fit, n*dt),
                     ac_fit[1], ac_fit[0], ac_fit[2]);
 
-            fprintf(fp, "&\n");
+            fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             for (i = 0; i < nbs; i++)
             {
                 fprintf(fp, "%g %g\n", tbs[i],
@@ -679,7 +689,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
         }
         if (s < nset-1)
         {
-            fprintf(fp, "&\n");
+            fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
     }
     sfree(fitsig);
@@ -1352,7 +1362,7 @@ int gmx_analyze(int argc, char *argv[])
             }
             if (s < nset-1)
             {
-                fprintf(out, "&\n");
+                fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
         }
         gmx_ffclose(out);

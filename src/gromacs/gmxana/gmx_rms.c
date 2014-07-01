@@ -38,21 +38,21 @@
 #include <config.h>
 #endif
 
-#include "smalloc.h"
 #include <math.h>
+#include <stdlib.h>
+
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "typedefs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
-#include "string2.h"
-#include "vec.h"
-#include "index.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "princ.h"
-#include "rmpbc.h"
-#include "do_fit.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -60,6 +60,7 @@
 #include "viewit.h"
 #include "gmx_ana.h"
 
+#include "gromacs/math/do_fit.h"
 
 static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
                        rvec *x)
@@ -229,7 +230,7 @@ int gmx_rms(int argc, char *argv[])
     int             ePBC;
     t_iatom        *iatom = NULL;
 
-    matrix          box;
+    matrix          box = {{0}};
     rvec           *x, *xp, *xm = NULL, **mat_x = NULL, **mat_x2, *mat_x2_j = NULL, vec1,
                     vec2;
     t_trxstatus    *status;
@@ -323,6 +324,8 @@ int gmx_rms(int argc, char *argv[])
     bPrev = (prev > 0);
     if (bPrev)
     {
+        fprintf(stderr, "WARNING: using option -prev with large trajectories will\n"
+                "         require a lot of memory and could lead to crashes\n");
         prev = abs(prev);
         if (freq != 1)
         {
@@ -1136,9 +1139,9 @@ int gmx_rms(int argc, char *argv[])
     for (i = 0; (i < teller); i++)
     {
         if (bSplit && i > 0 &&
-            abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
+            fabs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
         {
-            fprintf(fp, "&\n");
+            fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(fp, "%12.7f", time[bPrev ? freq*i : i]);
         for (j = 0; (j < nrms); j++)
@@ -1178,9 +1181,9 @@ int gmx_rms(int argc, char *argv[])
         }
         for (i = 0; (i < teller); i++)
         {
-            if (bSplit && i > 0 && abs(time[i]) < 1e-5)
+            if (bSplit && i > 0 && fabs(time[i]) < 1e-5)
             {
-                fprintf(fp, "&\n");
+                fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
             fprintf(fp, "%12.7f", time[i]);
             for (j = 0; (j < nrms); j++)

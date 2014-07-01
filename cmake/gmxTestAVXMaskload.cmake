@@ -64,9 +64,5 @@ MACRO(GMX_TEST_AVX_GCC_MASKLOAD_BUG VARIABLE AVX_CFLAGS)
                 MESSAGE(STATUS "Checking for gcc AVX maskload bug - not present")
             ENDIF()
         ENDIF()
-    ENDIF(NOT DEFINED ${VARIABLE})
+    ENDIF()
 ENDMACRO()
-
-
-
-

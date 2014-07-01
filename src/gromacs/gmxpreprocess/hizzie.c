@@ -43,13 +43,16 @@
 #include <string.h>
 #include "typedefs.h"
 #include "gromacs/fileio/pdbio.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "physics.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/units.h"
 #include "toputil.h"
 #include "pdb2top.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "macros.h"
+
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int in_strings(char *key, int nstr, const char **str)
 {

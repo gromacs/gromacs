@@ -38,28 +38,26 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#include <math.h>
-#include <assert.h>
 
 #include "typedefs.h"
-#include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/cstringutil.h"
 #include "names.h"
 #include "txtdump.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "chargegroup.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
-#include "mshift.h"
 #include "mdrun.h"
 #include "sim_util.h"
 #include "update.h"
-#include "physics.h"
-#include "main.h"
+#include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "force.h"
 #include "bondf.h"
@@ -69,7 +67,6 @@
 #include "network.h"
 #include "calcmu.h"
 #include "constr.h"
-#include "xvgr.h"
 #include "copyrite.h"
 #include "domdec.h"
 #include "genborn.h"
@@ -83,13 +80,17 @@
 #include "../gmxlib/nonbonded/nb_kernel.h"
 #include "../gmxlib/nonbonded/nb_free_energy.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
-
+#include "gromacs/imd/imd.h"
 #include "adress.h"
 #include "qmmm.h"
 
@@ -155,33 +156,29 @@ void print_time(FILE                     *out,
 }
 
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
-                         const gmx_walltime_accounting_t walltime_accounting)
+                         double the_time)
 {
-    int    i;
-    char   timebuf[STRLEN];
     char   time_string[STRLEN];
-    time_t tmptime;
 
-    if (fplog)
+    if (!fplog)
     {
-        if (walltime_accounting != NULL)
-        {
-            tmptime = (time_t) walltime_accounting_get_start_time_stamp(walltime_accounting);
-            gmx_ctime_r(&tmptime, timebuf, STRLEN);
-        }
-        else
-        {
-            tmptime = (time_t) gmx_gettime();
-            gmx_ctime_r(&tmptime, timebuf, STRLEN);
-        }
+        return;
+    }
+
+    {
+        int    i;
+        char   timebuf[STRLEN];
+        time_t temp_time = (time_t) the_time;
+
+        gmx_ctime_r(&temp_time, timebuf, STRLEN);
         for (i = 0; timebuf[i] >= ' '; i++)
         {
             time_string[i] = timebuf[i];
         }
         time_string[i] = '\0';
-
-        fprintf(fplog, "%s on node %d %s\n", title, nodeid, time_string);
     }
+
+    fprintf(fplog, "%s on rank %d %s\n", title, nodeid, time_string);
 }
 
 void print_start(FILE *fplog, t_commrec *cr,
@@ -191,7 +188,8 @@ void print_start(FILE *fplog, t_commrec *cr,
     char buf[STRLEN];
 
     sprintf(buf, "Started %s", name);
-    print_date_and_time(fplog, cr->nodeid, buf, walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, buf,
+                        walltime_accounting_get_start_time_stamp(walltime_accounting));
 }
 
 static void sum_forces(int start, int end, rvec f[], rvec flr[])
@@ -934,10 +932,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (EVDW_PME(fr->vdwtype))
         {
             pme_flags |= GMX_PME_DO_LJ;
-            if (fr->ljpme_combination_rule == eljpmeLB)
-            {
-                pme_flags |= GMX_PME_LJ_LB;
-            }
         }
 
         gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
@@ -1545,6 +1539,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
+    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+    IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
+
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
         /* In case of node-splitting, the PP nodes receive the long-range
@@ -1704,10 +1701,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (EVDW_PME(fr->vdwtype))
         {
             pme_flags |= GMX_PME_DO_LJ;
-            if (fr->ljpme_combination_rule == eljpmeLB)
-            {
-                pme_flags |= GMX_PME_LJ_LB;
-            }
         }
 
         gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
@@ -2020,6 +2013,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
+    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+    IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
+
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
         /* In case of node-splitting, the PP nodes receive the long-range
@@ -2134,7 +2130,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
 
     /* constrain the current position */
     constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-              ir, NULL, cr, step, 0, md,
+              ir, NULL, cr, step, 0, 1.0, md,
               state->x, state->x, NULL,
               fr->bMolPBC, state->box,
               state->lambda[efptBONDED], &dvdl_dum,
@@ -2146,7 +2142,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         /* might not yet treat veta correctly */
         constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-                  ir, NULL, cr, step, 0, md,
+                  ir, NULL, cr, step, 0, 1.0, md,
                   state->x, state->v, state->v,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
@@ -2177,7 +2173,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         }
         dvdl_dum = 0;
         constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-                  ir, NULL, cr, step, -1, md,
+                  ir, NULL, cr, step, -1, 1.0, md,
                   state->x, savex, NULL,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
@@ -2266,11 +2262,11 @@ integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 {
-    double eners[2], virs[2], enersum, virsum, y0, f, g, h;
-    double r0, r1, r, rc3, rc9, ea, eb, ec, pa, pb, pc, pd;
-    double invscale, invscale2, invscale3;
-    int    ri0, ri1, ri, i, offstart, offset;
-    real   scale, *vdwtab, tabfactor, tmp;
+    double   eners[2], virs[2], enersum, virsum, y0, f, g, h;
+    double   r0, r1, r, rc3, rc9, ea, eb, ec, pa, pb, pc, pd;
+    double   invscale, invscale2, invscale3;
+    int      ri0, ri1, ri, i, offstart, offset;
+    real     scale, *vdwtab, tabfactor, tmp;
 
     fr->enershiftsix    = 0;
     fr->enershifttwelve = 0;
@@ -2286,30 +2282,53 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if (fr->vdwtype == evdwSWITCH || fr->vdwtype == evdwSHIFT ||
-            fr->vdw_modifier == eintmodPOTSWITCH ||
-            fr->vdw_modifier == eintmodFORCESWITCH)
+        if ((fr->vdw_modifier == eintmodPOTSHIFT) ||
+            (fr->vdw_modifier == eintmodPOTSWITCH) ||
+            (fr->vdw_modifier == eintmodFORCESWITCH) ||
+            (fr->vdwtype == evdwSHIFT) ||
+            (fr->vdwtype == evdwSWITCH))
         {
-            if (fr->rvdw_switch == 0)
+            if (((fr->vdw_modifier == eintmodPOTSWITCH) ||
+                 (fr->vdw_modifier == eintmodFORCESWITCH) ||
+                 (fr->vdwtype == evdwSWITCH)) && fr->rvdw_switch == 0)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
                           "for vdw-type = %s", evdw_names[fr->vdwtype]);
             }
 
-            scale  = fr->nblists[0].table_elec_vdw.scale;
+            scale  = fr->nblists[0].table_vdw.scale;
             vdwtab = fr->nblists[0].table_vdw.data;
 
             /* Round the cut-offs to exact table values for precision */
             ri0  = floor(fr->rvdw_switch*scale);
             ri1  = ceil(fr->rvdw*scale);
+
+            /* The code below has some support for handling force-switching, i.e.
+             * when the force (instead of potential) is switched over a limited
+             * region. This leads to a constant shift in the potential inside the
+             * switching region, which we can handle by adding a constant energy
+             * term in the force-switch case just like when we do potential-shift.
+             *
+             * For now this is not enabled, but to keep the functionality in the
+             * code we check separately for switch and shift. When we do force-switch
+             * the shifting point is rvdw_switch, while it is the cutoff when we
+             * have a classical potential-shift.
+             *
+             * For a pure potential-shift the potential has a constant shift
+             * all the way out to the cutoff, and that is it. For other forms
+             * we need to calculate the constant shift up to the point where we
+             * start modifying the potential.
+             */
+            ri0  = (fr->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
+
             r0   = ri0/scale;
             r1   = ri1/scale;
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
-            if (fr->vdwtype == evdwSHIFT ||
-                fr->vdw_modifier == eintmodFORCESWITCH)
+            if ((fr->vdw_modifier == eintmodFORCESWITCH) ||
+                (fr->vdwtype == evdwSHIFT))
             {
                 /* Determine the constant energy shift below rvdw_switch.
                  * Table has a scale factor since we have scaled it down to compensate
@@ -2318,6 +2337,12 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                 fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
                 fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
             }
+            else if (fr->vdw_modifier == eintmodPOTSHIFT)
+            {
+                fr->enershiftsix    = (real)(-1.0/(rc3*rc3));
+                fr->enershifttwelve = (real)( 1.0/(rc9*rc3));
+            }
+
             /* Add the constant part from 0 to rvdw_switch.
              * This integration from 0 to rvdw_switch overcounts the number
              * of interactions by 1, as it also counts the self interaction.
@@ -2325,6 +2350,11 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              */
             eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
             eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
+
+            /* Calculate the contribution in the range [r0,r1] where we
+             * modify the potential. For a pure potential-shift modifier we will
+             * have ri0==ri1, and there will not be any contribution here.
+             */
             for (i = 0; i < 2; i++)
             {
                 enersum = 0;
@@ -2334,7 +2364,14 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                 virs[i]  -= virsum;
             }
 
-            /* now add the correction for rvdw_switch to infinity */
+            /* Alright: Above we compensated by REMOVING the parts outside r0
+             * corresponding to the ideal VdW 1/r6 and /r12 potentials.
+             *
+             * Regardless of whether r0 is the point where we start switching,
+             * or the cutoff where we calculated the constant shift, we include
+             * all the parts we are missing out to infinity from r0 by
+             * calculating the analytical dispersion correction.
+             */
             eners[0] += -4.0*M_PI/(3.0*rc3);
             eners[1] +=  4.0*M_PI/(9.0*rc9);
             virs[0]  +=  8.0*M_PI/rc3;
@@ -2379,10 +2416,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                       evdw_names[fr->vdwtype]);
         }
 
-        /* TODO: remove this code once we have group LJ-PME kernels
-         * that calculate the exact, full LJ param C6/r^6 within the cut-off,
-         * as the current nbnxn kernels do.
-         */
+        /* When we deprecate the group kernels the code below can go too */
         if (fr->vdwtype == evdwPME && fr->cutoff_scheme == ecutsGROUP)
         {
             /* Calculate self-interaction coefficient (assuming that
@@ -2833,6 +2867,10 @@ void init_md(FILE *fplog,
         if (ir->etc == etcVRESCALE)
         {
             please_cite(fplog, "Bussi2007a");
+        }
+        if (ir->eI == eiSD1)
+        {
+            please_cite(fplog, "Goga2012");
         }
     }
 

@@ -149,7 +149,7 @@ static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
 
 #ifdef UNROLLJ
 /* Add energy register to possibly multiple terms in the energy array */
-static inline void add_ener_grp(gmx_simd_real_t e_S, real *v, const int *offset_jj)
+static gmx_inline void add_ener_grp(gmx_simd_real_t e_S, real *v, const int *offset_jj)
 {
     int jj;
 
@@ -171,7 +171,7 @@ static inline void add_ener_grp(gmx_simd_real_t e_S, real *v, const int *offset_
 /* As add_ener_grp, but for two groups of UNROLLJ/2 stored in
  * a single SIMD register.
  */
-static inline void
+static gmx_inline void
 add_ener_grp_halves(gmx_simd_real_t e_S, real *v0, real *v1, const int *offset_jj)
 {
     gmx_mm_hpr e_S0, e_S1;

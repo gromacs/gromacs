@@ -39,17 +39,17 @@
 #endif
 
 #include <math.h>
-#include "smalloc.h"
-#include "sysstuff.h"
+#include <string.h>
+
 #include "macros.h"
-#include "string2.h"
 #include "topdirs.h"
 #include "toputil.h"
-#include "topdirs.h"
-#include "toputil.h"
-#include "symtab.h"
-#include "gmx_fatal.h"
 #include "gpp_atomtype.h"
+
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* UTILITIES */
 

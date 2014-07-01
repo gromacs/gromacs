@@ -38,22 +38,21 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <math.h>
 #include <assert.h>
+#include <math.h>
+#include <stdio.h>
 #include <string.h>
+
 #include "vsite_parm.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "resall.h"
 #include "add_par.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "toputil.h"
-#include "physics.h"
-#include "index.h"
+#include "gromacs/math/units.h"
 #include "names.h"
-#include "gmx_fatal.h"
-#include "string2.h"
-#include "physics.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/cstringutil.h"
 #include "macros.h"
 
 typedef struct {

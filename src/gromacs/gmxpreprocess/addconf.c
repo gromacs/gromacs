@@ -42,17 +42,23 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "vec.h"
+
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "types/commrec.h"
 #include "force.h"
 #include "names.h"
 #include "nsgrid.h"
 #include "mdatoms.h"
 #include "nrnb.h"
 #include "ns.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "chargegroup.h"
+
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/smalloc.h"
 
 static real box_margin;
 
@@ -259,7 +265,6 @@ static void do_nsgrid(FILE *fp, gmx_bool bVerbose,
     ir->vdw_modifier     = eintmodNONE;
     ir->coulombtype      = eelCUT;
     ir->vdwtype          = evdwCUT;
-    ir->ndelta           = 2;
     ir->ns_type          = ensGRID;
     snew(ir->opts.egp_flags, 1);
 
@@ -433,6 +438,11 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
             for (j = j0; (j < j1 && nremove < natoms_solvt); j++)
             {
                 jnr = nlist->jjnr[j];
+                if (jnr < 0)
+                {
+                    /* skip padding */
+                    continue;
+                }
                 copy_rvec(x_all[jnr], xj);
 
                 /* Check solvent-protein and solvent-solvent */

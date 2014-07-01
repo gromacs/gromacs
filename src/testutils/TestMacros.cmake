@@ -36,7 +36,7 @@ function (gmx_add_unit_test_object_library NAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         include_directories(${GMOCK_INCLUDE_DIRS})
         add_library(${NAME} OBJECT ${ARGN})
-    endif ()
+    endif()
 endfunction ()
 
 function (gmx_build_unit_test NAME EXENAME)
@@ -53,7 +53,7 @@ function (gmx_build_unit_test NAME EXENAME)
         set(EXTRA_COMPILE_DEFINITIONS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}" TEST_TEMP_PATH="${_temporary_files_path}")
 
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
-    endif ()
+    endif()
 endfunction ()
 
 function (gmx_register_unit_test NAME EXENAME)
@@ -62,7 +62,7 @@ function (gmx_register_unit_test NAME EXENAME)
                  COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set_tests_properties(${NAME} PROPERTIES LABELS "GTest;UnitTest")
         add_dependencies(tests ${EXENAME})
-    endif ()
+    endif()
 endfunction ()
 
 function (gmx_register_integration_test NAME EXENAME)
@@ -76,7 +76,7 @@ function (gmx_register_integration_test NAME EXENAME)
         # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
         # some point.
         # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES})
-    endif ()
+    endif()
 endfunction ()
 
 function (gmx_add_unit_test NAME EXENAME)

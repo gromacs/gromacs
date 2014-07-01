@@ -38,11 +38,12 @@
 #include <config.h>
 #endif
 
-#include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "macros.h"
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
@@ -51,19 +52,17 @@
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "names.h"
-#include "index.h"
-#include "vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xtcio.h"
-#include "do_fit.h"
-#include "rmpbc.h"
-#include "pbc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/xdrf.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gmx_ana.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -689,26 +688,9 @@ int gmx_trjcat(int argc, char *argv[])
                 /* Fails if last frame is incomplete
                  * We can't do anything about it without overwriting
                  * */
-                if (filetype == efXTC)
+                if (filetype == efXTC || filetype == efTNG)
                 {
-                    lasttime =
-                        xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
-                                                    gmx_fio_getxdr(stfio),
-                                                    fr.natoms, &bOK);
-                    fr.time = lasttime;
-                    if (!bOK)
-                    {
-                        gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
-                    }
-                }
-                else if (filetype == efTNG)
-                {
-                    tng_trajectory_t tng = trx_get_tng(status);
-                    if (!tng)
-                    {
-                        gmx_fatal(FARGS, "Error opening TNG file.");
-                    }
-                    lasttime = gmx_tng_get_time_of_final_frame(tng);
+                    lasttime = trx_get_time_of_final_frame(status);
                     fr.time  = lasttime;
                 }
                 else
@@ -729,14 +711,8 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     gmx_fatal(FARGS, "Overwrite only supported for XTC." );
                 }
-                last_frame_time =
-                    xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
-                                                gmx_fio_getxdr(stfio),
-                                                fr.natoms, &bOK);
-                if (!bOK)
-                {
-                    gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
-                }
+                last_frame_time = trx_get_time_of_final_frame(status);
+
                 /* xtc_seek_time broken for trajectories containing only 1 or 2 frames
                  *     or when seek time = 0 */
                 if (nfile_in > 1 && settime[1] < last_frame_time+timest[0]*0.5)

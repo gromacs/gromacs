@@ -90,13 +90,13 @@ Doxygen documentation file for directories in the source tree.
 /*! \libinternal
 \dir src/gromacs/simd
 \brief \ref module_simd
- 
+
 \ingroup module_simd
  */
 /*! \libinternal
 \dir src/gromacs/simd/tests
 \brief Unit tests for \ref module_simd
- 
+
 \ingroup module_simd
  */
 

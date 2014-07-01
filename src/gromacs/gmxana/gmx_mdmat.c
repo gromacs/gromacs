@@ -42,21 +42,20 @@
 #include <string.h>
 
 #include "macros.h"
-#include "vec.h"
-#include "sysstuff.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/matio.h"
-#include "xvgr.h"
-#include "index.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "rmpbc.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gmx_ana.h"
 
 
@@ -224,7 +223,7 @@ int gmx_mdmat(int argc, char *argv[])
     int          **nmat, **totnmat;
     real          *mean_n;
     int           *tot_n;
-    matrix         box;
+    matrix         box = {{0}};
     output_env_t   oenv;
     gmx_rmpbc_t    gpbc = NULL;
 
@@ -368,20 +367,22 @@ int gmx_mdmat(int argc, char *argv[])
 
     if (bCalcN)
     {
+        char **legend;
+
+        snew(legend, 5);
+        for (i = 0; i < 5; i++)
+        {
+            snew(legend[i], STRLEN);
+        }
         tot_nmat(nres, natoms, nframes, totnmat, tot_n, mean_n);
         fp = xvgropen(ftp2fn(efXVG, NFILE, fnm),
                       "Increase in number of contacts", "Residue", "Ratio", oenv);
-        fprintf(fp, "@ legend on\n");
-        fprintf(fp, "@ legend box on\n");
-        fprintf(fp, "@ legend loctype view\n");
-        fprintf(fp, "@ legend 0.75, 0.8\n");
-        fprintf(fp, "@ legend string 0 \"Total/mean\"\n");
-        fprintf(fp, "@ legend string 1 \"Total\"\n");
-        fprintf(fp, "@ legend string 2 \"Mean\"\n");
-        fprintf(fp, "@ legend string 3 \"# atoms\"\n");
-        fprintf(fp, "@ legend string 4 \"Mean/# atoms\"\n");
-        fprintf(fp, "#%3s %8s  %3s  %8s  %3s  %8s\n",
-                "res", "ratio", "tot", "mean", "natm", "mean/atm");
+        sprintf(legend[0], "Total/mean");
+        sprintf(legend[1], "Total");
+        sprintf(legend[2], "Mean");
+        sprintf(legend[3], "# atoms");
+        sprintf(legend[4], "Mean/# atoms");
+        xvgr_legend(fp, 5, (const char**)legend, oenv);
         for (i = 0; (i < nres); i++)
         {
             if (mean_n[i] == 0)

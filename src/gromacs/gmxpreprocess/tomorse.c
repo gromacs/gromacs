@@ -39,18 +39,19 @@
 #include <config.h>
 #endif
 
-#include <stdlib.h>
-#include <math.h>
 #include <ctype.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "grompp-impl.h"
-#include "gromacs/fileio/futil.h"
-#include "smalloc.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 #include "toputil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gpp_atomtype.h"
-#include "macros.h"
 
 #include "tomorse.h"
 
@@ -281,6 +282,7 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                         last++;
                     }
                 }
+                /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
                 sfree(bRemoveHarm);
                 fprintf(stderr, "Converted %d out of %d %s to morse bonds for mol %d\n",
                         nrharm-last, nrharm, interaction_function[bb].name, i);

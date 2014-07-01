@@ -39,27 +39,28 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
+
 #include "typedefs.h"
-#include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "gromacs/fileio/confio.h"
 #include "txtdump.h"
-#include "vec.h"
-#include <time.h>
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
-#include "mshift.h"
 #include "mdrun.h"
 #include "update.h"
-#include "physics.h"
-#include "nrjac.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/mdlib/groupcoord.h"
 
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
@@ -468,7 +469,7 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     char   fn[STRLEN];
 
 
-    sprintf(fn, "EDdump_node%d_edi%d", cr->nodeid, nr_edi);
+    sprintf(fn, "EDdump_rank%d_edi%d", cr->nodeid, nr_edi);
     out = gmx_ffopen(fn, "w");
 
     fprintf(out, "#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
@@ -1794,6 +1795,7 @@ static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms)
         /* Keep the curr_edi pointer for the case that the next group is empty: */
         last_edi = curr_edi;
         /* Let's prepare to read in the next edi data set: */
+        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         curr_edi = edi_read;
     }
     if (edi_nr == 0)
@@ -1928,7 +1930,7 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, struct gmx_edsam *ed)
 }
 
 
-static inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec is, rvec xu)
+static gmx_inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec is, rvec xu)
 {
     int tx, ty, tz;
 

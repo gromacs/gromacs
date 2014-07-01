@@ -73,7 +73,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     string(TOUPPER "${FFTW}" FFTW)
     if(NOT ${FFTW}_FOUND)
-      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for single-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-GMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
+      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for mixed-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-GMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
     endif()
 
     set(PKG_FFT "${${FFTW}_PKG}")
@@ -98,7 +98,10 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     if (NOT MKL_MANUALLY)
         # The next line takes care of everything for MKL
         if (WIN32)
-            set(FFT_LINKER_FLAGS "/Qmkl=sequential")
+            # This works according to the Intel MKL 10.3 for Windows
+            # docs, but on Jenkins Win2k8, icl tries to interpret it
+            # as a file. Shrug.
+            set(FFT_LINKER_FLAGS "/Qmkl:sequential")
         else()
             set(FFT_LINKER_FLAGS "-mkl=sequential")
         endif()
@@ -144,9 +147,9 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     set(GMX_FFT_FFTPACK 1)
     set(FFT_STATUS_MESSAGE "Using internal FFT library - fftpack")
-else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+else()
     gmx_invalid_option_value(GMX_FFT_LIBRARY)
-endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+endif()
 gmx_check_if_changed(FFT_CHANGED GMX_FFT_LIBRARY)
 if (FFT_CHANGED)
     message(STATUS "${FFT_STATUS_MESSAGE}")

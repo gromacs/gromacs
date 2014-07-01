@@ -45,15 +45,16 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/gmxpreprocess/solvate.h"
 #include "gromacs/gmxpreprocess/insert-molecules.h"
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
 #include "gromacs/gmxpreprocess/protonate.h"
+#include "gromacs/gmxpreprocess/solvate.h"
 #include "gromacs/gmxpreprocess/x2top.h"
 #include "gromacs/tools/check.h"
-#include "gromacs/tools/dump.h"
 #include "gromacs/tools/convert_tpr.h"
+#include "gromacs/tools/dump.h"
 
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"
@@ -260,8 +261,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate local pitch/bending/rotation/orientation inside helices");
     registerModule(manager, &gmx_hydorder, "hydorder",
                    "Compute tetrahedrality parameters around a given atom");
-    registerModule(manager, &gmx_kinetics, "kinetics",
-                   "Analyze kinetic constants from properties based on the Eyring model");
     registerModule(manager, &gmx_lie, "lie",
                    "Estimate free energy from linear combinations");
     registerModule(manager, &gmx_mdmat, "mdmat",
@@ -324,7 +323,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_traj, "traj",
                    "Plot x, v, f, box, temperature and rotational energy from trajectories");
     registerModule(manager, &gmx_tune_pme, "tune_pme",
-                   "Time mdrun as a function of PME nodes to optimize settings");
+                   "Time mdrun as a function of PME ranks to optimize settings");
     registerModule(manager, &gmx_vanhove, "vanhove",
                    "Compute Van Hove displacement and correlation functions");
     registerModule(manager, &gmx_velacc, "velacc",
@@ -458,7 +457,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("current");
         group.addModule("dos");
         group.addModule("dyecoupl");
-        group.addModule("kinetics");
         group.addModule("principal");
         group.addModule("tcaf");
         group.addModule("traj");

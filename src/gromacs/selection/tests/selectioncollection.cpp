@@ -46,6 +46,7 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
@@ -455,12 +456,6 @@ TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
                      gmx::InvalidInputError);
 }
 
-TEST_F(SelectionCollectionTest, HandlesHelpKeywordInInvalidContext)
-{
-    EXPECT_THROW_GMX(sc_.parseFromString("resname help"),
-                     gmx::InvalidInputError);
-}
-
 // TODO: Tests for more parser errors
 
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser1)
@@ -493,7 +488,9 @@ TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed2)
     EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
 }
 
-TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReference)
+// TODO: Make the check less eager so that it doesn't break other tests, and
+// adapt these tests accordingly.
+TEST_F(SelectionCollectionTest, DISABLED_HandlesUnsortedGroupReference)
 {
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
     EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpUnsorted\""),
@@ -501,7 +498,7 @@ TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReference)
     EXPECT_THROW_GMX(sc_.parseFromString("2"), gmx::InconsistentInputError);
 }
 
-TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReferenceDelayed)
+TEST_F(SelectionCollectionTest, DISABLED_HandlesUnsortedGroupReferenceDelayed)
 {
     ASSERT_NO_THROW_GMX(sc_.parseFromString("group 2; group \"GrpUnsorted\""));
     EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
@@ -928,6 +925,21 @@ TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelectionsDelayed)
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
     ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesUnsortedIndexGroupsInSelections)
+{
+    static const char * const selections[] = {
+        "group \"GrpUnsorted\"",
+        "GrpUnsorted",
+        "2",
+        "res_cog of group \"GrpUnsorted\"",
+        "group \"GrpUnsorted\" permute 2 1"
+    };
+    setFlags(TestFlags() | efTestPositionAtoms | efTestPositionMapping
+             | efTestSelectionNames);
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    runTest("simple.gro", selections);
 }
 
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)

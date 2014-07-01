@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,8 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "gromacs/utility/path.h"
+#include "path.h"
 
+#include <cctype>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -58,7 +59,8 @@
 #endif
 #endif
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace
 {
@@ -67,6 +69,18 @@ namespace
 const char cDirSeparator = '/';
 //! Directory separators to use when parsing paths.
 const char cDirSeparators[] = "/\\";
+/*! \var cPathSeparator
+ * \brief
+ * Separator to use to split the PATH environment variable.
+ *
+ * When reading the PATH environment variable, Unix separates entries
+ * with colon, while windows uses semicolon.
+ */
+#ifdef GMX_NATIVE_WINDOWS
+const char cPathSeparator = ';';
+#else
+const char cPathSeparator = ':';
+#endif
 
 //! Check whether a given character is a directory separator.
 bool isDirSeparator(char chr)
@@ -110,6 +124,11 @@ bool Path::isAbsolute(const std::string &path)
     return isAbsolute(path.c_str());
 }
 
+bool Path::startsWith(const std::string &path, const std::string &prefix)
+{
+    return gmx::startsWith(normalize(path), normalize(prefix));
+}
+
 std::string Path::join(const std::string &path1,
                        const std::string &path2)
 {
@@ -126,24 +145,52 @@ std::string Path::join(const std::string &path1,
     return path1 + cDirSeparator + path2 + cDirSeparator + path3;
 }
 
-std::pair<std::string, std::string>
-Path::splitToPathAndFilename(const std::string &path)
+std::string Path::getParentPath(const std::string &path)
 {
     size_t pos = path.find_last_of(cDirSeparators);
     if (pos == std::string::npos)
     {
-        return std::make_pair(std::string(), path);
+        return std::string();
     }
-    return std::make_pair(path.substr(0, pos), path.substr(pos+1));
+    return path.substr(0, pos);
+}
+
+std::string Path::getFilename(const std::string &path)
+{
+    size_t pos = path.find_last_of(cDirSeparators);
+    if (pos == std::string::npos)
+    {
+        return path;
+    }
+    return path.substr(pos+1);
+}
+
+std::string Path::stripExtension(const std::string &path)
+{
+    size_t dirSeparatorPos = path.find_last_of(cDirSeparators);
+    size_t extPos          = path.find_last_of('.');
+    if (extPos == std::string::npos
+        || (dirSeparatorPos != std::string::npos && extPos < dirSeparatorPos))
+    {
+        return path;
+    }
+    return path.substr(0, extPos);
 }
 
 std::string Path::normalize(const std::string &path)
 {
     std::string result(path);
+    // TODO: Remove . and .. entries.
     if (DIR_SEPARATOR != '/')
     {
         std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
     }
+#ifdef GMX_NATIVE_WINDOWS
+    if (std::isalpha(result[0]) && result[1] == ':')
+    {
+        result[0] = std::toupper(result[0]);
+    }
+#endif
     return result;
 }
 
@@ -168,11 +215,11 @@ std::string Path::getWorkingDirectory()
 void Path::splitPathEnvironment(const std::string        &pathEnv,
                                 std::vector<std::string> *result)
 {
-    size_t                   prevPos = 0;
-    size_t                   separator;
+    size_t prevPos = 0;
+    size_t separator;
     do
     {
-        separator = pathEnv.find_first_of(PATH_SEPARATOR, prevPos);
+        separator = pathEnv.find(cPathSeparator, prevPos);
         result->push_back(pathEnv.substr(prevPos, separator - prevPos));
         prevPos = separator + 1;
     }
@@ -209,7 +256,7 @@ std::string Path::resolveSymlinks(const std::string &path)
         }
         else
         {
-            result = join(splitToPathAndFilename(result).first, buf);
+            result = join(getParentPath(result), buf);
         }
     }
 #endif

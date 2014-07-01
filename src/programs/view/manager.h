@@ -39,14 +39,16 @@
 #define _manager_h
 
 #include <stdio.h>
+
 #include "typedefs.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/pbcutil/rmpbc.h"
+
+#include "3dview.h"
+#include "buttons.h"
+#include "nleg.h"
 #include "x11.h"
 #include "xutil.h"
-#include "gromacs/math/3dview.h"
-#include "nleg.h"
-#include "buttons.h"
-#include "rmpbc.h"
-#include "gromacs/fileio/trxio.h"
 
 /* Some window sizes */
 #define EWIDTH      200
@@ -174,8 +176,6 @@ extern void done_man(t_x11 *x11, t_manager *man);
 /* Clean up man struct */
 
 extern void draw_mol(t_x11 *x11, t_manager *man);
-
-extern void create_visibility(t_manager *man);
 
 extern void do_filter(t_x11 *x11, t_manager *man, t_filter *filter);
 

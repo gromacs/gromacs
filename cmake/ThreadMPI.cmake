@@ -37,10 +37,11 @@ include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(CheckCSourceCompiles)
 
-# sets TMPI_ATOMICS to 1 if atomic operations are found, undef otherwise
+# sets TMPI_ATOMICS to 1 if atomic operations are found, unset otherwise
 # Options:
 # include directory for thread_mpi/atomic.h
 MACRO(TMPI_TEST_ATOMICS INCDIR)
+
     if (NOT DEFINED TMPI_ATOMICS)
         try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
                 "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.c"
@@ -53,11 +54,12 @@ MACRO(TMPI_TEST_ATOMICS INCDIR)
             # positive results.
             set(TMPI_ATOMICS ${TEST_ATOMICS} CACHE INTERNAL "Whether atomic operations are found")
             set(TMPI_ATOMICS_INCDIR ${INCDIR} CACHE INTERNAL "Atomic operations check include dir")
-        else (TEST_ATOMICS)
+        else ()
             message(STATUS "Atomic operations not found")
-            undef(TEST_ATOMICS)
-        endif(TEST_ATOMICS)
-    endif(NOT DEFINED TMPI_ATOMICS)
+            unset(TEST_ATOMICS)
+        endif()
+    endif()
+
 ENDMACRO(TMPI_TEST_ATOMICS VARIABLE)
 
 
@@ -69,9 +71,9 @@ if (CMAKE_USE_PTHREADS_INIT)
 elseif (CMAKE_USE_WIN32_THREADS_INIT)
     set(THREAD_WINDOWS 1)
     set(THREAD_LIB)
-else ()
+else()
     message(FATAL_ERROR "Thread support required")
-endif (CMAKE_USE_PTHREADS_INIT)
+endif ()
 
 # Turns on thread_mpi core threading functions.
 MACRO(TMPI_ENABLE_CORE INCDIR)
@@ -98,9 +100,9 @@ MACRO(TMPI_ENABLE_CORE INCDIR)
         )
         if (PTHREAD_SETAFFINITY)
             set(HAVE_PTHREAD_SETAFFINITY 1)
-        endif (PTHREAD_SETAFFINITY)
+        endif ()
         set(CMAKE_REQUIRED_LIBRARIES)
-    endif (THREAD_PTHREADS)
+    endif ()
 
 
 # this runs on POSIX systems
@@ -131,68 +133,71 @@ MACRO(TMPI_ENABLE)
     mark_as_advanced(THREAD_MPI_WAIT_FOR_NO_ONE)
     if (THREAD_MPI_WAIT_FOR_NO_ONE)
         set(TMPI_WAIT_FOR_NO_ONE 1)
-    else (THREAD_MPI_WAIT_FOR_NO_ONE)
+    else ()
         set(TMPI_WAIT_FOR_NO_ONE 0)
-    endif (THREAD_MPI_WAIT_FOR_NO_ONE)
+    endif ()
 
 # the copy buffer option
     option(THREAD_MPI_COPY_BUFFER "Use an intermediate copy buffer for small message sizes, to allow blocking sends to return quickly. Only useful in programs with relatively uncoupled threads (infrequent MPI communication)" OFF)
     mark_as_advanced(THREAD_MPI_COPY_BUFFER)
     if (THREAD_MPI_COPY_BUFFER)
         set(TMPI_COPY_BUFFER 1)
-    else (THREAD_MPI_COPY_BUFFER)
+    else ()
         set(TMPI_COPY_BUFFER 0)
-    endif (THREAD_MPI_COPY_BUFFER)
+    endif ()
 
 # the profiling option
     option(THREAD_MPI_PROFILING "Turn on simple MPI profiling." OFF)
     mark_as_advanced(THREAD_MPI_PROFILING)
     if (THREAD_MPI_PROFILING)
         set(TMPI_PROFILE 1)
-    else (THREAD_MPI_PROFILING)
+    else ()
         set(TMPI_PROFILE 0)
-    endif (THREAD_MPI_PROFILING)
+    endif ()
 
 # tmpi warnings for testing
     option(THREAD_MPI_WARNINGS "Turn thread_mpi warnings for testing." OFF)
     mark_as_advanced(THREAD_MPI_WARNINGS)
     if (THREAD_MPI_WARNINGS)
         set(TMPI_WARNINGS 1)
-    else (THREAD_MPI_WARNINGS)
+    else ()
         set(TMPI_WARNINGS 0)
-    endif (THREAD_MPI_WARNINGS)
+    endif ()
 
     include(CheckCSourceCompiles)
 ENDMACRO(TMPI_ENABLE)
 
 
-MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
+MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
     set(${SRC_VARIABLE}
-        thread_mpi/errhandler.c
-        thread_mpi/tmpi_malloc.c
-        thread_mpi/atomic.c
-        thread_mpi/lock.c)
+        ${SRC_ROOT}/errhandler.c
+        ${SRC_ROOT}/tmpi_malloc.c
+        ${SRC_ROOT}/atomic.c
+        ${SRC_ROOT}/lock.c)
+
     if (THREAD_PTHREADS)
-        list(APPEND ${SRC_VARIABLE} thread_mpi/pthreads.c)
+        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/pthreads.c)
     elseif (THREAD_WINDOWS)
-        list(APPEND ${SRC_VARIABLE} thread_mpi/winthreads.c)
-    endif (THREAD_PTHREADS)
+        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/winthreads.c)
+    endif ()
+
     if (TMPI_CXX_LIB)
-        list(APPEND ${SRC_VARIABLE} thread_mpi/system_error.cpp)
-    endif (TMPI_CXX_LIB)
+        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/system_error.cpp)
+    endif ()
+
     if (TMPI_ENABLED)
         list(APPEND ${SRC_VARIABLE}
-             thread_mpi/alltoall.c      thread_mpi/p2p_protocol.c
-             thread_mpi/barrier.c       thread_mpi/p2p_send_recv.c
-             thread_mpi/bcast.c         thread_mpi/p2p_wait.c
-             thread_mpi/collective.c    thread_mpi/profile.c
-             thread_mpi/comm.c          thread_mpi/reduce.c
-             thread_mpi/event.c         thread_mpi/reduce_fast.c
-             thread_mpi/gather.c        thread_mpi/scatter.c
-             thread_mpi/group.c         thread_mpi/tmpi_init.c
-             thread_mpi/topology.c      thread_mpi/list.c
-             thread_mpi/type.c          thread_mpi/scan.c
-             thread_mpi/numa_malloc.c   thread_mpi/once.c)
+             ${SRC_ROOT}/alltoall.c      ${SRC_ROOT}/p2p_protocol.c
+             ${SRC_ROOT}/barrier.c       ${SRC_ROOT}/p2p_send_recv.c
+             ${SRC_ROOT}/bcast.c         ${SRC_ROOT}/p2p_wait.c
+             ${SRC_ROOT}/collective.c    ${SRC_ROOT}/profile.c
+             ${SRC_ROOT}/comm.c          ${SRC_ROOT}/reduce.c
+             ${SRC_ROOT}/event.c         ${SRC_ROOT}/reduce_fast.c
+             ${SRC_ROOT}/gather.c        ${SRC_ROOT}/scatter.c
+             ${SRC_ROOT}/group.c         ${SRC_ROOT}/tmpi_init.c
+             ${SRC_ROOT}/topology.c      ${SRC_ROOT}/list.c
+             ${SRC_ROOT}/type.c          ${SRC_ROOT}/scan.c
+             ${SRC_ROOT}/numa_malloc.c   ${SRC_ROOT}/once.c)
     endif()
 ENDMACRO(TMPI_GET_SOURCE_LIST)
 

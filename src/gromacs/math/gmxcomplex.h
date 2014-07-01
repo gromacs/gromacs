@@ -38,7 +38,10 @@
 #define GMX_MATH_GMXCOMPLEX_H
 
 #include <math.h>
-#include "../legacyheaders/types/simple.h"
+
+#include "../utility/real.h"
+
+#include "vectypes.h"
 
 typedef struct {
     real re, im;

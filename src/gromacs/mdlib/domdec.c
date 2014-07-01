@@ -42,15 +42,14 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "gmx_fatal_collective.h"
-#include "vec.h"
+#include "network.h"
+#include "gromacs/math/vec.h"
 #include "domdec.h"
 #include "domdec_network.h"
 #include "nrnb.h"
-#include "pbc.h"
 #include "chargegroup.h"
 #include "constr.h"
 #include "mdatoms.h"
@@ -60,7 +59,7 @@
 #include "mdrun.h"
 #include "nsgrid.h"
 #include "shellfc.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ga2la.h"
 #include "macros.h"
 #include "nbnxn_search.h"
@@ -68,15 +67,21 @@
 #include "gmx_omp_nthreads.h"
 #include "gpu_utils.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/swap/swapcoords.h"
-#include "gromacs/utility/qsort_threadsafe.h"
+#include "gromacs/imd/imd.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/swap/swapcoords.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/qsort_threadsafe.h"
+#include "gromacs/utility/smalloc.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
@@ -449,8 +454,14 @@ static const ivec dd_zp1[dd_zp1n] = {{0, 0, 2}};
 /* Factor to account for pressure scaling during nstlist steps */
 #define DD_PRES_SCALE_MARGIN 1.02
 
-/* Allowed performance loss before we DLB or warn */
-#define DD_PERF_LOSS 0.05
+/* Turn on DLB when the load imbalance causes this amount of total loss.
+ * There is a bit of overhead with DLB and it's difficult to achieve
+ * a load imbalance of less than 2% with DLB.
+ */
+#define DD_PERF_LOSS_DLB_ON  0.02
+
+/* Warn about imbalance due to PP or PP/PME load imbalance at this loss */
+#define DD_PERF_LOSS_WARN    0.05
 
 #define DD_CELL_F_SIZE(dd, di) ((dd)->nc[(dd)->dim[(di)]]+1+(di)*2+1+(di))
 
@@ -1916,7 +1927,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
                               gmx_domdec_t *dd, matrix box, gmx_ddbox_t *ddbox)
 {
     rvec   grid_s[2], *grid_r = NULL, cx, r;
-    char   fname[STRLEN], format[STRLEN], buf[22];
+    char   fname[STRLEN], buf[22];
     FILE  *out;
     int    a, i, d, z, y, x;
     matrix tric;
@@ -1930,7 +1941,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
         snew(grid_r, 2*dd->nnodes);
     }
 
-    dd_gather(dd, 2*sizeof(rvec), grid_s[0], DDMASTER(dd) ? grid_r[0] : NULL);
+    dd_gather(dd, 2*sizeof(rvec), grid_s, DDMASTER(dd) ? grid_r : NULL);
 
     if (DDMASTER(dd))
     {
@@ -1956,7 +1967,6 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
             }
         }
         sprintf(fname, "%s_%s.pdb", fn, gmx_step_str(step, buf));
-        sprintf(format, "%s%s\n", get_pdbformat(), "%6.2f%6.2f");
         out = gmx_fio_fopen(fname, "w");
         gmx_write_pdb_box(out, dd->bScrewPBC ? epbcSCREW : epbcXYZ, box);
         a = 1;
@@ -1977,8 +1987,8 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
                         cx[YY] = grid_r[i*2+y][YY];
                         cx[ZZ] = grid_r[i*2+z][ZZ];
                         mvmul(tric, cx, r);
-                        fprintf(out, format, "ATOM", a++, "CA", "GLY", ' ', 1+i,
-                                ' ', 10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol);
+                        gmx_fprintf_pdb_atomline(out, epdbATOM, a++, "CA", ' ', "GLY", ' ', i+1, ' ',
+                                                 10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol, "");
                     }
                 }
             }
@@ -2005,7 +2015,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
                   gmx_mtop_t *mtop, t_commrec *cr,
                   int natoms, rvec x[], matrix box)
 {
-    char          fname[STRLEN], format[STRLEN], format4[STRLEN], buf[22];
+    char          fname[STRLEN], buf[22];
     FILE         *out;
     int           i, ii, resnr, c;
     char         *atomname, *resname;
@@ -2019,9 +2029,6 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
     }
 
     sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), cr->sim_nodeid);
-
-    sprintf(format, "%s%s\n", get_pdbformat(), "%6.2f%6.2f");
-    sprintf(format4, "%s%s\n", get_pdbformat4(), "%6.2f%6.2f");
 
     out = gmx_fio_fopen(fname, "w");
 
@@ -2048,10 +2055,8 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
         {
             b = dd->comm->zones.n + 1;
         }
-        fprintf(out, strlen(atomname) < 4 ? format : format4,
-                "ATOM", (ii+1)%100000,
-                atomname, resname, ' ', resnr%10000, ' ',
-                10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, b);
+        gmx_fprintf_pdb_atomline(out, epdbATOM, ii+1, atomname, ' ', resname, ' ', resnr, ' ',
+                                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, b, "");
     }
     fprintf(out, "TER\n");
 
@@ -2368,7 +2373,7 @@ void get_pme_ddnodes(t_commrec *cr, int pmenodeid,
 
     if (debug)
     {
-        fprintf(debug, "Receive coordinates from PP nodes:");
+        fprintf(debug, "Receive coordinates from PP ranks:");
         for (x = 0; x < *nmy_ddnodes; x++)
         {
             fprintf(debug, " %d", (*my_ddnodes)[x]);
@@ -2584,7 +2589,7 @@ static int check_bLocalCG(gmx_domdec_t *dd, int ncg_sys, const char *bLocalCG,
         if (!bLocalCG[dd->index_gl[i]])
         {
             fprintf(stderr,
-                    "DD node %d, %s: cg %d, global cg %d is not marked in bLocalCG (ncg_home %d)\n", dd->rank, where, i+1, dd->index_gl[i]+1, dd->ncg_home);
+                    "DD rank %d, %s: cg %d, global cg %d is not marked in bLocalCG (ncg_home %d)\n", dd->rank, where, i+1, dd->index_gl[i]+1, dd->ncg_home);
             nerr++;
         }
     }
@@ -2598,7 +2603,7 @@ static int check_bLocalCG(gmx_domdec_t *dd, int ncg_sys, const char *bLocalCG,
     }
     if (ngl != dd->ncg_tot)
     {
-        fprintf(stderr, "DD node %d, %s: In bLocalCG %d cgs are marked as local, whereas there are %d\n", dd->rank, where, ngl, dd->ncg_tot);
+        fprintf(stderr, "DD rank %d, %s: In bLocalCG %d cgs are marked as local, whereas there are %d\n", dd->rank, where, ngl, dd->ncg_tot);
         nerr++;
     }
 
@@ -2621,7 +2626,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
         {
             if (have[dd->gatindex[a]] > 0)
             {
-                fprintf(stderr, "DD node %d: global atom %d occurs twice: index %d and %d\n", dd->rank, dd->gatindex[a]+1, have[dd->gatindex[a]], a+1);
+                fprintf(stderr, "DD rank %d: global atom %d occurs twice: index %d and %d\n", dd->rank, dd->gatindex[a]+1, have[dd->gatindex[a]], a+1);
             }
             else
             {
@@ -2640,7 +2645,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
         {
             if (a >= dd->nat_tot)
             {
-                fprintf(stderr, "DD node %d: global atom %d marked as local atom %d, which is larger than nat_tot (%d)\n", dd->rank, i+1, a+1, dd->nat_tot);
+                fprintf(stderr, "DD rank %d: global atom %d marked as local atom %d, which is larger than nat_tot (%d)\n", dd->rank, i+1, a+1, dd->nat_tot);
                 nerr++;
             }
             else
@@ -2648,7 +2653,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
                 have[a] = 1;
                 if (dd->gatindex[a] != i)
                 {
-                    fprintf(stderr, "DD node %d: global atom %d marked as local atom %d, which has global atom index %d\n", dd->rank, i+1, a+1, dd->gatindex[a]+1);
+                    fprintf(stderr, "DD rank %d: global atom %d marked as local atom %d, which has global atom index %d\n", dd->rank, i+1, a+1, dd->gatindex[a]+1);
                     nerr++;
                 }
             }
@@ -2658,7 +2663,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
     if (ngl != dd->nat_tot)
     {
         fprintf(stderr,
-                "DD node %d, %s: %d global atom indices, %d local atoms\n",
+                "DD rank %d, %s: %d global atom indices, %d local atoms\n",
                 dd->rank, where, ngl, dd->nat_tot);
     }
     for (a = 0; a < dd->nat_tot; a++)
@@ -2666,7 +2671,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
         if (have[a] == 0)
         {
             fprintf(stderr,
-                    "DD node %d, %s: local atom %d, global %d has no global index\n",
+                    "DD rank %d, %s: local atom %d, global %d has no global index\n",
                     dd->rank, where, a+1, dd->gatindex[a]+1);
         }
     }
@@ -2676,7 +2681,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
 
     if (nerr > 0)
     {
-        gmx_fatal(FARGS, "DD node %d, %s: %d atom/cg index inconsistencies",
+        gmx_fatal(FARGS, "DD rank %d, %s: %d atom/cg index inconsistencies",
                   dd->rank, where, nerr);
     }
 }
@@ -2805,7 +2810,7 @@ static gmx_bool check_grid_jump(gmx_int64_t     step,
                 /* This error should never be triggered under normal
                  * circumstances, but you never know ...
                  */
-                gmx_fatal(FARGS, "Step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d. This should not have happened. Running with less nodes might avoid this issue.",
+                gmx_fatal(FARGS, "Step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d. This should not have happened. Running with fewer ranks might avoid this issue.",
                           gmx_step_str(step, buf),
                           dim2char(dim), dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
             }
@@ -3077,8 +3082,17 @@ static void check_box_size(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
     }
 }
 
+enum {
+    setcellsizeslbLOCAL, setcellsizeslbMASTER, setcellsizeslbPULSE_ONLY
+};
+
+/* Set the domain boundaries. Use for static (or no) load balancing,
+ * and also for the starting state for dynamic load balancing.
+ * setmode determine if and where the boundaries are stored, use enum above.
+ * Returns the number communication pulses in npulse.
+ */
 static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
-                                  gmx_bool bMaster, ivec npulse)
+                                  int setmode, ivec npulse)
 {
     gmx_domdec_comm_t *comm;
     int                d, j;
@@ -3095,20 +3109,23 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
         {
             /* Uniform grid */
             cell_dx = ddbox->box_size[d]/dd->nc[d];
-            if (bMaster)
+            switch (setmode)
             {
-                for (j = 0; j < dd->nc[d]+1; j++)
-                {
-                    dd->ma->cell_x[d][j] = ddbox->box0[d] + j*cell_dx;
-                }
-            }
-            else
-            {
-                comm->cell_x0[d] = ddbox->box0[d] + (dd->ci[d]  )*cell_dx;
-                comm->cell_x1[d] = ddbox->box0[d] + (dd->ci[d]+1)*cell_dx;
+                case setcellsizeslbMASTER:
+                    for (j = 0; j < dd->nc[d]+1; j++)
+                    {
+                        dd->ma->cell_x[d][j] = ddbox->box0[d] + j*cell_dx;
+                    }
+                    break;
+                case setcellsizeslbLOCAL:
+                    comm->cell_x0[d] = ddbox->box0[d] + (dd->ci[d]  )*cell_dx;
+                    comm->cell_x1[d] = ddbox->box0[d] + (dd->ci[d]+1)*cell_dx;
+                    break;
+                default:
+                    break;
             }
             cellsize = cell_dx*ddbox->skew_fac[d];
-            while (cellsize*npulse[d] < comm->cutoff && npulse[d] < dd->nc[d]-1)
+            while (cellsize*npulse[d] < comm->cutoff)
             {
                 npulse[d]++;
             }
@@ -3121,7 +3138,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
              * all cell borders in a loop to obtain identical values
              * to the master distribution case and to determine npulse.
              */
-            if (bMaster)
+            if (setmode == setcellsizeslbMASTER)
             {
                 cell_x = dd->ma->cell_x[d];
             }
@@ -3142,10 +3159,13 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
                 }
                 cellsize_min[d] = min(cellsize_min[d], cellsize);
             }
-            if (!bMaster)
+            if (setmode == setcellsizeslbLOCAL)
             {
                 comm->cell_x0[d] = cell_x[dd->ci[d]];
                 comm->cell_x1[d] = cell_x[dd->ci[d]+1];
+            }
+            if (setmode != setcellsizeslbMASTER)
+            {
                 sfree(cell_x);
             }
         }
@@ -3156,12 +3176,23 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
         if (d < ddbox->npbcdim &&
             dd->nc[d] > 1 && npulse[d] >= dd->nc[d])
         {
-            gmx_fatal_collective(FARGS, NULL, dd,
-                                 "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
-                                 dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
-                                 comm->cutoff,
-                                 dd->nc[d], dd->nc[d],
-                                 dd->nnodes > dd->nc[d] ? "cells" : "processors");
+            char error_string[STRLEN];
+
+            sprintf(error_string,
+                    "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
+                    dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
+                    comm->cutoff,
+                    dd->nc[d], dd->nc[d],
+                    dd->nnodes > dd->nc[d] ? "cells" : "ranks");
+
+            if (setmode == setcellsizeslbLOCAL)
+            {
+                gmx_fatal_collective(FARGS, NULL, dd, error_string);
+            }
+            else
+            {
+                gmx_fatal(FARGS, error_string);
+            }
         }
     }
 
@@ -3771,7 +3802,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,
     }
     else
     {
-        set_dd_cell_sizes_slb(dd, ddbox, FALSE, npulse);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbLOCAL, npulse);
         realloc_comm_ind(dd, npulse);
     }
 
@@ -4038,6 +4069,7 @@ static void get_cg_distribution(FILE *fplog, gmx_int64_t step, gmx_domdec_t *dd,
     int                  i, cg_gl;
     int                 *ibuf, buf2[2] = { 0, 0 };
     gmx_bool             bMaster = DDMASTER(dd);
+
     if (bMaster)
     {
         ma = dd->ma;
@@ -4047,7 +4079,7 @@ static void get_cg_distribution(FILE *fplog, gmx_int64_t step, gmx_domdec_t *dd,
             check_screw_box(box);
         }
 
-        set_dd_cell_sizes_slb(dd, ddbox, TRUE, npulse);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbMASTER, npulse);
 
         distribute_cg(fplog, step, box, ddbox->tric_dir, cgs, pos, dd);
         for (i = 0; i < dd->nnodes; i++)
@@ -5448,7 +5480,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         fprintf(fplog, "\n");
         fprintf(stderr, "\n");
 
-        if (lossf >= DD_PERF_LOSS)
+        if (lossf >= DD_PERF_LOSS_WARN)
         {
             sprintf(buf,
                     "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
@@ -5464,12 +5496,12 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
             fprintf(fplog, "%s\n", buf);
             fprintf(stderr, "%s\n", buf);
         }
-        if (npme > 0 && fabs(lossp) >= DD_PERF_LOSS)
+        if (npme > 0 && fabs(lossp) >= DD_PERF_LOSS_WARN)
         {
             sprintf(buf,
-                    "NOTE: %.1f %% performance was lost because the PME nodes\n"
-                    "      had %s work to do than the PP nodes.\n"
-                    "      You might want to %s the number of PME nodes\n"
+                    "NOTE: %.1f %% performance was lost because the PME ranks\n"
+                    "      had %s work to do than the PP ranks.\n"
+                    "      You might want to %s the number of PME ranks\n"
                     "      or %s the cut-off and the grid spacing.\n",
                     fabs(lossp*100),
                     (lossp < 0) ? "less"     : "more",
@@ -5989,13 +6021,13 @@ static void make_pp_communicator(FILE *fplog, t_commrec *cr, int gmx_unused reor
     if (fplog)
     {
         fprintf(fplog,
-                "Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
+                "Domain decomposition rank %d, coordinates %d %d %d\n\n",
                 dd->rank, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
     }
     if (debug)
     {
         fprintf(debug,
-                "Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
+                "Domain decomposition rank %d, coordinates %d %d %d\n\n",
                 dd->rank, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
     }
 }
@@ -6106,7 +6138,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
         }
         else if (fplog)
         {
-            fprintf(fplog, "#pmenodes (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)\n", cr->npmenodes, dd->nc[XX], dd->nc[YY], dd->nc[XX], dd->nc[ZZ]);
+            fprintf(fplog, "Number of PME-only ranks (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)\n", cr->npmenodes, dd->nc[XX], dd->nc[YY], dd->nc[XX], dd->nc[ZZ]);
             fprintf(fplog,
                     "Will not use a Cartesian communicator for PP <-> PME\n\n");
         }
@@ -6143,7 +6175,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
 
         if (fplog)
         {
-            fprintf(fplog, "Cartesian nodeid %d, coordinates %d %d %d\n\n",
+            fprintf(fplog, "Cartesian rank %d, coordinates %d %d %d\n\n",
                     cr->sim_nodeid, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
         }
 
@@ -6170,7 +6202,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
             case ddnoPP_PME:
                 if (fplog)
                 {
-                    fprintf(fplog, "Order of the nodes: PP first, PME last\n");
+                    fprintf(fplog, "Order of the ranks: PP first, PME last\n");
                 }
                 break;
             case ddnoINTERLEAVE:
@@ -6181,7 +6213,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
                  */
                 if (fplog)
                 {
-                    fprintf(fplog, "Interleaving PP and PME nodes\n");
+                    fprintf(fplog, "Interleaving PP and PME ranks\n");
                 }
                 comm->pmenodes = dd_pmenodes(cr);
                 break;
@@ -6211,7 +6243,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
 
     if (fplog)
     {
-        fprintf(fplog, "This is a %s only node\n\n",
+        fprintf(fplog, "This rank does only %s work.\n\n",
                 (cr->duty & DUTY_PP) ? "particle-particle" : "PME-mesh");
     }
 }
@@ -6594,7 +6626,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     if (fplog)
     {
         fprintf(fplog,
-                "\nInitializing Domain Decomposition on %d nodes\n", cr->nnodes);
+                "\nInitializing Domain Decomposition on %d ranks\n", cr->nnodes);
     }
 
     snew(dd, 1);
@@ -6843,13 +6875,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
         if (dd->nc[XX] == 0)
         {
             bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
-            sprintf(buf, "Change the number of nodes or mdrun option %s%s%s",
+            sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
                     comm->eDLB != edlbNO ? " or -dds" : "",
                     bC ? " or your LINCS settings" : "");
 
             gmx_fatal_collective(FARGS, cr, NULL,
-                                 "There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
+                                 "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
                                  cr->nnodes-cr->npmenodes, limit, buf);
@@ -6860,7 +6892,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     if (fplog)
     {
         fprintf(fplog,
-                "Domain decomposition grid %d x %d x %d, separate PME nodes %d\n",
+                "Domain decomposition grid %d x %d x %d, separate PME ranks %d\n",
                 dd->nc[XX], dd->nc[YY], dd->nc[ZZ], cr->npmenodes);
     }
 
@@ -6868,13 +6900,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     if (cr->nnodes - dd->nnodes != cr->npmenodes)
     {
         gmx_fatal_collective(FARGS, cr, NULL,
-                             "The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
+                             "The size of the domain decomposition grid (%d) does not match the number of ranks (%d). The total number of ranks is %d",
                              dd->nnodes, cr->nnodes - cr->npmenodes, cr->nnodes);
     }
     if (cr->npmenodes > dd->nnodes)
     {
         gmx_fatal_collective(FARGS, cr, NULL,
-                             "The number of separate PME nodes (%d) is larger than the number of PP nodes (%d), this is not supported.", cr->npmenodes, dd->nnodes);
+                             "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", cr->npmenodes, dd->nnodes);
     }
     if (cr->npmenodes > 0)
     {
@@ -7179,7 +7211,7 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
     }
     else
     {
-        set_dd_cell_sizes_slb(dd, ddbox, FALSE, np);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbPULSE_ONLY, np);
         fprintf(fplog, "The initial number of communication pulses is:");
         for (d = 0; d < dd->ndim; d++)
         {
@@ -7398,7 +7430,7 @@ void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
         if (dd->pme_nodeid >= 0)
         {
             gmx_fatal_collective(FARGS, NULL, dd,
-                                 "Can not have separate PME nodes without PME electrostatics");
+                                 "Can not have separate PME ranks without PME electrostatics");
         }
     }
 
@@ -8684,6 +8716,7 @@ static void set_zones_size(gmx_domdec_t *dd,
                 corner[YY] -= corner[ZZ]*box[ZZ][YY]/box[ZZ][ZZ];
             }
             /* Apply the triclinic couplings */
+            assert(ddbox->npbcdim <= DIM);
             for (i = YY; i < ddbox->npbcdim; i++)
             {
                 for (j = XX; j < i; j++)
@@ -9349,7 +9382,7 @@ void dd_partition_system(FILE                *fplog,
                 if (DDMASTER(dd))
                 {
                     bTurnOnDLB =
-                        (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS);
+                        (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS_DLB_ON);
                     if (debug)
                     {
                         fprintf(debug, "step %s, imb loss %f\n",
@@ -9767,6 +9800,9 @@ void dd_partition_system(FILE                *fplog,
         /* Update the local groups needed for ion swapping */
         dd_make_local_swap_groups(dd, ir->swap);
     }
+
+    /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
+    dd_make_local_IMD_atoms(ir->bIMD, dd, ir->imd);
 
     add_dd_statistics(dd);
 

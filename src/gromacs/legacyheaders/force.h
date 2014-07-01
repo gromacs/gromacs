@@ -41,16 +41,19 @@
 
 #include "typedefs.h"
 #include "types/force_flags.h"
-#include "pbc.h"
 #include "network.h"
 #include "tgroup.h"
 #include "vsite.h"
 #include "genborn.h"
 
+#include "../timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_graph;
+struct t_pbc;
 
 void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda);
 
@@ -59,12 +62,12 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
 /* Calculate virial for nxf atoms, and add it to vir */
 
 void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
-                t_graph *g, rvec shift_vec[]);
+                struct t_graph *g, rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
-real RF_excl_correction(const t_forcerec *fr, t_graph *g,
+real RF_excl_correction(const t_forcerec *fr, struct t_graph *g,
                         const t_mdatoms *mdatoms, const t_blocka *excl,
-                        rvec x[], rvec f[], rvec *fshift, const t_pbc *pbc,
+                        rvec x[], rvec f[], rvec *fshift, const struct t_pbc *pbc,
                         real lambda, real *dvdlambda);
 /* Calculate the reaction-field energy correction for this node:
  * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
@@ -225,7 +228,7 @@ extern void do_force(FILE *log, t_commrec *cr,
                      tensor vir_force,
                      t_mdatoms *mdatoms,
                      gmx_enerdata_t *enerd, t_fcdata *fcd,
-                     real *lambda, t_graph *graph,
+                     real *lambda, struct t_graph *graph,
                      t_forcerec *fr,
                      gmx_vsite_t *vsite, rvec mu_tot,
                      double t, FILE *field, gmx_edsam_t ed,
@@ -275,7 +278,7 @@ extern void do_force_lowlevel(FILE         *fplog,
                               matrix       box,
                               t_lambda     *fepvals,
                               real         *lambda,
-                              t_graph      *graph,
+                              struct t_graph      *graph,
                               t_blocka     *excl,
                               rvec         mu_tot[2],
                               int          flags,

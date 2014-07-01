@@ -38,23 +38,18 @@
 
 #include <math.h>
 #include <string.h>
-#include <ctype.h>
+
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
-#include "symtab.h"
-#include "smalloc.h"
-#include "symtab.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/topology/symtab.h"
 #include "macros.h"
-#include "smalloc.h"
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
-#include "string2.h"
-#include "index.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "gbutil.h"
-#include "physics.h"
-#include "atomprop.h"
+#include "gromacs/math/units.h"
 
 void copy_atom(t_symtab *tab,t_atoms *a1,int i1,t_atoms *a2,int i2,
 	       rvec xin[],rvec xout[],rvec vin[],rvec vout[])

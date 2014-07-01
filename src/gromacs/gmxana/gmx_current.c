@@ -36,24 +36,28 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <stdlib.h>
+
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "xvgr.h"
-#include "rmpbc.h"
-#include "pbc.h"
-#include "physics.h"
-#include "index.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/math/units.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/statistics/statistics.h"
 #include "gmx_ana.h"
 #include "macros.h"
 
+#include "gromacs/utility/fatalerror.h"
+
 #define SQR(x) (pow(x, 2.0))
 #define EPSI0 (EPSILON0*E_CHARGE*E_CHARGE*AVOGADRO/(KILO*NANO)) /* EPSILON0 in SI units */
-
 
 static void index_atom2mol(int *n, int *index, t_block *mols)
 {
@@ -137,7 +141,7 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
         }
     }
 
-    if (abs(qall) > 0.01)
+    if (fabs(qall) > 0.01)
     {
         printf("\n\nSystem not neutral (q=%f) will not calculate translational part of the dipole moment.\n", qall);
         bNEU = FALSE;
@@ -468,7 +472,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                 xshfr[i] = 0.0;
             }
         }
-
+        assert(time != NULL);
 
 
         if (nfr == 0)
@@ -724,7 +728,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 
 
 
-    if (bACF)
+    if (bACF && (ii < nvfr))
     {
         fprintf(stderr, "Integral and integrated fit to the current acf yields at t=%f:\n", time[vfr[ii]]);
         fprintf(stderr, "sigma=%8.3f (pure integral: %.3f)\n", sgk-malt*pow(time[vfr[ii]], sigma), sgk);
@@ -759,7 +763,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     }
     else
     {
-        fprintf(stderr, "Too less points for a fit.\n");
+        fprintf(stderr, "Too few points for a fit.\n");
     }
 
 

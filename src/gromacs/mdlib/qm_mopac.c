@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,30 +41,25 @@
 #ifdef GMX_QMMM_MOPAC
 
 #include <math.h>
-#include "sysstuff.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "physics.h"
-#include "macros.h"
-#include "vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "force.h"
-#include "invblock.h"
 #include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "network.h"
-#include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"
-#include "mshift.h"
 #include "txtdump.h"
 #include "qmmm.h"
-#include <stdio.h>
-#include <string.h>
-#include "gmx_fatal.h"
-#include "typedefs.h"
-#include <stdlib.h>
+#include "gromacs/utility/fatalerror.h"
 
 
 /* mopac interface routines */

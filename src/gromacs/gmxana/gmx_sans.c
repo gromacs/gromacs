@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,26 +37,24 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include "smalloc.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "xvgr.h"
+#include "gromacs/math/vec.h"
 #include "copyrite.h"
-#include "gromacs/commandline/pargs.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gstat.h"
 #include "gmx_ana.h"
 #include "nsfactor.h"
 
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/matio.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_sans(int argc, char *argv[])
 {

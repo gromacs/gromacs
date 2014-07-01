@@ -40,44 +40,73 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include <ctype.h>
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "string2.h"
-#include "gmx_fatal.h"
+#include <stdlib.h>
+#include <string.h>
+
 #include "macros.h"
 #include "names.h"
-#include "symtab.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "filenm.h"
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "txtdump.h"
 #include "confio.h"
-#include "atomprop.h"
 #include "copyrite.h"
-#include "vec.h"
-#include "mtop_util.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define TPX_TAG_RELEASE  "release"
 
-/* This is the tag string which is stored in the tpx file.
- * Change this if you want to change the tpx format in a feature branch.
- * This ensures that there will not be different tpx formats around which
- * can not be distinguished.
+/*! \brief Tag string for the file format written to run input files
+ * written by this version of the code.
+ *
+ * Change this if you want to change the run input format in a feature
+ * branch. This ensures that there will not be different run input
+ * formats around which cannot be distinguished, while not causing
+ * problems rebasing the feature branch onto upstream changes. When
+ * merging with mainstream GROMACS, set this tag string back to
+ * TPX_TAG_RELEASE, and instead add an element to tpxv and set
+ * tpx_version to that.
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
+/*! \brief Enum of values that describe the contents of a tpr file
+ * whose format matches a version number
+ *
+ * The enum helps the code be more self-documenting and ensure merges
+ * do not silently resolve when two patches make the same bump. When
+ * adding new functionality, add a new element to the end of this
+ * enumeration, change the definition of tpx_version, and write code
+ * below that does the right thing according to the value of
+ * file_version. */
+enum tpxv {
+    tpxv_ComputationalElectrophysiology = 96,                /**< support for ion/water position swaps (computational electrophysiology) */
+    tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
+    tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
+    tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
+    tpxv_RemoveObsoleteParameters1                           /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+};
 
-/* The tpx_version number should be increased whenever the file format changes!
+/*! \brief Version number of the file format written to run input
+ * files by this version of the code.
  *
- * The following comment section helps to keep track of which feature has been
- * added in which version.
+ * The tpx_version number should be increased whenever the file format
+ * in the main development branch changes, generally to the highest
+ * value present in tpxv. Backward compatibility for reading old run
+ * input files is maintained by checking this version number against
+ * that of the file and then using the correct code path.
  *
- * version  feature added
- *    96    support for ion/water position swaps (computational electrophysiology)
- */
-static const int tpx_version = 96;
+ * When developing a feature branch that needs to change the run input
+ * file format, change tpx_tag instead. */
+static const int tpx_version = tpxv_RemoveObsoleteParameters1;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -89,8 +118,11 @@ static const int tpx_version = 96;
  * It first appeared in tpx version 26, when I also moved the inputrecord
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
+ *
+ * In particular, it must be increased when adding new elements to
+ * ftupd, so that old code can read new .tpr files.
  */
-static const int tpx_generation = 25;
+static const int tpx_generation = 26;
 
 /* This number should be the most recent backwards incompatible version
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -142,12 +174,15 @@ static const t_ftupd ftupd[] = {
     { 43, F_TABBONDS          },
     { 43, F_TABBONDSNC        },
     { 70, F_RESTRBONDS        },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRANGLES },
     { 76, F_LINEAR_ANGLES     },
     { 30, F_CROSS_BOND_BONDS  },
     { 30, F_CROSS_BOND_ANGLES },
     { 30, F_UREY_BRADLEY      },
     { 34, F_QUARTIC_ANGLES    },
     { 43, F_TABANGLES         },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRDIHS },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_CBTDIHS },
     { 26, F_FOURDIHS          },
     { 26, F_PIDIHS            },
     { 43, F_TABDIHS           },
@@ -380,6 +415,16 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
     }
 }
 
+static void do_imd(t_fileio *fio, t_IMD *imd, gmx_bool bRead)
+{
+    gmx_fio_do_int(fio, imd->nat);
+    if (bRead)
+    {
+        snew(imd->ind, imd->nat);
+    }
+    gmx_fio_ndo_int(fio, imd->ind, imd->nat);
+}
+
 static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int file_version)
 {
     /* i is defined in the ndo_double macro; use g to iterate. */
@@ -565,11 +610,11 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
     if (file_version >= 79)
     {
-        gmx_fio_do_int(fio, fepvals->bPrintEnergy);
+        gmx_fio_do_int(fio, fepvals->edHdLPrintEnergy);
     }
     else
     {
-        fepvals->bPrintEnergy = FALSE;
+        fepvals->edHdLPrintEnergy = edHdLPrintEnergyNO;
     }
 
     /* handle lambda_neighbors */
@@ -775,7 +820,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     int      i, j, k, *tmp, idum = 0;
     real     rdum, bd_temp;
     rvec     vdum;
-    gmx_bool bSimAnn;
+    gmx_bool bSimAnn, bdum = 0;
     real     zerotemptime, finish_t, init_temp, finish_temp;
 
     if (file_version != tpx_version)
@@ -806,6 +851,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_int(fio, idum);
         ir->nsteps = idum;
     }
+
     if (file_version > 25)
     {
         if (file_version >= 62)
@@ -881,7 +927,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     gmx_fio_do_int(fio, ir->ns_type);
     gmx_fio_do_int(fio, ir->nstlist);
-    gmx_fio_do_int(fio, ir->ndelta);
+    gmx_fio_do_int(fio, idum); /* used to be ndelta; not used anymore */
     if (file_version < 41)
     {
         gmx_fio_do_int(fio, idum);
@@ -910,13 +956,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     ir->nstcomm = abs(ir->nstcomm);
 
-    if (file_version > 25)
+    /* ignore nstcheckpoint */
+    if (file_version > 25 && file_version < tpxv_RemoveObsoleteParameters1)
     {
-        gmx_fio_do_int(fio, ir->nstcheckpoint);
-    }
-    else
-    {
-        ir->nstcheckpoint = 0;
+        gmx_fio_do_int(fio, idum);
     }
 
     gmx_fio_do_int(fio, ir->nstcgsteep);
@@ -1141,7 +1184,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, ir->epsilon_surface);
     }
 
-    gmx_fio_do_gmx_bool(fio, ir->bOptFFT);
+    /* ignore bOptFFT */
+    if (file_version < tpxv_RemoveObsoleteParameters1)
+    {
+        gmx_fio_do_gmx_bool(fio, bdum);
+    }
 
     if (file_version >= 93)
     {
@@ -1345,18 +1392,16 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->orires_tau  = 0;
         ir->nstorireout = 0;
     }
+
+    /* ignore dihre_fc */
     if (file_version >= 26 && file_version < 79)
     {
-        gmx_fio_do_real(fio, ir->dihre_fc);
+        gmx_fio_do_real(fio, rdum);
         if (file_version < 56)
         {
             gmx_fio_do_real(fio, rdum);
             gmx_fio_do_int(fio, idum);
         }
-    }
-    else
-    {
-        ir->dihre_fc = 0;
     }
 
     gmx_fio_do_real(fio, ir->em_stepsize);
@@ -1409,7 +1454,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, bd_temp);
     }
     gmx_fio_do_real(fio, ir->bd_fric);
-    gmx_fio_do_int(fio, ir->ld_seed);
+    if (file_version >= tpxv_Use64BitRandomSeed)
+    {
+        gmx_fio_do_int64(fio, ir->ld_seed);
+    }
+    else
+    {
+        gmx_fio_do_int(fio, idum);
+        ir->ld_seed = idum;
+    }
     if (file_version >= 33)
     {
         for (i = 0; i < DIM; i++)
@@ -1545,6 +1598,25 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->bRot = FALSE;
+    }
+
+    /* Interactive molecular dynamics */
+    if (file_version >= tpxv_InteractiveMolecularDynamics)
+    {
+        gmx_fio_do_int(fio, ir->bIMD);
+        if (TRUE == ir->bIMD)
+        {
+            if (bRead)
+            {
+                snew(ir->imd, 1);
+            }
+            do_imd(fio, ir->imd, bRead);
+        }
+    }
+    else
+    {
+        /* We don't support IMD sessions for old .tpr files */
+        ir->bIMD = FALSE;
     }
 
     /* grpopts stuff */
@@ -1706,7 +1778,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
 
     /* Swap ions */
-    if (file_version >= 96)
+    if (file_version >= tpxv_ComputationalElectrophysiology)
     {
         gmx_fio_do_int(fio, ir->eSwapCoords);
         if (ir->eSwapCoords != eswapNO)
@@ -1795,6 +1867,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 iparams->pdihs.cpB  = iparams->pdihs.cpA;
             }
             break;
+        case F_RESTRANGLES:
+            gmx_fio_do_real(fio, iparams->harmonic.rA);
+            gmx_fio_do_real(fio, iparams->harmonic.krA);
+            break;
         case F_LINEAR_ANGLES:
             gmx_fio_do_real(fio, iparams->linangle.klinA);
             gmx_fio_do_real(fio, iparams->linangle.aA);
@@ -1805,6 +1881,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fene.bm);
             gmx_fio_do_real(fio, iparams->fene.kb);
             break;
+
         case F_RESTRBONDS:
             gmx_fio_do_real(fio, iparams->restraint.lowA);
             gmx_fio_do_real(fio, iparams->restraint.up1A);
@@ -1961,6 +2038,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 gmx_fio_do_int(fio, iparams->pdihs.mult);
             }
             break;
+        case F_RESTRDIHS:
+            gmx_fio_do_real(fio, iparams->pdihs.phiA);
+            gmx_fio_do_real(fio, iparams->pdihs.cpA);
+            break;
         case F_DISRES:
             gmx_fio_do_int(fio, iparams->disres.label);
             gmx_fio_do_int(fio, iparams->disres.type);
@@ -2018,6 +2099,9 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_rvec(fio, iparams->fbposres.pos0);
             gmx_fio_do_real(fio, iparams->fbposres.r);
             gmx_fio_do_real(fio, iparams->fbposres.k);
+            break;
+        case F_CBTDIHS:
+            gmx_fio_ndo_real(fio, iparams->cbtdihs.cbtcA, NR_CBTDIHS);
             break;
         case F_RBDIHS:
             gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
@@ -2330,10 +2414,52 @@ static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead,
     gmx_fio_ndo_int(fio, block->a, block->nra);
 }
 
+/* This is a primitive routine to make it possible to translate atomic numbers
+ * to element names when reading TPR files, without making the Gromacs library
+ * directory a dependency on mdrun (which is the case if we need elements.dat).
+ */
+static const char *
+atomicnumber_to_element(int atomicnumber)
+{
+    const char * p;
+
+    /* This does not have to be complete, so we only include elements likely
+     * to occur in PDB files.
+     */
+    switch (atomicnumber)
+    {
+        case 1:  p = "H";  break;
+        case 5:  p = "B";  break;
+        case 6:  p = "C";  break;
+        case 7:  p = "N";  break;
+        case 8:  p = "O";  break;
+        case 9:  p = "F";  break;
+        case 11: p = "Na"; break;
+        case 12: p = "Mg"; break;
+        case 15: p = "P";  break;
+        case 16: p = "S";  break;
+        case 17: p = "Cl"; break;
+        case 18: p = "Ar"; break;
+        case 19: p = "K";  break;
+        case 20: p = "Ca"; break;
+        case 25: p = "Mn"; break;
+        case 26: p = "Fe"; break;
+        case 28: p = "Ni"; break;
+        case 29: p = "Cu"; break;
+        case 30: p = "Zn"; break;
+        case 35: p = "Br"; break;
+        case 47: p = "Ag"; break;
+        default: p = "";   break;
+    }
+    return p;
+}
+
+
 static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
                     int file_version, gmx_groups_t *groups, int atnr)
 {
-    int i, myngrp;
+    int    i, myngrp;
+    char * p_elem;
 
     gmx_fio_do_real(fio, atom->m);
     gmx_fio_do_real(fio, atom->q);
@@ -2346,6 +2472,15 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
     if (file_version >= 52)
     {
         gmx_fio_do_int(fio, atom->atomnumber);
+        if (bRead)
+        {
+            /* Set element string from atomic number if present.
+             * This routine returns an empty string if the name is not found.
+             */
+            strncpy(atom->elem, atomicnumber_to_element(atom->atomnumber), 4);
+            /* avoid warnings about potentially unterminated string */
+            atom->elem[3] = '\0';
+        }
     }
     else if (bRead)
     {
@@ -2931,8 +3066,8 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
-    int      mt, mb, i;
-    t_blocka dumb;
+    int            mt, mb, i;
+    t_blocka       dumb;
 
     if (bRead)
     {

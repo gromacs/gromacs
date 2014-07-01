@@ -35,7 +35,7 @@
 set(EXECUTABLE_EXTENSION "")
 if (GMX_NATIVE_WINDOWS OR GMX_CYGWIN)
     set(EXECUTABLE_EXTENSION ".exe")
-endif ()
+endif()
 set(PATH_SEARCH_TEST_DIR ${CMAKE_CURRENT_BINARY_DIR}/test-bin)
 file(MAKE_DIRECTORY ${PATH_SEARCH_TEST_DIR}/bin)
 file(WRITE ${PATH_SEARCH_TEST_DIR}/bin/test-exe${EXECUTABLE_EXTENSION}
@@ -49,7 +49,7 @@ if (UNIX)
         COMMAND ${CMAKE_COMMAND} -E create_symlink
             ${PATH_SEARCH_TEST_DIR}/bin/test-exe
             ${PATH_SEARCH_TEST_DIR}/bin/test-abs-link)
-endif ()
+endif()
 
 gmx_add_unit_test(CommandLineUnitTests commandline-test
                   cmdlinehelpwriter.cpp

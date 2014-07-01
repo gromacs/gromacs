@@ -40,24 +40,24 @@
 #include <config.h>
 #endif
 
+#include <string.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "string2.h"
 #include "gromacs/fileio/confio.h"
 #include "macros.h"
-#include "gromacs/fileio/futil.h"
-#include "atomprop.h"
+#include "gromacs/utility/futil.h"
 #include "names.h"
-#include "vec.h"
-#include "gmx_fatal.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "addconf.h"
 #include "read-conformation.h"
 #include "gromacs/fileio/pdbio.h"
-#include "pbc.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef DEBUG
 static void print_stat(rvec *x, int natoms, matrix box)
@@ -116,8 +116,10 @@ static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
             moltp = NOTSET;
             for (j = 0; (j < nrmoltypes) && (moltp == NOTSET); j++)
             {
-                if (strcmp(*(atoms->resinfo[atoms->atom[i].resind].name),
-                           moltypes[j].name) == 0)
+                /* cppcheck-suppress nullPointer
+                 * moltypes is guaranteed to be allocated because otherwise
+                 * nrmoltypes is 0. */
+                if (strcmp(*(atoms->resinfo[atoms->atom[i].resind].name), moltypes[j].name) == 0)
                 {
                     moltp = j;
                 }

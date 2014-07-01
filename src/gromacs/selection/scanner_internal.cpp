@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,13 +56,11 @@
 
 #include <string>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
-
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "parsetree.h"
@@ -75,7 +73,9 @@
 #include "scanner.h"
 #include "scanner_internal.h"
 
-//! Step in which the allocated memory for pretty-printed input is incremented.
+/*! \brief
+ * Step in which the allocated memory for pretty-printed input is incremented.
+ */
 #define STRSTORE_ALLOCSTEP 1000
 
 /* These are defined as macros in the generated scanner_flex.h.

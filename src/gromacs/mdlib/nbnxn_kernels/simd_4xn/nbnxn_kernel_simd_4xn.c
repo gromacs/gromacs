@@ -48,6 +48,7 @@
 #ifdef GMX_NBNXN_SIMD_4XN
 
 #include "gromacs/simd/vector_operations.h"
+
 #if !(GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8)
 #error "unsupported SIMD width"
 #endif
@@ -57,7 +58,7 @@
 #include "../nbnxn_kernel_common.h"
 #include "gmx_omp_nthreads.h"
 #include "types/force_flags.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
@@ -250,7 +251,7 @@ reduce_group_energies(int ng, int ng_2log,
 
 #else /* GMX_NBNXN_SIMD_4XN */
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #endif /* GMX_NBNXN_SIMD_4XN */
 

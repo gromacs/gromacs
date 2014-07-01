@@ -38,28 +38,23 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
-#include "sysstuff.h"
+
 #include "typedefs.h"
-#include "vec.h"
+#include "types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "gmx_fatal_collective.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "force.h"
 #include "tables.h"
 #include "nonbonded.h"
-#include "invblock.h"
 #include "names.h"
 #include "network.h"
-#include "pbc.h"
 #include "ns.h"
-#include "mshift.h"
 #include "txtdump.h"
 #include "coulomb.h"
 #include "md_support.h"
@@ -67,7 +62,7 @@
 #include "domdec.h"
 #include "qmmm.h"
 #include "copyrite.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "nbnxn_simd.h"
 #include "nbnxn_search.h"
 #include "nbnxn_atomdata.h"
@@ -76,10 +71,10 @@
 #include "gmx_detect_hardware.h"
 #include "inputrec.h"
 
-#ifdef _MSC_VER
-/* MSVC definition for __cpuid() */
-#include <intrin.h>
-#endif
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "types/nbnxn_cuda_types_ext.h"
 #include "gpu_utils.h"
@@ -157,6 +152,46 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
     return nbfp;
 }
 
+static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
+{
+    int   i, j, k, atnr;
+    real  c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real *grid;
+
+    /* For LJ-PME simulations, we correct the energies with the reciprocal space
+     * inside of the cut-off. To do this the non-bonded kernels needs to have
+     * access to the C6-values used on the reciprocal grid in pme.c
+     */
+
+    atnr = idef->atnr;
+    snew(grid, 2*atnr*atnr);
+    for (i = k = 0; (i < atnr); i++)
+    {
+        for (j = 0; (j < atnr); j++, k++)
+        {
+            c6i  = idef->iparams[i*(atnr+1)].lj.c6;
+            c12i = idef->iparams[i*(atnr+1)].lj.c12;
+            c6j  = idef->iparams[j*(atnr+1)].lj.c6;
+            c12j = idef->iparams[j*(atnr+1)].lj.c12;
+            c6   = sqrt(c6i * c6j);
+            if (fr->ljpme_combination_rule == eljpmeLB
+                && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
+            {
+                sigmai = pow(c12i / c6i, 1.0/6.0);
+                sigmaj = pow(c12j / c6j, 1.0/6.0);
+                epsi   = c6i * c6i / c12i;
+                epsj   = c6j * c6j / c12j;
+                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+            }
+            /* Store the elements at the same relative positions as C6 in nbfp in order
+             * to simplify access in the kernels
+             */
+            grid[2*(atnr*i+j)] = c6*6.0;
+        }
+    }
+    return grid;
+}
+
 static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
 {
     real *nbfp;
@@ -183,8 +218,8 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
                 sigmaj = pow(c12j / c6j, 1.0/6.0);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = epsi * epsj * pow(0.5*(sigmai+sigmaj), 6);
-                c12    = epsi * epsj * pow(0.5*(sigmai+sigmaj), 12);
+                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+                c12    = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 12);
             }
             C6(nbfp, atnr, i, j)   = c6*6.0;
             C12(nbfp, atnr, i, j)  = c12*12.0;
@@ -606,7 +641,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     int                  *a_con;
     int                   ftype;
     int                   ia;
-    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bFEP;
+    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bHavePerturbedAtoms;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb, mtop->nmolblock);
@@ -720,11 +755,11 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 /* bExclIntraAll: all intra cg interactions excluded
                  * bExclInter:    any inter cg interactions excluded
                  */
-                bExclIntraAll = TRUE;
-                bExclInter    = FALSE;
-                bHaveVDW      = FALSE;
-                bHaveQ        = FALSE;
-                bFEP          = FALSE;
+                bExclIntraAll       = TRUE;
+                bExclInter          = FALSE;
+                bHaveVDW            = FALSE;
+                bHaveQ              = FALSE;
+                bHavePerturbedAtoms = FALSE;
                 for (ai = a0; ai < a1; ai++)
                 {
                     /* Check VDW and electrostatic interactions */
@@ -733,7 +768,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     bHaveQ  = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
                                             molt->atoms.atom[ai].qB != 0);
 
-                    bFEP    = bFEP || (PERTURBED(molt->atoms.atom[ai]) != 0);
+                    bHavePerturbedAtoms = bHavePerturbedAtoms || (PERTURBED(molt->atoms.atom[ai]) != 0);
 
                     /* Clear the exclusion list for atom ai */
                     for (aj = a0; aj < a1; aj++)
@@ -795,7 +830,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 {
                     SET_CGINFO_HAS_Q(cginfo[cgm+cg]);
                 }
-                if (bFEP)
+                if (bHavePerturbedAtoms && fr->efep != efepNO)
                 {
                     SET_CGINFO_FEP(cginfo[cgm+cg]);
                     *bFEP_NonBonded = TRUE;
@@ -1542,17 +1577,7 @@ gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
                                       const t_inputrec *ir,
                                       gmx_bool          bGPU)
 {
-    /* TODO: remove these GPU specific restrictions by implementing CUDA kernels */
-    if (bGPU)
-    {
-        if (ir->vdwtype == evdwPME)
-        {
-            md_print_warn(cr, fplog, "LJ-PME is not yet supported with GPUs, falling back to CPU only\n");
-            return FALSE;
-        }
-    }
-
-    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
+    if (!bGPU && (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB))
     {
         md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with %s, falling back to %s\n",
                       bGPU ? "GPUs" : "SIMD kernels",
@@ -1750,6 +1775,15 @@ static void pick_nbnxn_kernel(FILE                *fp,
                 lookup_nbnxn_kernel_name(*kernel_type),
                 nbnxn_kernel_pairlist_simple(*kernel_type) ? NBNXN_CPU_CLUSTER_I_SIZE : NBNXN_GPU_CLUSTER_SIZE,
                 nbnxn_kernel_to_cj_size(*kernel_type));
+
+        if (nbnxnk4x4_PlainC == *kernel_type ||
+            nbnxnk8x8x8_PlainC == *kernel_type)
+        {
+            md_print_warn(cr, fp,
+                          "WARNING: Using the slow %s kernels. This should\n"
+                          "not happen during routine usage on supported platforms.\n\n",
+                          lookup_nbnxn_kernel_name(*kernel_type));
+        }
     }
 }
 
@@ -1793,7 +1827,7 @@ static void pick_nbnxn_resources(const t_commrec     *cr,
         {
             /* At this point the init should never fail as we made sure that
              * we have all the GPUs we need. If it still does, we'll bail. */
-            gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
+            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
                       get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
                                         cr->rank_pp_intranode),
@@ -1836,11 +1870,10 @@ static void init_ewald_f_table(interaction_const_t *ic,
 
     if (bUsesSimpleTables)
     {
-        /* With a spacing of 0.0005 we are at the force summation accuracy
-         * for the SSE kernels for "normal" atomistic simulations.
+        /* Get the Ewald table spacing based on Coulomb and/or LJ
+         * Ewald coefficients and rtol.
          */
-        ic->tabq_scale = ewald_spline3_table_scale(ic->ewaldcoeff_q,
-                                                   ic->rcoulomb);
+        ic->tabq_scale = ewald_spline3_table_scale(ic);
 
         maxr           = (rtab > ic->rcoulomb) ? rtab : ic->rcoulomb;
         ic->tabq_size  = (int)(maxr*ic->tabq_scale) + 2;
@@ -1856,12 +1889,28 @@ static void init_ewald_f_table(interaction_const_t *ic,
     sfree_aligned(ic->tabq_coul_F);
     sfree_aligned(ic->tabq_coul_V);
 
-    /* Create the original table data in FDV0 */
-    snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
-    snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
-    snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
-    table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q);
+    sfree_aligned(ic->tabq_vdw_FDV0);
+    sfree_aligned(ic->tabq_vdw_F);
+    sfree_aligned(ic->tabq_vdw_V);
+
+    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    {
+        /* Create the original table data in FDV0 */
+        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
+        snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
+        snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
+        table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
+                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
+    }
+
+    if (EVDW_PME(ic->vdwtype))
+    {
+        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size*4, 32);
+        snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
+        snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
+        table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
+                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+    }
 }
 
 void init_interaction_const_tables(FILE                *fp,
@@ -1871,7 +1920,7 @@ void init_interaction_const_tables(FILE                *fp,
 {
     real spacing;
 
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
         init_ewald_f_table(ic, bUsesSimpleTables, rtab);
 
@@ -1964,10 +2013,6 @@ init_interaction_const(FILE                       *fp,
             {
                 real crc2;
 
-                if (fr->cutoff_scheme == ecutsGROUP)
-                {
-                    gmx_fatal(FARGS, "Potential-shift is not (yet) implemented for LJ-PME with cutoff-scheme=group");
-                }
                 crc2            = sqr(ic->ewaldcoeff_lj*ic->rvdw);
                 ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
             }
@@ -2591,7 +2636,6 @@ void init_forcerec(FILE              *fp,
     switch (fr->vdwtype)
     {
         case evdwCUT:
-        case evdwPME:
             if (fr->bBHAM)
             {
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
@@ -2600,6 +2644,9 @@ void init_forcerec(FILE              *fp,
             {
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LENNARDJONES;
             }
+            break;
+        case evdwPME:
+            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LJEWALD;
             break;
 
         case evdwSWITCH:
@@ -2618,6 +2665,11 @@ void init_forcerec(FILE              *fp,
     fr->nbkernel_elec_modifier    = fr->coulomb_modifier;
     fr->nbkernel_vdw_modifier     = fr->vdw_modifier;
 
+    fr->rvdw             = cutoff_inf(ir->rvdw);
+    fr->rvdw_switch      = ir->rvdw_switch;
+    fr->rcoulomb         = cutoff_inf(ir->rcoulomb);
+    fr->rcoulomb_switch  = ir->rcoulomb_switch;
+
     fr->bTwinRange = fr->rlistlong > fr->rlist;
     fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype == eelEWALD);
 
@@ -2625,8 +2677,8 @@ void init_forcerec(FILE              *fp,
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
-                          !gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS));
+        fr->bvdwtab    = ((fr->vdwtype != evdwCUT || !gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS))
+                          && !EVDW_PME(fr->vdwtype));
         /* We have special kernels for standard Ewald and PME, but the pme-switch ones are tabulated above */
         fr->bcoultab   = !(fr->eeltype == eelCUT ||
                            fr->eeltype == eelEWALD ||
@@ -2636,12 +2688,18 @@ void init_forcerec(FILE              *fp,
 
         /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely
          * going to be faster to tabulate the interaction than calling the generic kernel.
+         * However, if generic kernels have been requested we keep things analytically.
          */
-        if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH && fr->nbkernel_vdw_modifier == eintmodPOTSWITCH)
+        if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH &&
+            fr->nbkernel_vdw_modifier == eintmodPOTSWITCH &&
+            bGenericKernelOnly == FALSE)
         {
             if ((fr->rcoulomb_switch != fr->rvdw_switch) || (fr->rcoulomb != fr->rvdw))
             {
                 fr->bcoultab = TRUE;
+                /* Once we tabulate electrostatics, we can use the switch function for LJ,
+                 * which would otherwise need two tables.
+                 */
             }
         }
         else if ((fr->nbkernel_elec_modifier == eintmodPOTSHIFT && fr->nbkernel_vdw_modifier == eintmodPOTSHIFT) ||
@@ -2649,10 +2707,19 @@ void init_forcerec(FILE              *fp,
                    fr->nbkernel_elec_modifier == eintmodEXACTCUTOFF &&
                    (fr->nbkernel_vdw_modifier == eintmodPOTSWITCH || fr->nbkernel_vdw_modifier == eintmodPOTSHIFT))))
         {
-            if (fr->rcoulomb != fr->rvdw)
+            if ((fr->rcoulomb != fr->rvdw) && (bGenericKernelOnly == FALSE))
             {
                 fr->bcoultab = TRUE;
             }
+        }
+
+        if (fr->nbkernel_elec_modifier == eintmodFORCESWITCH)
+        {
+            fr->bcoultab = TRUE;
+        }
+        if (fr->nbkernel_vdw_modifier == eintmodFORCESWITCH)
+        {
+            fr->bvdwtab = TRUE;
         }
 
         if (getenv("GMX_REQUIRE_TABLES"))
@@ -2745,8 +2812,6 @@ void init_forcerec(FILE              *fp,
     fr->epsilon_r       = ir->epsilon_r;
     fr->epsilon_rf      = ir->epsilon_rf;
     fr->fudgeQQ         = mtop->ffparams.fudgeQQ;
-    fr->rcoulomb_switch = ir->rcoulomb_switch;
-    fr->rcoulomb        = cutoff_inf(ir->rcoulomb);
 
     /* Parameters for generalized RF */
     fr->zsquare = 0.0;
@@ -2785,14 +2850,16 @@ void init_forcerec(FILE              *fp,
     {
         fr->ntype = mtop->ffparams.atnr;
         fr->nbfp  = mk_nbfp(&mtop->ffparams, fr->bBHAM);
+        if (EVDW_PME(fr->vdwtype))
+        {
+            fr->ljpme_c6grid  = make_ljpme_c6grid(&mtop->ffparams, fr);
+        }
     }
 
     /* Copy the energy group exclusions */
     fr->egp_flags = ir->opts.egp_flags;
 
     /* Van der Waals stuff */
-    fr->rvdw        = cutoff_inf(ir->rvdw);
-    fr->rvdw_switch = ir->rvdw_switch;
     if ((fr->vdwtype != evdwCUT) && (fr->vdwtype != evdwUSER) && !fr->bBHAM)
     {
         if (fr->rvdw_switch >= fr->rvdw)
@@ -2816,6 +2883,11 @@ void init_forcerec(FILE              *fp,
     if (fr->bBHAM && (fr->vdwtype == evdwSHIFT || fr->vdwtype == evdwSWITCH))
     {
         gmx_fatal(FARGS, "Switch/shift interaction not supported with Buckingham");
+    }
+
+    if (fr->bBHAM && fr->cutoff_scheme == ecutsVERLET)
+    {
+        gmx_fatal(FARGS, "Verlet cutoff-scheme is not supported with Buckingham");
     }
 
     if (fp)
@@ -2927,6 +2999,8 @@ void init_forcerec(FILE              *fp,
         (ir->eDispCorr != edispcNO && ir_vdw_switched(ir));
 
     bMakeSeparate14Table = ((!bMakeTables || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
+                             fr->coulomb_modifier != eintmodNONE ||
+                             fr->vdw_modifier != eintmodNONE ||
                              fr->bBHAM || fr->bEwald) &&
                             (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
                              gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
@@ -3045,6 +3119,17 @@ void init_forcerec(FILE              *fp,
             }
         }
     }
+    else if ((fr->eDispCorr != edispcNO) &&
+             ((fr->vdw_modifier == eintmodPOTSWITCH) ||
+              (fr->vdw_modifier == eintmodFORCESWITCH) ||
+              (fr->vdw_modifier == eintmodPOTSHIFT)))
+    {
+        /* Tables might not be used for the potential modifier interactions per se, but
+         * we still need them to evaluate switch/shift dispersion corrections in this case.
+         */
+        make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+    }
+
     if (bMakeSeparate14Table)
     {
         /* generate extra tables with plain Coulomb for 1-4 interactions only */

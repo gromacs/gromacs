@@ -37,13 +37,21 @@
 #define GMX_FILEIO_MDOUTF_H
 
 #include <stdio.h>
-#include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/types/topology.h"
+
 #include "../legacyheaders/types/inputrec.h"
 #include "../legacyheaders/types/oenv.h"
 #include "../legacyheaders/network.h"
+
+#include "../math/vectypes.h"
+#include "../utility/basedefinitions.h"
 #include "filenm.h"
 #include "enxio.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct gmx_mtop_t;
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
@@ -58,7 +66,7 @@ gmx_mdoutf_t init_mdoutf(FILE              *fplog,
                          int                mdrun_flags,
                          const t_commrec   *cr,
                          const t_inputrec  *ir,
-                         gmx_mtop_t        *mtop,
+                         struct gmx_mtop_t *mtop,
                          const output_env_t oenv);
 
 /*! \brief Getter for file pointer */
@@ -82,7 +90,7 @@ void done_mdoutf(gmx_mdoutf_t of);
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
-                                      gmx_mtop_t *top_global,
+                                      struct gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       rvec *f_local, rvec *f_global);
@@ -92,5 +100,10 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
 #define MDOF_F            (1<<2)
 #define MDOF_X_COMPRESSED (1<<3)
 #define MDOF_CPT          (1<<4)
+#define MDOF_IMD          (1<<5)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GMX_FILEIO_MDOUTF_H */

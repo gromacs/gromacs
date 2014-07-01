@@ -38,28 +38,28 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-#include <ctype.h>
 #include <math.h>
+#include <string.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
 #include "macros.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
 #include "typedefs.h"
-#include "xvgr.h"
+#include "viewit.h"
 #include "gstat.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "pbc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define FACTOR  1000.0  /* Convert nm^2/ps to 10e-5 cm^2/s */
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion

@@ -32,6 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
@@ -56,7 +57,7 @@
 
 #include "../nbnxn_kernel_simd_utils.h"
 
-static inline void
+static gmx_inline void
 gmx_load_simd_4xn_interactions(int gmx_unused             excl,
                                gmx_exclfilter gmx_unused  filter_S0,
                                gmx_exclfilter gmx_unused  filter_S1,

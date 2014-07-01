@@ -44,8 +44,6 @@
 #include "network.h"
 #include "sim_util.h"
 #include "tgroup.h"
-#include "../fileio/filenm.h"
-#include "mshift.h"
 #include "mdebin.h"
 #include "vcm.h"
 #include "vsite.h"
@@ -53,7 +51,8 @@
 #include "types/membedt.h"
 #include "types/globsig.h"
 
-#include "thread_mpi/threads.h"
+#include "../fileio/filenm.h"
+#include "../timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,28 +74,14 @@ extern "C" {
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 #define MD_TUNEPME        (1<<20)
 #define MD_TESTVERLET     (1<<22)
+#define MD_IMDWAIT        (1<<23)
+#define MD_IMDTERM        (1<<24)
+#define MD_IMDPULL        (1<<25)
 
 /* The options for the domain decomposition MPI task ordering */
 enum {
     ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
-
-/* Variables for temporary use with the deform option,
- * used in runner.c and md.c.
- * (These variables should be stored in the tpx file.)
- */
-extern gmx_int64_t         deform_init_init_step_tpx;
-extern matrix              deform_init_box_tpx;
-extern tMPI_Thread_mutex_t deform_init_box_mutex;
-
-#ifdef GMX_THREAD_MPI
-/* The minimum number of atoms per tMPI thread. With fewer atoms than this,
- * the number of threads will get lowered.
- */
-#define MIN_ATOMS_PER_MPI_THREAD    90
-#define MIN_ATOMS_PER_GPU           900
-#endif
-
 
 typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  int nfile, const t_filenm fnm[],
@@ -115,6 +100,7 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  gmx_membed_t membed,
                                  real cpt_period, real max_hours,
                                  const char *deviceOptions,
+                                 int imdport,
                                  unsigned long Flags,
                                  gmx_walltime_accounting_t walltime_accounting);
 
@@ -175,7 +161,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             const char *deviceOptions, unsigned long Flags);
+             const char *deviceOptions, int imdport, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 #ifdef __cplusplus

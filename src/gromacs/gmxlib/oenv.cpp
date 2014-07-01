@@ -36,24 +36,15 @@
  */
 #include "oenv.h"
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
-#include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/exceptions.h"
 
 struct output_env
 {
-    output_env()
-    {
-        setDefaults();
-    }
-    output_env(int argc, const char *const argv[])
-        : programContext(argc, argv)
-    {
-        setDefaults();
-    }
-
-    void setDefaults()
+    explicit output_env(const gmx::ProgramContextInterface &context)
+        : programContext(context)
     {
         time_unit   = time_ps;
         view        = FALSE;
@@ -62,18 +53,18 @@ struct output_env
         debug_level = 0;
     }
 
-    gmx::CommandLineProgramContext programContext;
+    const gmx::ProgramContextInterface  &programContext;
 
     /* the time unit, enum defined in oenv.h */
-    time_unit_t                    time_unit;
+    time_unit_t                          time_unit;
     /* view of file requested */
-    gmx_bool                       view;
+    gmx_bool                             view;
     /* xvg output format, enum defined in oenv.h */
-    xvg_format_t                   xvg_format;
+    xvg_format_t                         xvg_format;
     /* The level of verbosity for this program */
-    int                            verbosity;
+    int                                  verbosity;
     /* the debug level */
-    int                            debug_level;
+    int                                  debug_level;
 };
 
 /* The source code in this file should be thread-safe.
@@ -101,13 +92,14 @@ static const char *time_units_xvgr[] = {
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
-void output_env_init(output_env_t *oenvp, int argc, char *argv[],
+void output_env_init(output_env_t *oenvp,
+                     const gmx::ProgramContextInterface &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level)
 {
     try
     {
-        output_env_t oenv = new output_env(argc, argv);
+        output_env_t oenv = new output_env(context);
         *oenvp            = oenv;
         oenv->time_unit   = tmu;
         oenv->view        = view;
@@ -122,7 +114,7 @@ void output_env_init_default(output_env_t *oenvp)
 {
     try
     {
-        output_env_t oenv = new output_env();
+        output_env_t oenv = new output_env(gmx::getProgramContext());
         *oenvp = oenv;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

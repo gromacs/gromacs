@@ -141,7 +141,9 @@ extern const gmx_simd_int32_t iSimd_0xCCCCCCCC; //!< Bitpattern to test integer 
 #endif                                          // GMX_SIMD_HAVE_INT32
 
 
-/*! \brief Test fixture for SIMD tests.
+/*! \internal
+ * \brief
+ * Test fixture for SIMD tests.
  *
  * This is a very simple test fixture that basically just takes the common
  * SIMD/SIMD4 functionality from SimdBaseTest and creates wrapper routines

@@ -99,7 +99,7 @@ enum
     eNR_BORN_CHAINRULE,
     eNR_BORN_AVA_RADII_STILL, eNR_BORN_AVA_RADII_HCT_OBC,
     eNR_BORN_AVA_CHAINRULE,
-    eNR_WEIGHTS,              eNR_SPREADQ,              eNR_SPREADQBSP,
+    eNR_WEIGHTS,              eNR_SPREAD,               eNR_SPREADBSP,
     eNR_GATHERF,              eNR_GATHERFBSP,           eNR_FFT,
     eNR_CONV,                 eNR_SOLVEPME, eNR_NS,      eNR_RESETX,
     eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
@@ -132,8 +132,6 @@ typedef struct
 }
 t_nrnb;
 
-
-typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
 #ifdef __cplusplus
 }

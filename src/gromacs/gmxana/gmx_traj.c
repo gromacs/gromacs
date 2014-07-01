@@ -39,26 +39,27 @@
 #endif
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
-#include "mshift.h"
-#include "xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "rmpbc.h"
-#include "physics.h"
-#include "nrjac.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void low_print_data(FILE *fp, real time, rvec x[], int n, atom_id *index,
                            gmx_bool bDim[], const char *sffmt)
@@ -902,6 +903,12 @@ int gmx_traj(int argc, char *argv[])
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
+
+
+    if ((bOV || bOF) && fn2ftp(ftp2fn(efTRX, NFILE, fnm)) == efXTC)
+    {
+        gmx_fatal(FARGS, "Cannot extract velocities or forces since your input XTC file does not contain them.");
+    }
 
     if (bCV || bCF)
     {

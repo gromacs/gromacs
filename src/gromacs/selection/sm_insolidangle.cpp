@@ -117,17 +117,17 @@
 #include <math.h>
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/physics.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "selelem.h"
 
@@ -351,7 +351,7 @@ static const char *help_insolidangle[] = {
     "of these cones. The cutoff determines the width of the cones.",
 };
 
-/** \internal Selection method data for the \p insolidangle method. */
+/** Selection method data for the \p insolidangle method. */
 gmx_ana_selmethod_t sm_insolidangle = {
     "insolidangle", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_insolidangle), smparams_insolidangle,

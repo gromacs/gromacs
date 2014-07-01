@@ -68,6 +68,7 @@ class DefaultProgramContext : public ProgramContextInterface
         virtual const char *programName() const { return "GROMACS"; }
         virtual const char *displayName() const { return "GROMACS"; }
         virtual const char *fullBinaryPath() const { return ""; }
+        virtual const char *defaultLibraryDataPath() const { return ""; }
         virtual const char *commandLine() const { return ""; }
 };
 

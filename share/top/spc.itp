@@ -1,11 +1,1 @@
-; This file is for backward compatibility only.
-; Please directly include the spc.itp file from your force field directory.
-#ifdef _FF_GROMACS
-#include "gmx.ff/spc.itp"
-#endif
-#ifdef _FF_GROMOS96
-#include "gromos43a1.ff/spc.itp"
-#endif
-#ifdef _FF_OPLS  
-#include "oplsaa.ff/spc.itp"
-#endif
+#error   This top-level .itp file has been removed. Edit your topology to include it from your force field directory instead, e.g. "oplsaa.ff/spc.itp"

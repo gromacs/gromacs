@@ -40,12 +40,13 @@
 #endif
 
 #include <math.h>
-#include "sysstuff.h"
-#include "physics.h"
-#include "vec.h"
-#include "smalloc.h"
+#include <string.h>
+
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "topio.h"
 #include "toputil.h"
 #include "convparm.h"
@@ -218,6 +219,10 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->harmonic.rB  = old[2];
             newparam->harmonic.krB = old[3];
             break;
+        case F_RESTRANGLES:
+            newparam->harmonic.rA  = old[0];
+            newparam->harmonic.krA = old[1];
+            break;
         case F_MORSE:
             newparam->morse.b0A    = old[0];
             newparam->morse.cbA    = old[1];
@@ -312,6 +317,10 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->pdihs.mult = round_check(old[2], -99, ftype, "multiplicity");
 
             break;
+        case F_RESTRDIHS:
+            newparam->pdihs.phiA = old[0];
+            newparam->pdihs.cpA  = old[1];
+            break;
         case F_POSRES:
             newparam->posres.fcA[XX]   = old[0];
             newparam->posres.fcA[YY]   = old[1];
@@ -369,6 +378,12 @@ assign_param(t_functype ftype, t_iparams *newparam,
             {
                 newparam->rbdihs.rbcA[i] = old[i];
                 newparam->rbdihs.rbcB[i] = old[NR_RBDIHS+i];
+            }
+            break;
+        case F_CBTDIHS:
+            for (i = 0; (i < NR_CBTDIHS); i++)
+            {
+                newparam->cbtdihs.cbtcA[i] = old[i];
             }
             break;
         case F_FOURDIHS:

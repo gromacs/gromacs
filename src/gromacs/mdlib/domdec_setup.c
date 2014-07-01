@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,12 +40,12 @@
 #include <stdio.h>
 #include <assert.h>
 #include "domdec.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "perf_est.h"
-#include "physics.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "names.h"
 
 /* Margin for setting up the DD grid */
@@ -217,8 +217,8 @@ static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
     }
     if (npme > nnodes/2)
     {
-        gmx_fatal(FARGS, "Could not find an appropriate number of separate PME nodes. i.e. >= %5f*#nodes (%d) and <= #nodes/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
-                  "Use the -npme option of mdrun or change the number of processors or the PME grid dimensions, see the manual for details.",
+        gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
+                  "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
                   ratio, (int)(0.95*ratio*nnodes+0.5), nnodes/2, ir->nkx, ir->nky);
         /* Keep the compiler happy */
         npme = 0;
@@ -228,12 +228,12 @@ static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
         if (fplog)
         {
             fprintf(fplog,
-                    "Will use %d particle-particle and %d PME only nodes\n"
+                    "Will use %d particle-particle and %d PME only ranks\n"
                     "This is a guess, check the performance at the end of the log file\n",
                     nnodes-npme, npme);
         }
         fprintf(stderr, "\n"
-                "Will use %d particle-particle and %d PME only nodes\n"
+                "Will use %d particle-particle and %d PME only ranks\n"
                 "This is a guess, check the performance at the end of the log file\n",
                 nnodes-npme, npme);
     }
@@ -358,8 +358,13 @@ static float comm_cost_est(real limit, real cutoff,
     {
         bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
 
-        /* Without PBC there are no cell size limits with 2 cells */
+        /* Without PBC and with 2 cells, there are no lower limits on the cell size */
         if (!(i >= ddbox->npbcdim && nc[i] <= 2) && bt[i] < nc[i]*limit)
+        {
+            return -1;
+        }
+        /* With PBC, check if the cut-off fits in nc[i]-1 cells */
+        if (i < ddbox->npbcdim && nc[i] > 1 && (nc[i] - 1)*bt[i] < nc[i]*cutoff)
         {
             return -1;
         }
@@ -693,12 +698,12 @@ real dd_choose_grid(FILE *fplog,
                 if (cr->nnodes <= 2)
                 {
                     gmx_fatal(FARGS,
-                              "Can not have separate PME nodes with 2 or less nodes");
+                              "Cannot have separate PME ranks with 2 or fewer ranks");
                 }
                 if (cr->npmenodes >= cr->nnodes)
                 {
                     gmx_fatal(FARGS,
-                              "Can not have %d separate PME nodes with just %d total nodes",
+                              "Cannot have %d separate PME ranks with just %d total ranks",
                               cr->npmenodes, cr->nnodes);
                 }
 
@@ -713,13 +718,13 @@ real dd_choose_grid(FILE *fplog,
             cr->npmenodes = 0;
         }
 
-        if (cr->nnodes > 12)
+        if (nnodes_div > 12)
         {
             ldiv = largest_divisor(nnodes_div);
             /* Check if the largest divisor is more than nnodes^2/3 */
             if (ldiv*ldiv*ldiv > nnodes_div*nnodes_div)
             {
-                gmx_fatal(FARGS, "The number of nodes you selected (%d) contains a large prime factor %d. In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
+                gmx_fatal(FARGS, "The number of ranks you selected (%d) contains a large prime factor %d. In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
                           nnodes_div, ldiv);
             }
         }
@@ -734,7 +739,7 @@ real dd_choose_grid(FILE *fplog,
                     cr->npmenodes = 0;
                     if (fplog)
                     {
-                        fprintf(fplog, "Using %d separate PME nodes, as there are too few total\n nodes for efficient splitting\n", cr->npmenodes);
+                        fprintf(fplog, "Using %d separate PME ranks, as there are too few total\n ranks for efficient splitting\n", cr->npmenodes);
                     }
                 }
                 else
@@ -742,7 +747,7 @@ real dd_choose_grid(FILE *fplog,
                     cr->npmenodes = guess_npme(fplog, mtop, ir, box, cr->nnodes);
                     if (fplog)
                     {
-                        fprintf(fplog, "Using %d separate PME nodes, as guessed by mdrun\n", cr->npmenodes);
+                        fprintf(fplog, "Using %d separate PME ranks, as guessed by mdrun\n", cr->npmenodes);
                     }
                 }
             }
@@ -750,7 +755,7 @@ real dd_choose_grid(FILE *fplog,
             {
                 if (fplog)
                 {
-                    fprintf(fplog, "Using %d separate PME nodes, per user request\n", cr->npmenodes);
+                    fprintf(fplog, "Using %d separate PME ranks, per user request\n", cr->npmenodes);
                 }
             }
         }

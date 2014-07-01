@@ -37,18 +37,23 @@
 #include <config.h>
 #endif
 
-#include <math.h>
-#include <string.h>
 #include <assert.h>
-#include "smalloc.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nbnxn_consts.h"
 #include "nbnxn_internal.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
-#include "gromacs/utility/gmxomp.h"
 #include "gmx_omp_nthreads.h"
+#include "thread_mpi/atomic.h"
+
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Default nbnxn allocation routine, allocates NBNXN_MEM_ALIGN byte aligned */
 void nbnxn_alloc_aligned(void **ptr, size_t nbytes)
@@ -360,32 +365,39 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
     }
 }
 
-/* Stores the LJ parameter data in a format convenient for the SIMD kernels */
-static void set_ljparam_simd_data(nbnxn_atomdata_t *nbat)
+/* Stores the LJ parameter data in a format convenient for different kernels */
+static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
 {
     int  nt, i, j;
     real c6, c12;
 
     nt = nbat->ntype;
 
-    /* nbfp_s4 stores two parameters using a stride of 4,
-     * because this would suit x86 SIMD single-precision
-     * quad-load intrinsics. There's a slight inefficiency in
-     * allocating and initializing nbfp_s4 when it might not
-     * be used, but introducing the conditional code is not
-     * really worth it. */
-    nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
-    for (i = 0; i < nt; i++)
+    if (bSIMD)
     {
-        for (j = 0; j < nt; j++)
+        /* nbfp_s4 stores two parameters using a stride of 4,
+         * because this would suit x86 SIMD single-precision
+         * quad-load intrinsics. There's a slight inefficiency in
+         * allocating and initializing nbfp_s4 when it might not
+         * be used, but introducing the conditional code is not
+         * really worth it. */
+        nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
+        for (i = 0; i < nt; i++)
         {
-            nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
-            nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
-            nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
-            nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
+            for (j = 0; j < nt; j++)
+            {
+                nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
+                nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
+                nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
+                nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
+            }
         }
     }
 
+    /* We use combination rule data for SIMD combination rule kernels
+     * and with LJ-PME kernels. We then only need parameters per atom type,
+     * not per pair of atom types.
+     */
     switch (nbat->comb_rule)
     {
         case ljcrGEOM:
@@ -393,7 +405,7 @@ static void set_ljparam_simd_data(nbnxn_atomdata_t *nbat)
 
             for (i = 0; i < nt; i++)
             {
-                /* Copy the diagonal from the nbfp matrix */
+                /* Store the sqrt of the diagonal from the nbfp matrix */
                 nbat->nbfp_comb[i*2  ] = sqrt(nbat->nbfp[(i*nt+i)*2  ]);
                 nbat->nbfp_comb[i*2+1] = sqrt(nbat->nbfp[(i*nt+i)*2+1]);
             }
@@ -527,7 +539,7 @@ void nbnxn_atomdata_init(FILE *fp,
     int      i, j, nth;
     real     c6, c12, tol;
     char    *ptr;
-    gmx_bool simple, bCombGeom, bCombLB;
+    gmx_bool simple, bCombGeom, bCombLB, bSIMD;
 
     if (alloc == NULL)
     {
@@ -688,10 +700,10 @@ void nbnxn_atomdata_init(FILE *fp,
             gmx_incons("Unknown enbnxninitcombrule");
     }
 
-    if (simple)
-    {
-        set_ljparam_simd_data(nbat);
-    }
+    bSIMD = (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
+             nb_kernel_type == nbnxnk4xN_SIMD_2xNN);
+
+    set_lj_parameter_data(nbat, bSIMD);
 
     nbat->natoms  = 0;
     nbat->type    = NULL;
@@ -700,27 +712,25 @@ void nbnxn_atomdata_init(FILE *fp,
     {
         int pack_x;
 
-        switch (nb_kernel_type)
+        if (bSIMD)
         {
-            case nbnxnk4xN_SIMD_4xN:
-            case nbnxnk4xN_SIMD_2xNN:
-                pack_x = max(NBNXN_CPU_CLUSTER_I_SIZE,
-                             nbnxn_kernel_to_cj_size(nb_kernel_type));
-                switch (pack_x)
-                {
-                    case 4:
-                        nbat->XFormat = nbatX4;
-                        break;
-                    case 8:
-                        nbat->XFormat = nbatX8;
-                        break;
-                    default:
-                        gmx_incons("Unsupported packing width");
-                }
-                break;
-            default:
-                nbat->XFormat = nbatXYZ;
-                break;
+            pack_x = max(NBNXN_CPU_CLUSTER_I_SIZE,
+                         nbnxn_kernel_to_cj_size(nb_kernel_type));
+            switch (pack_x)
+            {
+                case 4:
+                    nbat->XFormat = nbatX4;
+                    break;
+                case 8:
+                    nbat->XFormat = nbatX8;
+                    break;
+                default:
+                    gmx_incons("Unsupported packing width");
+            }
+        }
+        else
+        {
+            nbat->XFormat = nbatXYZ;
         }
 
         nbat->FFormat = nbat->XFormat;
@@ -845,7 +855,7 @@ static void copy_lj_to_nbat_lj_comb_x8(const real *ljparam_type,
     }
 }
 
-/* Sets the atom type and LJ data in nbnxn_atomdata_t */
+/* Sets the atom type in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
                                          int                  ngrid,
                                          const nbnxn_search_t nbs,
@@ -866,9 +876,30 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
 
             copy_int_to_nbat_int(nbs->a+ash, grid->cxy_na[i], ncz*grid->na_sc,
                                  type, nbat->ntype-1, nbat->type+ash);
+        }
+    }
+}
 
-            if (nbat->comb_rule != ljcrNONE)
+/* Sets the LJ combination rule parameters in nbnxn_atomdata_t */
+static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
+                                            int                  ngrid,
+                                            const nbnxn_search_t nbs)
+{
+    int                 g, i, ncz, ash;
+    const nbnxn_grid_t *grid;
+
+    if (nbat->comb_rule != ljcrNONE)
+    {
+        for (g = 0; g < ngrid; g++)
+        {
+            grid = &nbs->grid[g];
+
+            /* Loop over all columns and copy and fill */
+            for (i = 0; i < grid->ncx*grid->ncy; i++)
             {
+                ncz = grid->cxy_ind[i+1] - grid->cxy_ind[i];
+                ash = (grid->cell0 + grid->cxy_ind[i])*grid->na_sc;
+
                 if (nbat->XFormat == nbatX4)
                 {
                     copy_lj_to_nbat_lj_comb_x4(nbat->nbfp_comb,
@@ -1089,6 +1120,9 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
     {
         nbnxn_atomdata_mask_fep(nbat, ngrid, nbs);
     }
+
+    /* This must be done after masking types for FEP */
+    nbnxn_atomdata_set_ljcombparams(nbat, ngrid, nbs);
 
     nbnxn_atomdata_set_energygroups(nbat, ngrid, nbs, atinfo);
 }

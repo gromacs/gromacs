@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,11 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
+
 #include "typedefs.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "string2.h"
+#include "gromacs/utility/smalloc.h"
 #include "Xstuff.h"
 #include "x11.h"
 
@@ -323,7 +323,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     title = strdup(argv[0]);
 
     /* First check environment */
-    fontname = getenv("GMXFONT");
+    fontname = getenv("GMX_FONT");
     display  = getenv("DISPLAY");
 
     snew(ARGV, *argc);

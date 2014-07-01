@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,7 @@
 #ifndef GMX_LINEARALGEBRA_EIGENSOLVER_H
 #define GMX_LINEARALGEBRA_EIGENSOLVER_H
 
-#include "../legacyheaders/types/simple.h"
+#include "../utility/real.h"
 
 #include "sparsematrix.h"
 
@@ -61,7 +61,7 @@ extern "C" {
  *                      of this array _must_ be n, even if not all
  *                      eigenvectors are calculated, since all eigenvalues
  *                      might be needed as an intermediate step.
- *  \param eigenvectors If this pointer is non-NULL, the eigenvectors
+ *  \param eigenvec     If this pointer is non-NULL, the eigenvectors
  *                      specified by the indices are returned as rows of
  *                      a matrix, i.e. eigenvector j starts at offset j*n, and
  *                      is of length n.

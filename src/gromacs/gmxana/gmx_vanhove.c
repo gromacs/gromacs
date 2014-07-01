@@ -38,23 +38,24 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-#include <ctype.h>
+#include <assert.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
 #include "typedefs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
@@ -200,6 +201,7 @@ int gmx_vanhove(int argc, char *argv[])
             srenew(sbox, nalloc);
             srenew(sx, nalloc);
         }
+        assert(time != NULL); assert(sbox != NULL);
 
         time[nfr] = t;
         copy_mat(box, sbox[nfr]);
@@ -435,7 +437,10 @@ int gmx_vanhove(int argc, char *argv[])
     if (orfile)
     {
         fp = xvgropen(orfile, "Van Hove function", "r (nm)", "G (nm\\S-1\\N)", oenv);
-        fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+        }
         snew(legend, nr);
         for (fbin = 0; fbin < nr; fbin++)
         {
@@ -460,7 +465,10 @@ int gmx_vanhove(int argc, char *argv[])
     {
         sprintf(buf, "Probability of moving less than %g nm", rint);
         fp = xvgropen(otfile, buf, "t (ps)", "", oenv);
-        fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+        }
         for (f = 0; f <= ftmax; f++)
         {
             fprintf(fp, "%g %g\n", f*dt, (real)pt[f]/(tcount[f]*isize));

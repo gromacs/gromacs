@@ -39,23 +39,21 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "typedefs.h"
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "vec.h"
+#include "types/commrec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "main.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/essentialdynamics/edsam.h"
-#include "index.h"
-#include "physics.h"
+#include "gromacs/topology/index.h"
 #include "names.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "membed.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "readinp.h"
-#include "readir.h"
+#include "gromacs/gmxpreprocess/readir.h"
 
 /* information about scaling center */
 typedef struct {

@@ -39,16 +39,16 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
-#include "string2.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
-#include "symtab.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/futil.h"
 #include "h_db.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "fflibutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 
 /* Number of control atoms for each 'add' type.

@@ -41,10 +41,12 @@
 #include <math.h>
 
 #include "types/simple.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "nb_generic_adress.h"
 #include "nrnb.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 #include "nonbonded.h"
 #include "nb_kernel.h"

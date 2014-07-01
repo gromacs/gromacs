@@ -43,9 +43,8 @@
 
 #include <math.h>
 #include "macros.h"
-#include "vec.h"
-#include "gmx_fatal.h"
-#include "pbc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 
 static real dist2(t_pbc *pbc, rvec x, rvec y)
 {

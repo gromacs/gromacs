@@ -40,7 +40,7 @@ get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
 get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
 if(GMX_GPU)
     get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
-endif(GMX_GPU)
+endif()
 
 configure_file(config.h.cmakein config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)

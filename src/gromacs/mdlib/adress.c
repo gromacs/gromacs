@@ -36,10 +36,12 @@
 
 #include "adress.h"
 #include "gromacs/math/utilities.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "types/simple.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 real
 adress_weight(rvec                 x,

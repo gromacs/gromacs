@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 
 #include "../nb_kernel.h"
 #include "types/simple.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
 /* #endif */
 
@@ -161,6 +161,13 @@ void
     real             rt,vfeps,vftabscale,Y,F,Geps,Heps2,Fp,VV,FF;
     real             *vftab;
     /* #endif */
+    /* #if 'LJEwald' in KERNEL_VDW */
+    /* #for I,J in PAIRS_IJ */
+    real             c6grid_{I}{J};
+    /* #endfor */
+    real             ewclj,ewclj2,ewclj6,ewcljrsq,poly,exponent,sh_lj_ewald;
+    real	     *vdwgridparam;
+    /* #endif */
     /* #if 'Ewald' in KERNEL_ELEC */
     int              ewitab;
     real             ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace;
@@ -194,6 +201,13 @@ void
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
+    /* #endif */
+    /* #if 'LJEwald' in KERNEL_VDW */
+    vdwgridparam     = fr->ljpme_c6grid;
+    ewclj            = fr->ewaldcoeff_lj;
+    sh_lj_ewald	     = fr->ic->sh_lj_ewald;
+    ewclj2           = ewclj*ewclj;
+    ewclj6           = ewclj2*ewclj2*ewclj2;
     /* #endif */
 
     /* #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW */
@@ -255,6 +269,10 @@ void
     c6_{I}{J}            = vdwparam[vdwioffset{I}+vdwjidx{J}];
     cexp1_{I}{J}         = vdwparam[vdwioffset{I}+vdwjidx{J}+1];
     cexp2_{I}{J}         = vdwparam[vdwioffset{I}+vdwjidx{J}+2];
+    /*             #elif 'LJEwald' in KERNEL_VDW */
+    c6_{I}{J}            = vdwparam[vdwioffset{I}+vdwjidx{J}];
+    c12_{I}{J}           = vdwparam[vdwioffset{I}+vdwjidx{J}+1];
+    c6grid_{I}{J}        = vdwgridparam[vdwioffset{I}+vdwjidx{J}];
     /*             #else */
     c6_{I}{J}            = vdwparam[vdwioffset{I}+vdwjidx{J}];
     c12_{I}{J}           = vdwparam[vdwioffset{I}+vdwjidx{J}+1];
@@ -459,6 +477,10 @@ void
             c6_{I}{J}            = vdwparam[vdwioffset{I}+vdwjidx{J}];
             cexp1_{I}{J}         = vdwparam[vdwioffset{I}+vdwjidx{J}+1];
             cexp2_{I}{J}         = vdwparam[vdwioffset{I}+vdwjidx{J}+2];
+	    /*             #elif 'LJEwald' in KERNEL_VDW */
+            c6_{I}{J}            = vdwparam[vdwioffset{I}+vdwjidx{J}];
+            c12_{I}{J}           = vdwparam[vdwioffset{I}+vdwjidx{J}+1];
+            c6grid_{I}{J}        = vdwgridparam[vdwioffset{I}+vdwjidx{J}];
             /*             #else */
             c6_{I}{J}            = vdwparam[vdwioffset{I}+vdwjidx{J}];
             c12_{I}{J}           = vdwparam[vdwioffset{I}+vdwjidx{J}+1];
@@ -698,6 +720,35 @@ void
             /*             #if 'Force' in KERNEL_VF */
             fvdw             = -(fvdw6+fvdw12)*vftabscale*rinv{I}{J};
             /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+
+            /*         #elif KERNEL_VDW=='LJEwald' */
+
+            rinvsix          = rinvsq{I}{J}*rinvsq{I}{J}*rinvsq{I}{J};
+            ewcljrsq         = ewclj2*rsq{I}{J};
+            exponent 	     = exp(-ewcljrsq);
+            poly             = exponent*(1.0 + ewcljrsq + ewcljrsq*ewcljrsq*0.5);
+            /*             #define INNERFLOPS INNERFLOPS+9 */
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_VDW=='PotentialSwitch' */
+            vvdw6            = (c6_{I}{J}-c6grid_{I}{J}*(1.0-poly))*rinvsix;
+            vvdw12           = c12_{I}{J}*rinvsix*rinvsix;
+            /*                 #define INNERFLOPS INNERFLOPS+6 */
+            /*                 #if KERNEL_MOD_VDW=='PotentialShift' */
+            vvdw             = (vvdw12 - c12_{I}{J}*sh_vdw_invrcut6*sh_vdw_invrcut6)*(1.0/12.0) - (vvdw6 - c6_{I}{J}*sh_vdw_invrcut6 - c6grid_{I}{J}*sh_lj_ewald)*(1.0/6.0);
+            /*                     #define INNERFLOPS INNERFLOPS+9 */
+            /*                 #else */
+            vvdw             = vvdw12*(1.0/12.0) - vvdw6*(1.0/6.0);
+            /*                     #define INNERFLOPS INNERFLOPS+3 */
+            /*                 #endif */
+            /*                 ## Check for force inside potential check, i.e. this means we already did the potential part */
+            /*                 #if 'Force' in KERNEL_VF */
+            fvdw             = (vvdw12 - vvdw6 - c6grid_{I}{J}*(1.0/6.0)*exponent*ewclj6)*rinvsq{I}{J};
+            /*                     #define INNERFLOPS INNERFLOPS+6 */
+            /*                 #endif */
+            /*             #elif KERNEL_VF=='Force' */
+            /*                 ## Force-only LennardJones makes it possible to save 1 flop (they do add up...) */
+            fvdw             = (((c12_{I}{J}*rinvsix - c6_{I}{J} + c6grid_{I}{J}*(1.0-poly))*rinvsix) - c6grid_{I}{J}*(1.0/6.0)*exponent*ewclj6)*rinvsq{I}{J};
+            /*                 #define INNERFLOPS INNERFLOPS+11 */
             /*             #endif */
             /*         #endif */
             /*         ## End of check for vdw interaction forms */

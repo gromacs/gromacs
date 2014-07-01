@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,12 +37,14 @@
 
 #ifndef _constr_h
 #define _constr_h
+
 #include "typedefs.h"
-#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_pbc;
 
 enum
 {
@@ -98,23 +100,23 @@ gmx_settledata_t settle_init(real mO, real mH, real invmO, real invmH,
                              real dOH, real dHH);
 /* Initializes and returns a structure with SETTLE parameters */
 
-void csettle(gmx_settledata_t settled,
-             int              nsettle,          /* Number of settles            */
-             t_iatom          iatoms[],         /* The settle iatom list        */
-             const t_pbc     *pbc,              /* PBC data pointer, can be NULL  */
-             real             b4[],             /* Old coordinates		*/
-             real             after[],          /* New coords, to be settled	*/
-             real             invdt,            /* 1/delta_t                    */
-             real            *v,                /* Also constrain v if v!=NULL  */
-             int              calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
-             tensor           vir_r_m_dr,       /* sum r x m delta_r            */
-             int             *xerror,
-             t_vetavars      *vetavar           /* variables for pressure control */
+void csettle(gmx_settledata_t    settled,
+             int                 nsettle,          /* Number of settles            */
+             t_iatom             iatoms[],         /* The settle iatom list        */
+             const struct t_pbc *pbc,              /* PBC data pointer, can be NULL */
+             real                b4[],             /* Old coordinates              */
+             real                after[],          /* New coords, to be settled    */
+             real                invdt,            /* 1/delta_t                    */
+             real               *v,                /* Also constrain v if v!=NULL  */
+             int                 calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
+             tensor              vir_r_m_dr,       /* sum r x m delta_r            */
+             int                *xerror,
+             t_vetavars         *vetavar           /* variables for pressure control */
              );
 
 void settle_proj(gmx_settledata_t settled, int econq,
                  int nsettle, t_iatom iatoms[],
-                 const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
+                 const struct t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],
                  rvec *der, rvec *derp,
                  int CalcVirAtomEnd, tensor vir_r_m_dder,
@@ -139,6 +141,7 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_ekindata_t *ekind,
                    t_commrec *cr,
                    gmx_int64_t step, int delta_step,
+                   real step_scaling,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -162,6 +165,11 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
  * when lenA != lenB or will the pull code with a pulling rate.
  * step + delta_step is the step at which the final configuration
  * is meant to be; for update delta_step = 1.
+ *
+ * step_scaling can be used to update coordinates based on the time
+ * step multiplied by this factor. Thus, normally 1.0 is passed. The
+ * SD1 integrator uses 0.5 in one of its calls, to correct positions
+ * for half a step of changed velocities.
  *
  * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *
@@ -257,7 +265,7 @@ constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
                 gmx_lincsdata_t lincsd, t_mdatoms *md,
                 t_commrec *cr,
                 rvec *x, rvec *xprime, rvec *min_proj,
-                matrix box, t_pbc *pbc,
+                matrix box, struct t_pbc *pbc,
                 real lambda, real *dvdlambda,
                 real invdt, rvec *v,
                 gmx_bool bCalcVir, tensor vir_r_m_dr,

@@ -40,10 +40,10 @@
 
 #include <string.h>
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
-#include "string2.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 
 typedef struct warninp {

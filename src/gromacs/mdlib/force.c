@@ -38,24 +38,19 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
-#include "sysstuff.h"
+
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "physics.h"
 #include "force.h"
 #include "nonbonded.h"
 #include "names.h"
 #include "network.h"
-#include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"
-#include "mshift.h"
 #include "txtdump.h"
 #include "coulomb.h"
 #include "pme.h"
@@ -64,7 +59,14 @@
 #include "qmmm.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void ns(FILE              *fp,
         t_forcerec        *fr,
@@ -209,7 +211,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
 
     if (bSepDVDL)
     {
-        fprintf(fplog, "Step %s: non-bonded V and dVdl for node %d:\n",
+        fprintf(fplog, "Step %s: non-bonded V and dVdl for rank %d:\n",
                 gmx_step_str(step, buf), cr->nodeid);
     }
 
@@ -446,11 +448,19 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
     where();
 
     *cycles_pme = 0;
+    clear_mat(fr->vir_el_recip);
+    clear_mat(fr->vir_lj_recip);
+
+    /* Do long-range electrostatics and/or LJ-PME, including related short-range
+     * corrections.
+     */
     if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
-        real Vlr             = 0, Vcorr = 0;
-        real dvdl_long_range = 0;
-        int  status          = 0;
+        real Vlr               = 0, Vcorr = 0;
+        real dvdl_long_range   = 0;
+        int  status            = 0;
+        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
+        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
 
         bSB = (ir->nwall == 2);
         if (bSB)
@@ -459,20 +469,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
             svmul(ir->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
             box_size[ZZ] *= ir->wall_ewald_zfac;
         }
-    }
-
-    /* Do long-range electrostatics and/or LJ-PME, including related short-range
-     * corrections.
-     */
-
-    clear_mat(fr->vir_el_recip);
-    clear_mat(fr->vir_lj_recip);
-
-    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
-    {
-        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
-        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
-        int  status            = 0;
 
         if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
@@ -535,16 +531,17 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                     }
                     *dvdlt_q  = 0;
                     *dvdlt_lj = 0;
+
                     ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
                                        cr, t, fr,
                                        md->chargeA,
                                        md->nChargePerturbed ? md->chargeB : NULL,
                                        md->sqrt_c6A,
-                                       md->nChargePerturbed ? md->sqrt_c6B : NULL,
+                                       md->nTypePerturbed ? md->sqrt_c6B : NULL,
                                        md->sigmaA,
-                                       md->nChargePerturbed ? md->sigmaB : NULL,
+                                       md->nTypePerturbed ? md->sigmaB : NULL,
                                        md->sigma3A,
-                                       md->nChargePerturbed ? md->sigma3B : NULL,
+                                       md->nTypePerturbed ? md->sigma3B : NULL,
                                        ir->cutoff_scheme != ecutsVERLET,
                                        excl, x, bSB ? boxs : box, mu_tot,
                                        ir->ewald_geometry,
@@ -577,17 +574,14 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
             PRINT_SEPDVDL("Ewald excl. corr. LJ", Vcorr_lj, dvdl_long_range_correction_lj);
             enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction_q;
             enerd->dvdl_lin[efptVDW]  += dvdl_long_range_correction_lj;
-        }
 
-        if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)))
-        {
-            if (cr->duty & DUTY_PME)
+            if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)) && (cr->duty & DUTY_PME))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
-                    pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                    pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
                     if (EEL_PME(fr->eeltype))
                     {
                         pme_flags     |= GMX_PME_DO_COULOMB;
@@ -595,11 +589,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                     if (EVDW_PME(fr->vdwtype))
                     {
                         pme_flags |= GMX_PME_DO_LJ;
-                        if (fr->ljpme_combination_rule == eljpmeLB)
-                        {
-                            /*Lorentz-Berthelot Comb. Rules in LJ-PME*/
-                            pme_flags |= GMX_PME_LJ_LB;
-                        }
                     }
                     if (flags & GMX_FORCE_FORCES)
                     {
@@ -727,7 +716,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         fr->t_wait += t3-t2;
         if (fr->timesteps == 11)
         {
-            fprintf(stderr, "* PP load balancing info: node %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
+            fprintf(stderr, "* PP load balancing info: rank %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
                     cr->nodeid, gmx_step_str(fr->timesteps, buf),
                     100*fr->t_wait/(fr->t_wait+fr->t_fnbf),
                     (fr->t_fnbf+fr->t_wait)/fr->t_fnbf);

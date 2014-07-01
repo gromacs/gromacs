@@ -41,11 +41,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "string2.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "topdirs.h"
 
 /* Must correspond to the directive enum in grompp-impl.h */
@@ -145,6 +144,8 @@ int ifunc_index(directive d, int type)
                     return F_TABANGLES;
                 case 9:
                     return F_LINEAR_ANGLES;
+                case 10:
+                    return F_RESTRANGLES;
                 default:
                     gmx_fatal(FARGS, "Invalid angle type %d", type);
                     break;
@@ -185,6 +186,10 @@ int ifunc_index(directive d, int type)
                     return F_TABDIHS;
                 case 9:
                     return F_PDIHS; /* proper dihedrals where we allow multiple terms over single bond */
+                case 10:
+                    return F_RESTRDIHS;
+                case 11:
+                    return F_CBTDIHS;
                 default:
                     gmx_fatal(FARGS, "Invalid dihedral type %d", type);
             }

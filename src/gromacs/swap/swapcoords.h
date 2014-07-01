@@ -33,7 +33,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_swap "Computational Electrophysiology" position swapping (swap)
+/*! \libinternal
+ * \defgroup module_swap "Computational Electrophysiology" position swapping (swap)
  * \ingroup group_mdrun
  * \brief
  * Implements the "Computational Electrophysiology" protocol.

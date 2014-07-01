@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,21 +49,21 @@
 #ifndef GMX_SELECTION_EVALUATE_H
 #define GMX_SELECTION_EVALUATE_H
 
-#include "gromacs/legacyheaders/typedefs.h"
-
-#include "gromacs/selection/indexutil.h"
-
 #include "selelem.h"
 
+struct gmx_ana_index_t;
 struct gmx_sel_mempool_t;
+struct t_pbc;
+struct t_topology;
+struct t_trxframe;
 
 /*! \internal \brief
  * Data structure for passing information required during evaluation.
  */
-typedef struct gmx_sel_evaluate_t
+struct gmx_sel_evaluate_t
 {
     /** Memory pool for intermediate values. */
-    struct gmx_sel_mempool_t *mp;
+    gmx_sel_mempool_t        *mp;
     /** Index group that contains all the atoms. */
     gmx_ana_index_t          *gall;
     /** Topology information. */
@@ -72,7 +72,7 @@ typedef struct gmx_sel_evaluate_t
     t_trxframe               *fr;
     /** PBC data. */
     t_pbc                    *pbc;
-} gmx_sel_evaluate_t;
+};
 
 /*! \name Utility functions
  */
@@ -80,7 +80,7 @@ typedef struct gmx_sel_evaluate_t
 /** Initializes an evaluation data structure. */
 void
 _gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
-                       struct gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
+                       gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
                        t_topology *top, t_trxframe *fr, t_pbc *pbc);
 /** Evaluates the children of a general selection element. */
 void

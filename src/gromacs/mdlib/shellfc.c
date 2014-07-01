@@ -38,11 +38,11 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "vec.h"
+#include "types/commrec.h"
 #include "txtdump.h"
 #include "force.h"
 #include "mdrun.h"
@@ -52,12 +52,17 @@
 #include "names.h"
 #include "constr.h"
 #include "domdec.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "shellfc.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "chargegroup.h"
 #include "macros.h"
-#include "pbc.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int     nnucl;
@@ -951,11 +956,11 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
             }
         }
     }
-    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x, xnold-start, NULL, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
-    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x, xnew-start, NULL, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
@@ -972,7 +977,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
     }
 
     /* Project the acceleration on the old bond directions */
-    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x_old, xnew-start, acc_dir, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqDeriv_FlexCon, FALSE, 0, 0);
@@ -1375,9 +1380,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         force[i] = shfc->f[i];
     }
 
-    /* When we had particle decomposition, this code only worked with
-     * PD when all particles involved with each shell were in the same
-     * charge group. Not sure if this is still relevant. */
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
     {
         /* This is the only time where the coordinates are used

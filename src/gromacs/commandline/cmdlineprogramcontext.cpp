@@ -53,7 +53,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/thread_mpi/mutex.h"
+#include "thread_mpi/mutex.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
@@ -164,6 +164,121 @@ std::string findFullBinaryPath(const std::string                    &invokedName
     return searchName;
 }
 
+/*! \brief
+ * Returns whether given path contains files from `share/top/`.
+ *
+ * Only checks for a single file that has an uncommon enough name.
+ */
+bool isAcceptableLibraryPath(const std::string &path)
+{
+    return Path::exists(Path::join(path, "gurgle.dat"));
+}
+
+/*! \brief
+ * Returns whether given path prefix contains files from `share/top/`.
+ *
+ * \param[in]  path   Path prefix to check.
+ * \param[out] result If return value is `true`, the pointee is set to the
+ *     actual data directory. Otherwise, the pointee is not modified.
+ * \returns  `true` if \p path contains the data files.
+ *
+ * Checks whether \p path could be the installation prefix where `share/top/`
+ * files have been installed:  appends the relative installation path of the
+ * data files and calls isAcceptableLibraryPath().
+ */
+bool isAcceptableLibraryPathPrefix(const std::string &path, std::string *result)
+{
+    std::string testPath = Path::join(path, GMXLIB_SEARCH_DIR);
+    if (isAcceptableLibraryPath(testPath))
+    {
+        *result = testPath;
+        return true;
+    }
+    return false;
+}
+
+/*! \brief
+ * Returns a fallback data path.
+ *
+ * Checks a few standard locations for the data files before returning a
+ * configure-time hard-coded path.  The hard-coded path is preferred if it
+ * actually contains the data files, though.
+ */
+std::string findFallbackLibraryDataPath()
+{
+#ifndef GMX_NATIVE_WINDOWS
+    if (!isAcceptableLibraryPath(GMXLIB_FALLBACK))
+    {
+        std::string foundPath;
+        if (isAcceptableLibraryPathPrefix("/usr/local", &foundPath))
+        {
+            return foundPath;
+        }
+        if (isAcceptableLibraryPathPrefix("/usr", &foundPath))
+        {
+            return foundPath;
+        }
+        if (isAcceptableLibraryPathPrefix("/opt", &foundPath))
+        {
+            return foundPath;
+        }
+    }
+#endif
+    return GMXLIB_FALLBACK;
+}
+
+/*! \brief
+ * Finds the library data files based on path of the binary.
+ *
+ * \param[in] binaryPath  Absolute path to the binary.
+ * \returns  Path to the `share/top/` data files.
+ *
+ * The search based on the path only works if the binary is in the same
+ * relative path as the installed \Gromacs binaries.  If the binary is
+ * somewhere else, a hard-coded fallback is used.  This doesn't work if the
+ * binaries are somewhere else than the path given during configure time...
+ *
+ * Extra logic is present to allow running binaries from the build tree such
+ * that they use up-to-date data files from the source tree.
+ */
+std::string findDefaultLibraryDataPath(const std::string &binaryPath)
+{
+    // If the input path is not absolute, the binary could not be found.
+    // Don't search anything.
+    if (Path::isAbsolute(binaryPath))
+    {
+        // Remove the executable name.
+        std::string searchPath = Path::getParentPath(binaryPath);
+        // If running directly from the build tree, try to use the source
+        // directory.
+#if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
+        if (Path::startsWith(searchPath, CMAKE_BINARY_DIR))
+        {
+            std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
+            if (isAcceptableLibraryPath(testPath))
+            {
+                return testPath;
+            }
+        }
+#endif
+
+        // Use the executable path to (try to) find the library dir.
+        while (!searchPath.empty())
+        {
+            std::string testPath = Path::join(searchPath, GMXLIB_SEARCH_DIR);
+            if (isAcceptableLibraryPath(testPath))
+            {
+                return testPath;
+            }
+            searchPath = Path::getParentPath(searchPath);
+        }
+    }
+
+    // End of smart searching. If we didn't find it in our parent tree,
+    // or if the program name wasn't set, return a fallback.
+    return findFallbackLibraryDataPath();
+}
+
 //! \}
 
 }   // namespace
@@ -179,12 +294,23 @@ class CommandLineProgramContext::Impl
         Impl(int argc, const char *const argv[],
              ExecutableEnvironmentPointer env);
 
+        /*! \brief
+         * Finds the full binary path if it isn't searched yet.
+         *
+         * Sets \a fullBinaryPath_ if it isn't set yet.
+         *
+         * The \a binaryPathMutex_ should be locked by the caller before
+         * calling this function.
+         */
+        void findBinaryPath() const;
+
         ExecutableEnvironmentPointer  executableEnv_;
         std::string                   invokedName_;
         std::string                   programName_;
         std::string                   displayName_;
         std::string                   commandLine_;
         mutable std::string           fullBinaryPath_;
+        mutable std::string           defaultLibraryDataPath_;
         mutable tMPI::mutex           binaryPathMutex_;
 };
 
@@ -197,15 +323,28 @@ CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
                                       ExecutableEnvironmentPointer env)
     : executableEnv_(move(env))
 {
-    invokedName_          = (argc != 0 ? argv[0] : "");
-    programName_          = Path::splitToPathAndFilename(invokedName_).second;
-    programName_          = stripSuffixIfPresent(programName_, ".exe");
+    invokedName_ = (argc != 0 ? argv[0] : "");
+    programName_ = Path::getFilename(invokedName_);
+    programName_ = stripSuffixIfPresent(programName_, ".exe");
 
     commandLine_ = quoteIfNecessary(programName_.c_str());
     for (int i = 1; i < argc; ++i)
     {
         commandLine_.append(" ");
         commandLine_.append(quoteIfNecessary(argv[i]));
+    }
+}
+
+void CommandLineProgramContext::Impl::findBinaryPath() const
+{
+    if (fullBinaryPath_.empty())
+    {
+        fullBinaryPath_ = findFullBinaryPath(invokedName_, *executableEnv_);
+        fullBinaryPath_ = Path::normalize(Path::resolveSymlinks(fullBinaryPath_));
+        // TODO: Investigate/Consider using a dladdr()-based solution.
+        // Potentially less portable, but significantly simpler, and also works
+        // with user binaries even if they are located in some arbitrary location,
+        // as long as shared libraries are used.
     }
 }
 
@@ -266,19 +405,20 @@ const char *CommandLineProgramContext::commandLine() const
 const char *CommandLineProgramContext::fullBinaryPath() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
-    if (impl_->fullBinaryPath_.empty())
-    {
-        impl_->fullBinaryPath_ =
-            Path::normalize(
-                    Path::resolveSymlinks(
-                            findFullBinaryPath(impl_->invokedName_,
-                                               *impl_->executableEnv_)));
-        // TODO: Investigate/Consider using a dladdr()-based solution.
-        // Potentially less portable, but significantly simpler, and also works
-        // with user binaries even if they are located in some arbitrary location,
-        // as long as shared libraries are used.
-    }
+    impl_->findBinaryPath();
     return impl_->fullBinaryPath_.c_str();
+}
+
+const char *CommandLineProgramContext::defaultLibraryDataPath() const
+{
+    tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
+    if (impl_->defaultLibraryDataPath_.empty())
+    {
+        impl_->findBinaryPath();
+        impl_->defaultLibraryDataPath_ =
+            Path::normalize(findDefaultLibraryDataPath(impl_->fullBinaryPath_));
+    }
+    return impl_->defaultLibraryDataPath_.c_str();
 }
 
 } // namespace gmx

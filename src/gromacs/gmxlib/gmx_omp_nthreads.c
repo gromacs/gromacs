@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,14 +42,16 @@
 #include <config.h>
 #endif
 
-#include "gmx_fatal.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "macros.h"
 #include "network.h"
 #include "copyrite.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
 
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
@@ -86,8 +88,8 @@ static const char *mod_name[emntNR] =
 
 /** Number of threads for each algorithmic module.
  *
- *  File-scope global variable that gets set once in \init_module_nthreads
- *  and queried via gmx_omp_nthreads_get.
+ *  File-scope global variable that gets set once in pick_module_nthreads()
+ *  and queried via gmx_omp_nthreads_get().
  *
  *  All fields are initialized to 0 which should result in errors if
  *  the init call is omitted.
@@ -95,9 +97,9 @@ static const char *mod_name[emntNR] =
 static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
 
 
-/** Determine the number of threads for module \mod.
+/** Determine the number of threads for module \p mod.
  *
- *  \m takes values form the module_nth_t enum and maps these to the
+ *  \p m takes values form the module_nth_t enum and maps these to the
  *  corresponding value in modth_env_var.
  *
  *  Each number of threads per module takes the default value unless
@@ -440,8 +442,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                 sprintf(sbuf, "thread-MPI threads");
 #else
                 sprintf(sbuf, "MPI processes");
-                sprintf(sbuf1, " per node");
-                sprintf(sbuf2, "On node %d: o", cr->sim_nodeid);
+                sprintf(sbuf1, " per rank");
+                sprintf(sbuf2, "On rank %d: o", cr->sim_nodeid);
 #endif
             }
 #endif

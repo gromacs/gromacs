@@ -40,18 +40,12 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <math.h>
 #include <assert.h>
+#include <math.h>
 
-#include "sysstuff.h"
-#include "typedefs.h"
 #ifdef GMX_USE_PLUGINS
 #include "vmdio.h"
 #endif
-#include "string2.h"
-#include "smalloc.h"
-#include "pbc.h"
 #include "gmxfio.h"
 #include "trxio.h"
 #include "tpxio.h"
@@ -59,14 +53,19 @@
 #include "tngio.h"
 #include "tngio_for_tools.h"
 #include "names.h"
-#include "vec.h"
-#include "futil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
 #include "xtcio.h"
 #include "pdbio.h"
 #include "confio.h"
 #include "checkpoint.h"
+#include "xdrf.h"
 
 #include "gromacs/fileio/timecontrol.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* defines for frame counter output */
 #define SKIP1   10
@@ -228,9 +227,38 @@ t_fileio *trx_get_fileio(t_trxstatus *status)
     return status->fio;
 }
 
-tng_trajectory_t trx_get_tng(t_trxstatus *status)
+float trx_get_time_of_final_frame(t_trxstatus *status)
 {
-    return status->tng;
+    t_fileio *stfio    = trx_get_fileio(status);
+    int       filetype = gmx_fio_getftp(stfio);
+    int       bOK;
+    float     lasttime = -1;
+
+    if (filetype == efXTC)
+    {
+        lasttime =
+            xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
+                                        gmx_fio_getxdr(stfio),
+                                        status->xframe->natoms, &bOK);
+        if (!bOK)
+        {
+            gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
+        }
+    }
+    else if (filetype == efTNG)
+    {
+        tng_trajectory_t tng = status->tng;
+        if (!tng)
+        {
+            gmx_fatal(FARGS, "Error opening TNG file.");
+        }
+        lasttime = gmx_tng_get_time_of_final_frame(tng);
+    }
+    else
+    {
+        gmx_incons("Only supported for TNG and XTC");
+    }
+    return lasttime;
 }
 
 void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
@@ -253,6 +281,7 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
         fr->bDouble   = FALSE;
         fr->natoms    = -1;
         fr->t0        = 0;
+        fr->tf        = 0;
         fr->tpf       = 0;
         fr->tppf      = 0;
         fr->title     = NULL;
@@ -766,13 +795,13 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
     int      ftp;
 
     bRet = FALSE;
-    pt   = fr->time;
+    pt   = fr->tf;
 
     do
     {
         clear_trxframe(fr, FALSE);
         fr->tppf = fr->tpf;
-        fr->tpf  = fr->time;
+        fr->tpf  = fr->tf;
 
         if (status->tng)
         {
@@ -805,7 +834,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                 /* DvdS 2005-05-31: this has been fixed along with the increased
                  * accuracy of the control over -b and -e options.
                  */
-                if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN)))
+                if (bTimeSet(TBEGIN) && (fr->tf < rTimeValue(TBEGIN)))
                 {
                     if (xtc_seek_time(status->fio, rTimeValue(TBEGIN), fr->natoms, TRUE))
                     {
@@ -846,6 +875,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                           gmx_fio_getname(status->fio));
 #endif
         }
+        fr->tf = fr->time;
 
         if (bRet)
         {
@@ -1015,6 +1045,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
 #endif
             break;
     }
+    fr->tf = fr->time;
 
     /* Return FALSE if we read a frame that's past the set ending time. */
     if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))

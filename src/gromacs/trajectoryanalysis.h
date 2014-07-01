@@ -280,7 +280,9 @@
 #include "options.h"
 #include "selection.h"
 
+#include "fileio/trx.h"
 #include "selection/nbsearch.h"
+#include "topology/topology.h"
 #include "trajectoryanalysis/analysismodule.h"
 #include "trajectoryanalysis/analysissettings.h"
 #include "trajectoryanalysis/cmdlinerunner.h"

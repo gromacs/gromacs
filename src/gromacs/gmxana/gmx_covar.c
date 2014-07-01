@@ -47,29 +47,26 @@
 #endif
 
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trnio.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "do_fit.h"
-#include "rmpbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "txtdump.h"
 #include "gromacs/fileio/matio.h"
 #include "eigio.h"
-#include "physics.h"
 #include "gmx_ana.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/trxio.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_covar(int argc, char *argv[])
 {
@@ -555,7 +552,7 @@ int gmx_covar(int argc, char *argv[])
     out = xvgropen(eigvalfile,
                    "Eigenvalues of the covariance matrix",
                    "Eigenvector index", str, oenv);
-    for (i = 0; (i < ndim); i++)
+    for (i = 0; (i < end); i++)
     {
         fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
     }
@@ -566,6 +563,9 @@ int gmx_covar(int argc, char *argv[])
         if (nframes-1 < ndim)
         {
             end = nframes-1;
+            fprintf(out, "WARNING: there are fewer frames in your trajectory than there are\n");
+            fprintf(out, "degrees of freedom in your system. Only generating the first\n");
+            fprintf(out, "%d out of %d eigenvectors and eigenvalues.\n", end, (int)ndim);
         }
         else
         {
@@ -640,7 +640,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(out, "Trace of the covariance matrix after diagonalizing: %g\n\n",
             sum);
 
-    fprintf(out, "Wrote %d eigenvalues to %s\n", (int)ndim, eigvalfile);
+    fprintf(out, "Wrote %d eigenvalues to %s\n", (int)end, eigvalfile);
     if (WriteXref == eWXR_YES)
     {
         fprintf(out, "Wrote reference structure to %s\n", eigvecfile);

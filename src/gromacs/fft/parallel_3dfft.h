@@ -37,10 +37,12 @@
 #ifndef GMX_FFT_PARALLEL_3DFFT_H
 #define GMX_FFT_PARALLEL_3DFFT_H
 
-#include "../legacyheaders/types/nrnb.h"
-#include "../legacyheaders/types/simple.h"
 #include "../math/gmxcomplex.h"
+#include "../timing/wallcycle.h"
+#include "../utility/basedefinitions.h"
 #include "../utility/gmxmpi.h"
+#include "../utility/real.h"
+
 #include "fft.h"
 
 #ifdef __cplusplus
@@ -121,12 +123,6 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
  *  is not released, but the contents is invalid after this call.
  *
  *  \param pfft_setup Parallel 3dfft setup.
- *  \param in_data    Input data.
- *  \param out_data   Output data.
- *  \param thread     Thread index of the calling thread, i.e. index to the part
- *                    of the data operated on last by the calling thread. This
- *                    is needed to start the FFT without an OpenMP barrier.
- *  \param wcycle     Wall cycle counters.
  *
  *  \return 0 or a standard error code.
  */

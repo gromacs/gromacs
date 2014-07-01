@@ -39,18 +39,21 @@
 #endif
 
 #include "typedefs.h"
-#include "string2.h"
-#include "smalloc.h"
 #include "mdrun.h"
 #include "domdec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "vcm.h"
 #include "nrnb.h"
 #include "macros.h"
 #include "md_logging.h"
 #include "md_support.h"
+#include "names.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
@@ -747,6 +750,11 @@ void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
             check_nst_param(fplog, cr, "nstcalcenergy", ir->nstcalcenergy,
                             "nstdhdl", &ir->fepvals->nstdhdl);
         }
+    }
+
+    if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
+    {
+        gmx_fatal(FARGS, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
     }
 }
 

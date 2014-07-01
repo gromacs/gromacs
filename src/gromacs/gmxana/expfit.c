@@ -42,12 +42,13 @@
 #include <string.h>
 
 #include "typedefs.h"
-#include "smalloc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
-#include "vec.h"
-#include "index.h"
+#include "gromacs/math/vec.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 const int   nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 4, 3};
 

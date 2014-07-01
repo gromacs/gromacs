@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,10 +35,10 @@
 
 #include <stdlib.h>
 
-#include "gmx_fatal.h"
-
 #include "cudautils.cuh"
 #include "pmalloc_cuda.h"
+
+#include "gromacs/utility/cstringutil.h"
 
 /*! Allocates nbytes of page-locked memory.
  *  This memory should always be freed using pfree (or with the page-locked

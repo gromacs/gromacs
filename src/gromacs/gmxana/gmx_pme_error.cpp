@@ -36,23 +36,25 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "types/commrec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
 #include "readinp.h"
 #include "calcgrid.h"
 #include "checkpoint.h"
 #include "gmx_ana.h"
 #include "gromacs/random/random.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "coulomb.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "network.h"
 #include "main.h"
 #include "macros.h"
+
+#include "gromacs/utility/fatalerror.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
@@ -670,7 +672,7 @@ static real estimate_reciprocal(
                     xtot, xtot == 1 ? "" : "s");
             if (PAR(cr))
             {
-                fprintf(stdout, " (%d sample%s per node)", x_per_core, x_per_core == 1 ? "" : "s");
+                fprintf(stdout, " (%d sample%s per rank)", x_per_core, x_per_core == 1 ? "" : "s");
             }
             fprintf(stdout, ".\n");
         }
@@ -761,7 +763,7 @@ static real estimate_reciprocal(
 #ifdef DEBUG
     if (PAR(cr))
     {
-        fprintf(stderr, "Node %3d: nx=[%3d...%3d]  e_rec3=%e\n",
+        fprintf(stderr, "Rank %3d: nx=[%3d...%3d]  e_rec3=%e\n",
                 cr->nodeid, startlocal, stoplocal, e_rec3);
     }
 #endif

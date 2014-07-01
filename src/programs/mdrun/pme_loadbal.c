@@ -36,17 +36,21 @@
 #include <config.h>
 #endif
 
-#include "smalloc.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "calcgrid.h"
 #include "pme.h"
-#include "vec.h"
 #include "domdec.h"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "force.h"
 #include "macros.h"
 #include "md_logging.h"
 #include "pme_loadbal.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Parameters and setting for one PP-PME setup */
 typedef struct {
@@ -317,6 +321,9 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t  pme_lb,
     /* The Ewald coefficient is inversly proportional to the cut-off */
     set->ewaldcoeff_q =
         pme_lb->setup[0].ewaldcoeff_q*pme_lb->setup[0].rcut_coulomb/set->rcut_coulomb;
+    /* We set ewaldcoeff_lj in set, even when LJ-PME is not used */
+    set->ewaldcoeff_lj =
+        pme_lb->setup[0].ewaldcoeff_lj*pme_lb->setup[0].rcut_coulomb/set->rcut_coulomb;
 
     set->count   = 0;
     set->cycles  = 0;
@@ -662,9 +669,26 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     ic->rlistlong    = set->rlistlong;
     ir->nstcalclr    = set->nstcalclr;
     ic->ewaldcoeff_q = set->ewaldcoeff_q;
+    /* TODO: centralize the code that sets the potentials shifts */
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
     {
         ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+    }
+    if (EVDW_PME(ic->vdwtype))
+    {
+        /* We have PME for both Coulomb and VdW, set rvdw equal to rcoulomb */
+        ic->rvdw            = set->rcut_coulomb;
+        ic->ewaldcoeff_lj   = set->ewaldcoeff_lj;
+        if (ic->vdw_modifier == eintmodPOTSHIFT)
+        {
+            real crc2;
+
+            ic->dispersion_shift.cpot = -pow(ic->rvdw, -6.0);
+            ic->repulsion_shift.cpot  = -pow(ic->rvdw, -12.0);
+            ic->sh_invrc6             = -ic->dispersion_shift.cpot;
+            crc2                      = sqr(ic->ewaldcoeff_lj*ic->rvdw);
+            ic->sh_lj_ewald           = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
+        }
     }
 
     bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
@@ -809,8 +833,8 @@ static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
     {
         md_print_warn(cr, fplog,
                       "NOTE: PME load balancing increased the non-bonded workload by more than 50%%.\n"
-                      "      For better performance use (more) PME nodes (mdrun -npme),\n"
-                      "      or in case you are beyond the scaling limit, use less nodes in total.\n");
+                      "      For better performance, use (more) PME ranks (mdrun -npme),\n"
+                      "      or if you are beyond the scaling limit, use fewer total ranks (or nodes).\n");
     }
     else
     {

@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "../math/gmxcomplex.h"
+#include "../timing/wallcycle.h"
 #include "../timing/walltime_accounting.h"
 #include "../legacyheaders/network.h"
 
@@ -51,7 +52,7 @@ extern "C" {
 typedef real *splinevec[DIM];
 
 enum {
-    GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD
+    GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
 };
 
 int gmx_pme_init(gmx_pme_t *pmedata, t_commrec *cr,
@@ -75,7 +76,7 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-#define GMX_PME_SPREAD_Q      (1<<0)
+#define GMX_PME_SPREAD        (1<<0)
 #define GMX_PME_SOLVE         (1<<1)
 #define GMX_PME_CALC_F        (1<<2)
 #define GMX_PME_CALC_ENER_VIR (1<<3)
@@ -87,9 +88,8 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
  */
 #define GMX_PME_DO_COULOMB    (1<<13)
 #define GMX_PME_DO_LJ         (1<<14)
-#define GMX_PME_LJ_LB         (1<<15)
 
-#define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
+#define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 int gmx_pme_do(gmx_pme_t pme,
                int start,       int homenr,
@@ -123,7 +123,7 @@ int gmx_pmeonly(gmx_pme_t pme,
 void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V);
 /* Calculate the PME grid energy V for n charges with a potential
  * in the pme struct determined before with a call to gmx_pme_do
- * with at least GMX_PME_SPREAD_Q and GMX_PME_SOLVE specified.
+ * with at least GMX_PME_SPREAD and GMX_PME_SOLVE specified.
  * Note that the charges are not spread on the grid in the pme struct.
  * Currently does not work in parallel or with free energy.
  */
@@ -191,7 +191,7 @@ enum {
     pmerecvqxRESETCOUNTERS /* reset the cycle and flop counters            */
 };
 
-int gmx_pme_recv_params_coords(gmx_pme_pp_t pme_pp,
+int gmx_pme_recv_coeffs_coords(gmx_pme_pp_t pme_pp,
                                int *natoms,
                                real **chargeA, real **chargeB,
                                real **sqrt_c6A, real **sqrt_c6B,

@@ -41,22 +41,21 @@
 #include <math.h>
 
 #include "typedefs.h"
-#include "smalloc.h"
 #include "macros.h"
-#include "xvgr.h"
-#include "gromacs/commandline/pargs.h"
-#include "string2.h"
-#include "vec.h"
-#include "index.h"
-#include "pbc.h"
-#include "gmx_fatal.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
 #include "gstat.h"
-#include "pbc.h"
-#include "do_fit.h"
 #include "gmx_ana.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_helixorient(int argc, char *argv[])
 {

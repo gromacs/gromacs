@@ -38,7 +38,8 @@
  * \brief
  * Declares gmx::ShellCompletionWriter.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com> (C++ interface)
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \ingroup module_commandline
  */
 #ifndef GMX_COMMANDLINE_SHELLCOMPLETIONS_H
 #define GMX_COMMANDLINE_SHELLCOMPLETIONS_H

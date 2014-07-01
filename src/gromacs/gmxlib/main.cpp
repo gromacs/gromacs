@@ -47,36 +47,34 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "network.h"
-#include "main.h"
-#include "macros.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "string2.h"
-#include "copyrite.h"
-
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/programcontext.h"
-
-/* The source code in this file should be thread-safe.
-         Please keep it that way. */
-
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #ifdef GMX_NATIVE_WINDOWS
 #include <process.h>
 #endif
 
-#define BUFSIZE 1024
+#include "types/commrec.h"
+#include "network.h"
+#include "main.h"
+#include "macros.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "copyrite.h"
 
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
+
+/* The source code in this file should be thread-safe.
+         Please keep it that way. */
+
+#define BUFSIZE 1024
 
 static void par_fn(char *base, int ftp, const t_commrec *cr,
                    gmx_bool bAppendSimId, gmx_bool bAppendNodeId,
@@ -97,7 +95,7 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     }
     if (bAppendNodeId)
     {
-        strcat(buf, "_node");
+        strcat(buf, "_rank");
         sprintf(buf+strlen(buf), "%d", cr->nodeid);
     }
     strcat(buf, ".");
@@ -106,7 +104,7 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     strcat(buf, (ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
     if (debug)
     {
-        fprintf(debug, "node %d par_fn '%s'\n", cr->nodeid, buf);
+        fprintf(debug, "rank %d par_fn '%s'\n", cr->nodeid, buf);
         if (fn2ftp(buf) == efLOG)
         {
             fprintf(debug, "log\n");
@@ -222,26 +220,6 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
 }
 
 
-int gmx_gethostname(char *name, size_t len)
-{
-    if (len < 8)
-    {
-        gmx_incons("gmx_gethostname called with len<8");
-    }
-#if defined(HAVE_UNISTD_H) && !defined(__native_client__)
-    if (gethostname(name, len-1) != 0)
-    {
-        strncpy(name, "unknown", 8);
-        return -1;
-    }
-    return 0;
-#else
-    strncpy(name, "unknown", 8);
-    return -1;
-#endif
-}
-
-
 void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
                   gmx_bool bAppendFiles, FILE** fplog)
 {
@@ -331,7 +309,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
 
     fprintf(fp,
             "Log file opened on %s"
-            "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
+            "Host: %s  pid: %d  rank ID: %d  number of ranks:  %d\n",
             timebuf, host, pid, cr->nodeid, cr->nnodes);
     try
     {
@@ -379,7 +357,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     nnodes  = cr->nnodes;
     if (nnodes % nsim != 0)
     {
-        gmx_fatal(FARGS, "The number of nodes (%d) is not a multiple of the number of simulations (%d)", nnodes, nsim);
+        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%d)", nnodes, nsim);
     }
 
     nnodpersim = nnodes/nsim;
@@ -387,7 +365,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
 
     if (debug)
     {
-        fprintf(debug, "We have %d simulations, %d nodes per simulation, local simulation is %d\n", nsim, nnodpersim, sim);
+        fprintf(debug, "We have %d simulations, %d ranks per simulation, local simulation is %d\n", nsim, nnodpersim, sim);
     }
 
     snew(ms, 1);
@@ -436,7 +414,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
         fprintf(debug, "This is simulation %d", cr->ms->sim);
         if (PAR(cr))
         {
-            fprintf(debug, ", local number of nodes %d, local nodeid %d",
+            fprintf(debug, ", local number of ranks %d, local rank ID %d",
                     cr->nnodes, cr->sim_nodeid);
         }
         fprintf(debug, "\n\n");

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,16 +38,20 @@
 #endif
 #include <assert.h>
 
-#include "smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "constr.h"
+#include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ga2la.h"
 #include "gmx_hash.h"
 #include "gmx_omp_nthreads.h"
 #include "macros.h"
+
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int  nsend;
@@ -236,7 +240,9 @@ void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f)
 }
 
 static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
-                             matrix box, rvec *x0, rvec *x1)
+                             matrix box,
+                             rvec *x0,
+                             rvec *x1, gmx_bool bX1IsCoord)
 {
     gmx_specatsend_t *spas;
     rvec             *x, *vbuf, *rbuf;
@@ -245,7 +251,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     rvec              shift = {0, 0, 0};
 
     nvec = 1;
-    if (x1)
+    if (x1 != NULL)
     {
         nvec++;
     }
@@ -285,7 +291,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                 {
                     x = (v == 0 ? x0 : x1);
                     /* Copy the required coordinates to the send buffer */
-                    if (!bPBC)
+                    if (!bPBC || (v == 1 && !bX1IsCoord))
                     {
                         /* Only copy */
                         for (i = 0; i < spas->nsend; i++)
@@ -414,11 +420,12 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
-void dd_move_x_constraints(gmx_domdec_t *dd, matrix box, rvec *x0, rvec *x1)
+void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
+                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord)
 {
     if (dd->constraint_comm)
     {
-        dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1);
+        dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1, bX1IsCoord);
     }
 }
 
@@ -426,7 +433,7 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
 {
     if (dd->vsite_comm)
     {
-        dd_move_x_specat(dd, dd->vsite_comm, box, x, NULL);
+        dd_move_x_specat(dd, dd->vsite_comm, box, x, NULL, FALSE);
     }
 }
 
@@ -636,8 +643,8 @@ static int setup_specat_communication(gmx_domdec_t             *dd,
                             nsend, 2, buf, 2);
             if (debug)
             {
-                fprintf(debug, "Send to node %d, %d (%d) indices, "
-                        "receive from node %d, %d (%d) indices\n",
+                fprintf(debug, "Send to rank %d, %d (%d) indices, "
+                        "receive from rank %d, %d (%d) indices\n",
                         dd->neighbor[d][1-dir], nsend[1], nsend[0],
                         dd->neighbor[d][dir], buf[1], buf[0]);
                 if (gmx_debug_at)

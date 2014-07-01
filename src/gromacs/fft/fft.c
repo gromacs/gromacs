@@ -33,20 +33,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/fft/fft.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
-#include "types/simple.h"
-#include "gmx_fatal.h"
-#include "gromacs/fft/fft.h"
 #include "gromacs/math/gmxcomplex.h"
-
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 /* This file contains common fft utility functions, but not
  * the actual transform implementations. Check the

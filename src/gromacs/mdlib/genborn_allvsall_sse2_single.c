@@ -41,11 +41,11 @@
 #include <math.h>
 #include "types/simple.h"
 
-#include "vec.h"
-#include "smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "network.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "genborn.h"
 #include "genborn_allvsall.h"
 

@@ -39,20 +39,23 @@
 #endif
 
 #include <stdio.h>
+
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vsite.h"
 #include "macros.h"
-#include "smalloc.h"
 #include "nrnb.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "network.h"
-#include "mshift.h"
-#include "pbc.h"
 #include "domdec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Routines to send/recieve coordinates and force
  * of constructing atoms.

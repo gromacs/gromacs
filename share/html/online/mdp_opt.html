@@ -117,10 +117,8 @@ With Nose-Hoover and/or Parrinello-Rahman coupling this comes with
 a slight increase in computational cost.
 </dd>
 <dt><b>sd</b></dt>
-<dd> An accurate leap-frog stochastic dynamics integrator.
-Four Gaussian random number are required
-per integration step per degree of freedom. With constraints,
-coordinates needs to be constrained twice per integration step.
+<dd> An accurate and efficient leap-frog stochastic dynamics integrator.
+With constraints, coordinates needs to be constrained twice per integration step.
 Depending on the computational cost of the force calculation,
 this can take a significant part of the simulation time.
 The temperature for one or more groups of atoms
@@ -133,16 +131,12 @@ The random generator is initialized with <b><A HREF="#ld">ld-seed</A></b>.
 When used as a thermostat, an appropriate value for <b>tau-t</b> is 2 ps,
 since this results in a friction that is lower than the internal friction
 of water, while it is high enough to remove excess heat
-(unless <b>cut-off</b> or <b>reaction-field</b> electrostatics is used).
 NOTE: temperature deviations decay twice as fast as with
 a Berendsen thermostat with the same <b>tau-t</b>.</dd>
-<dt><b>sd1</b></dt>
-<dd> An efficient leap-frog stochastic dynamics integrator.
-This integrator is equivalent to <b>sd</b>, except that it requires
-only one Gaussian random number and one constraint step and is therefore
-significantly faster. Without constraints the accuracy is the same as <b>sd</b>.
-With constraints the accuracy is significantly reduced, so then <b>sd</b>
-will often be preferred.</dd>
+<dt><b>sd2</b></dt>
+<dd> This used to be the default sd integrator, but is now deprecated.
+Four Gaussian random numbers are required per coordinate per step.
+With constraints, the temperature will be slightly too high.</dd>
 <dt><b>bd</b></dt>
 <dd>An Euler integrator for Brownian or position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
@@ -403,7 +397,7 @@ the neighbor list is made only once.
 With energy minimization the neighborlist will be updated for every
 energy evaluation when <b>nstlist</b><tt>&gt;0</tt>.
 With <b>cutoff-scheme=Verlet</b> and <b>verlet-buffer-tolerance</b> set,
-<b>nstlist</b> is actually a minimum value and <tt>mdrun</tt> might increase it.
+<b>nstlist</b> is actually a minimum value and <tt>mdrun</tt> might increase it, unless it is set to 1.
 With parallel simulations and/or non-bonded force calculation on the GPU,
 a value of 20 or 40 often gives the best performance.
 With <b>cutoff-scheme=Group</b> and non-exact cut-off's, <b>nstlist</b> will
@@ -667,7 +661,7 @@ from 0 to the largest cut-off distance + <b>table-extension</b>
 and should be uniformly spaced. For the pair interactions the table
 length in the file will be used.
 The optimal spacing, which is used for non-user tables,
-is <tt>0.002</tt> [nm] when you run in single precision
+is <tt>0.002</tt> [nm] when you run in mixed precision
 or <tt>0.0005</tt> [nm] when you run in double precision.
 The function value at <tt>x=0</tt> is not important. More information is
 in the printed manual.</dd>
@@ -1357,8 +1351,8 @@ since the distance of an atom in the reference group
 from the COM of the pull group has both a radial and an axial component.</dd>
 </dl></dd>
 <dt><b>pull-dim: (Y Y Y)</b></dt>
-<dd>the distance components to be used with geometry <b>distance</b>
-and <b>position</b>, and also sets which components are printed
+<dd>the distance components to be used with geometry <b>distance</b>,
+and also sets which components are printed
 to the output files</dd>
 <dt><b>pull-r1: (1) [nm]</b></dt>
 <dd>the inner radius of the cylinder for geometry <b>cylinder</b></dd>
@@ -1636,7 +1630,8 @@ the molecule definition in the topology.</dd>
 <dt><b>dhdl-derivatives: (yes)</b></dt>
 <dd>If yes (the default), the derivatives of the Hamiltonian with respect to lambda at each <b>nstdhdl</b> step are written out. These values are needed for interpolation of linear energy differences with <tt>g_bar</tt> (although the same can also be achieved with the right <b>foreign lambda</b> setting, that may not be as flexible), or with thermodynamic integration</dd>
 <dt><b>dhdl-print-energy: (no)</b></dt>
-<dd> Include the total energy in the dhdl file.  This information is needed for later analysis if the states of interest in the free e energy calculation are at different temperatures.  If all are at the same temperature, this information is not needed.</dd>
+<dd> Include either the total or the potential energy in the dhdl file.  Options are 'no', 'potential', or 'total'. This information is needed for later free energy analysis if the states of interest are at different temperatures.  If all states are at the same temperature, this information is not needed. 'potential' is useful in case one is using <tt>mdrun -rerun</tt> to generate the <tt>dhdl.xvg</tt> file.  When rerunning from an existing trajectory, the kinetic energy will often not be correct, and thus one must compute the residual free energy from the potential alone, with the kinetic energy component computed analytically.
+</dd>
 <dt><b>separate-dhdl-file: (yes)</b></dt>
 <dd><dl compact>
 <dt><b>yes</b></dt>

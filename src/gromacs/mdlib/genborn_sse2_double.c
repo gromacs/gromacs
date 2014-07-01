@@ -42,16 +42,15 @@
 #include <string.h>
 
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "genborn.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/pdbio.h"
 #include "names.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "domdec.h"
 #include "network.h"
-#include "gmx_fatal.h"
-#include "mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
 #include "genborn.h"
 
 #include "gromacs/utility/gmxmpi.h"

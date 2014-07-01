@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,19 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "enxio.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "futil.h"
-#include "string2.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "gmxfio.h"
-#include "enxio.h"
-#include "vec.h"
-#include "xdrf.h"
+#include <stdlib.h>
+#include <string.h>
+
+#include "gromacs/utility/futil.h"
 #include "macros.h"
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
@@ -109,31 +115,31 @@ static void enxsubblock_free(t_enxsubblock *sb)
 {
     if (sb->fval_alloc)
     {
-        free(sb->fval);
+        sfree(sb->fval);
         sb->fval_alloc = 0;
         sb->fval       = NULL;
     }
     if (sb->dval_alloc)
     {
-        free(sb->dval);
+        sfree(sb->dval);
         sb->dval_alloc = 0;
         sb->dval       = NULL;
     }
     if (sb->ival_alloc)
     {
-        free(sb->ival);
+        sfree(sb->ival);
         sb->ival_alloc = 0;
         sb->ival       = NULL;
     }
     if (sb->lval_alloc)
     {
-        free(sb->lval);
+        sfree(sb->lval);
         sb->lval_alloc = 0;
         sb->lval       = NULL;
     }
     if (sb->cval_alloc)
     {
-        free(sb->cval);
+        sfree(sb->cval);
         sb->cval_alloc = 0;
         sb->cval       = NULL;
     }
@@ -145,10 +151,10 @@ static void enxsubblock_free(t_enxsubblock *sb)
         {
             if (sb->sval[i])
             {
-                free(sb->sval[i]);
+                sfree(sb->sval[i]);
             }
         }
-        free(sb->sval);
+        sfree(sb->sval);
         sb->sval_alloc = 0;
         sb->sval       = NULL;
     }
@@ -230,7 +236,7 @@ static void enxblock_free(t_enxblock *eb)
         {
             enxsubblock_free(&(eb->sub[i]));
         }
-        free(eb->sub);
+        sfree(eb->sub);
         eb->nsub_alloc = 0;
         eb->sub        = NULL;
     }
@@ -264,7 +270,7 @@ void free_enxframe(t_enxframe *fr)
     {
         enxblock_free(&(fr->block[b]));
     }
-    free(fr->block);
+    sfree(fr->block);
 }
 
 void add_blocks_enxframe(t_enxframe *fr, int n)
@@ -919,7 +925,6 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     int           i, b;
     gmx_bool      bRead, bOK, bOK1, bSane;
     real          tmp1, tmp2, rdum;
-    char          buf[22];
     /*int       d_size;*/
 
     bOK   = TRUE;
@@ -972,9 +977,9 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     {
         fprintf(stderr, "\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr, "Found: step=%s, nre=%d, nblock=%d, time=%g.\n"
+        fprintf(stderr, "Found: step=%"GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n"
                 "Trying to skip frame expect a crash though\n",
-                gmx_step_str(fr->step, buf), fr->nre, fr->nblock, fr->t);
+                fr->step, fr->nre, fr->nblock, fr->t);
     }
     if (bRead && fr->nre > fr->e_alloc)
     {

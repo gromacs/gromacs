@@ -40,10 +40,13 @@
 #include <assert.h>
 
 #include "typedefs.h"
-#include "vec.h"
-#include "smalloc.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "nbnxn_kernel_ref.h"
 #include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"

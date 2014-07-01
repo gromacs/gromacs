@@ -42,17 +42,15 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "sysstuff.h"
-#include "physics.h"
-#include "macros.h"
+#include "gromacs/math/units.h"
 #include "readir.h"
 #include "typedefs.h"
 #include "topshake.h"
 #include "toppush.h"
 #include "toputil.h"
 #include "topdirs.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void copy_bond (t_params *pr, int to, int from)
 /* copies an entry in a bond list to another position.

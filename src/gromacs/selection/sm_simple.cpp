@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 
 #include "gromacs/legacyheaders/macros.h"
 
+#include "gromacs/topology/topology.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
@@ -188,7 +189,7 @@ static const char *help_atomname[] = {
     "keywords."
 };
 
-/** \internal Selection method data for \p all selection keyword. */
+/** Selection method data for \p all selection keyword. */
 gmx_ana_selmethod_t sm_all = {
     "all", GROUP_VALUE, 0,
     0, NULL,
@@ -202,7 +203,7 @@ gmx_ana_selmethod_t sm_all = {
     NULL,
 };
 
-/** \internal Selection method data for \p none selection keyword. */
+/** Selection method data for \p none selection keyword. */
 gmx_ana_selmethod_t sm_none = {
     "none", GROUP_VALUE, 0,
     0, NULL,
@@ -216,7 +217,7 @@ gmx_ana_selmethod_t sm_none = {
     NULL,
 };
 
-/** \internal Selection method data for \p atomnr selection keyword. */
+/** Selection method data for \p atomnr selection keyword. */
 gmx_ana_selmethod_t sm_atomnr = {
     "atomnr", INT_VALUE, 0,
     0, NULL,
@@ -230,7 +231,7 @@ gmx_ana_selmethod_t sm_atomnr = {
     NULL,
 };
 
-/** \internal Selection method data for \p resnr selection keyword. */
+/** Selection method data for \p resnr selection keyword. */
 gmx_ana_selmethod_t sm_resnr = {
     "resnr", INT_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -244,7 +245,7 @@ gmx_ana_selmethod_t sm_resnr = {
     NULL,
 };
 
-/** \internal Selection method data for \p resindex selection keyword. */
+/** Selection method data for \p resindex selection keyword. */
 gmx_ana_selmethod_t sm_resindex = {
     "resindex", INT_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -258,7 +259,7 @@ gmx_ana_selmethod_t sm_resindex = {
     NULL,
 };
 
-/** \internal Selection method data for \p molindex selection keyword. */
+/** Selection method data for \p molindex selection keyword. */
 gmx_ana_selmethod_t sm_molindex = {
     "molindex", INT_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -272,7 +273,7 @@ gmx_ana_selmethod_t sm_molindex = {
     NULL,
 };
 
-/** \internal Selection method data for \p atomname selection keyword. */
+/** Selection method data for \p atomname selection keyword. */
 gmx_ana_selmethod_t sm_atomname = {
     "atomname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -287,7 +288,7 @@ gmx_ana_selmethod_t sm_atomname = {
     {NULL, asize(help_atomname), help_atomname}
 };
 
-/** \internal Selection method data for \p pdbatomname selection keyword. */
+/** Selection method data for \p pdbatomname selection keyword. */
 gmx_ana_selmethod_t sm_pdbatomname = {
     "pdbatomname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -302,7 +303,7 @@ gmx_ana_selmethod_t sm_pdbatomname = {
     {NULL, asize(help_atomname), help_atomname}
 };
 
-/** \internal Selection method data for \p atomtype selection keyword. */
+/** Selection method data for \p atomtype selection keyword. */
 gmx_ana_selmethod_t sm_atomtype = {
     "atomtype", STR_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -316,7 +317,7 @@ gmx_ana_selmethod_t sm_atomtype = {
     NULL,
 };
 
-/** \internal Selection method data for \p resname selection keyword. */
+/** Selection method data for \p resname selection keyword. */
 gmx_ana_selmethod_t sm_resname = {
     "resname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -330,7 +331,7 @@ gmx_ana_selmethod_t sm_resname = {
     NULL,
 };
 
-/** \internal Selection method data for \p chain selection keyword. */
+/** Selection method data for \p chain selection keyword. */
 gmx_ana_selmethod_t sm_insertcode = {
     "insertcode", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
@@ -344,7 +345,7 @@ gmx_ana_selmethod_t sm_insertcode = {
     NULL,
 };
 
-/** \internal Selection method data for \p chain selection keyword. */
+/** Selection method data for \p chain selection keyword. */
 gmx_ana_selmethod_t sm_chain = {
     "chain", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
@@ -358,7 +359,7 @@ gmx_ana_selmethod_t sm_chain = {
     NULL,
 };
 
-/** \internal Selection method data for \p mass selection keyword. */
+/** Selection method data for \p mass selection keyword. */
 gmx_ana_selmethod_t sm_mass = {
     "mass", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -372,7 +373,7 @@ gmx_ana_selmethod_t sm_mass = {
     NULL,
 };
 
-/** \internal Selection method data for \p charge selection keyword. */
+/** Selection method data for \p charge selection keyword. */
 gmx_ana_selmethod_t sm_charge = {
     "charge", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -386,7 +387,7 @@ gmx_ana_selmethod_t sm_charge = {
     NULL,
 };
 
-/** \internal Selection method data for \p chain selection keyword. */
+/** Selection method data for \p chain selection keyword. */
 gmx_ana_selmethod_t sm_altloc = {
     "altloc", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
@@ -400,7 +401,7 @@ gmx_ana_selmethod_t sm_altloc = {
     NULL,
 };
 
-/** \internal Selection method data for \p occupancy selection keyword. */
+/** Selection method data for \p occupancy selection keyword. */
 gmx_ana_selmethod_t sm_occupancy = {
     "occupancy", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -414,7 +415,7 @@ gmx_ana_selmethod_t sm_occupancy = {
     NULL,
 };
 
-/** \internal Selection method data for \p betafactor selection keyword. */
+/** Selection method data for \p betafactor selection keyword. */
 gmx_ana_selmethod_t sm_betafactor = {
     "betafactor", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -428,7 +429,7 @@ gmx_ana_selmethod_t sm_betafactor = {
     NULL,
 };
 
-/** \internal Selection method data for \p x selection keyword. */
+/** Selection method data for \p x selection keyword. */
 gmx_ana_selmethod_t sm_x = {
     "x", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
@@ -442,7 +443,7 @@ gmx_ana_selmethod_t sm_x = {
     &evaluate_x,
 };
 
-/** \internal Selection method data for \p y selection keyword. */
+/** Selection method data for \p y selection keyword. */
 gmx_ana_selmethod_t sm_y = {
     "y", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
@@ -456,7 +457,7 @@ gmx_ana_selmethod_t sm_y = {
     &evaluate_y,
 };
 
-/** \internal Selection method data for \p z selection keyword. */
+/** Selection method data for \p z selection keyword. */
 gmx_ana_selmethod_t sm_z = {
     "z", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,

@@ -39,23 +39,22 @@
 #endif
 
 #include <math.h>
-#include <ctype.h>
 
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "names.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "string2.h"
 #include "gromacs/fileio/strdb.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "index.h"
-#include "pbc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
@@ -326,7 +325,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                     if (bEquiv)
                     {
                         /* set index for matching atom */
-                        noe_index[j] = groupnr;
+                        noe_index[i] = groupnr;
                         /* skip matching atom */
                         i = j;
                     }
@@ -344,7 +343,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                    This is supposed to cover all CH3 groups and the like */
                 anmi   = *atoms->atomname[index[i]];
                 anmil  = strlen(anmi);
-                bMatch = i < isize-3 && anmi[anmil-1] == '1';
+                bMatch = i <= isize-3 && anmi[anmil-1] == '1';
                 if (bMatch)
                 {
                     for (j = 1; j < 3; j++)
@@ -647,7 +646,7 @@ int gmx_rmsdist(int argc, char *argv[])
         "equivalent atoms can be supplied ([TT]-equiv[tt]), each line containing",
         "a set of equivalent atoms specified as residue number and name and",
         "atom name; e.g.:[PAR]",
-        "[TT]3 SER  HB1 3 SER  HB2[tt][PAR]",
+        "[TT]HB* 3 SER  HB1 3 SER  HB2[tt][PAR]",
         "Residue and atom names must exactly match those in the structure",
         "file, including case. Specifying non-sequential atoms is undefined."
 
@@ -788,7 +787,8 @@ int gmx_rmsdist(int argc, char *argv[])
     }
 
     /*do a first step*/
-    natom = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natom  = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    teller = 0;
 
     do
     {
@@ -796,13 +796,12 @@ int gmx_rmsdist(int argc, char *argv[])
 
         rmsnow = rms_diff(isize, d, d_r);
         fprintf(fp, "%g  %g\n", t, rmsnow);
+        teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     gmx_ffclose(fp);
-
-    teller = nframes_read(status);
 
     close_trj(status);
 

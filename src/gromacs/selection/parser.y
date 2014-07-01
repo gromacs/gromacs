@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
  *
  * \ingroup module_selection
  */
-#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/utility/scoped_ptr_sfree.h"
 
 #include "parser_internal.h"
 
@@ -92,10 +92,6 @@ using gmx::SelectionTreeElementPointer;
 
 /* Invalid token to report lexer errors */
 %token INVALID
-
-/* Tokens for help requests */
-%token         HELP
-%token <str>   HELP_TOPIC
 
 /* Simple input tokens */
 %token <i>     TOK_INT
@@ -173,16 +169,14 @@ using gmx::SelectionTreeElementPointer;
 %type <param> method_param
 %type <vlist> value_list value_list_contents basic_value_list basic_value_list_contents
 %type <val>   value_item value_item_range basic_value_item
-%type <vlist> help_topic
 
-%destructor { free($$);        } HELP_TOPIC STR IDENTIFIER KEYWORD_POS CMP_OP string
+%destructor { free($$);        } STR IDENTIFIER KEYWORD_POS CMP_OP string
 %destructor { if($$) free($$); } PARAM pos_mod
 %destructor { delete $$;       } commands command cmd_plain selection
 %destructor { delete $$;       } sel_expr num_expr str_expr pos_expr
 %destructor { delete $$;       } method_params method_param_list method_param
 %destructor { delete $$;       } value_list value_list_contents basic_value_list basic_value_list_contents
 %destructor { delete $$;       } value_item value_item_range basic_value_item
-%destructor { delete $$;       } help_topic
 
 %expect 35
 %debug
@@ -235,13 +229,6 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
 
 /* Commands can be selections or variable assignments */
 cmd_plain:   /* empty */
-             {
-                 BEGIN_ACTION;
-                 _gmx_sel_handle_empty_cmd(scanner);
-                 set_empty($$);
-                 END_ACTION;
-             }
-           | help_request
              {
                  BEGIN_ACTION;
                  set_empty($$);
@@ -302,32 +289,6 @@ cmd_plain:   /* empty */
                  BEGIN_ACTION;
                  scoped_ptr_sfree nameGuard($1);
                  set($$, _gmx_sel_assign_variable($1, get($3), scanner));
-                 END_ACTION;
-             }
-;
-
-/* Help requests */
-help_request:
-             HELP help_topic
-             {
-                 BEGIN_ACTION;
-                 _gmx_sel_handle_help_cmd(get($2), scanner);
-                 END_ACTION;
-             }
-;
-
-help_topic:  /* empty */
-             {
-                 BEGIN_ACTION;
-                 set($$, SelectionParserValue::createList());
-                 END_ACTION;
-             }
-           | help_topic HELP_TOPIC
-             {
-                 BEGIN_ACTION;
-                 SelectionParserValueListPointer list(get($1));
-                 list->push_back(SelectionParserValue::createString($2));
-                 set($$, move(list));
                  END_ACTION;
              }
 ;

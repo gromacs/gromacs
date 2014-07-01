@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,10 @@
 #include <stdlib.h>
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
 #include "parsetree.h"
@@ -107,7 +106,8 @@ typedef struct
  */
 static void *
 init_data_same(int npar, gmx_ana_selparam_t *param);
-/*! Initializes the \p same selection method.
+/*! \brief
+ * Initializes the \p same selection method.
  *
  * \param   top   Not used.
  * \param   npar  Not used (should be 2).

@@ -36,12 +36,16 @@ file(GLOB MATH_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
 
 set(MATH_PUBLIC_HEADERS
-    3dview.h
+    3dtransforms.h
     gmxcomplex.h
+    do_fit.h
+    units.h
     utilities.h
+    vec.h
+    vectypes.h
     )
-gmx_install_headers(maths ${MATH_PUBLIC_HEADERS})
+gmx_install_headers(math ${MATH_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)
-endif (BUILD_TESTING)
+endif()

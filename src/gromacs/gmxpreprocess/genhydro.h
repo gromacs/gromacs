@@ -65,7 +65,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
  */
 
 int protonate(t_atoms **atoms, rvec **x, t_protonate *protdata);
-/* Protonate molecule according to gmx2.ff/aminoacids.hdb
+/* Protonate molecule according to oplsaa.ff/aminoacids.hdb
  * when called the first time, new atoms are added to atoms,
  * second time only coordinates are generated
  * return the new total number of atoms

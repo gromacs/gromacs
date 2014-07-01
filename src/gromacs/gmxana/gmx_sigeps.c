@@ -38,22 +38,21 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "pbc.h"
-#include "physics.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/units.h"
 #include "names.h"
 #include "txtdump.h"
 #include "gromacs/fileio/trnio.h"
-#include "symtab.h"
 #include "gromacs/fileio/confio.h"
 
 real pot(real x, real qq, real c6, real cn, int npow)

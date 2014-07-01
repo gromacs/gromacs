@@ -37,10 +37,10 @@
 MACRO(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
     IF(NOT DEFINED ${VARIABLE})
         CHECK_C_COMPILER_FLAG("${FLAGS}" ${VARIABLE})
-    ENDIF(NOT DEFINED ${VARIABLE})
+    ENDIF()
     IF (${VARIABLE})
         SET (${CFLAGSVAR} "${FLAGS} ${${CFLAGSVAR}}")
-    ENDIF (${VARIABLE})
+    ENDIF ()
 ENDMACRO(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
 
 # Test C++ flags FLAGS, and set VARIABLE to true if the work. Also add the
@@ -48,12 +48,50 @@ ENDMACRO(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
 MACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
     IF(NOT DEFINED ${VARIABLE})
         CHECK_CXX_COMPILER_FLAG("${FLAGS}" ${VARIABLE})
-    ENDIF(NOT DEFINED ${VARIABLE})
+    ENDIF()
     IF (${VARIABLE})
         SET (${CXXFLAGSVAR} "${FLAGS} ${${CXXFLAGSVAR}}")
-    ENDIF (${VARIABLE})
+    ENDIF ()
 ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 
+# Set the real CMake variables for compiler flags. This should be a function
+# so we can have proper local variables while avoiding duplicating code.
+function(gmx_set_cmake_compiler_flags)
+    foreach(language C CXX)
+        # Copy the flags for the release build type to the build types
+        # that are modified forms of it. Ideally, the list of build
+        # types that are modifications of the Release build type would
+        # be set up elsewhere and passed to this function, but it is
+        # inconvenient in CMake to pass more than one list, and such a
+        # list is only used here.
+        foreach(build_type RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
+            set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
+        endforeach()
+        # Copy the flags that are only used by the real Release build
+        # type. Currently unused, but we plan to use -Wno-array-bounds
+        # in Release to work around gcc-4.8 being a little too vocal
+        # about some perfectly good code, while using RelWithAssert
+        # (ie. without that suppression) in Jenkins.
+        set(GMXC_${language}FLAGS_RELEASE "${GMXC_${language}FLAGS_RELEASE} ${GMXC_${language}FLAGS_RELEASE_ONLY}")
+
+        # Modify the real CMake variables for compiler flags for all
+        # builds and language types, and also those common to all
+        # build types.
+        foreach(build_type "" ${build_types_with_explicit_flags})
+            if("${build_type}" STREQUAL "")
+                set(punctuation "") # for general compiler flags (e.g.) CMAKE_CXX_FLAGS
+            else()
+                set(punctuation "_") # for build-type-specific compiler flags (e.g.) CMAKE_CXX_FLAGS_RELEASE
+            endif()
+
+            # Append to the variables for the given build type for
+            # each language, in the parent scope.
+            set(CMAKE_${language}_FLAGS${punctuation}${build_type}
+                "${GMXC_${language}FLAGS${punctuation}${build_type}} ${CMAKE_${language}_FLAGS${punctuation}${build_type}}"
+                PARENT_SCOPE)
+        endforeach()
+    endforeach()
+endfunction()
 
 # This is the actual exported function to be called 
 MACRO(gmx_c_flags)
@@ -69,9 +107,12 @@ MACRO(gmx_c_flags)
         endif()
         GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wno-sign-compare -Wpointer-arith" GMXC_CFLAGS)
+        # Since 4.8 on by default. For previous version disabling is a no-op. Only disabling for Release because with assert
+        # the warnings are OK.
+        GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
-        GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
+        GMX_TEST_CFLAG(CFLAGS_COPT "-funroll-all-loops"
                        GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_NOINLINE "-fno-inline" GMXC_CFLAGS_DEBUG)
     endif()
@@ -84,9 +125,10 @@ MACRO(gmx_c_flags)
         # Problematic with CUDA
         # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
+        GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
         # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
-        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
+        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-funroll-all-loops"
                          GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_NOINLINE "-fno-inline" GMXC_CXXFLAGS_DEBUG)
     endif()
@@ -95,27 +137,33 @@ MACRO(gmx_c_flags)
     if (CMAKE_C_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
             if(NOT GMX_OPENMP)
-                GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
+                GMX_TEST_CFLAG(CFLAGS_PRAGMA "-wd161" GMXC_CFLAGS)
             endif()
             GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd111 -wd177 -wd181 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CFLAGS_RELEASE)
         else()
-            GMX_TEST_CFLAG(CFLAGS_WARN "/W2" GMXC_CFLAGS)
-            GMX_TEST_CFLAG(CFLAGS_X86 "/Qip" GMXC_CFLAGS_RELEASE)
+            if(NOT GMX_OPENMP)
+                GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd161" GMXC_CFLAGS)
+            endif()
+            GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd111 /wd177 /wd181 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_OPT "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
     endif()
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
             if(NOT GMX_OPENMP)
-                GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
+                GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd161" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd111 -wd177 -wd181 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd1782" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CXXFLAGS_RELEASE)
         else()
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W2" GMXC_CXXFLAGS)
-            GMX_TEST_CXXFLAG(CXXFLAGS_X86 "/Qip" GMXC_CXXFLAGS_RELEASE)
+            if(NOT GMX_OPENMP)
+                GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd161" GMXC_CXXFLAGS)
+            endif()
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd111 /wd177 /wd181 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
     endif()
 
@@ -161,8 +209,17 @@ MACRO(gmx_c_flags)
         #      forcing value to bool
         #      "this" in initializer list
         #      deprecated (posix, secure) functions
-        GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996" GMXC_CFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996" GMXC_CXXFLAGS)
+        #      truncation (double -> float)
+        #      conversion from 'double' to 'real', possible loss of data
+        #      unreferenced local variable (only C)
+        #      conversion from 'size_t' to 'int', possible loss of data
+        #      conversion from 'const char*' to 'void*', different 'const' qualifiers (only C)
+        if(NOT CMAKE_CONFIGURATION_TYPES)
+            GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267" GMXC_CXXFLAGS)
+        else() #Projects only use the C++ flags
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CXXFLAGS)
+        endif()
     endif()
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -182,20 +239,8 @@ MACRO(gmx_c_flags)
     endif()
 
     # now actually set the flags:
-    # C
-    if ( NOT GMX_SKIP_DEFAULT_CFLAGS )
-        set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}")
-        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}")
-        set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}")
-    endif()
-
-    # C++
-    if ( NOT GMX_SKIP_DEFAULT_CFLAGS)
-        set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}")
-        set(CMAKE_CXX_FLAGS_RELEASE 
-            "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}")
-        set(CMAKE_CXX_FLAGS_DEBUG 
-            "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}")
+    if (NOT GMX_SKIP_DEFAULT_CFLAGS)
+        gmx_set_cmake_compiler_flags()
     endif()
 ENDMACRO(gmx_c_flags)
 

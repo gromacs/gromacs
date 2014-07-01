@@ -39,14 +39,12 @@
 #endif
 
 #include <stdio.h>
-#include <ctype.h>
 #include <string.h>
-#include "sysstuff.h"
+
 #include "macros.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 #include "typedefs.h"
-#include "string2.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
@@ -366,7 +364,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
     init_dlgs(x11, gmx);
 
-    /* Now do file shit */
+    /* Now do file operations */
     set_file(x11, gmx->man, ftp2fn(efTRX, nfile, fnm), ftp2fn(efTPX, nfile, fnm));
 
     ShowDlg(gmx->dlgs[edFilter]);

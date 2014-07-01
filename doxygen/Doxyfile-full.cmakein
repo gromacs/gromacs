@@ -1,12 +1,9 @@
 @INCLUDE               = Doxyfile-common
 
-MACRO_EXPANSION        = YES
-EXPAND_ONLY_PREDEF     = YES
 PREDEFINED            += F77_FUNC(name,NAME)=name
 
 ENABLED_SECTIONS      += libapi internal
 INTERNAL_DOCS          = YES
-EXTRACT_STATIC         = YES
 EXTRACT_LOCAL_CLASSES  = YES
 EXTRACT_ANON_NSPACES   = YES
 HIDE_UNDOC_CLASSES     = YES
@@ -18,4 +15,3 @@ INLINE_INHERITED_MEMB  = NO  # Makes it easier to go through all documentation
 ALIASES               += inpublicapi="\ingroup group_publicapi"
 ALIASES               += inlibraryapi="\ingroup group_libraryapi"
 ALIASES               += libinternal=
-ALIASES               += endlibinternal=

@@ -40,20 +40,17 @@
 
 #include <stdlib.h>
 
-#include "sysstuff.h"
-#include "princ.h"
-#include "gromacs/fileio/futil.h"
-#include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "symtab.h"
-#include "index.h"
 #include "gromacs/fileio/confio.h"
 #include "network.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "pull.h"
 #include "gmx_ga2la.h"
 

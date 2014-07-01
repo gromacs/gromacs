@@ -113,7 +113,7 @@ void write_top(FILE *out, char *pr, char *molname,
 
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              t_atoms *atoms, rvec **x,
-             gpp_atomtype_t atype, t_symtab *tab,
+             gpp_atomtype_t atype, struct t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
              gmx_bool bAllowMissing,

@@ -44,16 +44,19 @@
 #include "vcm.h"
 #include "../fileio/enxio.h"
 #include "../fileio/mdoutf.h"
+#include "../timing/wallcycle.h"
 #include "../timing/walltime_accounting.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct t_graph;
+
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
 void do_pbc_first(FILE *log, matrix box, t_forcerec *fr,
-                  t_graph *graph, rvec x[]);
+                  struct t_graph *graph, rvec x[]);
 
 void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
                        gmx_mtop_t *mtop, rvec x[]);
@@ -87,8 +90,16 @@ int do_per_step(gmx_int64_t step, gmx_int64_t nstep);
 void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
                 gmx_int64_t step, t_inputrec *ir, t_commrec *cr);
 
-void print_date_and_time(FILE *log, int pid, const char *title,
-                         const gmx_walltime_accounting_t walltime_accounting);
+/*! \brief Print date, time, MPI rank and a description of this point
+ * in time.
+ *
+ * \param[in] log       logfile, or NULL to suppress output
+ * \param[in] rank      MPI rank to include in the output
+ * \param[in] title     Description to include in the output
+ * \param[in] the_time  Seconds since the epoch, e.g. as reported by gmx_gettime
+ */
+void print_date_and_time(FILE *log, int rank, const char *title,
+                         double the_time);
 
 void print_start(FILE *fplog, t_commrec *cr,
                  gmx_walltime_accounting_t walltime_accounting,

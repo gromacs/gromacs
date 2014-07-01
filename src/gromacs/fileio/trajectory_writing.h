@@ -39,11 +39,17 @@
 #define GMX_FILEIO_TRAJECTORY_WRITING_H
 
 #include <stdio.h>
+
+#include "../legacyheaders/types/commrec_fwd.h"
+#include "../legacyheaders/mdebin.h"
+#include "../timing/wallcycle.h"
+
 #include "filenm.h"
 #include "mdoutf.h"
-#include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/types/commrec.h"
-#include "../legacyheaders/mdebin.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! \brief Wrapper routine for writing trajectories during mdrun
  *
@@ -76,5 +82,9 @@ do_md_trajectory_writing(FILE           *fplog,
                          gmx_bool        bSumEkinhOld
                          );
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GMX_FILEIO_TRAJECTORY_WRITING_H */

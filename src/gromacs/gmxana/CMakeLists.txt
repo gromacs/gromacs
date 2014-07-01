@@ -43,4 +43,4 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXANA_SOURCES} PARENT_SCOPE)
 
 if(BUILD_TESTING)
     add_subdirectory(legacytests)
-endif(BUILD_TESTING)
+endif()

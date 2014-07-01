@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,16 +38,18 @@
 #ifndef _bondf_h
 #define _bondf_h
 
-
 #include <stdio.h>
+
 #include "typedefs.h"
 #include "nrnb.h"
-#include "pbc.h"
 #include "genborn.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_graph;
+struct t_pbc;
 
 int glatnr(int *global_atom_index, int i);
 /* Returns the global topology atom number belonging to local atom index i.
@@ -60,7 +62,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
                 const t_idef *idef,
                 rvec x[], history_t *hist,
                 rvec f[], t_forcerec *fr,
-                const t_pbc *pbc, const t_graph *g,
+                const struct t_pbc *pbc, const struct t_graph *g,
                 gmx_enerdata_t *enerd, t_nrnb *nrnb, real *lambda,
                 const t_mdatoms *md,
                 t_fcdata *fcd, int *ddgatindex,
@@ -97,7 +99,7 @@ void calc_bonds_lambda(FILE *fplog,
                        const t_idef *idef,
                        rvec x[],
                        t_forcerec *fr,
-                       const t_pbc *pbc, const t_graph *g,
+                       const struct t_pbc *pbc, const struct t_graph *g,
                        gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                        real *lambda,
                        const t_mdatoms *md,
@@ -110,7 +112,7 @@ void calc_bonds_lambda(FILE *fplog,
 real posres(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
             const rvec x[], rvec f[], rvec vir_diag,
-            t_pbc *pbc,
+            struct t_pbc *pbc,
             real lambda, real *dvdlambda,
             int refcoord_scaling, int ePBC, rvec comA, rvec comB);
 /* Position restraints require a different pbc treatment from other bondeds */
@@ -118,17 +120,17 @@ real posres(int nbonds,
 real fbposres(int nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
               const rvec x[], rvec f[], rvec vir_diag,
-              t_pbc *pbc, int refcoord_scaling, int ePBC, rvec com);
+              struct t_pbc *pbc, int refcoord_scaling, int ePBC, rvec com);
 /* Flat-bottom posres. Same PBC treatment as in normal position restraints */
 
 real bond_angle(const rvec xi, const rvec xj, const rvec xk,
-                const t_pbc *pbc,
+                const struct t_pbc *pbc,
                 rvec r_ij, rvec r_kj, real *costh,
                 int *t1, int *t2);  /* out */
 /* Calculate bond-angle. No PBC is taken into account (use mol-shift) */
 
 real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
-               const t_pbc *pbc,
+               const struct t_pbc *pbc,
                rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n, /* out */
                real *sign,
                int *t1, int *t2, int *t3);
@@ -137,7 +139,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
                 rvec r_ij, rvec r_kj, rvec r_kl,
                 rvec m, rvec n, rvec f[], rvec fshift[],
-                const t_pbc *pbc, const t_graph *g,
+                const struct t_pbc *pbc, const struct t_graph *g,
                 const rvec *x, int t1, int t2, int t3);
 /* Do an update of the forces for dihedral potentials */
 
@@ -151,7 +153,9 @@ void make_dp_periodic(real *dp);
  *************************************************************************/
 t_ifunc bonds, g96bonds, morse_bonds, cubic_bonds, FENE_bonds, restraint_bonds;
 t_ifunc angles, g96angles, cross_bond_bond, cross_bond_angle, urey_bradley, quartic_angles, linear_angles;
+t_ifunc restrangles;
 t_ifunc pdihs, idihs, rbdihs;
+t_ifunc restrdihs, cbtdihs;
 t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, aniso_pol, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
 

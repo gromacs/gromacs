@@ -47,8 +47,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -62,7 +61,7 @@ namespace
 
 using ::testing::internal::FloatingPoint;
 
-//! \addtogroup module_testutils
+//! \internal \addtogroup module_testutils
 //! \{
 
 /*! \name Helper functions for computing floating-point differences

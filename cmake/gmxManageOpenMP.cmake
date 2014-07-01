@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,10 @@ if(GMX_OPENMP)
         message(STATUS "OpenMP multithreading not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled")
         set(GMX_OPENMP OFF CACHE BOOL
             "OpenMP multithreading not not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled!" FORCE)
+    elseif(CMAKE_C_COMPILER_ID MATCHES "Cray" AND CMAKE_VERSION VERSION_LESS 3)
+        message(STATUS "OpenMP multithreading is not detected correctly for the Cray compiler with CMake before version 3.0 (see http://public.kitware.com/Bug/view.php?id=14567)")
+        set(GMX_OPENMP OFF CACHE BOOL
+            "OpenMP multithreading is not detected correctly for the Cray compiler with CMake before version 3.0 (see http://public.kitware.com/Bug/view.php?id=14567)" FORCE)
     else()
         # We should do OpenMP detection if we get here
         # OpenMP check must come before other CFLAGS!
@@ -66,10 +70,10 @@ if(GMX_OPENMP)
                     endif()
                 endif()
             endif()
-        else(OPENMP_FOUND)
+        else()
             message(WARNING
                     "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
             set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
-        endif(OPENMP_FOUND)
+        endif()
     endif()
 endif()

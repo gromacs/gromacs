@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@ find_package(Threads)
 set(PTHREADS_LIBRARIES)
 if (CMAKE_USE_PTHREADS_INIT)
     set(PTHREADS_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-endif ()
+endif()
 
 set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(GTEST_DIR ${GMOCK_DIR}/gtest)

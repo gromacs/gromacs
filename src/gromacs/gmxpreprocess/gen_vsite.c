@@ -38,23 +38,27 @@
 #include <config.h>
 #endif
 
-#include "string2.h"
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "gen_vsite.h"
-#include "smalloc.h"
 #include "resall.h"
 #include "add_par.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "toputil.h"
-#include "physics.h"
-#include "index.h"
+#include "gromacs/math/units.h"
 #include "names.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gpp_atomtype.h"
 #include "fflibutil.h"
-#include "macros.h"
+
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MAXNAME 32
 #define OPENDIR     '[' /* starting sign for directive		*/
@@ -568,7 +572,7 @@ static void print_bonds(FILE *fp, int o2n[],
 }
 
 static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
-                     gmx_residuetype_t rt)
+                     gmx_residuetype_t *rt)
 {
     int      type;
     gmx_bool bNterm;
@@ -606,7 +610,7 @@ static int vsite_nm2type(const char *name, gpp_atomtype_t atype)
 }
 
 static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
-                      gmx_residuetype_t rt)
+                      gmx_residuetype_t *rt)
 {
     real     mass;
     gmx_bool bNterm;
@@ -1630,7 +1634,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     char            **db;
     int               nvsiteconf, nvsitetop, cmplength;
     gmx_bool          isN, planarN, bFound;
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
 
     t_vsiteconf      *vsiteconflist;
     /* pointer to a list of CH3/NH3/NH2 configuration entries.
@@ -2214,7 +2218,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 {
                     if (debug)
                     {
-                        fprintf(debug, " [%u -> %u]", params->param[i].a[j],
+                        fprintf(debug, " [%d -> %d]", params->param[i].a[j],
                                 params->param[i].a[j]-add_shift);
                     }
                     params->param[i].a[j] = params->param[i].a[j]-add_shift;
@@ -2223,7 +2227,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 {
                     if (debug)
                     {
-                        fprintf(debug, " [%u -> %d]", params->param[i].a[j],
+                        fprintf(debug, " [%d -> %d]", params->param[i].a[j],
                                 o2n[params->param[i].a[j]]);
                     }
                     params->param[i].a[j] = o2n[params->param[i].a[j]];

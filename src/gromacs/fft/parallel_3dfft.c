@@ -46,8 +46,8 @@
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/gmxmpi.h"
 
-#include "smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "fft5d.h"
 

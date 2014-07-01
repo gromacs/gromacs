@@ -191,6 +191,13 @@ enum {
     efptFEP, efptMASS, efptCOUL, efptVDW, efptBONDED, efptRESTRAINT, efptTEMPERATURE, efptNR
 };
 
+/* Printing the energy to the free energy dhdl file. YES is an alias to TOTAL, and
+ * will be converted in readir, so we never have to account for it in code.
+ */
+enum {
+    edHdLPrintEnergyNO, edHdLPrintEnergyTOTAL, edHdLPrintEnergyPOTENTIAL, edHdLPrintEnergyYES, edHdLPrintEnergyNR
+};
+
 /* How the lambda weights are calculated:
    elamstatsMETROPOLIS = using the metropolis criteria
    elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett
@@ -313,26 +320,6 @@ enum {
 enum eSwaptype {
     eswapNO, eswapX, eswapY, eswapZ, eSwapTypesNR
 };
-/* The following three enums are mainly used for indexing arrays and when
- * looping over the available ions, channels, or compartments. This hopefully
- * adds to the code's readability because it makes clear which object is dealt
- * with in a block of code.
- *
- * The two compartments for CompEL setups */
-enum eCompartment {
-    eCompA, eCompB, eCompNR
-};
-/* The positive and negative ions CompEL setups, future versions of the
- * protocol might consider more than two types of ions */
-enum eIontype {
-    eIonNEG, eIonPOS, eIonNR
-};
-/* The chanels that define with their COM the compartment boundaries in
- * CompEL setups. In principle one could also use modified setups with
- * more than two channels. */
-enum eChannel {
-    eChan0, eChan1, eChanNR
-};
 
 /* QMMM */
 enum {
@@ -453,6 +440,7 @@ enum gmx_nbkernel_vdw
     GMX_NBKERNEL_VDW_LENNARDJONES,
     GMX_NBKERNEL_VDW_BUCKINGHAM,
     GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
+    GMX_NBKERNEL_VDW_LJEWALD,
     GMX_NBKERNEL_VDW_NR
 };
 /* Types of interactions inside the neighborlist

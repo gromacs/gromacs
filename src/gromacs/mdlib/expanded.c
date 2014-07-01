@@ -36,23 +36,20 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+
 #include "typedefs.h"
-#include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "gromacs/fileio/confio.h"
 #include "txtdump.h"
-#include "pbc.h"
 #include "chargegroup.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
-#include "mshift.h"
 #include "mdrun.h"
 #include "update.h"
-#include "physics.h"
-#include "main.h"
+#include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "force.h"
 #include "bondf.h"
@@ -62,7 +59,6 @@
 #include "network.h"
 #include "calcmu.h"
 #include "constr.h"
-#include "xvgr.h"
 #include "gromacs/random/random.h"
 #include "domdec.h"
 #include "macros.h"
@@ -72,6 +68,7 @@
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 
 static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, int nlim)

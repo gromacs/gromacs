@@ -41,12 +41,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "types/commrec.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"
-#include "vec.h"
-#include "pbc.h"
+#include "gromacs/math/vec.h"
 #include "nbnxn_consts.h"
 /* nbnxn_internal.h included gromacs/simd/macros.h */
 #include "nbnxn_internal.h"
@@ -59,7 +57,9 @@
 #include "nrnb.h"
 #include "ns.h"
 
-#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
@@ -1373,14 +1373,13 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                                   int cxy_start, int cxy_end,
                                   int *sort_work)
 {
-    int  cxy;
-    int  cx, cy, cz = -1, c = -1, ncz;
-    int  na, ash, na_c, ind, a;
-    int  subdiv_z, sub_z, na_z, ash_z;
-    int  subdiv_y, sub_y, na_y, ash_y;
-    int  subdiv_x, sub_x, na_x, ash_x;
+    int        cxy;
+    int        cx, cy, cz = -1, c = -1, ncz;
+    int        na, ash, na_c, ind, a;
+    int        subdiv_z, sub_z, na_z, ash_z;
+    int        subdiv_y, sub_y, na_y, ash_y;
+    int        subdiv_x, sub_x, na_x, ash_x;
 
-    /* cppcheck-suppress unassignedVariable */
     nbnxn_bb_t bb_work_array[2], *bb_work_aligned;
 
     bb_work_aligned = (nbnxn_bb_t *)(((size_t)(bb_work_array+1)) & (~((size_t)15)));
@@ -3309,8 +3308,11 @@ static void make_fep_list(const nbnxn_search_t    nbs,
     cj_ind_start = nbl_ci->cj_ind_start;
     cj_ind_end   = nbl_ci->cj_ind_end;
 
-    /* In worst case we have alternating energy groups and create npair lists */
-    nri_max = nbl->na_ci*(cj_ind_end - cj_ind_start);
+    /* In worst case we have alternating energy groups
+     * and create #atom-pair lists, which means we need the size
+     * of a cluster pair (na_ci*na_cj) times the number of cj's.
+     */
+    nri_max = nbl->na_ci*nbl->na_cj*(cj_ind_end - cj_ind_start);
     if (nlist->nri + nri_max > nlist->maxnri)
     {
         nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
@@ -3436,7 +3438,6 @@ static void make_fep_list(const nbnxn_search_t    nbs,
                              * Note that the charge has been set to zero,
                              * but we need to avoid 0/0, as perturbed atoms
                              * can be on top of each other.
-                             * (and the LJ parameters have not been zeroed)
                              */
                             nbl->cj[cj_ind].excl &= ~(1U << (i*nbl->na_cj + j));
                         }
@@ -3446,6 +3447,7 @@ static void make_fep_list(const nbnxn_search_t    nbs,
 
             if (nlist->nrj > nlist->jindex[nri])
             {
+                /* Actually add this new, non-empty, list */
                 nlist->nri++;
                 nlist->jindex[nlist->nri] = nlist->nrj;
             }
@@ -3511,8 +3513,14 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
     cj4_ind_start = nbl_sci->cj4_ind_start;
     cj4_ind_end   = nbl_sci->cj4_ind_end;
 
-    /* No energy groups (yet), so we split lists in max_nrj_fep pairs */
-    nri_max = nbl->na_sc*(1 + ((cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE)/max_nrj_fep);
+    /* Here we process one super-cell, max #atoms na_sc, versus a list
+     * cj4 entries, each with max NBNXN_GPU_JGROUP_SIZE cj's, each
+     * of size na_cj atoms.
+     * On the GPU we don't support energy groups (yet).
+     * So for each of the na_sc i-atoms, we need max one FEP list
+     * for each max_nrj_fep j-atoms.
+     */
+    nri_max = nbl->na_sc*nbl->na_cj*(1 + ((cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE)/max_nrj_fep);
     if (nlist->nri + nri_max > nlist->maxnri)
     {
         nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
@@ -3635,6 +3643,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
 
                 if (nlist->nrj > nlist->jindex[nri])
                 {
+                    /* Actually add this new, non-empty, list */
                     nlist->nri++;
                     nlist->jindex[nlist->nri] = nlist->nrj;
                 }

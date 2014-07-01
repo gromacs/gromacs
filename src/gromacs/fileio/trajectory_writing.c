@@ -37,15 +37,15 @@
 #endif
 
 #include "typedefs.h"
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "sim_util.h"
 #include "mdrun.h"
 #include "confio.h"
 #include "trajectory_writing.h"
 #include "mdoutf.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/wallcycle.h"
 
 void
@@ -148,7 +148,6 @@ do_md_trajectory_writing(FILE           *fplog,
         if (bCPT)
         {
             (*nchkpt)++;
-            bCPT = FALSE;
         }
         debug_gmx();
         if (bLastStep && step_rel == ir->nsteps &&

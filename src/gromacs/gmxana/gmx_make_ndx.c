@@ -39,20 +39,26 @@
 #endif
 
 #include <ctype.h>
-#include "sysstuff.h"
-#include "gromacs/fileio/futil.h"
+#include <string.h>
+
+#include "gromacs/utility/futil.h"
 #include "macros.h"
-#include "string2.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "typedefs.h"
-#include "index.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/math/vec.h"
 
-#define MAXNAMES 30
-#define NAME_LEN 30
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
+/* It's not nice to have size limits, but we should not spend more time
+ * on this ancient tool, but instead use the new selection library.
+ */
+#define MAXNAMES 1024
+#define NAME_LEN 1024
 
 gmx_bool bCase = FALSE;
 
@@ -843,8 +849,12 @@ static int split_chain(t_atoms *atoms, rvec *x,
                 {
                     rvec_sub(x[ca_end], x[i], vec);
                 }
+                else
+                {
+                    break;
+                }
             }
-            while ((i < natoms) && (norm(vec) < 0.45));
+            while (norm(vec) < 0.45);
 
             end[nchain] = ca_end;
             while ((end[nchain]+1 < natoms) &&

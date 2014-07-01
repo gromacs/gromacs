@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,29 +40,14 @@
 #endif
 
 #include <math.h>
-#include <ctype.h>
-#include "string2.h"
-#include "sysstuff.h"
-#include "typedefs.h"
+
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "xvgr.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/tpxio.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
-#include "calcgrid.h"
-#include "nrnb.h"
-#include "coulomb.h"
-#include "gstat.h"
-#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
-#include "names.h"
 #include "sfactor.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_saxs(int argc, char *argv[])
 {

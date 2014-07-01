@@ -39,32 +39,28 @@
 #endif
 
 #include <math.h>
-#include <ctype.h>
 
-#include "string2.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "rmpbc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/commandline/pargs.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "index.h"
-#include "smalloc.h"
-#include "calcgrid.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "coulomb.h"
 #include "pme.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ana.h"
 
+#include "gromacs/utility/fatalerror.h"
 
 static void clust_size(const char *ndx, const char *trx, const char *xpm,
                        const char *xpmw, const char *ncl, const char *acl,

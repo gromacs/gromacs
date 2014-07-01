@@ -102,7 +102,7 @@ V_{LJ}(\rvij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {\rij}\right)^{12}
 
 In constructing the parameter matrix for the non-bonded LJ-parameters,
 two types of \normindex{combination rule}s can be used within {\gromacs},
-only geometric averages (type 1 in the input section of the force field file):
+only geometric averages (type 1 in the input section of the force-field file):
 \beq
 \begin{array}{rcl}
 C_{ij}^{(6)}    &=& \left({C_{ii}^{(6)} \, C_{jj}^{(6)}}\right)^{1/2}    \\
@@ -115,6 +115,7 @@ or, alternatively the Lorentz-Berthelot rules can be used. An arithmetic average
 \begin{array}{rcl}
  \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii} + \sigma_{jj})        \\
  \epsilon_{ij} &=& \left({\epsilon_{ii} \, \epsilon_{jj}}\right)^{1/2}
+ \label{eqn:lorentzberthelot}
 \end{array}
 \eeq
 finally an geometric average for both parameters can be used (type 3):
@@ -177,6 +178,8 @@ The force derived from this potential is:
 \beq
 \ve{F}_i(\rvij) = f \frac{q_i q_j}{\epsr\rij^2}\rnorm
 \eeq
+
+A plain Coulomb interaction should only be used without cut-off or when all pairs fall within the cut-off, since there is an abrupt, large change in the force at the cut-off. In case you do want to use a cut-off, the potential can be shifted by a constant to make the potential the integral of the force. With the group cut-off scheme, this shift is only applied to non-excluded pairs. With the Verlet cut-off scheme, the shift is also applied to excluded pairs and self interactions, which makes the potential equivalent to a reaction field with $\epsrf=1$ (see below).
 
 In {\gromacs} the  relative \swapindex{dielectric}{constant} 
 \normindex{$\epsr$}
@@ -347,7 +350,7 @@ The modified Coulomb potential function is:
 See also \figref{shift}.
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=10cm]{plots/shiftf}}
+\centerline{\includegraphics[width=10cm]{plots/shiftf}}
 \caption[The Coulomb Force, Shifted Force and Shift Function
 $S(r)$,.]{The Coulomb Force, Shifted Force and Shift Function $S(r)$,
 using r$_1$ = 2 and r$_c$ = 4.} 
@@ -388,7 +391,7 @@ The \swapindex{bond}{stretching} between two covalently bonded atoms
 $i$ and $j$ is represented by a harmonic potential:
 
 \begin{figure}
-\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f-bond}}
+\centerline{\raisebox{2cm}{\includegraphics[width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f-bond}}
 \caption[Bond stretching.]{Principle of bond stretching (left), and the bond
 stretching potential (right).}
 \label{fig:bstretch1}
@@ -415,9 +418,9 @@ The corresponding force is:
 \ve{F}_i(\rvij) = k^b_{ij}(\rij^2-b_{ij}^2)~\rvij
 \eeq
 The force constants for this form of the potential are related to the usual
-harmonic force constant $k^{b,harm}$ (\secref{bondpot}) as
+harmonic force constant $k^{b,\mathrm{harm}}$ (\secref{bondpot}) as
 \beq
-2 k^b b_{ij}^2 = k^{b,harm}
+2 k^b b_{ij}^2 = k^{b,\mathrm{harm}}
 \eeq
 The force constants are mostly derived from the harmonic ones used in 
 \gromosv{87}~\cite{biomos}. Although this form is computationally more 
@@ -532,7 +535,7 @@ The bond-\swapindex{angle}{vibration} between a triplet of atoms $i$ - $j$ - $k$
 is also represented by a harmonic potential on the angle $\tijk$
 
 \begin{figure}
-\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f-angle}}
+\centerline{\raisebox{1cm}{\includegraphics[width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f-angle}}
 \caption[Angle vibration.]{Principle of angle vibration (left) and the
 bond angle potential (right).}
 \label{fig:angle}
@@ -566,6 +569,7 @@ In the \gromosv{96} force field a simplified function is used to represent angle
 vibrations:
 \beq
 V_a(\tijk) = \half k^{\theta}_{ijk}\left(\cos(\tijk) - \cos(\tijk^0)\right)^2
+\label{eq:G96angle}
 \eeq
 where 
 \beq
@@ -573,16 +577,66 @@ where
 \eeq
 The corresponding force can be derived by partial differentiation with respect
 to the atomic positions. The force constants in this function are related
-to the force constants in the harmonic form $k^{\theta,harm}$
+to the force constants in the harmonic form $k^{\theta,\mathrm{harm}}$
 (\ssecref{harmonicangle}) by:
 \beq
-k^{\theta} \sin^2(\tijk^0) = k^{\theta,harm}
+k^{\theta} \sin^2(\tijk^0) = k^{\theta,\mathrm{harm}}
 \eeq
 In the \gromosv{96} manual there is a much more complicated conversion formula
 which is temperature dependent. The formulas are equivalent at 0 K
 and the differences at 300 K are on the order of 0.1 to 0.2\%.
 {\bf Note} that in the input in topology files, angles are given in degrees and
 force constants in kJ/mol.
+
+\subsection{Restricted bending potential}
+\label{subsec:ReB}
+The restricted bending (ReB) potential~\cite{MonicaGoga2013} prevents the bending angle $\theta$
+from reaching the $180^{\circ}$ value. In this way, the numerical instabilities
+due to the calculation of the torsion angle and potential are eliminated when
+performing coarse-grained molecular dynamics simulations.
+
+To systematically hinder the bending angles from reaching the $180^{\circ}$ value,
+the bending potential \ref{eq:G96angle} is divided by a $\sin^2\theta$ factor:
+%
+\beq
+V_{\rm ReB}(\theta_i) = \frac{1}{2} k_{\theta} \frac{(\cos\theta_i - \cos\theta_0)^2}{\sin^2\theta_i}.
+\label{eq:ReB}
+\eeq
+%
+Figure ~\figref{ReB} shows the comparison between the ReB potential, \ref{eq:ReB},
+and the standard one \ref{eq:G96angle}.
+%
+\begin{figure}
+\centerline{\includegraphics[width=10cm]{plots/fig-02}}
+\vspace*{8pt}
+\caption{Bending angle potentials: cosine harmonic (solid black line), angle harmonic
+(dashed black line) and restricted bending (red) with the same bending constant
+$k_{\theta}=85$ kJ mol$^{-1}$ and equilibrium angle $\theta_0=130^{\circ}$.
+The orange line represents the sum of a cosine harmonic ($k =50$ kJ mol$^{-1}$)
+with a restricted bending ($k =25$ kJ mol$^{-1}$) potential, both with $\theta_0=130^{\circ}$.}
+\label{fig:ReB}
+\end{figure}
+%
+The wall of the ReB potential is very repulsive in the region close to $180^{\circ}$ and,
+as a result, the bending angles are kept within a safe interval, far from instabilities.
+The power $2$ of $\sin\theta_i$ in the denominator has been chosen to guarantee this behavior
+and allows an elegant differentiation:
+%
+\beq
+F_{\rm ReB}(\theta_i) = \frac{2k_{\theta}}{\sin^4\theta_i}(\cos\theta_i - \cos\theta_0) (1 - \cos\theta_i\cos\theta_0) \frac{\partial \cos\theta_i}{\partial \vec r_{k}}.
+\label{eq:diff_ReB}
+\eeq
+%
+Due to its construction, the restricted bending potential cannot be used for equilibrium
+$\theta_0$ values too close to $0^{\circ}$ or $180^{\circ}$ (from experience, at least $10^{\circ}$
+difference is recommended). It is very important that, in the starting configuration,
+all the bending angles have to be in the safe interval to avoid initial instabilities.
+This bending potential can be used in combination with any form of torsion potential.
+It will always prevent three consecutive particles from becoming collinear and,
+as a result, any torsion potential will remain free of singularities.
+It can be also added to a standard bending potential to affect the angle around $180^{\circ}$,
+but to keep its original form around the minimum (see the orange curve in \figref{ReB}).
+
 
 \subsection{Urey-Bradley potential}
 \label{subsec:Urey-Bradley}
@@ -655,8 +709,8 @@ aromatic rings) planar, or to prevent molecules from flipping over to their
 \normindex{mirror image}s, see \figref{imp}.
 
 \begin {figure}
-\centerline{\includegraphics[angle=270,width=4cm]{plots/ring-imp}\hspace{1cm}
-\includegraphics[angle=270,width=3cm]{plots/subst-im}\hspace{1cm}\includegraphics[angle=270,width=3cm]{plots/tetra-im}}
+\centerline{\includegraphics[width=4cm]{plots/ring-imp}\hspace{1cm}
+\includegraphics[width=3cm]{plots/subst-im}\hspace{1cm}\includegraphics[width=3cm]{plots/tetra-im}}
 \caption[Improper dihedral angles.]{Principle of improper
 dihedral angles. Out of plane bending for rings (left), substituents
 of rings (middle), out of tetrahedral (right). The improper dihedral
@@ -719,7 +773,7 @@ when multiple parameters are defined for the same atomtypes
 in the {\tt [ dihedraltypes ]} section.
 
 \begin{figure}
-\centerline{\raisebox{4.5cm}{\includegraphics[angle=270,width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f-dih}}
+\centerline{\raisebox{1cm}{\includegraphics[width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f-dih}}
 \caption[Proper dihedral angle.]{Principle of proper dihedral angle
 (left, in {\em trans} form) and the dihedral angle potential (right).} 
 \label{fig:pdihf}
@@ -810,6 +864,96 @@ uses the Ryckaert-Bellemans code
 to compute Fourier dihedrals (see above), because this is more efficient.\\
 \noindent{\bf Note:} Mind the conversion from {\emph kcal mol$^{-1}$} for 
 literature OPLS parameters to {\bf kJ mol$^{-1}$} in {\gromacs}.\\
+
+\subsubsection{Proper dihedrals: Restricted torsion potential}
+\label{subsec:ReT}
+In a manner very similar to the restricted bending potential (see \ref{subsec:ReB}),
+a restricted torsion/dihedral potential is introduced:
+%
+\beq
+V_{\rm ReT}(\phi_i) = \frac{1}{2} k_{\phi} \frac{(\cos\phi_i - \cos\phi_0)^2}{\sin^2\phi_i}
+\label{eq:ReT}
+\eeq
+%
+with the advantages of being a function of $\cos\phi$ (no problems taking the derivative of $\sin\phi$)
+and of keeping the torsion angle at only one minimum value. In this case, the factor $\sin^2\phi$ does
+not allow the dihedral angle to move from the [$-180^{\circ}$:0] to [0:$180^{\circ}$] interval, i.e. it cannot have maxima both at $-\phi_0$ and $+\phi_0$ maxima, but only one of them.
+For this reason, all the dihedral angles of the starting configuration should have their values in the
+desired angles interval and the the equilibrium $\phi_0$ value should not be too close to the interval limits
+(as for the restricted bending potential, described in \ref{subsec:ReB}, at least $10^{\circ}$ difference is recommended).
+
+\subsubsection{Proper dihedrals: Combined bending-torsion potential}
+\label{subsec:CBT}
+When the four particles forming the dihedral angle become collinear (this situation will never happen in
+atomistic simulations, but it can occur in coarse-grained simulations) the calculation of the
+torsion angle and potential leads to numerical instabilities.
+One way to avoid this is to use the restricted bending potential (see \ref{subsec:ReB})
+that prevents the dihedral
+from reaching the $180^{\circ}$ value.
+
+Another way is to disregard any effects of the dihedral becoming ill-defined,
+keeping the dihedral force and potential calculation continuous in entire angle range
+by coupling the torsion potential (in a cosine form) with the bending potentials of the
+adjacent bending angles in a unique expression:
+%
+\beq
+V_{\rm CBT}(\theta_{i-1}, \theta_i, \phi_i) = k_{\phi} \sin^3\theta_{i-1} \sin^3\theta_{i} \sum_{n=0}^4 { a_n \cos^n\phi_i}.
+\label{eq:CBT}
+\eeq
+%
+This combined bending-torsion (CBT) potential has been proposed by~\cite{BulacuGiessen2005}
+for polymer melt simulations and is extensively described in~\cite{MonicaGoga2013}.
+
+This potential has two main advantages:
+\begin{itemize}
+\item
+it does not only depend on the dihedral angle $\phi_i$ (between the $i-2$, $i-1$, $i$ and $i+1$ beads)
+but also on the bending angles $\theta_{i-1}$ and $\theta_i$ defined from three adjacent beads
+($i-2$, $i-1$ and $i$, and $i-1$, $i$ and $i+1$, respectively).
+The two $\sin^3\theta$ pre-factors, tentatively suggested by~\cite{ScottScheragator1966} and theoretically
+discussed by~\cite{PaulingBond}, cancel the torsion potential and force when either of the two bending angles
+approaches the value of $180^\circ$.
+\item
+its dependence on $\phi_i$ is expressed through a polynomial in $\cos\phi_i$ that avoids the singularities in
+$\phi=0^\circ$ or $180^\circ$ in calculating the torsional force.
+\end{itemize}
+
+These two  properties make the CBT potential well-behaved for MD simulations with weak constraints
+on the bending angles or even for steered / non-equilibrium MD in which the bending and torsion angles suffer major
+modifications.
+When using the CBT potential, the bending potentials for the adjacent $\theta_{i-1}$ and $\theta_i$ may have any form.
+It is also possible to leave out the two angle bending terms ($\theta_{i-1}$ and $\theta_{i}$) completely.
+\figref{CBT} illustrates the difference between a torsion potential with and without the $\sin^{3}\theta$ factors
+(blue and gray curves, respectively).
+%
+\begin{figure}
+\centerline{\includegraphics[width=10cm]{plots/fig-04}}
+\caption{Blue: surface plot of the combined bending-torsion potential
+(\ref{eq:CBT} with $k = 10$ kJ mol$^{-1}$, $a_0=2.41$, $a_1=-2.95$, $a_2=0.36$, $a_3=1.33$)
+when, for simplicity, the bending angles behave the same ($\theta_1=\theta_2=\theta$).
+Gray: the same torsion potential without the $\sin^{3}\theta$ terms (Ryckaert-Bellemans type).
+$\phi$ is the dihedral angle.}
+\label{fig:CBT}
+\end{figure}
+%
+Additionally, the derivative of $V_{CBT}$ with respect to the Cartesian variables is straightforward:
+%
+\begin{equation}
+\frac{\partial V_{\rm CBT}(\theta_{i-1},\theta_i,\phi_i)} {\partial \vec r_{l}} = \frac{\partial V_{\rm CBT}}{\partial \theta_{i-1}} \frac{\partial \theta_{i-1}}{\partial \vec r_{l}} +
+                                                                                  \frac{\partial V_{\rm CBT}}{\partial \theta_{i  }} \frac{\partial \theta_{i  }}{\partial \vec r_{l}} +
+                                                                                  \frac{\partial V_{\rm CBT}}{\partial \phi_{i    }} \frac{\partial \phi_{i    }}{\partial \vec r_{l}}
+\label{eq:force_cbt}
+\end{equation}
+%
+The CBT is based on a cosine form without multiplicity, so it can only be symmetrical around $0^{\circ}$.
+To obtain an asymmetrical dihedral angle distribution (e.g. only one maximum in [$-180^{\circ}$:$180^{\circ}$] interval),
+a standard torsion potential such as harmonic angle  or  periodic cosine potentials should be used instead of a CBT potential.
+However, these two forms have the inconveniences of the force derivation ($1/\sin\phi$) and of the alignment of beads
+($\theta_i$ or $\theta_{i-1} = 0^{\circ}, 180^{\circ}$).
+Coupling such non-$\cos\phi$ potentials with $\sin^3\theta$ factors does not improve simulation stability since there are
+cases in which $\theta$ and $\phi$ are simultaneously $180^{\circ}$. The integration at this step would be possible
+(due to the cancelling of the torsion potential) but the next step would be singular
+($\theta$ is not $180^{\circ}$ and $\phi$ is very close to $180^{\circ}$).
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{Tabulated bonded interaction functions\index{tabulated bonded interaction function}}
@@ -1012,6 +1156,7 @@ as in an improper dihedral (sec.~\ref{sec:imp}) but with a slightly
 modified potential. Using:
 \beq
 \phi' = \left(\phi-\phi_0\right) ~{\rm MOD}~ 2\pi
+\label{eqn:dphi}
 \eeq
 where $\phi_0$ is the reference angle, the potential is defined as:
 \beq
@@ -1234,7 +1379,7 @@ definition in your topology file, like in the following example:
 
 \begin{verbatim}
 [ distance_restraints ]
-; ai  aj    type  index  type'   low    up1     up2    fac
+; ai   aj   type   index   type'      low     up1     up2     fac
 10     16      1       0       1      0.0     0.3     0.4     1.0
 10     28      1       1       1      0.0     0.3     0.4     1.0
 10     46      1       1       1      0.0     0.3     0.4     1.0
@@ -1769,7 +1914,7 @@ When soft core potentials are selected (by setting {\tt sc-alpha} \textgreater
 sequentially, then the Coulombic interaction is turned off linearly,
 rather than using soft core interactions, which should be less
 statistically noisy in most cases.  This behavior can be overwritten
-by using the mdp option {\tt sc-coul} to 'yes'. Additionally, the
+by using the mdp option {\tt sc-coul} to {\tt yes}. Additionally, the
 soft-core interaction potential is only applied when either the A or B
 state has zero interaction potential.  If both A and B states have
 nonzero interaction potential, default linear scaling described above
@@ -1790,7 +1935,7 @@ r_A &=& \left(\alpha \sigma_A^{48} \LAM^p + r^{48} \right)^\frac{1}{48}
 r_B &=& \left(\alpha \sigma_B^{48} \LL^p + r^{48} \right)^\frac{1}{48}
 \eea
 This ``1-1-48'' path is also implemented in {\gromacs}. Note that for this path the soft core $\alpha$
-should satisfy $0.001 < \alpha < 0.003$,rather than $\alpha \approx
+should satisfy $0.001 < \alpha < 0.003$, rather than $\alpha \approx
 0.5$.
 
 %} % Brace matches ifthenelse test for gmxlite
@@ -1813,7 +1958,7 @@ of atom {\bf i};
 atoms {\bf i+1} and {\bf i+2} are called {\em \normindex{exclusions}} of atom {\bf i}.
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=8cm]{plots/chain}}
+\centerline{\includegraphics[width=8cm]{plots/chain}}
 \caption{Atoms along an alkane chain.}
 \label{fig:chain}
 \end{figure}
@@ -1842,14 +1987,16 @@ in most cases, acceptable, except when applying the cut-off implies
 the creation of charges, in which case you should consider using the
 lattice sum methods provided by {\gromacs}.
 
-Consider a water molecule interacting with another atom. When we would apply
-the cut-off on an atom-atom basis we might include the atom-oxygen
+Consider a water molecule interacting with another atom. If we would apply
+a plain cut-off on an atom-atom basis we might include the atom-oxygen
 interaction (with a charge of $-0.82$) without the compensating charge
 of the protons, and as a result, induce a large dipole moment over the system.
 Therefore, we have to keep groups of atoms with total charge
-0 together. These groups are called {\em charge groups}.
+0 together. These groups are called {\em charge groups}. Note that with
+a proper treatment of long-range electrostatics (e.g. particle-mesh Ewald
+(\secref{pme}), keeping charge groups together is not required.
 
-\subsection{Treatment of Cut-offs\index{cut-off}}
+\subsection{Treatment of Cut-offs in the group scheme\index{cut-off}}
 \newcommand{\rs}{$r_{short}$}
 \newcommand{\rl}{$r_{long}$}
 {\gromacs} is quite flexible in treating cut-offs, which implies
@@ -1881,7 +2028,7 @@ are evaluated during neighbor list generation.
 The \normindex{virial} is calculated from the sum of the short- and
 long-range forces.
 This means that the virial can be slightly asymmetrical at non-NS steps.
-In single precision, the virial is almost always asymmetrical because the
+When mdrun is compiled to use mixed precision, the virial is almost always asymmetrical because the
 off-diagonal elements are about as large as each element in the sum.
 In most cases this is not really a problem, since the fluctuations in the
 virial can be 2 orders of magnitude larger than the average.
@@ -2226,11 +2373,11 @@ crystals~\cite{Ewald21}. The idea is to convert the single
 slowly-converging sum \eqnref{totalcoulomb} into two
 quickly-converging terms and a constant term:
 \begin{eqnarray}
-V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
-V_{dir} &=& \frac{f}{2} \sum_{i,j}^{N}
+V &=& V_{\mathrm{dir}} + V_{\mathrm{rec}} + V_{0} \\[0.5ex]
+V_{\mathrm{dir}} &=& \frac{f}{2} \sum_{i,j}^{N}
 \sum_{n_x}\sum_{n_y}
 \sum_{n_{z}*} q_i q_j \frac{\mbox{erfc}(\beta {r}_{ij,{\bf n}} )}{{r}_{ij,{\bf n}}} \\[0.5ex]
-V_{rec} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j
+V_{\mathrm{rec}} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j
 \sum_{m_x}\sum_{m_y}
 \sum_{m_{z}*} \frac{\exp{\left( -(\pi {\bf m}/\beta)^2 + 2 \pi i
       {\bf m} \cdot ({\bf r}_i - {\bf r}_j)\right)}}{{\bf m}^2} \\[0.5ex]
@@ -2298,7 +2445,7 @@ Lennard-Jones potential where all shifts add up. We apply the shift
 anyhow, such that the potential is the exact integral of the force.
 
 \subsubsection{Using PME}
-To use Particle-mesh Ewald summation in {\gromacs}, specify the
+As an example for using Particle-mesh Ewald summation in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
 
 \begin{verbatim}
@@ -2352,31 +2499,14 @@ by selecting the electrostatics type:
 coulombtype     = P3M-AD
 \end{verbatim}
 
-\subsection{Optimizing Fourier transforms}
-To get the best possible performance you should try to avoid large
-prime numbers for grid dimensions.
-The FFT code used in {\gromacs} is
-optimized for grid sizes of the form $2^a 3^b 5^c 7^d 11^e 13^f$,
-where $e+f$ is $0$ or $1$ and the other exponents arbitrary. (See
-further the documentation of the FFT algorithms at
-\href{http://www.fftw.org}{www.fftw.org}.
+\subsection{Optimizing Fourier transforms and PME calculations}
+It is recommended to optimize the parameters for calculation of
+electrostatic interaction such as PME grid dimensions and cut-off radii.
+This is particularly relevant to do before launching long production runs.
 
-It is also possible to optimize the transforms for the current problem
-by performing some calculations at the start of the run. This is not
-done by default since it takes a couple of minutes, but for large
-runs it will save time. Turn it on by specifying
-
-\begin{verbatim}
-optimize-fft      = yes
-\end{verbatim}
-in your {\tt .mdp} file.
-
-When running in parallel, the grid must be communicated several times,
-thus hurting scaling performance. With PME you can improve this
-by increasing grid spacing while simultaneously increasing the
-interpolation to {\eg} sixth order.
-Since the interpolation is entirely local, doing so will
-improve the scaling in most cases.
+{\gromacs} includes a special tool, {\tt g_tune_pme}, which automates the 
+process of selecting the optimal size of the grid and number of PME-only
+notes.
 
 %
 % Temporarily removed since I am not sure about the state of the testlr
@@ -2539,17 +2669,18 @@ non-homogeneous outside of the cut-off distance, we can instead use
 the Particle-mesh Ewald method as discussed for electrostatics above.
 In this case the modified Ewald equations become
 \begin{eqnarray}
-V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
-V_{dir} &=& -\frac{1}{2} \sum_{i,j}^{N}
+V &=& V_{\mathrm{dir}} + V_{\mathrm{rec}} + V_{0} \\[0.5ex]
+V_{\mathrm{dir}} &=& -\frac{1}{2} \sum_{i,j}^{N}
 \sum_{n_x}\sum_{n_y}
-\sum_{n_{z}*} \frac{C_{ij}^{(6)}g(\beta {r}_{ij,{\bf n}})}{{r_{ij,{\bf n}}}^6} \\[0.5ex]
-V_{rec} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
-f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C_{ij}^{(6)} {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
-V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C_{ii}^{(6)},
+\sum_{n_{z}*} \frac{C^{ij}_6 g(\beta {r}_{ij,{\bf n}})}{{r_{ij,{\bf n}}}^6}
+\label{eqn:ljpmerealspace}\\[0.5ex]
+V_{\mathrm{rec}} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
+f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C^{ij}_6 {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
+V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C^{ii}_6
 \end{eqnarray}
 
 where ${\bf m}=(m_x,m_y,m_z)$, $\beta$ is the parameter determining the weight between
-direct and reciprocal space, and ${C_{ij}}^{(6)}$ is the combined dispersion
+direct and reciprocal space, and ${C^{ij}_6}$ is the combined dispersion
 parameter for particle $i$ and $j$. The star indicates that terms
 with $i = j$ should be omitted when $((n_x,n_y,n_z)=(0,0,0))$, and
 ${\bf r}_{ij,{\bf n}}$ is the real distance between the particles.
@@ -2559,69 +2690,113 @@ f(x)&=&1/3\left[(1-2x^2){\mathrm{exp}}(-x^2) + 2{x^3}\sqrt{\pi}\,{\mathrm{erfc}}
 g(x)&=&{\mathrm{exp}}(-x^2)(1+x^2+\frac{x^4}{2}).
 \end{eqnarray}
 
-The above methodology works fine as long as the dispersion parameters can be factorized in the same
+The above methodology works fine as long as the dispersion parameters can be combined geometrically (\eqnref{comb}) in the same
 way as the charges for electrostatics
 \begin{equation}
-C_{ij}^{(6)} = \left({C_{ii}^{(6)} \, C_{jj}^{(6)}}\right)^{1/2}
+C^{ij}_{6,\mathrm{geom}} = \left(C^{ii}_6 \, C^{jj}_6\right)^{1/2}
 \end{equation}
-For Lorentz-Berthelot combination rules, the reciprocal part of this sum has to be calculated
+For Lorentz-Berthelot combination rules (\eqnref{lorentzberthelot}), the reciprocal part of this sum has to be calculated
 seven times due to the splitting of the dispersion parameter according to
 \begin{equation}
-C_{ij}^{(6)}=(\sigma_i+\sigma_j)^6=\sum_{n=0}^{6} P_{n}\sigma_{i}^{n}\sigma_{j}^{(6-n)},
+C^{ij}_{6,\mathrm{L-B}} = (\sigma_i+\sigma_j)^6=\sum_{n=0}^{6} P_{n}\sigma_{i}^{n}\sigma_{j}^{(6-n)},
 \end{equation}
 for $P_{n}$ the Pascal triangle coefficients. This introduces a
 non-negligible cost to the reciprocal part, requiring seven separate
-FFTs, and therefore this have been the limiting factor in previous
-attempts to implement LJ-PME. A solution to this problem is to
-approximate the interaction parameters in reciprocal space using
-geometrical combination rules.  This will preserve a well-defined
-Hamiltonian and significantly increase the performance of the
-simulations.
+FFTs, and therefore this has been the limiting factor in previous
+attempts to implement LJ-PME. A solution to this problem is to use
+geometrical combination rules in order to calculate an approximate
+interaction parameter for the reciprocal part of the potential,
+yielding a total interaction of
+\begin{eqnarray}
+V(r<r_c) & = & \underbrace{C^{\mathrm{dir}}_6 g(\beta r) r^{-6}}_{\mathrm{Direct \  space}} + \underbrace{C^\mathrm{recip}_{6,\mathrm{geom}} [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}} \nonumber \\
+&=& C^\mathrm{recip}_{6,\mathrm{geom}}r^{-6} + \left(C^{\mathrm{dir}}_6-C^\mathrm{recip}_{6,\mathrm{geom}}\right)g(\beta r)r^{-6} \\
+V(r>r_c) & = & \underbrace{C^\mathrm{recip}_{6,\mathrm{geom}} [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}}.
+\end{eqnarray}
+This will preserve a well-defined Hamiltonian and significantly increase
+the performance of the simulations. The approximation does introduce
+some errors, but since the difference is located in the interactions
+calculated in reciprocal space, the effect will be very small compared
+to the total interaction energy. In a simulation of a lipid bilayer,
+using a cut-off of 1.0 nm, the relative error in total dispersion
+energy was below 0.5\%. A more thorough discussion of this can be
+found in \cite{Wennberg13}.
 
-\begin{figure}
-\centerline{\includegraphics[width=15cm]{plots/ljpmedifference}}
-\caption {Dispersion potential between phosphorous and oxygen, The total, real and
-reciprocal parts of the total dispersion are shown. The reciprocal parts are calculated
-using either LB or geometric rules. The difference introduced by the use of the
-geometric approximation in the reciprocal part is small compared to the total
-interaction energy.}
-\label{fig:ljpmedifference}
-\end{figure}
-
-This approximation does introduce some errors, but since the
-difference is located in the interactions calculated in reciprocal
-space, the effect will be very small compared to the total interaction
-energy (see \figref{ljpmedifference}). The relative error in
-the total dispersion energy will stay below 0.5\% in a lipid bilayer
-simulation, when using a real space cut-off of 1.0 nm. A more
-thorough discussion of this can be found in \cite{Wennberg13}.
+In {\gromacs} we now perform the proper calculation of this interaction
+by subtracting, from the direct-space interactions, the contribution
+made by the approximate potential that is used in the reciprocal part
+\begin{equation}
+V_\mathrm{dir} = C^{\mathrm{dir}}_6 r^{-6} - C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}.
+\label{eqn:ljpmedirectspace}
+\end{equation}
+This potential will reduce to the expression in \eqnref{ljpmerealspace} when $C^{\mathrm{dir}}_6 = C^\mathrm{recip}_6$, 
+and the total interaction is given by
+\begin{eqnarray}
+\nonumber V(r<r_c) &=& \underbrace{C^{\mathrm{dir}}_6 r^{-6} - C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}}_{\mathrm{Direct \  space}} + \underbrace{C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}} \\ 
+&=&C^{\mathrm{dir}}_6 r^{-6}
+\label {eqn:ljpmecorr2} \\
+V(r>r_c) &=& C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}.
+\end{eqnarray}
+For the case when $C^{\mathrm{dir}}_6 \neq C^\mathrm{recip}_6$ this
+will retain an unmodified LJ force up to the cut-off, and the error
+is an order of magnitude smaller than in simulations where the
+direct-space interactions do not account for the approximation used in
+reciprocal space. When using a VdW interaction modifier of
+potential-shift, the constant
+\begin{equation}
+\left(-C^{\mathrm{dir}}_6 + C^\mathrm{recip}_6 [1 - g(\beta r_c)]\right) r_c^{-6}
+\end{equation}
+is added to \eqnref{ljpmecorr2} in order to ensure that the potential
+is continuous at the cutoff. Note that, in the same way as \eqnref{ljpmedirectspace}, this degenerates into the
+expected $-C_6g(\beta r_c)r^{-6}_c$ when $C^{\mathrm{dir}}_6 =
+C^\mathrm{recip}_6$. In addition to this, a long-range dispersion
+correction can be applied to correct for the approximation using a
+combination rule in reciprocal space. This correction assumes, as for
+the cut-off LJ potential, a uniform particle distribution.  But since
+the error of the combination rule approximation is very small this
+long-range correction is not necessary in most cases. Also note that
+this homogenous correction does not correct the surface tension, which
+is an inhomogeneous property.
 
 \subsubsection{Using LJ-PME}
-To use Particle-mesh Ewald summation for Lennard-Jones interactions in {\gromacs}, specify the
+As an example for using Particle-mesh Ewald summation for Lennard-Jones interactions in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
 \begin{verbatim}
 vdwtype          = PME
-rvdw             = 1.0
-rlist            = 1.0
-rcoulomb         = 1.0
+rvdw             = 0.9
+vdw-modifier     = Potential-Shift
+rlist            = 0.9
+rcoulomb         = 0.9
 fourierspacing   = 0.12
 pme-order        = 4
 ewald-rtol-lj    = 0.001
 lj-pme-comb-rule = geometric
 \end{verbatim}
 
-The {\tt fourierspacing} and {\tt pme-order} are the same parameters
-as is used for electrostatic PME, and {\tt ewald-rtol-lj} controls
-splitting between real and reciprocal space in the same way as
+The same Fourier grid and interpolation order are used if both
+LJ-PME and electrostatic PME are active, so the settings for
+{\tt fourierspacing} and {\tt pme-order} are common to both.
+{\tt ewald-rtol-lj} controls the
+splitting between direct and reciprocal space in the same way as
 {\tt ewald-rtol}.  In addition to this, the combination rule to be used
 in reciprocal space is determined by {\tt lj-pme-comb-rule}. If the
 current force field uses Lorentz-Berthelot combination rules, it is
 possible to set {\tt lj-pme-comb-rule = geometric} in order to gain a
 significant increase in performance for a small loss in accuracy. The
-details of this approximation can be found in the section above. The
-implementation of LJ-PME is supported with both cut-off schemes, but
-not free energy calculations. These features will be added in upcoming
-releases.
+details of this approximation can be found in the section above.
+
+Note that the use of a complete long-range dispersion correction means
+that as with Coulomb PME, {\tt rvdw} is now a free parameter in the
+method, rather than being necessarily restricted by the force-field
+parameterization scheme. Thus it is now possible to optimize the
+cutoff, spacing, order and tolerance terms for accuracy and best
+performance.
+
+Naturally, the use of LJ-PME rather than LJ cut-off adds computation
+and communication done for the reciprocal-space part, so for best
+performance in balancing the load of parallel simulations using
+PME-only ranks, more such ranks should be used. It may be possible to
+improve upon the automatic load-balancing used by {\tt mdrun}.
+
 %} % Brace matches ifthenelse test for gmxlite
 
 \section{Force field\index{force field}}
@@ -2650,26 +2825,6 @@ ones are available on the website. If you do not know which one to
 select we recommend \gromosv{96} for united-atom setups and OPLS-AA/L for
 all-atom parameters. That said, we describe the available options in
 some detail.
-
-\subsection{GROMOS87\index{GROMOS87 force field}}
-The \gromosv{87} suite of programs and corresponding force
-field~\cite{biomos} formed the basis for the development of {\gromacs}
-in the early 1990s.  The original GROMOS87 force field is not
-available in {\gromacs}. In previous versions ($<$ 3.3.2) there used
-to be the so-called ``{\gromacs} force field,'' which was based on
-\gromosv{87}~\cite{biomos}\index{GROMOS87}, with a small modification
-concerning the interaction between water oxygens and carbon
-atoms~\cite{Buuren93b,Mark94}, as well as 10 extra atom
-types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}. Whenever
-using this force field, please cite the above references, and {\bf do not}
-call it the ``{\gromacs} force field,'' instead name it
-\gromosv{87}~\cite{biomos} with corrections as detailed
-in~\cite{Buuren93b,Mark94}.  As noted by {\tt pdb2gmx}, this force field is
-``deprecated,'' indicating that newer, perhaps more reliable, versions of this
-parameter set are available.  For backwards compatibility, it is maintained 
-in the current release.  Should you have a justifiable reason to use this
-force field, all necessary files are provided in the {\tt gmx.ff} sub-directory
-of the {\gromacs} library.  See also the note in~\ssecref{atomtype}.
 
 \subsubsection{All-hydrogen force field}
 The \gromosv{87}-based all-hydrogen force field is almost identical to the
@@ -2747,7 +2902,7 @@ of the blocks. {\bf Note} that all {\gromacs} programs can read compressed
 
 \subsection{AMBER\index{AMBER force field}}
 
-As of version 4.5, {\gromacs} provides native support for the following AMBER force fields:
+{\gromacs} provides native support for the following AMBER force fields:
 
 \begin{itemize}
 \item AMBER94~\cite{Cornell1995}
@@ -2760,12 +2915,15 @@ As of version 4.5, {\gromacs} provides native support for the following AMBER fo
 \end{itemize}
 
 \subsection{CHARMM\index{CHARMM force field}}
+\label{subsec:charmmff}
 
-As of version 4.5, {\gromacs} supports the CHARMM27 force field for proteins~\cite{mackerell04, mackerell98}, lipids~\cite{feller00} and nucleic acids~\cite{foloppe00}. The protein parameters (and to some extent the lipid and nucleic acid parameters) were thoroughly tested -- both by comparing potential energies between the port and the standard parameter set in the CHARMM molecular simulation package, as well by how the protein force field behaves together with {\gromacs}-specific techniques such as virtual sites (enabling long time steps) and a fast implicit solvent recently implemented~\cite{Larsson10} -- and the details and results are presented in the paper by Bjelkmar et al.~\cite{Bjelkmar10}. The nucleic acid parameters, as well as the ones for HEME, were converted and tested by Michel Cuendet.
+{\gromacs} supports the CHARMM force field for proteins~\cite{mackerell04, mackerell98}, lipids~\cite{feller00} and nucleic acids~\cite{foloppe00,Mac2000}. The protein parameters (and to some extent the lipid and nucleic acid parameters) were thoroughly tested -- both by comparing potential energies between the port and the standard parameter set in the CHARMM molecular simulation package, as well by how the protein force field behaves together with {\gromacs}-specific techniques such as virtual sites (enabling long time steps) and a fast implicit solvent recently implemented~\cite{Larsson10} -- and the details and results are presented in the paper by Bjelkmar et al.~\cite{Bjelkmar10}. The nucleic acid parameters, as well as the ones for HEME, were converted and tested by Michel Cuendet.
 
 When selecting the CHARMM force field in {\tt \normindex{pdb2gmx}} the default option is to use \normindex{CMAP} (for torsional correction map). To exclude CMAP, use {\tt -nocmap}. The basic form of the CMAP term implemented in {\gromacs} is a function of the $\phi$ and $\psi$ backbone torsion angles. This term is defined in the {\tt .rtp} file by a {\tt [ cmap ]} statement at the end of each residue supporting CMAP. The following five atom names define the two torsional angles. Atoms 1-4 define $\phi$, and atoms 2-5 define $\psi$. The corresponding atom types are then matched to the correct CMAP type in the {\tt cmap.itp} file that contains the correction maps.
 
-\subsection{Coarse-grained force-fields}
+A port of the CHARMM36 force field for use with GROMACS is also available at \url{http://mackerell.umaryland.edu/charmm_ff.shtml#gromacs}.
+
+\subsection{Coarse-grained force fields}
 \index{force-field, coarse-grained}
 \label{sec:cg-forcefields}
 Coarse-graining is a systematic way of reducing the number of degrees of freedom representing a system of interest. To achieve this, typically whole groups of atoms are represented by single beads and the coarse-grained force fields describes their effective interactions. Depending on the choice of parameterization, the functional form of such an interaction can be complicated and often tabulated potentials are used.
@@ -2775,7 +2933,7 @@ Coarse-grained models are designed to reproduce certain properties of a referenc
 \item Conserving free energies
 \begin{itemize}
 \item Simplex method
-\item MARTINI force-field (see next section)
+\item MARTINI force field (see next section)
 \end{itemize}
 \item Conserving distributions (like the radial distribution function), so-called structure-based coarse-graining
 \begin{itemize}

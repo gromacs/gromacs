@@ -40,21 +40,25 @@
 #endif
 
 #include <math.h>
-#include "main.h"
+#include <stdlib.h>
+
+#include "types/commrec.h"
 #include "constr.h"
 #include "copyrite.h"
-#include "physics.h"
-#include "vec.h"
-#include "pbc.h"
-#include "smalloc.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int    b0;         /* first constraint for this thread */
@@ -625,7 +629,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                 /* Communicate the corrected non-local coordinates */
                 if (DOMAINDECOMP(cr))
                 {
-                    dd_move_x_constraints(cr->dd, box, xp, NULL);
+                    dd_move_x_constraints(cr->dd, box, xp, NULL, FALSE);
                 }
             }
         }

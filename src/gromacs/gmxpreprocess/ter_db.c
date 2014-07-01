@@ -38,15 +38,16 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
-#include "smalloc.h"
+#include <ctype.h>
+#include <string.h>
+
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "symtab.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "resall.h"
 #include "h_db.h"
-#include "string2.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "ter_db.h"
 #include "toputil.h"
 #include "gromacs/fileio/gmxfio.h"

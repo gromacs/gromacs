@@ -49,13 +49,16 @@
 #include <string>
 #include <vector>
 
+#include "config.h"
+
 #include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "gmx_header_config.h"
 
 namespace gmx
 {
@@ -156,6 +159,17 @@ void File::close()
         GMX_THROW_WITH_ERRNO(
                 FileIOError("Error while closing file"), "fclose", errno);
     }
+}
+
+bool File::isInteractive() const
+{
+    GMX_RELEASE_ASSERT(impl_->fp_ != NULL,
+                       "Attempted to access a file object that is not open");
+#ifdef HAVE_UNISTD_H
+    return isatty(fileno(impl_->fp_));
+#else
+    return true;
+#endif
 }
 
 FILE *File::handle()

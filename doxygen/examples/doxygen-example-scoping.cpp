@@ -57,6 +57,17 @@ void gmx_function();
 //! \}
 //! \endcond
 
+// An alternative to the above is use this, if the enclosing scope is only
+// documented in the library API:
+
+//! \libinternal \addtogroup module_libmodule
+//! \{
+
+//! Brief description.
+void gmx_function()
+
+//! \}
+
 /*! \libinternal \brief
  * Brief description for a struct.
  *

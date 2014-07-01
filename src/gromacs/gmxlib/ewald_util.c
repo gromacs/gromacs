@@ -42,12 +42,13 @@
 #include <math.h>
 #include "gromacs/math/utilities.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "coulomb.h"
-#include "smalloc.h"
-#include "physics.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/units.h"
 #include "txtdump.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "names.h"
 #include "macros.h"
 
@@ -225,7 +226,7 @@ void ewald_LRcorrection(int start, int end,
     {
         clear_mat(dxdf_lj);
     }
-    if ((calc_excl_corr || dipole_coeff != 0 || EVDW_PME(fr->vdwtype)) && !bFreeEnergy)
+    if ((calc_excl_corr || dipole_coeff != 0) && !bFreeEnergy)
     {
         for (i = start; (i < end); i++)
         {
@@ -386,7 +387,7 @@ void ewald_LRcorrection(int start, int end,
             }
         }
     }
-    else if (calc_excl_corr || dipole_coeff != 0 || EVDW_PME(fr->vdwtype))
+    else if (calc_excl_corr || dipole_coeff != 0)
     {
         for (i = start; (i < end); i++)
         {

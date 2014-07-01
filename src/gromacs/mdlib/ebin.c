@@ -41,16 +41,13 @@
 
 #include <math.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "gmx_fatal.h"
-#include "string2.h"
+#include "gromacs/utility/fatalerror.h"
 #include "ebin.h"
-#include "main.h"
 #include "gromacs/math/utilities.h"
-#include "vec.h"
-#include "physics.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/units.h"
 
 t_ebin *mk_ebin(void)
 {

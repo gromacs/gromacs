@@ -38,7 +38,7 @@
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
-#include "idef.h"
+#include "../../topology/idef.h"
 #include "nb_verlet.h"
 #include "interaction_const.h"
 #include "hw_info.h"
@@ -340,6 +340,8 @@ typedef struct {
     gmx_bool bTwinRange;
     int      nlr;
     rvec    *f_twin;
+    /* Constraint virial correction for multiple time stepping */
+    tensor   vir_twin_constr;
 
     /* Forces that should not enter into the virial summation:
      * PPPM/PME/Ewald/posres
@@ -374,6 +376,7 @@ typedef struct {
     int      ntype; /* Number of atom types */
     gmx_bool bBHAM;
     real    *nbfp;
+    real    *ljpme_c6grid; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
     int *egp_flags;

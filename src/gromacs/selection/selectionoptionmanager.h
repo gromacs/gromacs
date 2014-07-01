@@ -45,6 +45,7 @@
 
 #include <string>
 
+#include "../options/options.h"
 #include "../utility/common.h"
 
 namespace gmx
@@ -62,6 +63,8 @@ class SelectionOptionStorage;
  * require actions outside options parsing.
  * It also implements the coupling between SelectionOption and
  * SelectionFileOption.
+ * It needs to be added using Options::addManager() before SelectionOption or
+ * SelectionFileOption options can be added to an Options collection.
  *
  * The main features of this class are:
  *  - convertOptionValue(), which is used to convert string values into
@@ -73,12 +76,10 @@ class SelectionOptionStorage;
  *    parseRequestedFromStdin(), parseRequestedFromFile() or
  *    parseRequstedFromString().
  *
- * \see setManagerForSelectionOptions()
- *
  * \inpublicapi
  * \ingroup module_selection
  */
-class SelectionOptionManager
+class SelectionOptionManager : public OptionManagerInterface
 {
     public:
         /*! \brief
@@ -87,7 +88,7 @@ class SelectionOptionManager
          * \throws  std::bad_alloc if out of memory.
          */
         explicit SelectionOptionManager(SelectionCollection *selections);
-        ~SelectionOptionManager();
+        virtual ~SelectionOptionManager();
 
         /*! \brief
          * Adds a selection option to be managed.
@@ -208,20 +209,6 @@ class SelectionOptionManager
          */
         friend class SelectionOptionStorage;
 };
-
-/*! \brief
- * Set manager for all selection options.
- *
- * Recursively sets the manager to \p manager for all selection options in
- * \p options.
- * Must be called before value assignment starts for \p options.
- *
- * Does not throw.
- *
- * \inpublicapi
- */
-void setManagerForSelectionOptions(Options                *options,
-                                   SelectionOptionManager *manager);
 
 } // namespace gmx
 

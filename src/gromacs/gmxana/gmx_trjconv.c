@@ -38,33 +38,36 @@
 #include <config.h>
 #endif
 
-#include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "copyrite.h"
 #include "macros.h"
-#include "sysstuff.h"
-#include "smalloc.h"
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "names.h"
-#include "index.h"
-#include "vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xtcio.h"
-#include "do_fit.h"
-#include "rmpbc.h"
-#include "pbc.h"
 #include "viewit.h"
-#include "xvgr.h"
 #include "gmx_ana.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -695,6 +698,10 @@ int gmx_trjconv(int argc, char *argv[])
         "Use option [TT]-pbc mol[tt] in addition to [TT]-center[tt] when you",
         "want all molecules in the box after the centering.[PAR]",
 
+        "Option [TT]-box[tt] sets the size of the new box. If you want to"
+        "modify only some of the dimensions, e.g. when reading from a trajectory,"
+        "you can use -1 for those dimensions that should stay the same"
+
         "It is not always possible to use combinations of [TT]-pbc[tt],",
         "[TT]-fit[tt], [TT]-ur[tt] and [TT]-center[tt] to do exactly what",
         "you want in one call to [THISMODULE]. Consider using multiple",
@@ -1026,9 +1033,10 @@ int gmx_trjconv(int argc, char *argv[])
         {
             /* check if velocities are possible in input and output files */
             ftpin = fn2ftp(in_file);
-            bVels = (ftp == efTRR || ftp == efTRJ || ftp == efGRO || ftp == efG96)
-                && (ftpin == efTRR || ftpin == efTRJ || ftpin == efGRO || ftpin == efG96 ||
-                    ftpin == efCPT);
+            bVels = (ftp == efTRR || ftp == efTRJ || ftp == efGRO ||
+                     ftp == efG96 || ftp == efTNG)
+                && (ftpin == efTRR || ftpin == efTRJ || ftpin == efGRO ||
+                    ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
         {
@@ -1242,14 +1250,20 @@ int gmx_trjconv(int argc, char *argv[])
         /* Make atoms struct for output in GRO or PDB files */
         if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB))
         {
-            /* get memory for stuff to go in .pdb file */
-            init_t_atoms(&useatoms, atoms->nr, FALSE);
+            /* get memory for stuff to go in .pdb file, and initialize
+             * the pdbinfo structure part if the input has it.
+             */
+            init_t_atoms(&useatoms, atoms->nr, (atoms->pdbinfo != NULL));
             sfree(useatoms.resinfo);
             useatoms.resinfo = atoms->resinfo;
             for (i = 0; (i < nout); i++)
             {
                 useatoms.atomname[i] = atoms->atomname[index[i]];
                 useatoms.atom[i]     = atoms->atom[index[i]];
+                if (atoms->pdbinfo != NULL)
+                {
+                    useatoms.pdbinfo[i]  = atoms->pdbinfo[index[i]];
+                }
                 useatoms.nres        = max(useatoms.nres, useatoms.atom[i].resind+1);
             }
             useatoms.nr = nout;
@@ -1412,7 +1426,10 @@ int gmx_trjconv(int argc, char *argv[])
                     clear_mat(fr.box);
                     for (m = 0; m < DIM; m++)
                     {
-                        fr.box[m][m] = newbox[m];
+                        if (newbox[m] >= 0)
+                        {
+                            fr.box[m][m] = newbox[m];
+                        }
                     }
                 }
 

@@ -38,27 +38,30 @@
 #include <config.h>
 #endif
 
-#include <math.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <ctype.h>
 #include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "gromacs/fileio/futil.h"
-#include "sysstuff.h"
+#include <sys/types.h>
+
+#include "gromacs/utility/futil.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "txtdump.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
 #include "names.h"
-#include "string2.h"
-#include "symtab.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "vsite_parm.h"
 
@@ -74,13 +77,8 @@
 #include "genborn.h"
 #include "gromacs/math/utilities.h"
 
-#define CPPMARK     '#' /* mark from cpp			*/
-#define OPENDIR     '[' /* starting sign for directive		*/
-#define CLOSEDIR    ']' /* ending sign for directive		*/
-
-#define PM()  \
-    printf("line: %d, maxavail: %d\n", __LINE__, maxavail()); \
-    fflush(stdout)
+#define OPENDIR     '[' /* starting sign for directive */
+#define CLOSEDIR    ']' /* ending sign for directive   */
 
 static void free_nbparam(t_nbparam **param, int nr)
 {
@@ -178,7 +176,7 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
     char     buf[256];
     int      i, mb, nmol, ri, pt;
     double   q;
-    real     m;
+    real     m, mB;
     t_atoms *atoms;
 
     /* Check mass and charge */
@@ -192,30 +190,31 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
         {
             q += nmol*atoms->atom[i].q;
             m  = atoms->atom[i].m;
+            mB = atoms->atom[i].mB;
             pt = atoms->atom[i].ptype;
             /* If the particle is an atom or a nucleus it must have a mass,
              * else, if it is a shell, a vsite or a bondshell it can have mass zero
              */
-            if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus)))
+            if (((m <= 0.0) || (mB <= 0.0)) && ((pt == eptAtom) || (pt == eptNucleus)))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "atom %s (Res %s-%d) has mass %g\n",
+                sprintf(buf, "atom %s (Res %s-%d) has mass %g (state A) / %g (state B)\n",
                         *(atoms->atomname[i]),
                         *(atoms->resinfo[ri].name),
                         atoms->resinfo[ri].nr,
-                        m);
+                        m, mB);
                 warning_error(wi, buf);
             }
             else
-            if ((m != 0) && (pt == eptVSite))
+            if (((m != 0) || (mB != 0)) && (pt == eptVSite))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g\n"
+                sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g (state A) / %g (state B)\n"
                         "     Check your topology.\n",
                         *(atoms->atomname[i]),
                         *(atoms->resinfo[ri].name),
                         atoms->resinfo[ri].nr,
-                        m);
+                        m, mB);
                 warning_error(wi, buf);
                 /* The following statements make LINCS break! */
                 /* atoms->atom[i].m=0; */
@@ -614,8 +613,8 @@ static char **read_topol(const char *infile, const char *outfile,
     comb     = 0;
 
     /* Init the number of CMAP torsion angles  and grid spacing */
-    plist->grid_spacing = 0;
-    plist->nc           = 0;
+    plist[F_CMAP].grid_spacing = 0;
+    plist[F_CMAP].nc           = 0;
 
     bWarn_copy_A_B = bFEP;
 
@@ -1001,7 +1000,7 @@ static char **read_topol(const char *infile, const char *outfile,
                         }
                         default:
                             fprintf (stderr, "case: %d\n", d);
-                            invalid_case();
+                            gmx_incons("unknown directive");
                     }
                 }
             }
@@ -1365,7 +1364,6 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
         j       = 0;
         while (j < molt->ilist[i].nr)
         {
-            bexcl = FALSE;
             a1    = molt->ilist[i].iatoms[j+1];
             a2    = molt->ilist[i].iatoms[j+2];
             bexcl = ((bQMMM[a1] && bQMMM[a2]) ||

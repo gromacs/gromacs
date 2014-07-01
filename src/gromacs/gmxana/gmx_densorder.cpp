@@ -32,36 +32,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <ctype.h>
 #include <math.h>
-#include "sysstuff.h"
 #include <string.h>
-#include "string2.h"
+
+#include "gromacs/utility/cstringutil.h"
 #include "typedefs.h"
-#include "smalloc.h"
 #include "macros.h"
 #include "gstat.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/commandline/pargs.h"
-#include "index.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "physics.h"
-#include "gromacs/fileio/matio.h"
+#include "gromacs/math/units.h"
 #include "dens_filter.h"
 #include "binsearch.h"
 #include "powerspect.h"
 #include "gmx_ana.h"
 #include "copyrite.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_DOUBLE
 #define FLOOR(x) ((int) floor(x))

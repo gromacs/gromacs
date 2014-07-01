@@ -40,38 +40,41 @@
 #include <config.h>
 #endif
 
-#include <time.h>
 #include <ctype.h>
-#include "sysstuff.h"
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "smalloc.h"
 #include "copyrite.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
-#include "symtab.h"
-#include "vec.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "toputil.h"
 #include "h_db.h"
-#include "physics.h"
 #include "pgutil.h"
-#include "calch.h"
 #include "resall.h"
 #include "pdb2top.h"
 #include "ter_db.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "genhydro.h"
 #include "readinp.h"
-#include "atomprop.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "fflibutil.h"
 #include "macros.h"
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "hizzie.h"
 #include "specbond.h"
@@ -514,7 +517,7 @@ void write_posres(char *fn, t_atoms *pdba, real fc)
 static int read_pdball(const char *inf, const char *outf, char *title,
                        t_atoms *atoms, rvec **x,
                        int *ePBC, matrix box, gmx_bool bRemoveH,
-                       t_symtab *symtab, gmx_residuetype_t rt, const char *watres,
+                       t_symtab *symtab, gmx_residuetype_t *rt, const char *watres,
                        gmx_atomprop_t aps, gmx_bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
@@ -835,7 +838,8 @@ static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], gmx_bool bVerbose)
     return pdba->nr;
 }
 
-void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end, gmx_residuetype_t rt)
+void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
+                 gmx_residuetype_t *rt)
 {
     int         i;
     const char *p_startrestype;
@@ -1231,7 +1235,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     t_hackblock      *ah;
     t_symtab          symtab;
     gpp_atomtype_t    atype;
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
     const char       *top_fn;
     char              fn[256], itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
     char              molname[STRLEN], title[STRLEN], quote[STRLEN];
@@ -1716,7 +1720,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     printf("There are %d chains and %d blocks of water and "
            "%d residues with %d atoms\n",
            nch-nwaterchain, nwaterchain,
-           pdba_all.resinfo[pdba_all.atom[natom-1].resind].nr, natom);
+           pdba_all.nres, natom);
 
     printf("\n  %5s  %4s %6s\n", "chain", "#res", "#atoms");
     for (i = 0; (i < nch); i++)

@@ -52,12 +52,11 @@
 #include <set>
 #include <vector>
 
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/vec.h"
-
 #include "gromacs/selection/nbsearch.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "testutils/testasserts.h"
 

@@ -41,13 +41,13 @@
 
 #include <string.h>
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "grompp-impl.h"
 #include "macros.h"
 #include "toputil.h"
 #include "hackblock.h"
-#include "string2.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void clear_atom_list(int i0, atom_id a[])
 {

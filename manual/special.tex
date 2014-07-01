@@ -77,7 +77,7 @@ by using only {\tt fep-lambdas} to define the pathway.
 
 For example, if you wanted to first to change the Coulombic terms,
 then the van der Waals terms, changing bonded at the same time rate as
-the van der Wheals, but changing the restraints throughout the first
+the van der Waals, but changing the restraints throughout the first
 two-thirds of the simulation, then you could use this $\lambda$ vector:
 
 \begin{verbatim}
@@ -1065,7 +1065,7 @@ Choose {\tt Z} if your membrane is in the $xy$-plane (\figref{compelsetup} A, B)
 Ions will be exchanged between compartments depending on their $z$-positions alone.
 {\tt swap_frequency} determines how often a swap attempt will be made.
 This step requires that the positions of the ions, solvent, and swap groups are
-communicated between the parallel processes, so if chosen too small it can decrease the simulation
+communicated between the parallel ranks, so if chosen too small it can decrease the simulation
 performance.
 {\small
 \begin{verbatim}
@@ -1256,7 +1256,7 @@ virtualized as well, {\ie} hydrogens in the aromatic residues are treated
 differently depending on the treatment of the aromatic residues.
 
 Parameters for the virtual site constructions for the hydrogen atoms are
-inferred from the force field parameters ({\em vis}. bond lengths and
+inferred from the force-field parameters ({\em vis}. bond lengths and
 angles) directly by {\tt \normindex{grompp}} while processing the
 topology file.  The constructions for the aromatic residues are based
 on the bond lengths and angles for the geometry as described in the
@@ -1543,9 +1543,9 @@ This results in the following errors for each interval:
 V and V' are continuous, while V'' is the first discontinuous
 derivative.
 The number of points per nanometer is 500 and 2000
-for single- and double-precision versions of {\gromacs}, respectively.
+for mixed- and double-precision versions of {\gromacs}, respectively.
 This means that the errors in the potential and force will usually
-be smaller than the single precision accuracy.
+be smaller than the mixed precision accuracy.
 
 {\gromacs} stores $A_0$, $A_1$, $A_2$ and $A_3$.
 The force routines get a table with these four parameters and
@@ -1603,7 +1603,7 @@ order: $x$, $f(x)$, $-f'(x)$, $g(x)$, $-g'(x)$, $h(x)$, $-h'(x)$.
 The $x$ should run from 0 to $r_c+1$ (the value of {\tt table_extension} can be
 changed in the {\tt .mdp} file).
 You can choose the spacing you like; for the standard tables {\gromacs}
-uses a spacing of 0.002 and 0.0005 nm when you run in single
+uses a spacing of 0.002 and 0.0005 nm when you run in mixed
 and double precision, respectively.  In this
 context, $r_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
 {\tt rcoulomb} (see above). These variables need not be the same (and
@@ -1678,7 +1678,7 @@ double sums is the total electrostatic interaction between the QM
 electrons and the MM atoms. The total electrostatic interaction of the
 QM nuclei with the MM atoms is given by the second double sum. Bonded
 interactions between QM and MM atoms are described at the MM level by
-the appropriate force field terms. Chemical bonds that connect the two
+the appropriate force-field terms. Chemical bonds that connect the two
 subsystems are capped by a hydrogen atom to complete the valence of
 the QM region. The force on this atom, which is present in the QM
 region only, is distributed over the two atoms of the bond. The cap
@@ -1719,7 +1719,7 @@ To make use of the QM/MM functionality in {\gromacs}, one needs to:
 At the bond that connects the QM and MM subsystems, a link atoms is
 introduced.  In {\gromacs} the link atom has special atomtype, called
 LA. This atomtype is treated as a hydrogen atom in the QM calculation,
-and as a virtual site in the force field calculation. The link atoms, if
+and as a virtual site in the force-field calculation. The link atoms, if
 any, are part of the system, but have no interaction with any other
 atom, except that the QM force working on it is distributed over the
 two atoms of the bond. In the topology, the link atom (LA), therefore,
@@ -2005,7 +2005,7 @@ Adaptive water
 SOL    8507
 \end{verbatim}}
 The $\sigma$ and $\epsilon$ values correspond to $C_6=1$ and $C_{12}=1$ and thus the table file should contain the coarse-grained interaction in either the $C_6$ or $C_{12}$ column. In the example the OPLS force field is used where $\sigma$ and $\epsilon$ are specified.
-Note that for force fields which define atomtypes directly in terms of $C_6$ and $C_{12}$ ( like {\tt gmx.ff} ) one can simply set $C_6=0$ and $C_{12}=1$. See section \ssecref{userpot} for more details on tabulated interactions. Since now the water molecule has a virtual site the coordinate file also needs to include that.
+Note that for force fields which define atomtypes directly in terms of $C_6$ and $C_{12}$, one can simply set $C_6=0$ and $C_{12}=1$. See section \ssecref{userpot} for more details on tabulated interactions. Since now the water molecule has a virtual site the coordinate file also needs to include that.
 {\small
 \begin{verbatim}
 adaptive water coordinates
@@ -2062,6 +2062,65 @@ run time, locate the plug-ins. Alternatively, the {\tt VMD_PLUGIN_PATH}
 can be used at run time to specify a path where these plug-ins can be
 found. Note that these plug-ins are in a binary format, and that format
 must match the architecture of the machine attempting to use them.
+
+
+\section{\normindex{Interactive Molecular Dynamics}}
+{\gromacs} supports the interactive molecular dynamics (IMD) protocol as implemented
+by \href{http://www.ks.uiuc.edu/Research/vmd}{VMD} to control a running simulation
+in NAMD. IMD allows to monitor a running {\gromacs} simulation from a VMD client.
+In addition, the user can interact with the simulation by pulling on atoms, residues
+or fragments with a mouse or a force-feedback device. Additional information about
+the {\gromacs} implementation and an exemplary {\gromacs} IMD system can be found
+\href{http://www.mpibpc.mpg.de/grubmueller/interactivemd}{on this homepage}.
+
+\subsection{Simulation input preparation}
+The {\gromacs} implementation allows transmission and interaction with a part of the
+running simulation only, e.g.\ in cases where no water molecules should be transmitted
+or pulled. The group is specified via the {\tt .mdp} option {\tt IMD-group}. When
+{\tt IMD-group} is empty, the IMD protocol is disabled and cannot be enabled via the
+switches in {\tt mdrun}. To interact with the entire system, {\tt IMD-group} can
+be set to {\tt System}. When using {\tt grompp}, a {\tt .gro} file
+to be used as VMD input is written out ({\tt -imd} switch of {\tt grompp}).
+
+\subsection{Starting the simulation}
+Communication between VMD and {\gromacs} is achieved via TCP sockets and thus enables
+controlling an {\tt mdrun} running locally or on a remote cluster. The port for the
+connection can be specified with the {\tt -imdport} switch of {\tt mdrun}, 8888 is
+the default. If a port number of 0 or smaller is provided, {\gromacs} automatically
+assigns a free port to use with IMD.
+
+Every $N$ steps, the {\tt mdrun} client receives the applied forces from VMD and sends the new
+positions to the client. VMD permits increasing or decreasing the communication frequency
+interactively.
+By default, the simulation starts and runs even if no IMD client is connected. This
+behavior is changed by the {\tt -imdwait} switch of {\tt mdrun}. After startup and
+whenever the client has disconnected, the integration stops until reconnection of
+the client.
+When the {\tt -imdterm} switch is used, the simulation can be terminated by pressing
+the stop button in VMD. This is disabled by default.
+Finally, to allow interacting with the simulation (i.e. pulling from VMD) the {\tt -imdpull}
+switch has to be used.
+Therefore, a simulation can only be monitored but not influenced from the VMD client
+when none of {\tt -imdwait}, {\tt -imdterm} or {\tt -imdpull} are set. However, since
+the IMD protocol requires no authentication, it is not advisable to run simulations on
+a host directly reachable from an insecure environment. Secure shell forwarding of TCP
+can be used to connect to running simulations not directly reachable from the interacting host.
+Note that the IMD command line switches of {\tt mdrun} are hidden by default and show
+up in the help text only with {\tt gmx mdrun -h -hidden}.
+
+\subsection{Connecting from VMD}
+In VMD, first the structure corresponding to the IMD group has to be loaded ({\it File
+$\rightarrow$ New Molecule}). Then the IMD connection window has to be used
+({\it Extensions $\rightarrow$ Simulation $\rightarrow$ IMD Connect (NAMD)}). In the IMD
+connection window, hostname and port have to be specified and followed by pressing
+{\it Connect}. {\it Detach Sim} allows disconnecting without terminating the simulation, while
+{\it Stop Sim} ends the simulation on the next neighbor searching step (if allowed by
+{\tt -imdterm}).
+
+The timestep transfer rate allows adjusting the communication frequency between simulation
+and IMD client. Setting the keep rate loads every $N^\mathrm{th}$ frame into VMD instead
+of discarding them when a new one is received. The displayed energies are in SI units
+in contrast to energies displayed from NAMD simulations.
 
 
 % LocalWords:  PMF pmf kJ mol Jarzynski BT bilayer rup mdp AFM fepmf fecalc rb

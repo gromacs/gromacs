@@ -38,15 +38,15 @@
 #define GMX_GMXANA_GSTAT_H
 
 #include "../legacyheaders/typedefs.h"
-#include "../commandline/pargs.h"
 #include "../legacyheaders/oenv.h"
-#include "../legacyheaders/mshift.h"
-#include "../legacyheaders/rmpbc.h"
-#include "../legacyheaders/index.h"
+#include "../commandline/pargs.h"
+#include "../topology/index.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmx_residuetype_t;
 
 /***********************************************
  *
@@ -399,7 +399,7 @@ gmx_bool has_dihedral(int Dih, t_dlist *dl);
 t_dlist *mk_dlist(FILE *log,
                   t_atoms *atoms, int *nlist,
                   gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
-                  int maxchi, int r0, gmx_residuetype_t rt);
+                  int maxchi, int r0, struct gmx_residuetype_t *rt);
 
 void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt,  int printtype,
               gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega, int maxchi);

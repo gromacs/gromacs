@@ -124,9 +124,6 @@ int
 gmx_filter(int argc, char *argv[]);
 
 int
-gmx_genconf(int argc, char *argv[]);
-
-int
 gmx_genion(int argc, char *argv[]);
 
 int
@@ -149,9 +146,6 @@ gmx_helixorient(int argc, char *argv[]);
 
 int
 gmx_hydorder(int argc, char *argv[]);
-
-int
-gmx_kinetics(int argc, char *argv[]);
 
 int
 gmx_make_edi(int argc, char *argv[]);

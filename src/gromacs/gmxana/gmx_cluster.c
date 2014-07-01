@@ -37,35 +37,38 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "string2.h"
-#include "vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/random/random.h"
-#include "pbc.h"
-#include "rmpbc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "cmat.h"
-#include "do_fit.h"
 #include "gromacs/fileio/trnio.h"
 #include "viewit.h"
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
-static inline
+static gmx_inline
 void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     fprintf(fp1, "%s", buf);
@@ -73,14 +76,14 @@ void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 }
 
 /* just print a prepared buffer to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 {
     sprintf(buf, fmt, arg);
@@ -88,7 +91,7 @@ void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 {
     sprintf(buf, fmt, arg);
@@ -96,7 +99,7 @@ void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg)
 {
     sprintf(buf, fmt, arg);
@@ -104,7 +107,7 @@ void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *ar
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -112,7 +115,7 @@ void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, real arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -120,7 +123,7 @@ void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, re
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg1, const char *arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -1095,9 +1098,12 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (clustidfn)
     {
         fp = xvgropen(clustidfn, "Clusters", output_env_get_xvgr_tlabel(oenv), "Cluster #", oenv);
-        fprintf(fp, "@    s0 symbol 2\n");
-        fprintf(fp, "@    s0 symbol size 0.2\n");
-        fprintf(fp, "@    s0 linestyle 0\n");
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@    s0 symbol 2\n");
+            fprintf(fp, "@    s0 symbol size 0.2\n");
+            fprintf(fp, "@    s0 linestyle 0\n");
+        }
         for (i = 0; i < nf; i++)
         {
             fprintf(fp, "%8g %8d\n", time[i], clust->cl[i]);
@@ -1107,7 +1113,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (sizefn)
     {
         fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
-        fprintf(fp, "@g%d type %s\n", 0, "bar");
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@g%d type %s\n", 0, "bar");
+        }
     }
     snew(structure, nf);
     fprintf(log, "\n%3s | %3s  %4s | %6s %4s | cluster members\n",

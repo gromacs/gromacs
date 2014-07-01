@@ -43,11 +43,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdarg.h>
+
 /* Modified DvdS */
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "macros.h"
-#include "vec.h"
-#include "smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 #include "nsc.h"
 
 #define TEST_NSC 0
@@ -778,7 +779,6 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
         xmin   = coords[iat][XX]; xmax = xmin; xs = xmin;
         ymin   = coords[iat][YY]; ymax = ymin; ys = ymin;
         zmin   = coords[iat][ZZ]; zmax = zmin; zs = zmin;
-        ra2max = radius[iat];
 
         for (iat_xx = 1; (iat_xx < nat); iat_xx++)
         {

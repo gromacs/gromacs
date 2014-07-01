@@ -183,6 +183,123 @@ void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
     *E_lj   *= sw;
 }
 
+/*! Calculate LJ-PME grid force contribution with
+ *  geometric combination rule.
+ */
+static inline __device__
+void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
+                                    int                typei,
+                                    int                typej,
+                                    float              r2,
+                                    float              inv_r2,
+                                    float              lje_coeff2,
+                                    float              lje_coeff6_6,
+                                    float             *F_invr)
+{
+    float c6grid, inv_r6_nm, cr2, expmcr2, poly;
+
+#ifdef USE_TEXOBJ
+    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
+#else
+    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
+#endif /* USE_TEXOBJ */
+
+    /* Recalculate inv_r6 without exclusion mask */
+    inv_r6_nm = inv_r2*inv_r2*inv_r2;
+    cr2       = lje_coeff2*r2;
+    expmcr2   = expf(-cr2);
+    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+
+    /* Subtract the grid force from the total LJ force */
+    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+}
+
+/*! Calculate LJ-PME grid force + energy contribution with
+ *  geometric combination rule.
+ */
+static inline __device__
+void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
+                                      int                typei,
+                                      int                typej,
+                                      float              r2,
+                                      float              inv_r2,
+                                      float              lje_coeff2,
+                                      float              lje_coeff6_6,
+                                      float              int_bit,
+                                      float             *F_invr,
+                                      float             *E_lj)
+{
+    float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
+
+#ifdef USE_TEXOBJ
+    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
+#else
+    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
+#endif /* USE_TEXOBJ */
+
+    /* Recalculate inv_r6 without exclusion mask */
+    inv_r6_nm = inv_r2*inv_r2*inv_r2;
+    cr2       = lje_coeff2*r2;
+    expmcr2   = expf(-cr2);
+    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+
+    /* Subtract the grid force from the total LJ force */
+    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+
+    /* Shift should be applied only to real LJ pairs */
+    sh_mask   = nbparam.sh_lj_ewald*int_bit;
+    *E_lj    += ONE_SIXTH_F*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+}
+
+/*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
+ *  Lorentz-Berthelot combination rule.
+ *  We use a single F+E kernel with conditional because the performance impact
+ *  of this is pretty small and LB on the CPU is anyway very slow.
+ */
+static inline __device__
+void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
+                                    int                typei,
+                                    int                typej,
+                                    float              r2,
+                                    float              inv_r2,
+                                    float              lje_coeff2,
+                                    float              lje_coeff6_6,
+                                    float              int_bit,
+                                    float             *F_invr,
+                                    float             *E_lj)
+{
+    float c6grid, inv_r6_nm, cr2, expmcr2, poly;
+    float sigma, sigma2, epsilon;
+
+    /* sigma and epsilon are scaled to give 6*C6 */
+#ifdef USE_TEXOBJ
+    sigma   = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei    ) + tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej    );
+    epsilon = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei + 1) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej + 1);
+#else
+    sigma   = tex1Dfetch(nbfp_comb_texref, 2*typei    ) + tex1Dfetch(nbfp_comb_texref, 2*typej    );
+    epsilon = tex1Dfetch(nbfp_comb_texref, 2*typei + 1) * tex1Dfetch(nbfp_comb_texref, 2*typej + 1);
+#endif /* USE_TEXOBJ */
+    sigma2  = sigma*sigma;
+    c6grid  = epsilon*sigma2*sigma2*sigma2;
+
+    /* Recalculate inv_r6 without exclusion mask */
+    inv_r6_nm = inv_r2*inv_r2*inv_r2;
+    cr2       = lje_coeff2*r2;
+    expmcr2   = expf(-cr2);
+    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+
+    /* Subtract the grid force from the total LJ force */
+    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+
+    if (E_lj != NULL)
+    {
+        float sh_mask;
+
+        /* Shift should be applied only to real LJ pairs */
+        sh_mask   = nbparam.sh_lj_ewald*int_bit;
+        *E_lj    += ONE_SIXTH_F*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+    }
+}
 
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
  *  Original idea: from the OpenMM project

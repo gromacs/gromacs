@@ -45,30 +45,23 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <assert.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
 #include "macros.h"
-#include "string2.h"
 #include "readir.h"
 #include "toputil.h"
 #include "topio.h"
 #include "gromacs/fileio/confio.h"
 #include "readir.h"
-#include "symtab.h"
 #include "names.h"
 #include "grompp-impl.h"
-#include "gromacs/random/random.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
-#include "vec.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
 #include "splitter.h"
-#include "gromacs/gmxana/sortwater.h"
+#include "gromacs/gmxpreprocess/sortwater.h"
 #include "convparm.h"
-#include "gmx_fatal.h"
 #include "warninp.h"
-#include "index.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/tpxio.h"
@@ -81,11 +74,20 @@
 #include "perf_est.h"
 #include "compute_io.h"
 #include "gpp_atomtype.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "genborn.h"
 #include "calc_verletbuf.h"
-
 #include "tomorse.h"
+#include "gromacs/imd/imd.h"
+#include "gromacs/utility/cstringutil.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/random/random.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
@@ -373,6 +375,41 @@ static void check_vel(gmx_mtop_t *mtop, rvec v[])
                 clear_rvec(v[a]);
             }
         }
+    }
+}
+
+static void check_shells_inputrec(gmx_mtop_t *mtop,
+                                  t_inputrec *ir,
+                                  warninp_t   wi)
+{
+    gmx_mtop_atomloop_all_t aloop;
+    t_atom                 *atom;
+    int                     a, nshells = 0;
+    char                    warn_buf[STRLEN];
+
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    {
+        if (atom->ptype == eptShell ||
+            atom->ptype == eptBond)
+        {
+            nshells++;
+        }
+    }
+    if (IR_TWINRANGE(*ir) && (nshells > 0))
+    {
+        snprintf(warn_buf, STRLEN,
+                 "The combination of using shells and a twin-range cut-off is not supported");
+        warning_error(wi, warn_buf);
+    }
+    if ((nshells > 0) && (ir->nstcalcenergy != 1))
+    {
+        set_warning_line(wi, "unknown", -1);
+        snprintf(warn_buf, STRLEN,
+                 "There are %d shells, changing nstcalcenergy from %d to 1",
+                 nshells, ir->nstcalcenergy);
+        ir->nstcalcenergy = 1;
+        warning(wi, warn_buf);
     }
 }
 
@@ -896,6 +933,8 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
 
     if (rc_scaling != erscNO)
     {
+        assert(npbcdim <= DIM);
+
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
             molb     = &mtop->molblock[mb];
@@ -955,10 +994,10 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
     int i, j;
 
     read_posres  (mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
-    if (strcmp(fnA, fnB) != 0)
-    {
-        read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
-    }
+    /* It is safer to simply read the b-state posres rather than trying
+     * to be smart and copy the positions.
+     */
+    read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
 }
 
 static void set_wall_atomtype(gpp_atomtype_t at, t_gromppopts *opts,
@@ -1496,6 +1535,7 @@ int gmx_grompp(int argc, char *argv[])
     warninp_t          wi;
     char               warn_buf[STRLEN];
     unsigned int       useed;
+    t_atoms            IMDatoms;   /* Atoms to be operated on interactively (IMD) */
 
     t_filenm           fnm[] = {
         { efMDP, NULL,  NULL,        ffREAD  },
@@ -1509,7 +1549,9 @@ int gmx_grompp(int argc, char *argv[])
         { efTPX, "-o",  NULL,        ffWRITE },
         { efTRN, "-t",  NULL,        ffOPTRD },
         { efEDR, "-e",  NULL,        ffOPTRD },
-        { efTRN, "-ref", "rotref",    ffOPTRW }
+        /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
+        { efGRO, "-imd", "imdgroup", ffOPTWR },
+        { efTRN, "-ref", "rotref",   ffOPTRW }
     };
 #define NFILE asize(fnm)
 
@@ -1560,8 +1602,8 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->ld_seed == -1)
     {
-        ir->ld_seed = (int)gmx_rng_make_seed();
-        fprintf(stderr, "Setting the LD random seed to %d\n", ir->ld_seed);
+        ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+        fprintf(stderr, "Setting the LD random seed to %"GMX_PRId64 "\n", ir->ld_seed);
     }
 
     if (ir->expandedvals->lmc_seed == -1)
@@ -1623,6 +1665,11 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
+    if (nvsite && ir->eI == eiNM)
+    {
+        gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+    }
+
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         fprintf(stderr, "Removing all charge groups because cutoff-scheme=%s\n",
@@ -1677,7 +1724,7 @@ int gmx_grompp(int argc, char *argv[])
         {
             warning_error(wi, "AdResS contant weighting function should be between 0 and 1\n\n");
         }
-        /** \TODO check size of ex+hy width against box size */
+        /** TODO check size of ex+hy width against box size */
     }
 
     if (ir->bDrude)
@@ -1815,10 +1862,10 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
-    if (plist->ncmap > 0)
+    if (plist[F_CMAP].ncmap > 0)
     {
-        init_cmap_grid(&sys->ffparams.cmap_grid, plist->nc, plist->grid_spacing);
-        setup_cmap(plist->grid_spacing, plist->nc, plist->cmap, &sys->ffparams.cmap_grid);
+        init_cmap_grid(&sys->ffparams.cmap_grid, plist[F_CMAP].nc, plist[F_CMAP].grid_spacing);
+        setup_cmap(plist[F_CMAP].grid_spacing, plist[F_CMAP].nc, plist[F_CMAP].cmap, &sys->ffparams.cmap_grid);
     }
 
     set_wall_atomtype(atype, opts, ir, wi);
@@ -1874,6 +1921,9 @@ int gmx_grompp(int argc, char *argv[])
     {
         check_vel(sys, state.v);
     }
+
+    /* check for shells and inpurecs */
+    check_shells_inputrec(sys, ir, wi);
 
     /* check masses */
     check_mol(sys, wi);
@@ -2057,11 +2107,6 @@ int gmx_grompp(int argc, char *argv[])
        potentially conflict if not handled correctly. */
     if (ir->efep != efepNO)
     {
-        if (EVDW_PME(ir->vdwtype))
-        {
-            gmx_fatal(FARGS, "LJ-PME not implemented together with free energy calculations!");
-        }
-
         state.fep_state = ir->fepvals->init_fep_state;
         for (i = 0; i < efptNR; i++)
         {
@@ -2143,6 +2188,9 @@ int gmx_grompp(int argc, char *argv[])
 
     done_warning(wi, FARGS);
     write_tpx_state(ftp2fn(efTPX, NFILE, fnm), ir, &state, sys);
+
+    /* Output IMD group, if bIMD is TRUE */
+    write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);
 
     done_atomtype(atype);
     done_mtop(sys, TRUE);

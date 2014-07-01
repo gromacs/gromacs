@@ -38,28 +38,27 @@
 #include <config.h>
 #endif
 
-#include "smalloc.h"
 #include <math.h>
+
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "typedefs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
+#include "viewit.h"
 #include "gromacs/commandline/pargs.h"
-#include "string2.h"
-#include "vec.h"
-#include "index.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "pbc.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
-#include "do_fit.h"
+#include "gromacs/utility/futil.h"
 #include "princ.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
 
 static real find_pdb_bfac(t_atoms *atoms, t_resinfo *ri, char *atomnm)
 {

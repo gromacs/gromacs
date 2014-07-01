@@ -36,13 +36,14 @@
 #ifndef _nsfactor_h
 #define _nsfactor_h
 
-#include "index.h"
-#include "types/simple.h"
-#include "oenv.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_topology;
 
 typedef struct gmx_neutron_atomic_structurefactors_t {
     int       nratoms;
@@ -53,8 +54,8 @@ typedef struct gmx_neutron_atomic_structurefactors_t {
 } gmx_neutron_atomic_structurefactors_t;
 
 typedef struct gmx_sans_t {
-    t_topology *top;     /* topology */
-    double     *slength; /* scattering length for this topology */
+    struct t_topology *top;     /* topology */
+    double            *slength; /* scattering length for this topology */
 } gmx_sans_t;
 
 typedef struct gmx_radial_distribution_histogram_t {
@@ -79,7 +80,7 @@ void normalize_probability(int n, double *a);
 
 gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn);
 
-gmx_sans_t *gmx_sans_init(t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf);
+gmx_sans_t *gmx_sans_init(struct t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf);
 
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sans_t  *gsans,
                                                                           rvec        *x,

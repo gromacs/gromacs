@@ -37,21 +37,23 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
 #include "readinp.h"
 #include "txtdump.h"
 #include "gstat.h"
-#include "xvgr.h"
-#include "physics.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
@@ -225,7 +227,7 @@ static int comp_minima(const void *a, const void *b)
     }
 }
 
-static inline
+static gmx_inline
 void print_minimum(FILE *fp, int num, const t_minimum *min)
 {
     fprintf(fp,
@@ -233,7 +235,7 @@ void print_minimum(FILE *fp, int num, const t_minimum *min)
             num, min->index, min->ener);
 }
 
-static inline
+static gmx_inline
 void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
 {
     print_minimum(fp, num, min);
@@ -241,7 +243,7 @@ void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
     mm[num].ener  = min->ener;
 }
 
-static inline
+static gmx_inline
 gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
                                      int              dimension_index,
                                      int              dimension_min,
@@ -254,7 +256,7 @@ gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
     /* Note over/underflow within W cannot occur. */
 }
 
-static inline
+static gmx_inline
 gmx_bool is_local_minimum_from_above(const t_minimum *this_min,
                                      int              dimension_index,
                                      int              dimension_max,
@@ -411,25 +413,24 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
 
 static void do_sham(const char *fn, const char *ndx,
                     const char *xpmP, const char *xpm, const char *xpm2,
-                    const char *xpm3, const char *xpm4, const char *pdb,
+                    const char *xpm3, const char *pdb,
                     const char *logf,
                     int n, int neig, real **eig,
                     gmx_bool bGE, int nenerT, real **enerT,
-                    int nmap, real *mapindex, real **map,
                     real Tref,
                     real pmax, real gmax,
                     real *emin, real *emax, int nlevels, real pmin,
-                    const char *mname, int *idim, int *ibox,
+                    int *idim, int *ibox,
                     gmx_bool bXmin, real *xmin, gmx_bool bXmax, real *xmax)
 {
     FILE        *fp;
     real        *min_eig, *max_eig;
     real        *axis_x, *axis_y, *axis_z, *axis = NULL;
     double      *P;
-    real       **PP, *W, *E, **WW, **EE, *S, **SS, *M, **MM, *bE;
+    real       **PP, *W, *E, **WW, **EE, *S, **SS, *M, *bE;
     rvec         xxx;
     char        *buf;
-    double      *bfac, efac, bref, Pmax, Wmin, Wmax, Winf, Emin, Emax, Einf, Smin, Smax, Sinf, Mmin, Mmax, Minf;
+    double      *bfac, efac, bref, Pmax, Wmin, Wmax, Winf, Emin, Emax, Einf, Smin, Smax, Sinf, Mmin, Mmax;
     real        *delta;
     int          i, j, k, imin, len, index, d, *nbin, *bindex, bi;
     int         *nxyz, maxbox;
@@ -701,45 +702,7 @@ static void do_sham(const char *fn, const char *ndx,
             axis[j] = min_eig[i] + j/bfac[i];
         }
     }
-    if (map)
-    {
-        snew(M, len);
-        snew(MM, maxbox*maxbox);
-        for (i = 0; (i < ibox[0]); i++)
-        {
-            MM[i] = &(M[i*ibox[1]]);
-        }
-        Mmin = 1e8;
-        Mmax = -1e8;
-        for (i = 0; (i < nmap); i++)
-        {
-            Mmin = min(Mmin, map[0][i]);
-            Mmax = max(Mmax, map[0][i]);
-        }
-        Minf = Mmax*1.05;
-        for (i = 0; (i < len); i++)
-        {
-            M[i] = Minf;
-        }
-        for (i = 0; (i < nmap); i++)
-        {
-            index = gmx_nint(mapindex[i]);
-            if (index >= len)
-            {
-                gmx_fatal(FARGS, "Number of bins in file from -mdata option does not correspond to current analysis");
-            }
 
-            if (P[index] != 0)
-            {
-                M[index] = map[0][i];
-            }
-        }
-    }
-    else
-    {
-        MM   = NULL;
-        Minf = NOTSET;
-    }
     pick_minima(logf, ibox, neig, len, W);
     if (gmax <= 0)
     {
@@ -778,13 +741,6 @@ static void do_sham(const char *fn, const char *ndx,
         write_xpm(fp, flags, "Entropy Landscape", "TDS (kJ/mol)", "PC1", "PC2",
                   ibox[0], ibox[1], axis_x, axis_y, SS, 0, Sinf, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
-        if (map)
-        {
-            fp = gmx_ffopen(xpm4, "w");
-            write_xpm(fp, flags, "Custom Landscape", mname, "PC1", "PC2",
-                      ibox[0], ibox[1], axis_x, axis_y, MM, 0, Minf, rlo, rhi, &nlevels);
-            gmx_ffclose(fp);
-        }
     }
     else if (neig == 3)
     {
@@ -811,10 +767,6 @@ static void do_sham(const char *fn, const char *ndx,
         }
         gmx_ffclose(fp);
         write_xplor("out.xplor", W, ibox, min_eig, max_eig);
-        if (map)
-        {
-            write_xplor("user.xplor", M, ibox, min_eig, max_eig);
-        }
         nxyz[XX] = imin/(ibox[1]*ibox[2]);
         nxyz[YY] = (imin-nxyz[XX]*ibox[1]*ibox[2])/ibox[2];
         nxyz[ZZ] = imin % ibox[2];
@@ -858,11 +810,6 @@ static void do_sham(const char *fn, const char *ndx,
                   ibox[1], ibox[2], axis_y, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
         sfree(buf);
-    }
-    if (map)
-    {
-        sfree(MM);
-        sfree(M);
     }
 }
 
@@ -975,7 +922,6 @@ int gmx_sham(int argc, char *argv[])
     static rvec        nrbox     = {32, 32, 32};
     static rvec        xmin      = {0, 0, 0}, xmax = {1, 1, 1};
     static int         nsets_in  = 1, nb_min = 4, resol = 10, nlevels = 25;
-    static const char *mname     = "";
     t_pargs            pa[]      = {
         { "-time",    FALSE, etBOOL, {&bHaveT},
           "Expect a time in the input" },
@@ -1013,14 +959,12 @@ int gmx_sham(int argc, char *argv[])
           "Maximum enthalpy in output, default is calculate" },
         { "-nlevels", FALSE, etINT,  {&nlevels},
           "Number of levels for energy landscape" },
-        { "-mname",   FALSE, etSTR,  {&mname},
-          "Legend label for the custom landscape" },
     };
 #define NPA asize(pa)
 
     FILE           *out;
-    int             n, e_n, d_n, nlast, s, nset, e_nset, d_nset, i, j = 0, *idim, *ibox;
-    real          **val, **et_val, **dt_val, *t, *e_t, e_dt, d_dt, *d_t, dt, tot, error;
+    int             n, e_n, nlast, s, nset, e_nset, d_nset, i, j = 0, *idim, *ibox;
+    real          **val, **et_val, *t, *e_t, e_dt, d_dt, dt, tot, error;
     real           *rmin, *rmax;
     double         *av, *sig, cum1, cum2, cum3, cum4, db;
     const char     *fn_ge, *fn_ene;
@@ -1038,9 +982,7 @@ int gmx_sham(int argc, char *argv[])
         { efXPM, "-ls",   "gibbs",    ffOPTWR  },
         { efXPM, "-lsh",  "enthalpy", ffOPTWR  },
         { efXPM, "-lss",  "entropy",  ffOPTWR  },
-        { efXPM, "-map",  "map",      ffOPTWR  },
         { efPDB, "-ls3",  "gibbs3",   ffOPTWR  },
-        { efXVG, "-mdata", "mapdata",  ffOPTRD  },
         { efLOG, "-g",    "shamlog",  ffOPTWR  }
     };
 #define NFILE asize(fnm)
@@ -1100,22 +1042,6 @@ int gmx_sham(int argc, char *argv[])
         et_val = NULL;
     }
 
-    if (opt2fn_null("-mdata", NFILE, fnm) != NULL)
-    {
-        dt_val = read_xvg_time(opt2fn("-mdata", NFILE, fnm), bHaveT,
-                               FALSE, tb, FALSE, te,
-                               nsets_in, &d_nset, &d_n, &d_dt, &d_t);
-        if (d_nset != 1)
-        {
-            gmx_fatal(FARGS, "Can only handle one mapping data column in %s",
-                      opt2fn("-mdata", NFILE, fnm));
-        }
-    }
-    else
-    {
-        dt_val = NULL;
-    }
-
     if (fn_ene && et_val)
     {
         ehisto(opt2fn("-histo", NFILE, fnm), e_n, et_val, oenv);
@@ -1157,14 +1083,14 @@ int gmx_sham(int argc, char *argv[])
     do_sham(opt2fn("-dist", NFILE, fnm), opt2fn("-bin", NFILE, fnm),
             opt2fn("-lp", NFILE, fnm),
             opt2fn("-ls", NFILE, fnm), opt2fn("-lsh", NFILE, fnm),
-            opt2fn("-lss", NFILE, fnm), opt2fn("-map", NFILE, fnm),
+            opt2fn("-lss", NFILE, fnm),
             opt2fn("-ls3", NFILE, fnm), opt2fn("-g", NFILE, fnm),
-            n, nset, val, fn_ge != NULL, e_nset, et_val, d_n, d_t, dt_val, Tref,
+            n, nset, val, fn_ge != NULL, e_nset, et_val, Tref,
             pmax, gmax,
             opt2parg_bSet("-emin", NPA, pa) ? &emin : NULL,
             opt2parg_bSet("-emax", NPA, pa) ? &emax : NULL,
             nlevels, pmin,
-            mname, idim, ibox,
+            idim, ibox,
             opt2parg_bSet("-xmin", NPA, pa), rmin,
             opt2parg_bSet("-xmax", NPA, pa), rmax);
 

@@ -49,22 +49,27 @@
 #include <mkl.h>
 #endif
 
+#ifdef HAVE_EXTRAE
+ #include "extrae_user_events.h"
+#endif
+
 #include <boost/version.hpp>
 
 /* This file is completely threadsafe - keep it that way! */
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
-#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fft/fft.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
+#include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "buildinfo.h"
 
@@ -562,6 +567,11 @@ void please_cite(FILE *fp, const char *key)
           "An efficient and extensible format, library, and API for binary trajectory data from molecular simulations",
           "J. Comput. Chem.",
           35, 2014, "260-269"},
+        { "Goga2012",
+          "N. Goga and A. J. Rzepiela and A. H. de Vries and S. J. Marrink and H. J. C. Berendsen",
+          "Efficient Algorithms for Langevin and DPD Dynamics",
+          "J. Chem. Theory Comput.",
+          8, 2012, "3637--3649"},
         { "Lamoureux2003",
           "G. Lamoureux and B. Roux",
           "Modeling induced polarization with classical Drude oscillators: Theory and molecular dynamics simulation algorithm",
@@ -606,17 +616,9 @@ void please_cite(FILE *fp, const char *key)
     fflush(fp);
 }
 
-#ifdef GMX_GIT_VERSION_INFO
-/* Version information generated at compile time. */
-#include "gromacs/utility/gitversion.h"
-#else
-/* Fall back to statically defined version. */
-static const char _gmx_ver_string[] = "VERSION " VERSION;
-#endif
-
 const char *GromacsVersion()
 {
-    return _gmx_ver_string;
+    return gmx_version();
 }
 
 const char *ShortProgram(void)
@@ -643,18 +645,17 @@ extern void gmx_print_version_info_gpu(FILE *fp);
 
 static void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Gromacs version:    %s\n", _gmx_ver_string);
-#ifdef GMX_GIT_VERSION_INFO
-    fprintf(fp, "GIT SHA1 hash:      %s\n", _gmx_full_git_hash);
-    /* Only print out the branch information if present.
-     * The generating script checks whether the branch point actually
-     * coincides with the hash reported above, and produces an empty string
-     * in such cases. */
-    if (_gmx_central_base_hash[0] != 0)
+    fprintf(fp, "Gromacs version:    %s\n", gmx_version());
+    const char *const git_hash = gmx_version_git_full_hash();
+    if (git_hash[0] != '\0')
     {
-        fprintf(fp, "Branched from:      %s\n", _gmx_central_base_hash);
+        fprintf(fp, "GIT SHA1 hash:      %s\n", git_hash);
     }
-#endif
+    const char *const base_hash = gmx_version_git_central_base_hash();
+    if (base_hash[0] != '\0')
+    {
+        fprintf(fp, "Branched from:      %s\n", base_hash);
+    }
 
 #ifdef GMX_DOUBLE
     fprintf(fp, "Precision:          double\n");
@@ -684,7 +685,11 @@ static void gmx_print_version_info(FILE *fp)
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
+#ifndef __MIC__
     fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
+#else
+    fprintf(fp, "SIMD instructions:  %s\n", "Intel MIC");
+#endif
 
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP
@@ -702,6 +707,14 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "TNG support:        disabled\n");
 #endif
+#ifdef HAVE_EXTRAE
+    unsigned major, minor, revision;
+    Extrae_get_version(&major, &minor, &revision);
+    fprintf(fp, "Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision);
+#else
+    fprintf(fp, "Tracing support:    disabled\n");
+#endif
+
 
     fprintf(fp, "Built on:           %s\n", BUILD_TIME);
     fprintf(fp, "Built by:           %s\n", BUILD_USER);
@@ -791,17 +804,22 @@ void printBinaryInformation(FILE                            *fp,
         // Gromacs binary or some other binary that is calling Gromacs; we
         // could then print "%s is part of GROMACS" or some alternative text.
         fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
-                GromacsVersion(), precisionString, suffix);
+                gmx_version(), precisionString, suffix);
         fprintf(fp, "\n");
         printCopyright(fp);
         fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
-            GromacsVersion(), precisionString, suffix);
+    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
+            gmx_version(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
     if (binaryPath != NULL && binaryPath[0] != '\0')
     {
-        fprintf(fp, "%sExecutable: %s%s\n", prefix, binaryPath, suffix);
+        fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
+    }
+    const char *const libraryPath = programContext.defaultLibraryDataPath();
+    if (libraryPath != NULL && libraryPath[0] != '\0')
+    {
+        fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
     }
     const char *const commandLine = programContext.commandLine();
     if (commandLine != NULL && commandLine[0] != '\0')

@@ -55,7 +55,7 @@ const char *ens_names[ensNR+1] =
 
 const char *ei_names[eiNR+1] =
 {
-    "md", "steep", "cg", "bd", "sd", "nm", "l-bfgs", "tpi", "tpic", "sd1", "md-vv", "md-vv-avek", NULL
+    "md", "steep", "cg", "bd", "sd2", "nm", "l-bfgs", "tpi", "tpic", "sd", "md-vv", "md-vv-avek", NULL
 };
 
 const char *bool_names[BOOL_NR+1] =
@@ -161,6 +161,10 @@ const char *efpt_names[efptNR+1] = {
 
 const char *efpt_singular_names[efptNR+1] = {
     "fep-lambda", "mass-lambda", "coul-lambda", "vdw-lambda", "bonded-lambda", "restraint-lambda", "temperature-lambda", NULL
+};
+
+const char *edHdLPrintEnergy_names[edHdLPrintEnergyNR+1] = {
+    "no", "total", "potential", "yes", NULL
 };
 
 const char *elamstats_names[elamstatsNR+1] = {
@@ -283,5 +287,5 @@ const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1] =
 
 const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1] =
 {
-    "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", NULL
+    "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", "LJEwald", NULL
 };

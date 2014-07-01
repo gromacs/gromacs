@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,16 +43,21 @@
 #ifndef GMX_SELECTION_SELECTIONCOLLECTION_H
 #define GMX_SELECTION_SELECTIONCOLLECTION_H
 
+#include <cstdio>
+
 #include <string>
 #include <vector>
 
-#include "../legacyheaders/typedefs.h"
+#include "../legacyheaders/types/oenv.h"
 
 #include "../onlinehelp/helptopicinterface.h"
 #include "../utility/common.h"
 #include "selection.h" // For gmx::SelectionList
 
 struct gmx_ana_indexgrps_t;
+struct t_pbc;
+struct t_topology;
+struct t_trxframe;
 
 namespace gmx
 {
@@ -245,6 +250,7 @@ class SelectionCollection
          *      (if -1, parse as many as provided by the user).
          * \param[in]  bInteractive Whether the parser should behave
          *      interactively.
+         * \param[in]  context  Context to print for interactive input.
          * \returns    Vector of parsed selections.
          * \throws     std::bad_alloc if out of memory.
          * \throws     InvalidInputError if there is a parsing error
@@ -255,8 +261,12 @@ class SelectionCollection
          * the selection collection.
          * Some information about the selections only becomes available once
          * compile() has been called; see \ref Selection.
+         *
+         * The string provided to \p context should be such that it can replace
+         * the three dots in "Specify selections ...:".  It can be empty.
          */
-        SelectionList parseFromStdin(int count, bool bInteractive);
+        SelectionList parseFromStdin(int count, bool bInteractive,
+                                     const std::string &context);
         /*! \brief
          * Parses selection(s) from a file.
          *

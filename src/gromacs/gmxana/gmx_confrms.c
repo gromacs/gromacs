@@ -38,28 +38,27 @@
 #include <config.h>
 #endif
 
-#include "gromacs/fileio/filenm.h"
-#include "smalloc.h"
-#include "macros.h"
 #include <math.h>
+#include <string.h>
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/utility/smalloc.h"
+#include "macros.h"
 #include "typedefs.h"
-#include "xvgr.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
-#include "vec.h"
-#include "index.h"
-#include "pbc.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "txtdump.h"
-#include "do_fit.h"
 #include "viewit.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gmx_ana.h"
 
+#include "gromacs/math/do_fit.h"
 
 void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
@@ -176,7 +175,7 @@ int find_next_match_atoms_in_res(int *i1, atom_id index1[],
     {
         if (debug)
         {
-            fprintf(debug, "{%d %d}", *i1+bFW ? dx : dy, *i2+bFW ? dy : dx );
+            fprintf(debug, "{%d %d}", *i1 + (bFW ? dx : dy), *i2 + (bFW ? dy : dx) );
         }
         if (bFW)
         {

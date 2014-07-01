@@ -41,23 +41,18 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "sysstuff.h"
-#include "physics.h"
-#include "string2.h"
+#include <string.h>
+
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "pbc.h"
-#include "pbc.h"
-#include "index.h"
+#include "gromacs/math/vec.h"
 #include "gstat.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/writeps.h"
 
