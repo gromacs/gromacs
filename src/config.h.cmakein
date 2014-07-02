@@ -117,6 +117,9 @@
 /* 32-bit ARM NEON SIMD instruction set level was selected */
 #cmakedefine GMX_SIMD_ARM_NEON
 
+/* ARM (AArch64) NEON Advanced SIMD instruction set level was selected */
+#cmakedefine GMX_SIMD_ARM_NEON_ASIMD
+
 /* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
 #cmakedefine GMX_SIMD_IBM_QPX
 
