@@ -34,6 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include <algorithm>
 #include "gromacs/topology/block.h"
 
 #include "gromacs/utility/smalloc.h"
@@ -131,16 +132,21 @@ void stupid_fill_blocka(t_blocka *grp, int natom)
 void copy_blocka(const t_blocka *src, t_blocka *dest)
 {
     dest->nr           = src->nr;
-    dest->nalloc_index = dest->nr + 1;
+    /* Workaround for inconsistent handling of nalloc_index in
+     * other parts of the code. Often nalloc_index and nalloc_a
+     * are not set.
+     */
+    dest->nalloc_index = std::max(src->nalloc_index, dest->nr + 1);
     snew(dest->index, dest->nalloc_index);
     for (int i = 0; i < dest->nr+1; ++i)
     {
         dest->index[i] = src->index[i];
     }
     dest->nra      = src->nra;
-    dest->nalloc_a = dest->nra + 1;
+    /* See above. */
+    dest->nalloc_a = std::max(src->nalloc_a, dest->nra);
     snew(dest->a, dest->nalloc_a);
-    for (int i = 0; i < dest->nra+1; ++i)
+    for (int i = 0; i < dest->nra; ++i)
     {
         dest->a[i] = src->a[i];
     }
