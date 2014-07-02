@@ -34,9 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include <algorithm>
 #include "gromacs/topology/block.h"
 
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 
 void init_block(t_block *block)
 {
@@ -131,14 +133,14 @@ void stupid_fill_blocka(t_blocka *grp, int natom)
 void copy_blocka(const t_blocka *src, t_blocka *dest)
 {
     dest->nr           = src->nr;
-    dest->nalloc_index = dest->nr + 1;
+    dest->nalloc_index = std::max(src->nalloc_index, dest->nr+1);
     snew(dest->index, dest->nalloc_index);
     for (int i = 0; i < dest->nr+1; ++i)
     {
         dest->index[i] = src->index[i];
     }
     dest->nra      = src->nra;
-    dest->nalloc_a = dest->nra + 1;
+    dest->nalloc_a = std::max(src->nalloc_a, src->nra);
     snew(dest->a, dest->nalloc_a);
     for (int i = 0; i < dest->nra; ++i)
     {

@@ -84,10 +84,10 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
         { efLOG, "-g",      "md",       ffWRITE }
     };
     int nfile = sizeof(fnm)/sizeof(fnm[0]);
-    int argc = 0;
+    int argc = 1;
     char **argv;
     
-    snew(argv,1);
+    snew(argv, argc);
     argv[0] = strdup("MM-Slave");
     
     if (!parse_common_args(&argc, argv, 0, nfile, fnm, 0, NULL,

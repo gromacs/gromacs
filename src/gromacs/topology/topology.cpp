@@ -80,14 +80,14 @@ void init_top(t_topology *top)
 
 void done_moltype(gmx_moltype_t *molt)
 {
-    done_atom(&molt->atoms);
-    done_block(&molt->cgs);
-    done_blocka(&molt->excls);
+    //done_atom(&molt->atoms);
+    //done_block(&molt->cgs);
+    //done_blocka(&molt->excls);
 
     for (int f = 0; f < F_NRE; f++)
     {
-        sfree(molt->ilist[f].iatoms);
-        molt->ilist[f].nalloc = 0;
+        //sfree(molt->ilist[f].iatoms);
+        //molt->ilist[f].nalloc = 0;
     }
 }
 
