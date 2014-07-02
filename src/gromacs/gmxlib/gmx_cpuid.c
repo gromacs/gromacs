@@ -80,7 +80,8 @@ gmx_cpuid_vendor_string[GMX_CPUID_NVENDORS] =
     "AuthenticAMD",
     "Fujitsu",
     "IBM",
-    "ARM"
+    "ARM",
+    "AArch64"
 };
 
 const char *
@@ -92,7 +93,8 @@ gmx_cpuid_vendor_string_alternative[GMX_CPUID_NVENDORS] =
     "AuthenticAMD",
     "Fujitsu",
     "ibm", /* Used on BlueGene/Q */
-    "arm"
+    "arm",
+    "aarch64"
 };
 
 const char *
@@ -133,7 +135,8 @@ gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
     "tdt",
     "x2apic",
     "xop",
-    "arm_neon"
+    "arm_neon",
+    "aarch64_asimd"
 };
 
 const char *
@@ -149,7 +152,8 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
     "AVX2_256",
     "Sparc64 HPC-ACE",
     "IBM_QPX",
-    "ARM_NEON"
+    "ARM_NEON",
+    "AARCH64_ASIMD"
 };
 
 /* Max length of brand string */
@@ -240,6 +244,8 @@ static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE4_1;
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE2;
 #elif defined GMX_SIMD_ARM_NEON
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_ARM_NEON;
+#elif defined GMX_SIMD_AARCH64_ASIMD
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_AARCH64_ASIMD;
 #elif defined GMX_SIMD_SPARC64_HPC_ACE
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
 #elif defined GMX_SIMD_IBM_QPX
@@ -819,6 +825,62 @@ cpuid_check_arm(gmx_cpuid_t                cpuid)
     return 0;
 }
 
+
+static int
+cpuid_check_aarch64(gmx_cpuid_t                cpuid)
+{
+#if defined(__linux__) || defined(__linux)
+    FILE *fp;
+    char  buffer[GMX_CPUID_STRLEN], buffer2[GMX_CPUID_STRLEN], buffer3[GMX_CPUID_STRLEN];
+
+    if ( (fp = fopen("/proc/cpuinfo", "r")) != NULL)
+    {
+        while ( (fgets(buffer, sizeof(buffer), fp) != NULL))
+        {
+            chomp_substring_before_colon(buffer, buffer2, GMX_CPUID_STRLEN);
+            chomp_substring_after_colon(buffer, buffer3, GMX_CPUID_STRLEN);
+
+            if (!strcmp(buffer2, "Processor"))
+            {
+                strncpy(cpuid->brand, buffer3, GMX_CPUID_STRLEN);
+            }
+            else if (!strcmp(buffer2, "CPU architecture"))
+            {
+                /* Some implementations just list the string 'AArch64' */
+                if (!strcmp(buffer3, "AArch64"))
+                {
+                    cpuid->family = 8; /* Assume ARMv8 if no architecture given */
+                }
+                else
+                {
+                    cpuid->family = strtol(buffer3, NULL, 10);
+                }
+            }
+            else if (!strcmp(buffer2, "CPU part"))
+            {
+                cpuid->model = strtol(buffer3, NULL, 16);
+            }
+            else if (!strcmp(buffer2, "CPU revision"))
+            {
+                cpuid->stepping = strtol(buffer3, NULL, 10);
+            }
+            else if (!strcmp(buffer2, "Features") && strstr(buffer3, "asimd"))
+            {
+                cpuid->feature[GMX_CPUID_FEATURE_AARCH64_ASIMD] = 1;
+            }
+        }
+    }
+    fclose(fp);
+#else
+    /* Strange non-linux platform. However, since ASIMD/NEON is present on all
+     * implementations of AArch64 this far, we assume it is present for now.
+     */
+    cpuid->feature[GMX_CPUID_FEATURE_AARCH64_ASIMD] = 1;
+#endif
+    return 0;
+}
+
+
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
  */
@@ -861,7 +923,7 @@ cpuid_check_vendor(void)
         {
             chomp_substring_before_colon(buffer, before_colon, sizeof(before_colon));
             /* Intel/AMD use "vendor_id", IBM "vendor"(?) or "model". Fujitsu "manufacture".
-             * On ARM there does not seem to be a vendor, but ARM is listed in the Processor string.
+             * On ARM there does not seem to be a vendor, but ARM or AArch64 is listed in the Processor string.
              * Add others if you have them!
              */
             if (!strcmp(before_colon, "vendor_id")
@@ -995,6 +1057,9 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
 #endif
         case GMX_CPUID_VENDOR_ARM:
             cpuid_check_arm(cpuid);
+            break;
+        case GMX_CPUID_VENDOR_AARCH64:
+            cpuid_check_aarch64(cpuid);
             break;
         default:
             /* Default value */
@@ -1161,6 +1226,13 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
         if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_ARM_NEON))
         {
             tmpsimd = GMX_CPUID_SIMD_ARM_NEON;
+        }
+    }
+    else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_AARCH64)
+    {
+        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_AARCH64_ASIMD))
+        {
+            tmpsimd = GMX_CPUID_SIMD_AARCH64_ASIMD;
         }
     }
     return tmpsimd;

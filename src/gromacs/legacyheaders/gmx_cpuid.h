@@ -56,6 +56,7 @@ enum gmx_cpuid_vendor
     GMX_CPUID_VENDOR_FUJITSU,
     GMX_CPUID_VENDOR_IBM,
     GMX_CPUID_VENDOR_ARM,
+    GMX_CPUID_VENDOR_AARCH64,
     GMX_CPUID_NVENDORS
 };
 
@@ -113,6 +114,7 @@ enum gmx_cpuid_feature
     GMX_CPUID_FEATURE_X86_X2APIC,        /* Extended xAPIC Support                       */
     GMX_CPUID_FEATURE_X86_XOP,           /* AMD extended instructions, only AMD for now  */
     GMX_CPUID_FEATURE_ARM_NEON,          /* 32-bit ARM NEON                              */
+    GMX_CPUID_FEATURE_AARCH64_ASIMD,     /* 64-bit ARM AArch64 Advanced SIMD             */
     GMX_CPUID_NFEATURES
 };
 
@@ -135,6 +137,7 @@ enum gmx_cpuid_simd
     GMX_CPUID_SIMD_SPARC64_HPC_ACE,
     GMX_CPUID_SIMD_IBM_QPX,
     GMX_CPUID_SIMD_ARM_NEON,
+    GMX_CPUID_SIMD_AARCH64_ASIMD,
     GMX_CPUID_NSIMD
 };
 

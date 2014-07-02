@@ -269,6 +269,36 @@ elseif(${GMX_SIMD} STREQUAL "ARM_NEON")
     set(GMX_SIMD_ARM_NEON 1)
     set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions")
 
+elseif(${GMX_SIMD} STREQUAL "AARCH64_ASIMD")
+    # Gcc-4.8.1 appears to have a bug where the c++ compiler requires
+    # -D__STDC_CONSTANT_MACROS if we include arm_neon.h
+
+    gmx_find_cflag_for_source(CFLAGS_AARCH64_ASIMD "C compiler ARM AArch64 Advanced SIMD flag"
+                              "#include<arm_neon.h>
+                              int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                              SIMD_C_FLAGS
+                              "")
+    gmx_find_cxxflag_for_source(CXXFLAGS_AARCH64_ASIMD "C++ compiler ARM AArch64 Advanced SIMD flag"
+                                "#include<arm_neon.h>
+                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                                SIMD_CXX_FLAGS
+                                "-D__STDC_CONSTANT_MACROS" "")
+
+    if(NOT CFLAGS_AARCH64_ASIMD OR NOT CXXFLAGS_AARCH64_ASIMD)
+        message(FATAL_ERROR "Cannot find ARM 64-bit (AArch64) Advanced SIMD compiler flag. Use a newer compiler, or disable SIMD.")
+    endif()
+
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "4.9")
+        message(WARNING "At least gcc-4.8.1 has many bugs for AArch64 SIMD compilation. You might need gcc version 4.9 or later.")
+    endif()
+
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.4")
+        message(FATAL_ERROR "Clang version 3.4 or later is required for AArch64 SIMD.")
+    endif()
+
+    set(GMX_SIMD_AARCH64_ASIMD 1)
+    set(SIMD_STATUS_MESSAGE "Enabling ARM AArch64 Advanced SIMD instructions")
+
 elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
 
     try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
