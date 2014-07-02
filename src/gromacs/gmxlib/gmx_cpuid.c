@@ -92,7 +92,7 @@ gmx_cpuid_vendor_string_alternative[GMX_CPUID_NVENDORS] =
     "AuthenticAMD",
     "Fujitsu",
     "ibm", /* Used on BlueGene/Q */
-    "arm"
+    "AArch64"
 };
 
 const char *
@@ -133,7 +133,8 @@ gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
     "tdt",
     "x2apic",
     "xop",
-    "arm_neon"
+    "arm_neon",
+    "arm_neon_asimd"
 };
 
 const char *
@@ -149,7 +150,8 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
     "AVX2_256",
     "Sparc64 HPC-ACE",
     "IBM_QPX",
-    "ARM_NEON"
+    "ARM_NEON",
+    "ARM_NEON_ASIMD"
 };
 
 /* Max length of brand string */
@@ -240,6 +242,8 @@ static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE4_1;
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE2;
 #elif defined GMX_SIMD_ARM_NEON
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_ARM_NEON;
+#elif defined GMX_SIMD_ARM_NEON_ASIMD
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_ARM_NEON_ASIMD;
 #elif defined GMX_SIMD_SPARC64_HPC_ACE
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
 #elif defined GMX_SIMD_IBM_QPX
@@ -796,6 +800,10 @@ cpuid_check_arm(gmx_cpuid_t                cpuid)
             else if (!strcmp(buffer2, "CPU architecture"))
             {
                 cpuid->family = strtol(buffer3, NULL, 10);
+                if (!strcmp(buffer3, "AArch64"))
+                {
+                    cpuid->family = 8;
+                }
             }
             else if (!strcmp(buffer2, "CPU part"))
             {
@@ -809,15 +817,27 @@ cpuid_check_arm(gmx_cpuid_t                cpuid)
             {
                 cpuid->feature[GMX_CPUID_FEATURE_ARM_NEON] = 1;
             }
+            else if (!strcmp(buffer2, "Features") && strstr(buffer3, "asimd"))
+            {
+                cpuid->feature[GMX_CPUID_FEATURE_ARM_NEON_ASIMD] = 1;
+            }
         }
     }
     fclose(fp);
 #else
-    /* Strange non-linux platform. We cannot assume that neon is present. */
+#    ifdef __aarch64__
+    /* Strange 64-bit non-linux platform. However, since NEON ASIMD is present on all
+     * implementations of AArch64 this far, we assume it is present for now.
+     */
+    cpuid->feature[GMX_CPUID_FEATURE_ARM_NEON_ASIMD] = 1;
+#    else
+    /* Strange 32-bit non-linux platform. We cannot assume that neon is present. */
     cpuid->feature[GMX_CPUID_FEATURE_ARM_NEON] = 0;
+#    endif
 #endif
     return 0;
 }
+
 
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
@@ -861,7 +881,7 @@ cpuid_check_vendor(void)
         {
             chomp_substring_before_colon(buffer, before_colon, sizeof(before_colon));
             /* Intel/AMD use "vendor_id", IBM "vendor"(?) or "model". Fujitsu "manufacture".
-             * On ARM there does not seem to be a vendor, but ARM is listed in the Processor string.
+             * On ARM there does not seem to be a vendor, but ARM or AArch64 is listed in the Processor string.
              * Add others if you have them!
              */
             if (!strcmp(before_colon, "vendor_id")
@@ -886,14 +906,12 @@ cpuid_check_vendor(void)
         }
     }
     fclose(fp);
-#elif defined(__arm__) || defined (__arm)
+#elif defined(__arm__) || defined (__arm) || defined(__aarch64__)
     /* If we are using ARM on something that is not linux we have to trust the compiler,
-     * and we cannot get the extra info that might be present in /proc/cpuinf.
-     * This path will not trigger 64-bit arm, which is identified by __aarch64__ instead.
+     * and we cannot get the extra info that might be present in /proc/cpuinfo.
      */
     vendor = GMX_CPUID_VENDOR_ARM;
 #endif
-
     return vendor;
 }
 
@@ -1158,7 +1176,11 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
     }
     else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_ARM)
     {
-        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_ARM_NEON))
+        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_ARM_NEON_ASIMD))
+        {
+            tmpsimd = GMX_CPUID_SIMD_ARM_NEON_ASIMD;
+        }
+        else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_ARM_NEON))
         {
             tmpsimd = GMX_CPUID_SIMD_ARM_NEON;
         }
