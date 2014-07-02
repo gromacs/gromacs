@@ -1340,6 +1340,7 @@ gmx_simd_xor_sign_d(gmx_simd_double_t a, gmx_simd_double_t b)
 #endif
 }
 
+#ifndef gmx_simd_rsqrt_iter_d
 /*! \brief Perform one Newton-Raphson iteration to improve 1/sqrt(x) for SIMD double.
  *
  * \copydetails gmx_simd_rsqrt_iter_f
@@ -1353,7 +1354,7 @@ gmx_simd_rsqrt_iter_d(gmx_simd_double_t lu, gmx_simd_double_t x)
     return gmx_simd_mul_d(gmx_simd_set1_d(0.5), gmx_simd_mul_d(gmx_simd_sub_d(gmx_simd_set1_d(3.0), gmx_simd_mul_d(gmx_simd_mul_d(lu, lu), x)), lu));
 #endif
 }
-
+#endif
 
 /*! \brief Calculate 1/sqrt(x) for SIMD double
  *
@@ -1418,6 +1419,7 @@ gmx_simd_invsqrt_pair_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
 #endif
 }
 
+#ifndef gmx_simd_rcp_iter_d
 /*! \brief Perform one Newton-Raphson iteration to improve 1/x for SIMD double.
  *
  * \copydetails gmx_simd_rcp_iter_f
@@ -1427,6 +1429,7 @@ gmx_simd_rcp_iter_d(gmx_simd_double_t lu, gmx_simd_double_t x)
 {
     return gmx_simd_mul_d(lu, gmx_simd_fnmadd_d(lu, x, gmx_simd_set1_d(2.0)));
 }
+#endif
 
 /*! \brief Calculate 1/x for SIMD double.
  *
