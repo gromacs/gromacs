@@ -456,7 +456,7 @@ fpdecl = open('nb_kernel_' + Arch + '.c','w')
 fpdecl.write( FileHeader )
 fpdecl.write( '#ifndef nb_kernel_' + Arch + '_h\n' )
 fpdecl.write( '#define nb_kernel_' + Arch + '_h\n\n' )
-fpdecl.write( '#include "../nb_kernel.h"\n\n' )
+fpdecl.write( '#include "gromacs/gmxlib/nonbonded/nb_kernel.h"\n\n' )
 
 for KernelElec in ElectrostaticsList:
     defines['KERNEL_ELEC'] = KernelElec
