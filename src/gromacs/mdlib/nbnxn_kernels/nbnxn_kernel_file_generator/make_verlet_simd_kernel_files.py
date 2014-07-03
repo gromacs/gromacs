@@ -162,7 +162,7 @@ for type in VerletKernelTypeDict:
     DirName = "../simd_{0}".format(type)
     KernelNamePrefix = 'nbnxn_kernel'
     KernelsName = "{0}_simd_{1}".format(KernelNamePrefix,type)
-    KernelsHeaderFileName = "{0}.h".format(KernelsName,type)
+    KernelsHeaderFileName = "gromacs/mdlib/nbnxn_kernels/simd_{0}/{1}.h".format(type,KernelsName)
     KernelFunctionLookupTable = {}
     KernelDeclarations = ''
     KernelTemplate = read_kernel_template("{0}_kernel.c.pre".format(KernelsName))
@@ -205,7 +205,7 @@ for type in VerletKernelTypeDict:
 
     # Write the header file that declares all the kernel
     # functions for this type
-    with open('{0}/{1}'.format(DirName,KernelsHeaderFileName),'w') as fp:
+    with open('../../../../{0}'.format(KernelsHeaderFileName),'w') as fp:
         fp.write(FileHeader.format(type))
         fp.write(KernelsHeaderTemplate
                  .format(KernelsName,
