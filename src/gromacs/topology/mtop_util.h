@@ -37,8 +37,8 @@
 #ifndef GMX_TOPOLOGY_MTOP_UTIL_H
 #define GMX_TOPOLOGY_MTOP_UTIL_H
 
-#include "../legacyheaders/types/inputrec.h"
-#include "../utility/basedefinitions.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

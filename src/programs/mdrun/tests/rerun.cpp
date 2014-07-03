@@ -41,7 +41,7 @@
  * \ingroup module_mdrun
  */
 #include <gtest/gtest.h>
-#include "moduletest.h"
+#include "programs/mdrun/tests/moduletest.h"
 #include "gromacs/options/filenameoption.h"
 #include "testutils/cmdlinetest.h"
 

@@ -42,8 +42,8 @@
 #include <config.h>
 #endif
 
-#include "types/simple.h"
-#include "types/hw_info.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM_INT ;

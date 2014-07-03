@@ -81,8 +81,8 @@ extern int _gmx_sel_yydebug;
 /* Line 2049 of yacc.c  */
 #line 73 "parser.y"
 
-#include "parsetree.h"
-#include "selelem.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/selelem.h"
 
 
 /* Line 2049 of yacc.c  */

@@ -37,11 +37,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "types/hw_info.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 
-#include "gpu_utils.h"
-#include "../cuda_tools/cudautils.cuh"
-#include "memtestG80_core.h"
+#include "gromacs/legacyheaders/gpu_utils.h"
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/gmxlib/gpu_utils/memtestG80_core.h"
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"

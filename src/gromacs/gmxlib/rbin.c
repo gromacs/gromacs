@@ -39,9 +39,9 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "network.h"
-#include "rbin.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/rbin.h"
 #include "gromacs/utility/smalloc.h"
 
 t_bin *mk_bin(void)

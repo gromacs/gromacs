@@ -39,9 +39,9 @@
 #define _checkpoint_h
 
 
-#include "typedefs.h"
-#include "../fileio/gmxfio.h"
-#include "../fileio/filenm.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C" {

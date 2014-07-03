@@ -41,10 +41,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "Xstuff.h"
-#include "x11.h"
+#include "programs/view/Xstuff.h"
+#include "programs/view/x11.h"
 
 /* These colours will be mapped to black on a monochrome screen */
 unsigned long BLACK, BLUE, GREEN, CYAN, RED, BROWN, GREY, DARKGREY;

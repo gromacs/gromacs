@@ -41,9 +41,9 @@
 #ifndef GMX_SELECTION_POSITION_H
 #define GMX_SELECTION_POSITION_H
 
-#include "../math/vectypes.h"
+#include "gromacs/math/vectypes.h"
 
-#include "indexutil.h"
+#include "gromacs/selection/indexutil.h"
 
 /*! \brief
  * Stores a set of positions together with their origins.

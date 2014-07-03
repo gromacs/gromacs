@@ -42,13 +42,13 @@
 
 #include <math.h>
 
-#include "../nb_kernel.h"
-#include "types/simple.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/nrnb.h"
 
 #include "gromacs/simd/math_x86_avx_128_fma_double.h"
-#include "kernelutil_x86_avx_128_fma_double.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/kernelutil_x86_avx_128_fma_double.h"
 /* #endif */
 
 /* ## List of variables set by the generating script:                                    */

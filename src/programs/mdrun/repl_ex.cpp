@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "repl_ex.h"
+#include "programs/mdrun/repl_ex.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -43,15 +43,15 @@
 
 #include <math.h>
 
-#include "network.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/vec.h"
-#include "names.h"
-#include "domdec.h"
-#include "main.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/main.h"
 #include "gromacs/random/random.h"
 
 #define PROBABILITYCUTOFF 100

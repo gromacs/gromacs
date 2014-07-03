@@ -1,7 +1,7 @@
 #include <math.h>
 
 
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 double 
 F77_FUNC(dlansy,DLANSY)(const char *norm, const char *uplo, int *n, double *a, int 

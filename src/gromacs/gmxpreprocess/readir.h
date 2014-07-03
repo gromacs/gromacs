@@ -38,9 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
-#include "typedefs.h"
-#include "readinp.h"
-#include "grompp-impl.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
 #ifdef __cplusplus
 extern "C" {

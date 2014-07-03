@@ -61,7 +61,7 @@
 /* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif
 
-#include "fft5d.h"
+#include "gromacs/fft/fft5d.h"
 #include <float.h>
 #include <math.h>
 #include <assert.h>

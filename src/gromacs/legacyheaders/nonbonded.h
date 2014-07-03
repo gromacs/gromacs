@@ -38,10 +38,10 @@
 #ifndef _nonbonded_h
 #define _nonbonded_h
 
-#include "typedefs.h"
-#include "network.h"
-#include "tgroup.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/genborn.h"
 
 #ifdef __cplusplus
 extern "C" {

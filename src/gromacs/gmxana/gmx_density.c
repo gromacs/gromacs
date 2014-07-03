@@ -44,17 +44,17 @@
 #include <string.h>
 
 #include "gromacs/utility/cstringutil.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "gstat.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/units.h"
-#include "gmx_ana.h"
-#include "macros.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"

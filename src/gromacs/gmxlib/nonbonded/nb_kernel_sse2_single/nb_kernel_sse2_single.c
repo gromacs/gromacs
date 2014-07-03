@@ -38,7 +38,7 @@
 #ifndef nb_kernel_sse2_single_h
 #define nb_kernel_sse2_single_h
 
-#include "../nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_sse2_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_sse2_single;

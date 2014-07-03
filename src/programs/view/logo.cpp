@@ -40,11 +40,11 @@
 
 #include <stdlib.h>
 
-#include "macros.h"
-#include "xutil.h"
-#include "Xstuff.h"
-#include "copyrite.h"
-#include "logo.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "programs/view/xutil.h"
+#include "programs/view/Xstuff.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "programs/view/logo.h"
 
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"

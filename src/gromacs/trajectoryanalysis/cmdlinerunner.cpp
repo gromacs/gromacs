@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "cmdlinerunner.h"
+#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

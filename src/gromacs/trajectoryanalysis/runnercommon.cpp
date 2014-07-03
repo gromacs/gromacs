@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "runnercommon.h"
+#include "gromacs/trajectoryanalysis/runnercommon.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -69,7 +69,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "analysissettings-impl.h"
+#include "gromacs/trajectoryanalysis/analysissettings-impl.h"
 
 namespace gmx
 {

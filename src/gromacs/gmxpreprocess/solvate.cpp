@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "solvate.h"
+#include "gromacs/gmxpreprocess/solvate.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -42,14 +42,14 @@
 
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/confio.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/futil.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "addconf.h"
-#include "read-conformation.h"
+#include "gromacs/gmxpreprocess/addconf.h"
+#include "gromacs/gmxpreprocess/read-conformation.h"
 #include "gromacs/fileio/pdbio.h"
 
 #include "gromacs/commandline/pargs.h"

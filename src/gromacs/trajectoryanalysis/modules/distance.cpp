@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "distance.h"
+#include "gromacs/trajectoryanalysis/modules/distance.h"
 
 #include <string>
 

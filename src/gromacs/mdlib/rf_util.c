@@ -38,10 +38,10 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "force.h"
-#include "names.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"

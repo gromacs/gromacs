@@ -45,7 +45,7 @@
 
 #include "thread_mpi/mutex.h"
 
-#include "errorformat.h"
+#include "gromacs/utility/errorformat.h"
 
 namespace gmx
 {

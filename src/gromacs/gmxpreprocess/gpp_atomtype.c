@@ -41,10 +41,10 @@
 #include <math.h>
 #include <string.h>
 
-#include "topdirs.h"
-#include "toputil.h"
-#include "txtdump.h"
-#include "gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"

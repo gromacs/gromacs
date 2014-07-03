@@ -54,8 +54,8 @@
 
 #include <stdio.h>
 
-#include "../math/gmxcomplex.h"
-#include "../utility/real.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

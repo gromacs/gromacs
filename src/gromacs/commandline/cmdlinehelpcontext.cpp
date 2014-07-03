@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-#include "cmdlinehelpcontext.h"
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 
 #include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/utility/gmxassert.h"

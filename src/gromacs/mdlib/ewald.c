@@ -42,14 +42,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/units.h"
-#include "coulomb.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/math/gmxcomplex.h"

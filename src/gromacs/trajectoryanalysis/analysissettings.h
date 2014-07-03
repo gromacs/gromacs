@@ -43,9 +43,9 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 
-#include "../options/timeunitmanager.h"
-#include "../math/vectypes.h"
-#include "../utility/common.h"
+#include "gromacs/options/timeunitmanager.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/common.h"
 
 struct t_topology;
 
