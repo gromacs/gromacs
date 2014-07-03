@@ -59,7 +59,7 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 
-#include "moduletest.h"
+#include "gromacs/trajectoryanalysis/tests/moduletest.h"
 
 namespace
 {

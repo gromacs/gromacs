@@ -38,7 +38,7 @@
 #ifndef GMX_TIMING_WALLTIME_ACCOUNTING_H
 #define GMX_TIMING_WALLTIME_ACCOUNTING_H
 
-#include "../utility/basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

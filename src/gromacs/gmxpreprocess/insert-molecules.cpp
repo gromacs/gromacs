@@ -34,21 +34,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "insert-molecules.h"
+#include "gromacs/gmxpreprocess/insert-molecules.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/fileio/confio.h"
-#include "macros.h"
-#include "names.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "addconf.h"
-#include "read-conformation.h"
+#include "gromacs/gmxpreprocess/addconf.h"
+#include "gromacs/gmxpreprocess/read-conformation.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"

@@ -603,13 +603,13 @@
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
-#include "nbnxn_kernel_simd_2xnn_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for (; (cjind < cjind1); cjind++)
             {
-#include "nbnxn_kernel_simd_2xnn_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
             }
 #undef HALF_LJ
 #undef CALC_COULOMB
@@ -621,13 +621,13 @@
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
-#include "nbnxn_kernel_simd_2xnn_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for (; (cjind < cjind1); cjind++)
             {
-#include "nbnxn_kernel_simd_2xnn_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
             }
 #undef CALC_COULOMB
         }
@@ -637,13 +637,13 @@
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
-#include "nbnxn_kernel_simd_2xnn_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
             for (; (cjind < cjind1); cjind++)
             {
-#include "nbnxn_kernel_simd_2xnn_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
             }
         }
 #undef CALC_LJ

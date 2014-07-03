@@ -43,7 +43,7 @@
 #include "config.h"
 #endif
 
-#include "errorformat.h"
+#include "gromacs/utility/errorformat.h"
 
 #include <cctype>
 #include <cstdio>

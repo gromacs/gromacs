@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
-#include "filenameoptionmanager.h"
+#include "gromacs/options/filenameoptionmanager.h"
 
 #include <string>
 

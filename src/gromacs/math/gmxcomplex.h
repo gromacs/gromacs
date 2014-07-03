@@ -39,9 +39,9 @@
 
 #include <math.h>
 
-#include "../utility/real.h"
+#include "gromacs/utility/real.h"
 
-#include "vectypes.h"
+#include "gromacs/math/vectypes.h"
 
 typedef struct {
     real re, im;

@@ -42,22 +42,22 @@
 #include <string.h>
 
 #include "gromacs/math/utilities.h"
-#include "macros.h"
-#include "bondf.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
-#include "txtdump.h"
-#include "readinp.h"
-#include "names.h"
-#include "toppush.h"
-#include "pdb2top.h"
-#include "gpp_nextnb.h"
-#include "gpp_atomtype.h"
-#include "fflibutil.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
 
-#include "nm2type.h"
+#include "gromacs/gmxpreprocess/nm2type.h"
 
 #include "gromacs/utility/fatalerror.h"
 

@@ -41,16 +41,16 @@
 #include <stdio.h>
 #include <math.h>
 #include "gromacs/math/utilities.h"
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
-#include "coulomb.h"
+#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/utility/futil.h"
-#include "names.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/macros.h"
 
 real calc_ewaldcoeff_q(real rc, real dtol)
 {

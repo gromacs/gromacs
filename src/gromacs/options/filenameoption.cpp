@@ -39,8 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
-#include "filenameoption.h"
-#include "filenameoptionstorage.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/filenameoptionstorage.h"
 
 #include <cstring>
 

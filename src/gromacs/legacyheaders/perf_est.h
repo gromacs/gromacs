@@ -37,9 +37,9 @@
 #ifndef _perf_est_h
 #define _perf_est_h
 
-#include "types/inputrec.h"
-#include "../math/vectypes.h"
-#include "../utility/basedefinitions.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

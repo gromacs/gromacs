@@ -44,16 +44,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
-#include "grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "toputil.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 
-#include "tomorse.h"
+#include "gromacs/gmxpreprocess/tomorse.h"
 
 typedef struct {
     char *ai, *aj;

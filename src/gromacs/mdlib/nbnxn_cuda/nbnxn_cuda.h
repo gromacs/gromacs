@@ -40,8 +40,8 @@
 #include <config.h>
 #endif
 
-#include "types/nbnxn_cuda_types_ext.h"
-#include "types/simple.h"
+#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;

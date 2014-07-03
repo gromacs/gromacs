@@ -51,9 +51,9 @@
 #include <string>
 #include <vector>
 
-#include "../utility/common.h"
-#include "../utility/programcontext.h"
-#include "../utility/uniqueptr.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {

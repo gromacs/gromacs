@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "read-conformation.h"
+#include "gromacs/gmxpreprocess/read-conformation.h"
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/types/simple.h"

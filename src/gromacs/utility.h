@@ -160,10 +160,10 @@
 #ifndef GMX_UTILITY_H
 #define GMX_UTILITY_H
 
-#include "utility/errorcodes.h"
-#include "utility/exceptions.h"
-#include "utility/gmxassert.h"
-#include "utility/init.h"
-#include "utility/programcontext.h"
+#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/init.h"
+#include "gromacs/utility/programcontext.h"
 
 #endif

@@ -40,7 +40,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#include "moduletest.h"
+#include "programs/mdrun/tests/moduletest.h"
 
 #include <math.h>
 
