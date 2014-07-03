@@ -447,6 +447,9 @@ include(gmxManageSharedLibraries)
 # tests. This exports LIBXML2_FOUND, which we should not use because
 # it does not tell us that linking will succeed. Instead, we test that
 # next.
+if(DEFINED LIBXML2_LIBRARIES)
+  set(LibXml2_FIND_QUIETLY TRUE)
+endif()
 find_package(LibXml2)
 include(gmxTestLibXml2)
 gmx_test_libxml2(HAVE_LIBXML2)
