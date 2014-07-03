@@ -40,9 +40,9 @@
 
 #include <stdlib.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "sortwater.h"
+#include "gromacs/gmxpreprocess/sortwater.h"
 
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"

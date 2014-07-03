@@ -43,10 +43,10 @@
 
 #include <algorithm>
 
-#include "macros.h"
-#include "xutil.h"
-#include "xdlghi.h"
-#include "fgrid.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "programs/view/xutil.h"
+#include "programs/view/xdlghi.h"
+#include "programs/view/fgrid.h"
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

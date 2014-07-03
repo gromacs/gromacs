@@ -1,5 +1,5 @@
 #include <math.h>
-#include "../gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
 
 int
 F77_FUNC(idamax,IDAMAX)(int *n__,

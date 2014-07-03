@@ -40,7 +40,7 @@
 
 #include <signal.h>
 #include <stdlib.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 static int div_nsteps(int nsteps, int nst)
 {

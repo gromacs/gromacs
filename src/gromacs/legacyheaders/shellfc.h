@@ -35,10 +35,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "../timing/wallcycle.h"
+#include "gromacs/timing/wallcycle.h"
 
-#include "typedefs.h"
-#include "vsite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vsite.h"
 
 #ifdef __cplusplus
 extern "C" {

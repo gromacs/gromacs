@@ -36,16 +36,16 @@
 #include <config.h>
 #endif
 
-#include "types/commrec.h"
-#include "network.h"
-#include "calcgrid.h"
-#include "pme.h"
-#include "domdec.h"
-#include "nbnxn_cuda_data_mgmt.h"
-#include "force.h"
-#include "macros.h"
-#include "md_logging.h"
-#include "pme_loadbal.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/nbnxn_cuda_data_mgmt.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "programs/mdrun/pme_loadbal.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"

@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "protonate.h"
+#include "gromacs/gmxpreprocess/protonate.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -42,17 +42,17 @@
 
 #include <math.h>
 #include "gromacs/utility/cstringutil.h"
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "genhydro.h"
+#include "gromacs/gmxpreprocess/genhydro.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/math/vec.h"
-#include "hackblock.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 
 #include "gromacs/utility/fatalerror.h"
 

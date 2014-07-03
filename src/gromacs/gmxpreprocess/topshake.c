@@ -43,12 +43,12 @@
 #include <math.h>
 
 #include "gromacs/math/units.h"
-#include "readir.h"
-#include "typedefs.h"
-#include "topshake.h"
-#include "toppush.h"
-#include "toputil.h"
-#include "topdirs.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxpreprocess/topshake.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 

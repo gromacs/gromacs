@@ -36,11 +36,11 @@
 #ifndef NBNXN_CUDA_DATA_MGMT_H
 #define NBNXN_CUDA_DATA_MGMT_H
 
-#include "types/simple.h"
-#include "types/interaction_const.h"
-#include "types/nbnxn_cuda_types_ext.h"
-#include "types/hw_info.h"
-#include "types/nb_verlet.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/nb_verlet.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;

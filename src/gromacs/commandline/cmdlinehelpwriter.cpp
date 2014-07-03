@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-#include "cmdlinehelpwriter.h"
+#include "gromacs/commandline/cmdlinehelpwriter.h"
 
 #include <cstring>
 

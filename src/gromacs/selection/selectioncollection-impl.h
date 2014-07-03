@@ -50,13 +50,13 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "../onlinehelp/helptopicinterface.h"
-#include "../utility/uniqueptr.h"
-#include "indexutil.h"
-#include "poscalc.h"
-#include "selection.h" // For gmx::SelectionList
-#include "selectioncollection.h"
-#include "selelem.h"
+#include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/utility/uniqueptr.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/poscalc.h"
+#include "gromacs/selection/selection.h" // For gmx::SelectionList
+#include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selelem.h"
 
 struct gmx_sel_mempool_t;
 struct t_pbc;

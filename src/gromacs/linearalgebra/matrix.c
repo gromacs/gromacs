@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "matrix.h"
+#include "gromacs/linearalgebra/matrix.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -45,7 +45,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 double **alloc_matrix(int n, int m)
 {

@@ -39,10 +39,10 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "selectionoption.h"
-#include "selectionfileoption.h"
-#include "selectionoptionstorage.h"
-#include "selectionfileoptionstorage.h"
+#include "gromacs/selection/selectionoption.h"
+#include "gromacs/selection/selectionfileoption.h"
+#include "gromacs/selection/selectionoptionstorage.h"
+#include "gromacs/selection/selectionfileoptionstorage.h"
 
 #include <string>
 

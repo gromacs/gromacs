@@ -40,7 +40,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#include "moduletest.h"
+#include "programs/mdrun/tests/moduletest.h"
 #include <gtest/gtest.h>
 #include <string>
 #include "gromacs/options/filenameoption.h"

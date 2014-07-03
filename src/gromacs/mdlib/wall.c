@@ -42,10 +42,10 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "force.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/math/vec.h"
 
 #include "gromacs/fileio/filenm.h"
