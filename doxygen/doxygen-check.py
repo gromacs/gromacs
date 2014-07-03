@@ -119,10 +119,6 @@ def check_include(fileobj, includedfile, reporter):
         if not otherfile:
             reporter.code_issue(includedfile,
                     "includes non-local file as {0}".format(includedfile))
-        elif fileobj.is_installed() and not includedfile.is_relative():
-            reporter.code_issue(includedfile,
-                    "installed header includes {0} using non-relative path"
-                    .format(includedfile))
         if not otherfile:
             return
         if fileobj.is_installed() and not otherfile.is_installed():
