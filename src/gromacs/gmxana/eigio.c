@@ -40,7 +40,7 @@
 
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "eigio.h"
+#include "gromacs/gmxana/eigio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/utility/futil.h"

@@ -40,7 +40,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
-#include "simd.h"
+#include "gromacs/simd/tests/simd.h"
 
 namespace gmx
 {

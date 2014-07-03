@@ -1,4 +1,4 @@
-#include "../gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
 
 
 float

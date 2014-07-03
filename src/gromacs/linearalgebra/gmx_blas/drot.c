@@ -1,4 +1,4 @@
-#include "../gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
 
 void
 F77_FUNC(drot,DROT)(int *n__,

@@ -1,4 +1,4 @@
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void 
 F77_FUNC(slasd0,SLASD0)(int *n, 

@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "select.h"
+#include "gromacs/trajectoryanalysis/modules/select.h"
 
 #include <cstdio>
 #include <cstring>

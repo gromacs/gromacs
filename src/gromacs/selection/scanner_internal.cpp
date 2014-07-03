@@ -63,15 +63,15 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "parsetree.h"
-#include "selectioncollection-impl.h"
-#include "selelem.h"
-#include "selmethod.h"
-#include "symrec.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/selectioncollection-impl.h"
+#include "gromacs/selection/selelem.h"
+#include "gromacs/selection/selmethod.h"
+#include "gromacs/selection/symrec.h"
 
-#include "parser.h"
-#include "scanner.h"
-#include "scanner_internal.h"
+#include "gromacs/selection/parser.h"
+#include "gromacs/selection/scanner.h"
+#include "gromacs/selection/scanner_internal.h"
 
 /*! \brief
  * Step in which the allocated memory for pretty-printed input is incremented.

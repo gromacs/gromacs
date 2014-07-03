@@ -40,9 +40,9 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gstat.h"
+#include "gromacs/gmxana/gstat.h"
 
 real LegendreP(real x, unsigned long m)
 

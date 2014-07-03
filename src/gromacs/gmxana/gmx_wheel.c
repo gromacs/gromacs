@@ -43,13 +43,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "gstat.h"
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/futil.h"

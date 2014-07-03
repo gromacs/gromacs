@@ -1,4 +1,4 @@
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 
 /* Normally, DSTEVR is the LAPACK wrapper which calls one

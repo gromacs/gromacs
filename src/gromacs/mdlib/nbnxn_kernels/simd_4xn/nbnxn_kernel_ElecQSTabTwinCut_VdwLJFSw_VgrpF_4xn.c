@@ -44,7 +44,7 @@
  * function definition when the kernel will never be called.
  */
 #define GMX_SIMD_J_UNROLL_SIZE 1
-#include "nbnxn_kernel_simd_4xn.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
 
 #define CALC_COUL_TAB
 #define VDW_CUTOFF_CHECK /* Use twin-range cut-off */
@@ -54,7 +54,7 @@
 #define ENERGY_GROUPS
 
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "nbnxn_kernel_simd_4xn_common.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h"
 #endif /* GMX_NBNXN_SIMD_4XN */
 
 #ifdef CALC_ENERGIES
@@ -77,7 +77,7 @@ nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_VgrpF_4xn(const nbnxn_pairlist_t    gmx_u
                                                  real                      gmx_unused *fshift)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "nbnxn_kernel_simd_4xn_outer.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h"
 #else /* GMX_NBNXN_SIMD_4XN */
 {
 /* No need to call gmx_incons() here, because the only function

@@ -32,18 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "mdoutf.h"
+#include "gromacs/fileio/mdoutf.h"
 
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/mvdata.h"
 #include "gromacs/legacyheaders/domdec.h"
-#include "trnio.h"
-#include "xtcio.h"
-#include "tngio.h"
-#include "trajectory_writing.h"
-#include "checkpoint.h"
-#include "copyrite.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/trajectory_writing.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"

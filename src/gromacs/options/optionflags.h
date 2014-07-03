@@ -46,7 +46,7 @@
 #ifndef GMX_OPTIONS_OPTIONFLAGS_H
 #define GMX_OPTIONS_OPTIONFLAGS_H
 
-#include "../utility/flags.h"
+#include "gromacs/utility/flags.h"
 
 namespace gmx
 {

@@ -43,7 +43,7 @@
 #ifndef GMX_ONLINEHELP_HELPTOPICINTERFACE_H
 #define GMX_ONLINEHELP_HELPTOPICINTERFACE_H
 
-#include "../utility/uniqueptr.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {

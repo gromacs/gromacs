@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 #include "gromacs/utility/cstringutil.h"
-#include "pgutil.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
 #include <string.h>
 #include "gromacs/utility/fatalerror.h"
 

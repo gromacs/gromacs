@@ -41,14 +41,14 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
-#include "toputil.h"
-#include "pdb2top.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/utility/cstringutil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/fatalerror.h"

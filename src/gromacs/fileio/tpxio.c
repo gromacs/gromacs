@@ -43,15 +43,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "names.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
-#include "tpxio.h"
-#include "txtdump.h"
-#include "confio.h"
-#include "copyrite.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"

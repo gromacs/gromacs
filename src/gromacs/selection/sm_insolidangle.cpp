@@ -129,7 +129,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "selelem.h"
+#include "gromacs/selection/selelem.h"
 
 using std::min;
 using std::max;

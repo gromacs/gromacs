@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "selectioncollection.h"
+#include "gromacs/selection/selectioncollection.h"
 
 #include <cctype>
 #include <cstdio>
@@ -64,17 +64,17 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "compiler.h"
-#include "mempool.h"
-#include "parser.h"
-#include "poscalc.h"
-#include "scanner.h"
-#include "selection.h"
-#include "selectioncollection-impl.h"
-#include "selelem.h"
-#include "selhelp.h"
-#include "selmethod.h"
-#include "symrec.h"
+#include "gromacs/selection/compiler.h"
+#include "gromacs/selection/mempool.h"
+#include "gromacs/selection/parser.h"
+#include "gromacs/selection/poscalc.h"
+#include "gromacs/selection/scanner.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectioncollection-impl.h"
+#include "gromacs/selection/selelem.h"
+#include "gromacs/selection/selhelp.h"
+#include "gromacs/selection/selmethod.h"
+#include "gromacs/selection/symrec.h"
 
 namespace gmx
 {

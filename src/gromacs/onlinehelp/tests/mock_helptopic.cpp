@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
-#include "mock_helptopic.h"
+#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

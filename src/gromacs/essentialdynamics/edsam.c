@@ -42,16 +42,16 @@
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/fileio/confio.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
-#include "nrnb.h"
-#include "mdrun.h"
-#include "update.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/update.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"

@@ -38,7 +38,7 @@
 #ifndef nb_kernel_avx_128_fma_double_h
 #define nb_kernel_avx_128_fma_double_h
 
-#include "../nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_avx_128_fma_double;
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_avx_128_fma_double;

@@ -41,7 +41,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com> (C++ conversion)
  * \ingroup module_trajectoryanalysis
  */
-#include "sasa.h"
+#include "gromacs/trajectoryanalysis/modules/sasa.h"
 
 #include <algorithm>
 #include <string>
@@ -74,7 +74,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "nsc.h"
+#include "gromacs/trajectoryanalysis/modules/nsc.h"
 
 namespace gmx
 {

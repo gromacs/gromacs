@@ -37,9 +37,9 @@
 #ifndef GMX_LINEARALGEBRA_EIGENSOLVER_H
 #define GMX_LINEARALGEBRA_EIGENSOLVER_H
 
-#include "../utility/real.h"
+#include "gromacs/utility/real.h"
 
-#include "sparsematrix.h"
+#include "gromacs/linearalgebra/sparsematrix.h"
 
 #ifdef __cplusplus
 extern "C" {

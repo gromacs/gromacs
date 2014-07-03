@@ -43,14 +43,14 @@
 #include <unistd.h> // for fork()
 #endif
 
-#include "macros.h"
-#include "x11.h"
-#include "xdlghi.h"
-#include "xmb.h"
-#include "dialogs.h"
-#include "names.h"
-#include "nmol.h"
-#include "manager.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "programs/view/x11.h"
+#include "programs/view/xdlghi.h"
+#include "programs/view/xmb.h"
+#include "programs/view/dialogs.h"
+#include "gromacs/legacyheaders/names.h"
+#include "programs/view/nmol.h"
+#include "programs/view/manager.h"
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

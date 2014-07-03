@@ -1,5 +1,5 @@
 #include <math.h>
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void
 F77_FUNC(dlasq5,DLASQ5)(int *i0, 
