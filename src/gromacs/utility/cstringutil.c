@@ -37,9 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "cstringutil.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -213,7 +211,7 @@ void nice_header (FILE *out, const char *fn)
 {
     const char    *unk = "onbekend";
     time_t         clock;
-    const char    *user = unk;
+    const char    *user;
     int            gh;
 #ifdef HAVE_PWD_H
     uid_t          uid;
@@ -238,8 +236,9 @@ void nice_header (FILE *out, const char *fn)
     /* pw returns null on error (e.g. compute nodes lack /etc/passwd) */
     user = pw ? pw->pw_name : unk;
 #else
-    uid = 0;
-    gh  = -1;
+    uid  = 0;
+    gh   = -1;
+    user = unk;
 #endif
 
     gmx_ctime_r(&clock, timebuf, STRLEN);

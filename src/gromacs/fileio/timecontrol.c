@@ -36,9 +36,7 @@
  */
 #include "gromacs/fileio/timecontrol.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "thread_mpi/threads.h"
 

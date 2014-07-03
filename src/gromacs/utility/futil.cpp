@@ -36,9 +36,7 @@
  */
 #include "gromacs/utility/futil.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -906,13 +904,15 @@ int gmx_fsync(FILE *fp)
     rc = fah_fsync(fp);
 #else /* GMX_FAHCORE */
     {
-        int fn = -1;
+        int fn;
 
         /* get the file number */
 #if defined(HAVE_FILENO)
         fn = fileno(fp);
 #elif defined(HAVE__FILENO)
         fn = _fileno(fp);
+#else
+        fn = -1;
 #endif
 
         /* do the actual fsync */

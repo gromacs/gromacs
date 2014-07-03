@@ -465,6 +465,7 @@ cpuid_renumber_elements(int *data, int n)
             }
         }
     }
+    free(unique);
     return nunique;
 }
 

@@ -41,9 +41,7 @@
  */
 #include "cmdlinerunner.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"

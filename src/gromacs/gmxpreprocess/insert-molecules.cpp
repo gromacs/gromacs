@@ -36,9 +36,7 @@
  */
 #include "insert-molecules.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "typedefs.h"
 #include "gromacs/math/utilities.h"

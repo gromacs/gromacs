@@ -33,9 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 /* dens_filter.c
  * Routines for Filters and convolutions
  */
