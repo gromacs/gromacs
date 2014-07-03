@@ -37,9 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "conformation-utilities.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <math.h>
 #include "macros.h"

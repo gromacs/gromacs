@@ -39,9 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "errorformat.h"
 

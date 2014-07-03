@@ -38,9 +38,7 @@
 #ifndef _GPU_UTILS_H_
 #define _GPU_UTILS_H_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "types/simple.h"
 #include "types/hw_info.h"

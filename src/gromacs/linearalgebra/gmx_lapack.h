@@ -63,9 +63,7 @@
 
 /*! \cond */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 /* These are not required by this file, but by the internal LAPACK
  * implementation.  In principle, they could be included in each file

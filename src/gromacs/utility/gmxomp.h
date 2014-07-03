@@ -49,9 +49,7 @@
 #ifndef GMX_UTILITY_OMP_H
 #define GMX_UTILITY_OMP_H
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdio.h>
 

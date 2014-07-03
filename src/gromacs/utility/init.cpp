@@ -41,9 +41,7 @@
  */
 #include "gromacs/utility/init.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef GMX_LIB_MPI
 #include "gromacs/utility/gmxmpi.h"

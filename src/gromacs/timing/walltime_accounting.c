@@ -35,9 +35,7 @@
  */
 #include "gromacs/timing/walltime_accounting.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <time.h>
 #ifdef HAVE_UNISTD_H
