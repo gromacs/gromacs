@@ -45,9 +45,7 @@
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/utility/stringutil.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 namespace
 {

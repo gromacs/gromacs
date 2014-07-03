@@ -92,6 +92,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidPointerCast:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
         --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
         --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh
+	--suppress=passedByValue:src/gromacs/simd/test/*.cpp
         ) 
     set(_cxx_flags
         -D__cplusplus

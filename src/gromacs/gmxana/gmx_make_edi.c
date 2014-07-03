@@ -36,9 +36,7 @@
  * on the code from g_anaeig. You can reach him as olange@gwdg.de. He
  * probably also holds copyright to the following code.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <math.h>
 #include <stdlib.h>

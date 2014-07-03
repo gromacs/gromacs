@@ -110,6 +110,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     float                              d2;
     int                                xind_f, xind_l, cj;
 
+    /* cppcheck-suppress selfAssignment . selfAssignment for width 4.*/
     cjf = CI_TO_CJ_SIMD_4XN(cjf);
     cjl = CI_TO_CJ_SIMD_4XN(cjl+1) - 1;
 

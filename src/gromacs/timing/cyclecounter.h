@@ -49,9 +49,7 @@
  * define HAVE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
  * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef _MSC_VER
 #include <intrin.h>
