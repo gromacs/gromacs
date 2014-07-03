@@ -42,12 +42,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "macros.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/topology/index.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
@@ -65,7 +65,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "compare.h"
+#include "gromacs/tools/compare.h"
 
 typedef struct {
     int bStep;

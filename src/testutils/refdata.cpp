@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
-#include "refdata.h"
+#include "testutils/refdata.h"
 
 #include <cstdio>
 #include <cstdlib>

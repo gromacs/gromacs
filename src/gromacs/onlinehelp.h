@@ -60,6 +60,6 @@
 #ifndef GMX_ONLINEHELP_H
 #define GMX_ONLINEHELP_H
 
-#include "onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/helptopicinterface.h"
 
 #endif

@@ -44,20 +44,20 @@
 #include <string.h>
 
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/topology/index.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gstat.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/matio.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 
 int gmx_vanhove(int argc, char *argv[])

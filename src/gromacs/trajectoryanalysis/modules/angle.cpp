@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "angle.h"
+#include "gromacs/trajectoryanalysis/modules/angle.h"
 
 #include <algorithm>
 #include <string>

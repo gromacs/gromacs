@@ -46,8 +46,8 @@
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "buttons.h"
-#include "nleg.h"
+#include "programs/view/buttons.h"
+#include "programs/view/nleg.h"
 
 typedef struct {
     const char    *tp;

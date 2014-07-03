@@ -44,11 +44,11 @@
 #include <math.h>
 
 #include "gromacs/legacyheaders/types/inputrec.h"
-#include "types/commrec.h"
-#include "txtdump.h"
-#include "names.h"
-#include "macros.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

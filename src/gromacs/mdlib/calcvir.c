@@ -39,8 +39,8 @@
 #include <config.h>
 #endif
 
-#include "force.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"

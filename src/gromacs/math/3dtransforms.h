@@ -39,8 +39,8 @@
 
 #include <stdio.h>
 
-#include "../utility/real.h"
-#include "vectypes.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/math/vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -37,11 +37,11 @@
 #ifndef GMX_TOPOLOGY_TOPOLOGY_H
 #define GMX_TOPOLOGY_TOPOLOGY_H
 
-#include "../math/vectypes.h"
-#include "atoms.h"
-#include "block.h"
-#include "idef.h"
-#include "symtab.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/symtab.h"
 
 #ifdef __cplusplus
 extern "C" {

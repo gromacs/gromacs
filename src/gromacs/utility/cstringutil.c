@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "cstringutil.h"
+#include "gromacs/utility/cstringutil.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

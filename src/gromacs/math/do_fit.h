@@ -37,10 +37,10 @@
 #ifndef GMX_MATH_DO_FIT_H
 #define GMX_MATH_DO_FIT_H
 
-#include "../legacyheaders/types/simple.h"
-#include "../utility/real.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/real.h"
 
-#include "vectypes.h"
+#include "gromacs/math/vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {

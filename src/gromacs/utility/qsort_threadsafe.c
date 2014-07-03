@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "qsort_threadsafe.h"
+#include "gromacs/utility/qsort_threadsafe.h"
 
 #include <stdlib.h>
 

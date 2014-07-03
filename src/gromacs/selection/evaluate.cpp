@@ -62,10 +62,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "evaluate.h"
-#include "mempool.h"
-#include "selectioncollection-impl.h"
-#include "selelem.h"
+#include "gromacs/selection/evaluate.h"
+#include "gromacs/selection/mempool.h"
+#include "gromacs/selection/selectioncollection-impl.h"
+#include "gromacs/selection/selelem.h"
 
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;

@@ -39,7 +39,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 
-#include "../insert-molecules.h"
+#include "gromacs/gmxpreprocess/insert-molecules.h"
 #include "testutils/integrationtests.h"
 #include "testutils/cmdlinetest.h"
 #include "gromacs/utility/futil.h"

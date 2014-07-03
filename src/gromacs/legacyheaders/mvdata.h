@@ -38,8 +38,8 @@
 #ifndef _mvdata_h
 #define _mvdata_h
 
-#include "types/inputrec.h"
-#include "types/state.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/state.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -269,7 +269,7 @@
  * calculated.
  * Currently, no other processing is done.
  */
-#include "compiler.h"
+#include "gromacs/selection/compiler.h"
 
 #include <algorithm>
 
@@ -285,11 +285,11 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "evaluate.h"
-#include "keywords.h"
-#include "mempool.h"
-#include "selectioncollection-impl.h"
-#include "selelem.h"
+#include "gromacs/selection/evaluate.h"
+#include "gromacs/selection/keywords.h"
+#include "gromacs/selection/mempool.h"
+#include "gromacs/selection/selectioncollection-impl.h"
+#include "gromacs/selection/selelem.h"
 
 using std::min;
 using gmx::SelectionTreeElement;

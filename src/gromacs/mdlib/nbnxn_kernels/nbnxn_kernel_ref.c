@@ -39,17 +39,17 @@
 #include <math.h>
 #include <assert.h>
 
-#include "typedefs.h"
-#include "force.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "nbnxn_kernel_ref.h"
-#include "../nbnxn_consts.h"
-#include "nbnxn_kernel_common.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 
 /*! \brief Typedefs for declaring lookup tables of kernel functions.
  */
@@ -73,21 +73,21 @@ typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
 #define LJ_CUT
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_CUT
 #define LJ_FORCE_SWITCH
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_FORCE_SWITCH
 #define LJ_POT_SWITCH
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_POT_SWITCH
 #define LJ_EWALD
 #define LJ_CUT
 #define LJ_EWALD_COMB_GEOM
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_EWALD_COMB_GEOM
 #define LJ_EWALD_COMB_LB
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_EWALD_COMB_LB
 #undef LJ_CUT
 #undef LJ_EWALD
@@ -97,42 +97,42 @@ typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
 /* Tabulated exclusion interaction electrostatics kernels */
 #define CALC_COUL_TAB
 #define LJ_CUT
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_CUT
 #define LJ_FORCE_SWITCH
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_FORCE_SWITCH
 #define LJ_POT_SWITCH
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_POT_SWITCH
 #define LJ_EWALD
 #define LJ_CUT
 #define LJ_EWALD_COMB_GEOM
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_EWALD_COMB_GEOM
 #define LJ_EWALD_COMB_LB
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_EWALD_COMB_LB
 #undef LJ_CUT
 #undef LJ_EWALD
 /* Twin-range cut-off kernels */
 #define VDW_CUTOFF_CHECK
 #define LJ_CUT
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_CUT
 #define LJ_FORCE_SWITCH
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_FORCE_SWITCH
 #define LJ_POT_SWITCH
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_POT_SWITCH
 #define LJ_EWALD
 #define LJ_CUT
 #define LJ_EWALD_COMB_GEOM
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_EWALD_COMB_GEOM
 #define LJ_EWALD_COMB_LB
-#include "nbnxn_kernel_ref_includes.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
 #undef LJ_EWALD_COMB_LB
 #undef LJ_CUT
 #undef LJ_EWALD

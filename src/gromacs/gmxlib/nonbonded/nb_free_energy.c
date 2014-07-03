@@ -41,12 +41,12 @@
 #include <math.h>
 
 #include "gromacs/math/vec.h"
-#include "typedefs.h"
-#include "nonbonded.h"
-#include "nb_kernel.h"
-#include "nrnb.h"
-#include "macros.h"
-#include "nb_free_energy.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 
 #include "gromacs/utility/fatalerror.h"
 

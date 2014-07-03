@@ -39,9 +39,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "gmx_arpack.h"
-#include "gmx_blas.h"
-#include "gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_arpack.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 static void
 F77_FUNC(dstqrb, DSTQRB) (int *      n,

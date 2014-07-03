@@ -54,7 +54,7 @@
 
 #include "testutils/refdata.h"
 
-#include "toputils.h"
+#include "gromacs/selection/tests/toputils.h"
 
 namespace
 {

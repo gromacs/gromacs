@@ -37,14 +37,14 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/topology/index.h"
-#include "gstat.h"
-#include "gmx_ana.h"
-#include "nsfactor.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/nsfactor.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"

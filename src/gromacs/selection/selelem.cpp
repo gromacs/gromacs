@@ -50,10 +50,10 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "keywords.h"
-#include "mempool.h"
-#include "selelem.h"
-#include "selmethod.h"
+#include "gromacs/selection/keywords.h"
+#include "gromacs/selection/mempool.h"
+#include "gromacs/selection/selelem.h"
+#include "gromacs/selection/selmethod.h"
 
 /*!
  * \param[in] sel Selection for which the string is requested

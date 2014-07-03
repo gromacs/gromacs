@@ -39,7 +39,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_trajectoryanalysis
  */
-#include "freevolume.h"
+#include "gromacs/trajectoryanalysis/modules/freevolume.h"
 
 #include <string>
 

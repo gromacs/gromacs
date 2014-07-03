@@ -41,10 +41,10 @@
 
 #include <math.h>
 
-#include "macros.h"
-#include "copyrite.h"
-#include "gmx_ana.h"
-#include "sfactor.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/sfactor.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/smalloc.h"
