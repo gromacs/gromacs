@@ -36,9 +36,7 @@
  */
 /* This file is completely threadsafe - keep it that way! */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 #include "gromacs/utility/cstringutil.h"
 #include "pgutil.h"
 #include <string.h>

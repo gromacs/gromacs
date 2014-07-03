@@ -41,9 +41,7 @@
  */
 #include "gmxregex.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #if defined(HAVE_POSIX_REGEX)
 // old Mac needs sys/types.h before regex.h

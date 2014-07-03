@@ -36,9 +36,7 @@
 #ifndef _nbnxn_simd_h
 #define _nbnxn_simd_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "typedefs.h"
 

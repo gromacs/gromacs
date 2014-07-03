@@ -36,9 +36,7 @@
  */
 #include "gromacs/topology/atomprop.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <string.h>

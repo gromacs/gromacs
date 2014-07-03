@@ -36,9 +36,7 @@
  */
 #include "mtxio.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 /* This module provides routines to read/write sparse or full storage
  * matrices from/to files. It is normally used for the Hessian matrix

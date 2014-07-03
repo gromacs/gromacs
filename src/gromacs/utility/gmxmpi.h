@@ -49,9 +49,7 @@
 #ifndef GMX_UTILITY_GMXMPI_H
 #define GMX_UTILITY_GMXMPI_H
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 /*! \cond */
 #ifdef GMX_LIB_MPI

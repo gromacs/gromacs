@@ -35,9 +35,7 @@
 #ifndef _nb_kernel_h_
 #define _nb_kernel_h_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 
 #ifdef __cplusplus

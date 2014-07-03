@@ -37,9 +37,7 @@
 #ifndef _GENBORN_ALLVSALL_SSE2_DOUBLE_H
 #define _GENBORN_ALLVSALL_SSE2_DOUBLE_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "types/simple.h"
 #include "typedefs.h"

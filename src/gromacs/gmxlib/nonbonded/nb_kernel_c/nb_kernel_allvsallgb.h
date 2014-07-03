@@ -35,9 +35,7 @@
 #ifndef _NB_KERNEL_ALLVSALLGB_H
 #define _NB_KERNEL_ALLVSALLGB_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "types/simple.h"
 #include "typedefs.h"

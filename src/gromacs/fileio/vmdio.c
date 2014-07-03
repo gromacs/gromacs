@@ -34,9 +34,7 @@
  */
 #include "vmdio.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 /* Derived from PluginMgr.C and catdcd.c */
 
