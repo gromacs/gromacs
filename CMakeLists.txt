@@ -590,8 +590,6 @@ include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 # Required for gmx_header_config_gen.h to be found before installation
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src/gromacs/utility)
-# Required for now to make old code compile
-include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)

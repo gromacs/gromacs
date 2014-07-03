@@ -75,13 +75,14 @@ class IncludedFile(object):
 
     """Information about an #include directive in a file."""
 
-    def __init__(self, abspath, lineno, included_file, included_path, is_relative, is_system):
+    def __init__(self, abspath, lineno, included_file, included_path, is_relative, is_absolute, is_system):
         self._abspath = abspath
         self._line_number = lineno
         self._included_file = included_file
         self._included_path = included_path
         #self._used_include_path = used_include_path
         self._is_relative = is_relative
+        self._is_absolute = is_absolute
         self._is_system = is_system
 
     def __str__(self):
@@ -96,6 +97,9 @@ class IncludedFile(object):
     def is_relative(self):
         return self._is_relative
 
+    def is_absolute(self):
+        return self._is_absolute
+
     def get_file(self):
         return self._included_file
 
@@ -106,7 +110,7 @@ class File(object):
 
     """Source/header file in the GROMACS tree."""
 
-    def __init__(self, abspath, relpath, directory):
+    def __init__(self, abspath, relpath, directory, reporter):
         """Initialize a file representation with basic information."""
         self._abspath = abspath
         self._relpath = relpath
@@ -119,6 +123,7 @@ class File(object):
         self._modules = set()
         self._includes = []
         directory.add_file(self)
+        self._reporter = reporter
 
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the file."""
@@ -139,19 +144,24 @@ class File(object):
 
     def _process_include(self, lineno, is_system, includedpath, sourcetree):
         """Process #include directive during scan()."""
-        is_relative = False
+        is_relative = is_absolute = False
         if is_system:
             fileobj = sourcetree.find_include_file(includedpath)
         else:
             fullpath = os.path.join(self._dir.get_abspath(), includedpath)
             fullpath = os.path.abspath(fullpath)
+            absfileobj = sourcetree.find_include_file(includedpath)
             if os.path.exists(fullpath):
                 is_relative = True
                 fileobj = sourcetree.get_file(fullpath)
+                if fileobj != absfileobj:
+                    self._reporter.code_issue(self,
+                                        "include of {0} is ambigious".format(includedpath))
             else:
-                fileobj = sourcetree.find_include_file(includedpath)
+                fileobj = absfileobj
+            is_absolute = absfileobj!=None
         self._includes.append(IncludedFile(self.get_abspath(), lineno, fileobj, includedpath,
-                is_relative, is_system))
+                is_relative, is_absolute, is_system))
 
     def scan_contents(self, sourcetree):
         """Scan the file contents and initialize information based on it."""
@@ -538,14 +548,14 @@ class GromacsTree(object):
                 if extension in extensions:
                     fullpath = os.path.join(dirpath, filename)
                     relpath = self._get_rel_path(fullpath)
-                    self._files[relpath] = File(fullpath, relpath, currentdir)
+                    self._files[relpath] = File(fullpath, relpath, currentdir, self._reporter)
                 elif extension == '.cmakein':
                     extension = os.path.splitext(basename)[1]
                     if extension in extensions:
                         fullpath = os.path.join(dirpath, basename)
                         relpath = self._get_rel_path(fullpath)
                         fullpath = os.path.join(dirpath, filename)
-                        self._files[relpath] = GeneratedFile(fullpath, relpath, currentdir)
+                        self._files[relpath] = GeneratedFile(fullpath, relpath, currentdir, self._reporter)
 
     def _create_module(self, rootdir):
         """Create module for a subdirectory."""
@@ -639,7 +649,7 @@ class GromacsTree(object):
             relpath = self._get_rel_path(path)
             fileobj = self._files.get(relpath)
             if not fileobj:
-                fileobj = File(path, relpath, self._docmap[dirdoc])
+                fileobj = File(path, relpath, self._docmap[dirdoc], self._reporter)
                 self._files[relpath] = fileobj
             fileobj.set_doc_xml(filedoc, self)
             self._docmap[filedoc] = fileobj
@@ -681,7 +691,7 @@ class GromacsTree(object):
 
     def find_include_file(self, includedpath):
         """Find a file object corresponding to an include path."""
-        for testdir in ('src', 'src/gromacs/legacyheaders', 'src/external/thread_mpi/include'):
+        for testdir in ('src', 'src/external/thread_mpi/include'):
             testpath = os.path.join(testdir, includedpath)
             if testpath in self._files:
                 return self._files[testpath]

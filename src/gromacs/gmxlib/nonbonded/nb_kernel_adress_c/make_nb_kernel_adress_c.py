@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -456,7 +456,7 @@ fpdecl = open('nb_kernel_' + Arch + '.c','w')
 fpdecl.write( FileHeader )
 fpdecl.write( '#ifndef nb_kernel_' + Arch + '_h\n' )
 fpdecl.write( '#define nb_kernel_' + Arch + '_h\n\n' )
-fpdecl.write( '#include "../nb_kernel.h"\n\n' )
+fpdecl.write( '#include "gromacs/gmxlib/nonbonded/nb_kernel.h"\n\n' )
 
 for KernelElec in ElectrostaticsList:
     defines['KERNEL_ELEC'] = KernelElec

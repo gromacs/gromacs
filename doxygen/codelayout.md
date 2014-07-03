@@ -72,26 +72,11 @@ source files include headers as
 
     #include "gromacs/<module>/<file>.h"
 
-The following is also possible for intra-module headers:
-
-    #include "<file>.h"
-
-Header files include other headers using
-
-    #include "../<othermodule>/<file>.h"
-
-because relative paths work best for installed headers.  For non-installed
-headers, the path relative to `src/` is sometimes also used.
-
 For historical reasons, there are directories `src/gromacs/gmxana/`,
 `src/gromacs/gmxlib/`, `src/gromacs/mdlib/`, and `src/gromacs/gmxpreprocess/`
 that do not follow the above rules.  The installed headers for these are in
 `src/gromacs/legacyheaders/`.  The aim is to gradually get rid of these
 directories and move code into proper modules.
-
-For similar historical reasons, the include path also includes
-`src/gromacs/legacyheaders/`.  It is preferred that new code does not depend on
-this.
 
 Documentation organization
 ==========================
