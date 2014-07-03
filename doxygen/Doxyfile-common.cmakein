@@ -23,8 +23,7 @@ EXCLUDE_SYMBOLS       += MOCK_METHOD* MOCK_CONST_METHOD*
 FULL_PATH_NAMES        = YES
 STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@
 STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
-INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/legacyheaders
+INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@
 MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@

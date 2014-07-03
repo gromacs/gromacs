@@ -75,13 +75,14 @@ class IncludedFile(object):
 
     """Information about an #include directive in a file."""
 
-    def __init__(self, abspath, lineno, included_file, included_path, is_relative, is_system):
+    def __init__(self, abspath, lineno, included_file, included_path, is_relative, is_absolute, is_system):
         self._abspath = abspath
         self._line_number = lineno
         self._included_file = included_file
         self._included_path = included_path
         #self._used_include_path = used_include_path
         self._is_relative = is_relative
+        self._is_absolute = is_absolute
         self._is_system = is_system
 
     def __str__(self):
@@ -95,6 +96,9 @@ class IncludedFile(object):
 
     def is_relative(self):
         return self._is_relative
+
+    def is_absolute(self):
+        return self._is_absolute
 
     def get_file(self):
         return self._included_file
@@ -139,19 +143,21 @@ class File(object):
 
     def _process_include(self, lineno, is_system, includedpath, sourcetree):
         """Process #include directive during scan()."""
-        is_relative = False
+        is_relative = is_absolute = False
         if is_system:
             fileobj = sourcetree.find_include_file(includedpath)
         else:
             fullpath = os.path.join(self._dir.get_abspath(), includedpath)
             fullpath = os.path.abspath(fullpath)
+            absfileobj = sourcetree.find_include_file(includedpath)
             if os.path.exists(fullpath):
                 is_relative = True
                 fileobj = sourcetree.get_file(fullpath)
             else:
-                fileobj = sourcetree.find_include_file(includedpath)
+                fileobj = absfileobj
+            is_absolute = absfileobj!=None
         self._includes.append(IncludedFile(self.get_abspath(), lineno, fileobj, includedpath,
-                is_relative, is_system))
+                is_relative, is_absolute, is_system))
 
     def scan_contents(self, sourcetree):
         """Scan the file contents and initialize information based on it."""
@@ -681,7 +687,7 @@ class GromacsTree(object):
 
     def find_include_file(self, includedpath):
         """Find a file object corresponding to an include path."""
-        for testdir in ('src', 'src/gromacs/legacyheaders', 'src/external/thread_mpi/include'):
+        for testdir in ('src', 'src/external/thread_mpi/include'):
             testpath = os.path.join(testdir, includedpath)
             if testpath in self._files:
                 return self._files[testpath]
