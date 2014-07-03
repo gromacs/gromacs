@@ -47,9 +47,9 @@
 
 #include <string>
 
-#include "../utility/common.h"
+#include "gromacs/utility/common.h"
 
-#include "abstractoption.h"
+#include "gromacs/options/abstractoption.h"
 
 namespace gmx
 {

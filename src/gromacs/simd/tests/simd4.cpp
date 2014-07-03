@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#include "simd4.h"
+#include "gromacs/simd/tests/simd4.h"
 
 namespace gmx
 {

@@ -36,7 +36,7 @@
 #ifndef _nbnxn_atomdata_h
 #define _nbnxn_atomdata_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

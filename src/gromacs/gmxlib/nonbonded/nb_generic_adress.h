@@ -38,9 +38,9 @@
 #ifndef _nb_generic_adress_h_
 #define _nb_generic_adress_h_
 
-#include "nb_kernel.h"
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 void
 gmx_nb_generic_adress_kernel(t_nblist *                nlist,

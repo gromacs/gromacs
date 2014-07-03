@@ -50,7 +50,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/uniqueptr.h"
 
-#include "dataproxy.h"
+#include "gromacs/analysisdata/dataproxy.h"
 
 namespace gmx
 {

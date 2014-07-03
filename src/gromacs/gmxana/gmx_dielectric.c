@@ -42,15 +42,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "copyrite.h"
-#include "typedefs.h"
-#include "gstat.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "correl.h"
-#include "gmx_ana.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/gmxana/correl.h"
+#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "gromacs/utility/futil.h"

@@ -35,7 +35,7 @@
 
 /* The source code in this file should be thread-safe.
    Please keep it that way. */
-#include "checkpoint.h"
+#include "gromacs/legacyheaders/checkpoint.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -61,13 +61,13 @@
 #include <sys/locking.h>
 #endif
 
-#include "copyrite.h"
-#include "names.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
-#include "network.h"
+#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/utility/futil.h"

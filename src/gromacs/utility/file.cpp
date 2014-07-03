@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "file.h"
+#include "gromacs/utility/file.h"
 
 #include <cerrno>
 #include <cstdio>

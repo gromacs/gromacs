@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "nsgrid.h"
-#include "nblist.h"
+#include "gromacs/legacyheaders/types/nsgrid.h"
+#include "gromacs/legacyheaders/types/nblist.h"
 
 #ifdef __cplusplus
 extern "C" {

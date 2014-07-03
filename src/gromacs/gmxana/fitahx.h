@@ -39,8 +39,8 @@
 #define _fitahx_h
 
 
-#include "typedefs.h"
-#include "hxprops.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxana/hxprops.h"
 
 extern real fit_ahx(int nres, t_bb bb[], int natoms, int nall, atom_id allindex[],
                     rvec x[], int nca, atom_id caindex[], gmx_bool bFit);

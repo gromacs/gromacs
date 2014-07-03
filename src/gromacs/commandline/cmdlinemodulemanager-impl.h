@@ -46,8 +46,8 @@
 #include <string>
 #include <vector>
 
-#include "cmdlinemodule.h"
-#include "cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/options/options.h"

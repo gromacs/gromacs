@@ -87,7 +87,7 @@
  */
 #include "gromacs/utility/scoped_ptr_sfree.h"
 
-#include "parser_internal.h"
+#include "gromacs/selection/parser_internal.h"
 
 using gmx::scoped_ptr_sfree;
 using gmx::SelectionParserValue;
@@ -175,8 +175,8 @@ extern int _gmx_sel_yydebug;
 /* Line 350 of yacc.c  */
 #line 73 "parser.y"
 
-#include "parsetree.h"
-#include "selelem.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/selelem.h"
 
 
 /* Line 350 of yacc.c  */

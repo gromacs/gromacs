@@ -40,7 +40,7 @@
 #include <stdlib.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
@@ -51,8 +51,8 @@
 #include "gromacs/math/units.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/statistics/statistics.h"
-#include "gmx_ana.h"
-#include "macros.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/utility/fatalerror.h"
 

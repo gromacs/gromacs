@@ -57,10 +57,10 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "keywords.h"
-#include "parsetree.h"
-#include "scanner.h"
-#include "selelem.h"
+#include "gromacs/selection/keywords.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/scanner.h"
+#include "gromacs/selection/selelem.h"
 
 /*! \brief
  * Allocates data for integer keyword evaluation.

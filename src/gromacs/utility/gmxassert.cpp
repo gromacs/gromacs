@@ -39,12 +39,12 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "gmxassert.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include <cstdio>
 #include <cstdlib>
 
-#include "errorformat.h"
+#include "gromacs/utility/errorformat.h"
 
 namespace gmx
 {

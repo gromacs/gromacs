@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
-#include "helptopic.h"
+#include "gromacs/onlinehelp/helptopic.h"
 
 #include <map>
 #include <utility>

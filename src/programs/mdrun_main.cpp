@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "mdrun/mdrun_main.h"
+#include "programs/mdrun/mdrun_main.h"
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 

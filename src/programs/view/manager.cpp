@@ -46,10 +46,10 @@
 #include <unistd.h> // for usleep()
 #endif
 
-#include "typedefs.h"
-#include "macros.h"
-#include "names.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/utilities.h"
@@ -60,9 +60,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "3dview.h"
-#include "manager.h"
-#include "nmol.h"
+#include "programs/view/3dview.h"
+#include "programs/view/manager.h"
+#include "programs/view/nmol.h"
 
 static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)
 {

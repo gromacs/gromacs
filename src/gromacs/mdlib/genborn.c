@@ -42,17 +42,17 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/fileio/pdbio.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/units.h"
-#include "domdec.h"
-#include "network.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/topology/mtop_util.h"
-#include "nrnb.h"
-#include "bondf.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/bondf.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -72,7 +72,7 @@
 #  endif /* GMX_DOUBLE */
 #endif   /* SSE or AVX present */
 
-#include "genborn_allvsall.h"
+#include "gromacs/mdlib/genborn_allvsall.h"
 
 /*#define DISABLE_SSE*/
 

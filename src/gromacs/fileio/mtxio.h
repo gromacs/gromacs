@@ -43,8 +43,8 @@
 #ifndef GMX_FILEIO_MTXIO_H
 #define GMX_FILEIO_MTXIO_H
 
-#include "../linearalgebra/sparsematrix.h"
-#include "../utility/real.h"
+#include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

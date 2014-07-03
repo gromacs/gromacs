@@ -44,7 +44,7 @@
 #ifndef GMX_UTILITY_UNIQUEPTR_H
 #define GMX_UTILITY_UNIQUEPTR_H
 
-#include "gmx_header_config.h"
+#include "gromacs/utility/gmx_header_config.h"
 
 #ifdef GMX_CXX11 // C++11 Compiler
 #include <memory>

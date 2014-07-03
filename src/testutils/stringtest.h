@@ -48,7 +48,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 
-#include "refdata.h"
+#include "testutils/refdata.h"
 
 namespace gmx
 {

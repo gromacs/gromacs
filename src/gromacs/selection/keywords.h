@@ -44,8 +44,8 @@
 #ifndef GMX_SELECTION_KEYWORDS_H
 #define GMX_SELECTION_KEYWORDS_H
 
-#include "parsetree.h"
-#include "selelem.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/selelem.h"
 
 struct gmx_ana_selmethod_t;
 

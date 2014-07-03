@@ -35,7 +35,7 @@
 #ifndef GMX_GMXPREPROCESS_READ_CONFORMATION_H
 #define GMX_GMXPREPROCESS_READ_CONFORMATION_H
 
-#include "types/simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

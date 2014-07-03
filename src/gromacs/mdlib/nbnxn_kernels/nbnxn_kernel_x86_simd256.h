@@ -35,7 +35,7 @@
 #ifndef _nbnxn_kernel_x86_simd256_h
 #define _nbnxn_kernel_x86_simd256_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

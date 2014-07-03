@@ -43,17 +43,17 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "vsite_parm.h"
+#include "gromacs/gmxpreprocess/vsite_parm.h"
 #include "gromacs/utility/smalloc.h"
-#include "resall.h"
-#include "add_par.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/math/vec.h"
-#include "toputil.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/units.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/cstringutil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 typedef struct {
     t_iatom a[4];

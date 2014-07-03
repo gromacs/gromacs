@@ -43,8 +43,8 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/vec.h"
@@ -53,10 +53,10 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "txtdump.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/pbcutil/rmpbc.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 #include "gromacs/math/do_fit.h"
 

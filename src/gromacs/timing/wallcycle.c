@@ -50,7 +50,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "cyclecounter.h"
+#include "gromacs/timing/cyclecounter.h"
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last

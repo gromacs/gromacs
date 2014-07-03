@@ -52,10 +52,10 @@
 
 #include "gromacs/utility/gmxassert.h"
 
-#include "parsetree.h"
-#include "selelem.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/selelem.h"
 
-#include "scanner.h"
+#include "gromacs/selection/scanner.h"
 
 //! Error handler needed by Bison.
 static void

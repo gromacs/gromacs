@@ -40,7 +40,7 @@
 extern "C" {
 #endif
 
-#include "simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 typedef struct
 {

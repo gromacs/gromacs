@@ -42,7 +42,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/basicoptions.h"
 
-#include "base.h"
+#include "gromacs/simd/tests/base.h"
 
 namespace gmx
 {

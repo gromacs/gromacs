@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include "dataframe.h"
+#include "gromacs/analysisdata/dataframe.h"
 
 #include "gromacs/utility/gmxassert.h"
 

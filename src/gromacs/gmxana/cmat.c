@@ -38,9 +38,9 @@
 #include <config.h>
 #endif
 
-#include "cmat.h"
+#include "gromacs/gmxana/cmat.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/matio.h"

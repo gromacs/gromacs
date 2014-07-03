@@ -41,8 +41,8 @@
 #include <config.h>
 #endif
 
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 int
 genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,

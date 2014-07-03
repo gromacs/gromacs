@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-#include "cmdlineparser.h"
+#include "gromacs/commandline/cmdlineparser.h"
 
 #include <cstdlib>
 
