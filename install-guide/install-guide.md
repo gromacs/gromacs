@@ -13,7 +13,7 @@ at <http://www.gromacs.org/Documentation/Installation_Instructions>.
 3. Get and unpack the latest version of the GROMACS tarball.
 4. Make a separate build directory and change to it. 
 5. Run `cmake` with the path to the source as an argument
-6. Run `make` and `make install`
+6. Run `make`, `make test`, and `make install`
 
 Or, as a sequence of commands to execute:
 
@@ -21,8 +21,9 @@ Or, as a sequence of commands to execute:
     cd gromacs-@PROJECT_VERSION@
     mkdir build
     cd build
-    cmake .. -DGMX_BUILD_OWN_FFTW=ON
+    cmake .. -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON
     make
+    make test
     sudo make install
     source /usr/local/gromacs/bin/GMXRC
 
