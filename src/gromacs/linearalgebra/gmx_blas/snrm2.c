@@ -2,7 +2,7 @@
 
 
 #include "gromacs/utility/real.h"
-#include "../gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
 
 float
 F77_FUNC(snrm2,SNRM2)(int  *     n__,

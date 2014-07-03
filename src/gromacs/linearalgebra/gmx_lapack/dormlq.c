@@ -1,5 +1,5 @@
-#include "../gmx_lapack.h"
-#include "lapack_limits.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack/lapack_limits.h"
 
 
 void 

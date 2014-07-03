@@ -1,7 +1,7 @@
 #include <math.h>
 
 #include "gromacs/utility/real.h"
-#include "../gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
 
 double
 F77_FUNC(dnrm2,DNRM2)(int  *     n__,

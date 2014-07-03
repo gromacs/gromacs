@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#include "random.h"
+#include "gromacs/random/random.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,7 +54,7 @@
 #include "external/Random123-1.08/include/Random123/threefry.h"
 
 #include "gromacs/math/utilities.h"
-#include "random_gausstable.h"
+#include "gromacs/random/random_gausstable.h"
 
 #define RNG_N 624
 #define RNG_M 397

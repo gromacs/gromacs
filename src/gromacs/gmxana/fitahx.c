@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#include "fitahx.h"
+#include "gromacs/gmxana/fitahx.h"
 #include "gromacs/math/vec.h"
 
 #include "gromacs/math/do_fit.h"

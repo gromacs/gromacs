@@ -39,10 +39,10 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "geminate.h"
+#include "gromacs/gmxana/geminate.h"
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"

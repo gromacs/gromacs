@@ -37,7 +37,7 @@
 #ifndef GMX_MATH_VECTYPES_H
 #define GMX_MATH_VECTYPES_H
 
-#include "../utility/real.h"
+#include "gromacs/utility/real.h"
 
 #define XX      0 /* Defines for indexing in */
 #define YY      1 /* vectors                 */

@@ -43,7 +43,7 @@
 #ifndef GMX_UTILITY_SCOPED_PTR_SFREE_H
 #define GMX_UTILITY_SCOPED_PTR_SFREE_H
 
-#include "common.h"
+#include "gromacs/utility/common.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx

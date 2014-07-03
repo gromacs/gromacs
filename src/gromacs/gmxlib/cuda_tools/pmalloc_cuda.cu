@@ -35,8 +35,8 @@
 
 #include <stdlib.h>
 
-#include "cudautils.cuh"
-#include "pmalloc_cuda.h"
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/legacyheaders/pmalloc_cuda.h"
 
 #include "gromacs/utility/cstringutil.h"
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@
 
 #include <boost/exception_ptr.hpp>
 
-#include "parser.h"
+#include "gromacs/selection/parser.h"
 
 namespace gmx
 {
@@ -62,7 +62,7 @@ struct gmx_sel_lexer_t;
  * gets included in other files than scanner.cpp... */
 #ifndef FLEX_SCANNER
 #define YY_NO_UNISTD_H
-#include "scanner_flex.h"
+#include "gromacs/selection/scanner_flex.h"
 #endif
 
 /*! \internal \brief

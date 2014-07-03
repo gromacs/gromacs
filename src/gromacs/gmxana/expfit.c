@@ -41,11 +41,11 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
-#include "gstat.h"
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/vec.h"
 
 #include "gromacs/utility/fatalerror.h"

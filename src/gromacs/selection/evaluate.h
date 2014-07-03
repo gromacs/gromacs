@@ -49,7 +49,7 @@
 #ifndef GMX_SELECTION_EVALUATE_H
 #define GMX_SELECTION_EVALUATE_H
 
-#include "selelem.h"
+#include "gromacs/selection/selelem.h"
 
 struct gmx_ana_index_t;
 struct gmx_sel_mempool_t;

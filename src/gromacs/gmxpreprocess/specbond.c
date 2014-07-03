@@ -42,15 +42,15 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-#include "specbond.h"
-#include "pdb2top.h"
+#include "gromacs/gmxpreprocess/specbond.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/math/vec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 gmx_bool yesno(void)
 {

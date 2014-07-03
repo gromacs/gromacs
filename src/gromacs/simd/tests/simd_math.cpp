@@ -42,7 +42,7 @@
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/options/basicoptions.h"
 
-#include "simd.h"
+#include "gromacs/simd/tests/simd.h"
 
 namespace gmx
 {

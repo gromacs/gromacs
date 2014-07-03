@@ -41,15 +41,15 @@
 
 #include <stdlib.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "nsgrid.h"
+#include "gromacs/legacyheaders/nsgrid.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
-#include "network.h"
-#include "domdec.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include <stdio.h>
 #include "gromacs/utility/futil.h"

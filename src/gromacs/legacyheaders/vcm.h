@@ -40,11 +40,11 @@
 
 #include <stdio.h>
 
-#include "types/inputrec.h"
-#include "types/mdatom.h"
-#include "../math/vectypes.h"
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

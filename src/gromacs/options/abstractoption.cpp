@@ -46,7 +46,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "basicoptionstorage.h"
+#include "gromacs/options/basicoptionstorage.h"
 
 namespace gmx
 {

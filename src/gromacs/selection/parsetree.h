@@ -61,8 +61,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/uniqueptr.h"
 
-#include "selelem.h"
-#include "selvalue.h"
+#include "gromacs/selection/selelem.h"
+#include "gromacs/selection/selvalue.h"
 
 struct gmx_ana_indexgrps_t;
 struct gmx_ana_selmethod_t;

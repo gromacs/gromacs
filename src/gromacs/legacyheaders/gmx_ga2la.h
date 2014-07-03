@@ -37,7 +37,7 @@
 #ifndef _gmx_ga2la_h
 #define _gmx_ga2la_h
 
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
 

@@ -49,7 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "fft5d.h"
+#include "gromacs/fft/fft5d.h"
 
 struct gmx_parallel_3dfft  {
     fft5d_plan p1, p2;

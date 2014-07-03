@@ -56,8 +56,8 @@
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/real.h"
 
-#include "indexutil.h"
-#include "selvalue.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/selvalue.h"
 
 struct gmx_ana_poscalc_t;
 struct gmx_ana_selparam_t;

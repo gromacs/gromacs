@@ -1,7 +1,7 @@
 #include <math.h>
 
 #include "gromacs/utility/real.h"
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void 
 F77_FUNC(dlasr,DLASR)(const char *side, 

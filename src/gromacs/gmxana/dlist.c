@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gstat.h"
+#include "gromacs/gmxana/gstat.h"
 
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/fatalerror.h"

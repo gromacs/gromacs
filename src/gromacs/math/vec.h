@@ -115,13 +115,13 @@
 
 #include <math.h>
 
-#include "units.h"
-#include "utilities.h"
-#include "vectypes.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vectypes.h"
 
-#include "../utility/basedefinitions.h"
-#include "../utility/fatalerror.h"
-#include "../utility/real.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

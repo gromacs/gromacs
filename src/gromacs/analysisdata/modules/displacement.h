@@ -43,10 +43,10 @@
 #ifndef GMX_ANALYSISDATA_MODULES_DISPLACEMENT_H
 #define GMX_ANALYSISDATA_MODULES_DISPLACEMENT_H
 
-#include "../../utility/real.h"
+#include "gromacs/utility/real.h"
 
-#include "../abstractdata.h"
-#include "../datamodule.h"
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/datamodule.h"
 
 namespace gmx
 {

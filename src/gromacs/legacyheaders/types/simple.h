@@ -37,9 +37,9 @@
 #ifndef _simple_h
 #define _simple_h
 
-#include "../../math/vectypes.h"
-#include "../../utility/basedefinitions.h"
-#include "../../utility/real.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 typedef int         atom_id;      /* To indicate an atoms id         */
 #define NO_ATID     (atom_id)(~0) /* Use this to indicate invalid atid */

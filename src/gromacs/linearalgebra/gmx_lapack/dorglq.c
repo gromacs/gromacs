@@ -1,4 +1,4 @@
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 #define DORGLQ_BLOCKSIZE    32
 #define DORGLQ_MINBLOCKSIZE 2

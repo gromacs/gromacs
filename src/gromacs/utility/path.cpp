@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "path.h"
+#include "gromacs/utility/path.h"
 
 #include <cctype>
 #include <cerrno>

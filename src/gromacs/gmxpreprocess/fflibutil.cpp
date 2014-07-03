@@ -47,8 +47,8 @@
 #include <unistd.h>
 #endif
 
-#include "network.h"
-#include "fflibutil.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

@@ -40,9 +40,9 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "nrnb.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/genborn.h"
 
 #ifdef __cplusplus
 extern "C" {
