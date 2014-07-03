@@ -36,7 +36,7 @@
 #ifndef _domdec_network_h
 #define _domdec_network_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

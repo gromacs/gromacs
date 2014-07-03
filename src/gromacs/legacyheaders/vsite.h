@@ -40,8 +40,8 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "../pbcutil/ishift.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/pbcutil/ishift.h"
 
 #ifdef __cplusplus
 extern "C" {

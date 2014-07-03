@@ -40,9 +40,9 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/energy.h"
-#include "../fileio/enxio.h"
-#include "../utility/basedefinitions.h"
+#include "gromacs/legacyheaders/types/energy.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

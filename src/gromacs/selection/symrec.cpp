@@ -50,9 +50,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/uniqueptr.h"
 
-#include "poscalc.h"
-#include "selelem.h"
-#include "symrec.h"
+#include "gromacs/selection/poscalc.h"
+#include "gromacs/selection/selelem.h"
+#include "gromacs/selection/symrec.h"
 
 namespace gmx
 {

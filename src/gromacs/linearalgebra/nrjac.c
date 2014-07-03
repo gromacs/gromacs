@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "nrjac.h"
+#include "gromacs/linearalgebra/nrjac.h"
 
 #include <math.h>
 

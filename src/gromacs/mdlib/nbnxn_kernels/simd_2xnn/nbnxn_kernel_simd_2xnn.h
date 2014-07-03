@@ -37,7 +37,7 @@
  * kernel type 2xnn.
  */
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #include "gromacs/mdlib/nbnxn_simd.h"
 

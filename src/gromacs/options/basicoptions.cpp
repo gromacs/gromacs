@@ -39,8 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
-#include "basicoptions.h"
-#include "basicoptionstorage.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/basicoptionstorage.h"
 
 #include <cerrno>
 #include <cstdio>

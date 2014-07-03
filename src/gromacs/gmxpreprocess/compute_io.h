@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_COMPUTE_IO_H
 #define GMX_GMXPREPROCESS_COMPUTE_IO_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

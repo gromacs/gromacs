@@ -39,11 +39,11 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-#include "txtdump.h"
-#include "princ.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/gmxana/princ.h"
 
 #include "gromacs/linearalgebra/nrjac.h"
 

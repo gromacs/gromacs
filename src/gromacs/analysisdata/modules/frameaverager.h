@@ -44,8 +44,8 @@
 
 #include <vector>
 
-#include "../../utility/gmxassert.h"
-#include "../../utility/real.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

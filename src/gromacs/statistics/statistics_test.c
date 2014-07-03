@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "statistics.h"
+#include "gromacs/statistics/statistics.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

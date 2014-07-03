@@ -48,8 +48,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "keywords.h"
-#include "selelem.h"
+#include "gromacs/selection/keywords.h"
+#include "gromacs/selection/selelem.h"
 
 /*! \internal \brief
  * Data structure for position keyword evaluation.

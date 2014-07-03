@@ -40,9 +40,9 @@
 
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "network.h"
-#include "../fileio/filenm.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C" {

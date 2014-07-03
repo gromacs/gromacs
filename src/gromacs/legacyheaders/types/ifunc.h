@@ -39,9 +39,9 @@
 #ifndef _ifunc_h
 #define _ifunc_h
 
-#include "../../topology/idef.h"
-#include "mdatom.h"
-#include "fcdata.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 
 #ifdef __cplusplus
 extern "C" {

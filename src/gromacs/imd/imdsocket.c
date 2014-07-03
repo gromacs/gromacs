@@ -55,8 +55,8 @@
 
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "imdsocket.h"
-#include "imd.h"
+#include "gromacs/imd/imdsocket.h"
+#include "gromacs/imd/imd.h"
 
 #ifdef GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK

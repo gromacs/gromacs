@@ -36,7 +36,7 @@
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
-#include "nblist.h"
+#include "gromacs/legacyheaders/types/nblist.h"
 
 #ifdef __cplusplus
 extern "C" {

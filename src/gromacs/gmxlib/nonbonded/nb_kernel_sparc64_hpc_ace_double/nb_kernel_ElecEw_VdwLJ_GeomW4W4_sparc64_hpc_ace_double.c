@@ -41,12 +41,12 @@
 
 #include <math.h>
 
-#include "../nb_kernel.h"
-#include "types/simple.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/nrnb.h"
 
-#include "kernelutil_sparc64_hpc_ace_double.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/kernelutil_sparc64_hpc_ace_double.h"
 
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecEw_VdwLJ_GeomW4W4_VF_sparc64_hpc_ace_double

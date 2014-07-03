@@ -39,7 +39,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
-#include "integrationtests.h"
+#include "testutils/integrationtests.h"
 
 #include "testutils/testoptions.h"
 #include "gromacs/utility/stringutil.h"

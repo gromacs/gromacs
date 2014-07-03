@@ -38,14 +38,14 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/inputrec.h"
-#include "../legacyheaders/types/oenv.h"
-#include "../legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/legacyheaders/network.h"
 
-#include "../math/vectypes.h"
-#include "../utility/basedefinitions.h"
-#include "filenm.h"
-#include "enxio.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/enxio.h"
 
 #ifdef __cplusplus
 extern "C" {
