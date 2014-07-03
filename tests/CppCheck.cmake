@@ -71,7 +71,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
     endif()
     set(_common_flags
         --enable=style -DLINUX -DHAVE_UNISTD_H
-        -I src/gromacs/legacyheaders -I src
+        -I src
         -I src/external/thread_mpi/include
         -I src/external/tng_io/include
         -I ${CMAKE_BINARY_DIR}/src -I ${CMAKE_BINARY_DIR}/src/gromacs/utility
