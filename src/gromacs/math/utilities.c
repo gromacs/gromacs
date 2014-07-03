@@ -36,9 +36,7 @@
  */
 #include "gromacs/math/utilities.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <assert.h>
 #include <math.h>
@@ -715,9 +713,7 @@ float gmx_erfcf(float x)
 
 gmx_bool gmx_isfinite(real gmx_unused x)
 {
-    gmx_bool returnval = TRUE;
-    /* If no suitable function was found, assume the value is
-     * finite. */
+    gmx_bool returnval;
 
 #ifdef HAVE__FINITE
     returnval = _finite(x);
@@ -725,6 +721,10 @@ gmx_bool gmx_isfinite(real gmx_unused x)
     returnval = isfinite(x);
 #elif defined HAVE__ISFINITE
     returnval = _isfinite(x);
+#else
+    /* If no suitable function was found, assume the value is
+     * finite. */
+    returnval = TRUE;
 #endif
     return returnval;
 }

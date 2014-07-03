@@ -37,9 +37,7 @@
 #ifndef _genborn_sse_h
 #define _genborn_sse_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "typedefs.h"
 

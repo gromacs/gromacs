@@ -36,9 +36,7 @@
 #ifndef NBNXN_CUDA_H
 #define NBNXN_CUDA_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "types/nbnxn_cuda_types_ext.h"
 #include "types/simple.h"

@@ -40,9 +40,7 @@
  * \ingroup module_commandline
  */
 // For GMX_BINARY_SUFFIX
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <vector>
 

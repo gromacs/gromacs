@@ -38,9 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_TOMORSE_H
 #define GMX_GMXPREPROCESS_TOMORSE_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stdio.h>
 #include "typedefs.h"
