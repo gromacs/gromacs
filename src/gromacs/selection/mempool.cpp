@@ -48,7 +48,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "mempool.h"
+#include "gromacs/selection/mempool.h"
 
 //! Alignment in bytes for all returned blocks.
 #define ALIGN_STEP 8

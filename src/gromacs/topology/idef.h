@@ -37,7 +37,7 @@
 #ifndef GMX_TOPOLOGY_IDEF_H
 #define GMX_TOPOLOGY_IDEF_H
 
-#include "../legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

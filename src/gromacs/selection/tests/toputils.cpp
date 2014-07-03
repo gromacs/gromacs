@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "toputils.h"
+#include "gromacs/selection/tests/toputils.h"
 
 #include <cstring>
 

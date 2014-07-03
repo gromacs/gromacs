@@ -43,10 +43,10 @@
 #ifndef GMX_SELECTION_SELECTIONOPTION_H
 #define GMX_SELECTION_SELECTIONOPTION_H
 
-#include "../options/abstractoption.h"
+#include "gromacs/options/abstractoption.h"
 
-#include "selection.h"
-#include "selectionenums.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
 
 namespace gmx
 {

@@ -38,12 +38,12 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "orires.h"
-#include "main.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
 

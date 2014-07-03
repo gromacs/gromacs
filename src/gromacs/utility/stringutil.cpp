@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "stringutil.h"
+#include "gromacs/utility/stringutil.h"
 
 #include <cctype>
 #include <cstdio>

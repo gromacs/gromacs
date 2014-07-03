@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "splitter.h"
+#include "gromacs/legacyheaders/splitter.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -44,7 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/topology/block.h"

@@ -40,10 +40,10 @@
 
 #include <stdio.h>
 
-#include "../utility/cstringutil.h"
-#include "../utility/futil.h"
-#include "../utility/real.h"
-#include "../math/vectypes.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/math/vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {

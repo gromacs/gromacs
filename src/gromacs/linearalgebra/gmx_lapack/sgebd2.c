@@ -1,4 +1,4 @@
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void
 F77_FUNC(sgebd2,SGEBD2)(int *m,

@@ -42,12 +42,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gromacs/utility/cstringutil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "Xstuff.h"
-#include "xutil.h"
-#include "xdlg.h"
-#include "xmb.h"
+#include "programs/view/Xstuff.h"
+#include "programs/view/xutil.h"
+#include "programs/view/xdlg.h"
+#include "programs/view/xmb.h"
 #include "gromacs/utility/fatalerror.h"
 /*****************************
  *

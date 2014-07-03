@@ -41,13 +41,13 @@
 
 #include <math.h>
 
-#include "../nb_kernel.h"
-#include "types/simple.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/nrnb.h"
 
 #include "gromacs/simd/math_x86_avx_128_fma_single.h"
-#include "kernelutil_x86_avx_128_fma_single.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/kernelutil_x86_avx_128_fma_single.h"
 
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecEw_VdwNone_GeomW3W3_VF_avx_128_fma_single

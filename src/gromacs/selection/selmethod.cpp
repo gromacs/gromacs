@@ -48,7 +48,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 
-#include "symrec.h"
+#include "gromacs/selection/symrec.h"
 
 /*
  * These global variables cannot be const because gmx_ana_selmethod_register()

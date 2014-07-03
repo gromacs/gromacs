@@ -47,7 +47,7 @@
 
 #include <boost/exception_ptr.hpp>
 
-#include "parser.h"
+#include "gromacs/selection/parser.h"
 
 namespace gmx
 {

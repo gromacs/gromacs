@@ -43,17 +43,17 @@
 
 #include <algorithm>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "x11.h"
-#include "xutil.h"
-#include "buttons.h"
+#include "programs/view/x11.h"
+#include "programs/view/xutil.h"
+#include "programs/view/buttons.h"
 
-#include "stop_ani.bm"
-#include "play.bm"
-#include "ff.bm"
-#include "rewind.bm"
+#include "programs/view/stop_ani.bm"
+#include "programs/view/play.bm"
+#include "programs/view/ff.bm"
+#include "programs/view/rewind.bm"
 
 static void move_bbox(t_x11 *x11, t_butbox *bbox)
 {

@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "analysissettings.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
 
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
@@ -47,7 +47,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "analysissettings-impl.h"
+#include "gromacs/trajectoryanalysis/analysissettings-impl.h"
 
 namespace gmx
 {

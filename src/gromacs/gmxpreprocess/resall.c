@@ -42,10 +42,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "resall.h"
-#include "pgutil.h"
-#include "fflibutil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
 
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/topology/symtab.h"

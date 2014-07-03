@@ -47,9 +47,9 @@
 #include <string>
 #include <vector>
 
-#include "../selection/selection.h" // For gmx::SelectionList
-#include "../utility/common.h"
-#include "../utility/uniqueptr.h"
+#include "gromacs/selection/selection.h" // For gmx::SelectionList
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/uniqueptr.h"
 
 struct t_pbc;
 struct t_trxframe;

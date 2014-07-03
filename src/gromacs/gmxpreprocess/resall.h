@@ -38,10 +38,10 @@
 #ifndef GMX_GMXPREPROCESS_RESALL_H
 #define GMX_GMXPREPROCESS_RESALL_H
 
-#include "typedefs.h"
-#include "hackblock.h"
-#include "gpp_atomtype.h"
-#include "grompp-impl.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
 #ifdef __cplusplus
 extern "C" {

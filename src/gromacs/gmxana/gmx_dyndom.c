@@ -41,8 +41,8 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/units.h"
-#include "gmx_ana.h"
-#include "macros.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/trxio.h"
 
 #include "gromacs/commandline/pargs.h"

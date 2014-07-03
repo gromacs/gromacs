@@ -41,11 +41,11 @@
 #include <string.h>
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "txtdump.h"
-#include "names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/futil.h"
-#include "trnio.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 #define BUFSIZE     128
 #define GROMACS_MAGIC   1993

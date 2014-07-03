@@ -39,8 +39,8 @@
 #define GMX_GMXPREPROCESS_GPP_ATOMTYPE_H
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "grompp-impl.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
 #ifdef __cplusplus
 extern "C" {

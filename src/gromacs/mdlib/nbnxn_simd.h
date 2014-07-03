@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 /* Include SIMD, below we select kernels based on the SIMD width */
 #include "gromacs/simd/simd.h"

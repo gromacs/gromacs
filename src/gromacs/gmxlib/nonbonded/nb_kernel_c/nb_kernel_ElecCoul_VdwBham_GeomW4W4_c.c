@@ -41,10 +41,10 @@
 
 #include <math.h>
 
-#include "../nb_kernel.h"
-#include "types/simple.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/nrnb.h"
 
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c

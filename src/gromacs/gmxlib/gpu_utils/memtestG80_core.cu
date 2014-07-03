@@ -28,7 +28,7 @@
 #define BITSDIFF(x,y) __popc((x) ^ (y))
 
 
-#include "memtestG80_core.h"
+#include "gromacs/gmxlib/gpu_utils/memtestG80_core.h"
 
 #include <stdio.h>
 
