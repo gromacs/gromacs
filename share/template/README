@@ -12,6 +12,29 @@ makes use of pkg-config only to build the template program:
 $ source /path/to/GMXRC
 $ make -f Makefile.pkg
 
+You will need to make sure that you use a sufficiently similar C++
+compiler and C++ Standard Library as the one that was used for
+compiling GROMACS, preferably the same one. The easiest way
+to do this is to have pkg-config installed on your system, and
+to source GMXRC from the GROMACS installation before you attempt
+to configure the template.
+
+Otherwise, if the compiler used for GROMACS was capable of some
+C++11 features then by default those will be required for compiling
+the template. To make that work, you can either configure GROMACS with
+$ cmake -DGMX_CXX11=off
+or configure the template with the appropriate
+$ cmake -DCMAKE_CXX_FLAGS="-flag-for-your-compiler"
+You can find out the necessary flags from your compiler's docs, or
+by inspecting the src/buildinfo.h file in the GROMACS build tree.
+
+Also otherwise, if you encounter errors like
+  undefined reference to symbol '__cxa_free_exception@@CXXABI_1.3'
+then you need to hint to the linker to link to the C++ Standard
+Library (and again, it should be sufficiently similar to the one used
+when linking GROMACS). For example, configure the template with
+$ cmake -DCMAKE_EXE_LINKER_FLAGS="-lstdc++"
+
 ----------------------------------------------------------
 
 If you are reading this in the distribution directory,
