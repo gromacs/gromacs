@@ -360,8 +360,8 @@ gmx_simd_exp_f(gmx_simd_float_t x)
     const gmx_simd_float_t  argscale     = gmx_simd_set1_f(1.44269504088896341f);
     /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
     const gmx_simd_float_t  arglimit     = gmx_simd_set1_f(126.0f);
-    const gmx_simd_float_t  invargscale0 = gmx_simd_set1_f(0.693145751953125f);
-    const gmx_simd_float_t  invargscale1 = gmx_simd_set1_f(1.428606765330187045e-06f);
+    const gmx_simd_float_t  invargscale0 = gmx_simd_set1_f(-0.693145751953125f);
+    const gmx_simd_float_t  invargscale1 = gmx_simd_set1_f(-1.428606765330187045e-06f);
     const gmx_simd_float_t  CC4          = gmx_simd_set1_f(0.00136324646882712841033936f);
     const gmx_simd_float_t  CC3          = gmx_simd_set1_f(0.00836596917361021041870117f);
     const gmx_simd_float_t  CC2          = gmx_simd_set1_f(0.0416710823774337768554688f);
@@ -380,8 +380,8 @@ gmx_simd_exp_f(gmx_simd_float_t x)
     fexppart  = gmx_simd_blendzero_f(fexppart, valuemask);
 
     /* Extended precision arithmetics */
-    x         = gmx_simd_fnmadd_f(invargscale0, intpart, x);
-    x         = gmx_simd_fnmadd_f(invargscale1, intpart, x);
+    x         = gmx_simd_fmadd_f(invargscale0, intpart, x);
+    x         = gmx_simd_fmadd_f(invargscale1, intpart, x);
 
     p         = gmx_simd_fmadd_f(CC4, x, CC3);
     p         = gmx_simd_fmadd_f(p, x, CC2);
@@ -709,10 +709,10 @@ static gmx_inline void gmx_simdcall
 gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t *cosval)
 {
     /* Constants to subtract Pi/4*x from y while minimizing precision loss */
-    const gmx_simd_float_t  argred0         = gmx_simd_set1_f(1.5703125);
-    const gmx_simd_float_t  argred1         = gmx_simd_set1_f(4.83751296997070312500e-04f);
-    const gmx_simd_float_t  argred2         = gmx_simd_set1_f(7.54953362047672271729e-08f);
-    const gmx_simd_float_t  argred3         = gmx_simd_set1_f(2.56334406825708960298e-12f);
+    const gmx_simd_float_t  argred0         = gmx_simd_set1_f(-1.5703125);
+    const gmx_simd_float_t  argred1         = gmx_simd_set1_f(-4.83751296997070312500e-04f);
+    const gmx_simd_float_t  argred2         = gmx_simd_set1_f(-7.54953362047672271729e-08f);
+    const gmx_simd_float_t  argred3         = gmx_simd_set1_f(-2.56334406825708960298e-12f);
     const gmx_simd_float_t  two_over_pi     = gmx_simd_set1_f(2.0f/M_PI);
     const gmx_simd_float_t  const_sin2      = gmx_simd_set1_f(-1.9515295891e-4f);
     const gmx_simd_float_t  const_sin1      = gmx_simd_set1_f( 8.3321608736e-3f);
@@ -790,10 +790,10 @@ gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t
     /* where mask is FALSE, set sign. */
     csign   = gmx_simd_xor_sign_f(csign, gmx_simd_blendv_f(gmx_simd_set1_f(-1.0f), one, mask));
 #endif
-    x       = gmx_simd_fnmadd_f(y, argred0, x);
-    x       = gmx_simd_fnmadd_f(y, argred1, x);
-    x       = gmx_simd_fnmadd_f(y, argred2, x);
-    x       = gmx_simd_fnmadd_f(y, argred3, x);
+    x       = gmx_simd_fmadd_f(y, argred0, x);
+    x       = gmx_simd_fmadd_f(y, argred1, x);
+    x       = gmx_simd_fmadd_f(y, argred2, x);
+    x       = gmx_simd_fmadd_f(y, argred3, x);
     x2      = gmx_simd_mul_f(x, x);
 
     psin    = gmx_simd_fmadd_f(const_sin2, x2, const_sin1);
@@ -862,10 +862,10 @@ gmx_simd_cos_f(gmx_simd_float_t x)
 static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_tan_f(gmx_simd_float_t x)
 {
-    const gmx_simd_float_t  argred0         = gmx_simd_set1_f(1.5703125);
-    const gmx_simd_float_t  argred1         = gmx_simd_set1_f(4.83751296997070312500e-04f);
-    const gmx_simd_float_t  argred2         = gmx_simd_set1_f(7.54953362047672271729e-08f);
-    const gmx_simd_float_t  argred3         = gmx_simd_set1_f(2.56334406825708960298e-12f);
+    const gmx_simd_float_t  argred0         = gmx_simd_set1_f(-1.5703125);
+    const gmx_simd_float_t  argred1         = gmx_simd_set1_f(-4.83751296997070312500e-04f);
+    const gmx_simd_float_t  argred2         = gmx_simd_set1_f(-7.54953362047672271729e-08f);
+    const gmx_simd_float_t  argred3         = gmx_simd_set1_f(-2.56334406825708960298e-12f);
     const gmx_simd_float_t  two_over_pi     = gmx_simd_set1_f(2.0f/M_PI);
     const gmx_simd_float_t  CT6             = gmx_simd_set1_f(0.009498288995810566122993911);
     const gmx_simd_float_t  CT5             = gmx_simd_set1_f(0.002895755790837379295226923);
@@ -886,10 +886,10 @@ gmx_simd_tan_f(gmx_simd_float_t x)
     y       = gmx_simd_round_f(z);
     mask    = gmx_simd_cvt_fib2fb(gmx_simd_cmpeq_fi(gmx_simd_and_fi(iy, ione), ione));
 
-    x       = gmx_simd_fnmadd_f(y, argred0, x);
-    x       = gmx_simd_fnmadd_f(y, argred1, x);
-    x       = gmx_simd_fnmadd_f(y, argred2, x);
-    x       = gmx_simd_fnmadd_f(y, argred3, x);
+    x       = gmx_simd_fmadd_f(y, argred0, x);
+    x       = gmx_simd_fmadd_f(y, argred1, x);
+    x       = gmx_simd_fmadd_f(y, argred2, x);
+    x       = gmx_simd_fmadd_f(y, argred3, x);
     x       = gmx_simd_xor_f(gmx_simd_blendzero_f(gmx_simd_set1_f(GMX_FLOAT_NEGZERO), mask), x);
 #else
     const gmx_simd_float_t  quarter         = gmx_simd_set1_f(0.25f);
@@ -908,10 +908,10 @@ gmx_simd_tan_f(gmx_simd_float_t x)
     m3      = gmx_simd_cmple_f(threequarter, q);
     m1      = gmx_simd_and_fb(m1, m2);
     mask    = gmx_simd_or_fb(m1, m3);
-    w       = gmx_simd_fnmadd_f(y, argred0, w);
-    w       = gmx_simd_fnmadd_f(y, argred1, w);
-    w       = gmx_simd_fnmadd_f(y, argred2, w);
-    w       = gmx_simd_fnmadd_f(y, argred3, w);
+    w       = gmx_simd_fmadd_f(y, argred0, w);
+    w       = gmx_simd_fmadd_f(y, argred1, w);
+    w       = gmx_simd_fmadd_f(y, argred2, w);
+    w       = gmx_simd_fmadd_f(y, argred3, w);
 
     w       = gmx_simd_blendv_f(w, gmx_simd_fneg_f(w), mask);
     x       = gmx_simd_xor_sign_f(w, x);
@@ -1579,8 +1579,8 @@ gmx_simd_exp_d(gmx_simd_double_t x)
 {
     const gmx_simd_double_t  argscale      = gmx_simd_set1_d(1.44269504088896340735992468100);
     const gmx_simd_double_t  arglimit      = gmx_simd_set1_d(1022.0);
-    const gmx_simd_double_t  invargscale0  = gmx_simd_set1_d(0.69314718055966295651160180568695068359375);
-    const gmx_simd_double_t  invargscale1  = gmx_simd_set1_d(2.8235290563031577122588448175013436025525412068e-13);
+    const gmx_simd_double_t  invargscale0  = gmx_simd_set1_d(-0.69314718055966295651160180568695068359375);
+    const gmx_simd_double_t  invargscale1  = gmx_simd_set1_d(-2.8235290563031577122588448175013436025525412068e-13);
     const gmx_simd_double_t  CE12          = gmx_simd_set1_d(2.078375306791423699350304e-09);
     const gmx_simd_double_t  CE11          = gmx_simd_set1_d(2.518173854179933105218635e-08);
     const gmx_simd_double_t  CE10          = gmx_simd_set1_d(2.755842049600488770111608e-07);
@@ -1605,8 +1605,8 @@ gmx_simd_exp_d(gmx_simd_double_t x)
     fexppart  = gmx_simd_blendzero_d(fexppart, valuemask);
 
     /* Extended precision arithmetics */
-    x         = gmx_simd_fnmadd_d(invargscale0, intpart, x);
-    x         = gmx_simd_fnmadd_d(invargscale1, intpart, x);
+    x         = gmx_simd_fmadd_d(invargscale0, intpart, x);
+    x         = gmx_simd_fmadd_d(invargscale1, intpart, x);
 
     p         = gmx_simd_fmadd_d(CE12, x, CE11);
     p         = gmx_simd_fmadd_d(p, x, CE10);
@@ -2001,10 +2001,10 @@ static gmx_inline void gmx_simdcall
 gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_double_t *cosval)
 {
     /* Constants to subtract Pi/4*x from y while minimizing precision loss */
-    const gmx_simd_double_t  argred0         = gmx_simd_set1_d(2*0.78539816290140151978);
-    const gmx_simd_double_t  argred1         = gmx_simd_set1_d(2*4.9604678871439933374e-10);
-    const gmx_simd_double_t  argred2         = gmx_simd_set1_d(2*1.1258708853173288931e-18);
-    const gmx_simd_double_t  argred3         = gmx_simd_set1_d(2*1.7607799325916000908e-27);
+    const gmx_simd_double_t  argred0         = gmx_simd_set1_d(-2*0.78539816290140151978);
+    const gmx_simd_double_t  argred1         = gmx_simd_set1_d(-2*4.9604678871439933374e-10);
+    const gmx_simd_double_t  argred2         = gmx_simd_set1_d(-2*1.1258708853173288931e-18);
+    const gmx_simd_double_t  argred3         = gmx_simd_set1_d(-2*1.7607799325916000908e-27);
     const gmx_simd_double_t  two_over_pi     = gmx_simd_set1_d(2.0/M_PI);
     const gmx_simd_double_t  const_sin5      = gmx_simd_set1_d( 1.58938307283228937328511e-10);
     const gmx_simd_double_t  const_sin4      = gmx_simd_set1_d(-2.50506943502539773349318e-08);
@@ -2087,10 +2087,10 @@ gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_doubl
     /* where mask is FALSE, set sign. */
     csign   = gmx_simd_xor_sign_d(csign, gmx_simd_blendv_d(gmx_simd_set1_d(-1.0), one, mask));
 #endif
-    x       = gmx_simd_fnmadd_d(y, argred0, x);
-    x       = gmx_simd_fnmadd_d(y, argred1, x);
-    x       = gmx_simd_fnmadd_d(y, argred2, x);
-    x       = gmx_simd_fnmadd_d(y, argred3, x);
+    x       = gmx_simd_fmadd_d(y, argred0, x);
+    x       = gmx_simd_fmadd_d(y, argred1, x);
+    x       = gmx_simd_fmadd_d(y, argred2, x);
+    x       = gmx_simd_fmadd_d(y, argred3, x);
     x2      = gmx_simd_mul_d(x, x);
 
     psin    = gmx_simd_fmadd_d(const_sin5, x2, const_sin4);
@@ -2151,10 +2151,10 @@ gmx_simd_cos_d(gmx_simd_double_t x)
 static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_tan_d(gmx_simd_double_t x)
 {
-    const gmx_simd_double_t  argred0         = gmx_simd_set1_d(2*0.78539816290140151978);
-    const gmx_simd_double_t  argred1         = gmx_simd_set1_d(2*4.9604678871439933374e-10);
-    const gmx_simd_double_t  argred2         = gmx_simd_set1_d(2*1.1258708853173288931e-18);
-    const gmx_simd_double_t  argred3         = gmx_simd_set1_d(2*1.7607799325916000908e-27);
+    const gmx_simd_double_t  argred0         = gmx_simd_set1_d(-2*0.78539816290140151978);
+    const gmx_simd_double_t  argred1         = gmx_simd_set1_d(-2*4.9604678871439933374e-10);
+    const gmx_simd_double_t  argred2         = gmx_simd_set1_d(-2*1.1258708853173288931e-18);
+    const gmx_simd_double_t  argred3         = gmx_simd_set1_d(-2*1.7607799325916000908e-27);
     const gmx_simd_double_t  two_over_pi     = gmx_simd_set1_d(2.0/M_PI);
     const gmx_simd_double_t  CT15            = gmx_simd_set1_d(1.01419718511083373224408e-05);
     const gmx_simd_double_t  CT14            = gmx_simd_set1_d(-2.59519791585924697698614e-05);
@@ -2184,10 +2184,10 @@ gmx_simd_tan_d(gmx_simd_double_t x)
     y       = gmx_simd_round_d(z);
     mask    = gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(iy, ione), ione));
 
-    x       = gmx_simd_fnmadd_d(y, argred0, x);
-    x       = gmx_simd_fnmadd_d(y, argred1, x);
-    x       = gmx_simd_fnmadd_d(y, argred2, x);
-    x       = gmx_simd_fnmadd_d(y, argred3, x);
+    x       = gmx_simd_fmadd_d(y, argred0, x);
+    x       = gmx_simd_fmadd_d(y, argred1, x);
+    x       = gmx_simd_fmadd_d(y, argred2, x);
+    x       = gmx_simd_fmadd_d(y, argred3, x);
     x       = gmx_simd_xor_d(gmx_simd_blendzero_d(gmx_simd_set1_d(GMX_DOUBLE_NEGZERO), mask), x);
 #else
     const gmx_simd_double_t  quarter         = gmx_simd_set1_d(0.25);
@@ -2206,10 +2206,10 @@ gmx_simd_tan_d(gmx_simd_double_t x)
     m3      = gmx_simd_cmple_d(threequarter, q);
     m1      = gmx_simd_and_db(m1, m2);
     mask    = gmx_simd_or_db(m1, m3);
-    w       = gmx_simd_fnmadd_d(y, argred0, w);
-    w       = gmx_simd_fnmadd_d(y, argred1, w);
-    w       = gmx_simd_fnmadd_d(y, argred2, w);
-    w       = gmx_simd_fnmadd_d(y, argred3, w);
+    w       = gmx_simd_fmadd_d(y, argred0, w);
+    w       = gmx_simd_fmadd_d(y, argred1, w);
+    w       = gmx_simd_fmadd_d(y, argred2, w);
+    w       = gmx_simd_fmadd_d(y, argred3, w);
 
     w       = gmx_simd_blendv_d(w, gmx_simd_fneg_d(w), mask);
     x       = gmx_simd_xor_sign_d(w, x);
