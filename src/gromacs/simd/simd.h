@@ -131,6 +131,8 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
 #    include "gromacs/simd/impl_arm_neon_asimd/impl_arm_neon_asimd.h"
 #elif defined GMX_SIMD_IBM_QPX
 #    include "gromacs/simd/impl_ibm_qpx/impl_ibm_qpx.h"
+#elif defined GMX_SIMD_IBM_VMX
+#    include "gromacs/simd/impl_ibm_vmx/impl_ibm_vmx.h"
 #elif (defined GMX_SIMD_REFERENCE) || (defined DOXYGEN)
 /* Plain C SIMD reference implementation, also serves as documentation.
  * For now this code path will also be taken for Sparc64_HPC_ACE since we have
