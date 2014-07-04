@@ -37,8 +37,13 @@ if ("${GROMACS_VERSION_STRING}" VERSION_LESS "5.0")
   message(FATAL_ERROR "This template works with GROMACS 5.0 (and possibly later versions)")
 endif()
 
+# Let find_package find the subset of Boost installed with GROMACS
+# if it needs to use it.
+set(BOOST_INCLUDEDIR ${GROMACS_INCLUDE_DIRS}/gromacs/external/boost)
+find_package(Boost 1.44.0 REQUIRED)
+
 add_definitions( ${GROMACS_DEFINITIONS} )
-include_directories( ${GROMACS_INCLUDE_DIRS} )
+include_directories( ${GROMACS_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS} )
 
 add_executable(template template.cpp)
 target_link_libraries(template ${GROMACS_LIBRARIES})
