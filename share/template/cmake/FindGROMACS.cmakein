@@ -90,7 +90,7 @@ if (GROMACS_LIBRARY)
       list(REMOVE_ITEM PC_GROMACS_LIBRARIES ${GROMACS_LIBRARY_NAME})
       foreach (LIB ${PC_GROMACS_LIBRARIES})
         find_library(GROMACS_${LIB} NAMES ${LIB}
-                     HINTS ${PC_GROMACS_LIBRARY_DIRS} @CMAKE_INSTALL_PREFIX@/@INCL_INSTALL_DIR@)
+                     HINTS ${PC_GROMACS_LIBRARY_DIRS} @CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@)
         list(APPEND GMX_DEP_LIBRARIES ${GROMACS_${LIB}})
         unset(GROMACS_${LIB} CACHE)
       endforeach(LIB)
@@ -139,12 +139,12 @@ set(GROMACS_VERSION_STRING "${GROMACS_MAJOR_VERSION}.${GROMACS_MINOR_VERSION}.${
 
 if ("${GROMACS_PKG}" MATCHES "libgmx")
   if (${GROMACS_VERSION} EQUAL 40000)
-    find_path(GROMACS_INCLUDE_DIR tpxio.h HINTS ${PC_GROMACS_INCLUDE_DIRS})
+    find_path(GROMACS_INCLUDE_DIR tpxio.h HINTS ${PC_GROMACS_INCLUDE_DIRS} @CMAKE_INSTALL_PREFIX@/@INCL_INSTALL_DIR@)
   else(${GROMACS_VERSION} EQUAL 40000)
-   find_path(GROMACS_INCLUDE_DIR gromacs/tpxio.h HINTS ${PC_GROMACS_INCLUDE_DIRS})
+   find_path(GROMACS_INCLUDE_DIR gromacs/tpxio.h HINTS ${PC_GROMACS_INCLUDE_DIRS} @CMAKE_INSTALL_PREFIX@/@INCL_INSTALL_DIR@)
   endif(${GROMACS_VERSION} EQUAL 40000)
 elseif("${GROMACS_PKG}" MATCHES "libgromacs")
-  find_path(GROMACS_INCLUDE_DIR gromacs/version.h HINTS ${PC_GROMACS_INCLUDE_DIRS})
+  find_path(GROMACS_INCLUDE_DIR gromacs/version.h HINTS ${PC_GROMACS_INCLUDE_DIRS} @CMAKE_INSTALL_PREFIX@/@INCL_INSTALL_DIR@)
 endif("${GROMACS_PKG}" MATCHES "libgmx")
 
 set(GROMACS_LIBRARIES "${GROMACS_LIBRARY};${GROMACS_DEP_LIBRARIES}" )
@@ -152,6 +152,18 @@ set(GROMACS_INCLUDE_DIRS ${GROMACS_INCLUDE_DIR} )
 if (PC_GROMACS_INCLUDE_DIRS)
   list(APPEND GROMACS_INCLUDE_DIRS ${PC_GROMACS_INCLUDE_DIRS})
 endif(PC_GROMACS_INCLUDE_DIRS)
+
+if(NOT ${GROMACS_MAJOR_VERSION} LESS 5)
+    include(CheckIncludeFile)
+    # Let find_package find the subset of Boost installed with GROMACS
+    set(BOOST_INCLUDEDIR ${GROMACS_INCLUDE_DIRS}/gromacs/external/boost)
+    find_package(Boost 1.44.0 REQUIRED)
+    if(Boost_FOUND)
+        list(APPEND GROMACS_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
+    else()
+        message(FATAL_ERROR "Boost not found, compiling the GROMACS template will not work")
+    endif()
+endif()
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set GROMACS_FOUND to TRUE
