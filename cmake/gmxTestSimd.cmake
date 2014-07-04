@@ -313,6 +313,26 @@ elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
         message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics. If you are compiling for BlueGene/Q with the XL compilers, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-C' to set up the tool chain.")
     endif()
 
+elseif(${GMX_SIMD} STREQUAL "IBM_VMX")
+
+    gmx_find_cflag_for_source(CFLAGS_IBM_VMX "C compiler IBM VMX SIMD flag"
+                              "#include<altivec.h>
+                              int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                              SIMD_C_FLAGS
+                              "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VMX "C++ compiler IBM VMX SIMD flag"
+                                "#include<altivec.h>
+                                int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                                SIMD_CXX_FLAGS
+                                "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+
+    if(NOT CFLAGS_IBM_VMX OR NOT CXXFLAGS_IBM_VMX)
+        message(FATAL_ERROR "Cannot find IBM VMX SIMD compiler flag. Use a newer compiler, or disable VMX SIMD.")
+    endif()
+
+    set(GMX_SIMD_IBM_VMX 1)
+    set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions")
+
 elseif(${GMX_SIMD} STREQUAL "SPARC64_HPC_ACE")
 
     # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt

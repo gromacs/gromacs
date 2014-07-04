@@ -129,6 +129,8 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
 #    include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
 #elif defined GMX_SIMD_IBM_QPX
 #    include "impl_ibm_qpx/impl_ibm_qpx.h"
+#elif defined GMX_SIMD_IBM_VMX
+#    include "gromacs/simd/impl_ibm_vmx/impl_ibm_vmx.h"
 #elif defined GMX_SIMD_SPARC64_HPC_ACE
 #    include "impl_sparc64_hpc_ace/impl_sparc64_hpc_ace.h"
 #elif (defined GMX_SIMD_REFERENCE) || (defined DOXYGEN)
