@@ -123,6 +123,9 @@
 /* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
 #cmakedefine GMX_SIMD_IBM_QPX
 
+/* IBM VMX was selected as SIMD instructions (Power 6 and later) */
+#cmakedefine GMX_SIMD_IBM_VMX
+
 /* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
 #cmakedefine GMX_SIMD_SPARC64_HPC_ACE
 
