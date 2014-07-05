@@ -129,6 +129,9 @@
 /* IBM VMX was selected as SIMD instructions (Power 6 and later) */
 #cmakedefine GMX_SIMD_IBM_VMX
 
+/* IBM VSX was selected as SIMD instructions (Power 7 and later) */
+#cmakedefine GMX_SIMD_IBM_VSX
+ 
 /* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
 #cmakedefine GMX_SIMD_SPARC64_HPC_ACE
 

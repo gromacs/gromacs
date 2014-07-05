@@ -136,7 +136,8 @@ gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
     "arm_neon",
     "arm_neon_asimd",
     "QPX",
-    "VMX"
+    "VMX",
+    "VSX"
 };
 
 const char *
@@ -153,6 +154,7 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
     "Sparc64 HPC-ACE",
     "IBM_QPX",
     "IBM_VMX",
+    "IBM_VSX",
     "ARM_NEON",
     "ARM_NEON_ASIMD"
 };
@@ -253,6 +255,8 @@ static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_QPX;
 #elif defined GMX_SIMD_IBM_VMX
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_VMX;
+#elif defined GMX_SIMD_IBM_VSX
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_VSX;
 #elif defined GMX_SIMD_REFERENCE
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_REFERENCE;
 #else
@@ -859,16 +863,24 @@ cpuid_check_ibm(gmx_cpuid_t                cpuid)
             chomp_substring_before_colon(buffer, before_colon, GMX_CPUID_STRLEN);
             chomp_substring_after_colon(buffer, after_colon, GMX_CPUID_STRLEN);
 
+            if (!strcmp(before_colon, "cpu") || !strcmp(before_colon, "Processor"))
+            {
+                strncpy(cpuid->brand, after_colon, GMX_CPUID_STRLEN);
+            }
             if (!strcmp(before_colon, "model name") ||
                 !strcmp(before_colon, "model") ||
                 !strcmp(before_colon, "Processor") ||
                 !strcmp(before_colon, "cpu"))
             {
-                strncpy(cpuid->brand, after_colon, GMX_CPUID_STRLEN);
-
                 if (strstr(after_colon, "altivec"))
                 {
                     cpuid->feature[GMX_CPUID_FEATURE_IBM_VMX] = 1;
+
+                    if (!strstr(after_colon, "POWER6") && !strstr(after_colon, "Power6") &&
+                        !strstr(after_colon, "power6"))
+                    {
+                        cpuid->feature[GMX_CPUID_FEATURE_IBM_VSX] = 1;
+                    }
                 }
             }
         }
@@ -884,6 +896,7 @@ cpuid_check_ibm(gmx_cpuid_t                cpuid)
     strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_STRLEN);
     cpuid->feature[GMX_CPUID_FEATURE_IBM_QPX] = 0;
     cpuid->feature[GMX_CPUID_FEATURE_IBM_VMX] = 0;
+    cpuid->feature[GMX_CPUID_FEATURE_IBM_VSX] = 0;
 #endif
     return 0;
 }
@@ -1235,6 +1248,11 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
         if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_IBM_QPX))
         {
             tmpsimd = GMX_CPUID_SIMD_IBM_QPX;
+        }
+        else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_IBM_VSX))
+        {
+            /* VSX is better than VMX, so we check it first */
+            tmpsimd = GMX_CPUID_SIMD_IBM_VSX;
         }
         else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_IBM_VMX))
         {
