@@ -36,13 +36,15 @@
 if(CPACK_SOURCE_PACKAGE_FILE_NAME) #building source package
     get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
     if (NOT EXISTS "${CMAKE_BINARY_DIR}/share/man/man1/gmx-view.1" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/INSTALL" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/online.html")
+        NOT EXISTS "${CMAKE_BINARY_DIR}/install-guide/final/INSTALL" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/online.html" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/programs/gmx-view.html")
         message(FATAL_ERROR
-            "To create a complete source package all man and HTML pages need "
-            "to be generated, and the INSTALL file generated. "
-            "Run 'make man html' to build these parts. You can also set "
-            "GMX_BUILD_HELP=ON to automatically build the HTML parts. "
-            "The latter also requires you to execute 'make install-guide'.")
+            "To create a complete source package, bash completions, "
+            "man and HTML pages, and INSTALL need to be generated. "
+            "Configure with GMX_BUILD_TARBALL=ON, and run 'make man html "
+            "install-guide' to build these parts. You can also configure with "
+            "GMX_BUILD_HELP=ON to automatically build the HTML parts.")
     endif()
 endif()

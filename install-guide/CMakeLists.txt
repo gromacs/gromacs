@@ -68,10 +68,13 @@ if(INSTALL_GUIDE_BUILD_IS_POSSIBLE)
         VERBATIM
         )
 
-    # Make the INSTALL file for CPack for the tarball
+    # Make the INSTALL file for CPack for the tarball. This gets put
+    # into the tarball via the CPack rules in the top-level
+    # CMakeLists.txt
     add_custom_command(
-        OUTPUT ${CMAKE_BINARY_DIR}/INSTALL
-        COMMAND pandoc -t plain -o ../INSTALL install-guide.md
+        OUTPUT final/INSTALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory final
+        COMMAND pandoc -t plain -o final/INSTALL install-guide.md
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install-guide.md
         VERBATIM
         )
@@ -80,7 +83,7 @@ if(INSTALL_GUIDE_BUILD_IS_POSSIBLE)
     add_custom_target(install-guide
         DEPENDS
            ${CMAKE_CURRENT_BINARY_DIR}/install-guide.html
-           ${CMAKE_BINARY_DIR}/INSTALL
+           final/INSTALL
         VERBATIM
         )
 endif()
