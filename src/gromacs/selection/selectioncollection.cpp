@@ -568,11 +568,12 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     impl_->grps_               = grps;
     impl_->bExternalGroupsSet_ = true;
 
-    ExceptionInitializer        errors("Unknown index group references encountered");
+    ExceptionInitializer        errors("Invalid index group reference(s)");
     SelectionTreeElementPointer root = impl_->sc_.root;
     while (root)
     {
         impl_->resolveExternalGroups(root, &errors);
+        root->checkUnsortedAtoms(true, &errors);
         root = root->next;
     }
     if (errors.hasNestedExceptions())

@@ -237,6 +237,8 @@ _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val);
 namespace gmx
 {
 
+class ExceptionInitializer;
+
 /*! \brief
  * Function pointer for evaluating a gmx::SelectionTreeElement.
  */
@@ -323,6 +325,19 @@ class SelectionTreeElement
          */
         void fillNameIfMissing(const char *selectionText);
 
+        /*! \brief
+         * Checks that this element and its children do not contain unsupported
+         * elements with unsorted atoms.
+         *
+         * \param[in] bUnsortedAllowed Whether this element's parents allow it
+         *     to have unsorted atoms.
+         * \param     errors           Object for reporting any error messages.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Errors are reported as nested exceptions in \p errors.
+         */
+        void checkUnsortedAtoms(bool                  bUnsortedAllowed,
+                                ExceptionInitializer *errors) const;
         /*! \brief
          * Resolved an unresolved reference to an index group.
          *

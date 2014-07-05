@@ -2,6 +2,9 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <ParsedSelections Name="Parsed">
+    <ParsedVariable Name="Variable1">
+      <String Name="Input">foo = group "GrpUnsorted"</String>
+    </ParsedVariable>
     <ParsedSelection Name="Selection1">
       <String Name="Input">group "GrpUnsorted"</String>
       <String Name="Name">GrpUnsorted</String>
@@ -30,6 +33,12 @@
       <String Name="Input">group "GrpUnsorted" permute 2 1</String>
       <String Name="Name">GrpUnsorted</String>
       <String Name="Text">group "GrpUnsorted" permute 2 1</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection6">
+      <String Name="Input">foo</String>
+      <String Name="Name">foo</String>
+      <String Name="Text">foo</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
   </ParsedSelections>
@@ -415,6 +424,87 @@
           </Sequence>
           <Int Name="RefId">7</Int>
           <Int Name="MappedId">2</Int>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection6">
+      <String Name="Name">foo</String>
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>2</Int>
+        <Int>1</Int>
+        <Int>8</Int>
+        <Int>6</Int>
+        <Int>4</Int>
+        <Int>2</Int>
+        <Int>11</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">8</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>0</Int>
+          </Sequence>
+          <Int Name="RefId">0</Int>
+          <Int Name="MappedId">0</Int>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>2</Int>
+          </Sequence>
+          <Int Name="RefId">1</Int>
+          <Int Name="MappedId">2</Int>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>1</Int>
+          </Sequence>
+          <Int Name="RefId">2</Int>
+          <Int Name="MappedId">1</Int>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>8</Int>
+          </Sequence>
+          <Int Name="RefId">3</Int>
+          <Int Name="MappedId">8</Int>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>6</Int>
+          </Sequence>
+          <Int Name="RefId">4</Int>
+          <Int Name="MappedId">6</Int>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>4</Int>
+          </Sequence>
+          <Int Name="RefId">5</Int>
+          <Int Name="MappedId">4</Int>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>2</Int>
+          </Sequence>
+          <Int Name="RefId">6</Int>
+          <Int Name="MappedId">2</Int>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>11</Int>
+          </Sequence>
+          <Int Name="RefId">7</Int>
+          <Int Name="MappedId">11</Int>
         </Position>
       </Sequence>
     </Selection>

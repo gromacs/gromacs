@@ -91,6 +91,9 @@
  *  - \ref SMETH_MODIFIER : If set, the method is a selection modifier and
  *    not an actual selection method.
  *    For more details, see \ref selmethods_modifiers.
+ *  - \ref SMETH_ALLOW_UNSORTED : If set, the method supports unsorted atoms
+ *    in its input parameters. \ref SMETH_MODIFIER methods are assumed to always
+ *    support unsorted atoms, as their purpose is to affect the ordering.
  *
  * There are two additional flags that specify the number of values the
  * method returns. Only one of them can be set at a time.
@@ -345,6 +348,15 @@ struct t_trxframe;
  * the string pointers.
  */
 #define SMETH_CHARVAL    64
+/*! \brief
+ * If set, the method accepts unsorted atoms in its input parameters.
+ *
+ * Currently, the support for this functionality is fairly limited, and only
+ * static index group references can actually contain unsorted atoms.
+ * But to make this single case work, the position evaluation must support
+ * unsorted atoms as well.
+ */
+#define SMETH_ALLOW_UNSORTED 128
 /*! \brief
  * If set, the method is a selection modifier.
  *

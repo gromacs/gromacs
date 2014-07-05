@@ -77,7 +77,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     endif()
 
     set(PKG_FFT "${${FFTW}_PKG}")
-    include_directories(${${FFTW}_INCLUDE_DIRS})
+    if (GMX_BUILD_OWN_FFTW)
+        include_directories(BEFORE ${${FFTW}_INCLUDE_DIRS})
+    else()
+        include_directories(${${FFTW}_INCLUDE_DIRS})
+    endif()
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
     set(GMX_FFT_FFTW3 1)
 

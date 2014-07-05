@@ -142,7 +142,7 @@ static gmx_ana_selparam_t smparams_com[] = {
 
 /** Selection method data for position keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_pos = {
-    "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL,
+    "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL | SMETH_ALLOW_UNSORTED,
     asize(smparams_keyword_pos), smparams_keyword_pos,
     &init_data_pos,
     &set_poscoll_pos,

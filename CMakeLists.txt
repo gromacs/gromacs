@@ -103,9 +103,6 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
     set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
-set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
-mark_as_advanced(GMX_INSTALL_PREFIX)
-
 include(gmxBuildTypeReference)
 include(gmxBuildTypeProfile)
 include(gmxBuildTypeTSAN)
@@ -564,6 +561,9 @@ if(GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
         "version of Boost included with Gromacs.")
 endif()
 
+if(NOT DEFINED GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
+    message(WARNING "libxml2 not found. Will build GROMACS without unit-tests. This is not recommended, because the unit-tests help to verify that GROMACS functions correctly. Most likely you are missing the libxml2-dev(el) package. After you installed it, set GMX_BUILD_UNITTESTS=ON.")
+endif()
 option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ${HAVE_LIBXML2})
 mark_as_advanced(GMX_BUILD_UNITTESTS)
 gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
@@ -584,14 +584,14 @@ endif()
 ########################################################################
 
 add_definitions( -DHAVE_CONFIG_H )
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
-include_directories(${CMAKE_BINARY_DIR}/src)
+include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 # Required for gmx_header_config_gen.h to be found before installation
-include_directories(${CMAKE_BINARY_DIR}/src/gromacs/utility)
+include_directories(BEFORE ${CMAKE_BINARY_DIR}/src/gromacs/utility)
 # Required for now to make old code compile
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
@@ -793,21 +793,26 @@ set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 ########################################################################
 # Specify install locations
 ########################################################################
-# Use GNUInstallDirst to set paths on multiarch systems
+# Use GNUInstallDirs to set paths on multiarch systems.
 include(GNUInstallDirs)
 
+# Customization for the installation tree paths.
 set(GMX_LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING
     "Library installation directory (default: ${CMAKE_INSTALL_LIBDIR})")
 set(GMX_DATA_INSTALL_DIR gromacs CACHE STRING
     "Data installation directory under share/ (default: gromacs)")
 mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
 
-set(LIB_INSTALL_DIR  ${GMX_INSTALL_PREFIX}${GMX_LIB_INSTALL_DIR})
-set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
-set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/${GMX_DATA_INSTALL_DIR})
-set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
-set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
+# These variables are used internally to provide a central location for
+# customizing the install locations.
+set(LIB_INSTALL_DIR  ${GMX_LIB_INSTALL_DIR})
+set(BIN_INSTALL_DIR  bin)
+set(DATA_INSTALL_DIR share/${GMX_DATA_INSTALL_DIR})
+set(MAN_INSTALL_DIR  share/man)
+set(INCL_INSTALL_DIR include)
 
+# These variables get written into config.h for use in finding the data
+# directories.
 set(GMXLIB_SEARCH_DIR share/${GMX_DATA_INSTALL_DIR}/top)
 set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 
@@ -815,12 +820,22 @@ set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 include(gmxManageSuffixes)
 
 ################################################################
-# Shared library settings
+# Shared library load path settings
 ################################################################
-if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
+# CMake supports RPATH on OS X only from 2.8.12 upwards.
+# CMAKE_SYSTEM_VERSION > 8.0 matches OS X 10.5 and above, where RPATH support
+# was added.
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
+   ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
+    # The build folder always has bin/ and lib/; if we are also going to
+    # install to lib/, then the installation RPATH works also in the build
+    # tree.  This makes installation slightly faster (no need to rewrite the
+    # RPATHs), and makes the binaries in the build tree relocatable.
     if(GMX_LIB_INSTALL_DIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     endif()
+    # Set the RPATH as relative to the executable location to make the
+    # binaries relocatable.
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     else()
@@ -829,11 +844,13 @@ if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_G
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
 else()
-    # We are on Darwin/OSX, and cmake cannot handle proper RPATHs
-    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) #rpath supported for >10.4
+    # We are on Darwin/OSX, and CMake cannot handle RPATHs automatically.
+    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0)
+        # Set the RPATH options manually.
         set(CMAKE_INSTALL_NAME_DIR "@rpath")
         set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} "-Wl,-rpath,@executable_path/../${GMX_LIB_INSTALL_DIR}")
     else()
+        # Use the old INSTALL_NAME_DIR mechanism if RPATH is not supported.
         set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
     endif()
 endif()
@@ -846,7 +863,7 @@ if(GMX_EXTERNAL_BOOST)
     include_directories(${Boost_INCLUDE_DIRS})
     set(PKG_CFLAGS "${PKG_CFLAGS} -I${Boost_INCLUDE_DIRS}")
 else()
-    include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
+    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/boost)
     # typeid not supported for minimal internal version
     # (would add significant amount of code)
     add_definitions(-DBOOST_NO_TYPEID)
