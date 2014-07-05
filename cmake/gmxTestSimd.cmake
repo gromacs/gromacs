@@ -333,6 +333,26 @@ elseif(${GMX_SIMD} STREQUAL "IBM_VMX")
     set(GMX_SIMD_IBM_VMX 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions")
 
+elseif(${GMX_SIMD} STREQUAL "IBM_VSX")
+
+    gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
+                              "#include<altivec.h>
+                              int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                              SIMD_C_FLAGS
+                              "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VSX "C++ compiler IBM VSX SIMD flag"
+                                "#include<altivec.h>
+                                int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                                SIMD_CXX_FLAGS
+                                "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+
+    if(NOT CFLAGS_IBM_VSX OR NOT CXXFLAGS_IBM_VSX)
+        message(FATAL_ERROR "Cannot find IBM VSX SIMD compiler flag. Use a newer compiler, or disable VSX SIMD.")
+    endif()
+
+    set(GMX_SIMD_IBM_VSX 1)
+    set(SIMD_STATUS_MESSAGE "Enabling IBM VSX SIMD instructions")
+
 elseif(${GMX_SIMD} STREQUAL "SPARC64_HPC_ACE")
 
     # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
