@@ -116,6 +116,7 @@ enum gmx_cpuid_feature
     GMX_CPUID_FEATURE_ARM_NEON_ASIMD,    /* 64-bit ARM AArch64 Advanced SIMD             */
     GMX_CPUID_FEATURE_IBM_QPX,           /* IBM QPX SIMD (BlueGene/Q and later)          */
     GMX_CPUID_FEATURE_IBM_VMX,           /* IBM VMX SIMD (Altivec on Power6 and later)   */
+    GMX_CPUID_FEATURE_IBM_VSX,           /* IBM VSX SIMD (Power7 and later)              */
     GMX_CPUID_NFEATURES
 };
 
@@ -138,6 +139,7 @@ enum gmx_cpuid_simd
     GMX_CPUID_SIMD_SPARC64_HPC_ACE,
     GMX_CPUID_SIMD_IBM_QPX,
     GMX_CPUID_SIMD_IBM_VMX,
+    GMX_CPUID_SIMD_IBM_VSX,
     GMX_CPUID_SIMD_ARM_NEON,
     GMX_CPUID_SIMD_ARM_NEON_ASIMD,
     GMX_CPUID_NSIMD
