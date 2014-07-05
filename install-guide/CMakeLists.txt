@@ -70,17 +70,35 @@ if(INSTALL_GUIDE_BUILD_IS_POSSIBLE)
 
     # Make the INSTALL file for CPack for the tarball
     add_custom_command(
-        OUTPUT ${CMAKE_BINARY_DIR}/INSTALL
-        COMMAND pandoc -t plain -o ../INSTALL install-guide.md
+        OUTPUT final/INSTALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory final
+        COMMAND pandoc -t plain -o final/INSTALL install-guide.md
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install-guide.md
         VERBATIM
         )
+
+    # Getting INSTALL into the tarball via CPack requires that we
+    # "install" it to the top level of the destination folder, but we
+    # also need to avoid installing INSTALL when doing a normal
+    # GROMACS installation (from either tarball or repo). CPack looks
+    # like it has nice componentization, but you can't use it to
+    # select which components go where (and in any case, the issue is
+    # more that we have to use install() and it has no awareness of
+    # components). So, we can set a cache variable on the command line
+    # when doing a tarball build and thus only get INSTALL installed
+    # when we actually want it.
+    if(GMX_BUILD_TARBALL)
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/final/INSTALL
+            DESTINATION ${CMAKE_INSTALL_PREFIX}
+            COMPONENT install-guide
+            )
+    endif()
 
     # Add a top-level target for the others to hook onto
     add_custom_target(install-guide
         DEPENDS
            ${CMAKE_CURRENT_BINARY_DIR}/install-guide.html
-           ${CMAKE_BINARY_DIR}/INSTALL
+           final/INSTALL
         VERBATIM
         )
 endif()
