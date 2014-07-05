@@ -1,8 +1,3 @@
-# These look like bugs in Doxygen 1.8.5
-src/gromacs/gmxlib/gmx_cpuid.c: warning: duplicate declarations for a member 'gmx_cpuid_vendor'
-src/gromacs/gmxlib/gmx_cpuid.c: warning: duplicate declarations for a member 'gmx_cpuid_x86_smt'
-src/gromacs/gmxlib/gmx_cpuid.c: warning: duplicate declarations for a member 'gmx_cpuid_simd_suggest'
-
 # The script is currently a bit too eager
 share/template/template.cpp: error: source file documentation appears outside full documentation
 # The parser in the script is not clever enough
