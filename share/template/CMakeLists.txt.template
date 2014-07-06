@@ -2,43 +2,38 @@ cmake_minimum_required(VERSION 2.8)
 
 project(template)
 
-# Cmake modules/macros are in a subdirectory to keep this file cleaner
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
+endif()
 
 option(GMX_DOUBLE "Use double precision" OFF)
+set(GMX_SUFFIX "" CACHE STRING "Suffix for the GROMACS installation to use (empty for default)")
 
 ########################################################################
-# Fix stupid flags on MSVC
+# Use static linking on MSVC
 ########################################################################
-IF(CMAKE_GENERATOR MATCHES "Visual Studio")
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
-ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+    string(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    set(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    string(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    set(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
+endif()
 
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
 
-if (GMX_DOUBLE)
-  set(LIBGROMACS "libgromacs_d")
-else(GMX_DOUBLE)
-  set(LIBGROMACS "libgromacs")
-endif(GMX_DOUBLE)
-
-FIND_PACKAGE(GROMACS COMPONENTS ${LIBGROMACS} REQUIRED)
-message("GROMACS version ${GROMACS_VERSION_STRING} found")
-if ("${GROMACS_VERSION_STRING}" VERSION_LESS "5.0")
-  message(FATAL_ERROR "This template works with GROMACS 5.0 (and possibly later versions)")
+if (GMX_DOUBLE AND NOT GMX_SUFFIX)
+    set(GROMACS_SUFFIX "_d")
+else()
+    set(GROMACS_SUFFIX ${GMX_SUFFIX})
 endif()
 
-add_definitions( ${GROMACS_DEFINITIONS} )
-include_directories( ${GROMACS_INCLUDE_DIRS} )
+find_package(GROMACS 5.0 REQUIRED)
+
+include_directories(${GROMACS_INCLUDE_DIRS})
+add_definitions(${GROMACS_DEFINITIONS})
+list(APPEND CMAKE_CXX_FLAGS ${GROMACS_CXX_FLAGS})
 
 add_executable(template template.cpp)
 target_link_libraries(template ${GROMACS_LIBRARIES})

@@ -162,5 +162,4 @@ if(GMX_MPI)
   endif()
 
   set(GMX_LIB_MPI 1)
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
 endif()

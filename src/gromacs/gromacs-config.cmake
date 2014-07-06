@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,13 +32,16 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_executable(template template.cpp)
-target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
-install(FILES CMakeLists.txt.template
-        DESTINATION ${DATA_INSTALL_DIR}/template
-        RENAME CMakeLists.txt
-        COMPONENT development)
+set(_gmx_cmake_dir ${CMAKE_CURRENT_LIST_DIR})
 
-install(FILES README template.cpp Makefile.pkg
-        DESTINATION ${DATA_INSTALL_DIR}/template
-        COMPONENT development)
+set(_gmx_config_impl_file gromacs-config-impl.cmake)
+if (DEFINED GROMACS_SUFFIX)
+    set(_gmx_config_impl_file gromacs${GROMACS_SUFFIX}-config-impl.cmake)
+endif()
+include(${_gmx_cmake_dir}/${_gmx_config_impl_file} OPTIONAL
+        RESULT_VARIABLE _gmx_result)
+if (_gmx_result)
+    _gmx_configure_do()
+else()
+    set(GROMACS_FOUND FALSE)
+endif()
