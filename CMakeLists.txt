@@ -164,6 +164,11 @@ if(NOT EXISTS "${CMAKE_SOURCE_DIR}/admin/.isreposource")
     set(SOURCE_IS_SOURCE_DISTRIBUTION ON)
 endif()
 
+# Variables that accumulate stuff influencing the installed headers
+set(INSTALLED_HEADER_INCLUDE_DIRS "")
+set(INSTALLED_HEADER_DEFINITIONS "")
+set(INSTALLED_HEADER_CXX_FLAGS "")
+
 ########################################################################
 # Check and warn if cache generated on a different host is being reused
 ########################################################################
@@ -348,14 +353,12 @@ if(GMX_SIMD STREQUAL "AVX_256"
 endif()
 
 
-
-set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
     add_definitions(-DGMX_DOUBLE)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
+    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE")
 endif()
 if(GMX_SOFTWARE_INVSQRT)
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
+    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
 endif()
 
 if(WIN32 AND NOT CYGWIN)
@@ -648,6 +651,9 @@ cmake_dependent_option(GMX_CXX11
 mark_as_advanced(GMX_CXX11)
 if(GMX_CXX11)
     set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
+    if (GMX_CXX11_FLAGS)
+        list(APPEND INSTALLED_HEADER_CXX_FLAGS ${GMX_CXX11_FLAGS})
+    endif()
 endif()
 
 
@@ -788,7 +794,6 @@ else()
     set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
     set(GMX_SHARED_LINKER_FLAGS ${GMX_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS})
 endif()
-set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 
 ########################################################################
 # Specify install locations
@@ -805,16 +810,21 @@ mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
 
 # These variables are used internally to provide a central location for
 # customizing the install locations.
-set(LIB_INSTALL_DIR  ${GMX_LIB_INSTALL_DIR})
-set(BIN_INSTALL_DIR  bin)
-set(DATA_INSTALL_DIR share/${GMX_DATA_INSTALL_DIR})
-set(MAN_INSTALL_DIR  share/man)
-set(INCL_INSTALL_DIR include)
+set(LIB_INSTALL_DIR       ${GMX_LIB_INSTALL_DIR})
+set(BIN_INSTALL_DIR       bin)
+set(DATA_INSTALL_DIR      share/${GMX_DATA_INSTALL_DIR})
+set(MAN_INSTALL_DIR       share/man)
+set(CMAKE_INSTALL_DIR     share/cmake)
+# TODO: Make GMXRC adapt if this is changed
+set(PKGCONFIG_INSTALL_DIR ${LIB_INSTALL_DIR}/pkgconfig)
+set(INCL_INSTALL_DIR      include)
 
 # These variables get written into config.h for use in finding the data
 # directories.
 set(GMXLIB_SEARCH_DIR share/${GMX_DATA_INSTALL_DIR}/top)
 set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
+
+list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR})
 
 # Binary and library suffix options
 include(gmxManageSuffixes)
@@ -861,15 +871,14 @@ install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
 
 if(GMX_EXTERNAL_BOOST)
     include_directories(${Boost_INCLUDE_DIRS})
-    set(PKG_CFLAGS "${PKG_CFLAGS} -I${Boost_INCLUDE_DIRS}")
+    list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 else()
     include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/boost)
+    list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR}/gromacs/external/boost)
+    list(APPEND INSTALLED_HEADED_DEFINITIONS "-DBOOST_NO_TYPEID")
     # typeid not supported for minimal internal version
     # (would add significant amount of code)
     add_definitions(-DBOOST_NO_TYPEID)
-    # TODO: Propagate the above settings to the installed CMakeFiles.txt template
-    # (from share/template/)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${CMAKE_INSTALL_PREFIX}/${INCL_INSTALL_DIR}/gromacs/external/boost")
     if (NOT GMX_BUILD_MDRUN_ONLY)
         install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
                 DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
