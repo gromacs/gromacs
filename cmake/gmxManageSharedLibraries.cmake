@@ -123,8 +123,9 @@ IF( WIN32 AND NOT CYGWIN)
           #this combination segfaults (illegal passing of file handles)
           message(FATAL_ERROR "Static system libraries requested, and shared Gromacs libraries requested.")
       endif()
-      add_definitions(-DUSE_VISIBILITY -DTMPI_USE_VISIBILITY)
-      set(PKG_CFLAGS "$PKG_CFLAGS -DUSE_VISIBILITY -DTMPI_USE_VISIBILITY")
+      # Visibility not yet implemented
+      # add_definitions(-DUSE_VISIBILITY -DTMPI_USE_VISIBILITY)
+      # set(PKG_CFLAGS "$PKG_CFLAGS -DUSE_VISIBILITY -DTMPI_USE_VISIBILITY")
   endif()
 
   IF (GMX_PREFER_STATIC_LIBS)

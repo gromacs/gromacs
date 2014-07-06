@@ -4,9 +4,6 @@ Using \Gromacs as a library {#page_usinglibrary}
 Getting started
 ===============
 
-\todo
-Describe how to link against \Gromacs (pkg-config, FindGromacs.cmake, etc.)
-
 The \Gromacs library (`libgromacs`) provides a few different alternatives for
 using it.  These are listed here from the highest level of abstraction to the
 low-level functions.
@@ -50,6 +47,79 @@ If you think that some particular API would be necessary for your work, and
 think that it would be easy to expose, please drop a line on the
 `gmx-developers` mailing list, or contribute the necessary changes on
 http://gerrit.gromacs.org/.
+
+Linking against `libgromacs`
+============================
+
+\Gromacs is a bit picky on how the headers need to be used: depending on
+compilation options used for \Gromacs, some preprocessor defines may need to be
+set, the required include path may also depend on compilation options, and some
+extra libraries may need to be linked.  You will also likely need to use the
+same compiler (or sufficiently similar one that uses the same standard library)
+that was used to compile \Gromacs.
+
+To manage this more easily, \Gromacs provides two mechanisms for getting the
+correct flags for compilation and linking against the \Gromacs library:
+ - `pkg-config`: \Gromacs installs `libgromacs.pc` file (suffixed with the
+   library suffix) for use with `pkg-config` if that is present on the system.
+   Sourcing `GMXRC` adjusts the `pkg-config` search path such that these files
+   are found automatically.
+   See `Makefile.pkg` installed with the analysis template for one example of
+   how to use it (to use it with a differently suffixed \Gromacs, just replace
+   `libgromacs` with `libgromacs`<em>_suffix</em> in the `pkg-config` calls).
+ - CMake package configuration files that allow `find_package(GROMACS)` to work.
+   See below for details about how to use this in CMake.
+   Sourcing `GMXRC` sets an environment variable that allows CMake to find the
+   configuration file automatically.
+   See `CMakeLists.txt` installed with the analysis template for one example of
+   how to use it.
+
+These mechanisms are currently provided on a best-effort basis, but are not
+routinely tested on a wide range of configurations.  Please report any issues
+with details of how \Gromacs was built so that the mechanism can be improved.
+
+CMake `find_package(GROMACS)` details
+-------------------------------------
+
+TODO: Describe FindGROMACS.cmake
+
+Input options:
+
+<dl>
+<dt>`GROMACS_SUFFIX`</dt>
+<dd>This CMake variable can be set before calling `find_package(GROMACS)` to
+specify the \Gromacs suffix to search for.  If not set, an unsuffixed version
+is searched for.</dd>
+</dl>
+
+Output variables:
+
+<dl>
+<dt>`GROMACS_INCLUDE_DIRS`</dt>
+<dd>List of include directories necessary to compile against the \Gromacs
+headers.</dd>
+<dt>`GROMACS_LIBRARIES`</dt>
+<dd>List of libraries to link with to link against \Gromacs.
+Under the hood, this uses imported CMake targets to represent `libgromacs`.</dd>
+<dt>`GROMACS_DEFINITIONS`</dt>
+<dd>List of compile definitions (with `-D` in front) that are required to
+compile the \Gromacs headers.</dd>
+<dt>`GROMACS_IS_DOUBLE`</dt>
+<dd>Whether the found \Gromacs was compiled in double precision.</dd>
+</dl>
+
+Declared macros/functions:
+
+<dl>
+<dt>`gromacs_check_double(GMX_DOUBLE)`</dt>
+<dd>Checks that the found \Gromacs is in the expected precision.
+The parameter `GMX_DOUBLE` should be the name of a cache variable that
+specified whether double-precision was requested.</dd>
+<dt>`gromacs_check_compiler(LANG)`<dt>
+<dd>Checks that the found \Gromacs was compiled with the same compiler
+that is used by the current CMake system.
+Currently only `LANG=CXX` is supported.</dd>
+</dl>
 
 Notes on \Gromacs API
 =====================
