@@ -1,0 +1,99 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2014, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
+macro (_gmx_configure_do)
+    set(_gmx_cmake_dir ${CMAKE_CURRENT_LIST_DIR})
+    get_filename_component(_gmx_root_dir "${_gmx_cmake_dir}" PATH)
+    get_filename_component(_gmx_root_dir "${_gmx_root_dir}" PATH)
+
+    set(_gmx_is_gpu @GMX_GPU@)
+    if (_gmx_is_gpu)
+        message(FATAL_ERROR "GROMACS was compiled with GPU support, which currently does not allow using find_package(GROMACS)")
+    endif()
+    # TODO: Check/Make this work with both shared and static libraries
+    # installed with the same suffix.
+    include(${_gmx_cmake_dir}/libgromacs@GMX_LIBS_SUFFIX@.cmake)
+
+    set(GROMACS_INCLUDE_DIRS)
+    foreach (_dir @INSTALLED_HEADER_INCLUDE_DIRS@)
+        if (IS_ABSOLUTE ${_dir})
+            list(APPEND GROMACS_INCLUDE_DIRS ${_dir})
+        else()
+            list(APPEND GROMACS_INCLUDE_DIRS ${_gmx_root_dir}/${_dir})
+        endif()
+    endforeach()
+    set(GROMACS_LIBRARIES libgromacs)
+    set(GROMACS_DEFINITIONS @INSTALLED_HEADER_DEFINITIONS@)
+    set(GROMACS_IS_DOUBLE @GMX_DOUBLE@)
+    set(GROMACS_CXX_COMPILER @CMAKE_CXX_COMPILER@)
+endmacro()
+
+macro (_gmx_configure_do_version)
+    set(PACKAGE_VERSION "@PACKAGE_VERSION@")
+
+    if ("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
+        set(PACKAGE_VERSION_COMPATIBLE FALSE)
+    else()
+        set(PACKAGE_VERSION_COMPATIBLE TRUE)
+        if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
+            set(PACKAGE_VERSION_EXACT TRUE)
+        endif()
+    endif()
+endmacro()
+
+macro (gromacs_check_double GMX_DOUBLE)
+    if (${GMX_DOUBLE} AND NOT GROMACS_IS_DOUBLE)
+        message(FATAL_ERROR
+            "The found GROMACS installation is compiled in mixed precision, "
+            "but double-precision compilation was requested with ${GMX_DOUBLE}=${${GMX_DOUBLE}}")
+    elseif (NOT ${GMX_DOUBLE} AND GROMACS_IS_DOUBLE)
+        message(FATAL_ERROR
+            "The found GROMACS installation is compiled in double precision, "
+            "but mixed-precision compilation was requested with ${GMX_DOUBLE}=${${GMX_DOUBLE}}")
+    endif()
+endmacro()
+
+function (gromacs_check_compiler LANG)
+    if (NOT LANG STREQUAL CXX)
+        message(FATAL_ERROR
+            "gromacs_check_compiler(CXX) is currently the only supported call")
+    endif()
+    # TODO: Consider whether id+version would be a better thing to check for.
+    if (NOT CMAKE_${LANG}_COMPILER STREQUAL GROMACS_${LANG}_COMPILER)
+        message(WARNING
+            "You are compiling with a different C++ compiler than what was used "
+            "to compile GROMACS. This may lead to linking or runtime problems. "
+            "GROMACS was compiled with ${GROMACS_${LANG}_COMPILER}.")
+    endif()
+endfunction()
