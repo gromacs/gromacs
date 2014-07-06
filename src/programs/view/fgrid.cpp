@@ -104,9 +104,10 @@ void ReadDlgError(const char *infile, eDLGERR err, const char *s,
 static void ReadAccOpen(const char *infile, FILE *in)
 {
     char buf[STRLEN];
+    int  result;
 
-    fscanf(in, "%4s", buf);
-    if (strcmp(buf, "{") != 0)
+    result = fscanf(in, "%4s", buf);
+    if ((1 != result) || strcmp(buf, "{") != 0)
     {
         ReadDlgErr(infile, eACCOEXP, buf);
     }
@@ -115,9 +116,10 @@ static void ReadAccOpen(const char *infile, FILE *in)
 static void ReadAccClose(const char *infile, FILE *in)
 {
     char buf[STRLEN];
+    int  result;
 
-    fscanf(in, "%4s", buf);
-    if (strcmp(buf, "}") != 0)
+    result = fscanf(in, "%4s", buf);
+    if ((1 != result) || strcmp(buf, "}") != 0)
     {
         ReadDlgErr(infile, eACCCEXP, buf);
     }
@@ -370,15 +372,16 @@ t_fgrid *FGridFromFile(const char *infile)
 {
     FILE      *in;
     char       buf[STRLEN];
+    int        result;
 
     t_fgrid   *fgrid;
     t_fgroup  *fgroup;
     t_fsimple *fsimple;
     int        gridx, gridy;
 
-    in = libopen(infile);
-    fscanf(in, "%6s", buf);
-    if (strcmp(buf, "grid") != 0)
+    in     = libopen(infile);
+    result = fscanf(in, "%6s", buf);
+    if ((1 != result) || strcmp(buf, "grid") != 0)
     {
         ReadDlgErr(infile, eGRIDEXP, buf);
     }
@@ -390,8 +393,8 @@ t_fgrid *FGridFromFile(const char *infile)
     fgrid->w = gridx;
     fgrid->h = gridy;
     ReadAccOpen(infile, in);
-    fscanf(in, "%15s", buf);
-    while (bNotAccClose(buf))
+    result = fscanf(in, "%15s", buf);
+    while ((1 == result) && bNotAccClose(buf))
     {
         if (strcmp(buf, "group") == 0)
         {
@@ -411,11 +414,11 @@ t_fgrid *FGridFromFile(const char *infile)
                 ReadDlgErr(infile, eTOOHIGH, buf);
             }
             ReadAccOpen(infile, in);
-            fscanf(in, "%15s", buf);
-            while (bNotAccClose(buf))
+            result = fscanf(in, "%15s", buf);
+            while ((1 == result) && bNotAccClose(buf))
             {
                 AddFGroupFItem(fgroup, ScanFItem(infile, in, buf));
-                fscanf(in, "%15s", buf);
+                result = fscanf(in, "%15s", buf);
             }
         }
         else if (strcmp(buf, "simple") == 0)
@@ -434,11 +437,17 @@ t_fgrid *FGridFromFile(const char *infile)
                 ReadDlgErr(infile, eTOOHIGH, "simple");
             }
             ReadAccOpen(infile, in);
-            fscanf(in, "%15s", buf);
-            fsimple->fitem = ScanFItem(infile, in, buf);
-            ReadAccClose(infile, in);
+            result = fscanf(in, "%15s", buf);
+            if (1 == result)
+            {
+                fsimple->fitem = ScanFItem(infile, in, buf);
+                ReadAccClose(infile, in);
+            }
         }
-        fscanf(in, "%15s", buf);
+        if (1 == result)
+        {
+            result = fscanf(in, "%15s", buf);
+        }
     }
     gmx_ffclose(in);
 
