@@ -1,44 +1,42 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.8)
 
-project(template)
+project(template CXX)
 
-# Cmake modules/macros are in a subdirectory to keep this file cleaner
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
-
-option(GMX_DOUBLE "Use double precision" OFF)
-
-########################################################################
-# Fix stupid flags on MSVC
-########################################################################
-IF(CMAKE_GENERATOR MATCHES "Visual Studio")
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
-ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
-
-########################################################################
-# Basic system tests (standard libraries, headers, functions, types)   #
-########################################################################
-
-if (GMX_DOUBLE)
-  set(LIBGROMACS "libgromacs_d")
-else(GMX_DOUBLE)
-  set(LIBGROMACS "libgromacs")
-endif(GMX_DOUBLE)
-
-FIND_PACKAGE(GROMACS COMPONENTS ${LIBGROMACS} REQUIRED)
-message("GROMACS version ${GROMACS_VERSION_STRING} found")
-if ("${GROMACS_VERSION_STRING}" VERSION_LESS "5.0")
-  message(FATAL_ERROR "This template works with GROMACS 5.0 (and possibly later versions)")
 endif()
 
-add_definitions( ${GROMACS_DEFINITIONS} )
-include_directories( ${GROMACS_INCLUDE_DIRS} )
+# CMake modules are in a subdirectory to keep this file cleaner
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# In principle, this could be deduced from GROMACS_IS_DOUBLE returned by
+# find_package(GROMACS) based on the suffix alone, but it is clearer that the
+# user explicitly sets what they want to get, and then need to provide a suffix
+# to match.
+option(GMX_DOUBLE "Use double precision" OFF)
+set(GMX_SUFFIX "" CACHE STRING "Suffix for the GROMACS installation to use (empty for default)")
+
+# This does not allow for a non-suffixed double-precision libgromacs, but
+# that should be rare enough for demonstration purposes.
+if (GMX_DOUBLE AND NOT GMX_SUFFIX)
+    set(GROMACS_SUFFIX "_d")
+else()
+    set(GROMACS_SUFFIX ${GMX_SUFFIX})
+endif()
+
+find_package(GROMACS 5.1 REQUIRED)
+gromacs_check_double(GMX_DOUBLE)
+gromacs_check_compiler(CXX)
+include_directories(${GROMACS_INCLUDE_DIRS})
+add_definitions(${GROMACS_DEFINITIONS})
+
+# Use static linking on MSVC
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+    string(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    set(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    string(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    set(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
+endif()
 
 add_executable(template template.cpp)
 target_link_libraries(template ${GROMACS_LIBRARIES})
