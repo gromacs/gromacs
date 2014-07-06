@@ -157,6 +157,6 @@ not|"!"         { ADD_TOKEN; return NOT; }
 
 {IDENTIFIER}    { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
 
-[[:blank:]]+    { _gmx_sel_lexer_add_token(" ", 1, state); }
+[[:space:]]+    { _gmx_sel_lexer_add_token(" ", 1, state); }
 [_[:alnum:]]+   { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 .               { ADD_TOKEN; return yytext[0]; }
