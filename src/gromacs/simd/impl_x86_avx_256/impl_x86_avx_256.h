@@ -117,11 +117,11 @@
 #define gmx_simd_set_exponent_f    gmx_simd_set_exponent_f_avx_256
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_fint32_t          __m256i
-#define gmx_simd_load_fi(m)        _mm256_castps_si256(_mm256_load_ps((const float *)m))
+#define gmx_simd_load_fi(m)        _mm256_load_si256((__m256i const*)m)
 #define gmx_simd_set1_fi           _mm256_set1_epi32
-#define gmx_simd_store_fi(m, x)     _mm256_store_ps((float *)m, _mm256_castsi256_ps(x))
-#define gmx_simd_loadu_fi(m)       _mm256_castps_si256(_mm256_loadu_ps((const float *)m))
-#define gmx_simd_storeu_fi(m, x)    _mm256_storeu_ps((float *)m, _mm256_castsi256_ps(x))
+#define gmx_simd_store_fi(m, x)    _mm256_store_si256((__m256i *)m, x)
+#define gmx_simd_loadu_fi(m)       _mm256_loadu_si256((__m256i const*)m)
+#define gmx_simd_storeu_fi(m, x)   _mm256_storeu_si256((__m256i *)m, x)
 #define gmx_simd_setzero_fi        _mm256_setzero_si256
 #define gmx_simd_cvt_f2i           _mm256_cvtps_epi32
 #define gmx_simd_cvtt_f2i          _mm256_cvttps_epi32
