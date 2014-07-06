@@ -51,9 +51,10 @@
 #include <string>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include "../utility/common.h"
 #include "../utility/programcontext.h"
-#include "../utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -90,7 +91,7 @@ class ExecutableEnvironmentInterface
 };
 
 //! Shorthand for a smart pointer to ExecutableEnvironmentInterface.
-typedef gmx_unique_ptr<ExecutableEnvironmentInterface>::type
+typedef boost::shared_ptr<ExecutableEnvironmentInterface>
     ExecutableEnvironmentPointer;
 
 /*! \libinternal \brief
