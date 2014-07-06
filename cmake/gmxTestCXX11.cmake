@@ -34,10 +34,12 @@
 
 include(CheckCXXSourceCompiles)
 MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
-    if(NOT WIN32)
-        set(CXX11_FLAG "-std=c++0x")
-    else()
+    if(WIN32)
         set(CXX11_FLAG "/Qstd=c++0x")
+    elseif(CYGWIN)
+        set(CXX11_FLAG "-std=gnu++0x") #required for strdup
+    else()
+        set(CXX11_FLAG "-std=c++0x")
     endif()
     CHECK_CXX_COMPILER_FLAG("${CXX11_FLAG}" CXXFLAG_STD_CXX0X)
     if(NOT CXXFLAG_STD_CXX0X)
