@@ -112,6 +112,9 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
         # Since gcc 4.8 strict - false postives with old gmx_fatal. TODO: Remove in master
         GMX_TEST_CFLAG(CFLAGS_WARN_UNINIT "-Wno-maybe-uninitialized" GMXC_CFLAGS)
+        if(CYGWIN)
+            GMX_TEST_CFLAG(CFLAGS_WARN_SUBSCRIPT "-Wno-char-subscripts" GMXC_CFLAGS)
+        endif()
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
