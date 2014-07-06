@@ -205,16 +205,14 @@ set_target_properties(libgromacs PROPERTIES
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
-    install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+    install(TARGETS libgromacs
+            EXPORT libgromacs
+            DESTINATION ${LIB_INSTALL_DIR}
+            COMPONENT libraries)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgromacs.pc.cmakein
-                   ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
-            DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
-            RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
-            COMPONENT development)
+    include(InstallLibInfo.cmake)
 endif()
 
 if (INSTALL_CUDART_LIB) #can be set manual by user
