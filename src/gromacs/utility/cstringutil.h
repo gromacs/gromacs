@@ -50,24 +50,6 @@
 
 #include "gmx_header_config.h"
 
-/* Suppress Cygwin compiler warnings from using newlib version of
- * ctype.h */
-#ifdef GMX_CYGWIN
-#include <ctype.h>
-
-#undef isdigit
-#undef isstring
-#undef isspace
-#undef isalnum
-#undef isalpha
-#undef ispunct
-#undef isxdigit
-#undef isupper
-#undef islower
-#undef toupper
-#undef tolower
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
