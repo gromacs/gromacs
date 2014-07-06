@@ -655,6 +655,13 @@ CMakeLists.txt.
     is determined by CMake.
     The name of the directory can be changed using `GMX_LIB_INSTALL_DIR` CMake
     variable.
+`lib/pkgconfig/`
+  : Information about the installed `libgromacs` library for `pkg-config` is
+    installed here.  The `lib/` part adapts to the installation location of the
+    libraries.  The installed files contain the installation prefix as absolute
+    paths.
+`share/cmake/`
+  : CMake package configuration files are installed here.
 `share/gromacs/`
   : Various data files and some documentation go here.
     The `gromacs` part can be changed using `GMX_DATA_INSTALL_DIR`. Using this
