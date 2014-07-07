@@ -53,7 +53,7 @@ execute_process(COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile-${DOCTYPE}
 if (result)
     message(FATAL_ERROR "Doxygen failed. "
             "Please run '${DOXYGEN_EXECUTABLE} Doxyfile-${DOCTYPE}' "
-            "in the doxygen/ subdirectory in the build tree to see the details.")
+            "in the docs/doxygen/ subdirectory in the build tree to see the details.")
 endif()
 
 file(READ doxygen-${DOCTYPE}.log DOXYGEN_WARNINGS)
