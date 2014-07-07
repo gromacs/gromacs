@@ -422,7 +422,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
         case ButtonPress:
             /* Calculate new position for caret */
             et->pos = strlen(et->buf);
-            bp      = strdup(et->buf);
+            bp      = gmx_strdup(et->buf);
             xp      = event->xbutton.x-XTextWidth(x11->font, win->text, strlen(win->text))-
                 XCARET;
             while ((et->pos > 0) && (XTextWidth(x11->font, bp, strlen(bp)) > xp))
@@ -573,7 +573,7 @@ t_dlgitem *CreateButton(t_x11 *x11,
     }
     else
     {
-        lab = strdup(szLab);
+        lab = gmx_strdup(szLab);
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, szLab);
     sfree(lab);
@@ -711,7 +711,7 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
     snew(dlgitem->u.statictext.lines, nlines);
     for (i = 0; (i < nlines); i++)
     {
-        dlgitem->u.statictext.lines[i] = strdup(lines[i]);
+        dlgitem->u.statictext.lines[i] = gmx_strdup(lines[i]);
     }
     dlgitem->WndProc = WndProcST;
 
@@ -757,7 +757,7 @@ t_dlgitem *CreateEditText(t_x11 *x11,
     return dlgitem;
 }
 
-#define SC(src) (strlen(src) ? strdup(src) : NULL)
+#define SC(src) (strlen(src) ? gmx_strdup(src) : NULL)
 
 void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
                     char *set, char *get, char *help)

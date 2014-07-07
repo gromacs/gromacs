@@ -92,12 +92,12 @@ t_specbond *get_specbonds(int *nspecbond)
         }
         else
         {
-            sb[n].res1    = strdup(r1buf);
-            sb[n].res2    = strdup(r2buf);
-            sb[n].newres1 = strdup(nr1buf);
-            sb[n].newres2 = strdup(nr2buf);
-            sb[n].atom1   = strdup(a1buf);
-            sb[n].atom2   = strdup(a2buf);
+            sb[n].res1    = gmx_strdup(r1buf);
+            sb[n].res2    = gmx_strdup(r2buf);
+            sb[n].newres1 = gmx_strdup(nr1buf);
+            sb[n].newres2 = gmx_strdup(nr2buf);
+            sb[n].atom1   = gmx_strdup(a1buf);
+            sb[n].atom2   = gmx_strdup(a2buf);
             sb[n].nbond1  = nb1;
             sb[n].nbond2  = nb2;
             sb[n].length  = length;
@@ -219,7 +219,7 @@ static void rename_1res(t_atoms *pdba, int resind, char *newres, gmx_bool bVerbo
     }
     /* this used to free *resname, which messes up the symtab! */
     snew(pdba->resinfo[resind].rtp, 1);
-    *pdba->resinfo[resind].rtp = strdup(newres);
+    *pdba->resinfo[resind].rtp = gmx_strdup(newres);
 }
 
 int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
@@ -348,8 +348,8 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                         /* Store the residue numbers in the bonds array */
                         bonds[nbonds].res1 = specp[i];
                         bonds[nbonds].res2 = specp[j];
-                        bonds[nbonds].a1   = strdup(*pdba->atomname[ai]);
-                        bonds[nbonds].a2   = strdup(*pdba->atomname[aj]);
+                        bonds[nbonds].a1   = gmx_strdup(*pdba->atomname[ai]);
+                        bonds[nbonds].a2   = gmx_strdup(*pdba->atomname[aj]);
                         /* rename residues */
                         if (bSwap)
                         {

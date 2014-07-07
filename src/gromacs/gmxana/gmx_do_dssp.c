@@ -214,7 +214,7 @@ static void check_oo(t_atoms *atoms)
 
     int   i;
 
-    OOO = strdup("O");
+    OOO = gmx_strdup("O");
 
     for (i = 0; (i < atoms->nr); i++)
     {
@@ -354,7 +354,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     leg[0] = "Structure";
     for (s = 0; s < (size_t)mat->nmap; s++)
     {
-        leg[s+1] = strdup(map[s].desc);
+        leg[s+1] = gmx_strdup(map[s].desc);
     }
 
     fp = xvgropen(outfile, "Secondary Structure",

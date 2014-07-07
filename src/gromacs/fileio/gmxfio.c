@@ -489,7 +489,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     if (fn)
     {
         fio->iFTP   = fn2ftp(fn);
-        fio->fn     = strdup(fn);
+        fio->fn     = gmx_strdup(fn);
         fio->bStdio = FALSE;
 
         /* If this file type is in the list of XDR files, open it like that */
@@ -551,7 +551,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
         /* Use stdin/stdout for I/O */
         fio->iFTP   = efTPA;
         fio->fp     = bRead ? stdin : stdout;
-        fio->fn     = strdup("STDIO");
+        fio->fn     = gmx_strdup("STDIO");
         fio->bStdio = TRUE;
     }
     fio->bRead             = bRead;

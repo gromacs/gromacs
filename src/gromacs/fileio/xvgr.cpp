@@ -535,17 +535,17 @@ static char *read_xvgr_string(const char *line)
         ptr1 = strchr(ptr0, '"');
         if (ptr1 != NULL)
         {
-            str            = strdup(ptr0);
+            str            = gmx_strdup(ptr0);
             str[ptr1-ptr0] = '\0';
         }
         else
         {
-            str = strdup("");
+            str = gmx_strdup("");
         }
     }
     else
     {
-        str = strdup("");
+        str = gmx_strdup("");
     }
 
     return str;

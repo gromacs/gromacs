@@ -350,7 +350,7 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
                 }
 
                 snew(pdba->resinfo[hisind].rtp, 1);
-                *pdba->resinfo[hisind].rtp = strdup(hh[type]);
+                *pdba->resinfo[hisind].rtp = gmx_strdup(hh[type]);
             }
         }
     }

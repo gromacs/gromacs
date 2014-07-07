@@ -284,7 +284,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
         if (sscanf(line, "%s %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
                    atomn, &p, &a1, &a2, &a3, &a4, &b1, &b2, &b3, &b4, &c) == 11)
         {
-            gsf->atomnm[i] = strdup(atomn);
+            gsf->atomnm[i] = gmx_strdup(atomn);
             gsf->p[i]      = p;
             snew(gsf->a[i], 4);
             snew(gsf->b[i], 4);

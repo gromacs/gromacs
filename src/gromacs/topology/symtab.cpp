@@ -168,7 +168,7 @@ static char **enter_buf(t_symtab *symtab, char *name)
             if (symbuf->buf[i] == NULL)
             {
                 symtab->nr++;
-                symbuf->buf[i] = strdup(name);
+                symbuf->buf[i] = gmx_strdup(name);
                 return &(symbuf->buf[i]);
             }
             else if (strcmp(symbuf->buf[i], name) == 0)
@@ -192,7 +192,7 @@ static char **enter_buf(t_symtab *symtab, char *name)
     symbuf       = symbuf->next;
 
     symtab->nr++;
-    symbuf->buf[0] = strdup(name);
+    symbuf->buf[0] = gmx_strdup(name);
     return &(symbuf->buf[0]);
 }
 

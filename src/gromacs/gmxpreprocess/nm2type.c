@@ -107,7 +107,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
                         {
                             gmx_fatal(FARGS, "Error on line %d of %s", line, libfilename);
                         }
-                        newbuf[i] = strdup(nbbuf);
+                        newbuf[i] = gmx_strdup(nbbuf);
                         strcat(format, "%*s%*s");
                     }
                 }
@@ -115,8 +115,8 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
                 {
                     newbuf = NULL;
                 }
-                nm2t[nnnm].elem   = strdup(elem);
-                nm2t[nnnm].type   = strdup(type);
+                nm2t[nnnm].elem   = gmx_strdup(elem);
+                nm2t[nnnm].type   = gmx_strdup(type);
                 nm2t[nnnm].q      = qq;
                 nm2t[nnnm].m      = mm;
                 nm2t[nnnm].nbonds = nb;
