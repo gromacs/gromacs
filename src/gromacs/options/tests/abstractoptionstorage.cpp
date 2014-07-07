@@ -151,10 +151,10 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
         }
 
     private:
-        virtual gmx::AbstractOptionStoragePointer createStorage(
+        virtual gmx::AbstractOptionStorage *createStorage(
             const gmx::OptionManagerContainer & /*managers*/) const
         {
-            return gmx::AbstractOptionStoragePointer(new MockOptionStorage(*this));
+            return new MockOptionStorage(*this);
         }
 };
 
