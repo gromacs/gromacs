@@ -93,7 +93,6 @@ if (DOXYGEN_FOUND)
              "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact\n")
     endif()
 
-    FILE(COPY index.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     configure_file(RunDoxygen.cmake.cmakein RunDoxygen.cmake @ONLY)
     add_custom_target(doc-full
         ${CMAKE_COMMAND} -DDOCTYPE=full -P RunDoxygen.cmake
