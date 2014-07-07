@@ -905,8 +905,7 @@ if (BUILD_TESTING)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    add_subdirectory(doxygen)
-    add_subdirectory(install-guide)
+    add_subdirectory(docs)
     add_subdirectory(share)
     add_subdirectory(scripts)
 endif()
@@ -936,15 +935,3 @@ ADD_CUSTOM_TARGET(uninstall
 ###########################
 set_directory_properties(PROPERTIES
             ADDITIONAL_MAKE_CLEAN_FILES "install_manifest.txt")
-
-########################################################################
-# Manual                                                               #
-########################################################################
-
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_MANUAL)
-if(GMX_BUILD_MANUAL)
-    # Make sure we only do detection of manual-building dependencies
-    # when the user opted in for that.
-    add_subdirectory(manual)
-endif()

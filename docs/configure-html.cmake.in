@@ -1,0 +1,13 @@
+# Helper script that defers configure_file until build time, so that
+# changes to the files configured for the html files don't trigger a
+# global reconfigure
+
+set(SRC_DIR "@CMAKE_CURRENT_SOURCE_DIR@")
+set(BIN_DIR "@CMAKE_CURRENT_BINARY_DIR@")
+
+set(PROJECT_VERSION "@PROJECT_VERSION@")
+set(SOURCE_MD5SUM "@SOURCE_MD5SUM@")
+set(REGRESSIONTESTS_MD5SUM "@REGRESSIONTESTS_MD5SUM@")
+
+configure_file(${SRC_DIR}/index.md
+    ${BIN_DIR}/index.md @ONLY)
