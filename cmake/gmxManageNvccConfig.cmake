@@ -131,15 +131,6 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}-D__STRICT_ANSI__;")
     endif()
 
-    # on Linux we need to add -fPIC when building shared gmx libs
-    # Note: will add -fPIC for any compiler that supports it as it shouldn't hurt
-    if(BUILD_SHARED_LIBS)
-        GMX_TEST_CXXFLAG(CXXFLAG_FPIC "-fPIC" _FPIC_NVCC_FLAG)
-        if(_FPIC_NVCC_FLAG)
-            set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}-Xcompiler;${_FPIC_NVCC_FLAG}")
-        endif()
-    endif()
-
     # the legacy CUDA kernels have been dropped, warn with CUDA 4.0
     if (CUDA_VERSION VERSION_EQUAL "4.0")
         message(WARNING "The legacy GPU kernels optimized for older CUDA compilers, including the detected version 4.0, have been removed. To avoid performance loss, we strongly recommend upgrading to a newer CUDA toolkit.
