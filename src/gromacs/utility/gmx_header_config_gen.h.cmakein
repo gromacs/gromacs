@@ -56,6 +56,3 @@
 #ifdef _MSC_VER
 #define GMX_NATIVE_WINDOWS
 #endif
-
-/** Define if we have sufficient C++11 support */
-#cmakedefine GMX_CXX11

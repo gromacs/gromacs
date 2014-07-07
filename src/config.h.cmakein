@@ -93,6 +93,9 @@
 /* Target platform is BlueGene/Q */
 #cmakedefine GMX_TARGET_BGQ
 
+/** Define if we have sufficient C++11 support */
+#cmakedefine GMX_CXX11
+
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
 #cmakedefine GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 
