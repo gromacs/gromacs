@@ -43,14 +43,17 @@ endif()
 
 if(INSTALL_GUIDE_BUILD_IS_POSSIBLE)
     # Do replacement of CMake variables for version strings, etc.
+    # This defers until build time the configuration of
+    # install-guide.md, which could be faster for all the
+    # configurations that don't make the install guide even though it
+    # was possible.
     configure_file(configure-install-guide.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/configure-install-guide.cmake
         @ONLY)
 
-    # This defers until build time the configuration of
-    # install-guide.md, which could be faster
+    # Configure the install-guide.md at build time
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/install-guide.md
+        OUTPUT install-guide.md
         COMMAND ${CMAKE_COMMAND}
             -P ${CMAKE_CURRENT_BINARY_DIR}/configure-install-guide.cmake
         DEPENDS
@@ -60,11 +63,10 @@ if(INSTALL_GUIDE_BUILD_IS_POSSIBLE)
         VERBATIM
         )
 
-    # Make the HTML install guide
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/install-guide.html
-        COMMAND pandoc -t html -o ${CMAKE_CURRENT_BINARY_DIR}/install-guide.html install-guide.md -s --toc
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install-guide.md
+    # Add a target for the custom commands that need install-guide.md
+    # to hook onto
+    add_custom_target(install-guide-md
+        DEPENDS ${CMAKE_BINARY_DIR}/install-guide.md
         VERBATIM
         )
 
@@ -74,16 +76,16 @@ if(INSTALL_GUIDE_BUILD_IS_POSSIBLE)
     add_custom_command(
         OUTPUT final/INSTALL
         COMMAND ${CMAKE_COMMAND} -E make_directory final
-        COMMAND pandoc -t plain -o final/INSTALL install-guide.md
+        COMMAND ${PANDOC_EXECUTABLE} -t plain -o final/INSTALL install-guide.md
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install-guide.md
         VERBATIM
         )
 
     # Add a top-level target for the others to hook onto
     add_custom_target(install-guide
-        DEPENDS
-           ${CMAKE_CURRENT_BINARY_DIR}/install-guide.html
-           final/INSTALL
+        DEPENDS final/INSTALL
         VERBATIM
         )
 endif()
+
+set(INSTALL_GUIDE_BUILD_IS_POSSIBLE ${INSTALL_GUIDE_BUILD_IS_POSSIBLE} PARENT_SCOPE)
