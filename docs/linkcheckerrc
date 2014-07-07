@@ -1,0 +1,8 @@
+# .ini-style config file for linkchecker. Recommended use
+# for testing the GROMACS webpage is
+#
+# linkchecker index.html --ignore-url html-full --ignore-url html-user --ignore-url html-lib -f linkcheckerrc
+[filtering]
+# This site gives warnings about changed URLs, and suggests
+# using... the same URLs. Well done, someone.
+ignore=www.ks.uiuc.edu
