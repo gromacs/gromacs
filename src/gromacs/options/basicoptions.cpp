@@ -138,10 +138,10 @@ bool BooleanOptionInfo::defaultValue() const
  * BooleanOption
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new BooleanOptionStorage(*this));
+    return new BooleanOptionStorage(*this);
 }
 
 
@@ -196,10 +196,10 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
  * IntegerOption
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new IntegerOptionStorage(*this));
+    return new IntegerOptionStorage(*this);
 }
 
 
@@ -244,10 +244,10 @@ Int64OptionInfo::Int64OptionInfo(Int64OptionStorage *option)
  * Int64Option
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 Int64Option::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new Int64OptionStorage(*this));
+    return new Int64OptionStorage(*this);
 }
 
 
@@ -346,10 +346,10 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 DoubleOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new DoubleOptionStorage(*this));
+    return new DoubleOptionStorage(*this);
 }
 
 
@@ -450,10 +450,10 @@ void FloatOptionInfo::setScaleFactor(double factor)
  * FloatOption
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new FloatOptionStorage(*this));
+    return new FloatOptionStorage(*this);
 }
 
 
@@ -636,10 +636,10 @@ const std::vector<std::string> &StringOptionInfo::allowedValues() const
  * StringOption
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new StringOptionStorage(*this));
+    return new StringOptionStorage(*this);
 }
 
 } // namespace gmx

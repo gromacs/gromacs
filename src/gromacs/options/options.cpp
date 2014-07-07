@@ -195,7 +195,7 @@ OptionInfo *Options::addOption(const AbstractOption &settings)
     {
         root = root->parent_->impl_.get();
     }
-    AbstractOptionStoragePointer option(settings.createStorage(root->managers_));
+    Impl::AbstractOptionStoragePointer option(settings.createStorage(root->managers_));
     if (impl_->findOption(option->name().c_str()) != NULL)
     {
         GMX_THROW(APIError("Duplicate option: " + option->name()));

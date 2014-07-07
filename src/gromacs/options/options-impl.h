@@ -48,6 +48,7 @@
 #include "abstractoption.h"
 #include "optionmanagercontainer.h"
 #include "options.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -66,6 +67,9 @@ class AbstractOptionStorage;
 class Options::Impl
 {
     public:
+        //! Smart pointer for managing an AbstractOptionStorage object.
+        typedef gmx_unique_ptr<AbstractOptionStorage>::type
+            AbstractOptionStoragePointer;
         //! Convenience type for list of sections.
         typedef std::vector<Options *> SubSectionList;
         //! Convenience type for list of options.
