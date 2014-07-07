@@ -174,7 +174,7 @@ choose_ff(const char *ffsel,
         ptr = strrchr(ffdirs[i], '/');
         if (ptr == NULL)
         {
-            ffs[i]     = strdup(ffdirs[i]);
+            ffs[i]     = gmx_strdup(ffdirs[i]);
             ffs_dir[i] = low_gmxlibfn(ffdirs[i], FALSE, FALSE);
             if (ffs_dir[i] == NULL)
             {
@@ -183,8 +183,8 @@ choose_ff(const char *ffsel,
         }
         else
         {
-            ffs[i]     = strdup(ptr+1);
-            ffs_dir[i] = strdup(ffdirs[i]);
+            ffs[i]     = gmx_strdup(ptr+1);
+            ffs_dir[i] = gmx_strdup(ffdirs[i]);
         }
         ffs_dir[i][strlen(ffs_dir[i])-strlen(ffs[i])-1] = '\0';
         /* Remove the extension from the ffdir name */
@@ -256,7 +256,7 @@ choose_ff(const char *ffsel,
             }
             else
             {
-                desc[i] = strdup(ffs[i]);
+                desc[i] = gmx_strdup(ffs[i]);
             }
         }
         /* Order force fields from the same dir alphabetically
@@ -373,7 +373,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     }
     else if (strcmp(wmsel, "select") != 0)
     {
-        *watermodel = strdup(wmsel);
+        *watermodel = gmx_strdup(wmsel);
 
         return;
     }
@@ -431,7 +431,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     }
     else
     {
-        *watermodel = strdup(model[sel]);
+        *watermodel = gmx_strdup(model[sel]);
     }
 
     for (i = 0; i < nwm; i++)
@@ -1002,7 +1002,7 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
         }
         snew( restp->atomname[at_start+1+k], 1);
         restp->atom     [at_start+1+k] = *hack->atom;
-        *restp->atomname[at_start+1+k] = strdup(buf);
+        *restp->atomname[at_start+1+k] = gmx_strdup(buf);
         if (hack->cgnr != NOTSET)
         {
             restp->cgnr   [at_start+1+k] = hack->cgnr;
@@ -1176,7 +1176,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                             }
                             snew( (*restp)[i].atomname[l], 1);
                             (*restp)[i].atom[l]      =       *(*hb)[i].hack[j].atom;
-                            *(*restp)[i].atomname[l] = strdup((*hb)[i].hack[j].nname);
+                            *(*restp)[i].atomname[l] = gmx_strdup((*hb)[i].hack[j].nname);
                             if ( (*hb)[i].hack[j].cgnr != NOTSET)
                             {
                                 (*restp)[i].cgnr   [l] = (*hb)[i].hack[j].cgnr;
@@ -1333,7 +1333,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             }
             /* Rename the atom in pdba */
             snew(pdba->atomname[atind], 1);
-            *pdba->atomname[atind] = strdup(newnm);
+            *pdba->atomname[atind] = gmx_strdup(newnm);
         }
         else if (hbr->hack[j].oname != NULL && hbr->hack[j].nname == NULL &&
                  gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)

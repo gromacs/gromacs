@@ -145,7 +145,7 @@ int get_strings(const char *db, char ***strings)
 #ifdef DEBUG
         fprintf(stderr, "Have read: %s\n", buf);
 #endif
-        ptr[i] = strdup(buf);
+        ptr[i] = gmx_strdup(buf);
     }
     gmx_ffclose(in);
 
@@ -226,7 +226,7 @@ int get_file(const char *db, char ***strings)
             maxi += 50;
             srenew(ptr, maxi);
         }
-        ptr[i] = strdup(buf);
+        ptr[i] = gmx_strdup(buf);
         i++;
     }
     nstr = i;

@@ -2725,7 +2725,7 @@ static void do_symtab(t_fileio *fio, t_symtab *symtab, gmx_bool bRead)
         for (i = 0; (i < nr); i++)
         {
             gmx_fio_do_string(fio, buf);
-            symbuf->buf[i] = strdup(buf);
+            symbuf->buf[i] = gmx_strdup(buf);
         }
     }
     else

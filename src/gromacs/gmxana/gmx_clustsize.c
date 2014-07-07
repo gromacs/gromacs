@@ -149,7 +149,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         {
             index[i] = i;
         }
-        gname = strdup("mols");
+        gname = gmx_strdup("mols");
     }
     else
     {

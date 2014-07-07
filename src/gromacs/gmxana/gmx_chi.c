@@ -683,15 +683,15 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
         snew(leg, NJC);
         for (i = 0; (i < NKKKPHI); i++)
         {
-            leg[i] = strdup(kkkphi[i].name);
+            leg[i] = gmx_strdup(kkkphi[i].name);
         }
         for (i = 0; (i < NKKKPSI); i++)
         {
-            leg[i+NKKKPHI] = strdup(kkkpsi[i].name);
+            leg[i+NKKKPHI] = gmx_strdup(kkkpsi[i].name);
         }
         for (i = 0; (i < NKKKCHI); i++)
         {
-            leg[i+NKKKPHI+NKKKPSI] = strdup(kkkchi1[i].name);
+            leg[i+NKKKPHI+NKKKPSI] = gmx_strdup(kkkchi1[i].name);
         }
         xvgr_legend(fp, NJC, (const char**)leg, oenv);
         fprintf(fp, "%5s ", "#Res.");
@@ -1020,15 +1020,15 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
     char *leg[edMax];
 #define NLEG asize(leg)
 
-    leg[0] = strdup("Phi");
-    leg[1] = strdup("Psi");
-    leg[2] = strdup("Omega");
-    leg[3] = strdup("Chi1");
-    leg[4] = strdup("Chi2");
-    leg[5] = strdup("Chi3");
-    leg[6] = strdup("Chi4");
-    leg[7] = strdup("Chi5");
-    leg[8] = strdup("Chi6");
+    leg[0] = gmx_strdup("Phi");
+    leg[1] = gmx_strdup("Psi");
+    leg[2] = gmx_strdup("Omega");
+    leg[3] = gmx_strdup("Chi1");
+    leg[4] = gmx_strdup("Chi2");
+    leg[5] = gmx_strdup("Chi3");
+    leg[6] = gmx_strdup("Chi4");
+    leg[7] = gmx_strdup("Chi5");
+    leg[8] = gmx_strdup("Chi6");
 
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns",
@@ -1084,7 +1084,7 @@ static void order_params(FILE *log,
 
     for (i = 0; i < NLEG; i++)
     {
-        leg[i] = strdup(const_leg[i]);
+        leg[i] = gmx_strdup(const_leg[i]);
     }
 
     /* Print order parameters */

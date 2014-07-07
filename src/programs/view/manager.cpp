@@ -232,7 +232,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     man->natom =
         read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),
                      man->box);
-    man->trajfile = strdup(trajectory);
+    man->trajfile = gmx_strdup(trajectory);
     if (man->natom > man->top.atoms.nr)
     {
         gmx_fatal(FARGS, "Topology %s (%d atoms) and trajectory %s (%d atoms) "
@@ -242,7 +242,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
 
     cool_quote(quote, 255, NULL);
     sprintf(buf, "%s: %s", *man->top.name, quote);
-    man->title.text = strdup(buf);
+    man->title.text = gmx_strdup(buf);
     man->view       = init_view(man->box);
     at              = &(man->top.atoms);
     aps             = gmx_atomprop_init();

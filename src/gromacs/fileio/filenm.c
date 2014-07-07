@@ -563,7 +563,7 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                 *extpos = '\0';
                 sprintf(newname, "%s%s.%s", buf, suffix, extpos + 1);
                 sfree(fnm[i].fns[j]);
-                fnm[i].fns[j] = strdup(newname);
+                fnm[i].fns[j] = gmx_strdup(newname);
             }
         }
     }
@@ -581,7 +581,7 @@ t_filenm *dup_tfn(int nf, const t_filenm tfn[])
         ret[i] = tfn[i]; /* just directly copy all non-string fields */
         if (tfn[i].opt)
         {
-            ret[i].opt = strdup(tfn[i].opt);
+            ret[i].opt = gmx_strdup(tfn[i].opt);
         }
         else
         {
@@ -590,7 +590,7 @@ t_filenm *dup_tfn(int nf, const t_filenm tfn[])
 
         if (tfn[i].fn)
         {
-            ret[i].fn = strdup(tfn[i].fn);
+            ret[i].fn = gmx_strdup(tfn[i].fn);
         }
         else
         {
@@ -602,7 +602,7 @@ t_filenm *dup_tfn(int nf, const t_filenm tfn[])
             snew(ret[i].fns, tfn[i].nfiles);
             for (j = 0; j < tfn[i].nfiles; j++)
             {
-                ret[i].fns[j] = strdup(tfn[i].fns[j]);
+                ret[i].fns[j] = gmx_strdup(tfn[i].fns[j]);
             }
         }
     }

@@ -86,8 +86,8 @@ static t_2morse *read_dissociation_energies(int *n2morse)
                 srenew(t2m, maxn2m);
             }
             /* Copy the values */
-            t2m[n2m].ai     = strdup(ai);
-            t2m[n2m].aj     = strdup(aj);
+            t2m[n2m].ai     = gmx_strdup(ai);
+            t2m[n2m].aj     = gmx_strdup(aj);
             t2m[n2m].e_diss = e_diss;
             /* Increment counter */
             n2m++;

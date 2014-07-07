@@ -120,7 +120,7 @@ static void read_atom(char *line, gmx_bool bAdd,
     {
         if (nr == 4)
         {
-            *nname = strdup(buf[i++]);
+            *nname = gmx_strdup(buf[i++]);
         }
         else
         {
@@ -290,8 +290,8 @@ static void read_ter_db_file(char *fn,
                     srenew(tb, maxnb);
                 }
                 clear_t_hackblock(&tb[nb]);
-                tb[nb].name     = strdup(header);
-                tb[nb].filebase = strdup(filebase);
+                tb[nb].name     = gmx_strdup(header);
+                tb[nb].filebase = gmx_strdup(filebase);
             }
         }
         else
@@ -329,7 +329,7 @@ static void read_ter_db_file(char *fn,
                         gmx_fatal(FARGS, "Reading Termini Database '%s': "
                                   "expected atom name on line\n%s", fn, line);
                     }
-                    tb[nb].hack[nh].oname = strdup(buf);
+                    tb[nb].hack[nh].oname = gmx_strdup(buf);
                     /* we only replace or delete one atom at a time */
                     tb[nb].hack[nh].nr = 1;
                 }
@@ -353,7 +353,7 @@ static void read_ter_db_file(char *fn,
                     {
                         if (tb[nb].hack[nh].oname != NULL)
                         {
-                            tb[nb].hack[nh].nname = strdup(tb[nb].hack[nh].oname);
+                            tb[nb].hack[nh].nname = gmx_strdup(tb[nb].hack[nh].oname);
                         }
                         else
                         {
@@ -371,7 +371,7 @@ static void read_ter_db_file(char *fn,
                 {
                     if (sscanf(line+n, "%s%n", buf, &ni) == 1)
                     {
-                        tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = strdup(buf);
+                        tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = gmx_strdup(buf);
                     }
                     else
                     {
@@ -385,7 +385,7 @@ static void read_ter_db_file(char *fn,
                 }
                 strcpy(buf, "");
                 sscanf(line+n, "%s", buf);
-                tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = strdup(buf);
+                tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = gmx_strdup(buf);
                 tb[nb].rb[kwnr].nb++;
             }
             else

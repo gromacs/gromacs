@@ -363,7 +363,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
         {
             snew(leg, 1);
             sprintf(buf, "Internal in %s", grpn[0]);
-            leg[0] = strdup(buf);
+            leg[0] = gmx_strdup(buf);
             xvgr_legend(dist, 0, (const char**)leg, oenv);
             if (num)
             {
@@ -378,7 +378,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
                 for (k = i+1; (k < ng); k++, j++)
                 {
                     sprintf(buf, "%s-%s", grpn[i], grpn[k]);
-                    leg[j] = strdup(buf);
+                    leg[j] = gmx_strdup(buf);
                 }
             }
             xvgr_legend(dist, j, (const char**)leg, oenv);
@@ -394,7 +394,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
         for (i = 0; (i < ng-1); i++)
         {
             sprintf(buf, "%s-%s", grpn[0], grpn[i+1]);
-            leg[i] = strdup(buf);
+            leg[i] = gmx_strdup(buf);
         }
         xvgr_legend(dist, ng-1, (const char**)leg, oenv);
         if (num)

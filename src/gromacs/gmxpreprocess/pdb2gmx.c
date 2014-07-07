@@ -1684,7 +1684,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             chains[i].pdba->atom[j] = pdba_all.atom[pdb_ch[si].start+j];
             snew(chains[i].pdba->atomname[j], 1);
             *chains[i].pdba->atomname[j] =
-                strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
+                gmx_strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
             chains[i].pdba->pdbinfo[j] = pdba_all.pdbinfo[pdb_ch[si].start+j];
             copy_rvec(pdbx[pdb_ch[si].start+j], chains[i].x[j]);
         }
@@ -1701,7 +1701,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         {
             chains[i].pdba->resinfo[j] = pdba_all.resinfo[k+j];
             snew(chains[i].pdba->resinfo[j].name, 1);
-            *chains[i].pdba->resinfo[j].name = strdup(*pdba_all.resinfo[k+j].name);
+            *chains[i].pdba->resinfo[j].name = gmx_strdup(*pdba_all.resinfo[k+j].name);
             /* make all chain identifiers equal to that of the chain */
             chains[i].pdba->resinfo[j].chainid = pdb_ch[si].chainid;
         }
@@ -2059,7 +2059,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
             nincl++;
             srenew(incls, nincl);
-            incls[nincl-1] = strdup(itp_fn);
+            incls[nincl-1] = gmx_strdup(itp_fn);
             itp_file       = gmx_fio_fopen(itp_fn, "w");
         }
         else
@@ -2070,12 +2070,12 @@ int gmx_pdb2gmx(int argc, char *argv[])
         srenew(mols, nmol+1);
         if (cc->bAllWat)
         {
-            mols[nmol].name = strdup("SOL");
+            mols[nmol].name = gmx_strdup("SOL");
             mols[nmol].nr   = pdba->nres;
         }
         else
         {
-            mols[nmol].name = strdup(molname);
+            mols[nmol].name = gmx_strdup(molname);
             mols[nmol].nr   = 1;
         }
         nmol++;

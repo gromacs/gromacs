@@ -54,6 +54,7 @@
 #include "network.h"
 
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -61,7 +62,7 @@ static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
 {
     atoms2->atom[a2] = atoms1->atom[a1];
     snew(atoms2->atomname[a2], 1);
-    *atoms2->atomname[a2] = strdup(*atoms1->atomname[a1]);
+    *atoms2->atomname[a2] = gmx_strdup(*atoms1->atomname[a1]);
 }
 
 static atom_id pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
@@ -167,7 +168,7 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
         {
             if (hb[rnr].name == NULL)
             {
-                hb[rnr].name = strdup(ahptr->name);
+                hb[rnr].name = gmx_strdup(ahptr->name);
             }
             merge_hacks(ahptr, &hb[rnr]);
         }
@@ -232,7 +233,7 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
                 {
                     if ( (*abi)[*nabi + k].oname == NULL)
                     {
-                        (*abi)[*nabi + k].nname    = strdup(atomname);
+                        (*abi)[*nabi + k].nname    = gmx_strdup(atomname);
                         (*abi)[*nabi + k].nname[0] = 'H';
                     }
                 }
@@ -246,7 +247,7 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
                                 (*abi)[*nabi + k].oname ? (*abi)[*nabi + k].oname : "");
                     }
                     sfree((*abi)[*nabi + k].nname);
-                    (*abi)[*nabi + k].nname = strdup(hbr->hack[j].nname);
+                    (*abi)[*nabi + k].nname = gmx_strdup(hbr->hack[j].nname);
                 }
 
                 if (hbr->hack[j].tp == 10 && k == 2)
@@ -667,7 +668,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                                         ab[i][j].nname);
                             }
                             snew(newpdba->atomname[newi], 1);
-                            *newpdba->atomname[newi] = strdup(ab[i][j].nname);
+                            *newpdba->atomname[newi] = gmx_strdup(ab[i][j].nname);
                             if (ab[i][j].oname != NULL && ab[i][j].atom) /* replace */
                             {                                            /*          newpdba->atom[newi].m    = ab[i][j].atom->m; */
 /*        newpdba->atom[newi].q    = ab[i][j].atom->q; */

@@ -549,7 +549,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         ni = groups->grps[egcTC].nm_ind[i];
         sprintf(buf, "T-%s", *(groups->grpname[ni]));
-        grpnms[i] = strdup(buf);
+        grpnms[i] = gmx_strdup(buf);
     }
     md->itemp = get_ebin_space(md->ebin, md->nTC, (const char **)grpnms,
                                unit_temp_K);
@@ -567,9 +567,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     for (j = 0; (j < md->nNHC); j++)
                     {
                         sprintf(buf, "Xi-%d-%s", j, bufi);
-                        grpnms[2*(i*md->nNHC+j)] = strdup(buf);
+                        grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
                         sprintf(buf, "vXi-%d-%s", j, bufi);
-                        grpnms[2*(i*md->nNHC+j)+1] = strdup(buf);
+                        grpnms[2*(i*md->nNHC+j)+1] = gmx_strdup(buf);
                     }
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
@@ -582,9 +582,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                         for (j = 0; (j < md->nNHC); j++)
                         {
                             sprintf(buf, "Xi-%d-%s", j, bufi);
-                            grpnms[2*(i*md->nNHC+j)] = strdup(buf);
+                            grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
                             sprintf(buf, "vXi-%d-%s", j, bufi);
-                            grpnms[2*(i*md->nNHC+j)+1] = strdup(buf);
+                            grpnms[2*(i*md->nNHC+j)+1] = gmx_strdup(buf);
                         }
                     }
                     md->itcb = get_ebin_space(md->ebin, md->mdeb_n,
@@ -598,9 +598,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     ni   = groups->grps[egcTC].nm_ind[i];
                     bufi = *(groups->grpname[ni]);
                     sprintf(buf, "Xi-%s", bufi);
-                    grpnms[2*i] = strdup(buf);
+                    grpnms[2*i] = gmx_strdup(buf);
                     sprintf(buf, "vXi-%s", bufi);
-                    grpnms[2*i+1] = strdup(buf);
+                    grpnms[2*i+1] = gmx_strdup(buf);
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
                                          (const char **)grpnms, unit_invtime);
@@ -614,7 +614,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             ni = groups->grps[egcTC].nm_ind[i];
             sprintf(buf, "Lamb-%s", *(groups->grpname[ni]));
-            grpnms[i] = strdup(buf);
+            grpnms[i] = gmx_strdup(buf);
         }
         md->itc = get_ebin_space(md->ebin, md->mde_n, (const char **)grpnms, "");
     }
@@ -630,11 +630,11 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             ni = groups->grps[egcACC].nm_ind[i];
             sprintf(buf, "Ux-%s", *(groups->grpname[ni]));
-            grpnms[3*i+XX] = strdup(buf);
+            grpnms[3*i+XX] = gmx_strdup(buf);
             sprintf(buf, "Uy-%s", *(groups->grpname[ni]));
-            grpnms[3*i+YY] = strdup(buf);
+            grpnms[3*i+YY] = gmx_strdup(buf);
             sprintf(buf, "Uz-%s", *(groups->grpname[ni]));
-            grpnms[3*i+ZZ] = strdup(buf);
+            grpnms[3*i+ZZ] = gmx_strdup(buf);
         }
         md->iu = get_ebin_space(md->ebin, 3*md->nU, (const char **)grpnms, unit_vel);
         sfree(grpnms);
@@ -848,7 +848,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
     {
         /* state for the fep_vals, if we have alchemical sampling */
         sprintf(buf, "%s", "Thermodynamic state");
-        setname[s] = strdup(buf);
+        setname[s] = gmx_strdup(buf);
         s         += 1;
     }
 
@@ -864,7 +864,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
             default:
                 sprintf(buf, "%s (%s)", "Total Energy", unit_energy);
         }
-        setname[s] = strdup(buf);
+        setname[s] = gmx_strdup(buf);
         s         += 1;
     }
 
@@ -890,7 +890,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                     sprintf(buf, "%s %s = %.4f", dhdl, efpt_singular_names[i],
                             lam);
                 }
-                setname[s] = strdup(buf);
+                setname[s] = gmx_strdup(buf);
                 s         += 1;
             }
         }
@@ -937,14 +937,14 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                         ir->simtempvals->temperatures[s-(nsetsbegin)],
                         unit_temp_K);
             }
-            setname[s] = strdup(buf);
+            setname[s] = gmx_strdup(buf);
             s++;
         }
         if (write_pV)
         {
             np                     = sprintf(buf, "pV (%s)", unit_energy);
-            setname[nsetsextend-1] = strdup(buf);  /* the first entry after
-                                                      nsets */
+            setname[nsetsextend-1] = gmx_strdup(buf);  /* the first entry after
+                                                          nsets */
         }
 
         xvgr_legend(fp, nsetsextend, (const char **)setname, oenv);
@@ -1549,7 +1549,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                             nj = groups->grps[egcENER].nm_ind[j];
                             sprintf(buf, "%s-%s", *(groups->grpname[ni]),
                                     *(groups->grpname[nj]));
-                            md->print_grpnms[n++] = strdup(buf);
+                            md->print_grpnms[n++] = gmx_strdup(buf);
                         }
                     }
                 }

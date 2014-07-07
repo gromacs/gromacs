@@ -144,7 +144,7 @@ static void add_xr(t_xrama *xr, int ff[5], t_atoms *atoms)
     xr->pp[xr->npp].bShow = FALSE;
     sprintf(buf, "%s-%d", *atoms->resinfo[atoms->atom[ff[1]].resind].name,
             atoms->resinfo[atoms->atom[ff[1]].resind].nr);
-    xr->pp[xr->npp].label = strdup(buf);
+    xr->pp[xr->npp].label = gmx_strdup(buf);
     xr->npp++;
 }
 
