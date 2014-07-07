@@ -35,11 +35,11 @@
 #TODO: add check that source doesn't contain any untracked files
 if(NOT CPACK_INSTALL_CMAKE_PROJECTS) #building source package
     get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
-    if (NOT EXISTS "${CMAKE_BINARY_DIR}/share/man/man1/gmx-view.1" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/install-guide/final/INSTALL" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/online.html" OR
+    if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/man1/gmx-view.1" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/final/INSTALL" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/online.html" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/programs/gmx-view.html")
+        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/programs/gmx-view.html")
         message(FATAL_ERROR
             "To create a complete source package, bash completions, "
             "man and HTML pages, and INSTALL need to be generated. "
