@@ -173,6 +173,7 @@ static const double
 
 double gmx_erfd(double x)
 {
+#ifdef GMX_FLOAT_FORMAT_IEEE754
     gmx_int32_t hx, ix, i;
     double      R, S, P, Q, s, y, z, r;
 
@@ -185,9 +186,7 @@ double gmx_erfd(double x)
 
     conv.d = x;
 
-    /* In release-4-6 and later branches, only the test for
-     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
-#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
+#ifdef GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
     hx = conv.i[0];
 #else
     hx = conv.i[1];
@@ -263,9 +262,7 @@ double gmx_erfd(double x)
 
     conv.d = x;
 
-    /* In release-4-6 and later branches, only the test for
-     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
-#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
+#ifdef GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
     conv.i[1] = 0;
 #else
     conv.i[0] = 0;
@@ -282,11 +279,16 @@ double gmx_erfd(double x)
     {
         return r/x-one;
     }
+#else
+    /* No IEEE754 information. We need to trust that the OS provides erf(). */
+    return erf(x);
+#endif
 }
 
 
 double gmx_erfcd(double x)
 {
+#ifdef GMX_FLOAT_FORMAT_IEEE754
     gmx_int32_t hx, ix;
     double      R, S, P, Q, s, y, z, r;
 
@@ -299,9 +301,7 @@ double gmx_erfcd(double x)
 
     conv.d = x;
 
-    /* In release-4-6 and later branches, only the test for
-     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
-#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
+#ifdef GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
     hx = conv.i[0];
 #else
     hx = conv.i[1];
@@ -379,9 +379,7 @@ double gmx_erfcd(double x)
 
         conv.d = x;
 
-        /* In release-4-6 and later branches, only the test for
-         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
-#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
+#ifdef GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
         conv.i[1] = 0;
 #else
         conv.i[0] = 0;
@@ -411,6 +409,10 @@ double gmx_erfcd(double x)
             return two-tiny;
         }
     }
+#else
+    /* No IEEE754 information. We need to trust that the OS provides erfc(). */
+    return erfc(x);
+#endif
 }
 
 
