@@ -800,11 +800,4 @@ SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
     }
 }
 
-// static
-HelpTopicPointer
-SelectionCollection::createDefaultHelpTopic()
-{
-    return createSelectionHelpTopic();
-}
-
 } // namespace gmx
