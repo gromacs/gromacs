@@ -102,7 +102,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     }
     else
     {
-        yylval->str = param->name ? strdup(param->name) : NULL;
+        yylval->str = param->name ? gmx_strdup(param->name) : NULL;
     }
     return PARAM;
 }
@@ -336,7 +336,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (symtype == gmx::SelectionParserSymbol::PositionSymbol)
     {
         state->bMatchOf    = true;
-        yylval->str        = strdup(symbol->name().c_str());
+        yylval->str        = gmx_strdup(symbol->name().c_str());
         state->prev_pos_kw = 2;
         return KEYWORD_POS;
     }

@@ -587,7 +587,7 @@ int gmx_trjcat(int argc, char *argv[])
     {
         if (nfile_out != nset)
         {
-            char *buf = strdup(fnms_out[0]);
+            char *buf = gmx_strdup(fnms_out[0]);
             snew(fnms_out, nset);
             for (i = 0; (i < nset); i++)
             {

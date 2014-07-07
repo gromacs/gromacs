@@ -168,8 +168,8 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
                                 inp[nin-1].count      = 0;
                                 inp[nin-1].bObsolete  = FALSE;
                                 inp[nin-1].bSet       = FALSE;
-                                inp[nin-1].name       = strdup(lbuf);
-                                inp[nin-1].value      = strdup(rbuf);
+                                inp[nin-1].name       = gmx_strdup(lbuf);
+                                inp[nin-1].value      = gmx_strdup(rbuf);
                             }
                             else
                             {
@@ -184,7 +184,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
                                 {
                                     /* override */
                                     sfree(inp[found_index].value);
-                                    inp[found_index].value = strdup(rbuf);
+                                    inp[found_index].value = gmx_strdup(rbuf);
                                     sprintf(warn_buf,
                                             "Overriding existing parameter \"%s\" with value \"%s\"\n",
                                             lbuf, rbuf);
@@ -294,7 +294,7 @@ void replace_inp_entry(int ninp, t_inpfile *inp, const char *old_entry, const ch
                 fprintf(stderr, "Replacing old mdp entry '%s' by '%s'\n",
                         inp[i].name, new_entry);
                 sfree(inp[i].name);
-                inp[i].name = strdup(new_entry);
+                inp[i].name = gmx_strdup(new_entry);
             }
             else
             {
@@ -342,7 +342,7 @@ static int get_einp(int *ninp, t_inpfile **inp, const char *name)
         notfound = TRUE;
         i        = (*ninp)++;
         srenew(*inp, (*ninp));
-        (*inp)[i].name = strdup(name);
+        (*inp)[i].name = gmx_strdup(name);
         (*inp)[i].bSet = TRUE;
     }
     (*inp)[i].count = (*inp)[0].inp_count++;
@@ -375,7 +375,7 @@ int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
     if (ii == -1)
     {
         sprintf(buf, "%d", def);
-        (*inp)[(*ninp)-1].value = strdup(buf);
+        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
 
         return def;
     }
@@ -405,7 +405,7 @@ gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
     if (ii == -1)
     {
         sprintf(buf, "%"GMX_PRId64, def);
-        (*inp)[(*ninp)-1].value = strdup(buf);
+        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
 
         return def;
     }
@@ -434,7 +434,7 @@ double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
     if (ii == -1)
     {
         sprintf(buf, "%g", def);
-        (*inp)[(*ninp)-1].value = strdup(buf);
+        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
 
         return def;
     }
@@ -463,7 +463,7 @@ const char *get_estr(int *ninp, t_inpfile **inp, const char *name, const char *d
         if (def)
         {
             sprintf(buf, "%s", def);
-            (*inp)[(*ninp)-1].value = strdup(buf);
+            (*inp)[(*ninp)-1].value = gmx_strdup(buf);
         }
         else
         {
@@ -489,7 +489,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
 
     if (ii == -1)
     {
-        (*inp)[(*ninp)-1].value = strdup(defs[0]);
+        (*inp)[(*ninp)-1].value = gmx_strdup(defs[0]);
 
         return 0;
     }
@@ -522,7 +522,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
             fprintf(stderr, "%s\n", buf);
         }
 
-        (*inp)[ii].value = strdup(defs[0]);
+        (*inp)[ii].value = gmx_strdup(defs[0]);
 
         return 0;
     }

@@ -1043,7 +1043,7 @@ int gmx_trjconv(int argc, char *argv[])
             {
                 gmx_fatal(FARGS, "Output file name '%s' does not contain a '.'", out_file);
             }
-            outf_base = strdup(out_file);
+            outf_base = gmx_strdup(out_file);
             outf_base[outf_ext - out_file] = '\0';
         }
 

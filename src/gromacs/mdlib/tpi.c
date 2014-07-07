@@ -375,25 +375,25 @@ double do_tpi(FILE *fplog, t_commrec *cr,
         snew(leg, 4+nener);
         e = 0;
         sprintf(str, "-kT log(<Ve\\S-\\betaU\\N>/<V>)");
-        leg[e++] = strdup(str);
+        leg[e++] = gmx_strdup(str);
         sprintf(str, "f. -kT log<e\\S-\\betaU\\N>");
-        leg[e++] = strdup(str);
+        leg[e++] = gmx_strdup(str);
         sprintf(str, "f. <e\\S-\\betaU\\N>");
-        leg[e++] = strdup(str);
+        leg[e++] = gmx_strdup(str);
         sprintf(str, "f. V");
-        leg[e++] = strdup(str);
+        leg[e++] = gmx_strdup(str);
         sprintf(str, "f. <Ue\\S-\\betaU\\N>");
-        leg[e++] = strdup(str);
+        leg[e++] = gmx_strdup(str);
         for (i = 0; i < ngid; i++)
         {
             sprintf(str, "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
                     *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
-            leg[e++] = strdup(str);
+            leg[e++] = gmx_strdup(str);
         }
         if (bDispCorr)
         {
             sprintf(str, "f. <U\\sdisp c\\Ne\\S-\\betaU\\N>");
-            leg[e++] = strdup(str);
+            leg[e++] = gmx_strdup(str);
         }
         if (bCharge)
         {
@@ -401,17 +401,17 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             {
                 sprintf(str, "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
                         *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
-                leg[e++] = strdup(str);
+                leg[e++] = gmx_strdup(str);
             }
             if (bRFExcl)
             {
                 sprintf(str, "f. <U\\sRF excl\\Ne\\S-\\betaU\\N>");
-                leg[e++] = strdup(str);
+                leg[e++] = gmx_strdup(str);
             }
             if (EEL_FULL(fr->eeltype))
             {
                 sprintf(str, "f. <U\\sCoul recip\\Ne\\S-\\betaU\\N>");
-                leg[e++] = strdup(str);
+                leg[e++] = gmx_strdup(str);
             }
         }
         xvgr_legend(fp_tpi, 4+nener, (const char**)leg, oenv);

@@ -115,7 +115,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
         i = line_no;
         if (sscanf(line, "%s %d %d %lf", atomnm, &p, &n, &slength) == 4)
         {
-            gnsf->atomnm[i]  = strdup(atomnm);
+            gnsf->atomnm[i]  = gmx_strdup(atomnm);
             gnsf->n[i]       = n;
             gnsf->p[i]       = p;
             gnsf->slength[i] = slength;

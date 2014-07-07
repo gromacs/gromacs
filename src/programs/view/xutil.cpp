@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "xutil.h"
@@ -165,7 +166,7 @@ void InitWin(t_windata *win, int x0, int y0, int w, int h, int bw, const char *t
     win->cursor = 0;
     if (text)
     {
-        win->text = strdup(text);
+        win->text = gmx_strdup(text);
     }
     else
     {

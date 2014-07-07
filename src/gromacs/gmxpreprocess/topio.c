@@ -337,7 +337,7 @@ static char ** cpp_opts(const char *define, const char *include,
                     else
                     {
                         srenew(cppopts, ++ncppopts);
-                        cppopts[ncppopts-1] = strdup(buf);
+                        cppopts[ncppopts-1] = gmx_strdup(buf);
                     }
                     sfree(buf);
                     ptr = rptr;
@@ -640,7 +640,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
             set_warning_line(wi, cpp_cur_file(&handle), cpp_cur_linenr(&handle));
 
-            pline = strdup(line);
+            pline = gmx_strdup(line);
 
             /* Strip trailing '\' from pline, if it exists */
             sl = strlen(pline);
@@ -658,7 +658,7 @@ static char **read_topol(const char *infile, const char *outfile,
                 /* Since we depend on the '\' being present to continue to read, we copy line
                  * to a tmp string, strip the '\' from that string, and cat it to pline
                  */
-                tmp_line = strdup(line);
+                tmp_line = gmx_strdup(line);
 
                 sl = strlen(tmp_line);
                 if ((sl > 0) && (tmp_line[sl-1] == CONTINUE))
@@ -697,7 +697,7 @@ static char **read_topol(const char *infile, const char *outfile,
                      * without the brackets into dirstr, then
                      * skip spaces and tabs on either side of directive
                      */
-                    dirstr = strdup((pline+1));
+                    dirstr = gmx_strdup((pline+1));
                     if ((dummy2 = strchr (dirstr, CLOSEDIR)) != NULL)
                     {
                         (*dummy2) = 0;

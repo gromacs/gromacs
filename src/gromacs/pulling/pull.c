@@ -177,7 +177,7 @@ static FILE *open_pull_out(const char *fn, t_pull *pull, const output_env_t oenv
                         if (pull->dim[m])
                         {
                             sprintf(buf, "%d %s%c", c+1, "c", 'X'+m);
-                            setname[nsets] = strdup(buf);
+                            setname[nsets] = gmx_strdup(buf);
                             nsets++;
                         }
                     }
@@ -187,7 +187,7 @@ static FILE *open_pull_out(const char *fn, t_pull *pull, const output_env_t oenv
                     if (pull->dim[m])
                     {
                         sprintf(buf, "%d %s%c", c+1, "d", 'X'+m);
-                        setname[nsets] = strdup(buf);
+                        setname[nsets] = gmx_strdup(buf);
                         nsets++;
                     }
                 }
@@ -195,7 +195,7 @@ static FILE *open_pull_out(const char *fn, t_pull *pull, const output_env_t oenv
             else
             {
                 sprintf(buf, "%d", c+1);
-                setname[nsets] = strdup(buf);
+                setname[nsets] = gmx_strdup(buf);
                 nsets++;
             }
         }

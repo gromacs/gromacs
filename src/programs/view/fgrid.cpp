@@ -203,7 +203,7 @@ static t_fsimple *NewFSimple(void)
 static void AddFItemName(t_fitem *fitem, char *name)
 {
     srenew(fitem->name, ++fitem->nname);
-    fitem->name[fitem->nname-1] = strdup(name);
+    fitem->name[fitem->nname-1] = gmx_strdup(name);
 }
 
 static t_fgroup *NewFGroup(void)
@@ -358,10 +358,10 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
     ReadQuoteString(infile, in, get);
     ReadQuoteString(infile, in, def);
     ReadQuoteString(infile, in, help);
-    fitem->set  = strdup(set);
-    fitem->get  = strdup(get);
-    fitem->def  = strdup(def);
-    fitem->help = strdup(help);
+    fitem->set  = gmx_strdup(set);
+    fitem->get  = gmx_strdup(get);
+    fitem->def  = gmx_strdup(def);
+    fitem->help = gmx_strdup(help);
 
     return fitem;
 }
@@ -398,7 +398,7 @@ t_fgrid *FGridFromFile(const char *infile)
         {
             fgroup = AddFGridFGroup(fgrid);
             ReadQuoteString(infile, in, buf);
-            fgroup->name = strdup(buf);
+            fgroup->name = gmx_strdup(buf);
             if ((fscanf(in, "%5d%5d%5d%5d", &fgroup->x, &fgroup->y, &fgroup->w, &fgroup->h)) != 4)
             {
                 ReadDlgErr(infile, eNOVALS, "group x,y,w,h");

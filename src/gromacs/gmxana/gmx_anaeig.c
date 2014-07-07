@@ -646,7 +646,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         for (v = 0; v < noutvec; v++)
         {
             sprintf(str, "vec %d", eignr[outvec[v]]+1);
-            ylabel[v] = strdup(str);
+            ylabel[v] = gmx_strdup(str);
         }
         sprintf(str, "projection on eigenvectors (%s)", proj_unit);
         write_xvgr_graphs(projfile, noutvec, 1, str, NULL, output_env_get_xvgr_tlabel(oenv),
@@ -712,8 +712,8 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         init_t_atoms(&atoms, nframes, FALSE);
         snew(x, nframes);
         snew(b, nframes);
-        atnm  = strdup("C");
-        resnm = strdup("PRJ");
+        atnm  = gmx_strdup("C");
+        resnm = gmx_strdup("PRJ");
 
         if (nframes > 10000)
         {
@@ -878,7 +878,7 @@ static void components(const char *outfile, int natoms,
     {
         v = outvec[g];
         sprintf(str, "vec %d", eignr[v]+1);
-        ylabel[g] = strdup(str);
+        ylabel[g] = gmx_strdup(str);
         snew(y[g], 4);
         for (s = 0; s < 4; s++)
         {
@@ -935,7 +935,7 @@ static void rmsf(const char *outfile, int natoms, real *sqrtm,
             gmx_fatal(FARGS, "Selected vector %d is larger than the number of eigenvalues (%d)", eignr[v]+1, neig);
         }
         sprintf(str, "vec %d", eignr[v]+1);
-        ylabel[g] = strdup(str);
+        ylabel[g] = gmx_strdup(str);
         snew(y[g], natoms);
         for (i = 0; i < natoms; i++)
         {

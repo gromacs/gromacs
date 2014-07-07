@@ -42,6 +42,7 @@
 #include <algorithm>
 
 #include "macros.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "x11.h"
@@ -116,7 +117,7 @@ static bool VBCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 void set_vbtime(t_x11 *x11, t_butbox *vbox, char *text)
 {
     sfree(vbox->wd.text);
-    vbox->wd.text = strdup(text);
+    vbox->wd.text = gmx_strdup(text);
     ExposeWin(x11->disp, vbox->wd.self);
 }
 

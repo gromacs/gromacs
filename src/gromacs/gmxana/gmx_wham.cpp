@@ -1453,7 +1453,7 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
     }
     else
     {
-        fn = strdup(fnhist);
+        fn = gmx_strdup(fnhist);
         strcpy(title, "Umbrella histograms");
     }
 
