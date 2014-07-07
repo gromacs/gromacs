@@ -98,7 +98,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     private:
         //! Creates a BooleanOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 };
 
@@ -141,7 +141,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     private:
         //! Creates an IntegerOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         /*! \brief
@@ -171,7 +171,7 @@ class Int64Option : public OptionTemplate<gmx_int64_t, Int64Option>
 
     private:
         //! Creates an Int64OptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         /*! \brief
@@ -217,7 +217,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         //! Creates a DoubleOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         bool bTime_;
@@ -256,7 +256,7 @@ class FloatOption : public OptionTemplate<float, FloatOption>
 
     private:
         //! Creates a FloatOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         bool bTime_;
@@ -377,7 +377,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     private:
         //! Creates a StringOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         const char *const      *enumValues_;
