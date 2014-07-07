@@ -10,7 +10,7 @@ FILE_PATTERNS          = *.c *.cpp *.h *.md
 # FILE_PATTERNS         += *.cu *.cuh
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
-EXCLUDE                = @CMAKE_SOURCE_DIR@/doxygen/examples \
+EXCLUDE                = @CMAKE_SOURCE_DIR@/docs/doxygen/examples \
                          @CMAKE_SOURCE_DIR@/src/contrib \
                          @CMAKE_SOURCE_DIR@/src/external \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
@@ -64,3 +64,5 @@ DOT_IMAGE_FORMAT       = svg
 DOT_MULTI_TARGETS      = YES
 # According to Doxygen docs, this is required for svg support on IE
 HTML_FILE_EXTENSION    = .xhtml
+
+OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen
