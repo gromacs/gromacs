@@ -39,7 +39,7 @@
  */
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineinit.h"
-#include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selhelp.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -54,7 +54,7 @@ main(int argc, char *argv[])
         gmx::CommandLineModuleManager manager("gmx", &context);
         registerTrajectoryAnalysisModules(&manager);
         registerLegacyModules(&manager);
-        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
+        manager.addHelpTopic(gmx::createSelectionHelpTopic());
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
         return rc;
