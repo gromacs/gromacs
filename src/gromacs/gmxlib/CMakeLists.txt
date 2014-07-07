@@ -43,7 +43,6 @@ if(GMX_GPU)
     # The log file output queries Cuda if GPU support is enabled
     add_subdirectory(cuda_tools)
     add_subdirectory(gpu_utils)
-    set(GMX_GPU_LIBRARIES ${GMX_GPU_LIBRARIES} gpu_utils cuda_tools PARENT_SCOPE)
 endif()
 
 set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${NONBONDED_SOURCES} PARENT_SCOPE)

@@ -161,7 +161,29 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
 
-add_library(libgromacs ${LIBGROMACS_SOURCES})
+if (GMX_GPU)
+# (slightly sloppy) OS definitions required by memtestG80
+set(_os_def)
+if(UNIX)
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+        set(_os_def "-DOSX")
+    else() # everything that's UNIX & UNIX-like except OS X
+        set(_os_def "-DLINUX")
+    endif()
+else()
+    if(WIN32)
+        set(_os_def "-DWINDOWS")
+    else()
+        message(FATAL_ERROR " Could not detect OS required for memtestG80.")
+    endif()
+endif()
+    cuda_add_library(libgromacs ${LIBGROMACS_SOURCES}
+            OPTIONS ${_os_def}
+            RELWITHDEBINFO -g
+            DEBUG -g -D_DEBUG_=1)
+else()
+    add_library(libgromacs ${LIBGROMACS_SOURCES})
+endif()
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx-version)
 endif()
@@ -190,7 +212,6 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
-                      ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${TNG_IO_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
