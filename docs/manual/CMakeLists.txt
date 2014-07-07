@@ -77,8 +77,8 @@ if(MANUAL_BUILD_IS_POSSIBLE)
     # updates in that HTML file without copying files by hand.
 
     ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/mdp_opt.tex
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/mkmdp ARGS ${CMAKE_SOURCE_DIR}/share/html
-        DEPENDS mkmdp ${CMAKE_SOURCE_DIR}/share/html/online/mdp_opt.html
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/mkmdp ARGS ${CMAKE_CURRENT_SOURCE_DIR}/../old-html
+        DEPENDS mkmdp ${CMAKE_CURRENT_SOURCE_DIR}/../old-html/online/mdp_opt.html
         )
 
     # Finally, the command to build the manual.
@@ -113,3 +113,5 @@ else()
     # TODO Arrange for the "make manual" target to explain that this can't
     # be done
 endif()
+
+set(MANUAL_BUILD_IS_POSSIBLE ${MANUAL_BUILD_IS_POSSIBLE} PARENT_SCOPE)
