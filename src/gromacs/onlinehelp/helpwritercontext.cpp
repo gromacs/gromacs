@@ -61,7 +61,7 @@ namespace gmx
 namespace
 {
 
-//! \addtogroup module_onlinehelp
+//! \internal \addtogroup module_onlinehelp
 //! \{
 
 struct t_sandr
