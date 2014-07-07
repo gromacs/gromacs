@@ -1,12 +1,12 @@
 % Installation guide for GROMACS @PROJECT_VERSION@
 
-# Building GROMACS #
+# Introduction to building GROMACS #
 
 These instructions pertain to building GROMACS
 @PROJECT_VERSION@. Up-to-date installation instructions may be found
 at <http://www.gromacs.org/Documentation/Installation_Instructions>.
 
-# Quick and dirty installation #
+## Quick and dirty installation ##
 
 1. Get the latest version of your C and C++ compilers.
 2. Check that you have CMake version @GMX_CMAKE_MINIMUM_REQUIRED_VERSION@ or later.
@@ -36,7 +36,7 @@ GROMACS, you will have to read further. Sadly, the interactions of
 hardware, libraries, and compilers are only going to continue to get
 more complex.
 
-# Typical GROMACS installation #
+## Typical GROMACS installation ##
 
 As above, and with further details below, but you should consider
 using the following [CMake options](#using-cmake-command-line-options) with the
@@ -55,7 +55,7 @@ appropriate value instead of `xxx` :
 * `-DGMX_FFT_LIBRARY=xxx` to select whether to use `fftw`, `mkl` or `fftpack` libraries for [FFT support](#fast-fourier-transform-library)
 * `-DCMAKE_BUILD_TYPE=Debug` to build GROMACS in debug mode
 
-# Building older GROMACS versions #
+## Building older GROMACS versions ##
 
 For installation instructions for old GROMACS versions, see the
 documentation at
@@ -200,7 +200,7 @@ Many simulations in GROMACS make extensive use of fast Fourier
 transforms, and a software library to perform these is always
 required. We recommend [FFTW](http://www.fftw.org) (version 3 or
 higher only) or
-[Intel MKL](http://software.intel.com/en-us/intel-mkl). The choice of
+[Intel MKL](https://software.intel.com/en-us/intel-mkl). The choice of
 library can be set with `cmake -DGMX_FFT_LIBRARY=<name>`, where
 `<name>` is one of `fftw`, `mkl`, or `fftpack`. FFTPACK is bundled
 with GROMACS as a fallback, and is acceptable if mdrun performance is
@@ -665,11 +665,11 @@ CMakeLists.txt.
 `share/man/`
   : Installed man pages go here.
 
-## Building GROMACS ##
+## Compiling and linking ##
 
-Once you have configured with `cmake`, you can build GROMACS. It is
-expected that the `make` procedure will always complete successfully,
-and give few or no warnings. The tests GROMACS makes on the settings
+Once you have configured with `cmake`, you can build GROMACS with `make`.
+It is expected that this will always complete successfully, and
+give few or no warnings. The CMake-time tests GROMACS makes on the settings
 you choose are pretty extensive, but there are probably a few cases we
 have not thought of yet. Search the web first for solutions to
 problems, but if you need help, ask on gmx-users, being sure to
@@ -680,7 +680,9 @@ message!
 
 If you have a multi-core or multi-CPU machine with `N`
 processors, then using
+
     $ make -j N
+
 will generally speed things up by quite a bit. Other build generator systems
 supported by `cmake` (e.g. `ninja`) also work well.
 
