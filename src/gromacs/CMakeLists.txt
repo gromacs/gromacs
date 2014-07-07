@@ -161,7 +161,14 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
 
-add_library(libgromacs ${LIBGROMACS_SOURCES})
+if (GMX_GPU)
+    cuda_add_library(libgromacs ${LIBGROMACS_SOURCES}
+            OPTIONS
+            RELWITHDEBINFO -g
+            DEBUG -g -D_DEBUG_=1)
+else()
+    add_library(libgromacs ${LIBGROMACS_SOURCES})
+endif()
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx-version)
 endif()
@@ -190,7 +197,6 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
-                      ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${TNG_IO_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
