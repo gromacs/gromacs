@@ -61,9 +61,10 @@ Building the documentation
 ==========================
 
 If you simply want to see up-to-date documentation, you can go to
-http://jenkins.gromacs.org/job/Doxygen_Nightly_master/javadoc/html-lib/index.xhtml
+http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/html-lib/index.xhtml
 to see the documentation for the current development version.
-Jenkins also runs Doxygen for all changes pushed to Gerrit for master, and the
+Jenkins also runs Doxygen for all changes pushed to Gerrit for
+release-5-0 and master branches, and the
 resulting documentation can be viewed from the link posted by Jenkins.  The
 Doxygen build is marked as unstable if it introduces any Doxygen warnings.
 
@@ -76,7 +77,7 @@ For local work, it is generally a good idea to set `GMX_COMPACT_DOXYGEN=ON`
 CMake option, which removes some large generated graphs from the documentation
 and speeds up the process significantly.
 
-All files related to Doxygen reside in the `doxygen/` subdirectory in the source
+All files related to Doxygen reside in the `docs/doxygen/` subdirectory in the source
 and build trees.  In a freshly checked out source tree, this directory contains
 various `Doxyfile-*.cmakein` files.  When you run CMake, corresponding files
 `Doxyfile-user`, `Doxyfile-lib`, and `Doxyfile-full` are generated at the
@@ -89,14 +90,15 @@ You can run Doxygen directly with one of the generated files (all output will
 be produced under the current working directory), or build one of the
 `doc-user`, `doc-lib`, and `doc-full` targets.  The targets run Doxygen in a
 quieter mode and only show the warnings if there were any, and put the output
-under `doxygen/` in the build tree.  The `doc-all` target builds all three
+under `docs/html/doxygen/` in the build tree, so that the Doxygen build
+cooperates with the broader `webpage` target.  The `doc-all` target builds all three
 targets with less typing.
 
 The generated documentation is put under `html-user/`, `html-lib/`, and/or
-`html-full/` in the output directory.  Open `index.xhtml` file from one of
+`html-full/`.  Open `index.xhtml` file from one of
 these subdirectories to start browsing (for \Gromacs developers, the
 `html-lib/` is a reasonable starting point).  Log files with all Doxygen
-warnings are also produced as `doxygen-*.log`, so you can inspect them after
+warnings are also produced as `docs/doxygen/doxygen-*.log`, so you can inspect them after
 the run.
 
 You will need Doxygen 1.8.5 to build the current documentation.  Other versions
@@ -331,7 +333,7 @@ work even though the script reports absolute paths.
 Empty lines and lines starting with `#` are ignored.
 
 To add suppression for an issue, the line that reports the issue can be copied
-into `suppressios.txt`, and the line number (if any) removed.  If the
+into `suppressions.txt`, and the line number (if any) removed.  If the
 issue does not have a file name (or a pseudo-file) associated, a leading `:`
 must be added.  To cover many similar issues, parts of the line can then be
 replaced with wildcards.
@@ -343,7 +345,7 @@ the number of suppressions.
 As a side effect, the XML extraction makes Doxygen parse all comments in the
 code, even if they do not appear in the documentation.  This can reveal latent
 issues in the comments, like invalid Doxygen syntax.  The messages from the XML
-parsing are stored in `doxygen/doxygen-xml.log` in the build tree, similar to
+parsing are stored in `docs/doxygen/doxygen-xml.log` in the build tree, similar to
 other Doxygen runs.
 
 The `doc-check` target requires Python 2.7 (other versions may work, but have
@@ -440,7 +442,7 @@ Doxygen pages
 -------------
 
 The pages that are accessible through navigation from the front page are
-written using Markdown and are located under `doxygen/`.  Each page should be
+written using Markdown and are located under `docs/doxygen/`.  Each page should be
 placed in the page hierarchy by making it a subpage of another page, i.e., it
 should be referenced once using \c \\subpage.  `mainpage.md` is the root of the
 hierarchy.
@@ -463,7 +465,7 @@ module).  This header should contain the \c \\defgroup definition for the
 module.  The name of the group should be `module_`<em>name</em>, where _name_
 is the name of the subdirectory that hosts the module.
 
-The module should be added to an appropriate group (see `doxygen/misc.cpp` for
+The module should be added to an appropriate group (see `docs/doxygen/misc.cpp` for
 definitions) using \c \\ingroup to organize the "Modules" tab in the generated
 documentation.
 
@@ -559,7 +561,7 @@ the modules themselves are documented.  A brief description is still useful to
 provide a high-level overview of the source tree on the generated "Files" page.
 A reference to the module is typically sufficient as a brief description for a
 directory.  All directories are currently documented in
-`doxygen/directories.cpp`.
+`docs/doxygen/directories.cpp`.
 
 
 Examples
