@@ -32,12 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-set(CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE OFF)        
 file(GLOB GPU_UTILS_SOURCES *.cu)
-CUDA_ADD_LIBRARY(gpu_utils STATIC ${GPU_UTILS_SOURCES}
-                 OPTIONS ${_os_def}
-                 RELWITHDEBINFO -g
-                 DEBUG -g -D_DEBUG_=1 )
+set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${GPU_UTILS_SOURCES} PARENT_SCOPE)
 
-CUDA_BUILD_CLEAN_TARGET()
