@@ -145,7 +145,7 @@ set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
 # This variable is a list of pairs of names of source and destination
 # directories. Most of these are used for content GROMACS generates as
 # part of the configuration or build.
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/share/man/man1;share/man/man1;${CMAKE_BINARY_DIR}/share/man/man7;share/man/man7;${CMAKE_BINARY_DIR}/share/html/final;share/html/final;${CMAKE_BINARY_DIR}/install-guide/final;/")
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/docs/man/man1;docs/man/man1;${CMAKE_BINARY_DIR}/docs/man/man7;docs/man/man7;${CMAKE_BINARY_DIR}/docs/old-html/final;docs/old-html/final;${CMAKE_BINARY_DIR}/docs/final;/")
 set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 
 #must come after all cpack settings!
@@ -910,8 +910,7 @@ if (BUILD_TESTING)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    add_subdirectory(doxygen)
-    add_subdirectory(install-guide)
+    add_subdirectory(docs)
     add_subdirectory(share)
     add_subdirectory(scripts)
 endif()
@@ -941,15 +940,3 @@ ADD_CUSTOM_TARGET(uninstall
 ###########################
 set_directory_properties(PROPERTIES
             ADDITIONAL_MAKE_CLEAN_FILES "install_manifest.txt")
-
-########################################################################
-# Manual                                                               #
-########################################################################
-
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_MANUAL)
-if(GMX_BUILD_MANUAL)
-    # Make sure we only do detection of manual-building dependencies
-    # when the user opted in for that.
-    add_subdirectory(manual)
-endif()
