@@ -440,7 +440,7 @@ void OptionsAdapter::copyValues(bool bReadNode)
         for (int i = 0; i < file->fnm->nfiles; ++i)
         {
             // TODO: Check for out-of-memory.
-            file->fnm->fns[i] = strdup(file->values[i].c_str());
+            file->fnm->fns[i] = gmx_strdup(file->values[i].c_str());
         }
     }
     std::list<ProgramArgData>::const_iterator arg;

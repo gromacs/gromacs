@@ -173,7 +173,7 @@ void TopologyManager::initAtomTypes(int count, const char *const types[])
     atomtypes_.reserve(count);
     for (int i = 0; i < count; ++i)
     {
-        atomtypes_.push_back(strdup(types[i]));
+        atomtypes_.push_back(gmx_strdup(types[i]));
     }
     snew(top_->atoms.atomtype, top_->atoms.nr);
     for (int i = 0, j = 0; i < top_->atoms.nr; ++i, ++j)

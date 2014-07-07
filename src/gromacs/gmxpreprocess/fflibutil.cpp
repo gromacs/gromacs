@@ -202,7 +202,7 @@ static int low_fflib_search_file_end(const char *ffdir,
                         sprintf(fn_dir, "%s%c%s", dir, DIR_SEPARATOR, nextname);
 
                         /* Copy the file name, possibly including the path. */
-                        fns[n] = strdup(fn_dir);
+                        fns[n] = gmx_strdup(fn_dir);
 
                         if (ffdir == NULL)
                         {
@@ -215,11 +215,11 @@ static int low_fflib_search_file_end(const char *ffdir,
                             srenew(fns_short, n+1);
                             if (strcmp(dir, ".") == 0 || bEnvIsSet)
                             {
-                                fns_short[n] = strdup(fn_dir);
+                                fns_short[n] = gmx_strdup(fn_dir);
                             }
                             else
                             {
-                                fns_short[n] = strdup(nextname);
+                                fns_short[n] = gmx_strdup(nextname);
                             }
                         }
                         n++;
@@ -295,7 +295,7 @@ int fflib_search_file_in_dirend(const char *filename, const char *dirend,
                 {
                     /* We have a match */
                     srenew(dns, n+1);
-                    dns[n] = strdup(f_short[i]);
+                    dns[n] = gmx_strdup(f_short[i]);
                     n++;
                 }
             }

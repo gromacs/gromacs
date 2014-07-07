@@ -400,7 +400,7 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
         for (j = 0; (j < ntx); j++)
         {
             sprintf(buf, "%g", mat[i].axis_x[j]);
-            xtick[j] = strdup(buf);
+            xtick[j] = gmx_strdup(buf);
         }
         ps_strfont(ps, psr->X.tickfont, psr->X.tickfontsize);
         for (x = 0; (x < ntx); x++)
@@ -437,7 +437,7 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
         for (j = 0; (j < nty); j++)
         {
             sprintf(buf, "%g", mat[i].axis_y[j]);
-            ytick[j] = strdup(buf);
+            ytick[j] = gmx_strdup(buf);
         }
 
         for (y = 0; (y < nty); y++)

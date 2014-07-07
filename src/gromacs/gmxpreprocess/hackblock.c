@@ -41,6 +41,7 @@
 
 #include <string.h>
 #include "hackblock.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "names.h"
@@ -166,7 +167,7 @@ void clear_t_hack(t_hack *hack)
     }
 }
 
-#define safe_strdup(str) ((str != NULL) ? strdup(str) : NULL)
+#define safe_strdup(str) ((str != NULL) ? gmx_strdup(str) : NULL)
 
 static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
 {

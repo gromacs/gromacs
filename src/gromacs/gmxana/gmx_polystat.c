@@ -235,7 +235,7 @@ int gmx_polystat(int argc, char *argv[])
             for (d2 = 0; d2 < DIM; d2++)
             {
                 sprintf(buf, "eig%d %c", d+1, 'x'+d2);
-                legp[d*DIM+d2] = strdup(buf);
+                legp[d*DIM+d2] = gmx_strdup(buf);
             }
         }
         xvgr_legend(outv, DIM*DIM, (const char**)legp, oenv);

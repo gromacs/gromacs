@@ -228,6 +228,7 @@
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/messagestringcollector.h"
@@ -579,7 +580,7 @@ _gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
     buf[0] = op;
     buf[1] = 0;
     sel->setName(buf);
-    sel->u.arith.opstr = strdup(buf);
+    sel->u.arith.opstr = gmx_strdup(buf);
     sel->child         = left;
     sel->child->next   = right;
     return sel;
@@ -910,7 +911,7 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_GROUPREF));
     _gmx_selelem_set_vtype(sel, GROUP_VALUE);
     sel->setName(gmx::formatString("group \"%s\"", name));
-    sel->u.gref.name = strdup(name);
+    sel->u.gref.name = gmx_strdup(name);
     sel->u.gref.id   = -1;
 
     if (_gmx_sel_lexer_has_groups_set(scanner))
@@ -1075,7 +1076,7 @@ _gmx_sel_assign_variable(const char                             *name,
         sc->symtab->addVariable(name, root->child);
     }
     srenew(sc->varstrs, sc->nvars + 1);
-    sc->varstrs[sc->nvars] = strdup(pselstr);
+    sc->varstrs[sc->nvars] = gmx_strdup(pselstr);
     ++sc->nvars;
     if (_gmx_sel_is_lexer_interactive(scanner))
     {

@@ -540,7 +540,7 @@ int gmx_x2top(int argc, char *argv[])
     bOPLS = (strcmp(forcefield, "oplsaa") == 0);
 
 
-    mymol.name = strdup(molnm);
+    mymol.name = gmx_strdup(molnm);
     mymol.nr   = 1;
 
     /* Init parameter lists */

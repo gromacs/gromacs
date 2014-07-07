@@ -315,7 +315,7 @@ char *gmx_strerror(const char *key)
 
     if (key == NULL)
     {
-        return strdup("Empty message");
+        return gmx_strdup("Empty message");
     }
     else
     {
@@ -323,12 +323,12 @@ char *gmx_strerror(const char *key)
         {
             if (strcmp(key, msg[i].key) == 0)
             {
-                return strdup(msg[i].msg);
+                return gmx_strdup(msg[i].msg);
             }
         }
         char buf[1024];
         sprintf(buf, "No error message associated with key %s\n%s", key, gmxuser);
-        return strdup(buf);
+        return gmx_strdup(buf);
     }
 }
 

@@ -202,7 +202,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 
         if (buf)
         {
-            qm->gauss_dir = strdup(buf);
+            qm->gauss_dir = gmx_strdup(buf);
         }
         else
         {
@@ -212,7 +212,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         buf = getenv("GMX_QM_GAUSS_EXE");
         if (buf)
         {
-            qm->gauss_exe = strdup(buf);
+            qm->gauss_exe = gmx_strdup(buf);
         }
         else
         {
@@ -221,7 +221,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         buf = getenv("GMX_QM_MODIFIED_LINKS_DIR");
         if (buf)
         {
-            qm->devel_dir = strdup (buf);
+            qm->devel_dir = gmx_strdup (buf);
         }
         else
         {
