@@ -250,12 +250,11 @@ void SelectionOptionInfo::setDynamicMask(bool bEnabled)
  * SelectionOption
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 SelectionOption::createStorage(const OptionManagerContainer &managers) const
 {
-    return AbstractOptionStoragePointer(
-            new SelectionOptionStorage(
-                    *this, managers.get<SelectionOptionManager>()));
+    return new SelectionOptionStorage(
+            *this, managers.get<SelectionOptionManager>());
 }
 
 
@@ -318,12 +317,11 @@ SelectionFileOption::SelectionFileOption(const char *name)
     setDescription("Provide selections from files");
 }
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 SelectionFileOption::createStorage(const OptionManagerContainer &managers) const
 {
-    return AbstractOptionStoragePointer(
-            new SelectionFileOptionStorage(
-                    *this, managers.get<SelectionOptionManager>()));
+    return new SelectionFileOptionStorage(
+            *this, managers.get<SelectionOptionManager>());
 }
 
 } // namespace gmx

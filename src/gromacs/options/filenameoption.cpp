@@ -481,11 +481,10 @@ FileNameOptionInfo::ExtensionList FileNameOptionInfo::extensions() const
  * FileNameOption
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 FileNameOption::createStorage(const OptionManagerContainer &managers) const
 {
-    return AbstractOptionStoragePointer(
-            new FileNameOptionStorage(*this, managers.get<FileNameOptionManager>()));
+    return new FileNameOptionStorage(*this, managers.get<FileNameOptionManager>());
 }
 
 } // namespace gmx
