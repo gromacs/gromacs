@@ -108,9 +108,6 @@
  * The header flags.h implements a gmx::FlagsTemplate template for better type
  * safety when using bit flag fields.
  *
- * The header uniqueptr.h declares gmx::gmx_unique_ptr, which is intended for
- * declaring smart pointer types with unique ownership.
- *
  *
  * <H3>Other Functionality</H3>
  *
@@ -144,6 +141,9 @@
  *
  * The header qsort_threadsafe.h provides a guaranteed threadsafe
  * implementation for qsort().
+ *
+ * The header uniqueptr.h declares gmx::gmx_unique_ptr, which is intended for
+ * declaring smart pointer types with unique ownership.
  *
  * \endif
  *
