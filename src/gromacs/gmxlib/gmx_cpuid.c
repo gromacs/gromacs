@@ -103,6 +103,10 @@ gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
     "apic",
     "avx",
     "avx2",
+    "avx512f",
+    "avx512pf",
+    "avx512er",
+    "avx512cd",
     "clfsh",
     "cmov",
     "cx8",
@@ -151,6 +155,7 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
     "AVX_128_FMA",
     "AVX_256",
     "AVX2_256",
+    "AVX_512F",
     "Sparc64 HPC-ACE",
     "IBM_QPX",
     "IBM_VMX",
@@ -235,7 +240,9 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
 
 
 /* What type of SIMD was compiled in, if any? */
-#ifdef GMX_SIMD_X86_AVX2_256
+#ifdef GMX_SIMD_X86_AVX_512F
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_512F;
+#elif defined GMX_SIMD_X86_AVX2_256
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX2_256;
 #elif defined GMX_SIMD_X86_AVX_256
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_256;
@@ -667,7 +674,11 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
     if (max_stdfn >= 7)
     {
         execute_x86cpuid(0x7, 0, &eax, &ebx, &ecx, &edx);
-        cpuid->feature[GMX_CPUID_FEATURE_X86_AVX2]    = (ebx & (1 << 5))  != 0;
+        cpuid->feature[GMX_CPUID_FEATURE_X86_AVX2]      = (ebx & (1 << 5))  != 0;
+        cpuid->feature[GMX_CPUID_FEATURE_X86_AVX_512F]  = (ebx & (1 << 16)) != 0;
+        cpuid->feature[GMX_CPUID_FEATURE_X86_AVX_512PF] = (ebx & (1 << 26)) != 0;
+        cpuid->feature[GMX_CPUID_FEATURE_X86_AVX_512ER] = (ebx & (1 << 27)) != 0;
+        cpuid->feature[GMX_CPUID_FEATURE_X86_AVX_512CD] = (ebx & (1 << 28)) != 0;
     }
 
     /* Check whether Hyper-Threading is enabled, not only supported */
@@ -1203,6 +1214,10 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
 
     if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_INTEL)
     {
+        /* TODO: Add check for AVX-512F here as soon as we
+         * have implemented verlet kernels for it. Until then,
+         * we should pick AVX2 instead for the automatic detection.
+         */
         if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX2))
         {
             tmpsimd = GMX_CPUID_SIMD_X86_AVX2_256;
