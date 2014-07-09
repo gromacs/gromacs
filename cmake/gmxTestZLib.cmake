@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -44,16 +44,26 @@
 include(CheckLibraryExists)
 include(gmxOptionUtilities)
 function(GMX_TEST_ZLIB VARIABLE)
-    if(ZLIB_FOUND)
-        gmx_check_if_changed(_do_zlib_recompile ZLIB_INCLUDE_DIR ZLIB_LIBRARIES)
-        if(_do_zlib_recompile)
-            unset(ZLIB_LINKS_OK CACHE)
-        endif()
-        check_library_exists("${ZLIB_LIBRARIES}" "zlibVersion" "" ZLIB_LINKS_OK)
-        set(${VARIABLE} ${ZLIB_LINKS_OK} PARENT_SCOPE)
-    else()
+    if(NOT ZLIB_FOUND)
         set(${VARIABLE} OFF PARENT_SCOPE)
+        return()
     endif()
+
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
+    if(${_cmake_build_type} STREQUAL "MSAN")
+        # Linking MSan-enabled zlib in a way that can be tested with
+        # try_compile setup is tricky, but someone doing an MSan build
+        # can take care of themselves.
+        set(${VARIABLE} ON PARENT_SCOPE)
+        return()
+    endif()
+
+    gmx_check_if_changed(_do_zlib_recompile ZLIB_INCLUDE_DIR ZLIB_LIBRARIES)
+    if(_do_zlib_recompile)
+        unset(ZLIB_LINKS_OK CACHE)
+    endif()
+    check_library_exists("${ZLIB_LIBRARIES}" "zlibVersion" "" ZLIB_LINKS_OK)
+    set(${VARIABLE} ${ZLIB_LINKS_OK} PARENT_SCOPE)
 endfunction()
 
 
