@@ -33,7 +33,6 @@ manual/UseLATEX.cmake                   !filter
 scripts/GMXRC.*                         !filter
 scripts/make_gromos_rtp.py              !filter
 src/contrib/*                           !filter
-src/gromacs/gmxlib/gpu_utils/memtestG80_core.*             !filter
 src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter

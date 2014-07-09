@@ -62,15 +62,6 @@ extern "C" {
 #endif
 
 FUNC_QUALIFIER
-int do_quick_memtest(int gmx_unused dev_id) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int do_full_memtest(int gmx_unused dev_id) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int do_timed_memtest(int gmx_unused dev_id, int gmx_unused time_limit) FUNC_TERM_INT
-
-FUNC_QUALIFIER
 int detect_cuda_gpus(gmx_gpu_info_t gmx_unused *gpu_info, char gmx_unused *err_str) FUNC_TERM_INT
 
 FUNC_QUALIFIER
