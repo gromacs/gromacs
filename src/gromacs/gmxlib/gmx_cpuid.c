@@ -159,6 +159,7 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
     "AVX_256",
     "AVX2_256",
     "AVX_512F",
+    "AVX_512ER",
     "Sparc64 HPC-ACE",
     "IBM_QPX",
     "IBM_VMX",
@@ -243,7 +244,9 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
 
 
 /* What type of SIMD was compiled in, if any? */
-#ifdef GMX_SIMD_X86_AVX_512F
+#ifdef GMX_SIMD_X86_AVX_512ER
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_512ER;
+#elif defined GMX_SIMD_X86_AVX_512F
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_512F;
 #elif defined GMX_SIMD_X86_AVX2_256
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX2_256;
@@ -1218,8 +1221,8 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
 
     if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_INTEL)
     {
-        /* TODO: Add check for AVX-512F here as soon as we
-         * have implemented verlet kernels for it. Until then,
+        /* TODO: Add check for AVX-512F & AVX-512ER here as soon as we
+         * have implemented verlet kernels for them. Until then,
          * we should pick AVX2 instead for the automatic detection.
          */
         if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX2))

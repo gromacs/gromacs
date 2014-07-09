@@ -201,12 +201,18 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4TruncR)
  */
 TEST_F(Simd4FloatingpointTest, gmxSimd4RsqrtR)
 {
-    gmx_simd4_real_t x      = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
-    gmx_simd4_real_t ref    = setSimd4RealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    gmx_simd4_real_t x                   = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
+    gmx_simd4_real_t ref                 = setSimd4RealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    int              shiftbits           = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+
+    if (shiftbits < 0)
+    {
+        shiftbits = 0;
+    }
 
     // The allowed Ulp deviation is 2 to the power of the number of mantissa
     // digits, minus the number of bits provided by the table lookup
-    setUlpTol(1LL << (std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS));
+    setUlpTol(1LL << shiftbits);
     GMX_EXPECT_SIMD4_REAL_NEAR(ref, gmx_simd4_rsqrt_r(x));
 }
 
