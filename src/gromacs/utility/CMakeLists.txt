@@ -35,10 +35,6 @@
 file(GLOB UTILITY_SOURCES *.c *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
-set(GENERATED_HEADER_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/gmx_header_config_gen.h)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gmx_header_config_gen.h.cmakein
-               ${GENERATED_HEADER_CONFIG})
-
 set(UTILITY_PUBLIC_HEADERS
     arrayref.h
     basedefinitions.h
@@ -57,9 +53,8 @@ set(UTILITY_PUBLIC_HEADERS
     real.h
     smalloc.h
     stringutil.h
-    )
+    uniqueptr.h)
 gmx_install_headers(utility ${UTILITY_PUBLIC_HEADERS})
-gmx_install_headers(utility ${GENERATED_HEADER_CONFIG})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -72,12 +72,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-/* Suppress Cygwin compiler warnings from using newlib version of
- * ctype.h */
-#ifdef GMX_CYGWIN
-#undef toupper
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
