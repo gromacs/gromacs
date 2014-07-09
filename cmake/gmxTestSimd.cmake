@@ -277,6 +277,28 @@ elseif(${GMX_SIMD} STREQUAL "AVX_512F")
     set(GMX_SIMD_X86_AVX_512F 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512F SIMD instructions")
 
+elseif(${GMX_SIMD} STREQUAL "AVX_512ER")
+
+    gmx_use_clang_as_with_gnu_compilers_on_osx()
+
+    gmx_find_cflag_for_source(CFLAGS_AVX_512ER "C compiler AVX-512ER flag"
+                              "#include<immintrin.h>
+                              int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
+                              SIMD_C_FLAGS
+                              "-xMIC-AVX512" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
+    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512ER "C++ compiler AVX-512ER flag"
+                                "#include<immintrin.h>
+                                int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
+                                SIMD_CXX_FLAGS
+                                "-xMIC-AVX512" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
+
+    if(NOT CFLAGS_AVX_512ER OR NOT CXXFLAGS_AVX_512ER)
+        message(FATAL_ERROR "Cannot find AVX 512ER compiler flag. Use a newer compiler, or choose a lower level of SIMD")
+    endif()
+
+    set(GMX_SIMD_X86_AVX_512ER 1)
+    set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512ER SIMD instructions")
+
 elseif(${GMX_SIMD} STREQUAL "ARM_NEON")
 
     gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler 32-bit ARM NEON flag"
