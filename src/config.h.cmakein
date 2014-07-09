@@ -121,6 +121,9 @@
 /* AVX-512F foundation level instruction SIMD */
 #cmakedefine GMX_SIMD_X86_AVX_512F
 
+/* AVX-512ER foundation level instruction SIMD */
+#cmakedefine GMX_SIMD_X86_AVX_512ER
+
 /* 32-bit ARM NEON SIMD instruction set level was selected */
 #cmakedefine GMX_SIMD_ARM_NEON
 
