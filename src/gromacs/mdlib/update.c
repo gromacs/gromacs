@@ -1663,6 +1663,7 @@ void update_constraints(FILE             *fplog,
 
     if (inputrec->eI == eiSD1 && bDoConstr && !bFirstHalf)
     {
+        wallcycle_start(wcycle, ewcUPDATE);
         xprime = get_xprime(state, upd);
 
         nth = gmx_omp_nthreads_get(emntUpdate);
@@ -1689,6 +1690,7 @@ void update_constraints(FILE             *fplog,
                           DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
+        wallcycle_stop(wcycle, ewcUPDATE);
 
         if (bDoConstr)
         {
@@ -1708,6 +1710,7 @@ void update_constraints(FILE             *fplog,
 
     if ((inputrec->eI == eiSD2) && !(bFirstHalf))
     {
+        wallcycle_start(wcycle, ewcUPDATE);
         xprime = get_xprime(state, upd);
 
         nth = gmx_omp_nthreads_get(emntUpdate);
@@ -1732,6 +1735,7 @@ void update_constraints(FILE             *fplog,
                           DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
+        wallcycle_stop(wcycle, ewcUPDATE);
 
         if (bDoConstr)
         {

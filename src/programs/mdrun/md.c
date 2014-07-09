@@ -1089,6 +1089,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bVV && !bStartingFromCpt && !bRerunMD)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
+            wallcycle_start(wcycle, ewcUPDATE);
             if (ir->eI == eiVV && bInitStep)
             {
                 /* if using velocity verlet with full time step Ekin,
@@ -1163,11 +1164,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 bOK = TRUE;
                 if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
                 {
+                    wallcycle_stop(wcycle, ewcUPDATE);
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, shake_vir,
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
+                    wallcycle_start(wcycle, ewcUPDATE);
 
                     if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
                     {
@@ -1207,6 +1210,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                    So we need information from the last step in the first half of the integration */
                 if (bGStat || do_per_step(step-1, nstglobalcomm))
                 {
+                    wallcycle_stop(wcycle, ewcUPDATE);
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, state->box,
@@ -1227,6 +1231,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                        time step kinetic energy for the pressure (always true now, since we want accurate statistics).
                        b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                        EkinAveVel because it's needed for the pressure */
+                    wallcycle_start(wcycle, ewcUPDATE);
                 }
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (!bInitStep)
@@ -1240,7 +1245,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         if (bExchanged)
                         {
-
+                            wallcycle_stop(wcycle, ewcUPDATE);
                             /* We need the kinetic energy at minus the half step for determining
                              * the full step kinetic energy and possibly for T-coupling.*/
                             /* This may not be quite working correctly yet . . . . */
@@ -1249,6 +1254,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                             constr, NULL, FALSE, state->box,
                                             top_global, &bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
+                            wallcycle_start(wcycle, ewcUPDATE);
                         }
                     }
                 }
@@ -1278,6 +1284,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 copy_rvecn(cbuf, state->v, 0, state->natoms);
             }
+            wallcycle_stop(wcycle, ewcUPDATE);
         }
 
         /* MRS -- now done iterating -- compute the conserved quantity */
