@@ -26,8 +26,22 @@ remove all possible build outputs.
 Build types
 -----------
 
-.. TODO: Document our usage of build types in general, and list the existing
-   build types, describing their purpose.
+**MSAN**
+  Builds |Gromacs| for use with AddressSanitzer in clang 3.4 (and
+  newer) (http://clang.llvm.org/docs/MemorySanitizer.html) to detect
+  reads of unitialized memory. This functionality requires that
+  dependencies of the |Gromacs| build have been built in a compatible
+  way (roughly, static libraries with ``-g -fsanitize=memory
+  -fno-omit-frame-pointer``), which generally requires at least the C++
+  standard library to have been built specially. The path where the
+  includes and libraries for dependencies should be found for this
+  build type is set in the CMake cache variable
+  ``GMX_MSAN_PATH``. Only internal XDR and internal fftpack are
+  supported at this time.
+
+For all of the sanitizer builds, to get readable stack traces, you may
+need to ensure that the ``ASAN_SYMBOLIZER_PATH`` environment variable
+(or your ``PATH``) include that of the ``llvm-symbolizer`` binary.
 
 CMake cache variables
 ---------------------

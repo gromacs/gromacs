@@ -1,5 +1,5 @@
-Understaning Jenkins builds
-===========================
+Understanding Jenkins builds
+============================
 
 This page documents what different Jenkins builds actually run from the
 |Gromacs| source tree.  The purpose is two-fold:
