@@ -106,15 +106,16 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
 
 
 /* Intel MIC is a bit special since it is a co-processor. This means the rest
- * of GROMACS (which runs on the CPU) should use a default SIMD set like AVX,
- * while the part running on the coprocessor defines __MIC__. All functions in
- * this SIMD module are static, so it will work perfectly fine to include this
- * file with different SIMD definitions for different files.
+ * of GROMACS (which runs on the CPU) can use a default SIMD set like AVX.
+ * All functions in this SIMD module are static, so it will work perfectly fine
+ * to include this file with different SIMD definitions for different files.
  */
-#if defined GMX_SIMD_X86_MIC
-#    include "impl_intel_mic/impl_intel_mic.h"
+#if defined GMX_SIMD_X86_AVX_512ER
+#    include "impl_x86_avx_512er/impl_x86_avx_512er.h"
 #elif defined GMX_SIMD_X86_AVX_512F
 #    include "impl_x86_avx_512f/impl_x86_avx_512f.h"
+#elif defined GMX_SIMD_X86_MIC
+#    include "impl_intel_mic/impl_intel_mic.h"
 #elif defined GMX_SIMD_X86_AVX2_256
 #    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
 #elif defined GMX_SIMD_X86_AVX_256
