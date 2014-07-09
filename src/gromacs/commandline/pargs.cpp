@@ -567,9 +567,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx::GlobalCommandLineHelpContext::get();
         if (context != NULL)
         {
-            // TODO: The first check should not be necessary, but with
-            // thread-MPI it is...
-            GMX_RELEASE_ASSERT(!gmx_mpi_initialized() || gmx_node_rank() == 0,
+            GMX_RELEASE_ASSERT(gmx_node_rank() == 0,
                                "Help output should be handled higher up and "
                                "only get called only on the master rank");
             gmx::CommandLineHelpWriter(options)

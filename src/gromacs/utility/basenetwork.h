@@ -69,14 +69,34 @@ int gmx_gethostname(char *name, size_t len);
  *
  * The return value is `FALSE` if MPI_Init() has not been called, or if
  * \Gromacs has been compiled without MPI support.
- * For thread-MPI, always returns `TRUE`.
+ * For thread-MPI, returns `TRUE` when the threads have been started.
+ *
+ * Note that there is a lot of code in between MPI_Init() and the thread-MPI
+ * thread start where the return value is different depending on compilation
+ * options.
  */
 gmx_bool gmx_mpi_initialized(void);
 
-/** Returns the number of nodes. */
+/*! \brief
+ * Returns the number of nodes.
+ *
+ * For thread-MPI, returns one before the threads have been started.
+ * This allows code between the real MPI_Init() and the thread-MPI "init" to
+ * still use this function to check for serial/parallel status and work as
+ * expected: for thread-MPI, at that point they should behave as if the run was
+ * serial.
+ */
 int gmx_node_num(void);
 
-/** Returns the rank of the node. */
+/*! \brief
+ * Returns the rank of the node.
+ *
+ * For thread-MPI, returns zero before the threads have been started.
+ * This allows code between the real MPI_Init() and the thread-MPI "init" to
+ * still use this function to check for master node work as expected:
+ * for thread-MPI, at that point the only thread of execution should behave as
+ * if it the master node.
+ */
 int gmx_node_rank(void);
 
 /*! \brief

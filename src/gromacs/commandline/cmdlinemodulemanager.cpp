@@ -515,9 +515,7 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
     CommandLineModuleInterface    *module;
-    // TODO: With thread-MPI, gmx_node_rank() returns random stuff here, so we
-    // need the first check.
-    const bool                     bMaster = (!gmx_mpi_initialized() || gmx_node_rank() == 0);
+    const bool                     bMaster = (gmx_node_rank() == 0);
     bool                           bQuiet  = impl_->bQuiet_ || !bMaster;
     CommandLineCommonOptionsHolder optionsHolder;
     try
