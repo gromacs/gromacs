@@ -82,6 +82,10 @@ enum gmx_cpuid_feature
     GMX_CPUID_FEATURE_X86_APIC,          /* APIC support                                 */
     GMX_CPUID_FEATURE_X86_AVX,           /* Advanced vector extensions                   */
     GMX_CPUID_FEATURE_X86_AVX2,          /* AVX2 including gather support (not used yet) */
+    GMX_CPUID_FEATURE_X86_AVX_512F,      /* Foundation AVX-512 instructions              */
+    GMX_CPUID_FEATURE_X86_AVX_512PF,     /* Extended gather/scatter for AVX-512          */
+    GMX_CPUID_FEATURE_X86_AVX_512ER,     /* Extended-range 1/x and /1sqrt(x) for AVX-512 */
+    GMX_CPUID_FEATURE_X86_AVX_512CD,     /* Memory conflict-detection for AVX-512        */
     GMX_CPUID_FEATURE_X86_CLFSH,         /* Supports CLFLUSH instruction                 */
     GMX_CPUID_FEATURE_X86_CMOV,          /* Conditional move insn support                */
     GMX_CPUID_FEATURE_X86_CX8,           /* Supports CMPXCHG8B (8-byte compare-exchange) */
@@ -136,6 +140,7 @@ enum gmx_cpuid_simd
     GMX_CPUID_SIMD_X86_AVX_128_FMA,
     GMX_CPUID_SIMD_X86_AVX_256,
     GMX_CPUID_SIMD_X86_AVX2_256,
+    GMX_CPUID_SIMD_X86_AVX_512F,
     GMX_CPUID_SIMD_SPARC64_HPC_ACE,
     GMX_CPUID_SIMD_IBM_QPX,
     GMX_CPUID_SIMD_IBM_VMX,
