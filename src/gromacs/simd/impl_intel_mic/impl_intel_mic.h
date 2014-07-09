@@ -505,12 +505,25 @@ gmx_simd_exp2_f_mic(__m512 x)
 static gmx_inline __m512 gmx_simdcall
 gmx_simd_exp_f_mic(__m512 x)
 {
-    /* only 59ulp accuracy so we need to do extra an iteration
-       Using: http://yacas.sourceforge.net/Algochapter5.html 5.4 Method 3 */
-    __m512    r = gmx_simd_exp2_f(_mm512_mul_ps(x, _mm512_set1_ps(1.44269504088896341)));
-    __mmask16 m = _mm512_cmpneq_ps_mask(r, _mm512_setzero_ps());
-    __m512    t = _mm512_mask_fnmadd_ps(_mm512_mask_log2ae23_ps(_mm512_undefined_ps(), m, r), m, _mm512_set1_ps(0.693147180559945286226764), x);
-    return _mm512_mask_fmadd_ps(r, m, t, r);
+    const gmx_simd_float_t  argscale    = gmx_simd_set1_f(1.44269504088896341f);
+    const gmx_simd_float_t  invargscale = gmx_simd_set1_f(-0.69314718055994528623f);
+    __m512                  xscaled     = _mm512_mul_ps(x, argscale);
+    __m512                  r           = gmx_simd_exp2_f_mic(xscaled);
+
+    /* gmx_simd_exp2_f_mic() provides 23 bits of accuracy, but we ruin some of that
+     * with the argument scaling due to single-precision rounding, where the
+     * rounding error is amplified exponentially. To correct this, we find the
+     * difference between the scaled argument and the true one (extended precision
+     * arithmetics does not appear to be necessary to fulfill our accuracy requirements)
+     * and then multiply by the exponent of this correction since exp(a+b)=exp(a)*exp(b).
+     * Note that this only adds two instructions (and maybe some constant loads).
+     */
+    x         = gmx_simd_fmadd_f(invargscale, xscaled, x);
+    /* x will now be a _very_ small number, so approximate exp(x)=1+x.
+     * We should thus apply the correction as r'=r*(1+x)=r+r*x
+     */
+    r         = gmx_simd_fmadd_f(r, x, r);
+    return r;
 }
 
 static gmx_inline __m512 gmx_simdcall
