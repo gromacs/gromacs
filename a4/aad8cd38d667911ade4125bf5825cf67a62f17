@@ -1,0 +1,8 @@
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Verified+2: Jenkins Buildbot
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Wed, 09 Jul 2014 06:53:07 +0200
+Reviewed-on: https://gerrit.gromacs.org/3744
+Project: gromacs
+Branch: refs/heads/master
