@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,10 +34,12 @@
 
 include(CheckCXXSourceCompiles)
 MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
-    if(NOT WIN32)
-        set(CXX11_FLAG "-std=c++0x")
-    else()
+    if(WIN32)
         set(CXX11_FLAG "/Qstd=c++0x")
+    elseif(CYGWIN)
+        set(CXX11_FLAG "-std=gnu++0x") #required for strdup
+    else()
+        set(CXX11_FLAG "-std=c++0x")
     endif()
     CHECK_CXX_COMPILER_FLAG("${CXX11_FLAG}" CXXFLAG_STD_CXX0X)
     if(NOT CXXFLAG_STD_CXX0X)

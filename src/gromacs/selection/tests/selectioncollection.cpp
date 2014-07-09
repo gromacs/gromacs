@@ -417,6 +417,15 @@ TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
     EXPECT_STREQ("resname RB RC", sel_[1].selectionText());
 }
 
+TEST_F(SelectionCollectionTest, HandlesAtypicalWhitespace)
+{
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr\n1\r\nto\t10;\vatomnr 3\f to 14\r"));
+    ASSERT_EQ(2U, sel_.size());
+    EXPECT_STREQ("atomnr 1 to 10", sel_[0].selectionText());
+    // TODO: Get rid of the trailing whitespace.
+    EXPECT_STREQ("atomnr 3 to 14 ", sel_[1].selectionText());
+}
+
 TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
 {
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
