@@ -113,6 +113,8 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
  */
 #if defined GMX_SIMD_X86_MIC
 #    include "impl_intel_mic/impl_intel_mic.h"
+#elif defined GMX_SIMD_X86_AVX_512F
+#    include "impl_x86_avx_512f/impl_x86_avx_512f.h"
 #elif defined GMX_SIMD_X86_AVX2_256
 #    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
 #elif defined GMX_SIMD_X86_AVX_256
