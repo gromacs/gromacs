@@ -343,47 +343,6 @@ you should consult your local documentation for details.
 
 \end{enumerate}
 
-\section{Running {\gromacs} in parallel}
-By default {\gromacs} will be compiled with the built-in thread-MPI library.
-This library handles communication between threads on a single
-node more efficiently than using an external MPI library.
-To run {\gromacs} in parallel over multiple nodes, e.g. on a cluster,
-you need to configure and compile {\gromacs} with an external
-MPI library. All supercomputers are shipped with MPI libraries optimized for 
-that particular platform, and there are several good free MPI
-implementations; OpenMPI is usually a good choice.
-Note that MPI and thread-MPI support are mutually incompatible.
-
-In addition to MPI parallelization, {\gromacs} supports also
-thread-parallelization through \normindex{OpenMP}. MPI and OpenMP parallelization
-can be combined, which results in, so called, hybrid parallelization. It can offer
-better performance and scaling in some cases.
-
-See {\wwwpage} for details on the use and performance of the different
-parallelization schemes.
-
-\section{Running {\gromacs} on \normindex{GPUs}}
-As of version 4.6, {\gromacs} has native GPU support through CUDA.
-Note that {\gromacs} only off-loads the most compute intensive parts
-to the GPU, currently the non-bonded interactions, and does all other
-parts of the MD calculation on the CPU. The requirements for the CUDA code
-are an Nvidia GPU with compute capability $\geq 2.0$, i.e. at
-least Fermi class.
-In many cases {\tt cmake} can auto-detect GPUs and the support will be
-configured automatically. To be sure GPU support is configured, pass
-the {\tt -DGMX_GPU=on} option to {\tt cmake}. The actual use of GPUs
-is decided at run time by {\tt mdrun}, depending on the availability
-of (suitable) GPUs and on the run input settings. A binary compiled
-with GPU support can also run CPU only simulations. Use {\tt mdrun -nb cpu}
-to force a simulation to run on CPUs only. Only simulations with the Verlet
-cut-off scheme will run on a GPU. To test performance of old tpr files
-with GPUs, you can use the {\tt -testverlet} option of {\tt mdrun},
-but as this doesn't do the full parameter consistency check of {\tt grommp},
-you should not use this option for production simulations.
-Getting good performance with {\gromacs} on GPUs is easy,
-but getting best performance can be difficult.
-Please check {\wwwpage} for up to date information on GPU usage.
-
 % LocalWords:  Opteron Itanium PowerPC Altivec Athlon Fortran virial bfgs Nasm
 % LocalWords:  diagonalization Cygwin MPI Multi GMXHOME extern gmx tx pid buf
 % LocalWords:  bufsize txs rx rxs init nprocs fp msg GMXRC DUMPNL BUFS GMXNPRI
