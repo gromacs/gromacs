@@ -76,7 +76,7 @@ mark_as_advanced(CUSTOM_VERSION_STRING)
 if (CUSTOM_VERSION_STRING)
     set(PROJECT_VERSION ${CUSTOM_VERSION_STRING})
 endif()
-set(LIBRARY_SOVERSION 0)
+set(LIBRARY_SOVERSION 1)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "5")
