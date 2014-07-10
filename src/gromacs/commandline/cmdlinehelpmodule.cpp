@@ -549,7 +549,6 @@ class HelpExportHtml : public HelpExportInterface
 HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
     : links_(eHelpOutputFormat_Html)
 {
-    initProgramLinks(&links_, helpModule);
     File             linksFile("links.dat", "r");
     std::string      line;
     while (linksFile.readLine(&line))
@@ -557,6 +556,7 @@ HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
         links_.addLink(line, "../online/" + line, line);
     }
     linksFile.close();
+    initProgramLinks(&links_, helpModule);
     setupHeaderAndFooter();
 }
 
