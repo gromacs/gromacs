@@ -32,28 +32,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note that the install-guide target, etc. can still be built
+# Note that the user-guide target, etc. can still be built
 # independent of the webpage target.
 if(MARKDOWN_CONFIGURE_IS_POSSIBLE AND PANDOC_EXECUTABLE)
-    set(name "install-guide")
+    set(name "user-guide")
     handle_markdown(${name}.md)
-
-    # Make the INSTALL file for CPack for the tarball. This gets put
-    # into the tarball via the CPack rules in the top-level
-    # CMakeLists.txt
-    add_custom_command(
-        OUTPUT final/INSTALL
-        COMMAND ${CMAKE_COMMAND} -E make_directory final
-        COMMAND ${PANDOC_EXECUTABLE} -t plain -o final/INSTALL ${name}.md
-        DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/${name}.md
-        VERBATIM
-        )
 
     # Add a top-level target for the webpage build to hook onto
     add_custom_target(${name}
         DEPENDS
-            final/INSTALL
             ${HTML_OUTPUT_DIR}/${name}.html
             ${HTML_OUTPUT_DIR}/${name}.pdf
         VERBATIM

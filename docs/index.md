@@ -9,7 +9,8 @@
 * [Installation Guide](install-guide.html)  
   As [PDF](install-guide.pdf)
 
-* User Guide - coming soon!
+* [User Guide](user-guide.html)  
+  As [PDF](user-guide.pdf)
 
 * [Online Reference](online.html)
 
