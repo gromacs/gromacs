@@ -10,6 +10,7 @@
   As [PDF](install-guide.pdf)
 
 * [User Guide](user-guide.html)  
+  Includes getting started, .mdp options, advice using mdrun and more.  
   As [PDF](user-guide.pdf)
 
 * [Online Reference](online.html)
