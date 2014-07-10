@@ -263,7 +263,9 @@ if(HTML_BUILD_IS_POSSIBLE)
         # decent shape, try to make the generated HTML arrive directly
         # in ${HTML_OUTPUT_DIR}
         add_custom_target(webpage-html
-            ${CMAKE_COMMAND} -E copy_directory old-html/final ${HTML_OUTPUT_DIR}
+                ${CMAKE_COMMAND} -E copy_directory old-html/final ${HTML_OUTPUT_DIR}
+            COMMAND
+                ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/flowchart ${HTML_OUTPUT_DIR}/flowchart
             )
         add_dependencies(webpage-html html)
     else()

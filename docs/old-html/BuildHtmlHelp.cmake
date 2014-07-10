@@ -62,7 +62,6 @@ function(POST_EXPORT_ACTIONS)
         file(WRITE ${OUTPUT_DIR}/${_rel_path} "${_content}")
     endfunction()
 
-    create_html_file(${SOURCE_HTML_DIR}/online.html "")
     file(COPY ${SOURCE_HTML_DIR}/images DESTINATION ${OUTPUT_DIR})
     file(MAKE_DIRECTORY ${OUTPUT_DIR}/online)
     file(COPY ${SOURCE_HTML_DIR}/online/style.css DESTINATION ${OUTPUT_DIR}/online)
