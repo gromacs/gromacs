@@ -271,9 +271,6 @@ int
 gmx_pme_error(int argc, char *argv[]);
 
 int
-gmx_options(int argc, char *argv[]);
-
-int
 gmx_sans(int argc, char *argv[]);
 
 int
