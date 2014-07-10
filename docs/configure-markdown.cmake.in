@@ -1,0 +1,15 @@
+# Helper script that defers configure_file of markdown until build
+# time, so that changes to the files configured here don't trigger a
+# global reconfigure
+
+# Now configure the values for all the variables that might later
+# configure any of the markdown files.
+set(PROJECT_VERSION "@PROJECT_VERSION@")
+set(GMX_CMAKE_MINIMUM_REQUIRED_VERSION "@GMX_CMAKE_MINIMUM_REQUIRED_VERSION@")
+set(REQUIRED_CUDA_VERSION "@REQUIRED_CUDA_VERSION@")
+set(REQUIRED_CUDA_COMPUTE_CAPABILITY "@REQUIRED_CUDA_COMPUTE_CAPABILITY@")
+set(REGRESSIONTEST_VERSION "@REGRESSIONTEST_VERSION@")
+set(DOWNLOAD_SECTION "@DOWNLOAD_SECTION@")
+
+configure_file(${FILE_TO_CONFIGURE}
+    ${CONFIGURED_FILE} @ONLY)
