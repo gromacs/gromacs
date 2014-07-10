@@ -1,0 +1,106 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+\chapter{Technical Details}
+
+\section{Mixed or Double precision}
+{\gromacs} can be compiled in either mixed\index{mixed
+precision|see{precision, mixed}}\index{precision, mixed} or
+\pawsindex{double}{precision}. Documentation of previous {\gromacs}
+versions referred to ``single precision'', but the implementation
+has made selective use of double precision for many years.
+Using single precision
+for all variables would lead to a significant reduction in accuracy.
+Although in ``mixed precision'' all state vectors, i.e. particle coordinates,
+velocities and forces, are stored in single precision, critical variables
+are double precision. A typical example of the latter is the virial,
+which is a sum over all forces in the system, which have varying signs.
+In addition, in many parts of the code we managed to avoid double precision
+for arithmetic, by paying attention to summation order or reorganization
+of mathematical expressions. The default configuration uses mixed precision,
+but it is easy to turn on double precision by adding the option
+{\tt -DGMX_DOUBLE=on} to {\tt cmake}. Double precision
+will be 20 to 100\% slower than mixed precision depending on the
+architecture you are running on. Double precision will use somewhat
+more memory and run input, energy and full-precision trajectory files
+will be almost twice as large.
+
+The energies in mixed precision are accurate up to the last decimal,
+the last one or two decimals of the forces are non-significant.
+The virial is less accurate than the forces, since the virial is only one
+order of magnitude larger than the size of each element in the sum over
+all atoms (\secref{virial}).
+In most cases this is not really a problem, since the fluctuations in the
+virial can be two orders of magnitude larger than the average.
+Using cut-offs for the Coulomb interactions cause large errors
+in the energies, forces, and virial.
+Even when using a reaction-field or lattice sum method, the errors
+are larger than, or comparable to, the errors due to the partial use of
+single precision.
+Since MD is chaotic, trajectories with very similar starting conditions will
+diverge rapidly, the divergence is faster in mixed precision than in double
+precision.
+
+For most simulations, mixed precision is accurate enough.
+In some cases double precision is required to get reasonable results:
+\begin{itemize}
+\item normal mode analysis,
+for the conjugate gradient or l-bfgs minimization and the calculation and
+diagonalization of the Hessian
+\item long-term energy conservation, especially for large systems
+\end{itemize}
+
+% LocalWords:  Opteron Itanium PowerPC Altivec Athlon Fortran virial bfgs Nasm
+% LocalWords:  diagonalization Cygwin MPI Multi GMXHOME extern gmx tx pid buf
+% LocalWords:  bufsize txs rx rxs init nprocs fp msg GMXRC DUMPNL BUFS GMXNPRI
+% LocalWords:  unbuffered SGI npri mdrun covar nmeig setenv XPM XVG EPS
+% LocalWords:  PDB xvg xpm eps pdb xmgrace ghostview rasmol GMXTIMEUNIT fs dssp
+% LocalWords:  mpi distclean ing mpirun goofus doofus fred topol np
+% LocalWords:  internet gromacs DGMX cmake SIMD intrinsics AVX PME XN
+% LocalWords:  Verlet pre config CONSTRAINTVIR MAXBACKUP TPI ngmx mdp
+% LocalWords:  LONGFORMAT DISTGCT CPT tpr cpt CUDA EWALD TWINCUT rvdw
+% LocalWords:  rcoulomb STREAMSYNC cudaStreamSynchronized ECC GPUs sc
+% LocalWords:  ZYX PERF GPU PINHT hyperthreading DISRE NONBONDED ENX
+% LocalWords:  edr ENER gpu FSYNC ENV LJCOMB TOL MAXCONSTRWARN LINCS
+% LocalWords:  SOLV NBLISTCG NBNXN XNN ALLVSALL cudaStreamSynchronize
+% LocalWords:  USR SIGINT SIGTERM SIGUSR NODECOMM intra PULLVIR multi
+% LocalWords:  NOCHARGEGROUPS NOPREDICT NSCELL NCG NTHREADS OpenMP CP
+% LocalWords:  PMEONEDD Coulombic der Waals SCSIGMA TPIC GMXNPRIALL
+% LocalWords:  GOMP KMP pme NSTLIST ENVVAR nstlist startup OMP NUM ps
+% LocalWords:  ACC SCF BASENAME Orca CPMCSCF MCSCF DEVEL EXE GKRWIDTH
+% LocalWords:  MAXRESRENUM grompp FFRTP TER NXXX CXXX rtp GZIP gunzip
+% LocalWords:  GMXFONT ns MEM MULTIPROT multiprot NCPUS CPUs OPENMM
+% LocalWords:  PLUGIN OpenMM plugins SASTEP TESTMC eneconv VMD VMDDIR
+% LocalWords:  GMX_USE_XMGR xmgr parallelization nt online Nvidia nb cpu
+% LocalWords:  testverlet grommp

@@ -277,7 +277,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Generate an ensemble of structures from the normal modes");
     registerModule(manager, &gmx_nmtraj, "nmtraj",
                    "Generate a virtual oscillating trajectory from an eigenvector");
-    registerModule(manager, &gmx_options, "options", NULL);
     registerModule(manager, &gmx_order, "order",
                    "Compute the order parameter per atom for carbon tails");
     registerModule(manager, &gmx_pme_error, "pme_error",
