@@ -402,7 +402,7 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
                  "The combination of using shells and a twin-range cut-off is not supported");
         warning_error(wi, warn_buf);
     }
-    if ((nshells > 0) && (ir->nstcalcenergy != 1))
+    if ((nshells > 0) && (ir->nstcalcenergy != 1) && (ir->drude->drudemode != edrudeLagrangian))
     {
         set_warning_line(wi, "unknown", -1);
         snprintf(warn_buf, STRLEN,
@@ -1815,6 +1815,20 @@ int gmx_grompp(int argc, char *argv[])
         if (ir->opts.ngfrz > 0)
         {
             gmx_fatal(FARGS, "Cannot use freezegrps with Drude.");
+        }
+
+        /* disable anything other than NH for extended Lagrangian */
+        if (ir->drude->drudemode == edrudeLagrangian && ir->etc != etcNOSEHOOVER)
+        {
+            gmx_fatal(FARGS, "With extended Lagrangian, only Nose-Hoover is acceptable as thermostat.\n");
+        }
+
+        /* note issues with multiple NH chains */
+        if (ir->etc == etcNOSEHOOVER && ir->opts.nhchainlength > 1)
+        {
+            sprintf(warn_buf, "Drude simulations are not yet compatible with multiple NH chains.\n"
+                              "Set nh-chain-length to 1.\n");
+            warning_note(wi, warn_buf);
         }
 
     }
