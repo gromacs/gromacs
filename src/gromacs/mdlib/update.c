@@ -295,6 +295,13 @@ static void do_update_vv_vel(int start, int nrend, double dt,
             ga   = cACC[n];
         }
 
+        /* TODO: remove, just for tracing what's going on */
+        if (debug)
+        {
+            fprintf(debug, "VV VEL: v[%d] b4 update = %f %f %f\n", n, v[n][XX], v[n][YY], v[n][ZZ]);
+            fprintf(debug, "VV VEL: f[%d] b4 update = %f %f %f\n", n, f[n][XX], f[n][YY], f[n][ZZ]);
+        }
+
         for (d = 0; d < DIM; d++)
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
@@ -313,6 +320,12 @@ static void do_update_vv_vel(int start, int nrend, double dt,
                 v[n][d] = 0.0;
             }
         }
+
+        if (debug)
+        {
+            fprintf(debug, "VV VEL: v[%d] after update = %f %f %f\n", n, v[n][XX], v[n][YY], v[n][ZZ]);
+        }
+
     }
 } /* do_update_vv_vel */
 
