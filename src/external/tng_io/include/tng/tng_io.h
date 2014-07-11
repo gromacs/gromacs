@@ -290,6 +290,8 @@
 #ifndef TNG_IO_H
 #define TNG_IO_H     1
 
+#define _FILE_OFFSET_BITS 64
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -335,7 +337,6 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 #endif /* USE_STD_INTTYPES_H */
-
 
 #ifndef USE_WINDOWS
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -4071,7 +4072,8 @@ tng_function_status DECLSPECDLLEXPORT tng_util_box_shape_write_frequency_set
 /**
  * @brief High-level function for writing data of one frame to a data block.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param values is a 1D array of data to add. The array should be of length
  * n_particles * n_values_per_frame if writing particle related data, otherwise
  * it should be n_values_per_frame.
@@ -4090,7 +4092,6 @@ tng_function_status DECLSPECDLLEXPORT tng_util_box_shape_write_frequency_set
  * Only required if the block did not exist, i.e. a new block is created.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code values != 0 \endcode The pointer to the values array must not
  * be a NULL pointer.
  * @details n_values_per_frame, block_name, particle_dependency and
@@ -4117,7 +4118,8 @@ tng_function_status DECLSPECDLLEXPORT tng_util_generic_write
  * @brief High-level function for writing data of one frame to a double precision
  * data block.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param values is a 1D array of data to add. The array should be of length
  * n_particles * n_values_per_frame if writing particle related data, otherwise
  * it should be n_values_per_frame.
@@ -4136,7 +4138,6 @@ tng_function_status DECLSPECDLLEXPORT tng_util_generic_write
  * Only required if the block did not exist, i.e. a new block is created.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code values != 0 \endcode The pointer to the values array must not
  * be a NULL pointer.
  * @details n_values_per_frame, block_name, particle_dependency and
@@ -4162,12 +4163,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_generic_double_write
 /**
  * @brief High-level function for adding data to positions data blocks.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param positions is a 1D array of data to add. The array should be of length
  * n_particles * 3.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code positions != 0 \endcode The pointer to the positions array must not
  * be a NULL pointer.
  * @details This function uses tng_util_generic_write() and will
@@ -4189,12 +4190,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_pos_write
  * @brief High-level function for adding data to positions data blocks at double
  * precision.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param positions is a 1D array of data to add. The array should be of length
  * n_particles * 3.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code positions != 0 \endcode The pointer to the positions array must not
  * be a NULL pointer.
  * @details This function uses tng_util_generic_write() and will
@@ -4215,12 +4216,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_pos_double_write
 /**
  * @brief High-level function for adding data to velocities data blocks.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param velocities is a 1D array of data to add. The array should be of length
  * n_particles * 3.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code velocities != 0 \endcode The pointer to the velocities array must not
  * be a NULL pointer.
  * @details This function uses tng_util_generic_write() and will
@@ -4242,12 +4243,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_vel_write
  * @brief High-level function for adding data to velocities data blocks at double
  * precision.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param velocities is a 1D array of data to add. The array should be of length
  * n_particles * 3.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code velocities != 0 \endcode The pointer to the velocities array must not
  * be a NULL pointer.
  * @details This function uses tng_util_generic_write() and will
@@ -4268,12 +4269,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_vel_double_write
 /**
  * @brief High-level function for adding data to forces data blocks.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param forces is a 1D array of data to add. The array should be of length
  * n_particles * 3.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code forces != 0 \endcode The pointer to the forces array must not
  * be a NULL pointer.
  * @details This function uses tng_util_generic_write() and will
@@ -4295,12 +4296,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_force_write
  * @brief High-level function for adding data to forces data blocks at double
  * precision.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param forces is a 1D array of data to add. The array should be of length
  * n_particles * 3.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code forces != 0 \endcode The pointer to the forces array must not
  * be a NULL pointer.
  * @details This function uses tng_util_generic_write() and will
@@ -4321,11 +4322,11 @@ tng_function_status DECLSPECDLLEXPORT tng_util_force_double_write
 /**
  * @brief High-level function for adding data to box shape data blocks.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param box_shape is a 1D array of data to add. The array should be of length 9.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code box_shape != 0 \endcode The pointer to the box_shape array must not
  * be a NULL pointer.
  * @details This function uses tng_util_generic_write() and will
@@ -4347,11 +4348,11 @@ tng_function_status DECLSPECDLLEXPORT tng_util_box_shape_write
  * @brief High-level function for adding data to box shape data blocks at double
  * precision.
  * @param tng_data is the trajectory to use.
- * @param frame_nr is the frame number of the data.
+ * @param frame_nr is the frame number of the data. If frame_nr < 0 the
+ * data is written as non-trajectory data.
  * @param box_shape is a 1D array of data to add. The array should be of length 9.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)
  * must be initialised before using it.
- * @pre \code frame_nr >= 0 \endcode The frame number to write must be >= 0.
  * @pre \code box_shape != 0 \endcode The pointer to the box_shape array must not
  * be a NULL pointer.
  * @details This function uses tng_util_generic_write() and will
