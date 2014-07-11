@@ -290,6 +290,8 @@
 #ifndef TNG_IO_H
 #define TNG_IO_H     1
 
+#define _FILE_OFFSET_BITS 64
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -335,7 +337,6 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 #endif /* USE_STD_INTTYPES_H */
-
 
 #ifndef USE_WINDOWS
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
