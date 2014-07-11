@@ -316,15 +316,24 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir,
     int         g, i, j, k, m;
     int         ti;                 /* NH thermostat index */
     real        mass;               /* mass of an atom */
+    real        mtot;               /* total mass */
     rvec        v;                  /* velocity of an atom */
     rvec        p;                  /* linear momentum */
     rvec       *reltv;
+    rvec        absv;
     t_grpopts  *opts;
     int         nh;                 /* NH chain length */
 
     opts = &(ir->opts);
     snew(reltv, opts->ngtc);
     nh = opts->nhchainlength;
+    clear_rvec(absv);
+
+    mtot = 0;
+    for (i = 0; i < opts->ngtc; i++)
+    {
+        mtot += grpmass[i];
+    }
 
     if (bComputeCM)
     {
@@ -333,14 +342,12 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir,
             clear_rvec(reltv[i]);
         }
         /* Calculate COM velocity for all groups */
+        /* TODO: removed on 7/7/2014
         if (vcm->mode != ecmNO)
         {
-            if (debug)
-            {
-                fprintf(debug, "REL TSTAT: stopping COM motion before scaling\n");
-            }
             calc_vcm_grp(0, md->homenr, md, state->x, state->v, vcm);
         }
+        */
 
         for (j = 0; j < md->homenr; j++)
         {
@@ -370,6 +377,12 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir,
             mass = md->massT[j];
             svmul(mass, v, p);
 
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: v[%d] = %f %f %f\n", j, v[XX], v[YY], v[ZZ]);
+                fprintf(debug, "REL TSTAT: m = %f, p = %f %f %f\n", mass, p[XX], p[YY], p[ZZ]);
+            }
+
             /* add to relative velocity */
             for (m=0; m<DIM; m++)
             {
@@ -380,9 +393,39 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir,
         /* Scale relative velocities */
         for (i=0; i<opts->ngtc; i++)
         {
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: reltv[%d] b4 scale = %f %f %f\n", i, reltv[i][XX], reltv[i][YY], reltv[i][ZZ]);
+            }
             /* scale by mass, i.e. multiply by inverse mass */
             svmul((1.0/grpmass[i]), reltv[i], reltv[i]);
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: reltv[%d] after scale = %f %f %f\n", i, reltv[i][XX], reltv[i][YY], reltv[i][ZZ]);
+            }
+
+            /* total absolute velocity */
+            /* rvec_add(reltv[i], absv, absv); */
+            for (m = 0; m < DIM; m++)
+            {
+                absv[m] += reltv[i][m] * grpmass[i];
+            }
         }
+
+        if (debug)
+        {
+            fprintf(debug, "REL TSTAT: mtot = %f\n", mtot);
+            fprintf(debug, "REL TSTAT: b4 scale, absv = %f %f %f\n", absv[XX], absv[YY], absv[ZZ]);
+        }
+
+        /* scale by total system mass */
+        svmul((1.0/mtot), absv, absv);
+
+        if (debug)
+        {
+            fprintf(debug, "REL TSTAT: after scale, absv = %f %f %f\n", absv[XX], absv[YY], absv[ZZ]);
+        }
+
     } /* end of bComputeCM */
 
     /* loop back over the particles and remove drift associated with the thermostat */
@@ -395,7 +438,8 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir,
             continue;
         }
 
-        /* get COM motion removal group to which particle belongs */
+        /* get tc-grp to which particle belongs */
+        /*
         if (md->cTC)
         {
             g = md->cTC[j];
@@ -404,21 +448,41 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir,
         {
             g = 0;
         }
+        */
 
         /* get current velocity */
         copy_rvec(state->v[j], v);
 
+        if (debug)
+        {
+            fprintf(debug, "REL TSTAT: atom %d, v = %f %f %f\n", j, v[XX], v[YY], v[ZZ]);
+        }
+      
         if (bSwitch)
         {
             /* subtract absolute velocity */
             clear_rvec(state->v[j]);
-            rvec_sub(v, reltv[g], state->v[j]);
+            /* rvec_sub(v, reltv[g], state->v[j]); */
+            rvec_sub(v, absv, state->v[j]);
+
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: bSwitch = TRUE\n");
+                fprintf(debug, "REL TSTAT: v[%d] after subtract = %f %f %f\n", j, state->v[j][XX], state->v[j][YY], state->v[j][ZZ]);
+            }
         }
         else
         {
             /* add absolute velocity */
             clear_rvec(state->v[j]);
-            rvec_add(v, reltv[g], state->v[j]);
+            /* rvec_add(v, reltv[g], state->v[j]); */
+            rvec_add(v, absv, state->v[j]);
+
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: bSwitch = FALSE\n");
+                fprintf(debug, "REL TSTAT: v[%d] after add = %f %f %f\n", j, state->v[j][XX], state->v[j][YY], state->v[j][ZZ]);
+            }
         }
         clear_rvec(v);
     }
@@ -460,14 +524,13 @@ static void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_eki
 
     for (i=0; i<ngtc; i++)
     {
-        /* TODO: check */
-        if (seqno == etrtNHC || seqno == etrtBARONHC)
+        if (seqno == etrtNHC || seqno == etrtNHC2)
         {
-            clear_mat(ekind->tcstat[i].ekinh);
+            clear_mat(ekind->tcstat[i].ekinf);
         }
         else
         {
-            clear_mat(ekind->tcstat[i].ekinf);
+            clear_mat(ekind->tcstat[i].ekinh);
         }
     }
 
@@ -548,14 +611,13 @@ static void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_eki
          * here, that will be done later, outside this function */
         for (m=0; m<DIM; m++)
         {
-            /* TODO: check */
-            if (seqno == etrtNHC || seqno == etrtBARONHC)
+            if (seqno == etrtNHC || seqno == etrtNHC2)
             {
-                ekind->tcstat[ti].ekinh[m][m] += mv2[m];
+                ekind->tcstat[ti].ekinf[m][m] += mv2[m];
             }
             else
             {
-                ekind->tcstat[ti].ekinf[m][m] += mv2[m];
+                ekind->tcstat[ti].ekinh[m][m] += mv2[m];
             }
         }
     }
@@ -631,10 +693,28 @@ static void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *st
         /* calculate kinetic energies associated with thermostats */
         nosehoover_KE(ir, md, state, ekind, vcm, grpmass, seqno);
 
+        if (debug)
+        {
+            fprintf(debug, "DRUDE TFP: after NH KE: nc = %d\n", n);
+            for (i=0; i<md->homenr; i++)
+            {
+                fprintf(debug, "    v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
+            }
+        }
+
         /* get forces and velocities on all thermostats */
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
                     state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), FALSE);
+
+        if (debug)
+        {
+            fprintf(debug, "DRUDE TFP: after NHC: nc = %d\n", n);
+            for (i=0; i<md->homenr; i++)
+            {
+                fprintf(debug, "    v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
+            }
+        }
 
         for (i=0; i<opts->ngtc; i++)
         {
@@ -648,6 +728,15 @@ static void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *st
 
         /* scale relative to COM, subtracting COM velocity */
         relative_tstat(state, md, ir, vcm, grpmass, TRUE, TRUE);
+
+        if (debug)
+        {
+            fprintf(debug, "DRUDE TFP: after REL TSTAT b4 scale: nc = %d\n", n);
+            for (i=0; i<md->homenr; i++)
+            {
+                fprintf(debug, "    v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
+            }
+        }
 
         /* Now do the actual velocity scaling for each particle */
         for (i=0; i<md->homenr; i++)
@@ -757,6 +846,11 @@ static void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *st
                 copy_rvec(state->v[ia], va);
                 copy_rvec(state->v[ib], vb);
 
+                if (debug)
+                {
+                    fprintf(debug, "    DRUDE TFP: initial v = %f %f %f\n", va[XX], va[YY], va[ZZ]);
+                }
+
                 /* multiply by mass */
                 svmul(ma, va, pa);
                 svmul(mb, vb, pb);
@@ -856,6 +950,15 @@ static void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *st
         /* scale relative to COM, adding COM velocity */
         relative_tstat(state, md, ir, vcm, grpmass, FALSE, FALSE);
 
+        if (debug)
+        {
+            fprintf(debug, "DRUDE TFP: after REL TSTAT after scale: nc = %d\n", n);
+            for (i=0; i<md->homenr; i++)
+            {
+                fprintf(debug, "    v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
+            }
+        }
+
         /* Thermostat positions are only updated here, NOT within NHC_trotter */
         for (i=0; i<opts->ngtc; i++)
         {
@@ -880,9 +983,28 @@ static void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *st
         /* calculate new kinetic energies */
         nosehoover_KE(ir, md, state, ekind, vcm, grpmass, seqno);
 
+        if (debug)
+        {
+            fprintf(debug, "DRUDE TFP: after NH KE after scale: nc = %d\n", n);
+            for (i=0; i<md->homenr; i++)
+            {
+                fprintf(debug, "    v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
+            }
+        }
+
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
                     state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), FALSE);
+
+                if (debug)
+        {
+            fprintf(debug, "DRUDE TFP: after NHC after scale: nc = %d\n", n);
+            for (i=0; i<md->homenr; i++)
+            {
+                fprintf(debug, "    v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
+            }
+        }
+
     } /* end for-loop over thermostat subdivided time steps */
 
     sfree(expfac);
@@ -1662,23 +1784,27 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                 /* now that we've scaled the groupwise velocities, we can add them up to get the total */
                 /* but do we actually need the total? */
 
-                /* modify the velocities as well */
-                for (n = 0; n < md->homenr; n++)
+                /* modify the velocities as well, unless we're doing Drude, in which case the 
+                 * scaling is done in a special manner elsewhere */
+                if (!(ir->bDrude && ir->drude->drudemode == edrudeLagrangian))
                 {
-                    if (md->cTC) /* does this conditional need to be here? is this always true?*/
+                    for (n = 0; n < md->homenr; n++)
                     {
-                        gc = md->cTC[n];
-                    }
-                    for (d = 0; d < DIM; d++)
-                    {
-                        state->v[n][d] *= scalefac[gc];
-                    }
-
-                    if (debug)
-                    {
+                        if (md->cTC) /* does this conditional need to be here? is this always true?*/
+                        {
+                            gc = md->cTC[n];
+                        }
                         for (d = 0; d < DIM; d++)
                         {
-                            sumv[d] += (state->v[n][d])/md->invmass[n];
+                            state->v[n][d] *= scalefac[gc];
+                        }
+
+                        if (debug)
+                        {
+                            for (d = 0; d < DIM; d++)
+                            {
+                                sumv[d] += (state->v[n][d])/md->invmass[n];
+                            }
                         }
                     }
                 }
