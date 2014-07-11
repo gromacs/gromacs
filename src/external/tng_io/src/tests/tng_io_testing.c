@@ -9,13 +9,14 @@
  * modify it under the terms of the Revised BSD License.
  */
 
+#include "tng/tng_io.h"
+
 #ifdef USE_STD_INTTYPES_H
 #include <inttypes.h>
 #endif
 
 #include <stdlib.h>
 #include <string.h>
-#include "tng/tng_io.h"
 #include "tng/version.h"
 
 static tng_function_status tng_test_setup_molecules(tng_trajectory_t traj)
@@ -107,16 +108,16 @@ static tng_function_status tng_test_setup_molecules(tng_trajectory_t traj)
 }
 
 static tng_function_status tng_test_read_and_write_file
-                (tng_trajectory_t traj)
+                (tng_trajectory_t traj, const char hash_mode)
 {
     tng_function_status stat;
 
-    stat = tng_file_headers_read(traj, TNG_USE_HASH);
+    stat = tng_file_headers_read(traj, hash_mode);
     if(stat == TNG_CRITICAL)
     {
         return(stat);
     }
-    stat = tng_file_headers_write(traj, TNG_USE_HASH);
+    stat = tng_file_headers_write(traj, hash_mode);
     if(stat == TNG_CRITICAL)
     {
         return(stat);
@@ -124,22 +125,24 @@ static tng_function_status tng_test_read_and_write_file
 
     while(stat == TNG_SUCCESS)
     {
-        stat = tng_frame_set_read_next(traj, TNG_USE_HASH);
+        stat = tng_frame_set_read_next(traj, hash_mode);
         if(stat != TNG_SUCCESS)
         {
             return(stat);
         }
-        stat = tng_frame_set_write(traj, TNG_USE_HASH);
+        stat = tng_frame_set_write(traj, hash_mode);
     }
 
     return(stat);
 }
 
-static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
+static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj,
+                                                        const char hash_mode)
 {
     int i, j, k, nr, cnt;
     float *data, *molpos, *charges;
     int64_t mapping[300], n_particles, n_frames_per_frame_set, tot_n_mols;
+    int64_t codec_id;
 //     int64_t frame_nr;
     double box_shape[9];
     char atom_type[16], annotation[128];
@@ -223,7 +226,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
     }
 
     /* Write file headers (includes non trajectory data blocks */
-    if(tng_file_headers_write(*traj, TNG_SKIP_HASH) == TNG_CRITICAL)
+    if(tng_file_headers_write(*traj, hash_mode) == TNG_CRITICAL)
     {
         printf("Cannot write file headers.\n");
     }
@@ -257,6 +260,14 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
     for(i = 0; i < 200; i++)
     {
         cnt = 0;
+        if(i < 100)
+        {
+            codec_id = TNG_GZIP_COMPRESSION;
+        }
+        else
+        {
+            codec_id = TNG_TNG_COMPRESSION;
+        }
         for(j = 0; j < n_frames_per_frame_set; j++)
         {
             for(k = 0; k < tot_n_mols; k++)
@@ -349,7 +360,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
                                        n_frames_per_frame_set, 3,
                                        1, 0, n_particles,
 /*                                        TNG_UNCOMPRESSED, */
-                                       TNG_GZIP_COMPRESSION,
+                                       codec_id,
                                        data) != TNG_SUCCESS)
         {
             printf("Error adding data. %s: %d\n", __FILE__, __LINE__);
@@ -358,7 +369,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
             return(TNG_CRITICAL);
         }
         /* Write the frame set */
-        if(tng_frame_set_write(*traj, TNG_SKIP_HASH) != TNG_SUCCESS)
+        if(tng_frame_set_write(*traj, hash_mode) != TNG_SUCCESS)
         {
             printf("Error writing frame set. %s: %d\n", __FILE__, __LINE__);
             free(molpos);
@@ -427,7 +438,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
     }
 
     *//* Write the frame set to disk *//*
-    if(tng_frame_set_write(*traj, TNG_SKIP_HASH) != TNG_SUCCESS)
+    if(tng_frame_set_write(*traj, hash_mode) != TNG_SUCCESS)
     {
         printf("Error writing frame set. %s: %d\n", __FILE__, __LINE__);
         free(molpos);
@@ -461,7 +472,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
             }
             if(tng_frame_particle_data_write(*traj, frame_nr + i,
                                           TNG_TRAJ_POSITIONS, j * 300, 300,
-                                          data, TNG_SKIP_HASH) != TNG_SUCCESS)
+                                          data, hash_mode) != TNG_SUCCESS)
             {
                 printf("Error adding data. %s: %d\n", __FILE__, __LINE__);
                 free(molpos);
@@ -478,11 +489,11 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
     tng_trajectory_init(traj);
     tng_input_file_set(*traj, TNG_EXAMPLE_FILES_DIR "tng_test.tng");
 
-    stat = tng_file_headers_read(*traj, TNG_SKIP_HASH);
+    stat = tng_file_headers_read(*traj, hash_mode);
 
     while(stat == TNG_SUCCESS)
     {
-        stat = tng_frame_set_read_next(*traj, TNG_SKIP_HASH);
+        stat = tng_frame_set_read_next(*traj, hash_mode);
     }
 
     return(stat);
@@ -522,7 +533,8 @@ tng_function_status tng_test_get_box_data(tng_trajectory_t traj)
 /* This test relies on knowing that the positions are stored as float
  * and that the data is not sparse (i.e. as many frames in the data
  * as in the frame set */
-tng_function_status tng_test_get_positions_data(tng_trajectory_t traj)
+tng_function_status tng_test_get_positions_data(tng_trajectory_t traj,
+                                                const char hash_mode)
 {
     int64_t n_frames, n_particles, n_values_per_frame;
     union data_values ***values = 0;
@@ -560,7 +572,7 @@ tng_function_status tng_test_get_positions_data(tng_trajectory_t traj)
     values = 0;
 
     tng_particle_data_interval_get(traj, TNG_TRAJ_POSITIONS, 11000, 11499,
-                                   TNG_SKIP_HASH, &values, &n_particles,
+                                   hash_mode, &values, &n_particles,
                                    &n_values_per_frame, &type);
 
     /* Here the particle positions can be printed */
@@ -572,7 +584,7 @@ tng_function_status tng_test_get_positions_data(tng_trajectory_t traj)
 }
 
 
-tng_function_status tng_test_append(tng_trajectory_t traj)
+tng_function_status tng_test_append(tng_trajectory_t traj, const char hash_mode)
 {
     tng_function_status stat;
 
@@ -584,7 +596,7 @@ tng_function_status tng_test_append(tng_trajectory_t traj)
 
     tng_last_user_name_set(traj, "User2");
     tng_last_program_name_set(traj, "tng_testing");
-    tng_file_headers_write(traj, TNG_USE_HASH);
+    tng_file_headers_write(traj, hash_mode);
 
     stat = tng_util_trajectory_close(&traj);
 
@@ -597,6 +609,7 @@ int main()
     tng_function_status stat;
     char time_str[TNG_MAX_DATE_STR_LEN];
     char version_str[TNG_MAX_STR_LEN];
+    char hash_mode = TNG_USE_HASH;
 
     tng_version(traj, version_str, TNG_MAX_STR_LEN);
     if(strncmp(TNG_VERSION, version_str, TNG_MAX_STR_LEN) == 0)
@@ -625,7 +638,7 @@ int main()
     tng_output_file_set(traj, TNG_EXAMPLE_FILES_DIR "tng_example_out.tng");
 
 
-    if(tng_test_read_and_write_file(traj) == TNG_CRITICAL)
+    if(tng_test_read_and_write_file(traj, hash_mode) == TNG_CRITICAL)
     {
         printf("Test Read and write file:\t\t\tFailed. %s: %d\n",
                __FILE__, __LINE__);
@@ -659,7 +672,7 @@ int main()
 
     tng_output_file_set(traj, TNG_EXAMPLE_FILES_DIR "tng_test.tng");
 
-    if(tng_test_write_and_read_traj(&traj) == TNG_CRITICAL)
+    if(tng_test_write_and_read_traj(&traj, hash_mode) == TNG_CRITICAL)
     {
         printf("Test Write and read file:\t\t\tFailed. %s: %d\n",
                __FILE__, __LINE__);
@@ -669,7 +682,7 @@ int main()
         printf("Test Write and read file:\t\t\tSucceeded.\n");
     }
 
-    if(tng_test_get_positions_data(traj) != TNG_SUCCESS)
+    if(tng_test_get_positions_data(traj, hash_mode) != TNG_SUCCESS)
     {
         printf("Test Get particle data:\t\t\t\tFailed. %s: %d\n",
                __FILE__, __LINE__);
@@ -716,7 +729,7 @@ int main()
         printf("Test Utility function close:\t\t\tSucceeded.\n");
     }
 
-    if(tng_test_append(traj) != TNG_SUCCESS)
+    if(tng_test_append(traj, hash_mode) != TNG_SUCCESS)
     {
         printf("Test Append:\t\t\t\t\tFailed. %s: %d.\n",
                __FILE__, __LINE__);
