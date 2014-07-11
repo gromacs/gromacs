@@ -290,6 +290,8 @@
 #ifndef TNG_IO_H
 #define TNG_IO_H     1
 
+#define _FILE_OFFSET_BITS 64
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -307,6 +309,9 @@ typedef __int32 int32_t;
 typedef unsigned __int32 uint32_t;
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
+
+#define fseeko _fseeki64
+#define ftello _ftelli64
 
 #else
 #include <stdint.h>
