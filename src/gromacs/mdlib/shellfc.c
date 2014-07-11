@@ -663,7 +663,7 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
             /* TODO: remove */
             if (debug)
             {
-                fprintf(debug, "MAKE LOCAL SHELLS: shell[%d].shell = %d, nucl1 = %d\n", nshell, i, shell[nshell].nucl1);
+                fprintf(debug, "MAKE LOCAL SHELLS: shell[%d].shell = %d, nucl1 = %d\n", nshell, shell[nshell].shell, shell[nshell].nucl1);
             }
             nshell++;
         }
@@ -1026,6 +1026,7 @@ static void apply_drude_hardwall(t_shell s[], int nshell, t_inputrec *ir, t_mdat
     rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
     t_pbc   pbc;
 
+    /* TODO: should this be set_pbc_dd? Would need cr->dd passed into hardwall function */
     set_pbc(&pbc, ir->ePBC, state->box);
 
     /* Here, we get the local bonded interactions that will be used for searching.
@@ -1455,6 +1456,17 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "RELAX SHELL FLEXCON: b4 any updates!\n");
+        for (i=0; i<md->nr; i++)
+        {
+            fprintf(debug, "RELAX SHELL FLEXCON: v of atom %d = %f %f %f\n", i, state->v[i][XX],
+                    state->v[i][YY], state->v[i][ZZ]);
+        }
+    }
+
     /* Now, update shell/Drude positions. There are two methods to do this:
      *  1. The energy minimization/SCF approach
      *  2. Extended Lagrangian to integrate positions
@@ -1662,12 +1674,25 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     {
         /* Step 1. Apply forces to Drudes and update their velocities */
         /* TODO: check usage of fr->vir_twin_constr */
+        if (debug)
+        {
+            fprintf(debug, "RELAX SHELL FLEXCON: updating velocities of Drudes...\n");
+            for (i=0; i<md->nr; i++)
+            {
+                fprintf(debug, "RELAX SHELL FLEXCON: v of atom %d = %f %f %f\n", i, state->v[i][XX],
+                        state->v[i][YY], state->v[i][ZZ]);
+            }
+        }
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
                       f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
                       ekind, NULL, upd, bInitStep, etrtVELOCITY1,
                       cr, nrnb, constr, idef, TRUE);
 
         /* Step 2. Update Drude positions */
+        if (debug)
+        {
+            fprintf(debug, "RELAX SHELL FLEXCON: updating positions of Drudes...\n");
+        }
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
                       f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
                       ekind, NULL, upd, bInitStep, etrtPOSITION,
