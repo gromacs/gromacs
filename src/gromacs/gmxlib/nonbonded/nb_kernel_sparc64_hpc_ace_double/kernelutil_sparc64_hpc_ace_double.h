@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,6 +34,10 @@
  */
 #ifndef _kernelutil_sparc64_hpc_ace_double_h_
 #define _kernelutil_sparc64_hpc_ace_double_h_
+
+/* Get gmx_simd_exp_d() */
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
 
 /* Fujitsu header borrows the name from SSE2, since some instructions have aliases */
 #include <emmintrin.h>

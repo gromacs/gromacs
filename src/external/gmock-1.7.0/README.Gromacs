@@ -12,5 +12,8 @@ gmock-1.7.0/gtest/README
 gmock-1.7.0/gtest/include/
 gmock-1.7.0/gtest/src/
 
+On the very first line of gmock-1.7.0/gtest/include/gtest/internal/gtest-port.h
+we have added the define to use the built-in version of TR1 tuple.
+
 The file CMakeLists.txt in this directory is part of the Gromacs build system
 and has been written from scratch.

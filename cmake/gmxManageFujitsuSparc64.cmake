@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,6 +32,16 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(TestUtilsUnitTests testutils-test
-                  refdata_tests.cpp
-                  testasserts_tests.cpp)
+# Managing configuration for all kinds of BlueGene systems
+# BlueGene/L is probably obsolete, but does no harm
+# BlueGene/P needs testing, but hasn't changed
+# BlueGene/Q works
+message(STATUS "Configuring for Fujitsu PrimeHPC Sparc64")
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Use static linking by default on Fujitsu PrimeHPC" FORCE)
+set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on Fujitsu PrimeHPC" FORCE)
+
+set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Use native 1.0/sqrt(x) on Fujitsu PrimeHPC" FORCE)
+set(GMX_X11 OFF CACHE BOOL "X11 not compatible with PrimeHPC cross-compile, disabled." FORCE)
+set(GMX_SIMD "SPARC64_HPC_ACE" CACHE STRING "Enabling Sparc64 HPC-ACE SIMD when using Fujitsu Sparc64 toolchain" FORCE)
+
