@@ -2830,7 +2830,8 @@ void init_md(FILE *fplog,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir, rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags)
+             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags,
+             gmx_wallcycle_t wcycle)
 {
     int  i, j, n;
     real tmpt, mod;
@@ -2886,7 +2887,7 @@ void init_md(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf = init_mdoutf(fplog, nfile, fnm, Flags, cr, ir, mtop, oenv);
+        *outf = init_mdoutf(fplog, nfile, fnm, Flags, cr, ir, mtop, oenv, wcycle);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf));
