@@ -120,3 +120,14 @@ input files. The random seed for replica exchange is set with
 ``-reseed``. After every exchange, the velocities are scaled and
 neighbor searching is performed. See the Reference Manual for more
 details on how replica exchange functions in GROMACS.
+
+Controlling the length of the simulation
+----------------------------------------
+
+Normally, the length of an MD simulation is best managed through the
+[.mdp] option [nsteps](#nsteps), however there are situations where
+more control is useful. `mdrun -nsteps 100` overrides the [.mdp] file
+and executes 100 steps. `mdrun -maxh 2.5` will terminate the
+simulation shortly before 2.5 hours elapse, which can be useful when
+running under cluster queues (as long as the queueing system does not
+ever suspend the simulation).

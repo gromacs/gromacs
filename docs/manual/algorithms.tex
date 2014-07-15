@@ -472,9 +472,9 @@ of $j$ is less than a given cut-off radius $R_c$. Some of the particle
 pairs that fulfill this criterion are excluded, when their interaction
 is already fully accounted for by bonded interactions.  {\gromacs}
 employs a {\em pair list} that contains those particle pairs for which
-non-bonded forces must be calculated.  The pair list contains atoms
-$i$, a displacement vector for atom $i$, and all particles $j$ that
-are within \verb'rlist' of this particular image of atom $i$.  The
+non-bonded forces must be calculated.  The pair list contains particles
+$i$, a displacement vector for particle $i$, and all particles $j$ that
+are within \verb'rlist' of this particular image of particle $i$.  The
 list is updated every \verb'nstlist' steps, where \verb'nstlist' is
 typically 10. There is an option to calculate the total non-bonded
 force on each particle due to all particle in a shell around the
@@ -491,7 +491,7 @@ $O(N^2)$ algorithm is still available under some conditions.
 
 \subsubsection{\normindex{Cut-off schemes}: group versus Verlet}
 From version 4.6, {\gromacs} supports two different cut-off scheme
-setups: the original one based on atom groups and one using a Verlet
+setups: the original one based on particle groups and one using a Verlet
 buffer. There are some important differences that affect results,
 performance and feature support. The group scheme can be made to work
 (almost) like the Verlet scheme, but this will lead to a decrease in
@@ -500,27 +500,28 @@ which are abundant in many simulations, but on the most recent x86
 processors, this advantage is negated by the better instruction-level
 parallelism available in the Verlet-scheme implementation. The group
 scheme is deprecated in version 5.0, and will be removed in a future
-version.
+version. For practical details of choosing and setting up
+cut-off schemes, please see the User Guide.
 
 In the group scheme, a neighbor list is generated consisting of pairs
-of groups of at least one atom. These groups were originally
+of groups of at least one particle. These groups were originally
 \swapindex{charge}{group}s \ifthenelse{\equal{\gmxlite}{1}}{}{(see
   \secref{chargegroup})}, but with a proper treatment of long-range
-electrostatics, performance is their only advantage. A pair of groups
+electrostatics, performance in unbuffered simulations is their only advantage. A pair of groups
 is put into the neighbor list when their center of geometry is within
-the cut-off distance. Interactions between all atom pairs (one from
+the cut-off distance. Interactions between all particle pairs (one from
 each charge group) are calculated for a certain number of MD steps,
 until the neighbor list is updated. This setup is efficient, as the
-neighbor search only checks distance between charge group pair, not
-atom pairs (saves a factor of $3 \times 3 = 9$ with a three-atom water
+neighbor search only checks distance between charge-group pair, not
+particle pairs (saves a factor of $3 \times 3 = 9$ with a three-particle water
 model) and the non-bonded force kernels can be optimized for, say, a
 water molecule ``group''. Without explicit buffering, this setup leads
-to energy drift as some atom pairs which are within the cut-off don't
+to energy drift as some particle pairs which are within the cut-off don't
 interact and some outside the cut-off do interact. This can be caused
 by
 \begin{itemize}
-\item atoms moving across the cut-off between neighbor search steps, and/or
-\item for charge groups consisting of more than one atom, atom pairs
+\item particles moving across the cut-off between neighbor search steps, and/or
+\item for charge groups consisting of more than one particle, particle pairs
   moving in/out of the cut-off when their charge group center of
   geometry distance is outside/inside of the cut-off.
 \end{itemize}
@@ -530,18 +531,18 @@ artifacts are depends on the system, the properties in which you are
 interested, and the cut-off setup.
 
 The Verlet cut-off scheme uses a buffered pair list by default. It
-also uses clusters of atoms, but these are not static as in the group
+also uses clusters of particles, but these are not static as in the group
 scheme. Rather, the clusters are defined spatially and consist of 4 or
-8 atoms, which is convenient for stream computing, using e.g. SSE, AVX
+8 particles, which is convenient for stream computing, using e.g. SSE, AVX
 or CUDA on GPUs. At neighbor search steps, a pair list is created
 with a Verlet buffer, ie. the pair-list cut-off is larger than the
-interaction cut-off. In the non-bonded force kernels, forces are only
-added when an atom pair is within the cut-off distance at that
-particular time step. This ensures that as atoms move between pair
-search steps, forces between nearly all atoms within the cut-off
-distance are calculated. We say {\em nearly} all atoms, because
+interaction cut-off. In the non-bonded kernels, interactions are only
+computed when a particle pair is within the cut-off distance at that
+particular time step. This ensures that as particles move between pair
+search steps, forces between nearly all particles within the cut-off
+distance are calculated. We say {\em nearly} all particles, because
 {\gromacs} uses a fixed pair list update frequency for
-efficiency. An atom-pair, whose distance was outside the cut-off,
+efficiency. A particle-pair, whose distance was outside the cut-off,
 could possibly move enough during this fixed number of
 steps that its distance is now within the cut-off. This
 small chance results in a small energy drift, and the size of the
@@ -549,76 +550,17 @@ chance depends on the temperature. When temperature
 coupling is used, the buffer size can be determined automatically,
 given a certain tolerance on the energy drift.
 
-The {\tt mdp} file settings specific to the Verlet scheme are:
-\begin{verbatim}
-cutoff-scheme           = Verlet
-verlet-buffer-tolerance = 0.005
-\end{verbatim}
-The Verlet buffer size is determined from the latter option, which is
-by default set to 0.005 kJ/mol/ps pair energy error per atom. Note that
-errors in pair energies cancel and the effect on the total energy drift
-is usually at least an order of magnitude smaller than the tolerance.
-Furthermore, the drift of the total energy is affected by many other
-factors; often, the contribution from the constraint algorithm dominates.
-
-For constant-energy (NVE) simulations, the buffer size will be
-inferred from the temperature that corresponds to the velocities
-(either those generated, if applicable, or those found in the input
-configuration). Alternatively, the tolerance can be set to -1 and a
-buffer set manually by specifying {\tt rlist} $>$ {\tt max(rcoulomb,
-  rvdw)}. The simplest way to get a reasonable buffer size is to use
-an NVT {\tt mdp} file with the target temperature set to what you
-expect in your NVE simulation, and transfer the buffer size printed by
-{\tt grompp} to your NVE {\tt mdp} file.
-
 The Verlet cut-off scheme is implemented in a very efficient fashion
 based on clusters of particles. The simplest example is a cluster size
 of 4 particles. The pair list is then constructed based on cluster
 pairs. The cluster-pair search is much faster searching based on
 particle pairs, because $4 \times 4 = 16$ particle pairs are put in
 the list at once. The non-bonded force calculation kernel can then
-calculate all 16 particle-pair interactions at once, which maps nicely
-to SIMD units which can perform multiple floating operations at once
-(e.g. SSE, AVX, CUDA on GPUs, BlueGene FPUs). These non-bonded kernels
+calculate many particle-pair interactions at once, which maps nicely
+to SIMD or SIMT units on modern hardward, which can perform multiple
+floating operations at once. These non-bonded kernels
 are much faster than the kernels used in the group scheme for most
-types of systems, except for water molecules on processors with short
-SIMD widths when not using a buffered pair list. This latter case is
-common for (bio-)molecular simulations, so for greatest speed, it is
-worth comparing the performance of both schemes.
-
-As the Verlet cut-off scheme was introduced in version 4.6, not
-all features of the group scheme are supported yet. The Verlet scheme
-supports a few new features which the group scheme does not support.
-A list of features not (fully) supported in both cut-off schemes is
-given in \tabref{cutoffschemesupport}.
-
-\begin{table}
-\centerline{
-\begin{tabular}{|l|c|c|}
-\dline
-Non-bonded interaction feature    & group & Verlet \\
-\dline
-unbuffered cut-off scheme         & $\surd$ & not by default \\
-exact cut-off                     & shift/switch & $\surd$ \\
-shifted interactions              & force+energy & energy \\
-switched potential                & $\surd$ & $\surd$ \\
-switched forces                   & $\surd$ & $\surd$ \\
-non-periodic systems              & $\surd$ & Z  + walls \\
-implicit solvent                  & $\surd$ & \\
-free energy perturbed non-bondeds & $\surd$ & $\surd$ \\
-group energy contributions        & $\surd$ & CPU (not on GPU) \\
-energy group exclusions           & $\surd$ & \\
-AdResS multi-scale                & $\surd$ & \\
-OpenMP multi-threading            & only PME & $\surd$ \\
-native GPU support                &         & $\surd$ \\
-Lennard-Jones PME                 & $\surd$ & $\surd$ \\
-\dline
-\end{tabular}
-}
-\caption{Differences (only) in the support of non-bonded features
-  between the group and Verlet cut-off schemes.}
-\label{tab:cutoffschemesupport}
-\end{table}
+types of systems, particularly on newer hardware.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Energy drift and pair-list buffering}
@@ -632,7 +574,7 @@ displacements and the shape of the potential at the cut-off.
 The displacement distribution along one dimension for a freely moving
 particle with mass $m$ over time $t$ at temperature $T$ is Gaussian
 with zero mean and variance $\sigma^2 = t\,k_B T/m$. For the distance
-between two atoms, the variance changes to $\sigma^2 = \sigma_{12}^2 =
+between two particles, the variance changes to $\sigma^2 = \sigma_{12}^2 =
 t\,k_B T(1/m_1+1/m_2)$.  Note that in practice particles usually
 interact with other particles over time $t$ and therefore the real
 displacement distribution is much narrower.  Given a non-bonded
