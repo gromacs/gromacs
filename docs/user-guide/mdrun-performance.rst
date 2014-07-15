@@ -112,7 +112,7 @@ see the Reference Manual. The most important of these are
         members of its domain. A GPU may perform work for more than
         one PP rank, but it is normally most efficient to use a single
         PP rank per GPU and for that rank to have thousands of
-        atoms. When the work of a PP rank is done on the CPU, mdrun
+        particles. When the work of a PP rank is done on the CPU, mdrun
         will make extensive use of the SIMD capabilities of the
         core. There are various `command-line options
         <controlling-the-domain-decomposition-algorithm` to control
@@ -135,7 +135,7 @@ Running mdrun within a single node
 ----------------------------------
 
 :ref:`gmx mdrun` can be configured and compiled in several different ways that
-are efficient to use within a single node. The default configuration
+are efficient to use within a single :term:`node`. The default configuration
 using a suitable compiler will deploy a multi-level hybrid parallelism
 that uses CUDA, OpenMP and the threading platform native to the
 hardware. For programming convenience, in GROMACS, those native
@@ -315,24 +315,49 @@ OpenMP to spread the work of an MPI rank over more than one
 core is needed to continue to improve absolute performance.
 The location of the scaling limit depends on the processor,
 presence of GPUs, network, and simulation algorithm, but
-it is worth measuring at around ~200 atoms/core if you
+it is worth measuring at around ~200 particles/core if you
 need maximum throughput.
 
 There are further command-line parameters that are relevant in these
 cases.
 
 ``-tunepme``
-    If "on," will optimize various aspects of the PME
-    and DD algorithms, shifting load between ranks and/or
-    GPUs to maximize throughput
+    Defaults to "on." If "on," will optimize various aspects of the
+    PME and DD algorithms, shifting load between ranks and/or GPUs to
+    maximize throughput
+
+``-dlb``
+    Can be set to "auto," "no," or "yes."
+    Defaults to "auto." Doing Dynamic Load Balancing between MPI ranks
+    is needed to maximize performance. This is particularly important
+    for molecular systems with heterogeneous particle or interaction
+    density. When a certain threshold for performance loss is
+    exceeded, DLB activates and shifts particles between ranks to improve
+    performance.
 
 ``-gcom``
-    Can be used to limit global communication every n steps. This can
-    improve performance for highly parallel simulations where this global
-    communication step becomes the bottleneck. For a global thermostat
-    and/or barostat, the temperature and/or pressure will also only be
-    updated every ``-gcom`` steps. By default, it is set to the
-    minimum of :mdp:`nstcalcenergy` and :mdp:`nstlist`.
+    During the simulation :ref:`gmx mdrun` must communicate between all ranks to
+    compute quantities such as kinetic energy. By default, this
+    happens whenever plausible, and is influenced by a lot of [.mdp
+    options](#mdp-options). The period between communication phases
+    must be a multiple of :mdp:`nstlist`, and defaults to
+    the minimum of :mdp:`nstcalcenergy` and :mdp:`nstlist`.
+    ``mdrun -gcom`` sets the number of steps that must elapse between
+    such communication phases, which can improve performance when
+    running on a lot of nodes. Note that this means that _e.g._
+    temperature coupling algorithms will
+    effectively remain at constant energy until the next global
+    communication phase.
+
+Note that ``-tunepme`` has more effect when there is more than one
+:term:`node`, because the cost of communication for the PP and PME
+ranks differs. It still shifts load between PP and PME ranks, but does
+not change the number of separate PME ranks in use.
+
+Note also that ``-dlb`` and ``-tunepme`` can interfere with each other, so
+if you experience performance variation that could result from this,
+you may wish to tune PME separately, and run the result with ``mdrun
+-notunepme -dlb yes``.
 
 The :ref:`gmx tune_pme` utility is available to search a wider
 range of parameter space, including making safe
@@ -432,7 +457,7 @@ parallel hardware.
     Can be used to set the required maximum distance for inter
     charge-group bonded interactions. Communication for two-body
     bonded interactions below the non-bonded cut-off distance always
-    comes for free with the non-bonded communication. Atoms beyond
+    comes for free with the non-bonded communication. Particles beyond
     the non-bonded cut-off are only communicated when they have
     missing bonded interactions; this means that the extra cost is
     minor and nearly indepedent of the value of ``-rdd``. With dynamic
@@ -451,7 +476,7 @@ parallel hardware.
 ``-rcon``
     When constraints are present, option ``-rcon`` influences
     the cell size limit as well.  
-    Atoms connected by NC constraints, where NC is the LINCS order
+    Particles connected by NC constraints, where NC is the LINCS order
     plus 1, should not be beyond the smallest cell size. A error
     message is generated when this happens, and the user should change
     the decomposition or decrease the LINCS order and increase the

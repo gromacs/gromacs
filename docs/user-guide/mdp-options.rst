@@ -555,32 +555,32 @@ Neighbor searching
 
    (0.005) \[kJ/mol/ps\]
 
-   Useful only with the :mdp:`Verlet` :mdp:`cutoff-scheme`. This
-   sets the maximum allowed error for pair interactions per particle
-   caused by the Verlet buffer, which indirectly sets
-   :mdp:`rlist`. As both :mdp:`nstlist` and the Verlet buffer size
-   are fixed (for performance reasons), particle pairs not in the pair
-   list can occasionally get within the cut-off distance during
+   Useful only with the :mdp:`Verlet` :mdp:`cutoff-scheme`. This sets
+   the maximum allowed error for pair interactions per particle caused
+   by the Verlet buffer, which indirectly sets :mdp:`rlist`. As both
+   :mdp:`nstlist` and the Verlet buffer size are fixed (for
+   performance reasons), particle pairs not in the pair list can
+   occasionally get within the cut-off distance during
    :mdp:`nstlist` -1 steps. This causes very small jumps in the
    energy. In a constant-temperature ensemble, these very small energy
    jumps can be estimated for a given cut-off and :mdp:`rlist`. The
    estimate assumes a homogeneous particle distribution, hence the
    errors might be slightly underestimated for multi-phase
-   systems. For longer pair-list life-time (:mdp:`nstlist` -1) *
-   :mdp:`dt` the buffer is overestimated, because the interactions
-   between particles are ignored. Combined with cancellation of
-   errors, the actual drift of the total energy is usually one to two
-   orders of magnitude smaller. Note that the generated buffer size
-   takes into account that the |Gromacs| pair-list setup leads to a
-   reduction in the drift by a factor 10, compared to a simple
-   particle-pair based list. Without dynamics (energy minimization
-   etc.), the buffer is 5% of the cut-off. For NVE simulations the
-   initial temperature is used, unless this is zero, in which case a
-   buffer of 10% is used. For NVE simulations the tolerance usually
-   needs to be lowered to achieve proper energy conservation on the
-   nanosecond time scale. To override the automated buffer setting,
-   use :mdp:`verlet-buffer-tolerance` =-1 and set :mdp:`rlist`
-   manually.
+   systems. (See the `reference manual`_ for details). For longer
+   pair-list life-time (:mdp:`nstlist` -1) * :mdp:`dt` the buffer is
+   overestimated, because the interactions between particles are
+   ignored. Combined with cancellation of errors, the actual drift of
+   the total energy is usually one to two orders of magnitude
+   smaller. Note that the generated buffer size takes into account
+   that the |Gromacs| pair-list setup leads to a reduction in the
+   drift by a factor 10, compared to a simple particle-pair based
+   list. Without dynamics (energy minimization etc.), the buffer is 5%
+   of the cut-off. For NVE simulations the initial temperature is
+   used, unless this is zero, in which case a buffer of 10% is
+   used. For NVE simulations the tolerance usually needs to be lowered
+   to achieve proper energy conservation on the nanosecond time
+   scale. To override the automated buffer setting, use
+   :mdp:`verlet-buffer-tolerance` =-1 and set :mdp:`rlist` manually.
 
 .. mdp:: rlist
 
@@ -2866,3 +2866,5 @@ User defined thingies
    These you can use if you modify code. You can pass integers and
    reals and groups to your subroutine. Check the inputrec definition
    in ``src/gromacs/legacyheaders/types/inputrec.h``
+
+.. _reference manual: gmx-manual-parent-dir_
