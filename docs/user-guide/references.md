@@ -33,3 +33,5 @@
 [wwwpage]: http://www.gromacs.org
 [install guide]: install-guide.html
 [reference manual]: manual-@PROJECT_VERSION@.pdf
+
+[`verlet-buffer-tolerance`]: #verlet-buffer-tolerance

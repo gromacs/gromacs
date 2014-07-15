@@ -213,12 +213,21 @@ behaviour.
     are no separate PME ranks.
 
 `-nb`
-:   Can be set to "auto", "cpu", "gpu", "cpu_gpu."
+:   Can be set to "auto", "cpu", "gpu", or "cpu_gpu."
     Defaults to "auto," which uses a compatible GPU if available.
     Setting "cpu" requires that no GPU is used. Setting "gpu" requires
     that a compatible GPU be available and will be used. Setting
     "cpu_gpu" permits the CPU to execute a GPU-like code path, which
     will run slowly on the CPU and should only be used for debugging.
+
+`-tunepme`
+:   Can be set to "on," "off."
+    Defaults to "on." With the Verlet cut-off scheme, optimizes the
+    non-bonded cutoff radii and [Fourier grid
+    spacing](#fourierspacing) for maximum performance at equivalent
+    accuracy. Turning this option off requires [mdrun] use the scheme
+    in the [.tpr] file.
+
 
 ### Examples for mdrun on one node
 
@@ -292,21 +301,41 @@ presence of GPUs, network, and simulation algorithm, but
 it is worth measuring at around ~200 atoms/core if you
 need maximum throughput.
 
-There are further command-line parameters that are relevant in these
-cases.
-
-`-tunepme`
-:   If "on," will optimize various aspects of the PME
-    and DD algorithms, shifting load between ranks and/or
-    GPUs to maximize throughput
+There are a few further command-line parameters to [mdrun] that become
+relevant in these cases.
 
 `-gcom`
-:   Can be used to limit global communication every n steps. This can
-    improve performance for highly parallel simulations where this global
-    communication step becomes the bottleneck. For a global thermostat
-    and/or barostat, the temperature and/or pressure will also only be
-    updated every `-gcom` steps. By default, it is set to the
-    minimum of `nstcalcenergy` and `nstlist`.
+:   During the simulation [mdrun] must communicate between all ranks to
+    compute quantities such as kinetic energy. By default, this
+    happens whenever plausible, and is influenced by a lot of [.mdp
+    options](#mdp-options). The period between communication phases
+    must be a multiple of [`nstlist`](#nstlist), and defaults to
+    the minimum of `nstcalcenergy` and `nstlist`.
+    `mdrun -gcom` sets the number of steps that must elapse between
+    such communication phases, which can improve performance when
+    running on a lot of nodes. Note that this means that _e.g._
+    [temperature coupling](#temperature-coupling) algorithms will
+    effectively remain at constant energy until the next global
+    communication phase.
+
+`-dlb`
+:   Can be set to "auto," "no," or "yes."
+    Defaults to "auto." Doing Dynamic Load Balancing between MPI ranks
+    is needed to maximize performance. This is particularly important
+    for molecular systems with heterogeneous density (or density of
+    interactions). When a certain threshold for performance loss is
+    exceeded, DLB activates and shifts atoms between ranks to improve
+    performance. Can be set explicitly on or off.
+
+Note that `-tunepme` has more effect when there is more than one node,
+because the cost of communication for the PP and PME ranks differs. It
+still shifts load between PP and PME ranks, but does not change the
+number of separate PME ranks in use.
+
+Note also that `-dlb` and `-tunepme` can interfere with each other, so
+if you experience performance variation that could result from this,
+you may wish to tune PME separately, and run the result with `mdrun
+-notunepme -dlb yes`.
 
 The [gmx tune_pme] utility is available to search a wider
 range of parameter space, including making safe

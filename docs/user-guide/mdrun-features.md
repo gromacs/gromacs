@@ -101,3 +101,22 @@ temperature, the order of the files is not important. The random seed
 is set with `-reseed. The velocities are scaled and neighbor
 searching is performed after every exchange. See the Reference Manual
 for more details on how replica exchange functions in GROMACS.
+
+## Controlling the length of the simulation
+
+Normally, the length of an MD simulation is best managed through the
+[.mdp] option [nsteps](#nsteps), however there are situations where
+more control is useful. `mdrun -nsteps 100` overrides the [.mdp] file
+and executes 100 more steps. `mdrun -maxh 2.5` will terminate the
+simulation shortly before 2.5 hours elapse, which can be useful when
+running under cluster queues (as long as the queueing system does not
+ever suspend the simulation).
+
+## Testing the Verlet cut-off scheme
+
+During the transition period when both group and Verlet cutoff schemes
+are supported, `mdrun -testverlet` is available to permit users to do
+a quick estimate of performance that [mdrun] would achieve with a
+setup similar to that contained in a group-scheme [.tpr] file. It
+should not be used for production simulations, and will be removed
+in a future version of GROMACS.
