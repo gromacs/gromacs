@@ -137,6 +137,7 @@ class ArrayRef
          * type.  It is not explicit to enable that usage.
          */
         ArrayRef(const EmptyArrayRef &) : begin_(NULL), end_(NULL) {}
+#if 0
         /*! \brief
          * Constructs a reference to a particular range.
          *
@@ -150,6 +151,7 @@ class ArrayRef
         {
             GMX_ASSERT(end >= begin, "Invalid range");
         }
+#endif
         /*! \brief
          * Constructs a reference to a particular range in a std::vector.
          *
@@ -347,6 +349,7 @@ class ConstArrayRef
          * template type.  It is not explicit to enable that usage.
          */
         ConstArrayRef(const EmptyArrayRef &) : begin_(NULL), end_(NULL) {}
+#if 0
         /*! \brief
          * Constructs a reference to a particular range.
          *
@@ -360,6 +363,7 @@ class ConstArrayRef
         {
             GMX_ASSERT(end >= begin, "Invalid range");
         }
+#endif
         /*! \brief
          * Constructs a reference to a particular range in a std::vector.
          *

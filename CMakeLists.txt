@@ -246,7 +246,7 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_SIMD}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 IBM_QPX Sparc64_HPC_ACE Reference)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 IBM_QPX SPARC64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
@@ -428,6 +428,11 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 # things can be sorted out now, before the detection takes place.
 if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
     include(gmxManageBlueGene)
+endif()
+
+if(${CMAKE_CXX_COMPILER_ID} MATCHES Fujitsu OR 
+   (${CMAKE_CXX_COMPILER_ID} MATCHES unknown AND ${CMAKE_CXX_COMPILER} MATCHES ^FCC))
+    include(gmxManageFujitsuSparc64)
 endif()
 
 ########################################################################
