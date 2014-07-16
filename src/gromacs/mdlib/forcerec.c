@@ -2240,7 +2240,7 @@ static void init_nb_verlet(FILE                *fp,
                       DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
                       bFEP_NonBonded,
-                      gmx_omp_nthreads_get(emntNonbonded));
+                      gmx_omp_nthreads_get(emntPairsearch));
 
     for (i = 0; i < nbv->ngrp; i++)
     {
