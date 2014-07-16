@@ -110,7 +110,8 @@ static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE}
 static void pick_module_nthreads(FILE *fplog, int m,
                                  gmx_bool bSimMaster,
                                  gmx_bool bFullOmpSupport,
-                                 gmx_bool bSepPME)
+                                 gmx_bool bSepPME,
+                                 gmx_bool bNthAuto)
 {
     char    *env;
     int      nth;
@@ -143,10 +144,10 @@ static void pick_module_nthreads(FILE *fplog, int m,
 
         /* with the verlet codepath, when any GMX_*_NUM_THREADS env var is set,
          * OMP_NUM_THREADS also has to be set */
-        if (bFullOmpSupport && getenv("OMP_NUM_THREADS") == NULL)
+        if (bNthAuto)
         {
             gmx_fatal(FARGS, "%s=%d is set, the default number of threads also "
-                      "needs to be set with OMP_NUM_THREADS!",
+                      "needs to be set with OMP_NUM_THREADS or -ntomp!",
                       modth_env_var[m], nth);
         }
 
@@ -245,7 +246,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 {
     int      nth, nth_pmeonly, gmx_maxth, nppn;
     char    *env;
-    gmx_bool bSepPME, bOMP;
+    gmx_bool bSepPME, bOMP, bNthAuto = FALSE;
 
 #ifdef GMX_OPENMP
     bOMP = TRUE;
@@ -323,6 +324,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             {
                 nth = 1;
             }
+            bNthAuto = TRUE;
         }
 
         /* now we have the global values, set them:
@@ -356,15 +358,15 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 
         /* now set the per-module values */
         modth.nth[emntDefault] = modth.gnth;
-        pick_module_nthreads(fplog, emntDomdec, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntPairsearch, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntNonbonded, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntBonded, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntPME, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntUpdate, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntVSITE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
+        pick_module_nthreads(fplog, emntDomdec, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
+        pick_module_nthreads(fplog, emntPairsearch, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
+        pick_module_nthreads(fplog, emntNonbonded, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
+        pick_module_nthreads(fplog, emntBonded, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
+        pick_module_nthreads(fplog, emntPME, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
+        pick_module_nthreads(fplog, emntUpdate, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
+        pick_module_nthreads(fplog, emntVSITE, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
+        pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
+        pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME, bNthAuto);
 
         /* set the number of threads globally */
         if (bOMP)
