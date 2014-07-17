@@ -35,9 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <math.h>
@@ -785,13 +783,13 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     t_param    *ang, *dih, *pai, *improper;
     t_rbondeds *hbang, *hbdih;
     char      **anm;
+    const char *p;
     int         res, minres, maxres;
     int         i, j, j1, k, k1, l, l1, m, n, i1, i2;
     int         ninc, maxang, maxdih, maxpai;
     int         nang, ndih, npai, nimproper, nbd;
     int         nFound;
     gmx_bool    bFound, bExcl;
-
 
     /* These are the angles, dihedrals and pairs that we generate
      * from the bonds. The ones that are already there from the rtp file
@@ -815,6 +813,17 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     if (hb)
     {
         gen_excls(atoms, excls, hb, bAllowMissing);
+        /* mark all entries as not matched yet */
+        for (i = 0; i < atoms->nres; i++)
+        {
+            for (j = 0; j < ebtsNR; j++)
+            {
+                for (k = 0; k < hb[i].rb[j].nb; k++)
+                {
+                    hb[i].rb[j].b[k].match = FALSE;
+                }
+            }
+        }
     }
 
     /* Extract all i-j-k-l neighbours from nnb struct to generate all
@@ -875,6 +884,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                         if (bFound)
                                         {
                                             set_p_string(&(ang[nang]), hbang->b[l].s);
+                                            /* Mark that we found a match for this entry */
+                                            hbang->b[l].match = TRUE;
                                         }
                                     }
                                 }
@@ -937,6 +948,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                             if (bFound)
                                             {
                                                 set_p_string(&dih[ndih], hbdih->b[n].s);
+                                                /* Mark that we found a match for this entry */
+                                                hbdih->b[n].match = TRUE;
 
                                                 /* Set the last parameter to be able to see
                                                    if the dihedral was in the rtp list.
@@ -1021,6 +1034,106 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         }
                     }
                 }
+            }
+        }
+    }
+
+    /* The above approach is great in that we double-check that e.g. an angle
+     * really corresponds to three atoms connected by bonds, but this is not
+     * generally true. Go through the angle and dihedral hackblocks to add
+     * entries that we have not yet marked as matched when going through bonds.
+     */
+    for (i = 0; i < atoms->nres; i++)
+    {
+        /* Add remaining angles from hackblock */
+        hbang = &hb[i].rb[ebtsANGLES];
+        for (j = 0; j < hbang->nb; j++)
+        {
+            if (hbang->b[j].match == TRUE)
+            {
+                /* We already used this entry, continue to the next */
+                continue;
+            }
+            /* Hm - entry not used, let's see if we can find all atoms */
+            if (nang == maxang)
+            {
+                maxang += ninc;
+                srenew(ang, maxang);
+            }
+            bFound = TRUE;
+            for (k = 0; k < 3 && bFound; k++)
+            {
+                p   = hbang->b[j].a[k];
+                res = i;
+                if (p[0] == '-')
+                {
+                    p++;
+                    res--;
+                }
+                else if (p[0] == '+')
+                {
+                    p++;
+                    res++;
+                }
+                ang[nang].a[k] = search_res_atom(p, res, atoms, "angle", TRUE);
+                bFound         = (ang[nang].a[k] != NO_ATID);
+            }
+            ang[nang].C0 = NOTSET;
+            ang[nang].C1 = NOTSET;
+
+            if (bFound)
+            {
+                set_p_string(&(ang[nang]), hbang->b[j].s);
+                hbang->b[j].match = TRUE;
+                /* Incrementing nang means we save this angle */
+                nang++;
+            }
+        }
+
+        /* Add remaining dihedrals from hackblock */
+        hbdih = &hb[i].rb[ebtsPDIHS];
+        for (j = 0; j < hbdih->nb; j++)
+        {
+            if (hbdih->b[j].match == TRUE)
+            {
+                /* We already used this entry, continue to the next */
+                continue;
+            }
+            /* Hm - entry not used, let's see if we can find all atoms */
+            if (ndih == maxdih)
+            {
+                maxdih += ninc;
+                srenew(dih, maxdih);
+            }
+            bFound = TRUE;
+            for (k = 0; k < 4 && bFound; k++)
+            {
+                p   = hbdih->b[j].a[k];
+                res = i;
+                if (p[0] == '-')
+                {
+                    p++;
+                    res--;
+                }
+                else if (p[0] == '+')
+                {
+                    p++;
+                    res++;
+                }
+                dih[ndih].a[k] = search_res_atom(p, res, atoms, "dihedral", TRUE);
+                bFound         = (dih[ndih].a[k] != NO_ATID);
+            }
+            for (m = 0; m < MAXFORCEPARAM; m++)
+            {
+                dih[ndih].c[m] = NOTSET;
+            }
+
+            if (bFound)
+            {
+                set_p_string(&(dih[ndih]), hbdih->b[j].s);
+                hbdih->b[j].match = TRUE;
+                /* Incrementing ndih means we save this dihedral */
+                ndih++;
             }
         }
     }

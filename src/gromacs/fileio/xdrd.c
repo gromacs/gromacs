@@ -36,9 +36,7 @@
  */
 #include "xdrf.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"

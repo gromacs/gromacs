@@ -615,7 +615,7 @@ add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
         // FIXME: Use exceptions.
         return SelectionTreeElementPointer();
     }
-    _gmx_selelem_update_flags(child, scanner);
+    _gmx_selelem_update_flags(child);
     if ((child->flags & SEL_DYNAMIC) && !(param->flags & SPAR_DYNAMIC))
     {
         _gmx_selparser_error(scanner, "dynamic values not supported");

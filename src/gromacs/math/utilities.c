@@ -36,9 +36,7 @@
  */
 #include "gromacs/math/utilities.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <assert.h>
 #include <math.h>
@@ -173,6 +171,7 @@ static const double
 
 double gmx_erfd(double x)
 {
+#ifdef GMX_FLOAT_FORMAT_IEEE754
     gmx_int32_t hx, ix, i;
     double      R, S, P, Q, s, y, z, r;
 
@@ -278,11 +277,16 @@ double gmx_erfd(double x)
     {
         return r/x-one;
     }
+#else
+    /* No IEEE754 information. We need to trust that the OS provides erf(). */
+    return erf(x);
+#endif
 }
 
 
 double gmx_erfcd(double x)
 {
+#ifdef GMX_FLOAT_FORMAT_IEEE754
     gmx_int32_t hx, ix;
     double      R, S, P, Q, s, y, z, r;
 
@@ -403,6 +407,10 @@ double gmx_erfcd(double x)
             return two-tiny;
         }
     }
+#else
+    /* No IEEE754 information. We need to trust that the OS provides erfc(). */
+    return erfc(x);
+#endif
 }
 
 
@@ -715,9 +723,7 @@ float gmx_erfcf(float x)
 
 gmx_bool gmx_isfinite(real gmx_unused x)
 {
-    gmx_bool returnval = TRUE;
-    /* If no suitable function was found, assume the value is
-     * finite. */
+    gmx_bool returnval;
 
 #ifdef HAVE__FINITE
     returnval = _finite(x);
@@ -725,6 +731,10 @@ gmx_bool gmx_isfinite(real gmx_unused x)
     returnval = isfinite(x);
 #elif defined HAVE__ISFINITE
     returnval = _isfinite(x);
+#else
+    /* If no suitable function was found, assume the value is
+     * finite. */
+    returnval = TRUE;
 #endif
     return returnval;
 }

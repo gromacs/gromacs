@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "typedefs.h"
 #include "types/commrec.h"
@@ -368,7 +366,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     if (od->nr == 0)
     {
         /* This means that this is not the master node */
-        gmx_fatal(FARGS, "Orientation restraints are only supported on the master node, use less processors");
+        gmx_fatal(FARGS, "Orientation restraints are only supported on the master rank, use fewer ranks");
     }
 
     bTAV  = (od->edt != 0);

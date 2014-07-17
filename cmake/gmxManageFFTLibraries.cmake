@@ -73,11 +73,15 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     string(TOUPPER "${FFTW}" FFTW)
     if(NOT ${FFTW}_FOUND)
-      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for single-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-GMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
+      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for mixed-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-GMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
     endif()
 
     set(PKG_FFT "${${FFTW}_PKG}")
-    include_directories(${${FFTW}_INCLUDE_DIRS})
+    if (GMX_BUILD_OWN_FFTW)
+        include_directories(BEFORE ${${FFTW}_INCLUDE_DIRS})
+    else()
+        include_directories(${${FFTW}_INCLUDE_DIRS})
+    endif()
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
     set(GMX_FFT_FFTW3 1)
 

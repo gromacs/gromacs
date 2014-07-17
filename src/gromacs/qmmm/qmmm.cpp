@@ -58,8 +58,8 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "txtdump.h"
 #include "copyrite.h"
-#include "qmmmxx.h"
-#include "utility/fatalerror.h"
+#include "gromacs/qmmmxx.h"
+#include "gromacs/utility/fatalerror.h"
 #include "typedefs.h"
 #include "gromacs/topology/mtop_util.h"
 

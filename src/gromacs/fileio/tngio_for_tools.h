@@ -37,7 +37,7 @@
 
 #include <stdio.h>
 
-#include "external/tng_io/include/tng_io_fwd.h"
+#include "tng/tng_io_fwd.h"
 
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/utility/basedefinitions.h"

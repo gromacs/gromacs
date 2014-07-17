@@ -239,6 +239,17 @@ gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int maxn);
 /** Checks whether an index group is sorted. */
 bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g);
+
+/*! \brief
+ * Checks whether an index group has atoms from a defined range.
+ *
+ * \param[in]  g      Index group to check.
+ * \param[in]  natoms Largest atom number allowed.
+ * \returns    true if all atoms in the index group are in the
+ *     range 0 to \p natoms (i.e., no atoms over \p natoms are referenced).
+ */
+bool
+gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms);
 /*@}*/
 
 /*! \name Functions for set operations on gmx_ana_index_t

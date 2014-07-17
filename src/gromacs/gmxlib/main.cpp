@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -95,7 +93,7 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     }
     if (bAppendNodeId)
     {
-        strcat(buf, "_node");
+        strcat(buf, "_rank");
         sprintf(buf+strlen(buf), "%d", cr->nodeid);
     }
     strcat(buf, ".");
@@ -104,7 +102,7 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     strcat(buf, (ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
     if (debug)
     {
-        fprintf(debug, "node %d par_fn '%s'\n", cr->nodeid, buf);
+        fprintf(debug, "rank %d par_fn '%s'\n", cr->nodeid, buf);
         if (fn2ftp(buf) == efLOG)
         {
             fprintf(debug, "log\n");
@@ -309,7 +307,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
 
     fprintf(fp,
             "Log file opened on %s"
-            "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
+            "Host: %s  pid: %d  rank ID: %d  number of ranks:  %d\n",
             timebuf, host, pid, cr->nodeid, cr->nnodes);
     try
     {
@@ -357,7 +355,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     nnodes  = cr->nnodes;
     if (nnodes % nsim != 0)
     {
-        gmx_fatal(FARGS, "The number of nodes (%d) is not a multiple of the number of simulations (%d)", nnodes, nsim);
+        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%d)", nnodes, nsim);
     }
 
     nnodpersim = nnodes/nsim;
@@ -365,7 +363,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
 
     if (debug)
     {
-        fprintf(debug, "We have %d simulations, %d nodes per simulation, local simulation is %d\n", nsim, nnodpersim, sim);
+        fprintf(debug, "We have %d simulations, %d ranks per simulation, local simulation is %d\n", nsim, nnodpersim, sim);
     }
 
     snew(ms, 1);
@@ -414,7 +412,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
         fprintf(debug, "This is simulation %d", cr->ms->sim);
         if (PAR(cr))
         {
-            fprintf(debug, ", local number of nodes %d, local nodeid %d",
+            fprintf(debug, ", local number of ranks %d, local rank ID %d",
                     cr->nnodes, cr->sim_nodeid);
         }
         fprintf(debug, "\n\n");

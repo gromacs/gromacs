@@ -33,9 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stdio.h>
 #include <time.h>
@@ -2373,7 +2371,7 @@ void get_pme_ddnodes(t_commrec *cr, int pmenodeid,
 
     if (debug)
     {
-        fprintf(debug, "Receive coordinates from PP nodes:");
+        fprintf(debug, "Receive coordinates from PP ranks:");
         for (x = 0; x < *nmy_ddnodes; x++)
         {
             fprintf(debug, " %d", (*my_ddnodes)[x]);
@@ -2589,7 +2587,7 @@ static int check_bLocalCG(gmx_domdec_t *dd, int ncg_sys, const char *bLocalCG,
         if (!bLocalCG[dd->index_gl[i]])
         {
             fprintf(stderr,
-                    "DD node %d, %s: cg %d, global cg %d is not marked in bLocalCG (ncg_home %d)\n", dd->rank, where, i+1, dd->index_gl[i]+1, dd->ncg_home);
+                    "DD rank %d, %s: cg %d, global cg %d is not marked in bLocalCG (ncg_home %d)\n", dd->rank, where, i+1, dd->index_gl[i]+1, dd->ncg_home);
             nerr++;
         }
     }
@@ -2603,7 +2601,7 @@ static int check_bLocalCG(gmx_domdec_t *dd, int ncg_sys, const char *bLocalCG,
     }
     if (ngl != dd->ncg_tot)
     {
-        fprintf(stderr, "DD node %d, %s: In bLocalCG %d cgs are marked as local, whereas there are %d\n", dd->rank, where, ngl, dd->ncg_tot);
+        fprintf(stderr, "DD rank %d, %s: In bLocalCG %d cgs are marked as local, whereas there are %d\n", dd->rank, where, ngl, dd->ncg_tot);
         nerr++;
     }
 
@@ -2626,7 +2624,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
         {
             if (have[dd->gatindex[a]] > 0)
             {
-                fprintf(stderr, "DD node %d: global atom %d occurs twice: index %d and %d\n", dd->rank, dd->gatindex[a]+1, have[dd->gatindex[a]], a+1);
+                fprintf(stderr, "DD rank %d: global atom %d occurs twice: index %d and %d\n", dd->rank, dd->gatindex[a]+1, have[dd->gatindex[a]], a+1);
             }
             else
             {
@@ -2645,7 +2643,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
         {
             if (a >= dd->nat_tot)
             {
-                fprintf(stderr, "DD node %d: global atom %d marked as local atom %d, which is larger than nat_tot (%d)\n", dd->rank, i+1, a+1, dd->nat_tot);
+                fprintf(stderr, "DD rank %d: global atom %d marked as local atom %d, which is larger than nat_tot (%d)\n", dd->rank, i+1, a+1, dd->nat_tot);
                 nerr++;
             }
             else
@@ -2653,7 +2651,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
                 have[a] = 1;
                 if (dd->gatindex[a] != i)
                 {
-                    fprintf(stderr, "DD node %d: global atom %d marked as local atom %d, which has global atom index %d\n", dd->rank, i+1, a+1, dd->gatindex[a]+1);
+                    fprintf(stderr, "DD rank %d: global atom %d marked as local atom %d, which has global atom index %d\n", dd->rank, i+1, a+1, dd->gatindex[a]+1);
                     nerr++;
                 }
             }
@@ -2663,7 +2661,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
     if (ngl != dd->nat_tot)
     {
         fprintf(stderr,
-                "DD node %d, %s: %d global atom indices, %d local atoms\n",
+                "DD rank %d, %s: %d global atom indices, %d local atoms\n",
                 dd->rank, where, ngl, dd->nat_tot);
     }
     for (a = 0; a < dd->nat_tot; a++)
@@ -2671,7 +2669,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
         if (have[a] == 0)
         {
             fprintf(stderr,
-                    "DD node %d, %s: local atom %d, global %d has no global index\n",
+                    "DD rank %d, %s: local atom %d, global %d has no global index\n",
                     dd->rank, where, a+1, dd->gatindex[a]+1);
         }
     }
@@ -2681,7 +2679,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
 
     if (nerr > 0)
     {
-        gmx_fatal(FARGS, "DD node %d, %s: %d atom/cg index inconsistencies",
+        gmx_fatal(FARGS, "DD rank %d, %s: %d atom/cg index inconsistencies",
                   dd->rank, where, nerr);
     }
 }
@@ -2810,7 +2808,7 @@ static gmx_bool check_grid_jump(gmx_int64_t     step,
                 /* This error should never be triggered under normal
                  * circumstances, but you never know ...
                  */
-                gmx_fatal(FARGS, "Step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d. This should not have happened. Running with less nodes might avoid this issue.",
+                gmx_fatal(FARGS, "Step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d. This should not have happened. Running with fewer ranks might avoid this issue.",
                           gmx_step_str(step, buf),
                           dim2char(dim), dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
             }
@@ -3183,7 +3181,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
                     dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
                     comm->cutoff,
                     dd->nc[d], dd->nc[d],
-                    dd->nnodes > dd->nc[d] ? "cells" : "processors");
+                    dd->nnodes > dd->nc[d] ? "cells" : "ranks");
 
             if (setmode == setcellsizeslbLOCAL)
             {
@@ -5499,9 +5497,9 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         if (npme > 0 && fabs(lossp) >= DD_PERF_LOSS_WARN)
         {
             sprintf(buf,
-                    "NOTE: %.1f %% performance was lost because the PME nodes\n"
-                    "      had %s work to do than the PP nodes.\n"
-                    "      You might want to %s the number of PME nodes\n"
+                    "NOTE: %.1f %% performance was lost because the PME ranks\n"
+                    "      had %s work to do than the PP ranks.\n"
+                    "      You might want to %s the number of PME ranks\n"
                     "      or %s the cut-off and the grid spacing.\n",
                     fabs(lossp*100),
                     (lossp < 0) ? "less"     : "more",
@@ -6021,13 +6019,13 @@ static void make_pp_communicator(FILE *fplog, t_commrec *cr, int gmx_unused reor
     if (fplog)
     {
         fprintf(fplog,
-                "Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
+                "Domain decomposition rank %d, coordinates %d %d %d\n\n",
                 dd->rank, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
     }
     if (debug)
     {
         fprintf(debug,
-                "Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
+                "Domain decomposition rank %d, coordinates %d %d %d\n\n",
                 dd->rank, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
     }
 }
@@ -6138,7 +6136,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
         }
         else if (fplog)
         {
-            fprintf(fplog, "#pmenodes (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)\n", cr->npmenodes, dd->nc[XX], dd->nc[YY], dd->nc[XX], dd->nc[ZZ]);
+            fprintf(fplog, "Number of PME-only ranks (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)\n", cr->npmenodes, dd->nc[XX], dd->nc[YY], dd->nc[XX], dd->nc[ZZ]);
             fprintf(fplog,
                     "Will not use a Cartesian communicator for PP <-> PME\n\n");
         }
@@ -6175,7 +6173,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
 
         if (fplog)
         {
-            fprintf(fplog, "Cartesian nodeid %d, coordinates %d %d %d\n\n",
+            fprintf(fplog, "Cartesian rank %d, coordinates %d %d %d\n\n",
                     cr->sim_nodeid, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
         }
 
@@ -6202,7 +6200,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
             case ddnoPP_PME:
                 if (fplog)
                 {
-                    fprintf(fplog, "Order of the nodes: PP first, PME last\n");
+                    fprintf(fplog, "Order of the ranks: PP first, PME last\n");
                 }
                 break;
             case ddnoINTERLEAVE:
@@ -6213,7 +6211,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
                  */
                 if (fplog)
                 {
-                    fprintf(fplog, "Interleaving PP and PME nodes\n");
+                    fprintf(fplog, "Interleaving PP and PME ranks\n");
                 }
                 comm->pmenodes = dd_pmenodes(cr);
                 break;
@@ -6243,7 +6241,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
 
     if (fplog)
     {
-        fprintf(fplog, "This is a %s only node\n\n",
+        fprintf(fplog, "This rank does only %s work.\n\n",
                 (cr->duty & DUTY_PP) ? "particle-particle" : "PME-mesh");
     }
 }
@@ -6626,7 +6624,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     if (fplog)
     {
         fprintf(fplog,
-                "\nInitializing Domain Decomposition on %d nodes\n", cr->nnodes);
+                "\nInitializing Domain Decomposition on %d ranks\n", cr->nnodes);
     }
 
     snew(dd, 1);
@@ -6875,13 +6873,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
         if (dd->nc[XX] == 0)
         {
             bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
-            sprintf(buf, "Change the number of nodes or mdrun option %s%s%s",
+            sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
                     comm->eDLB != edlbNO ? " or -dds" : "",
                     bC ? " or your LINCS settings" : "");
 
             gmx_fatal_collective(FARGS, cr, NULL,
-                                 "There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
+                                 "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
                                  cr->nnodes-cr->npmenodes, limit, buf);
@@ -6892,7 +6890,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     if (fplog)
     {
         fprintf(fplog,
-                "Domain decomposition grid %d x %d x %d, separate PME nodes %d\n",
+                "Domain decomposition grid %d x %d x %d, separate PME ranks %d\n",
                 dd->nc[XX], dd->nc[YY], dd->nc[ZZ], cr->npmenodes);
     }
 
@@ -6900,13 +6898,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     if (cr->nnodes - dd->nnodes != cr->npmenodes)
     {
         gmx_fatal_collective(FARGS, cr, NULL,
-                             "The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
+                             "The size of the domain decomposition grid (%d) does not match the number of ranks (%d). The total number of ranks is %d",
                              dd->nnodes, cr->nnodes - cr->npmenodes, cr->nnodes);
     }
     if (cr->npmenodes > dd->nnodes)
     {
         gmx_fatal_collective(FARGS, cr, NULL,
-                             "The number of separate PME nodes (%d) is larger than the number of PP nodes (%d), this is not supported.", cr->npmenodes, dd->nnodes);
+                             "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", cr->npmenodes, dd->nnodes);
     }
     if (cr->npmenodes > 0)
     {
@@ -7430,7 +7428,7 @@ void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
         if (dd->pme_nodeid >= 0)
         {
             gmx_fatal_collective(FARGS, NULL, dd,
-                                 "Can not have separate PME nodes without PME electrostatics");
+                                 "Can not have separate PME ranks without PME electrostatics");
         }
     }
 

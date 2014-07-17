@@ -260,7 +260,7 @@ _gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
     char    buf[1024];
     va_list ap;
     va_start(ap, fmt);
-    vsprintf(buf, fmt, ap);
+    vsnprintf(buf, 1024, fmt, ap);
     va_end(ap);
     errors->append(buf);
 }
@@ -321,8 +321,6 @@ SelectionParserParameter::SelectionParserParameter(
 
 /*!
  * \param[in,out] sel  Root of the selection element tree to initialize.
- * \param[in]     scanner Scanner data structure.
- * \returns       0 on success, an error code on error.
  *
  * Propagates the \ref SEL_DYNAMIC flag from the children of \p sel to \p sel
  * (if any child of \p sel is dynamic, \p sel is also marked as such).
@@ -339,8 +337,7 @@ SelectionParserParameter::SelectionParserParameter(
  * operation does not descend beyond such elements.
  */
 void
-_gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel,
-                          yyscan_t                                scanner)
+_gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel)
 {
     bool                bUseChildType = false;
     bool                bOnlySingleChildren;
@@ -408,18 +405,18 @@ _gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel,
     while (child)
     {
         /* Update the child */
-        _gmx_selelem_update_flags(child, scanner);
-        /* Propagate the dynamic flag */
-        sel->flags |= (child->flags & SEL_DYNAMIC);
+        _gmx_selelem_update_flags(child);
+        /* Propagate the dynamic and unsorted flags */
+        sel->flags |= (child->flags & (SEL_DYNAMIC | SEL_UNSORTED));
         /* Propagate the type flag if necessary and check for problems */
         if (bUseChildType)
         {
             if ((sel->flags & SEL_VALTYPEMASK)
                 && !(sel->flags & child->flags & SEL_VALTYPEMASK))
             {
-                _gmx_selparser_error(scanner, "invalid combination of selection expressions");
-                // FIXME: Use an exception.
-                return;
+                // TODO: Recollect when this is triggered, and whether the type
+                // is appropriate.
+                GMX_THROW(gmx::InvalidInputError("Invalid combination of selection expressions"));
             }
             sel->flags |= (child->flags & SEL_VALTYPEMASK);
         }
@@ -918,8 +915,9 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
 
     if (_gmx_sel_lexer_has_groups_set(scanner))
     {
-        gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
-        sel->resolveIndexGroupReference(grps);
+        gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
+        gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
+        sel->resolveIndexGroupReference(grps, sc->gall.isize);
     }
 
     return sel;
@@ -941,8 +939,9 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
 
     if (_gmx_sel_lexer_has_groups_set(scanner))
     {
-        gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
-        sel->resolveIndexGroupReference(grps);
+        gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
+        gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
+        sel->resolveIndexGroupReference(grps, sc->gall.isize);
     }
 
     return sel;
@@ -989,11 +988,6 @@ _gmx_sel_init_selection(const char                             *name,
                         const gmx::SelectionTreeElementPointer &sel,
                         yyscan_t                                scanner)
 {
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[1024];
-    sprintf(buf, "In selection '%s'", _gmx_sel_lexer_pselstr(scanner));
-    gmx::MessageStringContext  context(errors, buf);
-
     if (sel->v.type != POS_VALUE)
     {
         /* FIXME: Better handling of this error */
@@ -1008,7 +1002,13 @@ _gmx_sel_init_selection(const char                             *name,
         root->setName(name);
     }
     /* Update the flags */
-    _gmx_selelem_update_flags(root, scanner);
+    _gmx_selelem_update_flags(root);
+    gmx::ExceptionInitializer errors("Invalid index group reference(s)");
+    root->checkUnsortedAtoms(true, &errors);
+    if (errors.hasNestedExceptions())
+    {
+        GMX_THROW(gmx::InconsistentInputError(errors));
+    }
 
     root->fillNameIfMissing(_gmx_sel_lexer_pselstr(scanner));
 
@@ -1042,39 +1042,40 @@ _gmx_sel_assign_variable(const char                             *name,
     const char                  *pselstr = _gmx_sel_lexer_pselstr(scanner);
     SelectionTreeElementPointer  root;
 
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[1024];
-    sprintf(buf, "In selection '%s'", pselstr);
-    gmx::MessageStringContext  context(errors, buf);
-
-    _gmx_selelem_update_flags(expr, scanner);
+    _gmx_selelem_update_flags(expr);
     /* Check if this is a constant non-group value */
     if (expr->type == SEL_CONST && expr->v.type != GROUP_VALUE)
     {
         /* If so, just assign the constant value to the variable */
         sc->symtab->addVariable(name, expr);
-        goto finish;
     }
     /* Check if we are assigning a variable to another variable */
-    if (expr->type == SEL_SUBEXPRREF)
+    else if (expr->type == SEL_SUBEXPRREF)
     {
         /* If so, make a simple alias */
         sc->symtab->addVariable(name, expr->child);
-        goto finish;
     }
-    /* Create the root element */
-    root.reset(new SelectionTreeElement(SEL_ROOT));
-    root->setName(name);
-    /* Create the subexpression element */
-    root->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
-    root->child->setName(name);
-    _gmx_selelem_set_vtype(root->child, expr->v.type);
-    root->child->child  = expr;
-    /* Update flags */
-    _gmx_selelem_update_flags(root, scanner);
-    /* Add the variable to the symbol table */
-    sc->symtab->addVariable(name, root->child);
-finish:
+    else
+    {
+        /* Create the root element */
+        root.reset(new SelectionTreeElement(SEL_ROOT));
+        root->setName(name);
+        /* Create the subexpression element */
+        root->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
+        root->child->setName(name);
+        _gmx_selelem_set_vtype(root->child, expr->v.type);
+        root->child->child  = expr;
+        /* Update flags */
+        _gmx_selelem_update_flags(root);
+        gmx::ExceptionInitializer errors("Invalid index group reference(s)");
+        root->checkUnsortedAtoms(true, &errors);
+        if (errors.hasNestedExceptions())
+        {
+            GMX_THROW(gmx::InconsistentInputError(errors));
+        }
+        /* Add the variable to the symbol table */
+        sc->symtab->addVariable(name, root->child);
+    }
     srenew(sc->varstrs, sc->nvars + 1);
     sc->varstrs[sc->nvars] = strdup(pselstr);
     ++sc->nvars;

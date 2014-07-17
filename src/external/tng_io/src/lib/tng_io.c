@@ -22,10 +22,10 @@
 #include <zlib.h>
 #endif
 
-#include "../../include/tng_io.h"
-#include "../../include/md5.h"
-#include "../../include/compression/tng_compress.h"
-#include "../include/version.h"
+#include "tng/tng_io.h"
+#include "tng/md5.h"
+#include "compression/tng_compress.h"
+#include "tng/version.h"
 
 
 struct tng_bond {
@@ -7852,6 +7852,52 @@ static tng_function_status tng_atom_destroy(tng_atom_t atom)
     return(TNG_SUCCESS);
 }
 
+tng_function_status DECLSPECDLLEXPORT tng_version_major
+                (const tng_trajectory_t tng_data,
+                 int *version)
+{
+    (void)tng_data;
+
+    *version = TNG_VERSION_MAJOR;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version_minor
+                (const tng_trajectory_t tng_data,
+                 int *version)
+{
+    (void)tng_data;
+
+    *version = TNG_VERSION_MINOR;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version_patchlevel
+                (const tng_trajectory_t tng_data,
+                 int *patch_level)
+{
+    (void)tng_data;
+
+    *patch_level = TNG_VERSION_PATCHLEVEL;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version
+                (const tng_trajectory_t tng_data,
+                 char *version,
+                 const int max_len)
+{
+    (void)tng_data;
+    TNG_ASSERT(version, "TNG library: version must not be a NULL pointer");
+
+    TNG_SNPRINTF(version, max_len, "%s", TNG_VERSION);
+
+    return(TNG_SUCCESS);
+}
+
 tng_function_status DECLSPECDLLEXPORT tng_molecule_add
                 (tng_trajectory_t tng_data,
                  const char *name,
@@ -11479,7 +11525,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
     int64_t long_stride_length, medium_stride_length;
     long file_pos, orig_frame_set_file_pos;
     tng_trajectory_frame_set_t frame_set;
-    struct tng_trajectory_frame_set   orig_frame_set;
+    struct tng_trajectory_frame_set orig_frame_set;
     tng_gen_block_t block;
     tng_function_status stat;
     int64_t cnt = 0;
@@ -11493,6 +11539,12 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
 
     orig_frame_set_file_pos = tng_data->current_trajectory_frame_set_input_file_pos;
     file_pos = (long)tng_data->first_trajectory_frame_set_input_file_pos;
+
+    if(file_pos < 0)
+    {
+        *n = tng_data->n_trajectory_frame_sets = cnt;
+        return(TNG_SUCCESS);
+    }
 
     tng_block_init(&block);
     fseek(tng_data->input_file,
@@ -16857,7 +16909,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_open
         /* Read the file headers */
         tng_file_headers_read(*tng_data_p, TNG_USE_HASH);
 
-        tng_num_frame_sets_get(*tng_data_p, &(*tng_data_p)->n_trajectory_frame_sets);
+        stat = tng_num_frame_sets_get(*tng_data_p, &(*tng_data_p)->n_trajectory_frame_sets);
+
+        if(stat != TNG_SUCCESS)
+        {
+            return(stat);
+        }
     }
 
     if(mode == 'w')
@@ -17322,6 +17379,10 @@ tng_function_status DECLSPECDLLEXPORT tng_util_particle_data_next_frame_read
                 {
                     return(stat);
                 }
+                if(frame_set->first_frame + frame_set->n_frames - 1 < i)
+                {
+                    return(TNG_FAILURE);
+                }
                 i = frame_set->first_frame;
             }
         }
@@ -17481,6 +17542,10 @@ tng_function_status DECLSPECDLLEXPORT tng_util_non_particle_data_next_frame_read
                 if(stat == TNG_CRITICAL)
                 {
                     return(stat);
+                }
+                if(frame_set->first_frame + frame_set->n_frames - 1 < i)
+                {
+                    return(TNG_FAILURE);
                 }
                 i = frame_set->first_frame;
             }
@@ -18889,7 +18954,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_frame_current_compression_get
                 (tng_trajectory_t tng_data,
                  const int64_t block_id,
                  int64_t *codec_id,
-                 float *factor)
+                 double *factor)
 {
     tng_trajectory_frame_set_t frame_set;
     tng_particle_data_t p_data = 0;
@@ -18986,12 +19051,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_frame_current_compression_get
     if(block_type == TNG_PARTICLE_BLOCK_DATA)
     {
         *codec_id = p_data->codec_id;
-        *factor   = (float)p_data->compression_multiplier;
+        *factor   = p_data->compression_multiplier;
     }
     else if(block_type == TNG_NON_PARTICLE_BLOCK_DATA)
     {
         *codec_id = np_data->codec_id;
-        *factor   = (float)np_data->compression_multiplier;
+        *factor   = np_data->compression_multiplier;
     }
     return(TNG_SUCCESS);
 }

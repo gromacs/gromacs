@@ -35,9 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <string.h>
 
@@ -575,7 +573,7 @@ static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
     block_bc(cr, fep->init_lambda);
     block_bc(cr, fep->init_fep_state);
     block_bc(cr, fep->delta_lambda);
-    block_bc(cr, fep->bPrintEnergy);
+    block_bc(cr, fep->edHdLPrintEnergy);
     block_bc(cr, fep->n_lambda);
     if (fep->n_lambda > 0)
     {

@@ -32,9 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <algorithm>
 
@@ -213,7 +211,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     if (debug)
     {
-        fprintf(debug, "FFT5D: Using %dx%d processor grid, rank %d,%d\n",
+        fprintf(debug, "FFT5D: Using %dx%d rank grid, rank %d,%d\n",
                 P[0], P[1], prank[0], prank[1]);
     }
 
@@ -1344,7 +1342,7 @@ fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int
     {
         if (prank == 0)
         {
-            printf("FFT5D: WARNING: Number of processors %d not evenly dividable by %d\n", size, P0);
+            printf("FFT5D: WARNING: Number of ranks %d not evenly divisible by %d\n", size, P0);
         }
         P0 = lfactor(size);
     }

@@ -269,8 +269,8 @@ rules about dependencies between the modules, but currently the checks are not
 run automatically.
 
 The checker currently checks for a few different types of issues:
-* For all Doxygen documentation (currently does not apply for members within
-  anonymous namespaces or members that do not appear in the documentation):
+* For all Doxygen documentation (currently does not apply for members that do
+  not appear in the documentation):
    * If a member has documentation, it should have a brief description.
    * A note is issued for in-body documentation for functions, since this is
      ignored by our current settings.
@@ -306,6 +306,8 @@ The checker currently checks for a few different types of issues:
   (\c \\defgroup module_foo exists for the subdirectory):
    * Such files should not be included from outside their module if they are
      undocumented or are not specified as part of library or public API.
+* For all modules:
+   * There should not be cyclic include dependencies between modules.
 
 The checker is based on extracting the Doxygen documentation in XML format.
 This information is then read using a Python script, and combined with
@@ -335,6 +337,18 @@ into `suppressios.txt`, and the line number (if any) removed.  If the
 issue does not have a file name (or a pseudo-file) associated, a leading `:`
 must be added.  To cover many similar issues, parts of the line can then be
 replaced with wildcards.
+
+A separate suppression mechanism is in place for cyclic dependencies: to
+suppress a cycle between moduleA and moduleB, add a line with format
+
+    moduleA -> moduleB
+
+into `doxygen/cycle-suppressions.txt`.  This suppresses all cycles that contain
+the mentioned edge.  Since a cycle contains multiple edges, the suppression
+should be made for the edge that is determined to be an incorrect dependency.
+This also affects the layout of the include dependency graphs (see below): the
+suppressed edge is not considered when determining the dependency order, and is
+shown as invalid in the graph.
 
 For some false positives from the script, the suppression mechanism is the
 easiest way to silence the script, but otherwise the goal would be to minimize

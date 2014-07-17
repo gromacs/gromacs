@@ -36,9 +36,7 @@
  */
 #include "gromacs/utility/futil.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,15 +85,15 @@ typedef struct t_pstack {
 } t_pstack;
 
 static t_pstack    *pstack      = NULL;
-static gmx_bool     bUnbuffered = FALSE;
+static bool         bUnbuffered = false;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
 static tMPI_Thread_mutex_t pstack_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-void no_buffers(void)
+void gmx_disable_file_buffering(void)
 {
-    bUnbuffered = TRUE;
+    bUnbuffered = true;
 }
 
 void push_ps(FILE *fp)
@@ -906,13 +904,15 @@ int gmx_fsync(FILE *fp)
     rc = fah_fsync(fp);
 #else /* GMX_FAHCORE */
     {
-        int fn = -1;
+        int fn;
 
         /* get the file number */
 #if defined(HAVE_FILENO)
         fn = fileno(fp);
 #elif defined(HAVE__FILENO)
         fn = _fileno(fp);
+#else
+        fn = -1;
 #endif
 
         /* do the actual fsync */

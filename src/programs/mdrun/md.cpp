@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stdlib.h>
 
@@ -190,7 +188,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_shellfc_t     shellfc;
     int               count, nconverged = 0;
     double            tcount                 = 0;
-    gmx_bool          bConverged             = TRUE, bOK, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool          bConverged             = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
@@ -1151,7 +1149,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     }
                 }
 
-                bOK = TRUE;
                 if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
                 {
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
@@ -1165,12 +1162,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         /* Correct the virial for multiple time stepping */
                         m_sub(shake_vir, fr->vir_twin_constr, shake_vir);
                     }
-
-                    if (!bOK)
-                    {
-                        gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
-                    }
-
                 }
                 else if (graph)
                 {
@@ -1467,7 +1458,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              */
             copy_mat(state->box, lastbox);
 
-            bOK         = TRUE;
             dvdl_constr = 0;
 
             if (!(bRerunMD && !rerun_fr.bV && !bForceUpdate))
@@ -1576,10 +1566,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        cr, nrnb, wcycle, upd, NULL,
                                        FALSE, bCalcVir,
                                        state->veta);
-                }
-                if (!bOK)
-                {
-                    gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
                 }
 
                 if (fr->bSepDVDL && fplog && do_log)

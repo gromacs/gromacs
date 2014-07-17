@@ -36,9 +36,7 @@
  */
 #include "gromacs/fileio/xvgr.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -57,7 +55,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
@@ -252,10 +249,12 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
             gmx::BinaryInformationSettings settings;
             settings.generatedByHeader(true);
             settings.linePrefix("# ");
-            gmx::printBinaryInformation(fp, gmx::getProgramContext(), settings);
+            gmx::printBinaryInformation(fp, output_env_get_program_context(oenv),
+                                        settings);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        fprintf(fp, "# %s is part of G R O M A C S:\n#\n", ShortProgram());
+        fprintf(fp, "# %s is part of G R O M A C S:\n#\n",
+                output_env_get_program_display_name(oenv));
         bromacs(pukestr, 99);
         fprintf(fp, "# %s\n#\n", pukestr);
         fprintf(fp, "@    title \"%s\"\n", xvgrstr(title, oenv, buf, STRLEN));

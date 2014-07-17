@@ -73,6 +73,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --enable=style -DLINUX -DHAVE_UNISTD_H
         -I src/gromacs/legacyheaders -I src
         -I src/external/thread_mpi/include
+        -I src/external/tng_io/include
         -I ${CMAKE_BINARY_DIR}/src -I ${CMAKE_BINARY_DIR}/src/gromacs/utility
         --quiet
         --inline-suppr
@@ -99,7 +100,9 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidscanf:src/gromacs/fileio/matio.cpp
         --suppress=invalidscanf:src/gromacs/fileio/xvgr.cpp
         --suppress=invalidscanf:src/gromacs/topology/index.cpp
-        --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp)
+        --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp
+        --suppress=passedByValue:src/gromacs/simd/tests/*
+        )
 
     # This list will hold the list of all files with cppcheck errors
     # (one per input file)

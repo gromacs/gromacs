@@ -32,9 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include "types/commrec.h"
 #include "network.h"
@@ -833,8 +831,8 @@ static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
     {
         md_print_warn(cr, fplog,
                       "NOTE: PME load balancing increased the non-bonded workload by more than 50%%.\n"
-                      "      For better performance use (more) PME nodes (mdrun -npme),\n"
-                      "      or in case you are beyond the scaling limit, use less nodes in total.\n");
+                      "      For better performance, use (more) PME ranks (mdrun -npme),\n"
+                      "      or if you are beyond the scaling limit, use fewer total ranks (or nodes).\n");
     }
     else
     {

@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <assert.h>
 #include <math.h>
@@ -4600,7 +4598,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
     }
     if (bPrintSepPot)
     {
-        fprintf(fplog, "Step %s: bonded V and dVdl for this node\n",
+        fprintf(fplog, "Step %s: bonded V and dVdl for this rank\n",
                 gmx_step_str(step, buf));
     }
 

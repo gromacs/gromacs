@@ -36,6 +36,7 @@
 #ifndef _tables_h
 #define _tables_h
 #include "types/simple.h"
+#include "types/interaction_const.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,7 +65,7 @@ void table_spline3_fill_ewald_lr(real                                 *table_F,
  * The force can then be interpolated linearly.
  */
 
-real ewald_spline3_table_scale(real ewaldcoeff, real rc);
+real ewald_spline3_table_scale(const interaction_const_t *ic);
 /* Return the scaling for the Ewald quadratic spline tables. */
 
 double v_q_ewald_lr(double beta, double r);

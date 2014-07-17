@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 #include <string.h>
 #include <math.h>
 
@@ -68,7 +66,6 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
@@ -955,7 +952,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             gmx::BinaryInformationSettings settings;
             settings.generatedByHeader(true);
             settings.linePrefix("# ");
-            gmx::printBinaryInformation(dip3d, gmx::getProgramContext(),
+            gmx::printBinaryInformation(dip3d, output_env_get_program_context(oenv),
                                         settings);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

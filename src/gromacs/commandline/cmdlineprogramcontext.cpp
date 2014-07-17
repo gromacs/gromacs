@@ -41,9 +41,7 @@
  */
 #include "cmdlineprogramcontext.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <cstdlib>
 #include <cstring>
@@ -321,7 +319,7 @@ CommandLineProgramContext::Impl::Impl()
 
 CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
                                       ExecutableEnvironmentPointer env)
-    : executableEnv_(move(env))
+    : executableEnv_(env)
 {
     invokedName_ = (argc != 0 ? argv[0] : "");
     programName_ = Path::getFilename(invokedName_);
@@ -370,7 +368,7 @@ CommandLineProgramContext::CommandLineProgramContext(
 
 CommandLineProgramContext::CommandLineProgramContext(
         int argc, const char *const argv[], ExecutableEnvironmentPointer env)
-    : impl_(new Impl(argc, argv, move(env)))
+    : impl_(new Impl(argc, argv, env))
 {
 }
 

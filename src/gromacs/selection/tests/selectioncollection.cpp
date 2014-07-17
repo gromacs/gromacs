@@ -417,6 +417,15 @@ TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
     EXPECT_STREQ("resname RB RC", sel_[1].selectionText());
 }
 
+TEST_F(SelectionCollectionTest, HandlesAtypicalWhitespace)
+{
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr\n1\r\nto\t10;\vatomnr 3\f to 14\r"));
+    ASSERT_EQ(2U, sel_.size());
+    EXPECT_STREQ("atomnr 1 to 10", sel_[0].selectionText());
+    // TODO: Get rid of the trailing whitespace.
+    EXPECT_STREQ("atomnr 3 to 14 ", sel_[1].selectionText());
+}
+
 TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
 {
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
@@ -491,16 +500,44 @@ TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed2)
 TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReference)
 {
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
-    EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpUnsorted\""),
+    EXPECT_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group \"GrpUnsorted\""),
                      gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.parseFromString("2"), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("group 2 or atomnr 2 to 5"),
+                     gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("within 1 of group 2"),
+                     gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReferenceDelayed)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("group 2; group \"GrpUnsorted\""));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group \"GrpUnsorted\""));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group 2"));
     EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+    // TODO: Add a separate check in the selection compiler for a safer API
+    // (makes sense in the future if the compiler needs the information for
+    // other purposes as well).
+    // EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroup)
+{
+    ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, 5));
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpB\""), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroupDelayed)
+{
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"GrpB\""));
+    EXPECT_THROW_GMX(sc_.setTopology(NULL, 5), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroupDelayed2)
+{
+    ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, 5));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"GrpB\""));
+    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingMoleculeInfo)
@@ -919,6 +956,40 @@ TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelectionsDelayed)
         "group \"GrpB\" and resname RB"
     };
     setFlags(TestFlags() | efTestSelectionNames);
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesUnsortedIndexGroupsInSelections)
+{
+    static const char * const selections[] = {
+        "foo = group \"GrpUnsorted\"",
+        "group \"GrpUnsorted\"",
+        "GrpUnsorted",
+        "2",
+        "res_cog of group \"GrpUnsorted\"",
+        "group \"GrpUnsorted\" permute 2 1",
+        "foo"
+    };
+    setFlags(TestFlags() | efTestPositionAtoms | efTestPositionMapping
+             | efTestSelectionNames);
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    runTest("simple.gro", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesUnsortedIndexGroupsInSelectionsDelayed)
+{
+    static const char * const selections[] = {
+        "foo = group \"GrpUnsorted\"",
+        "group \"GrpUnsorted\"",
+        "GrpUnsorted",
+        "2",
+        "res_cog of group \"GrpUnsorted\"",
+        "group \"GrpUnsorted\" permute 2 1",
+        "foo"
+    };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));

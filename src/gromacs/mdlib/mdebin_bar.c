@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <string.h>
 #include <float.h>
@@ -469,7 +467,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
                 bExpanded = TRUE;
             }
             /* whether to print energies */
-            if (ir->fepvals->bPrintEnergy)
+            if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
             {
                 dhc->ndh += 1;
                 bEnergy   = TRUE;

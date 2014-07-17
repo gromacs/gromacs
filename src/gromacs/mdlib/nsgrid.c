@@ -35,9 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stdlib.h>
 

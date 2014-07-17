@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -751,9 +749,9 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
 
     if (!ret)
     {
-        md5_init(&state);
-        md5_append(&state, buf, read_len);
-        md5_finish(&state, digest);
+        gmx_md5_init(&state);
+        gmx_md5_append(&state, buf, read_len);
+        gmx_md5_finish(&state, digest);
         ret = read_len;
     }
     sfree(buf);

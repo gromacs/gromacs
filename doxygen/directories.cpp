@@ -48,7 +48,7 @@ Doxygen documentation file for directories in the source tree.
 \ingroup module_commandline
  */
 
-/*!
+/*! \libinternal
 \dir src/gromacs/onlinehelp
 \brief \ref module_onlinehelp
 

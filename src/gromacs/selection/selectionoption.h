@@ -149,7 +149,7 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         using MyBase::defaultValue;
         using MyBase::defaultValueIfSet;
 
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         const char             *defaultText_;

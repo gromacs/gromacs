@@ -35,9 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -650,6 +648,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
             dlen2 = 2*len2 - norm2(dx);
             if (dlen2 < wfac*len2 && (nlocat == NULL || nlocat[b]))
             {
+                /* not race free - see detailed comment in caller */
                 *warn = b;
             }
             if (dlen2 > 0)

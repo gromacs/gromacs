@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -2140,7 +2138,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("temperature-lambdas", is->fep_lambda[efptTEMPERATURE], NULL);
     ITYPE ("calc-lambda-neighbors", fep->lambda_neighbors, 1);
     STYPE ("init-lambda-weights", is->lambda_weights, NULL);
-    EETYPE("dhdl-print-energy", fep->bPrintEnergy, yesno_names);
+    EETYPE("dhdl-print-energy", fep->edHdLPrintEnergy, edHdLPrintEnergy_names);
     RTYPE ("sc-alpha", fep->sc_alpha, 0.0);
     ITYPE ("sc-power", fep->sc_power, 1);
     RTYPE ("sc-r-power", fep->sc_r_power, 6.0);
@@ -2365,11 +2363,23 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
     }
 
-    if (ir->bSimTemp)
+    if (fep->edHdLPrintEnergy == edHdLPrintEnergyYES)
     {
-        fep->bPrintEnergy = TRUE;
-        /* always print out the energy to dhdl if we are doing expanded ensemble, since we need the total energy
-           if the temperature is changing. */
+        fep->edHdLPrintEnergy = edHdLPrintEnergyTOTAL;
+        warning_note(wi, "Old option for dhdl-print-energy given: "
+                     "changing \"yes\" to \"total\"\n");
+    }
+
+    if (ir->bSimTemp && (fep->edHdLPrintEnergy == edHdLPrintEnergyNO))
+    {
+        /* always print out the energy to dhdl if we are doing
+           expanded ensemble, since we need the total energy for
+           analysis if the temperature is changing. In some
+           conditions one may only want the potential energy, so
+           we will allow that if the appropriate mdp setting has
+           been enabled. Otherwise, total it is:
+         */
+        fep->edHdLPrintEnergy = edHdLPrintEnergyTOTAL;
     }
 
     if ((ir->efep != efepNO) || ir->bSimTemp)
@@ -4117,11 +4127,12 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
     }
 
-    if (ir->eI == eiSD1 &&
-        (gmx_mtop_ftype_count(sys, F_CONSTR) > 0 ||
-         gmx_mtop_ftype_count(sys, F_SETTLE) > 0))
+    if (ir->eI == eiSD2)
     {
-        sprintf(warn_buf, "With constraints integrator %s is less accurate, consider using %s instead", ei_names[ir->eI], ei_names[eiSD2]);
+        sprintf(warn_buf, "The stochastic dynamics integrator %s is deprecated, since\n"
+                "it is slower than integrator %s and is slightly less accurate\n"
+                "with constraints. Use the %s integrator.",
+                ei_names[ir->eI], ei_names[eiSD1], ei_names[eiSD1]);
         warning_note(wi, warn_buf);
     }
 

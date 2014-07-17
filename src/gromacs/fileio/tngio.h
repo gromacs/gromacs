@@ -36,7 +36,7 @@
 #ifndef GMX_FILEIO_TNGIO_H
 #define GMX_FILEIO_TNGIO_H
 
-#include "external/tng_io/include/tng_io_fwd.h"
+#include "tng/tng_io_fwd.h"
 
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vectypes.h"

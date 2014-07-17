@@ -91,6 +91,12 @@ int gmx_node_num(void)
 #ifndef GMX_MPI
     return 1;
 #else
+#ifdef GMX_THREAD_MPI
+    if (!gmx_mpi_initialized())
+    {
+        return 1;
+    }
+#endif
     int i;
     (void) MPI_Comm_size(MPI_COMM_WORLD, &i);
     return i;
@@ -102,6 +108,12 @@ int gmx_node_rank(void)
 #ifndef GMX_MPI
     return 0;
 #else
+#ifdef GMX_THREAD_MPI
+    if (!gmx_mpi_initialized())
+    {
+        return 0;
+    }
+#endif
     int i;
     (void) MPI_Comm_rank(MPI_COMM_WORLD, &i);
     return i;
@@ -240,7 +252,7 @@ void gmx_abort(int errorno)
     const int noderank = gmx_node_rank();
     if (nnodes > 1)
     {
-        std::fprintf(stderr, "Halting parallel program %s on node %d out of %d\n",
+        std::fprintf(stderr, "Halting parallel program %s on rank %d out of %d\n",
                      programName, noderank, nnodes);
     }
     else

@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 /* This file is completely threadsafe - please keep it that way! */
 
@@ -740,7 +738,7 @@ static void pr_fepvals(FILE *fp, int indent, t_lambda *fep, gmx_bool bMDPformat)
         }
     }
     PI("calc-lambda-neighbors", fep->lambda_neighbors);
-    PS("dhdl-print-energy", EBOOL(fep->bPrintEnergy));
+    PS("dhdl-print-energy", edHdLPrintEnergy_names[fep->edHdLPrintEnergy]);
     PR("sc-alpha", fep->sc_alpha);
     PI("sc-power", fep->sc_power);
     PR("sc-r-power", fep->sc_r_power);
@@ -1948,11 +1946,11 @@ void pr_commrec(FILE *fp, int indent, t_commrec *cr)
     fprintf(fp, "commrec:\n");
     indent += 2;
     pr_indent(fp, indent);
-    fprintf(fp, "nodeid    = %d\n", cr->nodeid);
+    fprintf(fp, "rank      = %d\n", cr->nodeid);
     pr_indent(fp, indent);
-    fprintf(fp, "nnodes    = %d\n", cr->nnodes);
+    fprintf(fp, "number of ranks = %d\n", cr->nnodes);
     pr_indent(fp, indent);
-    fprintf(fp, "npmenodes = %d\n", cr->npmenodes);
+    fprintf(fp, "PME-only ranks = %d\n", cr->npmenodes);
     /*
        pr_indent(fp,indent);
        fprintf(fp,"threadid  = %d\n",cr->threadid);

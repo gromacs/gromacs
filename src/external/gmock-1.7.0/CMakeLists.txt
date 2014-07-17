@@ -35,6 +35,10 @@
 # As stated in README.Gromacs, this file is not part of GMock, but is written
 # specifically for the GROMACS build system from scratch.
 
+include(gmxGetMsvcTupleWorkaround)
+get_msvc_tuple_workaround_definitions(GMOCK_COMPILE_DEFINITIONS)
+set(GMOCK_COMPILE_DEFINITIONS ${GMOCK_COMPILE_DEFINITIONS} PARENT_SCOPE)
+
 # GTest/GMock suggest linking with pthreads when available for thread safety
 set(CMAKE_THREAD_PREFER_PTHREAD 1)
 find_package(Threads)
@@ -51,11 +55,12 @@ set(GMOCK_SOURCES ${GMOCK_DIR}/src/gmock-all.cc)
 set(GTEST_INCLUDE_DIRS ${GTEST_DIR}/include)
 set(GMOCK_INCLUDE_DIRS ${GMOCK_DIR}/include ${GTEST_INCLUDE_DIRS})
 
-include_directories(${GTEST_INCLUDE_DIRS})
-include_directories(${GTEST_DIR})
-include_directories(${GMOCK_INCLUDE_DIRS})
-include_directories(${GMOCK_DIR})
+include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
+include_directories(BEFORE ${GTEST_DIR})
+include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
+include_directories(BEFORE ${GMOCK_DIR})
 add_library(gmock STATIC ${GMOCK_SOURCES} ${GTEST_SOURCES})
+set_property(TARGET gmock APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
 
 set(GMOCK_LIBRARIES gmock ${PTHREADS_LIBRARIES} PARENT_SCOPE)
 set(GTEST_LIBRARIES ${GMOCK_LIBRARIES} PARENT_SCOPE)

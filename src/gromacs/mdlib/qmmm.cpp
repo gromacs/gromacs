@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -59,7 +57,7 @@
 #include "txtdump.h"
 #include "qmmm.h"
 #include "gromacs/topology/mtop_util.h"
-#include "qmmmxx.h"
+#include "gromacs/qmmmxx.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -497,7 +495,7 @@ void init_QMMMrec(t_commrec  *cr,
     /* issue a fatal if the user wants to run with more than one node */
     if (PAR(cr))
     {
-        gmx_fatal(FARGS, "QM/MM does not work in parallel, use a single node instead\n");
+        gmx_fatal(FARGS, "QM/MM does not work in parallel, use a single rank instead\n");
     }
 
     /* Make a local copy of the QMMMrec */

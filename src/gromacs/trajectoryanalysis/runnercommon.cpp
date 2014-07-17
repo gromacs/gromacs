@@ -41,9 +41,7 @@
  */
 #include "runnercommon.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 
@@ -350,7 +348,7 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
     }
     time_unit_t time_unit
         = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
-    output_env_init(&impl_->oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0, 0);
+    output_env_init(&impl_->oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0);
 
     int frflags = impl_->settings_.frflags();
     frflags |= TRX_NEED_X;
@@ -373,17 +371,6 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
                                                      "Trajectory (%d atoms) does not match topology (%d atoms)",
                                                      impl_->fr->natoms, top.topology()->atoms.nr)));
         }
-        // TODO: Check index groups if they have been initialized based on the topology.
-        /*
-           if (top)
-           {
-            for (int i = 0; i < impl_->sel->nr(); ++i)
-            {
-                gmx_ana_index_check(impl_->sel->sel(i)->indexGroup(),
-                                    impl_->fr->natoms);
-            }
-           }
-         */
     }
     else
     {

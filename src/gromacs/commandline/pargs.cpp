@@ -37,12 +37,8 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gromacs/commandline/pargs.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
-#include <cctype>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -423,10 +419,6 @@ void OptionsAdapter::copyValues(bool bReadNode)
     std::list<FileNameData>::const_iterator file;
     for (file = fileNameOptions_.begin(); file != fileNameOptions_.end(); ++file)
     {
-        // FIXME: FF_NOT_READ_NODE should also skip all fexist() calls in
-        // FileNameOption.  However, it is not currently used, and other
-        // commented out code for using it is also outdated, so left this for
-        // later.
         if (!bReadNode && (file->fnm->flag & ffREAD))
         {
             continue;
@@ -493,7 +485,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     try
     {
-        int                        nicelevel = 0, debug_level = 0;
+        int                        nicelevel = 0;
         double                     tbegin    = 0.0, tend = 0.0, tdelta = 0.0;
         bool                       bView     = false;
         int                        xvgFormat = 0;
@@ -502,12 +494,10 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         gmx::Options               options(NULL, NULL);
         gmx::FileNameOptionManager fileOptManager;
 
+        fileOptManager.disableInputOptionChecking(
+                FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
         options.setDescription(gmx::ConstArrayRef<const char *>(desc, ndesc));
-        options.addOption(
-                gmx::IntegerOption("debug").store(&debug_level).hidden()
-                    .description("Write file with debug information, "
-                                 "1: short, 2: also x and f"));
 
         options.addOption(
                 gmx::IntegerOption("nice").store(&nicelevel)
@@ -577,14 +567,14 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx::GlobalCommandLineHelpContext::get();
         if (context != NULL)
         {
-            if (!(FF(PCA_QUIET)))
-            {
-                gmx::CommandLineHelpWriter(options)
-                    .setShowDescriptions(true)
-                    .setTimeUnitString(timeUnitManager.timeUnitAsString())
-                    .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
-                    .writeHelp(*context);
-            }
+            GMX_RELEASE_ASSERT(gmx_node_rank() == 0,
+                               "Help output should be handled higher up and "
+                               "only get called only on the master rank");
+            gmx::CommandLineHelpWriter(options)
+                .setShowDescriptions(true)
+                .setTimeUnitString(timeUnitManager.timeUnitAsString())
+                .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
+                .writeHelp(*context);
             return FALSE;
         }
 
@@ -596,27 +586,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         /* set program name, command line, and default values for output options */
         output_env_init(oenv, gmx::getProgramContext(),
                         (time_unit_t)(timeUnitManager.timeUnit() + 1), bView,
-                        (xvg_format_t)(xvgFormat + 1), 0, debug_level);
-
-        /* Open the debug file */
-        if (debug_level > 0)
-        {
-            char buf[256];
-
-            if (gmx_mpi_initialized())
-            {
-                sprintf(buf, "%s%d.debug", output_env_get_short_program_name(*oenv),
-                        gmx_node_rank());
-            }
-            else
-            {
-                sprintf(buf, "%s.debug", output_env_get_short_program_name(*oenv));
-            }
-
-            init_debug(debug_level, buf);
-            fprintf(stderr, "Opening debug file %s (src code file %s, line %d)\n",
-                    buf, __FILE__, __LINE__);
-        }
+                        (xvg_format_t)(xvgFormat + 1), 0);
 
         /* Set the nice level */
 #ifdef HAVE_UNISTD_H

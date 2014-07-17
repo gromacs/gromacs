@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 /* This file is completely threadsafe - keep it that way! */
 
@@ -609,11 +607,11 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
     if (file_version >= 79)
     {
-        gmx_fio_do_int(fio, fepvals->bPrintEnergy);
+        gmx_fio_do_int(fio, fepvals->edHdLPrintEnergy);
     }
     else
     {
-        fepvals->bPrintEnergy = FALSE;
+        fepvals->edHdLPrintEnergy = edHdLPrintEnergyNO;
     }
 
     /* handle lambda_neighbors */

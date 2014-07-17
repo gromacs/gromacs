@@ -16,6 +16,3 @@ src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"
 src/config.h.cmakein: warning: includes non-local file as "swindirect.h"
-
-# These are limitations in the current script
-src/gromacs/utility/gmx_header_config.h: warning: includes non-local file as "gmx_header_config_gen.h"

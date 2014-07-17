@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -591,7 +589,7 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
 
     fprintf(log, "\nDetailed load balancing info in percentage of average\n");
 
-    fprintf(log, " Type                 NODE:");
+    fprintf(log, " Type                 RANK:");
     for (i = 0; (i < cr->nnodes); i++)
     {
         fprintf(log, "%3d ", i);

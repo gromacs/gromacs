@@ -33,9 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 #include <assert.h>
 
 #include "gromacs/math/vec.h"
@@ -643,8 +641,8 @@ static int setup_specat_communication(gmx_domdec_t             *dd,
                             nsend, 2, buf, 2);
             if (debug)
             {
-                fprintf(debug, "Send to node %d, %d (%d) indices, "
-                        "receive from node %d, %d (%d) indices\n",
+                fprintf(debug, "Send to rank %d, %d (%d) indices, "
+                        "receive from rank %d, %d (%d) indices\n",
                         dd->neighbor[d][1-dir], nsend[1], nsend[0],
                         dd->neighbor[d][dir], buf[1], buf[0]);
                 if (gmx_debug_at)

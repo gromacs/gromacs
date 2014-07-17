@@ -36,9 +36,7 @@
  */
 /* This file is completely threadsafe - keep it that way! */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 #include "gromacs/utility/cstringutil.h"
 #include "pgutil.h"
 #include <string.h>
@@ -147,6 +145,25 @@ atom_id search_atom(const char *type, int start,
     }
     return NO_ATID;
 }
+
+atom_id
+search_res_atom(const char *type, int resind,
+                t_atoms *atoms,
+                const char *bondtype, gmx_bool bAllowMissing)
+{
+    int i;
+
+    for (i = 0; (i < atoms->nr); i++)
+    {
+        if (atoms->atom[i].resind == resind)
+        {
+            return search_atom(type, i, atoms, bondtype, bAllowMissing);
+        }
+    }
+
+    return NO_ATID;
+}
+
 
 void set_at(t_atom *at, real m, real q, int type, int resind)
 {

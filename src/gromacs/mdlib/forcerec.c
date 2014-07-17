@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <assert.h>
 #include <math.h>
@@ -1827,7 +1825,7 @@ static void pick_nbnxn_resources(const t_commrec     *cr,
         {
             /* At this point the init should never fail as we made sure that
              * we have all the GPUs we need. If it still does, we'll bail. */
-            gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
+            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
                       get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
                                         cr->rank_pp_intranode),
@@ -1870,11 +1868,10 @@ static void init_ewald_f_table(interaction_const_t *ic,
 
     if (bUsesSimpleTables)
     {
-        /* With a spacing of 0.0005 we are at the force summation accuracy
-         * for the SSE kernels for "normal" atomistic simulations.
+        /* Get the Ewald table spacing based on Coulomb and/or LJ
+         * Ewald coefficients and rtol.
          */
-        ic->tabq_scale = ewald_spline3_table_scale(ic->ewaldcoeff_q,
-                                                   ic->rcoulomb);
+        ic->tabq_scale = ewald_spline3_table_scale(ic);
 
         maxr           = (rtab > ic->rcoulomb) ? rtab : ic->rcoulomb;
         ic->tabq_size  = (int)(maxr*ic->tabq_scale) + 2;

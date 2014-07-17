@@ -53,6 +53,7 @@
 #include "keywords.h"
 #include "mempool.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 /*!
  * \param[in] sel Selection for which the string is requested
@@ -328,7 +329,45 @@ void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
     }
 }
 
-void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
+void SelectionTreeElement::checkUnsortedAtoms(
+        bool bUnsortedAllowed, ExceptionInitializer *errors) const
+{
+    const bool bUnsortedSupported
+        = (type == SEL_CONST && v.type == GROUP_VALUE)
+            || type == SEL_ROOT || type == SEL_SUBEXPR || type == SEL_SUBEXPRREF
+            // TODO: Consolidate.
+            || type == SEL_MODIFIER
+            || (type == SEL_EXPRESSION && (u.expr.method->flags & SMETH_ALLOW_UNSORTED));
+
+    // TODO: For some complicated selections, this may result in the same
+    // index group reference being flagged as an error multiple times for the
+    // same selection.
+    SelectionTreeElementPointer child = this->child;
+    while (child)
+    {
+        child->checkUnsortedAtoms(bUnsortedAllowed && bUnsortedSupported,
+                                  errors);
+        child = child->next;
+    }
+
+    // The logic here is simplified by the fact that only constant groups can
+    // currently be the root cause of SEL_UNSORTED being set, so only those
+    // need to be considered in triggering the error.
+    if (!bUnsortedAllowed && (flags & SEL_UNSORTED)
+        && type == SEL_CONST && v.type == GROUP_VALUE)
+    {
+        std::string message = formatString(
+                    "Group '%s' cannot be used in selections except "
+                    "as a full value of the selection, "
+                    "because atom indices in it are not sorted and/or "
+                    "it contains duplicate atoms.",
+                    name().c_str());
+        errors->addNested(InconsistentInputError(message));
+    }
+}
+
+void SelectionTreeElement::resolveIndexGroupReference(
+        gmx_ana_indexgrps_t *grps, int natoms)
 {
     GMX_RELEASE_ASSERT(type == SEL_GROUPREF,
                        "Should only be called for index group reference elements");
@@ -365,13 +404,7 @@ void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
 
     if (!gmx_ana_index_check_sorted(&foundGroup))
     {
-        gmx_ana_index_deinit(&foundGroup);
-        std::string message = formatString(
-                    "Group '%s' ('%s') cannot be used in selections, "
-                    "because atom indices in it are not sorted and/or "
-                    "it contains duplicate atoms.",
-                    foundName.c_str(), name().c_str());
-        GMX_THROW(InconsistentInputError(message));
+        flags |= SEL_UNSORTED;
     }
 
     sfree(u.gref.name);
@@ -379,6 +412,26 @@ void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
     gmx_ana_index_set(&u.cgrp, foundGroup.isize, foundGroup.index,
                       foundGroup.nalloc_index);
     setName(foundName);
+
+    if (natoms > 0)
+    {
+        checkIndexGroup(natoms);
+    }
+}
+
+void SelectionTreeElement::checkIndexGroup(int natoms)
+{
+    GMX_RELEASE_ASSERT(type == SEL_CONST && v.type == GROUP_VALUE,
+                       "Should only be called for index group elements");
+    if (!gmx_ana_index_check_range(&u.cgrp, natoms))
+    {
+        std::string message = formatString(
+                    "Group '%s' cannot be used in selections, because it "
+                    "contains negative atom indices and/or references atoms "
+                    "not present (largest allowed atom index is %d).",
+                    name().c_str(), natoms);
+        GMX_THROW(InconsistentInputError(message));
+    }
 }
 
 } // namespace gmx

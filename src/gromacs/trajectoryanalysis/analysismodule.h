@@ -47,9 +47,10 @@
 #include <string>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include "../selection/selection.h" // For gmx::SelectionList
 #include "../utility/common.h"
-#include "../utility/uniqueptr.h"
 
 struct t_pbc;
 struct t_trxframe;
@@ -177,7 +178,7 @@ class TrajectoryAnalysisModuleData
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
-typedef gmx_unique_ptr<TrajectoryAnalysisModuleData>::type
+typedef boost::shared_ptr<TrajectoryAnalysisModuleData>
     TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
@@ -496,7 +497,7 @@ class TrajectoryAnalysisModule
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
-typedef gmx_unique_ptr<TrajectoryAnalysisModule>::type
+typedef boost::shared_ptr<TrajectoryAnalysisModule>
     TrajectoryAnalysisModulePointer;
 
 } // namespace gmx

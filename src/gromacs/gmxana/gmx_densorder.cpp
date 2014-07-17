@@ -32,9 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <math.h>
@@ -63,7 +61,6 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_DOUBLE
@@ -615,7 +612,9 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
     sfree(yticks);
 }
 
-static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins, int ybins, char **fnms)
+static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks,
+                     int xbins, int ybins, char **fnms,
+                     const output_env_t oenv)
 {
     FILE *raw1, *raw2;
     int   i, j, n;
@@ -627,8 +626,10 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);
         settings.linePrefix("# ");
-        gmx::printBinaryInformation(raw1, gmx::getProgramContext(), settings);
-        gmx::printBinaryInformation(raw2, gmx::getProgramContext(), settings);
+        gmx::printBinaryInformation(raw1, output_env_get_program_context(oenv),
+                                    settings);
+        gmx::printBinaryInformation(raw2, output_env_get_program_context(oenv),
+                                    settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(raw1, "# Legend: nt nx ny\n# Xbin Ybin Z t\n");
@@ -798,7 +799,7 @@ int gmx_densorder(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "No or not correct number (2) of output-files: %d", nfxpm);
         }
-        writeraw(surf1, surf2, tblock, xslices, yslices, rawfiles);
+        writeraw(surf1, surf2, tblock, xslices, yslices, rawfiles, oenv);
     }
 
 

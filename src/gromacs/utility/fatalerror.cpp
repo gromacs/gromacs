@@ -36,9 +36,7 @@
  */
 #include "fatalerror.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <cerrno>
 #include <cstdarg>
@@ -58,23 +56,34 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
-static gmx_bool            bDebug         = FALSE;
-static FILE               *log_file       = NULL;
-
-static tMPI_Thread_mutex_t debug_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
+static bool                bDebug         = false;
 static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
 
+FILE                      *debug          = NULL;
+gmx_bool                   gmx_debug_at   = FALSE;
+
+static FILE               *log_file       = NULL;
+static tMPI_Thread_mutex_t error_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
 static const char *const   gmxuser
     = "Please report this to the mailing list (gmx-users@gromacs.org)";
+
+void gmx_init_debug(const int dbglevel, const char *dbgfile)
+{
+    if (!bDebug)
+    {
+        gmx_disable_file_buffering();
+        debug  = gmx_ffopen(dbgfile, "w+");
+        bDebug = true;
+        if (dbglevel >= 2)
+        {
+            gmx_debug_at = TRUE;
+        }
+    }
+}
 
 gmx_bool bDebugMode(void)
 {
     return bDebug;
-}
-
-void gmx_fatal_set_log_file(FILE *fp)
-{
-    log_file = fp;
 }
 
 void _where(const char *file, int line)
@@ -119,11 +128,16 @@ void _where(const char *file, int line)
     }
 }
 
+void gmx_fatal_set_log_file(FILE *fp)
+{
+    log_file = fp;
+}
+
 static int fatal_errno = 0;
 
 static void default_error_handler(const char *msg)
 {
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&error_mutex);
     if (fatal_errno == 0)
     {
         if (log_file)
@@ -143,7 +157,7 @@ static void default_error_handler(const char *msg)
         }
         perror(msg);
     }
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&error_mutex);
 }
 
 static void (*gmx_error_handler)(const char *msg) = default_error_handler;
@@ -152,9 +166,9 @@ void set_gmx_error_handler(void (*func)(const char *msg))
 {
     // TODO: Either this is unnecessary, or also reads to the handler should be
     // protected by a mutex.
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&error_mutex);
     gmx_error_handler = func;
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&error_mutex);
 }
 
 static void call_error_handler(const char *key, const char *file, int line, const char *msg)
@@ -248,9 +262,9 @@ void gmx_fatal_mpi_va(int f_errno, const char *file, int line,
         char msg[STRLEN];
         vsprintf(msg, fmt, ap);
 
-        tMPI_Thread_mutex_lock(&debug_mutex);
+        tMPI_Thread_mutex_lock(&error_mutex);
         fatal_errno = f_errno;
-        tMPI_Thread_mutex_unlock(&debug_mutex);
+        tMPI_Thread_mutex_unlock(&error_mutex);
 
         call_error_handler("fatal", file, line, msg);
     }
@@ -264,32 +278,6 @@ void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
     va_start(ap, fmt);
     gmx_fatal_mpi_va(f_errno, file, line, TRUE, FALSE, fmt, ap);
     va_end(ap);
-}
-
-/*
- * These files are global variables in the gromacs preprocessor
- * Every routine in a file that includes gmx_fatal.h can write to these
- * debug channels. Depending on the debuglevel used
- * 0 to 3 of these filed are redirected to /dev/null
- *
- */
-FILE    *debug           = NULL;
-gmx_bool gmx_debug_at    = FALSE;
-
-void init_debug(const int dbglevel, const char *dbgfile)
-{
-    tMPI_Thread_mutex_lock(&debug_mutex);
-    if (!bDebug) /* another thread hasn't already run this*/
-    {
-        no_buffers();
-        debug  = gmx_ffopen(dbgfile, "w+");
-        bDebug = TRUE;
-        if (dbglevel >= 2)
-        {
-            gmx_debug_at = TRUE;
-        }
-    }
-    tMPI_Thread_mutex_unlock(&debug_mutex);
 }
 
 char *gmx_strerror(const char *key)

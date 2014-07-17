@@ -383,8 +383,7 @@ _gmx_selparser_handle_exception(void *scanner, const std::exception &ex);
 
 /** Propagates the flags for selection elements. */
 void
-_gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel,
-                          void                                   *scanner);
+_gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel);
 
 /** Initializes the method parameter data of \ref SEL_EXPRESSION and
  * \ref SEL_MODIFIER elements. */

@@ -36,9 +36,7 @@
  */
 #include "copyrite.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -566,7 +564,12 @@ void please_cite(FILE *fp, const char *key)
           "M. Lundborg, R. Apostolov, D. Spangberg, A. Gardenas, D. van der Spoel and E. Lindahl",
           "An efficient and extensible format, library, and API for binary trajectory data from molecular simulations",
           "J. Comput. Chem.",
-          35, 2014, "260-269"}
+          35, 2014, "260-269"},
+        { "Goga2012",
+          "N. Goga and A. J. Rzepiela and A. H. de Vries and S. J. Marrink and H. J. C. Berendsen",
+          "Efficient Algorithms for Langevin and DPD Dynamics",
+          "J. Chem. Theory Comput.",
+          8, 2012, "3637--3649"}
     };
 #define NSTR (int)asize(citedb)
 

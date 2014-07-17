@@ -75,8 +75,8 @@ class IncludedFile(object):
 
     """Information about an #include directive in a file."""
 
-    def __init__(self, abspath, lineno, included_file, included_path, is_relative, is_system):
-        self._abspath = abspath
+    def __init__(self, including_file, lineno, included_file, included_path, is_relative, is_system):
+        self._including_file = including_file
         self._line_number = lineno
         self._included_file = included_file
         self._included_path = included_path
@@ -96,11 +96,14 @@ class IncludedFile(object):
     def is_relative(self):
         return self._is_relative
 
+    def get_including_file(self):
+        return self._including_file
+
     def get_file(self):
         return self._included_file
 
     def get_reporter_location(self):
-        return reporter.Location(self._abspath, self._line_number)
+        return reporter.Location(self._including_file.get_abspath(), self._line_number)
 
 class File(object):
 
@@ -150,7 +153,7 @@ class File(object):
                 fileobj = sourcetree.get_file(fullpath)
             else:
                 fileobj = sourcetree.find_include_file(includedpath)
-        self._includes.append(IncludedFile(self.get_abspath(), lineno, fileobj, includedpath,
+        self._includes.append(IncludedFile(self, lineno, fileobj, includedpath,
                 is_relative, is_system))
 
     def scan_contents(self, sourcetree):
@@ -324,6 +327,37 @@ class Directory(object):
         for fileobj in self._files:
             yield fileobj
 
+class ModuleDependency(object):
+
+    """Dependency between modules."""
+
+    def __init__(self, othermodule):
+        """Initialize empty dependency object with given module as dependency."""
+        self._othermodule = othermodule
+        self._includedfiles = []
+        self._cyclesuppression = None
+
+    def add_included_file(self, includedfile):
+        """Add IncludedFile that is part of this dependency."""
+        assert includedfile.get_file().get_module() == self._othermodule
+        self._includedfiles.append(includedfile)
+
+    def set_cycle_suppression(self):
+        """Set suppression on cycles containing this dependency."""
+        self._cyclesuppression = True
+
+    def is_cycle_suppressed(self):
+        """Return whether cycles containing this dependency are suppressed."""
+        return self._cyclesuppression is not None
+
+    def get_other_module(self):
+        """Get module that this dependency is to."""
+        return self._othermodule
+
+    def get_included_files(self):
+        """Get IncludedFile objects for the individual include dependencies."""
+        return self._includedfiles
+
 class Module(object):
 
     """Code module in the GROMACS source tree.
@@ -340,6 +374,7 @@ class Module(object):
         self._rawdoc = None
         self._rootdir = rootdir
         self._group = None
+        self._dependencies = dict()
 
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the module."""
@@ -351,6 +386,13 @@ class Module(object):
                 groupname = groups[0].get_name()
                 if groupname.startswith('group_'):
                     self._group = groupname[6:]
+
+    def add_dependency(self, othermodule, includedfile):
+        """Add #include dependency from a file in this module."""
+        assert includedfile.get_file().get_module() == othermodule
+        if othermodule not in self._dependencies:
+            self._dependencies[othermodule] = ModuleDependency(othermodule)
+        self._dependencies[othermodule].add_included_file(includedfile)
 
     def is_documented(self):
         return self._rawdoc is not None
@@ -367,6 +409,9 @@ class Module(object):
 
     def get_group(self):
         return self._group
+
+    def get_dependencies(self):
+        return self._dependencies.itervalues()
 
 class Namespace(object):
 
@@ -559,6 +604,14 @@ class GromacsTree(object):
         for fileobj in self._files.itervalues():
             if not fileobj.is_external():
                 fileobj.scan_contents(self)
+                module = fileobj.get_module()
+                if module:
+                    for includedfile in fileobj.get_includes():
+                        otherfile = includedfile.get_file()
+                        if otherfile:
+                            othermodule = otherfile.get_module()
+                            if othermodule and othermodule != module:
+                                module.add_dependency(othermodule, includedfile)
 
     def load_xml(self, only_files=False):
         """Load Doxygen XML information.
@@ -681,7 +734,8 @@ class GromacsTree(object):
 
     def find_include_file(self, includedpath):
         """Find a file object corresponding to an include path."""
-        for testdir in ('src', 'src/gromacs/legacyheaders', 'src/external/thread_mpi/include'):
+        for testdir in ('src', 'src/gromacs/legacyheaders', 'src/external/thread_mpi/include',
+                'src/external/tng_io/include'):
             testpath = os.path.join(testdir, includedpath)
             if testpath in self._files:
                 return self._files[testpath]
@@ -700,6 +754,34 @@ class GromacsTree(object):
                         "installed file not in source tree: {0}".format(path))
                 continue
             self._files[relpath].set_installed()
+
+    def load_cycle_suppression_list(self, filename):
+        """Load a list of edges to suppress in cycles.
+
+        These edges between modules, if present, will be marked in the
+        corresponding ModuleDependency objects.
+        """
+        with open(filename, 'r') as fp:
+            for line in fp:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                modulenames = ['module_' + x.strip() for x in line.split('->')]
+                if len(modulenames) != 2:
+                    self._reporter.input_error(
+                            "invalid cycle suppression line: {0}".format(line))
+                    continue
+                firstmodule = self._modules.get(modulenames[0])
+                secondmodule = self._modules.get(modulenames[1])
+                if not firstmodule or not secondmodule:
+                    self._reporter.input_error(
+                            "unknown modules mentioned on cycle suppression line: {0}".format(line))
+                    continue
+                for dep in firstmodule.get_dependencies():
+                    if dep.get_other_module() == secondmodule:
+                        # TODO: Check that each suppression is actually part of
+                        # a cycle.
+                        dep.set_cycle_suppression()
 
     def get_object(self, docobj):
         """Get tree object for a Doxygen XML object."""

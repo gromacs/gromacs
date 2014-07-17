@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,9 +41,7 @@
  */
 #include "gmxregex.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #if defined(HAVE_POSIX_REGEX)
 // old Mac needs sys/types.h before regex.h

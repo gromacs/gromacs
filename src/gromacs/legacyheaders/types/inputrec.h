@@ -151,7 +151,7 @@ typedef struct {
                                        valid value if positive)   */
     int      init_fep_state;        /* the initial number of the state                   */
     double   delta_lambda;          /* change of lambda per time step (fraction of (0.1) */
-    gmx_bool bPrintEnergy;          /* Whether to print the energy in the dhdl           */
+    int      edHdLPrintEnergy;      /* print no, total or potential energies in dhdl    */
     int      n_lambda;              /* The number of foreign lambda points               */
     double **all_lambda;            /* The array of all lambda values                    */
     int      lambda_neighbors;      /* The number of neighboring lambda states to

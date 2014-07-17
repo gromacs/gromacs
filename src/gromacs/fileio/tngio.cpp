@@ -34,16 +34,14 @@
  */
 #include "tngio.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 #ifdef GMX_USE_TNG
-#include "../../external/tng_io/include/tng_io.h"
+#include "tng/tng_io.h"
 #endif
 
 #include "gromacs/legacyheaders/copyrite.h"

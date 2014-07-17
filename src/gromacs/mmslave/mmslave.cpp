@@ -61,6 +61,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/pbcutil/pbc.h"
 
 /* Note: the C-interface is all the way down in this file */
 
@@ -341,8 +342,9 @@ bool MMSlave::calcEnergy(FILE       *fplog,
     {
         GMX_THROW(InternalError("Copying coordinates"));
     }
+    
     // Make sure the coordinates are in the state too!
-    giab_->ems_->s.x = (rvec *)x;
+    giab_->ems_->s.x = (rvec *)x_;
     giab_->ems_->f   = (rvec *)f;
     giab_->ems_->A   = (rvec *)A;
     giab_->ems_->phi = (real *)phi;

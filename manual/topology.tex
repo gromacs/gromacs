@@ -603,7 +603,7 @@ working directory, then in the {\gromacs} {\tt share/top} directory, and
 use the first matching {\tt xxx.ff} directory found.
 
 Two general files are read by {\tt pdb2gmx}: an atom type file
-(extension {\tt .atp}, see~\ssecref{atomtype}) from the force field directory,
+(extension {\tt .atp}, see~\ssecref{atomtype}) from the force-field directory,
 and a file called {\tt residuetypes.dat} from either the working directory, or
 the {\gromacs} {\tt share/top} directory. {\tt residuetypes.dat}
 determines which residue names are considered protein, DNA, RNA,
@@ -725,7 +725,7 @@ the standard parameters in the {\tt .itp} files.  This should only be
 used in special cases. Instead of parameters, a string can be added
 for each bonded interaction.  This is used in \gromosv{96} {\tt .rtp}
 files. These strings are copied to the topology file and can be
-replaced by force field parameters by the C-preprocessor in {\tt grompp}
+replaced by force-field parameters by the C-preprocessor in {\tt grompp}
 using {\tt \#define} statements.
 
 {\tt pdb2gmx} automatically generates all angles. This means that for 
@@ -755,8 +755,8 @@ Each force field has its own naming convention for residues.
 Most residues have consistent naming, but some, especially those
 with different protonation states, can have many different names.
 The {\tt .r2b} files are used to convert standard residue names to
-the force field build block names. If no {\tt .r2b} is present
-in the force field directory or a residue is not listed, the building
+the force-field build block names. If no {\tt .r2b} is present
+in the force-field directory or a residue is not listed, the building
 block name is assumed to be identical to the residue name.
 The {\tt .r2b} can contain 2 or 5 columns. The 2-column format
 has the residue name in the first column and the building block name
@@ -805,7 +805,7 @@ HEME & heme \\
 \subsection{Atom renaming database}
 Force fields often use atom names that do not follow IUPAC or PDB convention.
 The {\tt .arn} database is used to translate the atom names in the coordinate
-file to the force field names. Atoms that are not listed keep their names.
+file to the force-field names. Atoms that are not listed keep their names.
 The file has three columns: the building block name,
 the old atom name, and the new atom name, respectively. The residue name
 supports question-mark wildcards that match a single character.
@@ -813,9 +813,9 @@ supports question-mark wildcards that match a single character.
 An additional general atom renaming file called {\tt xlateat.dat} is present
 in the {\tt share/top} directory, which translates common non-standard
 atom names in the coordinate file to IUPAC/PDB convention. Thus, when writing
-force field files, you can assume standard atom names and no further
+force-field files, you can assume standard atom names and no further
 atom name translation is required, except for translating from standard atom names
-to the force field ones.
+to the force-field ones.
 
 \subsection{Hydrogen database}
 \label{subsec:hdb}
@@ -1269,7 +1269,7 @@ Description of the file layout:
 \item Directives are surrounded by {\tt [} and {\tt ]}
 \item The topology hierarchy (which must be followed) consists of three levels:
 \begin{itemize}
-\item the parameter level, which defines certain force field specifications 
+\item the parameter level, which defines certain force-field specifications 
       (see~\tabref{topfile1})
 \item the molecule level, which should contain one or more molecule
       definitions (see~\tabref{topfile2})
@@ -1315,7 +1315,7 @@ Here is an example of a topology file, {\tt urea.top}:
 ;
 ;       Example topology file
 ;
-; The force field files to be included
+; The force-field files to be included
 #include "amber99.ff/forcefield.itp"
 
 [ moleculetype ]
@@ -1769,7 +1769,7 @@ lambda is not equal to zero or one.
 
 {\bf Note} that this topology uses the \gromosv{96} force field, in which the bonded
 interactions are not determined by the atom types. The bonded interaction
-strings are converted by the C-preprocessor. The force field parameter
+strings are converted by the C-preprocessor. The force-field parameter
 files contain lines like:
 
 {\small
@@ -1803,7 +1803,7 @@ each of the constraint components.  This functionality is planned for later vers
 
 {\small
 \begin{verbatim}
-; Include force field parameters
+; Include force-field parameters
 #include "gromos43a1.ff/forcefield.itp"
 
 [ moleculetype ]
@@ -1880,7 +1880,7 @@ tensor, not a vector.
 \section{Force field organization \index{force field organization}}
 \label{sec:fforganization}
 
-\subsection{Force field files}
+\subsection{Force-field files}
 \label{subsec:fffiles}
 Many force fields are available by default.
 Force fields are detected by the presence of {\tt <name>.ff} directories
@@ -1911,8 +1911,8 @@ The force fields included with {\gromacs} are:
  
 A force field is included at the beginning of a topology file with an
 {\tt \#include} statement followed by {\tt <name>.ff/forcefield.itp}.
-This statement includes the force field file,
-which, in turn, may include other force field files. All the force fields
+This statement includes the force-field file,
+which, in turn, may include other force-field files. All the force fields
 are organized in the same way. An example of the
 {\tt amber99.ff/forcefield.itp} was shown in \ssecref{topfile}.
 
@@ -1924,7 +1924,7 @@ the atom type database ({\tt .atp}, see~\ssecref{atomtype}), which contains only
 files are described in~\secref{pdb2gmxfiles}.
 
 
-\subsection{Changing force field parameters\index{force field}}
+\subsection{Changing force-field parameters\index{force field}}
 If one wants to change the parameters of few bonded interactions in
 a molecule, this is most easily accomplished by typing the parameters
 behind the definition of the bonded interaction directly in the {\tt *.top} file 
@@ -1951,7 +1951,7 @@ As of {\gromacs} version 3.1.3, atom types can be added in an extra
 force field. After the definition of the new atom type(s), additional
 non-bonded and pair parameters can be defined.
 In pre-3.1.3 versions of {\gromacs}, the new atom types needed to be
-added in the {\tt [~atomtypes~]} section of the force field files,
+added in the {\tt [~atomtypes~]} section of the force-field files,
 because all non-bonded parameters above the last {\tt [~atomtypes~]}
 section would be overwritten using the standard combination rules.
 

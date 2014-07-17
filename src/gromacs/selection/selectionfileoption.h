@@ -76,7 +76,7 @@ class SelectionFileOption : public AbstractOption
         explicit SelectionFileOption(const char *name);
 
     private:
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 };
 
