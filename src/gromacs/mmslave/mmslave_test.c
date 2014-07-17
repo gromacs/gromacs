@@ -3,6 +3,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/mmslave.h"
 #include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/gmx_detect_hardware.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
 int main(int argc, char *argv[])
 {
@@ -13,11 +16,25 @@ int main(int argc, char *argv[])
     gmx_mmslave_t gms;
     double e0, e1;
     int i;
-    
+    gmx_hw_info_t            *hwinfo       = NULL;
+
 #ifdef GMX_LIB_MPI
     (void) MPI_Init(&argc, &argv);
 #endif
     cr = init_commrec();
+    
+    /* Detect hardware, gather information. This is an operation that is
+     * global for this process (MPI rank). */
+    hwinfo = gmx_detect_hardware(stdout, cr, FALSE);
+    
+    gmx_omp_nthreads_init(stdout, cr,
+                          hwinfo->nthreads_hw_avail,
+                          0, /* hw_opt->nthreads_omp */
+                          0, /* hw_opt->nthreads_omp_pme */
+                          FALSE, /* (cr->duty & DUTY_PP) == 0 */
+                          FALSE /* inputrec->cutoff_scheme == ecutsVERLET*/
+                          );
+    
     gms = mmslave_init(cr);
     if (argc > 1) 
     {
