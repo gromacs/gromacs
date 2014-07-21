@@ -1,0 +1,10 @@
+Verified+2: Roland Schulz <roland@rschulz.eu>
+Code-Review+2: Berk Hess <hess@kth.se>
+Verified-1: Jenkins Buildbot
+Code-Review+1: John Eblen <jeblen@acm.org>
+Verified+1: John Eblen <jeblen@acm.org>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Tue, 22 Jul 2014 01:34:09 +0200
+Reviewed-on: https://gerrit.gromacs.org/3809
+Project: gromacs
+Branch: refs/heads/release-5-0
