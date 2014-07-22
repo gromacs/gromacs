@@ -753,9 +753,93 @@ void write_top(FILE *out, char *pr, char *molname,
 }
 
 
+/* adds vsite, aniso, and exclusion parameters to topology after
+ * special bonds have been made */
+static void add_drude_lp_ssbonds(t_params *psv, int ai, int aj)
+{
+    char ss_lpa[] = "4   -0.045   -0.09   -3.1";
+    char ss_lpb[] = "4   -0.045   -0.09    3.1";
 
-static void do_ssbonds(t_params *ps, t_atoms *atoms,
-                       int nssbonds, t_ssbond *ssbonds, gmx_bool bAllowMissing)
+    /* add vsite parameters for both sulfurs - two LP added to each */
+    add_vsite3_rtp_param(psv, ai+2, ai, ai-4, aj, ss_lpa);
+    add_vsite3_rtp_param(psv, ai+3, ai, ai-4, aj, ss_lpb);
+    add_vsite3_rtp_param(psv, aj+2, aj, aj-4, ai, ss_lpa);
+    add_vsite3_rtp_param(psv, aj+3, aj, aj-4, ai, ss_lpb);
+}
+
+/* adds Thole screening factors for atoms linked via disulfide */
+static void add_drude_ssbonds_thole(t_atoms *atoms, int nssbonds, t_ssbond *ssbonds,
+                                    t_params *ps, gmx_bool bAllowMissing) 
+{
+
+    fprintf(stderr, "Generating Thole interactions for disulfides...\n");
+
+    int             i, ri, rj;
+    atom_id         ai, aj;
+    enum            { etSG, etCB };
+    const real      tfac[] = { 1.082, 1.067 };
+
+    /* loop over all special bonds to add Thole screening to these */ 
+    for (i = 0; (i < nssbonds); i++)
+    {
+        ri = ssbonds[i].res1;
+        rj = ssbonds[i].res2;
+        ai = search_res_atom(ssbonds[i].a1, ri, atoms,
+                             "check", bAllowMissing);
+        aj = search_res_atom(ssbonds[i].a2, rj, atoms,
+                             "check", bAllowMissing);
+        if ((ai == NO_ATID) || (aj == NO_ATID))
+        {
+            gmx_fatal(FARGS, "Trying to make impossible Thole interaction (%s-%s)!",
+                      ssbonds[i].a1, ssbonds[i].a2);
+        }
+
+        /* only do this for disulfides */
+        if ((strncmp(*(atoms->atomname[ai]),"SG",2)==0) &&
+            (strncmp(*(atoms->atomname[aj]),"SG",2)==0))
+        {
+            /* 1SG - 2SG */
+            add_thole_param(ps, ai, aj, tfac[etSG], tfac[etSG]);
+
+            /* 1SG - 2DSG */
+            add_thole_param(ps, ai, aj+1, tfac[etSG], tfac[etSG]);
+
+            /* 1SG - 2CB */
+            add_thole_param(ps, ai, aj-4, tfac[etSG], tfac[etCB]);
+
+            /* 1SG - 2DCB */
+            add_thole_param(ps, ai, aj-3, tfac[etSG], tfac[etCB]);
+
+            /* 1DSG - 2SG */
+            add_thole_param(ps, ai+1, aj, tfac[etSG], tfac[etSG]);
+
+            /* 1DSG - 2DSG */
+            add_thole_param(ps, ai+1, aj+1, tfac[etSG], tfac[etSG]);
+
+            /* 1DSG - 2CB */
+            add_thole_param(ps, ai+1, aj-4, tfac[etSG], tfac[etCB]);
+
+            /* 1DSG - 2DCB */
+            add_thole_param(ps, ai+1, aj-3, tfac[etSG], tfac[etCB]);
+
+            /* 1CB - 2SG */
+            add_thole_param(ps, ai-4, aj, tfac[etCB], tfac[etSG]);
+
+            /* 1CB - 2DSG */
+            add_thole_param(ps, ai-4, aj+1, tfac[etCB], tfac[etSG]);
+
+            /* 1DCB - 2SG */
+            add_thole_param(ps, ai-3, aj, tfac[etCB], tfac[etSG]);
+
+            /* 1DCB - 2DSG */
+            add_thole_param(ps, ai-3, aj+1, tfac[etCB], tfac[etSG]);
+        }
+    }
+}
+
+static void do_ssbonds(t_params *ps, t_params *psv, t_atoms *atoms,
+                       int nssbonds, t_ssbond *ssbonds, 
+                       gmx_bool bAllowMissing, gmx_bool bDrude)
 {
     int     i, ri, rj;
     atom_id ai, aj;
@@ -774,6 +858,16 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
                       ssbonds[i].a1, ssbonds[i].a2);
         }
         add_param(ps, ai, aj, NULL, NULL);
+
+        if (bDrude)
+        {
+            /* only call this for disulfides */
+            if ((strncmp(*(atoms->atomname[ai]),"SG",2)==0) && 
+                (strncmp(*(atoms->atomname[aj]),"SG",2)==0))
+            {
+                add_drude_lp_ssbonds(psv, ai, aj);
+            }
+        }
     }
 }
 
@@ -2003,9 +2097,9 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              bDrude);
 
     /* specbonds: disulphide bonds & heme-his */
-    do_ssbonds(&(plist[F_BONDS]),
+    do_ssbonds(&(plist[F_BONDS]), &(plist[F_VSITE3OUT]), 
                atoms, nssbonds, ssbonds,
-               bAllowMissing);
+               bAllowMissing, bDrude);
 
     nmissat = name2type(atoms, &cgnr, restp, rt);
     if (nmissat)
@@ -2049,8 +2143,21 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
     print_nnb(&nnb, "NNB");
-    gen_pad(&nnb, atoms, restp, plist, excls, hb, bAllowMissing, bDrude);
+    gen_pad(&nnb, atoms, restp, plist, excls, hb, nssbonds, ssbonds, bAllowMissing, bDrude);
     done_nnb(&nnb);
+
+    /* TODO: add Tholes for Drude disulfides */
+    if (bDrude)
+    {
+        /* TODO: write this function... */ 
+        add_drude_ssbonds_thole(atoms, nssbonds, ssbonds, &(plist[F_THOLE_POL]), bAllowMissing);
+
+        /* Duplicates can happen when merging tdb and rtp, so since the
+         * tdb are read and stored first, their terminus-specific values
+         * will override what is stored in the rtp */
+        fprintf(stderr, "Cleaning up merged Thole screening factors...\n");
+        clean_tholes(&(plist[F_THOLE_POL]), atoms);
+    }
 
     /* Make CMAP */
     if (TRUE == bCmap)
@@ -2061,15 +2168,6 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
             fprintf(stderr, "There are %4d cmap torsion pairs\n",
                     plist[F_CMAP].nr);
         }
-    }
-
-    if (bDrude)
-    {
-        /* Duplicates can happen when merging tdb and rtp, so since the
-         * tdb are read and stored first, their terminus-specific values
-         * will override what is stored in the rtp */
-        fprintf(stderr, "Cleaning up merged Thole factors...\n");
-        clean_tholes(&(plist[F_THOLE_POL]), atoms);
     }
 
     /* set mass of all remaining hydrogen atoms */

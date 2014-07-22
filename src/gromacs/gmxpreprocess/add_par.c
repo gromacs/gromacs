@@ -171,6 +171,22 @@ void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak)
     ps->nr++;
 }
 
+void add_thole_param(t_params *ps, int ai, int aj, real c1, real c2)
+{
+    real a = 2.60;
+
+    pr_alloc(1, ps);
+    ps->param[ps->nr].AI = ai;
+    ps->param[ps->nr].AJ = aj;
+    clear_atom_list  (2, ps->param[ps->nr].a);
+    ps->param[ps->nr].C0 = a;
+    ps->param[ps->nr].C1 = c1;
+    ps->param[ps->nr].C2 = c2;
+    clear_force_param(3, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), "");
+    ps->nr++;
+}
+
 void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0)
 {
     pr_alloc(1, ps);

@@ -65,6 +65,8 @@ void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak);
 void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al,
                       gmx_bool bSwapParity);
 
+void add_thole_param(t_params *ps, int ai, int aj, real c1, real c2);
+
 void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0);
 
 void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,

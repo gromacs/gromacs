@@ -860,7 +860,203 @@ static void get_atomnames_min(int n, char **anm,
     }
 }
 
+static void add_drude_ssbonds_excl(t_atoms *atoms, t_excls *excls,
+                                   int nssbonds, t_ssbond *ssbonds, 
+                                   gmx_bool bAllowMissing)
+{
+
+    int         i, ri, rj;
+    atom_id     ai, aj;
+
+    /* loop over all special bonds and use those atoms to generate exclusions */ 
+    for (i = 0; (i < nssbonds); i++)
+    {
+        ri = ssbonds[i].res1;
+        rj = ssbonds[i].res2;
+        ai = search_res_atom(ssbonds[i].a1, ri, atoms,
+                             "check", bAllowMissing);
+        aj = search_res_atom(ssbonds[i].a2, rj, atoms,
+                             "check", bAllowMissing);
+        if ((ai == NO_ATID) || (aj == NO_ATID))
+        {
+            gmx_fatal(FARGS, "Trying to make impossible exclusion (%s-%s)!",
+                      ssbonds[i].a1, ssbonds[i].a2);
+        }
+
+        /* only do this for disulfides */
+        if ((strncmp(*(atoms->atomname[ai]),"SG",2)==0) &&
+            (strncmp(*(atoms->atomname[aj]),"SG",2)==0))
+        {
+            /* Exclusions within each residue are handled in .rtp entry, but those
+             *  between the CYS residues need to be added separately, after the
+             *  disulfides have been detected and added.  Need to exclude (D)SG from
+             *  LPSA, LPSB, DSG, SG, CB, and DCB in linked residue */
+
+            /* 1SG - 2SG */
+            srenew(excls[ai].e, excls[ai].nr+1);
+            excls[ai].e[excls[ai].nr] = aj;
+            excls[ai].nr++;
+
+            /* 1SG - 2DSG */
+            srenew(excls[ai].e, excls[ai].nr+1);
+            excls[ai].e[excls[ai].nr] = aj+1;
+            excls[ai].nr++;
+
+            /* 1SG - 2LPSA */
+            srenew(excls[ai].e, excls[ai].nr+1);
+            excls[ai].e[excls[ai].nr] = aj+2;
+            excls[ai].nr++;
+
+            /* 1SG - 2LPSB */
+            srenew(excls[ai].e, excls[ai].nr+1);
+            excls[ai].e[excls[ai].nr] = aj+3;
+            excls[ai].nr++;
+
+            /* 1SG - 2CB */
+            srenew(excls[ai].e, excls[ai].nr+1);
+            excls[ai].e[excls[ai].nr] = aj-4;
+            excls[ai].nr++;
+
+            /* 1SG - 2DCB */
+            srenew(excls[ai].e, excls[ai].nr+1);
+            excls[ai].e[excls[ai].nr] = aj-3;
+            excls[ai].nr++;
+
+            /* 1DSG - 2SG */
+            srenew(excls[ai+1].e, excls[ai+1].nr+1);
+            excls[ai+1].e[excls[ai+1].nr] = aj;
+            excls[ai+1].nr++;
+
+            /* 1DSG - 2DSG */
+            srenew(excls[ai+1].e, excls[ai+1].nr+1);
+            excls[ai+1].e[excls[ai+1].nr] = aj+1;
+            excls[ai+1].nr++;
+
+            /* 1DSG - 2LPSA */
+            srenew(excls[ai+1].e, excls[ai+1].nr+1);
+            excls[ai+1].e[excls[ai+1].nr] = aj+2;
+            excls[ai+1].nr++;
+
+            /* 1DSG - 2LPSB */
+            srenew(excls[ai+1].e, excls[ai+1].nr+1);
+            excls[ai+1].e[excls[ai+1].nr] = aj+3;
+            excls[ai+1].nr++;
+
+            /* 1DSG - 2CB */
+            srenew(excls[ai+1].e, excls[ai+1].nr+1);
+            excls[ai+1].e[excls[ai+1].nr] = aj-4;
+            excls[ai+1].nr++;
+
+            /* 1DSG - 2DCB */
+            srenew(excls[ai+1].e, excls[ai+1].nr+1);
+            excls[ai+1].e[excls[ai+1].nr] = aj-3;
+            excls[ai+1].nr++;
+
+            /* 1CB - 2SG */
+            srenew(excls[ai-4].e, excls[ai-4].nr+1);
+            excls[ai-4].e[excls[ai-4].nr] = aj;
+            excls[ai-4].nr++;
+
+            /* 1CB - 2DSG */
+            srenew(excls[ai-4].e, excls[ai-4].nr+1);
+            excls[ai-4].e[excls[ai-4].nr] = aj+1;
+            excls[ai-4].nr++;
+
+            /* 1CB - 2LPSA */
+            srenew(excls[ai-4].e, excls[ai-4].nr+1);
+            excls[ai-4].e[excls[ai-4].nr] = aj+2;
+            excls[ai-4].nr++;
+
+            /* 1CB - 2LPSB */
+            srenew(excls[ai-4].e, excls[ai-4].nr+1);
+            excls[ai-4].e[excls[ai-4].nr] = aj+3;
+            excls[ai-4].nr++;
+
+            /* 1DCB - 2SG */
+            srenew(excls[ai-3].e, excls[ai-3].nr+1);
+            excls[ai-3].e[excls[ai-3].nr] = aj;
+            excls[ai-3].nr++;
+
+            /* 1DCB - 2DSG */
+            srenew(excls[ai-3].e, excls[ai-3].nr+1);
+            excls[ai-3].e[excls[ai-3].nr] = aj+1;
+            excls[ai-3].nr++;
+
+            /* 1DCB - 2LPSA */
+            srenew(excls[ai-3].e, excls[ai-3].nr+1);
+            excls[ai-3].e[excls[ai-3].nr] = aj+2;
+            excls[ai-3].nr++;
+
+            /* 1DCB - 2LPSB */
+            srenew(excls[ai-3].e, excls[ai-3].nr+1);
+            excls[ai-3].e[excls[ai-3].nr] = aj+3;
+            excls[ai-3].nr++;
+
+            /* 1LPSA - 2LPSA */
+            srenew(excls[ai+2].e, excls[ai+2].nr+1);
+            excls[ai+2].e[excls[ai+2].nr] = aj+2;
+            excls[ai+2].nr++;
+
+            /* 1LPSA - 2LPSB */
+            srenew(excls[ai+2].e, excls[ai+2].nr+1);
+            excls[ai+2].e[excls[ai+2].nr] = aj+3;
+            excls[ai+2].nr++;
+
+            /* 1LPSB - 2LPSA */
+            srenew(excls[ai+3].e, excls[aj+2].nr+1);
+            excls[ai+3].e[excls[ai+3].nr] = aj+2;
+            excls[ai+3].nr++;
+
+            /* 1LPSB - 2LPSB */
+            srenew(excls[ai+3].e, excls[ai+3].nr+1);
+            excls[ai+3].e[excls[ai+3].nr] = aj+3;
+            excls[ai+3].nr++;
+
+            /* 2LPSA - 1SG */
+            srenew(excls[aj+2].e, excls[aj+2].nr+1);
+            excls[aj+2].e[excls[aj+2].nr] = ai;
+            excls[aj+2].nr++;
+
+            /* 2LPSA - 1DSG */
+            srenew(excls[aj+2].e, excls[aj+2].nr+1);
+            excls[aj+2].e[excls[aj+2].nr] = ai+1;
+            excls[aj+2].nr++;
+
+            /* 2LPSA - 1CB */
+            srenew(excls[aj+2].e, excls[aj+2].nr+1);
+            excls[aj+2].e[excls[aj+2].nr] = ai-4;
+            excls[aj+2].nr++;
+
+            /* 2LPSA - 1DCB */
+            srenew(excls[aj+2].e, excls[aj+2].nr+1);
+            excls[aj+2].e[excls[aj+2].nr] = ai-3;
+            excls[aj+2].nr++;
+
+            /* 2LPSB - 1SG */
+            srenew(excls[aj+3].e, excls[aj+3].nr+1);
+            excls[aj+3].e[excls[aj+3].nr] = ai;
+            excls[aj+3].nr++;
+
+            /* 2LPSB - 1DSG */
+            srenew(excls[aj+3].e, excls[aj+3].nr+1);
+            excls[aj+3].e[excls[aj+3].nr] = ai+1;
+            excls[aj+3].nr++;
+
+            /* 2LPSB - 1CB */
+            srenew(excls[aj+3].e, excls[aj+3].nr+1);
+            excls[aj+3].e[excls[aj+3].nr] = ai-4;
+            excls[aj+3].nr++;
+
+            /* 2LPSB - 1DCB */
+            srenew(excls[aj+3].e, excls[aj+3].nr+1);
+            excls[aj+3].e[excls[aj+3].nr] = ai-3;
+            excls[aj+3].nr++;
+        }
+    }
+}
+
 static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
+                      int nssbonds, t_ssbond *ssbonds,
                       gmx_bool bAllowMissing, gmx_bool bDrude)
 {
 
@@ -921,6 +1117,12 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
         }
     }
 
+    /* special Drude exclusions in case of disulfides */
+    if (bDrude)
+    {
+        add_drude_ssbonds_excl(atoms, excls, nssbonds, ssbonds, bAllowMissing);
+    }
+
     for (a = 0; a < atoms->nr; a++)
     {
         if (excls[a].nr > 1)
@@ -929,20 +1131,20 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
         }
     }
 
-    if (debug)
+     if (debug)
     {
-        fprintf(debug, "At end of gen_excl:\n");
+        fprintf(stderr, "At end of gen_excl:\n");
         for (a = 0; a < atoms->nr; a++)
         {
             if (excls[a].nr > 1)
             {
                 int q;
-                fprintf(debug, "excluded from %d: ", a+1);
+                fprintf(stderr, "excluded from %d: ", a+1);
                 for (q = 0; q < excls[a].nr; q++)
                 {
-                    fprintf(debug, "%4d", excls[a].e[q]+1);
+                    fprintf(stderr, "%5d", excls[a].e[q]+1);
                 }
-                fprintf(debug, "\n");
+                fprintf(stderr, "\n");
             }
         }
     }
@@ -1054,6 +1256,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 /* Generate pairs, angles and dihedrals from .rtp settings */
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
+             int nssbonds, t_ssbond *ssbonds,
              gmx_bool bAllowMissing, gmx_bool bDrude)
 {
     t_param    *ang, *dih, *pai, *improper;
@@ -1099,7 +1302,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 
     if (hb)
     {
-        gen_excls(atoms, excls, hb, bAllowMissing, bDrude);
+        gen_excls(atoms, excls, hb, nssbonds, ssbonds, bAllowMissing, bDrude);
         /* mark all entries as not matched yet */
         for (i = 0; i < atoms->nres; i++)
         {

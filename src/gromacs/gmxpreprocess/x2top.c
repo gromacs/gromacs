@@ -584,7 +584,7 @@ int gmx_x2top(int argc, char *argv[])
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
     print_nnb(&nnb, "NNB");
-    gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, NULL, TRUE, FALSE);
+    gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, NULL, 0, NULL, TRUE, FALSE);
     done_nnb(&nnb);
 
     if (!bPairs)
