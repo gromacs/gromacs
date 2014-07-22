@@ -928,6 +928,24 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
             qsort(excls[a].e, excls[a].nr, (size_t)sizeof(atom_id), atom_id_comp);
         }
     }
+
+    if (debug)
+    {
+        fprintf(debug, "At end of gen_excl:\n");
+        for (a = 0; a < atoms->nr; a++)
+        {
+            if (excls[a].nr > 1)
+            {
+                int q;
+                fprintf(debug, "excluded from %d: ", a+1);
+                for (q = 0; q < excls[a].nr; q++)
+                {
+                    fprintf(debug, "%4d", excls[a].e[q]+1);
+                }
+                fprintf(debug, "\n");
+            }
+        }
+    }
 }
 
 static void remove_excl(t_excls *excls, int remove)
@@ -1493,7 +1511,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     cppar(pai, npai, plist, F_LJ14);
 
     /* Remove all exclusions which are within nrexcl */
-    clean_excls(nnb, rtp[0].nrexcl, excls);
+    /* Leave all assigned exclusions in case of Drude? TESTING */
+    if (!bDrude)
+    {
+        clean_excls(nnb, rtp[0].nrexcl, excls);
+    }
 
     sfree(ang);
     sfree(dih);
