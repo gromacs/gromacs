@@ -1579,7 +1579,7 @@
       DCB      D   -2.38443  13
       HB1  HDA2A    0.08700  14
       HB2  HDA2A    0.08700  15
-       SG  SD31B    2.84405  16
+       SG  SD30B    2.84405  16
       DSG      D   -2.84405  17
      LPSA     LP   -0.05200  18
      LPSB     LP   -0.05200  19
@@ -1600,18 +1600,108 @@
        CB   HB1
        CB   HB2
        CB    SG
-   [ exclusions ]
-    ; ai  aj
-      DO    LPOA
-      DO    LPOB
-      O     LPOA
-      O     LPOB
-      LPOA  LPOB
-      DSG   LPSA
-      DSG   LPSB
-      SG    LPSA
-      SG    LPSB
-      LPSA  LPSB
+  [ exclusions ]
+  ; ai  aj
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
+  DSG   LPGA
+  DSG   LPGB
+  SG    LPGA
+  SG    LPGB
+  LPGA  LPGB
+  HG1   LPGA
+  HG1   LPGB
+  CB    LPGA
+  CB    LPGB
+  DCB   LPGA
+  DCB   LPGB
+  HB1   LPGA
+  HB1   LPGB
+  HB2   LPGA
+  HB2   LPGB
+  CA    LPGA
+  CA    LPGB
+  DCA   LPGA
+  DCA   LPGB
+  N      CA  
+  N      DCA 
+  DN     CA  
+  DN     DCA 
+  CA     C   
+  CA     DC  
+  DCA    C   
+  DCA    DC  
+  C      +N  
+  C      +DN 
+  DC     +N  
+  DC     +DN 
+  C      O   
+  C      DO  
+  DC     O   
+  DC     DO  
+  CA     CB  
+  CA     DCB 
+  DCA    CB  
+  DCA    DCB 
+  CB     SG  
+  CB     DSG 
+  DCB    SG  
+  DCB    DSG 
+  N      C   
+  N      DC  
+  DN     C   
+  DN     DC  
+  N      CB  
+  N      DCB 
+  DN     CB  
+  DN     DCB 
+  CA     +N  
+  CA     +DN 
+  DCA    +N  
+  DCA    +DN 
+  CA     O   
+  CA     DO  
+  DCA    O   
+  DCA    DO  
+  CB     C   
+  CB     DC  
+  DCB    C   
+  DCB    DC  
+  O      +N  
+  O      +DN 
+  DO     +N  
+  DO     +DN 
+  CA     SG  
+  CA     DSG 
+  DCA    SG  
+  DCA    DSG 
   [ impropers ]
         C    CA    +N     O
         N    -C    CA    HN
@@ -1619,62 +1709,66 @@
        -C     N    CA     C    +N
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DO      O     C  LPOA  LPOB 0.82322    1.14332    1.03346
-     DSG     SG    CB  LPSA  LPSB 0.92080    1.01020    1.06900
+      DO      O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+     DSG     SG    CB  LPSA  LPSB 0.92080000 1.01020000 1.06900000
   [ thole_polarization ]
   ; ai    aj   a     alpha_i  alpha_j
-     N    CA   2.60  0.2500   1.0780
-    DN    CA   2.60  0.2500   1.0780
-     N   DCA   2.60  0.2500   1.0780
-    DN   DCA   2.60  0.2500   1.0780
-    CA     C   2.60  1.0780   0.2950
-   DCA     C   2.60  1.0780   0.2950
-    CA    DC   2.60  1.0780   0.2950
-   DCA    DC   2.60  1.0780   0.2950
-     C    +N   2.60  0.2950   0.2500
-    DC    +N   2.60  0.2950   0.2500
-     C   +DN   2.60  0.2950   0.2500
-    DC   +DN   2.60  0.2950   0.2500
-     C     O   2.60  0.2950   0.3100
-    DC     O   2.60  0.2950   0.3100
-     C    DO   2.60  0.2950   0.3100
-    DC    DO   2.60  0.2950   0.3100
-    CA    CB   2.60  1.0780   1.0670
-   DCA    CB   2.60  1.0780   1.0670
-    CA   DCB   2.60  1.0780   1.0670
-   DCA   DCB   2.60  1.0780   1.0670
-    CB    SG   2.60  1.0670   1.0820
-   DCB    SG   2.60  1.0670   1.0820
-    CB   DSG   2.60  1.0670   1.0820
-   DCB   DSG   2.60  1.0670   1.0820
-     N     C   2.60  0.2500   0.2950
-    DN     C   2.60  0.2500   0.2950
-     N    DC   2.60  0.2500   0.2950
-    DN    DC   2.60  0.2500   0.2950
-    CA    +N   2.60  1.0780   0.2500
-   DCA    +N   2.60  1.0780   0.2500
-    CA   +DN   2.60  1.0780   0.2500
-   DCA   +DN   2.60  1.0780   0.2500
-    CA    +N   2.60  1.0780   0.2500
-   DCA    +N   2.60  1.0780   0.2500
-    CA   +DN   2.60  1.0780   0.2500
-   DCA   +DN   2.60  1.0780   0.2500
-    CA    +N   2.60  1.0780   0.2500
-   DCA    +N   2.60  1.0780   0.2500
-    CA   +DN   2.60  1.0780   0.2500
-   DCA   +DN   2.60  1.0780   0.2500
-     O    +N   2.60  0.3100   0.2500
-    DO    +N   2.60  0.3100   0.2500
-     O   +DN   2.60  0.3100   0.2500
-    DO   +DN   2.60  0.3100   0.2500
-    CA    SG   2.60  1.0780   1.0820
-   DCA    SG   2.60  1.0780   1.0820
-    CA   DSG   2.60  1.0780   1.0820
-   DCA   DSG   2.60  1.0780   1.0820
-     C   +CA   2.60  0.2950   1.0780
-    DC   +CA   2.60  0.2950   1.0780
-     C  +DCA   2.60  0.2950   1.0780
-    DC  +DCA   2.60  0.2950   1.0780
+     N    CA  2.60   0.2500   1.0780
+    DN    CA  2.60   0.2500   1.0780
+     N   DCA  2.60   0.2500   1.0780
+    DN   DCA  2.60   0.2500   1.0780
+    CA     C  2.60   1.0780   0.2950
+   DCA     C  2.60   1.0780   0.2950
+    CA    DC  2.60   1.0780   0.2950
+   DCA    DC  2.60   1.0780   0.2950
+     C    +N  2.60   0.2950   0.2500
+    DC    +N  2.60   0.2950   0.2500
+     C   +DN  2.60   0.2950   0.2500
+    DC   +DN  2.60   0.2950   0.2500
+     C     O  2.60   0.2950   0.3100
+    DC     O  2.60   0.2950   0.3100
+     C    DO  2.60   0.2950   0.3100
+    DC    DO  2.60   0.2950   0.3100
+    CA    CB  2.60   1.0780   1.0670
+   DCA    CB  2.60   1.0780   1.0670
+    CA   DCB  2.60   1.0780   1.0670
+   DCA   DCB  2.60   1.0780   1.0670
+    CB    SG  2.60   1.0670   1.0820
+   DCB    SG  2.60   1.0670   1.0820
+    CB   DSG  2.60   1.0670   1.0820
+   DCB   DSG  2.60   1.0670   1.0820
+     N     C  2.60   0.2500   0.2950
+    DN     C  2.60   0.2500   0.2950
+     N    DC  2.60   0.2500   0.2950
+    DN    DC  2.60   0.2500   0.2950
+     N    CB  2.60   0.2500   1.0670
+    DN    CB  2.60   0.2500   1.0670
+     N   DCB  2.60   0.2500   1.0670
+    DN   DCB  2.60   0.2500   1.0670
+    CA    +N  2.60   1.0780   0.2500
+   DCA    +N  2.60   1.0780   0.2500
+    CA   +DN  2.60   1.0780   0.2500
+   DCA   +DN  2.60   1.0780   0.2500
+    CA     O  2.60   1.0780   0.3100
+   DCA     O  2.60   1.0780   0.3100
+    CA    DO  2.60   1.0780   0.3100
+   DCA    DO  2.60   1.0780   0.3100
+    CB     C  2.60   1.0670   0.2950
+   DCB     C  2.60   1.0670   0.2950
+    CB    DC  2.60   1.0670   0.2950
+   DCB    DC  2.60   1.0670   0.2950
+     O    +N  2.60   0.3100   0.2500
+    DO    +N  2.60   0.3100   0.2500
+     O   +DN  2.60   0.3100   0.2500
+    DO   +DN  2.60   0.3100   0.2500
+    CA    SG  2.60   1.0780   1.0820
+   DCA    SG  2.60   1.0780   1.0820
+    CA   DSG  2.60   1.0780   1.0820
+   DCA   DSG  2.60   1.0780   1.0820
+     C   +CA  2.60   0.2950   1.0780
+    DC   +CA  2.60   0.2950   1.0780
+     C  +DCA  2.60   0.2950   1.0780
+    DC  +DCA  2.60   0.2950   1.0780
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
