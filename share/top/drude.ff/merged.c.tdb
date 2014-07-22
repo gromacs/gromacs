@@ -123,8 +123,8 @@
  DOT2  DOT1  2.60  2.3990  2.3990
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-   DOT1   OT1     C  LPT1  LPT2 0.00082322 0.00114332 0.00103346
-   DOT2   OT2     C  LPT3  LPT4 0.00082322 0.00114332 0.00103346 
+   DOT1   OT1     C  LPT1  LPT2 0.82322    1.14332    1.03346
+   DOT2   OT2     C  LPT3  LPT4 0.82322    1.14332    1.03346 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -240,8 +240,8 @@
   DCB    DC  2.60  2.0800  0.7080
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-  DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
-  DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
+  DOT1    OT1     C  LPT1  LPT2 0.69680 1.21940 1.08380 
+  DOT2    OT2     C  LPT3  LPT4 0.81080 1.21620 0.97300 
 [ virtual_sites3 ]
  ; 3fad
    LPT1   OT1    C     CA      3   91.000 0.030 
@@ -348,8 +348,8 @@
  DOT2  DOT1  2.60  2.3990  2.3990
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-   DOT1   OT1     C  LPT1  LPT2 0.00082322 0.00114332 0.00103346 
-   DOT2   OT2     C  LPT3  LPT4 0.00082322 0.00114332 0.00103346 
+   DOT1   OT1     C  LPT1  LPT2 0.82322    1.14332    1.03346 
+   DOT2   OT2     C  LPT3  LPT4 0.82322    1.14332    1.03346 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -461,8 +461,8 @@
  DOT2  DOT1  2.60  1.1240  1.5390
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-  DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
-  DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
+  DOT1    OT1     C  LPT1  LPT2 0.69680    1.21940    1.08380 
+  DOT2    OT2     C  LPT3  LPT4 0.81080    1.21620    0.97300 
 [ virtual_sites3 ]
  ; 3fad
    LPT1   OT1    C     CA      3   91.000 0.030 
@@ -620,8 +620,8 @@
   DCB   DCD  2.60  0.4320  1.1000
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-   DOT1   OT1     C  LPT1  LPT2 0.00082322 0.00114332 0.00103346 
-   DOT2   OT2     C  LPT3  LPT4 0.00082322 0.00114332 0.00103346 
+   DOT1   OT1     C  LPT1  LPT2 0.82322    1.14332    1.03346 
+   DOT2   OT2     C  LPT3  LPT4 0.82322    1.14332    1.03346 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -720,8 +720,8 @@
  DOT2  DOT1  2.60  2.3990  2.3990
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-   DOT1   OT1     C  LPT1  LPT2 0.00082322 0.00114332 0.00103346 
-   DOT2   OT2     C  LPT3  LPT4 0.00082322 0.00114332 0.00103346 
+   DOT1   OT1     C  LPT1  LPT2 0.82322    1.14332    1.03346 
+   DOT2   OT2     C  LPT3  LPT4 0.82322    1.14332    1.03346 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -825,8 +825,8 @@
  DOT2  DOT1  2.60  1.1240  1.5390
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-  DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
-  DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
+  DOT1    OT1     C  LPT1  LPT2 0.69680    1.21940    1.08380 
+  DOT2    OT2     C  LPT3  LPT4 0.81080    1.21620    0.97300 
 
 
 [ 3TER ]
@@ -846,7 +846,7 @@
  LP32 LP3B  LP       0.0000 -0.23000
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al   a11        a22        a33
-   DO3'    O3'   C3'   LP3A  LP3B 0.00081080 0.00121620 0.00097300
+   DO3'    O3'   C3'   LP3A  LP3B 0.81080    1.21620    0.97300
 [ virtual_sites3 ]
   ; 3out
   ; site from              func    a      b      c 

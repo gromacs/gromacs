@@ -26,6 +26,19 @@
     D                0.4000 -1.97707    -1
 [ delete ]
  HN
+[ exclusions ]
+     N    CA
+     N   DCA
+    DN    CA
+    DN   DCA
+     N    CB
+     N   DCB
+    DN    CB
+    DN   DCB
+     N     C
+     N    DC
+    DN     C
+    DN    DC
 [ thole_polarization ]
   ; ai    aj   a     alpha_i    alpha_j
      N    CA   2.60  0.8950  1.0780
@@ -58,6 +71,19 @@
     D                0.4000 -1.97707    -1
 [ delete ]
  HN
+[ exclusions ]
+     N    CA
+     N   DCA
+    DN    CA
+    DN   DCA
+     N    CB
+     N   DCB
+    DN    CB
+    DN   DCB
+     N     C
+     N    DC
+    DN     C
+    DN    DC
 [ thole_polarization ]
   ; ai    aj   a     alpha_i    alpha_j
      N    CA   2.60  0.8950  0.8950
@@ -116,6 +142,15 @@
     D                0.4000 -1.97707    -1
 [ delete ]
  HN
+[ exclusions ]
+     N    CA
+     N   DCA
+    DN    CA
+    DN   DCA
+     N     C
+     N    DC
+    DN     C
+    DN    DC
 [ thole_polarization ]
   ; ai    aj   a     alpha_i    alpha_j
      N    CA   2.60  0.8950  0.8950
@@ -155,6 +190,15 @@
     D                0.4000 -1.97707    -1
 [ delete ]
  HN
+[ exclusions ]
+     N    CA
+     N   DCA
+    DN    CA
+    DN   DCA
+     N     C
+     N    DC
+    DN     C
+    DN    DC
 ; TODO: CHECK THIS - experimental
 [ thole_polarization ]
   ; ai    aj   a     alpha_i    alpha_j
@@ -248,7 +292,7 @@
    LP5A  LP5B
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al   a11        a22        a33
-   DO5'    O5'   C5'   LP5A  LP5B 0.00081080 0.00121620 0.00097300
+   DO5'    O5'   C5'   LP5A  LP5B 0.81080 1.121620 0.97300
 [ virtual_sites3 ]
   ; 3out
   ; site from              func    a      b      c 

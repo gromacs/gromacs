@@ -55,8 +55,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -139,16 +139,49 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
   [ virtual_sites3 ]
   ; 3fad
@@ -234,9 +267,9 @@
   [ cmap ]
 	   CY     N    CA     C    NT
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	  DOY    OY    CY  LPY1  LPY2 0.00082322 0.00114332 0.00103346
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	  DOY    OY    CY  LPY1  LPY2 0.82322000 1.14332000 1.03346000
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
    CAY    CY  2.60   2.1220   0.2950
@@ -371,25 +404,85 @@
   CAT    LPOB
   DCAT   LPOA
   DCAT   LPOB
+  CAY 	 CY  
+  CAY 	 DCY 
+  DCAY	 CY  
   DCAY	 DCY 
+  CY  	 N   
+  CY  	 DN  
+  DCY 	 N   
   DCY 	 DN  
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 NT  
+  C   	 DNT 
+  DC  	 NT  
   DC  	 DNT 
+  NT  	 CAT 
+  NT  	 DCAT
+  DNT 	 CAT 
   DNT 	 DCAT
+  CY  	 OY  
+  CY  	 DOY 
+  DCY 	 OY  
   DCY 	 DOY 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CAY 	 N   
+  CAY 	 DN  
+  DCAY	 N   
   DCAY	 DN  
+  CAY 	 OY  
+  CAY 	 DOY 
+  DCAY	 OY  
   DCAY	 DOY 
+  CY  	 CA  
+  CY  	 DCA 
+  DCY 	 CA  
   DCY 	 DCA 
+  OY  	 N   
+  OY  	 DN  
+  DOY 	 N   
   DOY 	 DN  
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 NT  
+  CA  	 DNT 
+  DCA 	 NT  
   DCA 	 DNT 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  C   	 CAT 
+  C   	 DCAT
+  DC  	 CAT 
   DC  	 DCAT
+  O   	 NT  
+  O   	 DNT 
+  DO  	 NT  
   DO  	 DNT 
   [ virtual_sites3 ]
   ; 3fad
@@ -481,8 +574,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -617,29 +710,101 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD  
+  CG  	 DCD 
+  DCG 	 CD  
   DCG 	 DCD 
+  CD  	 NE  
+  CD  	 DNE 
+  DCD 	 NE  
   DCD 	 DNE 
+  NE  	 CZ  
+  NE  	 DCZ 
+  DNE 	 CZ  
   DNE 	 DCZ 
+  CZ  	 NH1 
+  CZ  	 DNH1
+  DCZ 	 NH1 
   DCZ 	 DNH1
+  CZ  	 NH2 
+  CZ  	 DNH2
+  DCZ 	 NH2 
   DCZ 	 DNH2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD  
+  CB  	 DCD 
+  DCB 	 CD  
   DCB 	 DCD 
+  CG  	 NE  
+  CG  	 DNE 
+  DCG 	 NE  
   DCG 	 DNE 
+  CD  	 CZ  
+  CD  	 DCZ 
+  DCD 	 CZ  
   DCD 	 DCZ 
+  NE  	 NH1 
+  NE  	 DNH1
+  DNE 	 NH1 
   DNE 	 DNH1
+  NE  	 NH2 
+  NE  	 DNH2
+  DNE 	 NH2 
   DNE 	 DNH2
+  NH2 	 NH1 
+  NH2 	 DNH1
+  DNH2	 NH1 
   DNH2	 DNH1
   [ virtual_sites3 ]
   ; 3fad
@@ -706,9 +871,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	 DOD1   OD1    CG  LPDA  LPDB 0.00088000 0.00132000 0.00080000
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	 DOD1   OD1    CG  LPDA  LPDB 0.88000000 1.32000000 0.80000000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -840,23 +1005,77 @@
   HD21  LPDB
   HD22  LPDA
   HD22  LPDB
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 OD1 
+  CG  	 DOD1
+  DCG 	 OD1 
   DCG 	 DOD1
+  CG  	 ND2 
+  CG  	 DND2
+  DCG 	 ND2 
   DCG 	 DND2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 OD1 
+  CB  	 DOD1
+  DCB 	 OD1 
   DCB 	 DOD1
+  CB  	 ND2 
+  CB  	 DND2
+  DCB 	 ND2 
   DCB 	 DND2
+  ND2 	 OD1 
+  ND2 	 DOD1
+  DND2	 OD1 
   DND2	 DOD1
   [ virtual_sites3 ]
   ; 3fad
@@ -942,83 +1161,83 @@
        -C     N    CA     C    +N
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DO      O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-    DOD1    OD1    CG  LPP1  LPP2 0.00069680 0.00121940 0.00108380
-    DOD2    OD2    CG  LPP3  LPP4 0.00081080 0.00121620 0.00097300
+      DO      O     C  LPOA  LPOB 0.82322    1.14332    1.03346
+    DOD1    OD1    CG  LPP1  LPP2 0.69680    1.21940    1.08380
+    DOD2    OD2    CG  LPP3  LPP4 0.81080    1.21620    0.97300
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-     N    CA   0.2500   1.0780
-    DN    CA   0.2500   1.0780
-     N   DCA   0.2500   1.0780
-    DN   DCA   0.2500   1.0780
-    CA     C   1.0780   0.2950
-   DCA     C   1.0780   0.2950
-    CA    DC   1.0780   0.2950
-   DCA    DC   1.0780   0.2950
-     C    +N   0.2950   0.2500
-    DC    +N   0.2950   0.2500
-     C   +DN   0.2950   0.2500
-    DC   +DN   0.2950   0.2500
-     C     O   0.2950   0.3100
-    DC     O   0.2950   0.3100
-     C    DO   0.2950   0.3100
-    DC    DO   0.2950   0.3100
-    CA    CB   1.0780   0.7500 
-   DCA    CB   1.0780   0.7500
-    CA   DCB   1.0780   0.7500
-   DCA   DCB   1.0780   0.7500
-    CB    CG   0.7500   0.7080 
-   DCB    CG   0.7500   0.7080
-    CB   DCG   0.7500   0.7080
-   DCB   DCG   0.7500   0.7080
-    CG   OD1   0.7080   1.5390
-   DCG   OD1   0.7080   1.5390
-    CG  DOD1   0.7080   1.5390
-   DCG  DOD1   0.7080   1.5390
-    CG   OD2   0.7080   1.1240
-   DCG   OD2   0.7080   1.1240
-    CG  DOD2   0.7080   1.1240
-   DCG  DOD2   0.7080   1.1240
-     N     C   0.2500   0.2950
-    DN     C   0.2500   0.2950
-     N    DC   0.2500   0.2950
-    DN    DC   0.2500   0.2950
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-     O    +N   0.3100   0.2500
-    DO    +N   0.3100   0.2500
-     O   +DN   0.3100   0.2500
-    DO   +DN   0.3100   0.2500
-    CA    CG   1.0780   0.7500
-   DCA    CG   1.0780   0.7500
-    CA   DCG   1.0780   0.7500
-   DCA   DCG   1.0780   0.7500
-    CB   OD1   0.7500   1.5390
-   DCB   OD1   0.7500   1.5390
-    CB  DOD1   0.7500   1.5390
-   DCB  DOD1   0.7500   1.5390
-    CB   OD2   0.7500   1.1240 
-   DCB   OD2   0.7500   1.1240
-    CB  DOD2   0.7500   1.1240
-   DCB  DOD2   0.7500   1.1240
-   OD2   OD1   1.1240   1.5390
-  DOD2   OD1   1.1240   1.5390
-   OD2  DOD1   1.1240   1.5390
-  DOD2  DOD1   1.1240   1.5390
-     C   +CA   0.2950   1.0780
-    DC   +CA   0.2950   1.0780
-     C  +DCA   0.2950   1.0780
-    DC  +DCA   0.2950   1.0780
+  ; ai    aj   a     alpha_i  alpha_j
+     N    CA   2.60  0.2500   1.0780
+    DN    CA   2.60  0.2500   1.0780
+     N   DCA   2.60  0.2500   1.0780
+    DN   DCA   2.60  0.2500   1.0780
+    CA     C   2.60  1.0780   0.2950
+   DCA     C   2.60  1.0780   0.2950
+    CA    DC   2.60  1.0780   0.2950
+   DCA    DC   2.60  1.0780   0.2950
+     C    +N   2.60  0.2950   0.2500
+    DC    +N   2.60  0.2950   0.2500
+     C   +DN   2.60  0.2950   0.2500
+    DC   +DN   2.60  0.2950   0.2500
+     C     O   2.60  0.2950   0.3100
+    DC     O   2.60  0.2950   0.3100
+     C    DO   2.60  0.2950   0.3100
+    DC    DO   2.60  0.2950   0.3100
+    CA    CB   2.60  1.0780   0.7500 
+   DCA    CB   2.60  1.0780   0.7500
+    CA   DCB   2.60  1.0780   0.7500
+   DCA   DCB   2.60  1.0780   0.7500
+    CB    CG   2.60  0.7500   0.7080 
+   DCB    CG   2.60  0.7500   0.7080
+    CB   DCG   2.60  0.7500   0.7080
+   DCB   DCG   2.60  0.7500   0.7080
+    CG   OD1   2.60  0.7080   1.5390
+   DCG   OD1   2.60  0.7080   1.5390
+    CG  DOD1   2.60  0.7080   1.5390
+   DCG  DOD1   2.60  0.7080   1.5390
+    CG   OD2   2.60  0.7080   1.1240
+   DCG   OD2   2.60  0.7080   1.1240
+    CG  DOD2   2.60  0.7080   1.1240
+   DCG  DOD2   2.60  0.7080   1.1240
+     N     C   2.60  0.2500   0.2950
+    DN     C   2.60  0.2500   0.2950
+     N    DC   2.60  0.2500   0.2950
+    DN    DC   2.60  0.2500   0.2950
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+     O    +N   2.60  0.3100   0.2500
+    DO    +N   2.60  0.3100   0.2500
+     O   +DN   2.60  0.3100   0.2500
+    DO   +DN   2.60  0.3100   0.2500
+    CA    CG   2.60  1.0780   0.7500
+   DCA    CG   2.60  1.0780   0.7500
+    CA   DCG   2.60  1.0780   0.7500
+   DCA   DCG   2.60  1.0780   0.7500
+    CB   OD1   2.60  0.7500   1.5390
+   DCB   OD1   2.60  0.7500   1.5390
+    CB  DOD1   2.60  0.7500   1.5390
+   DCB  DOD1   2.60  0.7500   1.5390
+    CB   OD2   2.60  0.7500   1.1240 
+   DCB   OD2   2.60  0.7500   1.1240
+    CB  DOD2   2.60  0.7500   1.1240
+   DCB  DOD2   2.60  0.7500   1.1240
+   OD2   OD1   2.60  1.1240   1.5390
+  DOD2   OD1   2.60  1.1240   1.5390
+   OD2  DOD1   2.60  1.1240   1.5390
+  DOD2  DOD1   2.60  1.1240   1.5390
+     C   +CA   2.60  0.2950   1.0780
+    DC   +CA   2.60  0.2950   1.0780
+     C  +DCA   2.60  0.2950   1.0780
+    DC  +DCA   2.60  0.2950   1.0780
  [ virtual_sites3 ]
   ; 3fad
   ; site from              func   theta   d
@@ -1087,10 +1306,10 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	 DOD1   OD1    CG  LP1A  LP1B 0.00072290 0.00126500 0.00101210
-	 DOD2   OD2    CG  LP2A  LP2B 0.00072290 0.00126500 0.00101210
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	 DOD1   OD1    CG  LP1A  LP1B 0.72290000 1.26500000 1.01210000
+	 DOD2   OD2    CG  LP2A  LP2B 0.72290000 1.26500000 1.01210000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -1229,23 +1448,77 @@
   CB    LP2B
   DCB   LP2A
   DCB   LP2B
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 OD1 
+  CG  	 DOD1
+  DCG 	 OD1 
   DCG 	 DOD1
+  CG  	 OD2 
+  CG  	 DOD2
+  DCG 	 OD2 
   DCG 	 DOD2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 OD1 
+  CB  	 DOD1
+  DCB 	 OD1 
   DCB 	 DOD1
+  CB  	 OD2 
+  CB  	 DOD2
+  DCB 	 OD2 
   DCB 	 DOD2
+  OD2 	 OD1 
+  OD2 	 DOD1
+  DOD2	 OD1 
   DOD2	 DOD1
   [ virtual_sites3 ]
   ; 3fad
@@ -1346,62 +1619,62 @@
        -C     N    CA     C    +N
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DO      O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-     DSG     SG    CB  LPSA  LPSB 0.00092080 0.00101020 0.00106900
+      DO      O     C  LPOA  LPOB 0.82322    1.14332    1.03346
+     DSG     SG    CB  LPSA  LPSB 0.92080    1.01020    1.06900
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-     N    CA   0.2500   1.0780
-    DN    CA   0.2500   1.0780
-     N   DCA   0.2500   1.0780
-    DN   DCA   0.2500   1.0780
-    CA     C   1.0780   0.2950
-   DCA     C   1.0780   0.2950
-    CA    DC   1.0780   0.2950
-   DCA    DC   1.0780   0.2950
-     C    +N   0.2950   0.2500
-    DC    +N   0.2950   0.2500
-     C   +DN   0.2950   0.2500
-    DC   +DN   0.2950   0.2500
-     C     O   0.2950   0.3100
-    DC     O   0.2950   0.3100
-     C    DO   0.2950   0.3100
-    DC    DO   0.2950   0.3100
-    CA    CB   1.0780   1.0670
-   DCA    CB   1.0780   1.0670
-    CA   DCB   1.0780   1.0670
-   DCA   DCB   1.0780   1.0670
-    CB    SG   1.0670   1.0820
-   DCB    SG   1.0670   1.0820
-    CB   DSG   1.0670   1.0820
-   DCB   DSG   1.0670   1.0820
-     N     C   0.2500   0.2950
-    DN     C   0.2500   0.2950
-     N    DC   0.2500   0.2950
-    DN    DC   0.2500   0.2950
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-     O    +N   0.3100   0.2500
-    DO    +N   0.3100   0.2500
-     O   +DN   0.3100   0.2500
-    DO   +DN   0.3100   0.2500
-    CA    SG   1.0780   1.0820
-   DCA    SG   1.0780   1.0820
-    CA   DSG   1.0780   1.0820
-   DCA   DSG   1.0780   1.0820
-     C   +CA   0.2950   1.0780
-    DC   +CA   0.2950   1.0780
-     C  +DCA   0.2950   1.0780
-    DC  +DCA   0.2950   1.0780
+  ; ai    aj   a     alpha_i  alpha_j
+     N    CA   2.60  0.2500   1.0780
+    DN    CA   2.60  0.2500   1.0780
+     N   DCA   2.60  0.2500   1.0780
+    DN   DCA   2.60  0.2500   1.0780
+    CA     C   2.60  1.0780   0.2950
+   DCA     C   2.60  1.0780   0.2950
+    CA    DC   2.60  1.0780   0.2950
+   DCA    DC   2.60  1.0780   0.2950
+     C    +N   2.60  0.2950   0.2500
+    DC    +N   2.60  0.2950   0.2500
+     C   +DN   2.60  0.2950   0.2500
+    DC   +DN   2.60  0.2950   0.2500
+     C     O   2.60  0.2950   0.3100
+    DC     O   2.60  0.2950   0.3100
+     C    DO   2.60  0.2950   0.3100
+    DC    DO   2.60  0.2950   0.3100
+    CA    CB   2.60  1.0780   1.0670
+   DCA    CB   2.60  1.0780   1.0670
+    CA   DCB   2.60  1.0780   1.0670
+   DCA   DCB   2.60  1.0780   1.0670
+    CB    SG   2.60  1.0670   1.0820
+   DCB    SG   2.60  1.0670   1.0820
+    CB   DSG   2.60  1.0670   1.0820
+   DCB   DSG   2.60  1.0670   1.0820
+     N     C   2.60  0.2500   0.2950
+    DN     C   2.60  0.2500   0.2950
+     N    DC   2.60  0.2500   0.2950
+    DN    DC   2.60  0.2500   0.2950
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+     O    +N   2.60  0.3100   0.2500
+    DO    +N   2.60  0.3100   0.2500
+     O   +DN   2.60  0.3100   0.2500
+    DO   +DN   2.60  0.3100   0.2500
+    CA    SG   2.60  1.0780   1.0820
+   DCA    SG   2.60  1.0780   1.0820
+    CA   DSG   2.60  1.0780   1.0820
+   DCA   DSG   2.60  1.0780   1.0820
+     C   +CA   2.60  0.2950   1.0780
+    DC   +CA   2.60  0.2950   1.0780
+     C  +DCA   2.60  0.2950   1.0780
+    DC  +DCA   2.60  0.2950   1.0780
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -1459,9 +1732,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	  DSG    SG    CB  LPGA  LPGB 0.00088000 0.00132000 0.00080000
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	  DSG    SG    CB  LPGA  LPGB 0.88000000 1.32000000 0.80000000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -1571,18 +1844,57 @@
   CA    LPGB
   DCA   LPGA
   DCA   LPGB
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 SG  
+  CB  	 DSG 
+  DCB 	 SG  
   DCB 	 DSG 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 SG  
+  CA  	 DSG 
+  DCA 	 SG  
   DCA 	 DSG 
   [ virtual_sites3 ]
   ; 3fad
@@ -1672,9 +1984,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	 DOE1   OE1    CD  LPEA  LPEB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	 DOE1   OE1    CD  LPEA  LPEB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -1814,25 +2126,85 @@
   HE21  LPEB
   HE22  LPEA
   HE22  LPEB
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD  
+  CG  	 DCD 
+  DCG 	 CD  
   DCG 	 DCD 
+  CD  	 OE1 
+  CD  	 DOE1
+  DCD 	 OE1 
   DCD 	 DOE1
+  CD  	 NE2 
+  CD  	 DNE2
+  DCD 	 NE2 
   DCD 	 DNE2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD  
+  CB  	 DCD 
+  DCB 	 CD  
   DCB 	 DCD 
+  CG  	 OE1 
+  CG  	 DOE1
+  DCG 	 OE1 
   DCG 	 DOE1
+  CG  	 NE2 
+  CG  	 DNE2
+  DCG 	 NE2 
   DCG 	 DNE2
+  NE2 	 OE1 
+  NE2 	 DOE1
+  DNE2	 OE1 
   DNE2	 DOE1
   [ virtual_sites3 ]
   ; 3fad
@@ -1926,91 +2298,91 @@
        -C     N    CA     C    +N
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DO      O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-    DOE1    OE1    CD  LPP1  LPP2 0.00069680 0.00121940 0.00108380
-    DOE2    OE2    CD  LPP3  LPP4 0.00081080 0.00121620 0.00097300
+      DO      O     C  LPOA  LPOB 0.82322    1.14332    1.03346
+    DOE1    OE1    CD  LPP1  LPP2 0.69680    1.21940    1.08380
+    DOE2    OE2    CD  LPP3  LPP4 0.81080    1.21620    0.97300
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-     N    CA   0.2500   1.0780
-    DN    CA   0.2500   1.0780
-     N   DCA   0.2500   1.0780
-    DN   DCA   0.2500   1.0780
-    CA     C   1.0780   0.2950
-   DCA     C   1.0780   0.2950
-    CA    DC   1.0780   0.2950
-   DCA    DC   1.0780   0.2950
-     C    +N   0.2950   0.2500
-    DC    +N   0.2950   0.2500
-     C   +DN   0.2950   0.2500
-    DC   +DN   0.2950   0.2500
-     C     O   0.2950   0.3100
-    DC     O   0.2950   0.3100
-     C    DO   0.2950   0.3100
-    DC    DO   0.2950   0.3100
-    CA    CB   1.0780   2.0800
-   DCA    CB   1.0780   2.0800
-    CA   DCB   1.0780   2.0800
-   DCA   DCB   1.0780   2.0800
-    CB    CG   1.0780   0.7500
-   DCB    CG   1.0780   0.7500
-    CB   DCG   1.0780   0.7500
-   DCB   DCG   1.0780   0.7500
-    CG    CD   0.7500   0.7080
-   DCG    CD   0.7500   0.7080
-    CG   DCD   0.7500   0.7080
-   DCG   DCD   0.7500   0.7080
-    CD   OE1   0.7080   1.5390
-   DCD   OE1   0.7080   1.5390
-    CD  DOE1   0.7080   1.5390
-   DCD  DOE1   0.7080   1.5390
-    CD   OE2   0.7080   1.1240
-   DCD   OE2   0.7080   1.1240
-    CD  DOE2   0.7080   1.1240
-   DCD  DOE2   0.7080   1.1240
-     N     C   0.2500   0.2950
-    DN     C   0.2500   0.2950
-     N    DC   0.2500   0.2950
-    DN    DC   0.2500   0.2950
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-    CA    +N   1.0780   0.2500
-   DCA    +N   1.0780   0.2500
-    CA   +DN   1.0780   0.2500
-   DCA   +DN   1.0780   0.2500
-     O    +N   0.3100   0.2500
-    DO    +N   0.3100   0.2500
-     O   +DN   0.3100   0.2500
-    DO   +DN   0.3100   0.2500
-    CA    CG   1.0780   0.7500
-   DCA    CG   1.0780   0.7500
-    CA   DCG   1.0780   0.7500
-   DCA   DCG   1.0780   0.7500
-    CB    CD   2.0800   0.7080
-   DCB    CD   2.0800   0.7080
-    CB   DCD   2.0800   0.7080
-   DCB   DCD   2.0800   0.7080
-    CG   OE1   0.7500   1.5390
-   DCG   OE1   0.7500   1.5390
-    CG  DOE1   0.7500   1.5390
-   DCG  DOE1   0.7500   1.5390
-    CG   OE2   0.7500   1.1240
-   DCG   OE2   0.7500   1.1240
-    CG  DOE2   0.7500   1.1240
-   DCG  DOE2   0.7500   1.1240
-   OE2   OE1   1.1240   1.5390
-  DOE2   OE1   1.1240   1.5390
-   OE2  DOE1   1.1240   1.5390
-  DOE2  DOE1   1.1240   1.5390
-     C   +CA   0.2950   1.0780
-    DC   +CA   0.2950   1.0780
-     C  +DCA   0.2950   1.0780
-    DC  +DCA   0.2950   1.0780
+  ; ai    aj   a     alpha_i  alpha_j
+     N    CA   2.60  0.2500   1.0780
+    DN    CA   2.60  0.2500   1.0780
+     N   DCA   2.60  0.2500   1.0780
+    DN   DCA   2.60  0.2500   1.0780
+    CA     C   2.60  1.0780   0.2950
+   DCA     C   2.60  1.0780   0.2950
+    CA    DC   2.60  1.0780   0.2950
+   DCA    DC   2.60  1.0780   0.2950
+     C    +N   2.60  0.2950   0.2500
+    DC    +N   2.60  0.2950   0.2500
+     C   +DN   2.60  0.2950   0.2500
+    DC   +DN   2.60  0.2950   0.2500
+     C     O   2.60  0.2950   0.3100
+    DC     O   2.60  0.2950   0.3100
+     C    DO   2.60  0.2950   0.3100
+    DC    DO   2.60  0.2950   0.3100
+    CA    CB   2.60  1.0780   2.0800
+   DCA    CB   2.60  1.0780   2.0800
+    CA   DCB   2.60  1.0780   2.0800
+   DCA   DCB   2.60  1.0780   2.0800
+    CB    CG   2.60  1.0780   0.7500
+   DCB    CG   2.60  1.0780   0.7500
+    CB   DCG   2.60  1.0780   0.7500
+   DCB   DCG   2.60  1.0780   0.7500
+    CG    CD   2.60  0.7500   0.7080
+   DCG    CD   2.60  0.7500   0.7080
+    CG   DCD   2.60  0.7500   0.7080
+   DCG   DCD   2.60  0.7500   0.7080
+    CD   OE1   2.60  0.7080   1.5390
+   DCD   OE1   2.60  0.7080   1.5390
+    CD  DOE1   2.60  0.7080   1.5390
+   DCD  DOE1   2.60  0.7080   1.5390
+    CD   OE2   2.60  0.7080   1.1240
+   DCD   OE2   2.60  0.7080   1.1240
+    CD  DOE2   2.60  0.7080   1.1240
+   DCD  DOE2   2.60  0.7080   1.1240
+     N     C   2.60  0.2500   0.2950
+    DN     C   2.60  0.2500   0.2950
+     N    DC   2.60  0.2500   0.2950
+    DN    DC   2.60  0.2500   0.2950
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+    CA    +N   2.60  1.0780   0.2500
+   DCA    +N   2.60  1.0780   0.2500
+    CA   +DN   2.60  1.0780   0.2500
+   DCA   +DN   2.60  1.0780   0.2500
+     O    +N   2.60  0.3100   0.2500
+    DO    +N   2.60  0.3100   0.2500
+     O   +DN   2.60  0.3100   0.2500
+    DO   +DN   2.60  0.3100   0.2500
+    CA    CG   2.60  1.0780   0.7500
+   DCA    CG   2.60  1.0780   0.7500
+    CA   DCG   2.60  1.0780   0.7500
+   DCA   DCG   2.60  1.0780   0.7500
+    CB    CD   2.60  2.0800   0.7080
+   DCB    CD   2.60  2.0800   0.7080
+    CB   DCD   2.60  2.0800   0.7080
+   DCB   DCD   2.60  2.0800   0.7080
+    CG   OE1   2.60  0.7500   1.5390
+   DCG   OE1   2.60  0.7500   1.5390
+    CG  DOE1   2.60  0.7500   1.5390
+   DCG  DOE1   2.60  0.7500   1.5390
+    CG   OE2   2.60  0.7500   1.1240
+   DCG   OE2   2.60  0.7500   1.1240
+    CG  DOE2   2.60  0.7500   1.1240
+   DCG  DOE2   2.60  0.7500   1.1240
+   OE2   OE1   2.60  1.1240   1.5390
+  DOE2   OE1   2.60  1.1240   1.5390
+   OE2  DOE1   2.60  1.1240   1.5390
+  DOE2  DOE1   2.60  1.1240   1.5390
+     C   +CA   2.60  0.2950   1.0780
+    DC   +CA   2.60  0.2950   1.0780
+     C  +DCA   2.60  0.2950   1.0780
+    DC  +DCA   2.60  0.2950   1.0780
  [ virtual_sites3 ]
   ; 3fad
   ; site from              func   theta   d
@@ -2087,10 +2459,10 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	 DOE1   OE1    CD  LP1A  LP1B 0.00072290 0.00126500 0.00101210
-	 DOE2   OE2    CD  LP2A  LP2B 0.00072290 0.00126500 0.00101210
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	 DOE1   OE1    CD  LP1A  LP1B 0.72290000 1.26500000 1.01210000
+	 DOE2   OE2    CD  LP2A  LP2B 0.72290000 1.26500000 1.01210000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -2239,25 +2611,85 @@
   CG    LP2B
   DCG   LP2A
   DCG   LP2B
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD  
+  CG  	 DCD 
+  DCG 	 CD  
   DCG 	 DCD 
+  CD  	 OE1 
+  CD  	 DOE1
+  DCD 	 OE1 
   DCD 	 DOE1
+  CD  	 OE2 
+  CD  	 DOE2
+  DCD 	 OE2 
   DCD 	 DOE2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD  
+  CB  	 DCD 
+  DCB 	 CD  
   DCB 	 DCD 
+  CG  	 OE1 
+  CG  	 DOE1
+  DCG 	 OE1 
   DCG 	 DOE1
+  CG  	 OE2 
+  CG  	 DOE2
+  DCG 	 OE2 
   DCG 	 DOE2
+  OE2 	 OE1 
+  OE2 	 DOE1
+  DOE2	 OE1 
   DOE2	 DOE1
   [ virtual_sites3 ]
   ; 3fad
@@ -2302,8 +2734,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -2374,13 +2806,37 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
   [ virtual_sites3 ]
   ; 3fad
@@ -2472,9 +2928,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	 DNE2   NE2  LPE2   CE1   CD2 0.00080800 0.00138400 0.00080800
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	 DNE2   NE2  LPE2   CE1   CD2 0.80800000 1.38400000 0.80800000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -2626,30 +3082,105 @@
   ND1   LPE2
   DND1  LPE2
   HD1   LPE2
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 ND1 
+  CG  	 DND1
+  DCG 	 ND1 
   DCG 	 DND1
+  ND1 	 CE1 
+  ND1 	 DCE1
+  DND1	 CE1 
   DND1	 DCE1
+  CE1 	 NE2 
+  CE1 	 DNE2
+  DCE1	 NE2 
   DCE1	 DNE2
+  NE2 	 CD2 
+  NE2 	 DCD2
+  DNE2	 CD2 
   DNE2	 DCD2
+  CD2 	 CG  
+  CD2 	 DCG 
+  DCD2	 CG  
   DCD2	 DCG 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 ND1 
+  CB  	 DND1
+  DCB 	 ND1 
   DCB 	 DND1
+  CB  	 CD2 
+  CB  	 DCD2
+  DCB 	 CD2 
   DCB 	 DCD2
+  CG  	 CE1 
+  CG  	 DCE1
+  DCG 	 CE1 
   DCG 	 DCE1
+  CD2 	 ND1 
+  CD2 	 DND1
+  DCD2	 ND1 
   DCD2	 DND1
+  ND1 	 NE2 
+  ND1 	 DNE2
+  DND1	 NE2 
   DND1	 DNE2
+  CE1 	 CD2 
+  CE1 	 DCD2
+  DCE1	 CD2 
   DCE1	 DCD2
+  NE2 	 CG  
+  NE2 	 DCG 
+  DNE2	 CG  
   DNE2	 DCG 
   [ virtual_sites3 ]
   ; 3fd
@@ -2730,9 +3261,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	 DND1   ND1  LPD1   CE1    CG 0.00080800 0.00138400 0.00080800
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	 DND1   ND1  LPD1   CE1    CG 0.80800000 1.38400000 0.80800000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -2888,30 +3419,105 @@
   CD2   LPD1
   DCD2  LPD1
   HD2   LPD1
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 ND1 
+  CG  	 DND1
+  DCG 	 ND1 
   DCG 	 DND1
+  ND1 	 CE1 
+  ND1 	 DCE1
+  DND1	 CE1 
   DND1	 DCE1
+  CE1 	 NE2 
+  CE1 	 DNE2
+  DCE1	 NE2 
   DCE1	 DNE2
+  NE2 	 CD2 
+  NE2 	 DCD2
+  DNE2	 CD2 
   DNE2	 DCD2
+  CD2 	 CG  
+  CD2 	 DCG 
+  DCD2	 CG  
   DCD2	 DCG 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 ND1 
+  CB  	 DND1
+  DCB 	 ND1 
   DCB 	 DND1
+  CB  	 CD2 
+  CB  	 DCD2
+  DCB 	 CD2 
   DCB 	 DCD2
+  CG  	 CE1 
+  CG  	 DCE1
+  DCG 	 CE1 
   DCG 	 DCE1
+  CD2 	 ND1 
+  CD2 	 DND1
+  DCD2	 ND1 
   DCD2	 DND1
+  ND1 	 NE2 
+  ND1 	 DNE2
+  DND1	 NE2 
   DND1	 DNE2
+  CE1 	 CD2 
+  CE1 	 DCD2
+  DCE1	 CD2 
   DCE1	 DCD2
+  NE2 	 CG  
+  NE2 	 DCG 
+  DNE2	 CG  
   DNE2	 DCG 
   [ virtual_sites3 ]
   ; 3fd
@@ -2994,8 +3600,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -3134,30 +3740,105 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 ND1 
+  CG  	 DND1
+  DCG 	 ND1 
   DCG 	 DND1
+  ND1 	 CE1 
+  ND1 	 DCE1
+  DND1	 CE1 
   DND1	 DCE1
+  CE1 	 NE2 
+  CE1 	 DNE2
+  DCE1	 NE2 
   DCE1	 DNE2
+  NE2 	 CD2 
+  NE2 	 DCD2
+  DNE2	 CD2 
   DNE2	 DCD2
+  CD2 	 CG  
+  CD2 	 DCG 
+  DCD2	 CG  
   DCD2	 DCG 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 ND1 
+  CB  	 DND1
+  DCB 	 ND1 
   DCB 	 DND1
+  CB  	 CD2 
+  CB  	 DCD2
+  DCB 	 CD2 
   DCB 	 DCD2
+  CG  	 CE1 
+  CG  	 DCE1
+  DCG 	 CE1 
   DCG 	 DCE1
+  CD2 	 ND1 
+  CD2 	 DND1
+  DCD2	 ND1 
   DCD2	 DND1
+  ND1 	 NE2 
+  ND1 	 DNE2
+  DND1	 NE2 
   DND1	 DNE2
+  CE1 	 CD2 
+  CE1 	 DCD2
+  DCE1	 CD2 
   DCE1	 DCD2
+  NE2 	 CG  
+  NE2 	 DCG 
+  DNE2	 CG  
   DNE2	 DCG 
   [ virtual_sites3 ]
   ; 3fad
@@ -3237,8 +3918,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -3349,23 +4030,77 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG1 
+  CB  	 DCG1
+  DCB 	 CG1 
   DCB 	 DCG1
+  CB  	 CG2 
+  CB  	 DCG2
+  DCB 	 CG2 
   DCB 	 DCG2
+  CG1 	 CD  
+  CG1 	 DCD1
+  DCG1	 CD  
   DCG1	 DCD1
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG1 
+  CA  	 DCG1
+  DCA 	 CG1 
   DCA 	 DCG1
+  CA  	 CG2 
+  CA  	 DCG2
+  DCA 	 CG2 
   DCA 	 DCG2
+  CG2 	 CG1 
+  CG2 	 DCG1
+  DCG2	 CG1 
   DCG2	 DCG1
+  CB  	 CD  
+  CB  	 DCD1
+  DCB 	 CD  
   DCB 	 DCD1
   [ virtual_sites3 ]
   ; 3fad
@@ -3438,8 +4173,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -3550,23 +4285,77 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD1 
+  CG  	 DCD1
+  DCG 	 CD1 
   DCG 	 DCD1
+  CG  	 CD2 
+  CG  	 DCD2
+  DCG 	 CD2 
   DCG 	 DCD2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD1 
+  CB  	 DCD1
+  DCB 	 CD1 
   DCB 	 DCD1
+  CB  	 CD2 
+  CB  	 DCD2
+  DCB 	 CD2 
   DCB 	 DCD2
+  CD2 	 CD1 
+  CD2 	 DCD1
+  DCD2	 CD1 
   DCD2	 DCD1
   [ virtual_sites3 ]
   ; 3fad
@@ -3656,8 +4445,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -3772,24 +4561,81 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD  
+  CG  	 DCD 
+  DCG 	 CD  
   DCG 	 DCD 
+  CD  	 CE  
+  CD  	 DCE 
+  DCD 	 CE  
   DCD 	 DCE 
+  CE  	 NZ  
+  CE  	 DNZ 
+  DCE 	 NZ  
   DCE 	 DNZ 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD  
+  CB  	 DCD 
+  DCB 	 CD  
   DCB 	 DCD 
+  CG  	 CE  
+  CG  	 DCE 
+  DCG 	 CE  
   DCG 	 DCE 
+  CD  	 NZ  
+  CD  	 DNZ 
+  DCD 	 NZ  
   DCD 	 DNZ 
   [ virtual_sites3 ]
   ; 3fad
@@ -3869,9 +4715,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	  DSD    SD    CE  LP1A  LP1B 0.00078080 0.00136620 0.00085300
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	  DSD    SD    CE  LP1A  LP1B 0.78080000 1.36620000 0.85300000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -4005,22 +4851,73 @@
   CB    LP1B
   DCB   LP1A
   DCB   LP1B
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 SD  
+  CG  	 DSD 
+  DCG 	 SD  
   DCG 	 DSD 
+  SD  	 CE  
+  SD  	 DCE 
+  DSD 	 CE  
   DSD 	 DCE 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 SD  
+  CB  	 DSD 
+  DCB 	 SD  
   DCB 	 DSD 
+  CG  	 CE  
+  CG  	 DCE 
+  DCG 	 CE  
   DCG 	 DCE 
   [ virtual_sites3 ]
   ; 3fad
@@ -4120,8 +5017,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -4268,32 +5165,113 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD1 
+  CG  	 DCD1
+  DCG 	 CD1 
   DCG 	 DCD1
+  CD1 	 CE1 
+  CD1 	 DCE1
+  DCD1	 CE1 
   DCD1	 DCE1
+  CE1 	 CZ  
+  CE1 	 DCZ 
+  DCE1	 CZ  
   DCE1	 DCZ 
+  CG  	 CD2 
+  CG  	 DCD2
+  DCG 	 CD2 
   DCG 	 DCD2
+  CD2 	 CE2 
+  CD2 	 DCE2
+  DCD2	 CE2 
   DCD2	 DCE2
+  CE2 	 CZ  
+  CE2 	 DCZ 
+  DCE2	 CZ  
   DCE2	 DCZ 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD1 
+  CB  	 DCD1
+  DCB 	 CD1 
   DCB 	 DCD1
+  CB  	 CD2 
+  CB  	 DCD2
+  DCB 	 CD2 
   DCB 	 DCD2
+  CG  	 CE1 
+  CG  	 DCE1
+  DCG 	 CE1 
   DCG 	 DCE1
+  CD2 	 CD1 
+  CD2 	 DCD1
+  DCD2	 CD1 
   DCD2	 DCD1
+  CD1 	 CZ  
+  CD1 	 DCZ 
+  DCD1	 CZ  
   DCD1	 DCZ 
+  CE1 	 CE2 
+  CE1 	 DCE2
+  DCE1	 CE2 
   DCE1	 DCE2
+  CG  	 CE2 
+  CG  	 DCE2
+  DCG 	 CE2 
   DCG 	 DCE2
+  CD2 	 CZ  
+  CD2 	 DCZ 
+  DCD2	 CZ  
   DCD2	 DCZ 
   [ virtual_sites3 ]
   ; 3fad
@@ -4362,8 +5340,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   2.0780   0.6220
@@ -4474,23 +5452,77 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD  
+  CG  	 DCD 
+  DCG 	 CD  
   DCG 	 DCD 
+  CD  	 N   
+  CD  	 DN  
+  DCD 	 N   
   DCD 	 DN  
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CD  	 CA  
+  CD  	 DCA 
+  DCD 	 CA  
   DCD 	 DCA 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD  
+  CB  	 DCD 
+  DCB 	 CD  
   DCB 	 DCD 
+  CG  	 N   
+  CG  	 DN  
+  DCG 	 N   
   DCG 	 DN  
   [ virtual_sites3 ]
   ; 3fad
@@ -4552,9 +5584,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	  DOG    OG    CB  LPGA  LPGB 0.00081080 0.00121620 0.00097300
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	  DOG    OG    CB  LPGA  LPGB 0.81080000 1.21620000 0.97300000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -4664,18 +5696,57 @@
   CA    LPGB
   DCA   LPGA
   DCA   LPGB
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 OG  
+  CB  	 DOG 
+  DCB 	 OG  
   DCB 	 DOG 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 OG  
+  CA  	 DOG 
+  DCA 	 OG  
   DCA 	 DOG 
   [ virtual_sites3 ]
   ; 3fad
@@ -4789,9 +5860,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	 DOG1   OG1    CB  LPGA  LPGB 0.00081080 0.00121620 0.00097300
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	 DOG1   OG1    CB  LPGA  LPGB 0.81080000 1.21620000 0.97300000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -4923,21 +5994,69 @@
   CA    LPGB
   DCA   LPGA
   DCA   LPGB
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 OG1 
+  CB  	 DOG1
+  DCB 	 OG1 
   DCB 	 DOG1
+  CB  	 CG2 
+  CB  	 DCG2
+  DCB 	 CG2 
   DCB 	 DCG2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 OG1 
+  CA  	 DOG1
+  DCA 	 OG1 
   DCA 	 DOG1
+  CA  	 CG2 
+  CA  	 DCG2
+  DCA 	 CG2 
   DCA 	 DCG2
+  CG2 	 OG1 
+  CG2 	 DOG1
+  DCG2	 OG1 
   DCG2	 DOG1
   [ virtual_sites3 ]
   ; 3fad
@@ -5038,8 +6157,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -5230,43 +6349,157 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD1 
+  CG  	 DCD1
+  DCG 	 CD1 
   DCG 	 DCD1
+  CD1 	 NE1 
+  CD1 	 DNE1
+  DCD1	 NE1 
   DCD1	 DNE1
+  NE1 	 CE2 
+  NE1 	 DCE2
+  DNE1	 CE2 
   DNE1	 DCE2
+  CE2 	 CD2 
+  CE2 	 DCD2
+  DCE2	 CD2 
   DCE2	 DCD2
+  CD2 	 CG  
+  CD2 	 DCG 
+  DCD2	 CG  
   DCD2	 DCG 
+  CD2 	 CE3 
+  CD2 	 DCE3
+  DCD2	 CE3 
   DCD2	 DCE3
+  CE3 	 CZ3 
+  CE3 	 DCZ3
+  DCE3	 CZ3 
   DCE3	 DCZ3
+  CZ3 	 CH2 
+  CZ3 	 DCH2
+  DCZ3	 CH2 
   DCZ3	 DCH2
+  CH2 	 CZ2 
+  CH2 	 DCZ2
+  DCH2	 CZ2 
   DCH2	 DCZ2
+  CZ2 	 CE2 
+  CZ2 	 DCE2
+  DCZ2	 CE2 
   DCZ2	 DCE2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD1 
+  CB  	 DCD1
+  DCB 	 CD1 
   DCB 	 DCD1
+  CB  	 CD2 
+  CB  	 DCD2
+  DCB 	 CD2 
   DCB 	 DCD2
+  CG  	 NE1 
+  CG  	 DNE1
+  DCG 	 NE1 
   DCG 	 DNE1
+  CD2 	 CD1 
+  CD2 	 DCD1
+  DCD2	 CD1 
   DCD2	 DCD1
+  CD1 	 CE2 
+  CD1 	 DCE2
+  DCD1	 CE2 
   DCD1	 DCE2
+  NE1 	 CD2 
+  NE1 	 DCD2
+  DNE1	 CD2 
   DNE1	 DCD2
+  NE1 	 CZ2 
+  NE1 	 DCZ2
+  DNE1	 CZ2 
   DNE1	 DCZ2
+  CE2 	 CG  
+  CE2 	 DCG 
+  DCE2	 CG  
   DCE2	 DCG 
+  CE2 	 CE3 
+  CE2 	 DCE3
+  DCE2	 CE3 
   DCE2	 DCE3
+  CZ2 	 CD2 
+  CZ2 	 DCD2
+  DCZ2	 CD2 
   DCZ2	 DCD2
+  CE3 	 CG  
+  CE3 	 DCG 
+  DCE3	 CG  
   DCE3	 DCG 
+  CD2 	 CZ3 
+  CD2 	 DCZ3
+  DCD2	 CZ3 
   DCD2	 DCZ3
+  CE3 	 CH2 
+  CE3 	 DCH2
+  DCE3	 CH2 
   DCE3	 DCH2
+  CZ3 	 CZ2 
+  CZ3 	 DCZ2
+  DCZ3	 CZ2 
   DCZ3	 DCZ2
+  CH2 	 CE2 
+  CH2 	 DCE2
+  DCH2	 CE2 
   DCH2	 DCE2
   [ virtual_sites3 ]
   ; 3fad
@@ -5354,9 +6587,9 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
-	  DOH    OH    CZ  LP1A  LP1B 0.00081080 0.00121620 0.00097300
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
+	  DOH    OH    CZ  LP1A  LP1B 0.81080000 1.21620000 0.97300000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -5538,35 +6771,125 @@
   DCE2  LP1B
   HE2   LP1A
   HE2   LP1B
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG  
+  CB  	 DCG 
+  DCB 	 CG  
   DCB 	 DCG 
+  CG  	 CD1 
+  CG  	 DCD1
+  DCG 	 CD1 
   DCG 	 DCD1
+  CD1 	 CE1 
+  CD1 	 DCE1
+  DCD1	 CE1 
   DCD1	 DCE1
+  CE1 	 CZ  
+  CE1 	 DCZ 
+  DCE1	 CZ  
   DCE1	 DCZ 
+  CG  	 CD2 
+  CG  	 DCD2
+  DCG 	 CD2 
   DCG 	 DCD2
+  CD2 	 CE2 
+  CD2 	 DCE2
+  DCD2	 CE2 
   DCD2	 DCE2
+  CE2 	 CZ  
+  CE2 	 DCZ 
+  DCE2	 CZ  
   DCE2	 DCZ 
+  CZ  	 OH  
+  CZ  	 DOH 
+  DCZ 	 OH  
   DCZ 	 DOH 
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG  
+  CA  	 DCG 
+  DCA 	 CG  
   DCA 	 DCG 
+  CB  	 CD1 
+  CB  	 DCD1
+  DCB 	 CD1 
   DCB 	 DCD1
+  CB  	 CD2 
+  CB  	 DCD2
+  DCB 	 CD2 
   DCB 	 DCD2
+  CG  	 CE1 
+  CG  	 DCE1
+  DCG 	 CE1 
   DCG 	 DCE1
+  CD2 	 CD1 
+  CD2 	 DCD1
+  DCD2	 CD1 
   DCD2	 DCD1
+  CD1 	 CZ  
+  CD1 	 DCZ 
+  DCD1	 CZ  
   DCD1	 DCZ 
+  CE1 	 CE2 
+  CE1 	 DCE2
+  DCE1	 CE2 
   DCE1	 DCE2
+  CE1 	 OH  
+  CE1 	 DOH 
+  DCE1	 OH  
   DCE1	 DOH 
+  CG  	 CE2 
+  CG  	 DCE2
+  DCG 	 CE2 
   DCG 	 DCE2
+  CD2 	 CZ  
+  CD2 	 DCZ 
+  DCD2	 CZ  
   DCD2	 DCZ 
+  CE2 	 OH  
+  CE2 	 DOH 
+  DCE2	 OH  
   DCE2	 DOH 
   [ virtual_sites3 ]
   ; 3fad
@@ -5635,8 +6958,8 @@
   [ cmap ]
 	   -C     N    CA     C    +N
   [ anisotropic_polarization ]
-  ; drude    ai    aj    ak    al a11        a22        a33       
-	   DO     O     C  LPOA  LPOB 0.00082322 0.00114332 0.00103346
+  ; drude    ai    aj    ak    al        a11        a22        a33
+	   DO     O     C  LPOA  LPOB 0.82322000 1.14332000 1.03346000
   [ thole_polarization ]
   ; ai	  aj   a	 alpha_i	alpha_j
      N    CA  2.60   0.2500   1.0780
@@ -5739,21 +7062,69 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+  N   	 CA  
+  N   	 DCA 
+  DN  	 CA  
   DN  	 DCA 
+  CA  	 C   
+  CA  	 DC  
+  DCA 	 C   
   DCA 	 DC  
+  C   	 +N  
+  C   	 +DN 
+  DC  	 +N  
   DC  	 +DN 
+  C   	 O   
+  C   	 DO  
+  DC  	 O   
   DC  	 DO  
+  CA  	 CB  
+  CA  	 DCB 
+  DCA 	 CB  
   DCA 	 DCB 
+  CB  	 CG1 
+  CB  	 DCG1
+  DCB 	 CG1 
   DCB 	 DCG1
+  CB  	 CG2 
+  CB  	 DCG2
+  DCB 	 CG2 
   DCB 	 DCG2
+  N   	 C   
+  N   	 DC  
+  DN  	 C   
   DN  	 DC  
+  N   	 CB  
+  N   	 DCB 
+  DN  	 CB  
   DN  	 DCB 
+  CA  	 +N  
+  CA  	 +DN 
+  DCA 	 +N  
   DCA 	 +DN 
+  CA  	 O   
+  CA  	 DO  
+  DCA 	 O   
   DCA 	 DO  
+  CB  	 C   
+  CB  	 DC  
+  DCB 	 C   
   DCB 	 DC  
+  O   	 +N  
+  O   	 +DN 
+  DO  	 +N  
   DO  	 +DN 
+  CA  	 CG1 
+  CA  	 DCG1
+  DCA 	 CG1 
   DCA 	 DCG1
+  CA  	 CG2 
+  CA  	 DCG2
+  DCA 	 CG2 
   DCA 	 DCG2
+  CG2 	 CG1 
+  CG2 	 DCG1
+  DCG2	 CG1 
   DCG2	 DCG1
   [ virtual_sites3 ]
   ; 3fad
@@ -5841,87 +7212,87 @@
        C6    N1    C5    N6
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DN1    N1   LP1    C6    C2 0.00080800 0.00138400 0.00080800
-      DN3    N3   LP3    C4    C2 0.00080800 0.00138400 0.00080800
-      DN7    N7   LP7    C8    C5 0.00080800 0.00138400 0.00080800
+      DN1    N1   LP1    C6    C2 0.80800    1.38400    0.80800
+      DN3    N3   LP3    C4    C2 0.80800    1.38400    0.80800
+      DN7    N7   LP7    C8    C5 0.80800    1.38400    0.80800
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-    N9    C4   1.0310   1.0510
-   DN9    C4   1.0310   1.0510
-    N9   DC4   1.0310   1.0510
-   DN9   DC4   1.0310   1.0510
-    C4    N3   1.0510   0.1440
-   DC4    N3   1.0510   0.1440
-    C4   DN3   1.0510   0.1440
-   DC4   DN3   1.0510   0.1440
-    N3    C2   0.1440   1.0290
-   DN3    C2   0.1440   1.0290
-    N3   DC2   0.1440   1.0290
-   DN3   DC2   0.1440   1.0290
-    C2    N1   1.0290   1.2320
-   DC2    N1   1.0290   1.2320
-    C2   DN1   1.0290   1.2320
-   DC2   DN1   1.0290   1.2320
-    N1    C6   1.2320   0.5950
-   DN1    C6   1.2320   0.5950
-    N1   DC6   1.2320   0.5950
-   DN1   DC6   1.2320   0.5950
-    C6    C5   0.5950   1.9270
-   DC6    C5   0.5950   1.9270
-    C6   DC5   0.5950   1.9270
-   DC6   DC5   0.5950   1.9270
-    C5    C4   1.9270   1.0510
-   DC5    C4   1.9270   1.0510
-    C5   DC4   1.9270   1.0510
-   DC5   DC4   1.9270   1.0510
-    N9    C8   1.0310   1.9010
-   DN9    C8   1.0310   1.9010
-    N9   DC8   1.0310   1.9010
-   DN9   DC8   1.0310   1.9010
-    C8    N7   1.9010   0.5460
-   DC8    N7   1.9010   0.5460
-    C8   DN7   1.9010   0.5460
-   DC8   DN7   1.9010   0.5460
-    N7    C5   0.5460   1.9270
-   DN7    C5   0.5460   1.9270
-    N7   DC5   0.5460   1.9270
-   DN7   DC5   0.5460   1.9270
-    C6    N6   0.5950   0.3440
-   DC6    N6   0.5950   0.3440
-    C6   DN6   0.5950   0.3440
-   DC6   DN6   0.5950   0.3440
-    N9    N3   1.0310   0.1440
-   DN9    N3   1.0310   0.1440
-    N9   DN3   1.0310   0.1440
-   DN9   DN3   1.0310   0.1440
-    C4    C2   1.0510   1.0290
-   DC4    C2   1.0510   1.0290
-    C4   DC2   1.0510   1.0290
-   DC4   DC2   1.0510   1.0290
-    N3    N1   0.1440   1.2320
-   DN3    N1   0.1440   1.2320
-    N3   DN1   0.1440   1.2320
-   DN3   DN1   0.1440   1.2320
-    C2    C6   1.0290   0.5950
-   DC2    C6   1.0290   0.5950
-    C2   DC6   1.0290   0.5950
-   DC2   DC6   1.0290   0.5950
-    N1    C5   1.2320   1.9270
-   DN1    C5   1.2320   1.9270
-    N1   DC5   1.2320   1.9270
-   DN1   DC5   1.2320   1.9270
-    C6    C4   0.5950   1.0510
-   DC6    C4   0.5950   1.0510
-    C6   DC4   0.5950   1.0510
-   DC6   DC4   0.5950   1.0510
-    N9    N7   1.0310   0.5460
-   DN9    N7   1.0310   0.5460
-    N9   DN7   1.0310   0.5460
-   DN9   DN7   1.0310   0.5460
-    C8    C5   1.9010   1.9270
-   DC8    C5   1.9010   1.9270
-    C8   DC5   1.9010   1.9270
-   DC8   DC5   1.9010   1.9270
+  ; ai    aj   a     alpha_i  alpha_j
+    N9    C4   2.60  1.0310   1.0510
+   DN9    C4   2.60  1.0310   1.0510
+    N9   DC4   2.60  1.0310   1.0510
+   DN9   DC4   2.60  1.0310   1.0510
+    C4    N3   2.60  1.0510   0.1440
+   DC4    N3   2.60  1.0510   0.1440
+    C4   DN3   2.60  1.0510   0.1440
+   DC4   DN3   2.60  1.0510   0.1440
+    N3    C2   2.60  0.1440   1.0290
+   DN3    C2   2.60  0.1440   1.0290
+    N3   DC2   2.60  0.1440   1.0290
+   DN3   DC2   2.60  0.1440   1.0290
+    C2    N1   2.60  1.0290   1.2320
+   DC2    N1   2.60  1.0290   1.2320
+    C2   DN1   2.60  1.0290   1.2320
+   DC2   DN1   2.60  1.0290   1.2320
+    N1    C6   2.60  1.2320   0.5950
+   DN1    C6   2.60  1.2320   0.5950
+    N1   DC6   2.60  1.2320   0.5950
+   DN1   DC6   2.60  1.2320   0.5950
+    C6    C5   2.60  0.5950   1.9270
+   DC6    C5   2.60  0.5950   1.9270
+    C6   DC5   2.60  0.5950   1.9270
+   DC6   DC5   2.60  0.5950   1.9270
+    C5    C4   2.60  1.9270   1.0510
+   DC5    C4   2.60  1.9270   1.0510
+    C5   DC4   2.60  1.9270   1.0510
+   DC5   DC4   2.60  1.9270   1.0510
+    N9    C8   2.60  1.0310   1.9010
+   DN9    C8   2.60  1.0310   1.9010
+    N9   DC8   2.60  1.0310   1.9010
+   DN9   DC8   2.60  1.0310   1.9010
+    C8    N7   2.60  1.9010   0.5460
+   DC8    N7   2.60  1.9010   0.5460
+    C8   DN7   2.60  1.9010   0.5460
+   DC8   DN7   2.60  1.9010   0.5460
+    N7    C5   2.60  0.5460   1.9270
+   DN7    C5   2.60  0.5460   1.9270
+    N7   DC5   2.60  0.5460   1.9270
+   DN7   DC5   2.60  0.5460   1.9270
+    C6    N6   2.60  0.5950   0.3440
+   DC6    N6   2.60  0.5950   0.3440
+    C6   DN6   2.60  0.5950   0.3440
+   DC6   DN6   2.60  0.5950   0.3440
+    N9    N3   2.60  1.0310   0.1440
+   DN9    N3   2.60  1.0310   0.1440
+    N9   DN3   2.60  1.0310   0.1440
+   DN9   DN3   2.60  1.0310   0.1440
+    C4    C2   2.60  1.0510   1.0290
+   DC4    C2   2.60  1.0510   1.0290
+    C4   DC2   2.60  1.0510   1.0290
+   DC4   DC2   2.60  1.0510   1.0290
+    N3    N1   2.60  0.1440   1.2320
+   DN3    N1   2.60  0.1440   1.2320
+    N3   DN1   2.60  0.1440   1.2320
+   DN3   DN1   2.60  0.1440   1.2320
+    C2    C6   2.60  1.0290   0.5950
+   DC2    C6   2.60  1.0290   0.5950
+    C2   DC6   2.60  1.0290   0.5950
+   DC2   DC6   2.60  1.0290   0.5950
+    N1    C5   2.60  1.2320   1.9270
+   DN1    C5   2.60  1.2320   1.9270
+    N1   DC5   2.60  1.2320   1.9270
+   DN1   DC5   2.60  1.2320   1.9270
+    C6    C4   2.60  0.5950   1.0510
+   DC6    C4   2.60  0.5950   1.0510
+    C6   DC4   2.60  0.5950   1.0510
+   DC6   DC4   2.60  0.5950   1.0510
+    N9    N7   2.60  1.0310   0.5460
+   DN9    N7   2.60  1.0310   0.5460
+    N9   DN7   2.60  1.0310   0.5460
+   DN9   DN7   2.60  1.0310   0.5460
+    C8    C5   2.60  1.9010   1.9270
+   DC8    C5   2.60  1.9010   1.9270
+    C8   DC5   2.60  1.9010   1.9270
+   DC8   DC5   2.60  1.9010   1.9270
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -6069,216 +7440,204 @@
        C6    N1    C5    N6
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DN1    N1   LP1    C6    C2 0.00080800 0.00138400 0.00080800
-      DN3    N3   LP3    C4    C2 0.00080800 0.00138400 0.00080800
-      DN7    N7   LP7    C8    C5 0.00080800 0.00138400 0.00080800
-     DO4'   O4'   LPX  LPRA  LPRB 0.00088890 0.00122220 0.00088890
-     DO5'   O5'   O1P  -O3'   O2P 0.00100000 0.00060000 0.00140000
-    -DO3'  -O3'   O2P   O5'   O1P 0.00100000 0.00060000 0.00140000
-     DO1P   O1P     P   O5'  -O3' 0.00060000 0.00100000 0.00140000
-     DO2P   O2P     P  -O3'   O5' 0.00060000 0.00100000 0.00140000
+      DN1    N1   LP1    C6    C2 0.80800    1.38400    0.80800
+      DN3    N3   LP3    C4    C2 0.80800    1.38400    0.80800
+      DN7    N7   LP7    C8    C5 0.80800    1.38400    0.80800
+     DO4'   O4'   LPX  LPRA  LPRB 0.88890    1.22220    0.88890
+     DO5'   O5'   O1P  -O3'   O2P 1.00000    0.60000    1.40000
+    -DO3'  -O3'   O2P   O5'   O1P 1.00000    0.60000    1.40000
+     DO1P   O1P     P   O5'  -O3' 0.60000    1.00000    1.40000
+     DO2P   O2P     P  -O3'   O5' 0.60000    1.00000    1.40000
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-    N9    C4   1.0310   1.0510
-   DN9    C4   1.0310   1.0510
-    N9   DC4   1.0310   1.0510
-   DN9   DC4   1.0310   1.0510
-    C4    N3   1.0510   0.1440
-   DC4    N3   1.0510   0.1440
-    C4   DN3   1.0510   0.1440
-   DC4   DN3   1.0510   0.1440
-    N3    C2   0.1440   1.0290
-   DN3    C2   0.1440   1.0290
-    N3   DC2   0.1440   1.0290
-   DN3   DC2   0.1440   1.0290
-    C2    N1   1.0290   1.2320
-   DC2    N1   1.0290   1.2320
-    C2   DN1   1.0290   1.2320
-   DC2   DN1   1.0290   1.2320
-    N1    C6   1.2320   0.5950
-   DN1    C6   1.2320   0.5950
-    N1   DC6   1.2320   0.5950
-   DN1   DC6   1.2320   0.5950
-    C6    C5   0.5950   1.9270
-   DC6    C5   0.5950   1.9270
-    C6   DC5   0.5950   1.9270
-   DC6   DC5   0.5950   1.9270
-    C5    C4   1.9270   1.0510
-   DC5    C4   1.9270   1.0510
-    C5   DC4   1.9270   1.0510
-   DC5   DC4   1.9270   1.0510
-    N9    C8   1.0310   1.9010
-   DN9    C8   1.0310   1.9010
-    N9   DC8   1.0310   1.9010
-   DN9   DC8   1.0310   1.9010
-    C8    N7   1.9010   0.5460
-   DC8    N7   1.9010   0.5460
-    C8   DN7   1.9010   0.5460
-   DC8   DN7   1.9010   0.5460
-    N7    C5   0.5460   1.9270
-   DN7    C5   0.5460   1.9270
-    N7   DC5   0.5460   1.9270
-   DN7   DC5   0.5460   1.9270
-    C6    N6   0.5950   0.3440
-   DC6    N6   0.5950   0.3440
-    C6   DN6   0.5950   0.3440
-   DC6   DN6   0.5950   0.3440
-    N9   C1'   1.0310   1.1030
-   DN9   C1'   1.0310   1.1030
-    N9  DC1'   1.0310   1.1030
-   DN9  DC1'   1.0310   1.1030
-   C1'   C2'   1.1030   1.3000
-  DC1'   C2'   1.1030   1.3000
-   C1'  DC2'   1.1030   1.3000
-  DC1'  DC2'   1.1030   1.3000
-   C2'   C3'   1.3000   0.8620
-  DC2'   C3'   1.3000   0.8620
-   C2'  DC3'   1.3000   0.8620
-  DC2'  DC3'   1.3000   0.8620
-   C3'   O3'   0.8620   0.1810
-  DC3'   O3'   0.8620   0.1810
-   C3'  DO3'   0.8620   0.1810
-  DC3'  DO3'   0.8620   0.1810
-   C3'   C4'   0.8620   1.1030
-  DC3'   C4'   0.8620   1.1030
-   C3'  DC4'   0.8620   1.1030
-  DC3'  DC4'   0.8620   1.1030
-   C4'   O4'   1.1030   1.5450
-  DC4'   O4'   1.1030   1.5450
-   C4'  DO4'   1.1030   1.5450
-  DC4'  DO4'   1.1030   1.5450
-   O4'   C1'   1.5450   1.1030
-  DO4'   C1'   1.5450   1.1030
-   O4'  DC1'   1.5450   1.1030
-  DO4'  DC1'   1.5450   1.1030
-   C4'   C5'   1.1030   0.8620
-  DC4'   C5'   1.1030   0.8620
-   C4'  DC5'   1.1030   0.8620
-  DC4'  DC5'   1.1030   0.8620
-   C5'   O5'   0.8620   0.1810
-  DC5'   O5'   0.8620   0.1810
-   C5'  DO5'   0.8620   0.1810
-  DC5'  DO5'   0.8620   0.1810
-   O5'     P   0.1810   2.0980
-  DO5'     P   0.1810   2.0980
-   O5'    DP   0.1810   2.0980
-  DO5'    DP   0.1810   2.0980
-     P   O1P   2.0980   1.0830
-    DP   O1P   2.0980   1.0830
-     P  DO1P   2.0980   1.0830
-    DP  DO1P   2.0980   1.0830
-     P   O2P   2.0980   1.0830
-    DP   O2P   2.0980   1.0830
-     P  DO2P   2.0980   1.0830
-    DP  DO2P   2.0980   1.0830
-   O3'    +P   0.1810   2.0980
-  DO3'    +P   0.1810   2.0980
-   O3'   +DP   0.1810   2.0980
-  DO3'   +DP   0.1810   2.0980
-   O3'  +O5'   0.1810   0.1810
-  DO3'  +O5'   0.1810   0.1810
-   O3' +DO5'   0.1810   0.1810
-  DO3' +DO5'   0.1810   0.1810
-   O3'  +O1P   0.1810   1.0830
-  DO3'  +O1P   0.1810   1.0830
-   O3' +DO1P   0.1810   1.0830
-  DO3' +DO1P   0.1810   1.0830
-   O3'  +O2P   0.1810   1.0830
-  DO3'  +O2P   0.1810   1.0830
-   O3' +DO2P   0.1810   1.0830
-  DO3' +DO2P   0.1810   1.0830
-    N9    N3   1.0310   0.1440
-   DN9    N3   1.0310   0.1440
-    N9   DN3   1.0310   0.1440
-   DN9   DN3   1.0310   0.1440
-    C4    C2   1.0510   1.0290
-   DC4    C2   1.0510   1.0290
-    C4   DC2   1.0510   1.0290
-   DC4   DC2   1.0510   1.0290
-    N3    N1   0.1440   1.2320
-   DN3    N1   0.1440   1.2320
-    N3   DN1   0.1440   1.2320
-   DN3   DN1   0.1440   1.2320
-    C2    C6   1.0290   0.5950
-   DC2    C6   1.0290   0.5950
-    C2   DC6   1.0290   0.5950
-   DC2   DC6   1.0290   0.5950
-    N1    C5   1.2320   1.9270
-   DN1    C5   1.2320   1.9270
-    N1   DC5   1.2320   1.9270
-   DN1   DC5   1.2320   1.9270
-    C6    C4   0.5950   1.0510
-   DC6    C4   0.5950   1.0510
-    C6   DC4   0.5950   1.0510
-   DC6   DC4   0.5950   1.0510
-    N9    N7   1.0310   0.5460
-   DN9    N7   1.0310   0.5460
-    N9   DN7   1.0310   0.5460
-   DN9   DN7   1.0310   0.5460
-    C8    C5   1.9010   1.9270
-   DC8    C5   1.9010   1.9270
-    C8   DC5   1.9010   1.9270
-   DC8   DC5   1.9010   1.9270
-    N9   C2'   1.0310   1.3000
-   DN9   C2'   1.0310   1.3000
-    N9  DC2'   1.0310   1.3000
-   DN9  DC2'   1.0310   1.3000
-   C1'   O2'   1.1030   1.3000
-  DC1'   O2'   1.1030   1.3000
-   C1'  DO2'   1.1030   1.3000
-  DC1'  DO2'   1.1030   1.3000
-   C1'   O2'   1.1030   1.3000
-  DC1'   O2'   1.1030   1.3000
-   C1'  DO2'   1.1030   1.3000
-  DC1'  DO2'   1.1030   1.3000
-   C3'   O2'   0.8620   1.3000
-  DC3'   O2'   0.8620   1.3000
-   C3'  DO2'   0.8620   1.3000
-  DC3'  DO2'   0.8620   1.3000
-   C2'   O3'   1.3000   0.1810
-  DC2'   O3'   1.3000   0.1810
-   C2'  DO3'   1.3000   0.1810
-  DC2'  DO3'   1.3000   0.1810
-   C2'   O3'   1.3000   0.1810
-  DC2'   O3'   1.3000   0.1810
-   C2'  DO3'   1.3000   0.1810
-  DC2'  DO3'   1.3000   0.1810
-   C4'   O3'   1.1030   0.1810
-  DC4'   O3'   1.1030   0.1810
-   C4'  DO3'   1.1030   0.1810
-  DC4'  DO3'   1.1030   0.1810
-   C3'   O4'   0.8620   1.5450
-  DC3'   O4'   0.8620   1.5450
-   C3'  DO4'   0.8620   1.5450
-  DC3'  DO4'   0.8620   1.5450
-   C4'   C1'   1.1030   1.1030
-  DC4'   C1'   1.1030   1.1030
-   C4'  DC1'   1.1030   1.1030
-  DC4'  DC1'   1.1030   1.1030
-   C4'   C1'   1.1030   1.1030
-  DC4'   C1'   1.1030   1.1030
-   C4'  DC1'   1.1030   1.1030
-  DC4'  DC1'   1.1030   1.1030
-   C4'   O5'   1.1030   0.1810
-  DC4'   O5'   1.1030   0.1810
-   C4'  DO5'   1.1030   0.1810
-  DC4'  DO5'   1.1030   0.1810
-   C5'     P   0.8620   2.0980
-  DC5'     P   0.8620   2.0980
-   C5'    DP   0.8620   2.0980
-  DC5'    DP   0.8620   2.0980
-   O5'   O1P   0.1810   1.0830
-  DO5'   O1P   0.1810   1.0830
-   O5'  DO1P   0.1810   1.0830
-  DO5'  DO1P   0.1810   1.0830
-   O5'   O1P   0.1810   1.0830
-  DO5'   O1P   0.1810   1.0830
-   O5'  DO1P   0.1810   1.0830
-  DO5'  DO1P   0.1810   1.0830
-   O2P   O1P   1.0830   1.0830
-  DO2P   O1P   1.0830   1.0830
-   O2P  DO1P   1.0830   1.0830
-  DO2P  DO1P   1.0830   1.0830
+  ; ai    aj   a     alpha_i  alpha_j
+    N9    C4   2.60  1.0310   1.0510
+   DN9    C4   2.60  1.0310   1.0510
+    N9   DC4   2.60  1.0310   1.0510
+   DN9   DC4   2.60  1.0310   1.0510
+    C4    N3   2.60  1.0510   0.1440
+   DC4    N3   2.60  1.0510   0.1440
+    C4   DN3   2.60  1.0510   0.1440
+   DC4   DN3   2.60  1.0510   0.1440
+    N3    C2   2.60  0.1440   1.0290
+   DN3    C2   2.60  0.1440   1.0290
+    N3   DC2   2.60  0.1440   1.0290
+   DN3   DC2   2.60  0.1440   1.0290
+    C2    N1   2.60  1.0290   1.2320
+   DC2    N1   2.60  1.0290   1.2320
+    C2   DN1   2.60  1.0290   1.2320
+   DC2   DN1   2.60  1.0290   1.2320
+    N1    C6   2.60  1.2320   0.5950
+   DN1    C6   2.60  1.2320   0.5950
+    N1   DC6   2.60  1.2320   0.5950
+   DN1   DC6   2.60  1.2320   0.5950
+    C6    C5   2.60  0.5950   1.9270
+   DC6    C5   2.60  0.5950   1.9270
+    C6   DC5   2.60  0.5950   1.9270
+   DC6   DC5   2.60  0.5950   1.9270
+    C5    C4   2.60  1.9270   1.0510
+   DC5    C4   2.60  1.9270   1.0510
+    C5   DC4   2.60  1.9270   1.0510
+   DC5   DC4   2.60  1.9270   1.0510
+    N9    C8   2.60  1.0310   1.9010
+   DN9    C8   2.60  1.0310   1.9010
+    N9   DC8   2.60  1.0310   1.9010
+   DN9   DC8   2.60  1.0310   1.9010
+    C8    N7   2.60  1.9010   0.5460
+   DC8    N7   2.60  1.9010   0.5460
+    C8   DN7   2.60  1.9010   0.5460
+   DC8   DN7   2.60  1.9010   0.5460
+    N7    C5   2.60  0.5460   1.9270
+   DN7    C5   2.60  0.5460   1.9270
+    N7   DC5   2.60  0.5460   1.9270
+   DN7   DC5   2.60  0.5460   1.9270
+    C6    N6   2.60  0.5950   0.3440
+   DC6    N6   2.60  0.5950   0.3440
+    C6   DN6   2.60  0.5950   0.3440
+   DC6   DN6   2.60  0.5950   0.3440
+    N9   C1'   2.60  1.0310   1.1030
+   DN9   C1'   2.60  1.0310   1.1030
+    N9  DC1'   2.60  1.0310   1.1030
+   DN9  DC1'   2.60  1.0310   1.1030
+   C1'   C2'   2.60  1.1030   1.3000
+  DC1'   C2'   2.60  1.1030   1.3000
+   C1'  DC2'   2.60  1.1030   1.3000
+  DC1'  DC2'   2.60  1.1030   1.3000
+   C2'   C3'   2.60  1.3000   0.8620
+  DC2'   C3'   2.60  1.3000   0.8620
+   C2'  DC3'   2.60  1.3000   0.8620
+  DC2'  DC3'   2.60  1.3000   0.8620
+   C3'   O3'   2.60  0.8620   0.1810
+  DC3'   O3'   2.60  0.8620   0.1810
+   C3'  DO3'   2.60  0.8620   0.1810
+  DC3'  DO3'   2.60  0.8620   0.1810
+   C3'   C4'   2.60  0.8620   1.1030
+  DC3'   C4'   2.60  0.8620   1.1030
+   C3'  DC4'   2.60  0.8620   1.1030
+  DC3'  DC4'   2.60  0.8620   1.1030
+   C4'   O4'   2.60  1.1030   1.5450
+  DC4'   O4'   2.60  1.1030   1.5450
+   C4'  DO4'   2.60  1.1030   1.5450
+  DC4'  DO4'   2.60  1.1030   1.5450
+   O4'   C1'   2.60  1.5450   1.1030
+  DO4'   C1'   2.60  1.5450   1.1030
+   O4'  DC1'   2.60  1.5450   1.1030
+  DO4'  DC1'   2.60  1.5450   1.1030
+   C4'   C5'   2.60  1.1030   0.8620
+  DC4'   C5'   2.60  1.1030   0.8620
+   C4'  DC5'   2.60  1.1030   0.8620
+  DC4'  DC5'   2.60  1.1030   0.8620
+   C5'   O5'   2.60  0.8620   0.1810
+  DC5'   O5'   2.60  0.8620   0.1810
+   C5'  DO5'   2.60  0.8620   0.1810
+  DC5'  DO5'   2.60  0.8620   0.1810
+   O5'     P   2.60  0.1810   2.0980
+  DO5'     P   2.60  0.1810   2.0980
+   O5'    DP   2.60  0.1810   2.0980
+  DO5'    DP   2.60  0.1810   2.0980
+     P   O1P   2.60  2.0980   1.0830
+    DP   O1P   2.60  2.0980   1.0830
+     P  DO1P   2.60  2.0980   1.0830
+    DP  DO1P   2.60  2.0980   1.0830
+     P   O2P   2.60  2.0980   1.0830
+    DP   O2P   2.60  2.0980   1.0830
+     P  DO2P   2.60  2.0980   1.0830
+    DP  DO2P   2.60  2.0980   1.0830
+   O3'    +P   2.60  0.1810   2.0980
+  DO3'    +P   2.60  0.1810   2.0980
+   O3'   +DP   2.60  0.1810   2.0980
+  DO3'   +DP   2.60  0.1810   2.0980
+   O3'  +O5'   2.60  0.1810   0.1810
+  DO3'  +O5'   2.60  0.1810   0.1810
+   O3' +DO5'   2.60  0.1810   0.1810
+  DO3' +DO5'   2.60  0.1810   0.1810
+   O3'  +O1P   2.60  0.1810   1.0830
+  DO3'  +O1P   2.60  0.1810   1.0830
+   O3' +DO1P   2.60  0.1810   1.0830
+  DO3' +DO1P   2.60  0.1810   1.0830
+   O3'  +O2P   2.60  0.1810   1.0830
+  DO3'  +O2P   2.60  0.1810   1.0830
+   O3' +DO2P   2.60  0.1810   1.0830
+  DO3' +DO2P   2.60  0.1810   1.0830
+    N9    N3   2.60  1.0310   0.1440
+   DN9    N3   2.60  1.0310   0.1440
+    N9   DN3   2.60  1.0310   0.1440
+   DN9   DN3   2.60  1.0310   0.1440
+    C4    C2   2.60  1.0510   1.0290
+   DC4    C2   2.60  1.0510   1.0290
+    C4   DC2   2.60  1.0510   1.0290
+   DC4   DC2   2.60  1.0510   1.0290
+    N3    N1   2.60  0.1440   1.2320
+   DN3    N1   2.60  0.1440   1.2320
+    N3   DN1   2.60  0.1440   1.2320
+   DN3   DN1   2.60  0.1440   1.2320
+    C2    C6   2.60  1.0290   0.5950
+   DC2    C6   2.60  1.0290   0.5950
+    C2   DC6   2.60  1.0290   0.5950
+   DC2   DC6   2.60  1.0290   0.5950
+    N1    C5   2.60  1.2320   1.9270
+   DN1    C5   2.60  1.2320   1.9270
+    N1   DC5   2.60  1.2320   1.9270
+   DN1   DC5   2.60  1.2320   1.9270
+    C6    C4   2.60  0.5950   1.0510
+   DC6    C4   2.60  0.5950   1.0510
+    C6   DC4   2.60  0.5950   1.0510
+   DC6   DC4   2.60  0.5950   1.0510
+    N9    N7   2.60  1.0310   0.5460
+   DN9    N7   2.60  1.0310   0.5460
+    N9   DN7   2.60  1.0310   0.5460
+   DN9   DN7   2.60  1.0310   0.5460
+    C8    C5   2.60  1.9010   1.9270
+   DC8    C5   2.60  1.9010   1.9270
+    C8   DC5   2.60  1.9010   1.9270
+   DC8   DC5   2.60  1.9010   1.9270
+    N9   C2'   2.60  1.0310   1.3000
+   DN9   C2'   2.60  1.0310   1.3000
+    N9  DC2'   2.60  1.0310   1.3000
+   DN9  DC2'   2.60  1.0310   1.3000
+   C2'   O3'   2.60  1.3000   0.1810
+  DC2'   O3'   2.60  1.3000   0.1810
+   C2'  DO3'   2.60  1.3000   0.1810
+  DC2'  DO3'   2.60  1.3000   0.1810
+   C2'   O3'   2.60  1.3000   0.1810
+  DC2'   O3'   2.60  1.3000   0.1810
+   C2'  DO3'   2.60  1.3000   0.1810
+  DC2'  DO3'   2.60  1.3000   0.1810
+   C4'   O3'   2.60  1.1030   0.1810
+  DC4'   O3'   2.60  1.1030   0.1810
+   C4'  DO3'   2.60  1.1030   0.1810
+  DC4'  DO3'   2.60  1.1030   0.1810
+   C3'   O4'   2.60  0.8620   1.5450
+  DC3'   O4'   2.60  0.8620   1.5450
+   C3'  DO4'   2.60  0.8620   1.5450
+  DC3'  DO4'   2.60  0.8620   1.5450
+   C4'   C1'   2.60  1.1030   1.1030
+  DC4'   C1'   2.60  1.1030   1.1030
+   C4'  DC1'   2.60  1.1030   1.1030
+  DC4'  DC1'   2.60  1.1030   1.1030
+   C4'   C1'   2.60  1.1030   1.1030
+  DC4'   C1'   2.60  1.1030   1.1030
+   C4'  DC1'   2.60  1.1030   1.1030
+  DC4'  DC1'   2.60  1.1030   1.1030
+   C4'   O5'   2.60  1.1030   0.1810
+  DC4'   O5'   2.60  1.1030   0.1810
+   C4'  DO5'   2.60  1.1030   0.1810
+  DC4'  DO5'   2.60  1.1030   0.1810
+   C5'     P   2.60  0.8620   2.0980
+  DC5'     P   2.60  0.8620   2.0980
+   C5'    DP   2.60  0.8620   2.0980
+  DC5'    DP   2.60  0.8620   2.0980
+   O5'   O1P   2.60  0.1810   1.0830
+  DO5'   O1P   2.60  0.1810   1.0830
+   O5'  DO1P   2.60  0.1810   1.0830
+  DO5'  DO1P   2.60  0.1810   1.0830
+   O5'   O1P   2.60  0.1810   1.0830
+  DO5'   O1P   2.60  0.1810   1.0830
+   O5'  DO1P   2.60  0.1810   1.0830
+  DO5'  DO1P   2.60  0.1810   1.0830
+   O2P   O1P   2.60  1.0830   1.0830
+  DO2P   O1P   2.60  1.0830   1.0830
+   O2P  DO1P   2.60  1.0830   1.0830
+  DO2P  DO1P   2.60  1.0830   1.0830
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -6355,8 +7714,8 @@
        N1    C6    C2    H1
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DO2    O2    C2    N1    N3 0.00069680 0.00121940 0.00108380
-      DN3    N3   LP3    C4    C2 0.00080800 0.00138400 0.00080800
+      DO2    O2    C2    N1    N3 0.69680    1.21940    1.08380
+      DN3    N3   LP3    C4    C2 0.80800    1.38400    0.80800
   [ thole_polarization ]
   ; ai    aj   alpha_i  alpha_j
     N1    C2   1.0160   1.6520
@@ -6553,13 +7912,13 @@
        N4    C4   H41   H42
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DO2    O2    C2    N1    N3 0.00069680 0.00121940 0.00108380
-      DN3    N3   LP3    C4    C2 0.00080800 0.00138400 0.00080800
-     DO4'   O4'   LPX  LPRA  LPRB 0.00088890 0.00122220 0.00088890
-     DO5'   O5'   O1P  -O3'   O2P 0.00100000 0.00060000 0.00140000
-    -DO3'  -O3'   O2P   O5'   O1P 0.00100000 0.00060000 0.00140000
-     DO1P   O1P     P   O5'  -O3' 0.00060000 0.00100000 0.00140000
-     DO2P   O2P     P  -O3'   O5' 0.00060000 0.00100000 0.00140000
+      DO2    O2    C2    N1    N3 0.69680    1.21940    1.08380
+      DN3    N3   LP3    C4    C2 0.80800    1.38400    0.80800
+     DO4'   O4'   LPX  LPRA  LPRB 0.88890    1.22220    0.88890
+     DO5'   O5'   O1P  -O3'   O2P 1.00000    0.60000    1.40000
+    -DO3'  -O3'   O2P   O5'   O1P 1.00000    0.60000    1.40000
+     DO1P   O1P     P   O5'  -O3' 0.60000    1.00000    1.40000
+     DO2P   O2P     P  -O3'   O5' 0.60000    1.00000    1.40000
   [ thole_polarization ]
   ; ai    aj   alpha_i  alpha_j
     N1    C2   1.0160   1.6520
@@ -6831,9 +8190,9 @@
        N2   H21    C2   H22
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DN3    N3   LP3    C4    C2 0.00080800 0.00138400 0.00080800
-      DO6    O6    C6    C5    N1 0.00069680 0.00121940 0.00108380
-      DN7    N7   LP7    C8    C5 0.00080800 0.00138400 0.00080800
+      DN3    N3   LP3    C4    C2 0.80800    1.38400    0.80800
+      DO6    O6    C6    C5    N1 0.69680    1.21940    1.08380
+      DN7    N7   LP7    C8    C5 0.80800    1.38400    0.80800
   [ thole_polarization ]
   ; ai    aj   alpha_i  alpha_j
     N9    C4   0.9280   1.2440
@@ -7075,14 +8434,14 @@
        N2   H21    C2   H22
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DN3    N3   LP3    C4    C2 0.00080800 0.00138400 0.00080800
-      DO6    O6    C6    C5    N1 0.00069680 0.00121940 0.00108380
-      DN7    N7   LP7    C8    C5 0.00080800 0.00138400 0.00080800
-     DO4'   O4'   LPX  LPRA  LPRB 0.00088890 0.00122220 0.00088890
-     DO5'   O5'   O1P  -O3'   O2P 0.00100000 0.00060000 0.00140000
-    -DO3'  -O3'   O2P   O5'   O1P 0.00100000 0.00060000 0.00140000
-     DO1P   O1P     P   O5'  -O3' 0.00060000 0.00100000 0.00140000
-     DO2P   O2P     P  -O3'   O5' 0.00060000 0.00100000 0.00140000
+      DN3    N3   LP3    C4    C2 0.80800    1.38400    0.80800
+      DO6    O6    C6    C5    N1 0.69680    1.21940    1.08380
+      DN7    N7   LP7    C8    C5 0.80800    1.38400    0.80800
+     DO4'   O4'   LPX  LPRA  LPRB 0.88890    1.22220    0.88890
+     DO5'   O5'   O1P  -O3'   O2P 1.00000    0.60000    1.40000
+    -DO3'  -O3'   O2P   O5'   O1P 1.00000    0.60000    1.40000
+     DO1P   O1P     P   O5'  -O3' 0.60000    1.00000    1.40000
+     DO2P   O2P     P  -O3'   O5' 0.60000    1.00000    1.40000
   [ thole_polarization ]
   ; ai    aj   alpha_i  alpha_j
     N9    C4   0.9280   1.2440
@@ -7378,8 +8737,8 @@
        N1    C6    C2    H1
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DO2    O2    C2    N1    N3 0.00069680 0.00121940 0.00108380
-      DO4    O4    C4    N3    C5 0.00069680 0.00121940 0.00108380
+      DO2    O2    C2    N1    N3 0.69680    1.21940    1.08380
+      DO4    O4    C4    N3    C5 0.69680    1.21940    1.08380
   [ thole_polarization ]
   ; ai    aj   alpha_i  alpha_j
     N1    C2   1.3090   1.7020
@@ -7589,13 +8948,13 @@
        C5    C4    C6   C5M
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DO2    O2    C2    N1    N3 0.00069680 0.00121940 0.00108380
-      DO4    O4    C4    N3    C5 0.00069680 0.00121940 0.00108380
-     DO4'   O4'   LPX  LPRA  LPRB 0.00088890 0.00122220 0.00088890
-     DO5'   O5'   O1P  -O3'   O2P 0.00100000 0.00060000 0.00140000
-    -DO3'  -O3'   O2P   O5'   O1P 0.00100000 0.00060000 0.00140000
-     DO1P   O1P     P   O5'  -O3' 0.00060000 0.00100000 0.00140000
-     DO2P   O2P     P  -O3'   O5' 0.00060000 0.00100000 0.00140000
+      DO2    O2    C2    N1    N3 0.69680    1.21940    1.08380
+      DO4    O4    C4    N3    C5 0.69680    1.21940    1.08380
+     DO4'   O4'   LPX  LPRA  LPRB 0.88890    1.22220    0.88890
+     DO5'   O5'   O1P  -O3'   O2P 1.00000    0.60000    1.40000
+    -DO3'  -O3'   O2P   O5'   O1P 1.00000    0.60000    1.40000
+     DO1P   O1P     P   O5'  -O3' 0.60000    1.00000    1.40000
+     DO2P   O2P     P  -O3'   O5' 0.60000    1.00000    1.40000
   [ thole_polarization ]
   ; ai    aj   alpha_i  alpha_j
     N1    C2   1.3090   1.7020
@@ -7828,35 +9187,59 @@
      OY    LPY1
      OY    LPY2
      LPY1  LPY2
+     CAY   CY
+     DCAY  CY
+     CAY   DCY
+     DCAY  DCY
+     CY    OY
+     DCY   OY
+     CY    DOY
+     DCY   DOY
+     CY    +N
+     DCY   +N
+     CY    +DN
+     DCY   +DN
+     CAY   OY
+     DCAY  OY
+     CAY   DOY
+     DCAY  DOY
+     OY    +N
+     DOY   +N
+     OY    +DN
+     DOY   +DN
+     CY    +CA
+     DCY   +CA
+     CY    +DCA
+     DCY   +DCA
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DOY    OY    CY  LPY1  LPY2 0.00082322 0.00114332 0.00103346
+      DOY    OY    CY  LPY1  LPY2 0.82322    1.14332    1.03346
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-   CAY    CY   2.1220   0.2950
-  DCAY    CY   2.1220   0.2950
-   CAY   DCY   2.1220   0.2950
-  DCAY   DCY   2.1220   0.2950
-    CY    OY   0.2950   0.3100
-   DCY    OY   0.2950   0.3100
-    CY   DOY   0.2950   0.3100
-   DCY   DOY   0.2950   0.3100
-    CY    +N   0.2950   0.2500
-   DCY    +N   0.2950   0.2500
-    CY   +DN   0.2950   0.2500
-   DCY   +DN   0.2950   0.2500
-   CAY    OY   2.1220   0.3100
-  DCAY    OY   2.1220   0.3100
-   CAY   DOY   2.1220   0.3100
-  DCAY   DOY   2.1220   0.3100
-    OY    +N   0.3100   0.2500
-   DOY    +N   0.3100   0.2500
-    OY   +DN   0.3100   0.2500
-   DOY   +DN   0.3100   0.2500
-    CY   +CA   0.2950   1.0780
-   DCY   +CA   0.2950   1.0780
-    CY  +DCA   0.2950   1.0780
-   DCY  +DCA   0.2950   1.0780
+  ; ai    aj   a     alpha_i  alpha_j
+   CAY    CY   2.60  2.1220   0.2950
+  DCAY    CY   2.60  2.1220   0.2950
+   CAY   DCY   2.60  2.1220   0.2950
+  DCAY   DCY   2.60  2.1220   0.2950
+    CY    OY   2.60  0.2950   0.3100
+   DCY    OY   2.60  0.2950   0.3100
+    CY   DOY   2.60  0.2950   0.3100
+   DCY   DOY   2.60  0.2950   0.3100
+    CY    +N   2.60  0.2950   0.2500
+   DCY    +N   2.60  0.2950   0.2500
+    CY   +DN   2.60  0.2950   0.2500
+   DCY   +DN   2.60  0.2950   0.2500
+   CAY    OY   2.60  2.1220   0.3100
+  DCAY    OY   2.60  2.1220   0.3100
+   CAY   DOY   2.60  2.1220   0.3100
+  DCAY   DOY   2.60  2.1220   0.3100
+    OY    +N   2.60  0.3100   0.2500
+   DOY    +N   2.60  0.3100   0.2500
+    OY   +DN   2.60  0.3100   0.2500
+   DOY   +DN   2.60  0.3100   0.2500
+    CY   +CA   2.60  0.2950   1.0780
+   DCY   +CA   2.60  0.2950   1.0780
+    CY  +DCA   2.60  0.2950   1.0780
+   DCY  +DCA   2.60  0.2950   1.0780
 
 ; special acetyl cap for N-terminal proline
 [ ACP ]
@@ -7886,7 +9269,7 @@
        CY      CAY     +N      OY
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
-      DOY    OY    CY  LPY1  LPY2 0.00082322 0.00114332 0.00103346
+      DOY    OY    CY  LPY1  LPY2 0.82322    1.14332    1.03346
   [ exclusions ]
   ;  ai    aj
      DOY   LPY1
@@ -7894,30 +9277,54 @@
      OY    LPY1
      OY    LPY2
      LPY1  LPY2
+     CAY   CY
+     DCAY  CY
+     CAY   DCY
+     DCAY  DCY
+     CY    OY
+     DCY   OY
+     CY    DOY
+     DCY   DOY
+     CY    +N
+     DCY   +N
+     CY    +DN
+     DCY   +DN
+     CAY   OY
+     DCAY  OY
+     CAY   DOY
+     DCAY  DOY
+     OY    +N
+     DOY   +N
+     OY    +DN
+     DOY   +DN
+     CY    +CA
+     DCY   +CA
+     CY    +DCA
+     DCY   +DCA
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-   CAY    CY   2.1220   0.2950
-  DCAY    CY   2.1220   0.2950
-   CAY   DCY   2.1220   0.2950
-  DCAY   DCY   2.1220   0.2950
-    CY    OY   0.2950   0.3100
-   DCY    OY   0.2950   0.3100
-    CY   DOY   0.2950   0.3100
-   DCY   DOY   0.2950   0.3100
-    CY    +N   0.2950   0.2500
-   DCY    +N   0.2950   0.2500
-    CY   +DN   0.2950   0.2500
-   DCY   +DN   0.2950   0.2500
-   CAY    OY   2.1220   0.3100
-  DCAY    OY   2.1220   0.3100
-   CAY   DOY   2.1220   0.3100
-  DCAY   DOY   2.1220   0.3100
-    OY    +N   0.3100   0.2500
-   DOY    +N   0.3100   0.2500
-    OY   +DN   0.3100   0.2500
-   DOY   +DN   0.3100   0.2500
-    CY   +CA   0.2950   1.0780
-   DCY   +CA   0.2950   1.0780
-    CY  +DCA   0.2950   1.0780
-   DCY  +DCA   0.2950   1.0780
+  ; ai    aj   a     alpha_i  alpha_j
+   CAY    CY   2.60  2.1220   0.2950
+  DCAY    CY   2.60  2.1220   0.2950
+   CAY   DCY   2.60  2.1220   0.2950
+  DCAY   DCY   2.60  2.1220   0.2950
+    CY    OY   2.60  0.2950   0.3100
+   DCY    OY   2.60  0.2950   0.3100
+    CY   DOY   2.60  0.2950   0.3100
+   DCY   DOY   2.60  0.2950   0.3100
+    CY    +N   2.60  0.2950   0.2500
+   DCY    +N   2.60  0.2950   0.2500
+    CY   +DN   2.60  0.2950   0.2500
+   DCY   +DN   2.60  0.2950   0.2500
+   CAY    OY   2.60  2.1220   0.3100
+  DCAY    OY   2.60  2.1220   0.3100
+   CAY   DOY   2.60  2.1220   0.3100
+  DCAY   DOY   2.60  2.1220   0.3100
+    OY    +N   2.60  0.3100   0.2500
+   DOY    +N   2.60  0.3100   0.2500
+    OY   +DN   2.60  0.3100   0.2500
+   DOY   +DN   2.60  0.3100   0.2500
+    CY   +CA   2.60  0.2950   1.0780
+   DCY   +CA   2.60  0.2950   1.0780
+    CY  +DCA   2.60  0.2950   1.0780
+   DCY  +DCA   2.60  0.2950   1.0780
 
