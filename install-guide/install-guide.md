@@ -224,9 +224,9 @@ recommends either
 * that you build FFTW from the source code.
 
 Note that the GROMACS-managed download of the FFTW tarball has a
-slight chance of posing a security risk. If you use this option, you
-will see a warning that advises how you can eliminate this risk
-(before the opportunity has arisen).
+slight chance of posing a security risk. If you want to verify
+the integrity (md5sum) of FFTW you should build it yourself or
+use the system-provided version.
 
 If you build FFTW from source yourself, get the most recent version
 and follow its [installation
@@ -750,7 +750,9 @@ the tests yourself. It only takes a few minutes, after which you can
 trust your build.
 
 The simplest way to run the checks is to build GROMACS with
-`-DREGRESSIONTEST_DOWNLOAD`, and run `make check`.
+`-DREGRESSIONTEST_DOWNLOAD`, and run `make check`. Notice that
+this option doesn't check the integrity of the tests and thus
+poses a slight security risk.
 GROMACS will automatically download and run the tests for you.
 Alternatively, you can download and unpack the tarball yourself from
 <http://gerrit.gromacs.org/download/regressiontests-@REGRESSIONTEST_VERSION@.tar.gz>,
