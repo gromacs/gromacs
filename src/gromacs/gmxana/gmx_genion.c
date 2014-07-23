@@ -118,6 +118,26 @@ static void insert_ion(int nsa, int *nwater,
     }
 }
 
+/* Here, we will have to hard-code some atom names within each moleculetype */
+static void drudenames(const char *mname, char **ptr)
+{
+
+    int     i;
+    enum    { eiK, eiNA, eiRB, eiCS, eiMG, eiCA, eiZN, eiSR, eiBA, eiF, eiCL, eiBR, eiI, eiNR };
+    const char *rnames[] = { "LI", "K", "NA", "RB", "CS", "MG", "CAL", "ZN", "SR", "BA", "F", "CL", "BR", "I", NULL };
+    const char *inames[] = { "LI", "POT", "SOD", "RB", "CS", "MAG", "CAL", "ZN", "SR", "BA", "F", "CLA", "BR", "I", NULL };
+
+    for (i=0; i<eiNR; i++)
+    {
+        /* assign names for atom and Drude */
+        if (strcmp(mname, rnames[i])==0)
+        {
+            ptr[0] = strdup(inames[i]);
+            ptr[1] = strdup("D");
+            strcat(ptr[1], inames[i]);
+        }
+    }
+}
 
 static char *aname(const char *mname)
 {
@@ -137,7 +157,8 @@ static char *aname(const char *mname)
 
 void sort_ions(int nsa, int nw, int repl[], atom_id index[],
                t_atoms *atoms, rvec x[],
-               const char *p_name, const char *n_name)
+               const char *p_name, const char *n_name,
+               gmx_bool bDrude)
 {
     int    i, j, k, r, np, nn, starta, startr, npi, nni;
     rvec  *xt;
@@ -179,15 +200,33 @@ void sort_ions(int nsa, int nw, int repl[], atom_id index[],
         {
             snew(pptr, 1);
             pptr[0] = strdup(p_name);
-            snew(paptr, 1);
-            paptr[0] = aname(p_name);
+
+            if (bDrude)
+            {
+                snew(paptr, 2);
+                drudenames(p_name, paptr);
+            }
+            else
+            {
+                snew(paptr, 1);
+                paptr[0] = aname(p_name);
+            }
         }
         if (nn)
         {
             snew(nptr, 1);
             nptr[0] = strdup(n_name);
-            snew(naptr, 1);
-            naptr[0] = aname(n_name);
+
+            if (bDrude)
+            {
+                snew(naptr, 2);
+                drudenames(n_name, naptr);
+            }
+            else
+            {
+                snew(naptr, 1);
+                naptr[0] = aname(n_name);
+            }
         }
         npi = 0;
         nni = 0;
@@ -196,22 +235,64 @@ void sort_ions(int nsa, int nw, int repl[], atom_id index[],
             r = repl[i];
             if (r > 0)
             {
-                j = starta+npi;
+                if (bDrude)
+                {
+                    j = starta+(2*npi);
+                }
+                else
+                {
+                    j = starta+npi;
+                }
                 k = startr+npi;
-                copy_rvec(x[index[nsa*i]], xt[j]);
-                atoms->atomname[j]     = paptr;
-                atoms->atom[j].resind  = k;
-                atoms->resinfo[k].name = pptr;
+
+                if (bDrude)
+                {
+                    copy_rvec(x[index[nsa*i]], xt[j]);
+                    copy_rvec(x[index[nsa*i]], xt[j+1]);
+                    atoms->atomname[j]      = &(paptr[0]);
+                    atoms->atomname[j+1]    = &(paptr[1]);
+                    atoms->atom[j].resind   = k;
+                    atoms->atom[j+1].resind = k;
+                    atoms->resinfo[k].name  = pptr;
+                }
+                else
+                {
+                    copy_rvec(x[index[nsa*i]], xt[j]);
+                    atoms->atomname[j]     = paptr;
+                    atoms->atom[j].resind  = k;
+                    atoms->resinfo[k].name = pptr;
+                }
                 npi++;
             }
             else if (r < 0)
             {
-                j = starta+np+nni;
+                if (bDrude)
+                {
+
+                }
+                else
+                {
+                    j = starta+np+nni;
+                }
                 k = startr+np+nni;
-                copy_rvec(x[index[nsa*i]], xt[j]);
-                atoms->atomname[j]     = naptr;
-                atoms->atom[j].resind  = k;
-                atoms->resinfo[k].name = nptr;
+
+                if (bDrude)
+                {
+                    copy_rvec(x[index[nsa*i]], xt[j]);
+                    copy_rvec(x[index[nsa*i]], xt[j+1]);
+                    atoms->atomname[j]      = &(naptr[0]);
+                    atoms->atomname[j+1]    = &(naptr[1]);
+                    atoms->atom[j].resind   = k;
+                    atoms->atom[j+1].resind = k;
+                    atoms->resinfo[k].name  = nptr;
+                }
+                else
+                {
+                    copy_rvec(x[index[nsa*i]], xt[j]);
+                    atoms->atomname[j]     = naptr;
+                    atoms->atom[j].resind  = k;
+                    atoms->resinfo[k].name = nptr;
+                }
                 nni++;
             }
         }
@@ -222,7 +303,16 @@ void sort_ions(int nsa, int nw, int repl[], atom_id index[],
             atoms->atom[j]     = atoms->atom[i];
             copy_rvec(x[i], xt[j]);
         }
-        atoms->nr -= (nsa-1)*(np+nn);
+
+        if (bDrude)
+        {
+            /* each ion inserted was actually 2 atoms/particles */
+            atoms->nr -= (nsa-2)*(np+nn);
+        }
+        else
+        {
+            atoms->nr -= (nsa-1)*(np+nn);
+        }
 
         /* Copy the new positions back */
         for (i = index[0]; i < atoms->nr; i++)
@@ -369,7 +459,7 @@ int gmx_genion(int argc, char *argv[])
     static const char *p_name   = "NA", *n_name = "CL";
     static real        rmin     = 0.6, conc = 0;
     static int         seed     = 1993;
-    static gmx_bool    bNeutral = FALSE;
+    static gmx_bool    bNeutral = FALSE, bDrude = FALSE;
     static t_pargs     pa[]     = {
         { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
         { "-pname", FALSE, etSTR,  {&p_name}, "Name of the positive ion"      },
@@ -381,7 +471,8 @@ int gmx_genion(int argc, char *argv[])
         { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" },
         { "-conc",  FALSE, etREAL, {&conc},
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [TT].tpr[tt] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
-        { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
+        { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "},
+        { "-drude", FALSE, etBOOL, {&bDrude}, "Add polarizable ions. ONLY for the CHARMM Drude force field." }
     };
     t_topology         top;
     rvec              *x, *v;
@@ -545,7 +636,7 @@ int gmx_genion(int argc, char *argv[])
 
         if (nw)
         {
-            sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name);
+            sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name, bDrude);
         }
 
         sfree(atoms.pdbinfo);
