@@ -122,16 +122,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -386,20 +381,14 @@
   CA     LPOB
   DCA    LPOA
   DCA    LPOB
-  HA     LPOA
-  HA     LPOB
   CA     LPY1
   CA     LPY2
   DCA    LPY1
   DCA    LPY2
-  HA     LPY1
-  HA     LPY2
   NT     LPOA
   NT     LPOB
   DNT    LPOA
   DNT    LPOB
-  HNT    LPOA
-  HNT    LPOB
   CAT    LPOA
   CAT    LPOB
   DCAT   LPOA
@@ -693,16 +682,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -967,16 +951,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -1001,10 +980,6 @@
   ND2   LPDB
   DND2  LPDA
   DND2  LPDB
-  HD21  LPDA
-  HD21  LPDB
-  HD22  LPDA
-  HD22  LPDB
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -1139,21 +1114,137 @@
       OD2   HD2
    [ exclusions ]
     ; ai  aj
-      DO    LPOA
-      DO    LPOB
-      O     LPOA
-      O     LPOB
-      LPOA  LPOB
-      DOD1  LPP1
-      DOD1  LPP2
-      OD1   LPP1
-      OD1   LPP2
-      LPP1  LPP2
-      DOD2  LPP3
-      DOD2  LPP4
-      OD2   LPP3
-      OD2   LPP4
-      LPP3  LPP4
+    DO    LPOA
+    DO    LPOB
+    O     LPOA
+    O     LPOB
+    LPOA  LPOB
+    C     LPOA
+    C     LPOB
+    DC    LPOA
+    DC    LPOB
+    CA    LPOA
+    CA    LPOB
+    DCA   LPOA
+    DCA   LPOB
+    +N    LPOA
+    +N    LPOB
+    +DN   LPOA
+    +DN   LPOB
+    +CA   LPOA 
+    +CA   LPOB
+    +DCA  LPOA
+    +DCA  LPOB
+    +CA   C
+    +CA   DC
+    +DCA  C
+    +DCA  DC
+    DOD1  LP1A
+    DOD1  LP1B
+    OD1   LP1A
+    OD1   LP1B
+    LP1A  LP1B
+    DOD1  LP2A
+    DOD1  LP2B
+    OD1   LP2A
+    OD1   LP2B
+    LP2A  LP2B
+    DOD2  LP2A
+    DOD2  LP2B
+    OD2   LP2A
+    OD2   LP2A
+    CG    LP1A
+    CG    LP1B
+    DCG   LP1A
+    DCG   LP1B
+    CG    LP2A
+    CG    LP2B
+    DCG   LP2A
+    DCG   LP2B
+    LP1A  LP1B
+    LP1A  LP2B
+    LP2A  LP1B
+    LP2A  LP2B
+    CB    LP1A
+    CB    LP1B
+    DCB   LP1A
+    DCB   LP1B
+    CB    LP2A
+    CB    LP2B
+    DCB   LP2A
+    DCB   LP2B
+    N      CA  
+    N      DCA 
+    DN     CA  
+    DN     DCA 
+    CA     C   
+    CA     DC  
+    DCA    C   
+    DCA    DC  
+    C      +N  
+    C      +DN 
+    DC     +N  
+    DC     +DN 
+    C      O   
+    C      DO  
+    DC     O   
+    DC     DO  
+    CA     CB  
+    CA     DCB 
+    DCA    CB  
+    DCA    DCB 
+    CB     CG  
+    CB     DCG 
+    DCB    CG  
+    DCB    DCG 
+    CG     OD1 
+    CG     DOD1
+    DCG    OD1 
+    DCG    DOD1
+    CG     OD2 
+    CG     DOD2
+    DCG    OD2 
+    DCG    DOD2
+    N      C   
+    N      DC  
+    DN     C   
+    DN     DC  
+    N      CB  
+    N      DCB 
+    DN     CB  
+    DN     DCB 
+    CA     +N  
+    CA     +DN 
+    DCA    +N  
+    DCA    +DN 
+    CA     O   
+    CA     DO  
+    DCA    O   
+    DCA    DO  
+    CB     C   
+    CB     DC  
+    DCB    C   
+    DCB    DC  
+    O      +N  
+    O      +DN 
+    DO     +N  
+    DO     +DN 
+    CA     CG  
+    CA     DCG 
+    DCA    CG  
+    DCA    DCG 
+    CB     OD1 
+    CB     DOD1
+    DCB    OD1 
+    DCB    DOD1
+    CB     OD2 
+    CB     DOD2
+    DCB    OD2 
+    DCB    DOD2
+    OD2    OD1 
+    OD2    DOD1
+    DOD2   OD1 
+    DOD2   DOD1
   [ impropers ]
         C    CA    +N     O
         N    -C    CA    HN
@@ -1403,16 +1494,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -1425,9 +1511,15 @@
   OD1   LP1A
   OD1   LP1B
   LP1A  LP1B
+  DOD1  LP2A
+  DOD1  LP2B
+  OD1   LP2A
+  OD1   LP2B
+  LP2A  LP2B
   DOD2  LP2A
   DOD2  LP2B
-  LP2A  LP2B
+  OD2   LP2A
+  OD2   LP2A
   CG    LP1A
   CG    LP1B
   DCG   LP1A
@@ -1614,15 +1706,10 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
   +CA   LPOA
   +CA   LPOB
   +DCA  LPOA
@@ -1631,25 +1718,19 @@
   +CA   DC
   +DCA  C
   +DCA  DC
-  DSG   LPGA
-  DSG   LPGB
-  SG    LPGA
-  SG    LPGB
-  LPGA  LPGB
-  HG1   LPGA
-  HG1   LPGB
-  CB    LPGA
-  CB    LPGB
-  DCB   LPGA
-  DCB   LPGB
-  HB1   LPGA
-  HB1   LPGB
-  HB2   LPGA
-  HB2   LPGB
-  CA    LPGA
-  CA    LPGB
-  DCA   LPGA
-  DCA   LPGB
+  DSG   LPSA
+  DSG   LPSB
+  SG    LPSA
+  SG    LPSB
+  LPSA  LPSB
+  CB    LPSA
+  CB    LPSB
+  DCB   LPSA
+  DCB   LPSB
+  CA    LPSA
+  CA    LPSB
+  DCA   LPSA
+  DCA   LPSB
   N      CA  
   N      DCA 
   DN     CA  
@@ -1902,16 +1983,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -1924,16 +2000,10 @@
   SG    LPGA
   SG    LPGB
   LPGA  LPGB
-  HG1   LPGA
-  HG1   LPGB
   CB    LPGA
   CB    LPGB
   DCB   LPGA
   DCB   LPGB
-  HB1   LPGA
-  HB1   LPGB
-  HB2   LPGA
-  HB2   LPGB
   CA    LPGA
   CA    LPGB
   DCA   LPGA
@@ -2182,16 +2252,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -2216,10 +2281,6 @@
   NE2   LPEB
   DNE2  LPEA
   DNE2  LPEB
-  HE21  LPEA
-  HE21  LPEB
-  HE22  LPEA
-  HE22  LPEB
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -2370,21 +2431,149 @@
       OE2   HE2
    [ exclusions ]
     ; ai  aj
-      DO    LPOA
-      DO    LPOB
-      O     LPOA
-      O     LPOB
-      LPOA  LPOB
-      DOE1  LPP1
-      DOE1  LPP2
-      OE1   LPP1
-      OE1   LPP2
-      LPP1  LPP2
-      DOE2  LPP3
-      DOE2  LPP4
-      OE2   LPP3
-      OE2   LPP4
-      LPP3  LPP4
+    DO    LPOA
+    DO    LPOB
+    O     LPOA
+    O     LPOB
+    LPOA  LPOB
+    C     LPOA
+    C     LPOB
+    DC    LPOA
+    DC    LPOB
+    CA    LPOA
+    CA    LPOB
+    DCA   LPOA
+    DCA   LPOB
+    +N    LPOA
+    +N    LPOB
+    +DN   LPOA
+    +DN   LPOB
+    +CA   LPOA 
+    +CA   LPOB
+    +DCA  LPOA
+    +DCA  LPOB
+    +CA   C
+    +CA   DC
+    +DCA  C
+    +DCA  DC
+    DOE1  LP1A
+    DOE1  LP1B
+    OE1   LP1A
+    OE1   LP1B
+    LP1A  LP1B
+    DOE1  LP2A
+    DOE1  LP2B
+    OE1   LP2A
+    OE1   LP2B
+    DOE2  LP2A
+    DOE2  LP2B
+    OE2   LP2A
+    OE2   LP2B
+    LP2A  LP2B
+    DOE2  LP1A
+    DOE2  LP1B
+    OE2   LP1A
+    OE2   LP1B
+    CD    LP1A
+    CD    LP1B
+    DCD   LP1A
+    DCD   LP1B
+    CD    LP2A
+    CD    LP2B
+    DCD   LP2A
+    DCD   LP2B
+    LP1A  LP2A
+    LP1A  LP2B
+    LP1B  LP2A
+    LP1B  LP2B
+    CG    LP1A
+    CG    LP1B
+    DCG   LP1A
+    DCG   LP1B
+    CG    LP2A
+    CG    LP2B
+    DCG   LP2A
+    DCG   LP2B
+    N      CA  
+    N      DCA 
+    DN     CA  
+    DN     DCA 
+    CA     C   
+    CA     DC  
+    DCA    C   
+    DCA    DC  
+    C      +N  
+    C      +DN 
+    DC     +N  
+    DC     +DN 
+    C      O   
+    C      DO  
+    DC     O   
+    DC     DO  
+    CA     CB  
+    CA     DCB 
+    DCA    CB  
+    DCA    DCB 
+    CB     CG  
+    CB     DCG 
+    DCB    CG  
+    DCB    DCG 
+    CG     CD  
+    CG     DCD 
+    DCG    CD  
+    DCG    DCD 
+    CD     OE1 
+    CD     DOE1
+    DCD    OE1 
+    DCD    DOE1
+    CD     OE2 
+    CD     DOE2
+    DCD    OE2 
+    DCD    DOE2
+    N      C   
+    N      DC  
+    DN     C   
+    DN     DC  
+    N      CB  
+    N      DCB 
+    DN     CB  
+    DN     DCB 
+    CA     +N  
+    CA     +DN 
+    DCA    +N  
+    DCA    +DN 
+    CA     O   
+    CA     DO  
+    DCA    O   
+    DCA    DO  
+    CB     C   
+    CB     DC  
+    DCB    C   
+    DCB    DC  
+    O      +N  
+    O      +DN 
+    DO     +N  
+    DO     +DN 
+    CA     CG  
+    CA     DCG 
+    DCA    CG  
+    DCA    DCG 
+    CB     CD  
+    CB     DCD 
+    DCB    CD  
+    DCB    DCD 
+    CG     OE1 
+    CG     DOE1
+    DCG    OE1 
+    DCG    DOE1
+    CG     OE2 
+    CG     DOE2
+    DCG    OE2 
+    DCG    DOE2
+    OE2    OE1 
+    OE2    DOE1
+    DOE2   OE1 
+    DOE2   DOE1
   [ impropers ]
         C    CA    +N     O
         N    -C    CA    HN
@@ -2658,16 +2847,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -2680,11 +2864,19 @@
   OE1   LP1A
   OE1   LP1B
   LP1A  LP1B
+  DOE1  LP2A
+  DOE1  LP2B
+  OE1   LP2A
+  OE1   LP2B
   DOE2  LP2A
   DOE2  LP2B
   OE2   LP2A
   OE2   LP2B
   LP2A  LP2B
+  DOE2  LP1A
+  DOE2  LP1B
+  OE2   LP1A
+  OE2   LP1B
   CD    LP1A
   CD    LP1B
   DCD   LP1A
@@ -2883,16 +3075,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -3146,16 +3333,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -3479,16 +3661,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -3817,16 +3994,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -4107,16 +4279,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -4362,16 +4529,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -4638,16 +4800,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -4901,16 +5058,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -4927,20 +5079,10 @@
   CG    LP1B
   DCG   LP1A
   DCG   LP1B
-  HG1   LP1A
-  HG1   LP1B
-  HG2   LP1A
-  HG2   LP1B
   CE    LP1A
   CE    LP1B
   DCE   LP1A
   DCE   LP1B
-  HE1   LP1A
-  HE1   LP1B
-  HE2   LP1A
-  HE2   LP1B
-  HE3   LP1A
-  HE3   LP1B
   CB    LP1A
   CB    LP1B
   DCB   LP1A
@@ -5242,16 +5384,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -5529,16 +5666,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -5754,16 +5886,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -5776,16 +5903,10 @@
   OG    LPGA
   OG    LPGB
   LPGA  LPGB
-  HG1   LPGA
-  HG1   LPGB
   CB    LPGA
   CB    LPGB
   DCB   LPGA
   DCB   LPGB
-  HB1   LPGA
-  HB1   LPGB
-  HB2   LPGA
-  HB2   LPGB
   CA    LPGA
   CA    LPGB
   DCA   LPGA
@@ -6042,16 +6163,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -6064,26 +6180,14 @@
   OG1   LPGA
   OG1   LPGB
   LPGA  LPGB
-  HG1   LPGA
-  HG1   LPGB
   CB    LPGA
   CB    LPGB
   DCB   LPGA 
   DCB   LPGB
-  HB1   LPGA
-  HB1   LPGB
-  HB2   LPGA
-  HB2   LPGB
   CG2   LPGA
   CG2   LPGB
   DCG2  LPGA
   DCG2  LPGB
-  HG21  LPGA
-  HG21  LPGB
-  HG22  LPGA
-  HG22  LPGB
-  HG23  LPGA
-  HG23  LPGB
   CA    LPGA
   CA    LPGB
   DCA   LPGA
@@ -6426,16 +6530,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -6825,16 +6924,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -6847,8 +6941,6 @@
   OH    LP1A
   OH    LP1B
   LP1A  LP1B
-  HH    LP1A
-  HH    LP1B
   CZ    LP1A
   CZ    LP1B
   DCZ   LP1A
@@ -6857,14 +6949,10 @@
   CE1   LP1B
   DCE1  LP1A
   DCE1  LP1B
-  HE1   LP1A
-  HE1   LP1B
   CE2   LP1A
   CE2   LP1B
   DCE2  LP1A
   DCE2  LP1B
-  HE2   LP1A
-  HE2   LP1B
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -7139,16 +7227,11 @@
   CA    LPOB
   DCA   LPOA
   DCA   LPOB
-  DCA   DC
-  DN    DCA
-  DN    DC
   +N    LPOA
   +N    LPOB
   +DN   LPOA
   +DN   LPOB
-  +N    DC
-  +DN   DC
-  +CA   LPOA
+  +CA   LPOA 
   +CA   LPOB
   +DCA  LPOA
   +DCA  LPOB
@@ -7293,14 +7376,147 @@
        N6   H61
        N6   H62
        C2    H2
-   [ exclusions ]
-   ; ai  aj
-   DN1  LP1
-   N1   LP1
-   DN3  LP3
-   N3   LP3
-   DN7  LP7
-   N7   LP7
+ [ exclusions ]
+  ; ai   aj
+  DN1    LP1
+  N1     LP1
+  C6     LP1
+  DC6    LP1
+  N6     LP1
+  DN6    LP1
+  C2     LP1
+  DC2    LP1
+  N3     LP1
+  DN3    LP1
+  DN3    LP3
+  N3     LP3
+  C2     LP3
+  DC2    LP3
+  C4     LP3
+  DC4    LP3
+  N1     LP3
+  DN1    LP3
+  C5     LP3
+  DC5    LP3
+  N9     LP3
+  DN9    LP3
+  LP1    LP3
+  DN7    LP7
+  N7     LP7
+  C8     LP7
+  DC8    LP7
+  C5     LP7
+  DC5    LP7
+  N9     LP7
+  DN9    LP7
+  C4     LP7
+  DC4    LP7
+  C6     LP7
+  DC6    LP7
+  N9     C4  
+  N9     DC4 
+  DN9    C4  
+  DN9    DC4 
+  C4     N3  
+  C4     DN3 
+  DC4    N3  
+  DC4    DN3 
+  N3     C2  
+  N3     DC2 
+  DN3    C2  
+  DN3    DC2 
+  C2     N1  
+  C2     DN1 
+  DC2    N1  
+  DC2    DN1 
+  N1     C6  
+  N1     DC6 
+  DN1    C6  
+  DN1    DC6 
+  C6     C5  
+  C6     DC5 
+  DC6    C5  
+  DC6    DC5 
+  C5     C4  
+  C5     DC4 
+  DC5    C4  
+  DC5    DC4 
+  N9     C8  
+  N9     DC8 
+  DN9    C8  
+  DN9    DC8 
+  C8     N7  
+  C8     DN7 
+  DC8    N7  
+  DC8    DN7 
+  N7     C5  
+  N7     DC5 
+  DN7    C5  
+  DN7    DC5 
+  C6     N6  
+  C6     DN6 
+  DC6    N6  
+  DC6    DN6 
+  N9     N3  
+  N9     DN3 
+  DN9    N3  
+  DN9    DN3 
+  N9     C5  
+  N9     DC5 
+  DN9    C5  
+  DN9    DC5 
+  C8     C4  
+  C8     DC4 
+  DC8    C4  
+  DC8    DC4 
+  C4     C2  
+  C4     DC2 
+  DC4    C2  
+  DC4    DC2 
+  C5     N3  
+  C5     DN3 
+  DC5    N3  
+  DC5    DN3 
+  N3     N1  
+  N3     DN1 
+  DN3    N1  
+  DN3    DN1 
+  C2     C6  
+  C2     DC6 
+  DC2    C6  
+  DC2    DC6 
+  N1     C5  
+  N1     DC5 
+  DN1    C5  
+  DN1    DC5 
+  N1     N6  
+  N1     DN6 
+  DN1    N6  
+  DN1    DN6 
+  C6     C4  
+  C6     DC4 
+  DC6    C4  
+  DC6    DC4 
+  C6     N7  
+  C6     DN7 
+  DC6    N7  
+  DC6    DN7 
+  N6     C5  
+  N6     DC5 
+  DN6    C5  
+  DN6    DC5 
+  N7     C4  
+  N7     DC4 
+  DN7    C4  
+  DN7    DC4 
+  N9     N7  
+  N9     DN7 
+  DN9    N7  
+  DN9    DN7 
+  C8     C5  
+  C8     DC5 
+  DC8    C5  
+  DC8    DC5 
   [ impropers ]
        N6    C6   H61   H62
        C6    N1    C5    N6
@@ -7514,21 +7730,314 @@
       O3'    +P
   [ exclusions ]
   ; ai  aj
-  DO4'  LPX
-  DO4'  LPRA
-  DO4'  LPRB
-  O4'   LPX
-  O4'   LPRA
-  O4'   LPRB
-  LPX   LPRA
-  LPX   LPRB
-  LPRA  LPRB
-  DN1   LP1
-  N1    LP1
-  DN3   LP3
-  N3    LP3
-  DN7   LP7
-  N7    LP7
+  DO4'   LPX
+  DO4'   LPRA
+  DO4'   LPRB
+  O4'    LPX
+  O4'    LPRA
+  O4'    LPRB
+  LPX    LPRA
+  LPX    LPRB
+  LPRA   LPRB
+  C4'    LPX
+  C4'    LPRA
+  C4'    LPRB
+  DC4'   LPX
+  DC4'   LPRA
+  DC4'   LPRB
+  C1'    LPX
+  DC1'   LPRA
+  DC1'   LPRB
+  C3'    LPX
+  C3'    LPRA
+  C3'    LPRB
+  DC3'   LPX
+  DC3'   LPRA
+  DC3'   LPRB
+  C2'    LPX
+  C2'    LPRA
+  C2'    LPRB
+  DC2'   LPX
+  DC2'   LPRA
+  DC2'   LPRB
+  O3'    +O5'
+  O3'    +DO5'
+  DO3'   +O5'
+  DO3'   +DO5'
+  LPHA   LPHB
+  N9     LPX
+  N9     LPRA
+  N9     LPRB
+  DN9    LPX
+  DN9    LPRA
+  DN9    LPRB
+  DN1    LP1
+  N1     LP1
+  C6     LP1
+  DC6    LP1
+  N6     LP1
+  DN6    LP1
+  C2     LP1
+  DC2    LP1
+  N3     LP1
+  DN3    LP1
+  DN3    LP3
+  N3     LP3
+  C2     LP3
+  DC2    LP3
+  C4     LP3
+  DC4    LP3
+  N1     LP3
+  DN1    LP3
+  C5     LP3
+  DC5    LP3
+  N9     LP3
+  DN9    LP3
+  LP1    LP3
+  DN7    LP7
+  N7     LP7
+  C8     LP7
+  DC8    LP7
+  C5     LP7
+  DC5    LP7
+  N9     LP7
+  DN9    LP7
+  C4     LP7
+  DC4    LP7
+  C6     LP7
+  DC6    LP7
+  N9     C4  
+  N9     DC4 
+  DN9    C4  
+  DN9    DC4 
+  C4     N3  
+  C4     DN3 
+  DC4    N3  
+  DC4    DN3 
+  N3     C2  
+  N3     DC2 
+  DN3    C2  
+  DN3    DC2 
+  C2     N1  
+  C2     DN1 
+  DC2    N1  
+  DC2    DN1 
+  N1     C6  
+  N1     DC6 
+  DN1    C6  
+  DN1    DC6 
+  C6     C5  
+  C6     DC5 
+  DC6    C5  
+  DC6    DC5 
+  C5     C4  
+  C5     DC4 
+  DC5    C4  
+  DC5    DC4 
+  N9     C8  
+  N9     DC8 
+  DN9    C8  
+  DN9    DC8 
+  C8     N7  
+  C8     DN7 
+  DC8    N7  
+  DC8    DN7 
+  N7     C5  
+  N7     DC5 
+  DN7    C5  
+  DN7    DC5 
+  C6     N6  
+  C6     DN6 
+  DC6    N6  
+  DC6    DN6 
+  N9     C1' 
+  N9     DC1'
+  DN9    C1' 
+  DN9    DC1'
+  C1'    C2' 
+  C1'    DC2'
+  DC1'   C2' 
+  DC1'   DC2'
+  C2'    C3' 
+  C2'    DC3'
+  DC2'   C3' 
+  DC2'   DC3'
+  C3'    O3' 
+  C3'    DO3'
+  DC3'   O3' 
+  DC3'   DO3'
+  C3'    C4' 
+  C3'    DC4'
+  DC3'   C4' 
+  DC3'   DC4'
+  C4'    O4' 
+  C4'    DO4'
+  DC4'   O4' 
+  DC4'   DO4'
+  O4'    C1' 
+  O4'    DC1'
+  DO4'   C1' 
+  DO4'   DC1'
+  C4'    C5' 
+  C4'    DC5'
+  DC4'   C5' 
+  DC4'   DC5'
+  C5'    O5' 
+  C5'    DO5'
+  DC5'   O5' 
+  DC5'   DO5'
+  O5'    P   
+  O5'    DP  
+  DO5'   P   
+  DO5'   DP  
+  P      O1P 
+  P      DO1P
+  DP     O1P 
+  DP     DO1P
+  P      O2P 
+  P      DO2P
+  DP     O2P 
+  DP     DO2P
+  O3'    +P  
+  O3'    +DP 
+  DO3'   +P  
+  DO3'   +DP 
+  N9     N3  
+  N9     DN3 
+  DN9    N3  
+  DN9    DN3 
+  N9     C5  
+  N9     DC5 
+  DN9    C5  
+  DN9    DC5 
+  C8     C4  
+  C8     DC4 
+  DC8    C4  
+  DC8    DC4 
+  C1'    C4  
+  C1'    DC4 
+  DC1'   C4  
+  DC1'   DC4 
+  C4     C2  
+  C4     DC2 
+  DC4    C2  
+  DC4    DC2 
+  C5     N3  
+  C5     DN3 
+  DC5    N3  
+  DC5    DN3 
+  N3     N1  
+  N3     DN1 
+  DN3    N1  
+  DN3    DN1 
+  C2     C6  
+  C2     DC6 
+  DC2    C6  
+  DC2    DC6 
+  N1     C5  
+  N1     DC5 
+  DN1    C5  
+  DN1    DC5 
+  N1     N6  
+  N1     DN6 
+  DN1    N6  
+  DN1    DN6 
+  C6     C4  
+  C6     DC4 
+  DC6    C4  
+  DC6    DC4 
+  C6     N7  
+  C6     DN7 
+  DC6    N7  
+  DC6    DN7 
+  N6     C5  
+  N6     DC5 
+  DN6    C5  
+  DN6    DC5 
+  N7     C4  
+  N7     DC4 
+  DN7    C4  
+  DN7    DC4 
+  N9     N7  
+  N9     DN7 
+  DN9    N7  
+  DN9    DN7 
+  C1'    C8  
+  C1'    DC8 
+  DC1'   C8  
+  DC1'   DC8 
+  C8     C5  
+  C8     DC5 
+  DC8    C5  
+  DC8    DC5 
+  N9     C2' 
+  N9     DC2'
+  DN9    C2' 
+  DN9    DC2'
+  N9     O4' 
+  N9     DO4'
+  DN9    O4' 
+  DN9    DO4'
+  C1'    C3' 
+  C1'    DC3'
+  DC1'   C3' 
+  DC1'   DC3'
+  O4'    C2' 
+  O4'    DC2'
+  DO4'   C2' 
+  DO4'   DC2'
+  C2'    O3' 
+  C2'    DO3'
+  DC2'   O3' 
+  DC2'   DO3'
+  C2'    C4' 
+  C2'    DC4'
+  DC2'   C4' 
+  DC2'   DC4'
+  C4'    O3' 
+  C4'    DO3'
+  DC4'   O3' 
+  DC4'   DO3'
+  C3'    +P  
+  C3'    +DP 
+  DC3'   +P  
+  DC3'   +DP 
+  C3'    O4' 
+  C3'    DO4'
+  DC3'   O4' 
+  DC3'   DO4'
+  C3'    C5' 
+  C3'    DC5'
+  DC3'   C5' 
+  DC3'   DC5'
+  C4'    C1' 
+  C4'    DC1'
+  DC4'   C1' 
+  DC4'   DC1'
+  C5'    O4' 
+  C5'    DO4'
+  DC5'   O4' 
+  DC5'   DO4'
+  C4'    O5' 
+  C4'    DO5'
+  DC4'   O5' 
+  DC4'   DO5'
+  C5'    P   
+  C5'    DP  
+  DC5'   P   
+  DC5'   DP  
+  O5'    O1P 
+  O5'    DO1P
+  DO5'   O1P 
+  DO5'   DO1P
+  O5'    O2P 
+  O5'    DO2P
+  DO5'   O2P 
+  DO5'   DO2P
+  O2P    O1P 
+  O2P    DO1P
+  DO2P   O1P 
+  DO2P   DO1P
   [ impropers ]
        N6    C6   H61   H62
        C6    N1    C5    N6
@@ -7793,14 +8302,106 @@
        C5    H5
        C6    H6
   [ exclusions ]
-   ; ai  aj
-   DN3   LP3
-   N3    LP3
-   DO2   LP2A
-   DO2   LP2B
-   O2    LP2A
-   O2    LP2B
-   LP2A  LP2B
+  ; ai  aj
+  DN3    LP3
+  N3     LP3
+  C4     LP3
+  DC4    LP3
+  C2     LP3
+  DC2    LP3
+  N4     LP3
+  DN4    LP3
+  C5     LP3
+  DC5    LP3
+  O2     LP3
+  DO2    LP3
+  LP2A   LP3
+  LP2B   LP3
+  DO2    LP2A
+  DO2    LP2B
+  O2     LP2A
+  O2     LP2B
+  LP2A   LP2B
+  C2     LP2A
+  C2     LP2B
+  DC2    LP2A
+  DC2    LP2B
+  N1     LP2A
+  N1     LP2B
+  DN1    LP2A
+  DN1    LP2B
+  N1     C2  
+  N1     DC2 
+  DN1    C2  
+  DN1    DC2 
+  C2     N3  
+  C2     DN3 
+  DC2    N3  
+  DC2    DN3 
+  N3     C4  
+  N3     DC4 
+  DN3    C4  
+  DN3    DC4 
+  C4     C5  
+  C4     DC5 
+  DC4    C5  
+  DC4    DC5 
+  C5     C6  
+  C5     DC6 
+  DC5    C6  
+  DC5    DC6 
+  C6     N1  
+  C6     DN1 
+  DC6    N1  
+  DC6    DN1 
+  C2     O2  
+  C2     DO2 
+  DC2    O2  
+  DC2    DO2 
+  C4     N4  
+  C4     DN4 
+  DC4    N4  
+  DC4    DN4 
+  N1     N3  
+  N1     DN3 
+  DN1    N3  
+  DN1    DN3 
+  C6     C2  
+  C6     DC2 
+  DC6    C2  
+  DC6    DC2 
+  N1     O2  
+  N1     DO2 
+  DN1    O2  
+  DN1    DO2 
+  C2     C4  
+  C2     DC4 
+  DC2    C4  
+  DC2    DC4 
+  O2     N3  
+  O2     DN3 
+  DO2    N3  
+  DO2    DN3 
+  N3     C5  
+  N3     DC5 
+  DN3    C5  
+  DN3    DC5 
+  N3     N4  
+  N3     DN4 
+  DN3    N4  
+  DN3    DN4 
+  C4     C6  
+  C4     DC6 
+  DC4    C6  
+  DC4    DC6 
+  N4     C5  
+  N4     DC5 
+  DN4    C5  
+  DN4    DC5 
+  C5     N1  
+  C5     DN1 
+  DC5    N1  
+  DC5    DN1 
   [ impropers ]
        C2    N1    N3    O2
        C4    N3    C5    N4
@@ -7811,59 +8412,79 @@
       DO2    O2    C2    N1    N3 0.69680    1.21940    1.08380
       DN3    N3   LP3    C4    C2 0.80800    1.38400    0.80800
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-    N1    C2   1.0160   1.6520
-   DN1    C2   1.0160   1.6520
-    N1   DC2   1.0160   1.6520
-   DN1   DC2   1.0160   1.6520
-    C2    N3   1.6520   0.9350
-   DC2    N3   1.6520   0.9350
-    C2   DN3   1.6520   0.9350
-   DC2   DN3   1.6520   0.9350
-    N3    C4   0.9350   1.3100
-   DN3    C4   0.9350   1.3100
-    N3   DC4   0.9350   1.3100
-   DN3   DC4   0.9350   1.3100
-    C4    C5   1.3100   1.1430
-   DC4    C5   1.3100   1.1430
-    C4   DC5   1.3100   1.1430
-   DC4   DC5   1.3100   1.1430
-    C5    C6   1.1430   1.5150
-   DC5    C6   1.1430   1.5150
-    C5   DC6   1.1430   1.5150
-   DC5   DC6   1.1430   1.5150
-    C6    N1   1.5150   1.0160
-   DC6    N1   1.5150   1.0160
-    C6   DN1   1.5150   1.0160
-   DC6   DN1   1.5150   1.0160
-    C2    O2   1.6520   0.7950
-   DC2    O2   1.6520   0.7950
-    C2   DO2   1.6520   0.7950
-   DC2   DO2   1.6520   0.7950
-    C4    N4   1.3100   0.5520
-   DC4    N4   1.3100   0.5520
-    C4   DN4   1.3100   0.5520
-   DC4   DN4   1.3100   0.5520
-    N1    N3   1.0160   0.9350
-   DN1    N3   1.0160   0.9350
-    N1   DN3   1.0160   0.9350
-   DN1   DN3   1.0160   0.9350
-    C2    C4   1.6520   1.3100
-   DC2    C4   1.6520   1.3100
-    C2   DC4   1.6520   1.3100
-   DC2   DC4   1.6520   1.3100
-    N3    C5   0.9350   1.1430
-   DN3    C5   0.9350   1.1430
-    N3   DC5   0.9350   1.1430
-   DN3   DC5   0.9350   1.1430
-    C4    C6   1.3100   1.5150
-   DC4    C6   1.3100   1.5150
-    C4   DC6   1.3100   1.5150
-   DC4   DC6   1.3100   1.5150
-    C5    N1   1.1430   1.0160
-   DC5    N1   1.1430   1.0160
-    C5   DN1   1.1430   1.0160
-   DC5   DN1   1.1430   1.0160
+  ; ai    aj   a     alpha_i  alpha_j
+    N1    C2   2.60  1.0160   1.6520
+   DN1    C2   2.60  1.0160   1.6520
+    N1   DC2   2.60  1.0160   1.6520
+   DN1   DC2   2.60  1.0160   1.6520
+    C2    N3   2.60  1.6520   0.9350
+   DC2    N3   2.60  1.6520   0.9350
+    C2   DN3   2.60  1.6520   0.9350
+   DC2   DN3   2.60  1.6520   0.9350
+    N3    C4   2.60  0.9350   1.3100
+   DN3    C4   2.60  0.9350   1.3100
+    N3   DC4   2.60  0.9350   1.3100
+   DN3   DC4   2.60  0.9350   1.3100
+    C4    C5   2.60  1.3100   1.1430
+   DC4    C5   2.60  1.3100   1.1430
+    C4   DC5   2.60  1.3100   1.1430
+   DC4   DC5   2.60  1.3100   1.1430
+    C5    C6   2.60  1.1430   1.5150
+   DC5    C6   2.60  1.1430   1.5150
+    C5   DC6   2.60  1.1430   1.5150
+   DC5   DC6   2.60  1.1430   1.5150
+    C6    N1   2.60  1.5150   1.0160
+   DC6    N1   2.60  1.5150   1.0160
+    C6   DN1   2.60  1.5150   1.0160
+   DC6   DN1   2.60  1.5150   1.0160
+    C2    O2   2.60  1.6520   0.7950
+   DC2    O2   2.60  1.6520   0.7950
+    C2   DO2   2.60  1.6520   0.7950
+   DC2   DO2   2.60  1.6520   0.7950
+    C4    N4   2.60  1.3100   0.5520
+   DC4    N4   2.60  1.3100   0.5520
+    C4   DN4   2.60  1.3100   0.5520
+   DC4   DN4   2.60  1.3100   0.5520
+    N1    N3   2.60  1.0160   0.9350
+   DN1    N3   2.60  1.0160   0.9350
+    N1   DN3   2.60  1.0160   0.9350
+   DN1   DN3   2.60  1.0160   0.9350
+    C6    C2   2.60  1.5150   1.6520
+   DC6    C2   2.60  1.5150   1.6520
+    C6   DC2   2.60  1.5150   1.6520
+   DC6   DC2   2.60  1.5150   1.6520
+    N1    O2   2.60  1.0160   0.7950
+   DN1    O2   2.60  1.0160   0.7950
+    N1   DO2   2.60  1.0160   0.7950
+   DN1   DO2   2.60  1.0160   0.7950
+    C2    C4   2.60  1.6520   1.3100
+   DC2    C4   2.60  1.6520   1.3100
+    C2   DC4   2.60  1.6520   1.3100
+   DC2   DC4   2.60  1.6520   1.3100
+    O2    N3   2.60  0.7950   0.9350
+   DO2    N3   2.60  0.7950   0.9350
+    O2   DN3   2.60  0.7950   0.9350
+   DO2   DN3   2.60  0.7950   0.9350
+    N3    C5   2.60  0.9350   1.1430
+   DN3    C5   2.60  0.9350   1.1430
+    N3   DC5   2.60  0.9350   1.1430
+   DN3   DC5   2.60  0.9350   1.1430
+    N3    N4   2.60  0.9350   0.5520
+   DN3    N4   2.60  0.9350   0.5520
+    N3   DN4   2.60  0.9350   0.5520
+   DN3   DN4   2.60  0.9350   0.5520
+    C4    C6   2.60  1.3100   1.5150
+   DC4    C6   2.60  1.3100   1.5150
+    C4   DC6   2.60  1.3100   1.5150
+   DC4   DC6   2.60  1.3100   1.5150
+    N4    C5   2.60  0.5520   1.1430
+   DN4    C5   2.60  0.5520   1.1430
+    N4   DC5   2.60  0.5520   1.1430
+   DN4   DC5   2.60  0.5520   1.1430
+    C5    N1   2.60  1.1430   1.0160
+   DC5    N1   2.60  1.1430   1.0160
+    C5   DN1   2.60  1.1430   1.0160
+   DC5   DN1   2.60  1.1430   1.0160
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -7983,23 +8604,275 @@
         P   O2P
       O3'    +P
   [ exclusions ]
-   ; ai  aj
-   DO4'  LPX
-   DO4'  LPRA
-   DO4'  LPRB
-   O4'   LPX
-   O4'   LPRA
-   O4'   LPRB
-   LPX   LPRA
-   LPX   LPRB
-   LPRA  LPRB
-   DN3   LP3
-   N3    LP3
-   DO2   LP2A
-   DO2   LP2B
-   O2    LP2A
-   O2    LP2B
-   LP2A  LP2B
+  ; ai  aj
+  DO4'   LPX
+  DO4'   LPRA
+  DO4'   LPRB
+  O4'    LPX
+  O4'    LPRA
+  O4'    LPRB
+  LPX    LPRA
+  LPX    LPRB
+  LPRA   LPRB
+  C4'    LPX
+  C4'    LPRA
+  C4'    LPRB
+  DC4'   LPX
+  DC4'   LPRA
+  DC4'   LPRB
+  C1'    LPX
+  DC1'   LPRA
+  DC1'   LPRB
+  C3'    LPX
+  C3'    LPRA
+  C3'    LPRB
+  DC3'   LPX
+  DC3'   LPRA
+  DC3'   LPRB
+  C2'    LPX
+  C2'    LPRA
+  C2'    LPRB
+  DC2'   LPX
+  DC2'   LPRA
+  DC2'   LPRB
+  O3'    +O5'
+  O3'    +DO5'
+  DO3'   +O5'
+  DO3'   +DO5'
+  LPHA   LPHB
+  N1     LPX
+  N1     LPRA
+  N1     LPRB
+  DN1    LPX
+  DN1    LPRA
+  DN1    LPRB
+  DN3    LP3
+  N3     LP3
+  C4     LP3
+  DC4    LP3
+  C2     LP3
+  DC2    LP3
+  N4     LP3
+  DN4    LP3
+  C5     LP3
+  DC5    LP3
+  O2     LP3
+  DO2    LP3
+  LP2A   LP3
+  LP2B   LP3
+  DO2    LP2A
+  DO2    LP2B
+  O2     LP2A
+  O2     LP2B
+  LP2A   LP2B
+  C2     LP2A
+  C2     LP2B
+  DC2    LP2A
+  DC2    LP2B
+  N1     LP2A
+  N1     LP2B
+  DN1    LP2A
+  DN1    LP2B
+  N1     C2  
+  N1     DC2 
+  DN1    C2  
+  DN1    DC2 
+  C2     N3  
+  C2     DN3 
+  DC2    N3  
+  DC2    DN3 
+  N3     C4  
+  N3     DC4 
+  DN3    C4  
+  DN3    DC4 
+  C4     C5  
+  C4     DC5 
+  DC4    C5  
+  DC4    DC5 
+  C5     C6  
+  C5     DC6 
+  DC5    C6  
+  DC5    DC6 
+  C6     N1  
+  C6     DN1 
+  DC6    N1  
+  DC6    DN1 
+  C2     O2  
+  C2     DO2 
+  DC2    O2  
+  DC2    DO2 
+  C4     N4  
+  C4     DN4 
+  DC4    N4  
+  DC4    DN4 
+  N1     C1' 
+  N1     DC1'
+  DN1    C1' 
+  DN1    DC1'
+  C1'    C2' 
+  C1'    DC2'
+  DC1'   C2' 
+  DC1'   DC2'
+  C2'    C3' 
+  C2'    DC3'
+  DC2'   C3' 
+  DC2'   DC3'
+  C3'    O3' 
+  C3'    DO3'
+  DC3'   O3' 
+  DC3'   DO3'
+  C3'    C4' 
+  C3'    DC4'
+  DC3'   C4' 
+  DC3'   DC4'
+  C4'    O4' 
+  C4'    DO4'
+  DC4'   O4' 
+  DC4'   DO4'
+  O4'    C1' 
+  O4'    DC1'
+  DO4'   C1' 
+  DO4'   DC1'
+  C4'    C5' 
+  C4'    DC5'
+  DC4'   C5' 
+  DC4'   DC5'
+  C5'    O5' 
+  C5'    DO5'
+  DC5'   O5' 
+  DC5'   DO5'
+  O5'    P   
+  O5'    DP  
+  DO5'   P   
+  DO5'   DP  
+  P      O1P 
+  P      DO1P
+  DP     O1P 
+  DP     DO1P
+  P      O2P 
+  P      DO2P
+  DP     O2P 
+  DP     DO2P
+  O3'    +P  
+  O3'    +DP 
+  DO3'   +P  
+  DO3'   +DP 
+  N1     N3  
+  N1     DN3 
+  DN1    N3  
+  DN1    DN3 
+  C6     C2  
+  C6     DC2 
+  DC6    C2  
+  DC6    DC2 
+  N1     O2  
+  N1     DO2 
+  DN1    O2  
+  DN1    DO2 
+  C1'    C2  
+  C1'    DC2 
+  DC1'   C2  
+  DC1'   DC2 
+  C2     C4  
+  C2     DC4 
+  DC2    C4  
+  DC2    DC4 
+  O2     N3  
+  O2     DN3 
+  DO2    N3  
+  DO2    DN3 
+  N3     C5  
+  N3     DC5 
+  DN3    C5  
+  DN3    DC5 
+  N3     N4  
+  N3     DN4 
+  DN3    N4  
+  DN3    DN4 
+  C4     C6  
+  C4     DC6 
+  DC4    C6  
+  DC4    DC6 
+  N4     C5  
+  N4     DC5 
+  DN4    C5  
+  DN4    DC5 
+  C5     N1  
+  C5     DN1 
+  DC5    N1  
+  DC5    DN1 
+  C6     C1' 
+  C6     DC1'
+  DC6    C1' 
+  DC6    DC1'
+  N1     C2' 
+  N1     DC2'
+  DN1    C2' 
+  DN1    DC2'
+  N1     O4' 
+  N1     DO4'
+  DN1    O4' 
+  DN1    DO4'
+  C1'    C3' 
+  C1'    DC3'
+  DC1'   C3' 
+  DC1'   DC3'
+  O4'    C2' 
+  O4'    DC2'
+  DO4'   C2' 
+  DO4'   DC2'
+  C2'    O3' 
+  C2'    DO3'
+  DC2'   O3' 
+  DC2'   DO3'
+  C2'    C4' 
+  C2'    DC4'
+  DC2'   C4' 
+  DC2'   DC4'
+  C4'    O3' 
+  C4'    DO3'
+  DC4'   O3' 
+  DC4'   DO3'
+  C3'    +P  
+  C3'    +DP 
+  DC3'   +P  
+  DC3'   +DP 
+  C3'    O4' 
+  C3'    DO4'
+  DC3'   O4' 
+  DC3'   DO4'
+  C3'    C5' 
+  C3'    DC5'
+  DC3'   C5' 
+  DC3'   DC5'
+  C4'    C1' 
+  C4'    DC1'
+  DC4'   C1' 
+  DC4'   DC1'
+  C5'    O4' 
+  C5'    DO4'
+  DC5'   O4' 
+  DC5'   DO4'
+  C4'    O5' 
+  C4'    DO5'
+  DC4'   O5' 
+  DC4'   DO5'
+  C5'    P   
+  C5'    DP  
+  DC5'   P   
+  DC5'   DP  
+  O5'    O1P 
+  O5'    DO1P
+  DO5'   O1P 
+  DO5'   DO1P
+  O5'    O2P 
+  O5'    DO2P
+  DO5'   O2P 
+  DO5'   DO2P
+  O2P    O1P 
+  O2P    DO1P
+  DO2P   O1P 
+  DO2P   DO1P
   [ impropers ]
        C2    N1    N3    O2
        C4    N3    C5    N4
@@ -8014,183 +8887,219 @@
      DO1P   O1P     P   O5'  -O3' 0.60000    1.00000    1.40000
      DO2P   O2P     P  -O3'   O5' 0.60000    1.00000    1.40000
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-    N1    C2   1.0160   1.6520
-   DN1    C2   1.0160   1.6520
-    N1   DC2   1.0160   1.6520
-   DN1   DC2   1.0160   1.6520
-    C2    N3   1.6520   0.9350
-   DC2    N3   1.6520   0.9350
-    C2   DN3   1.6520   0.9350
-   DC2   DN3   1.6520   0.9350
-    N3    C4   0.9350   1.3100
-   DN3    C4   0.9350   1.3100
-    N3   DC4   0.9350   1.3100
-   DN3   DC4   0.9350   1.3100
-    C4    C5   1.3100   1.1430
-   DC4    C5   1.3100   1.1430
-    C4   DC5   1.3100   1.1430
-   DC4   DC5   1.3100   1.1430
-    C5    C6   1.1430   1.5150
-   DC5    C6   1.1430   1.5150
-    C5   DC6   1.1430   1.5150
-   DC5   DC6   1.1430   1.5150
-    C6    N1   1.5150   1.0160
-   DC6    N1   1.5150   1.0160
-    C6   DN1   1.5150   1.0160
-   DC6   DN1   1.5150   1.0160
-    C2    O2   1.6520   0.7950
-   DC2    O2   1.6520   0.7950
-    C2   DO2   1.6520   0.7950
-   DC2   DO2   1.6520   0.7950
-    C4    N4   1.3100   0.5520
-   DC4    N4   1.3100   0.5520
-    C4   DN4   1.3100   0.5520
-   DC4   DN4   1.3100   0.5520
-    N1   C1'   1.0160   1.1030
-   DN1   C1'   1.0160   1.1030
-    N1  DC1'   1.0160   1.1030
-   DN1  DC1'   1.0160   1.1030
-   C1'   C2'   1.1030   1.3000
-  DC1'   C2'   1.1030   1.3000
-   C1'  DC2'   1.1030   1.3000
-  DC1'  DC2'   1.1030   1.3000
-   C2'   C3'   1.3000   0.8620
-  DC2'   C3'   1.3000   0.8620
-   C2'  DC3'   1.3000   0.8620
-  DC2'  DC3'   1.3000   0.8620
-   C3'   O3'   0.8620   0.1810
-  DC3'   O3'   0.8620   0.1810
-   C3'  DO3'   0.8620   0.1810
-  DC3'  DO3'   0.8620   0.1810
-   C3'   C4'   0.8620   1.1030
-  DC3'   C4'   0.8620   1.1030
-   C3'  DC4'   0.8620   1.1030
-  DC3'  DC4'   0.8620   1.1030
-   C4'   O4'   1.1030   1.5450
-  DC4'   O4'   1.1030   1.5450
-   C4'  DO4'   1.1030   1.5450
-  DC4'  DO4'   1.1030   1.5450
-   O4'   C1'   1.5450   1.1030
-  DO4'   C1'   1.5450   1.1030
-   O4'  DC1'   1.5450   1.1030
-  DO4'  DC1'   1.5450   1.1030
-   C4'   C5'   1.1030   0.8620
-  DC4'   C5'   1.1030   0.8620
-   C4'  DC5'   1.1030   0.8620
-  DC4'  DC5'   1.1030   0.8620
-   C5'   O5'   0.8620   0.1810
-  DC5'   O5'   0.8620   0.1810
-   C5'  DO5'   0.8620   0.1810
-  DC5'  DO5'   0.8620   0.1810
-   O5'     P   0.1810   2.0980
-  DO5'     P   0.1810   2.0980
-   O5'    DP   0.1810   2.0980
-  DO5'    DP   0.1810   2.0980
-     P   O1P   2.0980   1.0830
-    DP   O1P   2.0980   1.0830
-     P  DO1P   2.0980   1.0830
-    DP  DO1P   2.0980   1.0830
-     P   O2P   2.0980   1.0830
-    DP   O2P   2.0980   1.0830
-     P  DO2P   2.0980   1.0830
-    DP  DO2P   2.0980   1.0830
-   O3'    +P   0.1810   2.0980
-  DO3'    +P   0.1810   2.0980
-   O3'   +DP   0.1810   2.0980
-  DO3'   +DP   0.1810   2.0980
-   O3'  +O5'   0.1810   0.1810
-  DO3'  +O5'   0.1810   0.1810
-   O3' +DO5'   0.1810   0.1810
-  DO3' +DO5'   0.1810   0.1810
-   O3'  +O1P   0.1810   1.0830
-  DO3'  +O1P   0.1810   1.0830
-   O3' +DO1P   0.1810   1.0830
-  DO3' +DO1P   0.1810   1.0830
-   O3'  +O2P   0.1810   1.0830
-  DO3'  +O2P   0.1810   1.0830
-   O3' +DO2P   0.1810   1.0830
-  DO3' +DO2P   0.1810   1.0830
-    N1    N3   1.0160   0.9350
-   DN1    N3   1.0160   0.9350
-    N1   DN3   1.0160   0.9350
-   DN1   DN3   1.0160   0.9350
-    C2    C4   1.6520   1.3100
-   DC2    C4   1.6520   1.3100
-    C2   DC4   1.6520   1.3100
-   DC2   DC4   1.6520   1.3100
-    N3    C5   0.9350   1.1430
-   DN3    C5   0.9350   1.1430
-    N3   DC5   0.9350   1.1430
-   DN3   DC5   0.9350   1.1430
-    C4    C6   1.3100   1.5150
-   DC4    C6   1.3100   1.5150
-    C4   DC6   1.3100   1.5150
-   DC4   DC6   1.3100   1.5150
-    C5    N1   1.1430   1.0160
-   DC5    N1   1.1430   1.0160
-    C5   DN1   1.1430   1.0160
-   DC5   DN1   1.1430   1.0160
-    N1   C2'   1.0160   1.3000
-   DN1   C2'   1.0160   1.3000
-    N1  DC2'   1.0160   1.3000
-   DN1  DC2'   1.0160   1.3000
-   C1'   O2'   1.1030   1.3000
-  DC1'   O2'   1.1030   1.3000
-   C1'  DO2'   1.1030   1.3000
-  DC1'  DO2'   1.1030   1.3000
-   C1'   O2'   1.1030   1.3000
-  DC1'   O2'   1.1030   1.3000
-   C1'  DO2'   1.1030   1.3000
-  DC1'  DO2'   1.1030   1.3000
-   C3'   O2'   0.8620   1.3000
-  DC3'   O2'   0.8620   1.3000
-   C3'  DO2'   0.8620   1.3000
-  DC3'  DO2'   0.8620   1.3000
-   C2'   O3'   1.3000   0.1810
-  DC2'   O3'   1.3000   0.1810
-   C2'  DO3'   1.3000   0.1810
-  DC2'  DO3'   1.3000   0.1810
-   C2'   O3'   1.3000   0.1810
-  DC2'   O3'   1.3000   0.1810
-   C2'  DO3'   1.3000   0.1810
-  DC2'  DO3'   1.3000   0.1810
-   C4'   O3'   1.1030   0.1810
-  DC4'   O3'   1.1030   0.1810
-   C4'  DO3'   1.1030   0.1810
-  DC4'  DO3'   1.1030   0.1810
-   C3'   O4'   0.8620   1.5450
-  DC3'   O4'   0.8620   1.5450
-   C3'  DO4'   0.8620   1.5450
-  DC3'  DO4'   0.8620   1.5450
-   C4'   C1'   1.1030   1.1030
-  DC4'   C1'   1.1030   1.1030
-   C4'  DC1'   1.1030   1.1030
-  DC4'  DC1'   1.1030   1.1030
-   C4'   C1'   1.1030   1.1030
-  DC4'   C1'   1.1030   1.1030
-   C4'  DC1'   1.1030   1.1030
-  DC4'  DC1'   1.1030   1.1030
-   C4'   O5'   1.1030   0.1810
-  DC4'   O5'   1.1030   0.1810
-   C4'  DO5'   1.1030   0.1810
-  DC4'  DO5'   1.1030   0.1810
-   C5'     P   0.8620   2.0980
-  DC5'     P   0.8620   2.0980
-   C5'    DP   0.8620   2.0980
-  DC5'    DP   0.8620   2.0980
-   O5'   O1P   0.1810   1.0830
-  DO5'   O1P   0.1810   1.0830
-   O5'  DO1P   0.1810   1.0830
-  DO5'  DO1P   0.1810   1.0830
-   O5'   O1P   0.1810   1.0830
-  DO5'   O1P   0.1810   1.0830
-   O5'  DO1P   0.1810   1.0830
-  DO5'  DO1P   0.1810   1.0830
-   O2P   O1P   1.0830   1.0830
-  DO2P   O1P   1.0830   1.0830
-   O2P  DO1P   1.0830   1.0830
-  DO2P  DO1P   1.0830   1.0830
+  ; ai    aj  a      alpha_i  alpha_j
+    N1    C2  2.60   1.0160   1.6520
+   DN1    C2  2.60   1.0160   1.6520
+    N1   DC2  2.60   1.0160   1.6520
+   DN1   DC2  2.60   1.0160   1.6520
+    C2    N3  2.60   1.6520   0.9350
+   DC2    N3  2.60   1.6520   0.9350
+    C2   DN3  2.60   1.6520   0.9350
+   DC2   DN3  2.60   1.6520   0.9350
+    N3    C4  2.60   0.9350   1.3100
+   DN3    C4  2.60   0.9350   1.3100
+    N3   DC4  2.60   0.9350   1.3100
+   DN3   DC4  2.60   0.9350   1.3100
+    C4    C5  2.60   1.3100   1.1430
+   DC4    C5  2.60   1.3100   1.1430
+    C4   DC5  2.60   1.3100   1.1430
+   DC4   DC5  2.60   1.3100   1.1430
+    C5    C6  2.60   1.1430   1.5150
+   DC5    C6  2.60   1.1430   1.5150
+    C5   DC6  2.60   1.1430   1.5150
+   DC5   DC6  2.60   1.1430   1.5150
+    C6    N1  2.60   1.5150   1.0160
+   DC6    N1  2.60   1.5150   1.0160
+    C6   DN1  2.60   1.5150   1.0160
+   DC6   DN1  2.60   1.5150   1.0160
+    C2    O2  2.60   1.6520   0.7950
+   DC2    O2  2.60   1.6520   0.7950
+    C2   DO2  2.60   1.6520   0.7950
+   DC2   DO2  2.60   1.6520   0.7950
+    C4    N4  2.60   1.3100   0.5520
+   DC4    N4  2.60   1.3100   0.5520
+    C4   DN4  2.60   1.3100   0.5520
+   DC4   DN4  2.60   1.3100   0.5520
+    N1   C1'  2.60   1.0160   1.1030
+   DN1   C1'  2.60   1.0160   1.1030
+    N1  DC1'  2.60   1.0160   1.1030
+   DN1  DC1'  2.60   1.0160   1.1030
+   C1'   C2'  2.60   1.1030   1.3000
+  DC1'   C2'  2.60   1.1030   1.3000
+   C1'  DC2'  2.60   1.1030   1.3000
+  DC1'  DC2'  2.60   1.1030   1.3000
+   C2'   C3'  2.60   1.3000   0.8620
+  DC2'   C3'  2.60   1.3000   0.8620
+   C2'  DC3'  2.60   1.3000   0.8620
+  DC2'  DC3'  2.60   1.3000   0.8620
+   C3'   O3'  2.60   0.8620   0.1810
+  DC3'   O3'  2.60   0.8620   0.1810
+   C3'  DO3'  2.60   0.8620   0.1810
+  DC3'  DO3'  2.60   0.8620   0.1810
+   C3'   C4'  2.60   0.8620   1.1030
+  DC3'   C4'  2.60   0.8620   1.1030
+   C3'  DC4'  2.60   0.8620   1.1030
+  DC3'  DC4'  2.60   0.8620   1.1030
+   C4'   O4'  2.60   1.1030   1.5450
+  DC4'   O4'  2.60   1.1030   1.5450
+   C4'  DO4'  2.60   1.1030   1.5450
+  DC4'  DO4'  2.60   1.1030   1.5450
+   O4'   C1'  2.60   1.5450   1.1030
+  DO4'   C1'  2.60   1.5450   1.1030
+   O4'  DC1'  2.60   1.5450   1.1030
+  DO4'  DC1'  2.60   1.5450   1.1030
+   C4'   C5'  2.60   1.1030   0.8620
+  DC4'   C5'  2.60   1.1030   0.8620
+   C4'  DC5'  2.60   1.1030   0.8620
+  DC4'  DC5'  2.60   1.1030   0.8620
+   C5'   O5'  2.60   0.8620   0.1810
+  DC5'   O5'  2.60   0.8620   0.1810
+   C5'  DO5'  2.60   0.8620   0.1810
+  DC5'  DO5'  2.60   0.8620   0.1810
+   O5'     P  2.60   0.1810   2.0980
+  DO5'     P  2.60   0.1810   2.0980
+   O5'    DP  2.60   0.1810   2.0980
+  DO5'    DP  2.60   0.1810   2.0980
+     P   O1P  2.60   2.0980   1.0830
+    DP   O1P  2.60   2.0980   1.0830
+     P  DO1P  2.60   2.0980   1.0830
+    DP  DO1P  2.60   2.0980   1.0830
+     P   O2P  2.60   2.0980   1.0830
+    DP   O2P  2.60   2.0980   1.0830
+     P  DO2P  2.60   2.0980   1.0830
+    DP  DO2P  2.60   2.0980   1.0830
+   O3'    +P  2.60   0.1810   2.0980
+  DO3'    +P  2.60   0.1810   2.0980
+   O3'   +DP  2.60   0.1810   2.0980
+  DO3'   +DP  2.60   0.1810   2.0980
+   O3'  +O5'   2.60  0.1810   0.1810
+  DO3'  +O5'   2.60  0.1810   0.1810
+   O3' +DO5'   2.60  0.1810   0.1810
+  DO3' +DO5'   2.60  0.1810   0.1810
+   O3'  +O1P   2.60  0.1810   1.0830
+  DO3'  +O1P   2.60  0.1810   1.0830
+   O3' +DO1P   2.60  0.1810   1.0830
+  DO3' +DO1P   2.60  0.1810   1.0830
+   O3'  +O2P   2.60  0.1810   1.0830
+  DO3'  +O2P   2.60  0.1810   1.0830
+   O3' +DO2P   2.60  0.1810   1.0830
+  DO3' +DO2P   2.60  0.1810   1.0830
+    N1    N3  2.60   1.0160   0.9350
+   DN1    N3  2.60   1.0160   0.9350
+    N1   DN3  2.60   1.0160   0.9350
+   DN1   DN3  2.60   1.0160   0.9350
+    C6    C2  2.60   1.5150   1.6520
+   DC6    C2  2.60   1.5150   1.6520
+    C6   DC2  2.60   1.5150   1.6520
+   DC6   DC2  2.60   1.5150   1.6520
+    N1    O2  2.60   1.0160   0.7950
+   DN1    O2  2.60   1.0160   0.7950
+    N1   DO2  2.60   1.0160   0.7950
+   DN1   DO2  2.60   1.0160   0.7950
+   C1'    C2  2.60   1.1030   1.6520
+  DC1'    C2  2.60   1.1030   1.6520
+   C1'   DC2  2.60   1.1030   1.6520
+  DC1'   DC2  2.60   1.1030   1.6520
+    C2    C4  2.60   1.6520   1.3100
+   DC2    C4  2.60   1.6520   1.3100
+    C2   DC4  2.60   1.6520   1.3100
+   DC2   DC4  2.60   1.6520   1.3100
+    O2    N3  2.60   0.7950   0.9350
+   DO2    N3  2.60   0.7950   0.9350
+    O2   DN3  2.60   0.7950   0.9350
+   DO2   DN3  2.60   0.7950   0.9350
+    N3    C5  2.60   0.9350   1.1430
+   DN3    C5  2.60   0.9350   1.1430
+    N3   DC5  2.60   0.9350   1.1430
+   DN3   DC5  2.60   0.9350   1.1430
+    N3    N4  2.60   0.9350   0.5520
+   DN3    N4  2.60   0.9350   0.5520
+    N3   DN4  2.60   0.9350   0.5520
+   DN3   DN4  2.60   0.9350   0.5520
+    C4    C6  2.60   1.3100   1.5150
+   DC4    C6  2.60   1.3100   1.5150
+    C4   DC6  2.60   1.3100   1.5150
+   DC4   DC6  2.60   1.3100   1.5150
+    N4    C5  2.60   0.5520   1.1430
+   DN4    C5  2.60   0.5520   1.1430
+    N4   DC5  2.60   0.5520   1.1430
+   DN4   DC5  2.60   0.5520   1.1430
+    C5    N1  2.60   1.1430   1.0160
+   DC5    N1  2.60   1.1430   1.0160
+    C5   DN1  2.60   1.1430   1.0160
+   DC5   DN1  2.60   1.1430   1.0160
+    C6   C1'  2.60   1.5150   1.1030
+   DC6   C1'  2.60   1.5150   1.1030
+    C6  DC1'  2.60   1.5150   1.1030
+   DC6  DC1'  2.60   1.5150   1.1030
+    N1   C2'  2.60   1.0160   1.3000
+   DN1   C2'  2.60   1.0160   1.3000
+    N1  DC2'  2.60   1.0160   1.3000
+   DN1  DC2'  2.60   1.0160   1.3000
+    N1   O4'  2.60   1.0160   1.5450
+   DN1   O4'  2.60   1.0160   1.5450
+    N1  DO4'  2.60   1.0160   1.5450
+   DN1  DO4'  2.60   1.0160   1.5450
+   C1'   C3'  2.60   1.1030   0.8620
+  DC1'   C3'  2.60   1.1030   0.8620
+   C1'  DC3'  2.60   1.1030   0.8620
+  DC1'  DC3'  2.60   1.1030   0.8620
+   O4'   C2'  2.60   1.5450   1.3000
+  DO4'   C2'  2.60   1.5450   1.3000
+   O4'  DC2'  2.60   1.5450   1.3000
+  DO4'  DC2'  2.60   1.5450   1.3000
+   C2'   O3'  2.60   1.3000   0.1810
+  DC2'   O3'  2.60   1.3000   0.1810
+   C2'  DO3'  2.60   1.3000   0.1810
+  DC2'  DO3'  2.60   1.3000   0.1810
+   C2'   C4'  2.60   1.3000   1.1030
+  DC2'   C4'  2.60   1.3000   1.1030
+   C2'  DC4'  2.60   1.3000   1.1030
+  DC2'  DC4'  2.60   1.3000   1.1030
+   C4'   O3'  2.60   1.1030   0.1810
+  DC4'   O3'  2.60   1.1030   0.1810
+   C4'  DO3'  2.60   1.1030   0.1810
+  DC4'  DO3'  2.60   1.1030   0.1810
+   C3'    +P  2.60   0.8620   2.0980
+  DC3'    +P  2.60   0.8620   2.0980
+   C3'   +DP  2.60   0.8620   2.0980
+  DC3'   +DP  2.60   0.8620   2.0980
+   C3'   O4'  2.60   0.8620   1.5450
+  DC3'   O4'  2.60   0.8620   1.5450
+   C3'  DO4'  2.60   0.8620   1.5450
+  DC3'  DO4'  2.60   0.8620   1.5450
+   C3'   C5'  2.60   0.8620   0.8620
+  DC3'   C5'  2.60   0.8620   0.8620
+   C3'  DC5'  2.60   0.8620   0.8620
+  DC3'  DC5'  2.60   0.8620   0.8620
+   C4'   C1'  2.60   1.1030   1.1030
+  DC4'   C1'  2.60   1.1030   1.1030
+   C4'  DC1'  2.60   1.1030   1.1030
+  DC4'  DC1'  2.60   1.1030   1.1030
+   C5'   O4'  2.60   0.8620   1.5450
+  DC5'   O4'  2.60   0.8620   1.5450
+   C5'  DO4'  2.60   0.8620   1.5450
+  DC5'  DO4'  2.60   0.8620   1.5450
+   C4'   O5'  2.60   1.1030   0.1810
+  DC4'   O5'  2.60   1.1030   0.1810
+   C4'  DO5'  2.60   1.1030   0.1810
+  DC4'  DO5'  2.60   1.1030   0.1810
+   C5'     P  2.60   0.8620   2.0980
+  DC5'     P  2.60   0.8620   2.0980
+   C5'    DP  2.60   0.8620   2.0980
+  DC5'    DP  2.60   0.8620   2.0980
+   O5'   O1P  2.60   0.1810   1.0830
+  DO5'   O1P  2.60   0.1810   1.0830
+   O5'  DO1P  2.60   0.1810   1.0830
+  DO5'  DO1P  2.60   0.1810   1.0830
+   O5'   O2P  2.60   0.1810   1.0830
+  DO5'   O2P  2.60   0.1810   1.0830
+   O5'  DO2P  2.60   0.1810   1.0830
+  DO5'  DO2P  2.60   0.1810   1.0830
+   O2P   O1P  2.60   1.0830   1.0830
+  DO2P   O1P  2.60   1.0830   1.0830
+   O2P  DO1P  2.60   1.0830   1.0830
+  DO2P  DO1P  2.60   1.0830   1.0830
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -8268,16 +9177,166 @@
        N2   H21
        N2   H22
   [ exclusions ]
-   ; ai  aj
-   DN3   LP3
-   N3    LP3
-   DN7   LP7
-   N7    LP7
-   DO6   LP6A
-   DO6   LP6B
-   O6    LP6A
-   O6    LP6B
-   LP6A  LP6B
+  ; ai  aj
+  DN3    LP3
+  N3     LP3
+  C2     LP3
+  DC2    LP3
+  C4     LP3
+  DC4    LP3
+  N2     LP3
+  DN2    LP3
+  N9     LP3
+  DN9    LP3
+  C5     LP3
+  DC5    LP3
+  N1     LP3
+  DN1    LP3
+  DN7    LP7
+  N7     LP7
+  C8     LP7
+  DC8    LP7
+  C5     LP7
+  DC5    LP7
+  N9     LP7
+  DN9    LP7
+  C4     LP7
+  DC4    LP7
+  C6     LP7
+  DC6    LP7
+  DO6    LP6A
+  DO6    LP6B
+  O6     LP6A
+  O6     LP6B
+  LP6A   LP6B
+  C6     LP6A
+  C6     LP6B
+  DC6    LP6A
+  DC6    LP6B
+  C5     LP6A
+  C5     LP6B
+  DC5    LP6A
+  DC5    LP6B
+  N1     LP6A
+  N1     LP6B
+  DN1    LP6A
+  DN1    LP6B
+  N9     C4  
+  N9     DC4 
+  DN9    C4  
+  DN9    DC4 
+  C4     N3  
+  C4     DN3 
+  DC4    N3  
+  DC4    DN3 
+  N3     C2  
+  N3     DC2 
+  DN3    C2  
+  DN3    DC2 
+  C2     N1  
+  C2     DN1 
+  DC2    N1  
+  DC2    DN1 
+  N1     C6  
+  N1     DC6 
+  DN1    C6  
+  DN1    DC6 
+  C6     C5  
+  C6     DC5 
+  DC6    C5  
+  DC6    DC5 
+  C5     C4  
+  C5     DC4 
+  DC5    C4  
+  DC5    DC4 
+  N9     C8  
+  N9     DC8 
+  DN9    C8  
+  DN9    DC8 
+  C8     N7  
+  C8     DN7 
+  DC8    N7  
+  DC8    DN7 
+  C5     N7  
+  C5     DN7 
+  DC5    N7  
+  DC5    DN7 
+  C6     O6  
+  C6     DO6 
+  DC6    O6  
+  DC6    DO6 
+  C2     N2  
+  C2     DN2 
+  DC2    N2  
+  DC2    DN2 
+  N9     N3  
+  N9     DN3 
+  DN9    N3  
+  DN9    DN3 
+  N9     C5  
+  N9     DC5 
+  DN9    C5  
+  DN9    DC5 
+  C8     C4  
+  C8     DC4 
+  DC8    C4  
+  DC8    DC4 
+  C4     C2  
+  C4     DC2 
+  DC4    C2  
+  DC4    DC2 
+  C5     N3  
+  C5     DN3 
+  DC5    N3  
+  DC5    DN3 
+  N3     N1  
+  N3     DN1 
+  DN3    N1  
+  DN3    DN1 
+  N3     N2  
+  N3     DN2 
+  DN3    N2  
+  DN3    DN2 
+  C2     C6  
+  C2     DC6 
+  DC2    C6  
+  DC2    DC6 
+  N2     N1  
+  N2     DN1 
+  DN2    N1  
+  DN2    DN1 
+  N1     C5  
+  N1     DC5 
+  DN1    C5  
+  DN1    DC5 
+  N1     O6  
+  N1     DO6 
+  DN1    O6  
+  DN1    DO6 
+  C6     C4  
+  C6     DC4 
+  DC6    C4  
+  DC6    DC4 
+  C6     N7  
+  C6     DN7 
+  DC6    N7  
+  DC6    DN7 
+  O6     C5  
+  O6     DC5 
+  DO6    C5  
+  DO6    DC5 
+  N7     C4  
+  N7     DC4 
+  DN7    C4  
+  DN7    DC4 
+  N9     N7  
+  N9     DN7 
+  DN9    N7  
+  DN9    DN7 
+  C8     C5  
+  C8     DC5 
+  DC8    C5  
+  DC8    DC5 
   [ impropers ]
        C2    N3    N1    N2
        C6    N1    C5    O6
@@ -8288,87 +9347,123 @@
       DO6    O6    C6    C5    N1 0.69680    1.21940    1.08380
       DN7    N7   LP7    C8    C5 0.80800    1.38400    0.80800
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-    N9    C4   0.9280   1.2440
-   DN9    C4   0.9280   1.2440
-    N9   DC4   0.9280   1.2440
-   DN9   DC4   0.9280   1.2440
-    C4    N3   1.2440   1.2450
-   DC4    N3   1.2440   1.2450
-    C4   DN3   1.2440   1.2450
-   DC4   DN3   1.2440   1.2450
-    N3    C2   1.2450   1.4610
-   DN3    C2   1.2450   1.4610
-    N3   DC2   1.2450   1.4610
-   DN3   DC2   1.2450   1.4610
-    C2    N1   1.4610   0.1520
-   DC2    N1   1.4610   0.1520
-    C2   DN1   1.4610   0.1520
-   DC2   DN1   1.4610   0.1520
-    N1    C6   0.1520   1.7510
-   DN1    C6   0.1520   1.7510
-    N1   DC6   0.1520   1.7510
-   DN1   DC6   0.1520   1.7510
-    C6    C5   1.7510   1.3960
-   DC6    C5   1.7510   1.3960
-    C6   DC5   1.7510   1.3960
-   DC6   DC5   1.7510   1.3960
-    C5    C4   1.3960   1.2440
-   DC5    C4   1.3960   1.2440
-    C5   DC4   1.3960   1.2440
-   DC5   DC4   1.3960   1.2440
-    N9    C8   0.9280   0.8860
-   DN9    C8   0.9280   0.8860
-    N9   DC8   0.9280   0.8860
-   DN9   DC8   0.9280   0.8860
-    C8    N7   0.8860   1.2840
-   DC8    N7   0.8860   1.2840
-    C8   DN7   0.8860   1.2840
-   DC8   DN7   0.8860   1.2840
-    C5    N7   1.3960   1.2840
-   DC5    N7   1.3960   1.2840
-    C5   DN7   1.3960   1.2840
-   DC5   DN7   1.3960   1.2840
-    C6    O6   1.7510   1.1680
-   DC6    O6   1.7510   1.1680
-    C6   DO6   1.7510   1.1680
-   DC6   DO6   1.7510   1.1680
-    C2    N2   1.4610   0.5290
-   DC2    N2   1.4610   0.5290
-    C2   DN2   1.4610   0.5290
-   DC2   DN2   1.4610   0.5290
-    N9    N3   0.9280   1.2450
-   DN9    N3   0.9280   1.2450
-    N9   DN3   0.9280   1.2450
-   DN9   DN3   0.9280   1.2450
-    C4    C2   1.2440   1.4610
-   DC4    C2   1.2440   1.4610
-    C4   DC2   1.2440   1.4610
-   DC4   DC2   1.2440   1.4610
-    N3    N1   1.2450   0.1520
-   DN3    N1   1.2450   0.1520
-    N3   DN1   1.2450   0.1520
-   DN3   DN1   1.2450   0.1520
-    C2    C6   1.4610   1.7510
-   DC2    C6   1.4610   1.7510
-    C2   DC6   1.4610   1.7510
-   DC2   DC6   1.4610   1.7510
-    N1    C5   0.1520   1.3960
-   DN1    C5   0.1520   1.3960
-    N1   DC5   0.1520   1.3960
-   DN1   DC5   0.1520   1.3960
-    C6    C4   1.7510   1.2440
-   DC6    C4   1.7510   1.2440
-    C6   DC4   1.7510   1.2440
-   DC6   DC4   1.7510   1.2440
-    N9    N7   0.9280   1.2840
-   DN9    N7   0.9280   1.2840
-    N9   DN7   0.9280   1.2840
-   DN9   DN7   0.9280   1.2840
-    C8    C5   0.8860   1.3960
-   DC8    C5   0.8860   1.3960
-    C8   DC5   0.8860   1.3960
-   DC8   DC5   0.8860   1.3960
+  ; ai    aj  a      alpha_i  alpha_j
+    N9    C4  2.60   0.9280   1.2440
+   DN9    C4  2.60   0.9280   1.2440
+    N9   DC4  2.60   0.9280   1.2440
+   DN9   DC4  2.60   0.9280   1.2440
+    C4    N3  2.60   1.2440   1.2450
+   DC4    N3  2.60   1.2440   1.2450
+    C4   DN3  2.60   1.2440   1.2450
+   DC4   DN3  2.60   1.2440   1.2450
+    N3    C2  2.60   1.2450   1.4610
+   DN3    C2  2.60   1.2450   1.4610
+    N3   DC2  2.60   1.2450   1.4610
+   DN3   DC2  2.60   1.2450   1.4610
+    C2    N1  2.60   1.4610   0.1520
+   DC2    N1  2.60   1.4610   0.1520
+    C2   DN1  2.60   1.4610   0.1520
+   DC2   DN1  2.60   1.4610   0.1520
+    N1    C6  2.60   0.1520   1.7510
+   DN1    C6  2.60   0.1520   1.7510
+    N1   DC6  2.60   0.1520   1.7510
+   DN1   DC6  2.60   0.1520   1.7510
+    C6    C5  2.60   1.7510   1.3960
+   DC6    C5  2.60   1.7510   1.3960
+    C6   DC5  2.60   1.7510   1.3960
+   DC6   DC5  2.60   1.7510   1.3960
+    C5    C4  2.60   1.3960   1.2440
+   DC5    C4  2.60   1.3960   1.2440
+    C5   DC4  2.60   1.3960   1.2440
+   DC5   DC4  2.60   1.3960   1.2440
+    N9    C8  2.60   0.9280   0.8860
+   DN9    C8  2.60   0.9280   0.8860
+    N9   DC8  2.60   0.9280   0.8860
+   DN9   DC8  2.60   0.9280   0.8860
+    C8    N7  2.60   0.8860   1.2840
+   DC8    N7  2.60   0.8860   1.2840
+    C8   DN7  2.60   0.8860   1.2840
+   DC8   DN7  2.60   0.8860   1.2840
+    C5    N7  2.60   1.3960   1.2840
+   DC5    N7  2.60   1.3960   1.2840
+    C5   DN7  2.60   1.3960   1.2840
+   DC5   DN7  2.60   1.3960   1.2840
+    C6    O6  2.60   1.7510   1.1680
+   DC6    O6  2.60   1.7510   1.1680
+    C6   DO6  2.60   1.7510   1.1680
+   DC6   DO6  2.60   1.7510   1.1680
+    C2    N2  2.60   1.4610   0.5290
+   DC2    N2  2.60   1.4610   0.5290
+    C2   DN2  2.60   1.4610   0.5290
+   DC2   DN2  2.60   1.4610   0.5290
+    N9    N3  2.60   0.9280   1.2450
+   DN9    N3  2.60   0.9280   1.2450
+    N9   DN3  2.60   0.9280   1.2450
+   DN9   DN3  2.60   0.9280   1.2450
+    N9    C5  2.60   0.9280   1.3960
+   DN9    C5  2.60   0.9280   1.3960
+    N9   DC5  2.60   0.9280   1.3960
+   DN9   DC5  2.60   0.9280   1.3960
+    C8    C4  2.60   0.8860   1.2440
+   DC8    C4  2.60   0.8860   1.2440
+    C8   DC4  2.60   0.8860   1.2440
+   DC8   DC4  2.60   0.8860   1.2440
+    C4    C2  2.60   1.2440   1.4610
+   DC4    C2  2.60   1.2440   1.4610
+    C4   DC2  2.60   1.2440   1.4610
+   DC4   DC2  2.60   1.2440   1.4610
+    C5    N3  2.60   1.3960   1.2450
+   DC5    N3  2.60   1.3960   1.2450
+    C5   DN3  2.60   1.3960   1.2450
+   DC5   DN3  2.60   1.3960   1.2450
+    N3    N1  2.60   1.2450   0.1520
+   DN3    N1  2.60   1.2450   0.1520
+    N3   DN1  2.60   1.2450   0.1520
+   DN3   DN1  2.60   1.2450   0.1520
+    N3    N2  2.60   1.2450   0.5290
+   DN3    N2  2.60   1.2450   0.5290
+    N3   DN2  2.60   1.2450   0.5290
+   DN3   DN2  2.60   1.2450   0.5290
+    C2    C6  2.60   1.4610   1.7510
+   DC2    C6  2.60   1.4610   1.7510
+    C2   DC6  2.60   1.4610   1.7510
+   DC2   DC6  2.60   1.4610   1.7510
+    N2    N1  2.60   0.5290   0.1520
+   DN2    N1  2.60   0.5290   0.1520
+    N2   DN1  2.60   0.5290   0.1520
+   DN2   DN1  2.60   0.5290   0.1520
+    N1    C5  2.60   0.1520   1.3960
+   DN1    C5  2.60   0.1520   1.3960
+    N1   DC5  2.60   0.1520   1.3960
+   DN1   DC5  2.60   0.1520   1.3960
+    N1    O6  2.60   0.1520   1.1680
+   DN1    O6  2.60   0.1520   1.1680
+    N1   DO6  2.60   0.1520   1.1680
+   DN1   DO6  2.60   0.1520   1.1680
+    C6    C4  2.60   1.7510   1.2440
+   DC6    C4  2.60   1.7510   1.2440
+    C6   DC4  2.60   1.7510   1.2440
+   DC6   DC4  2.60   1.7510   1.2440
+    C6    N7  2.60   1.7510   1.2840
+   DC6    N7  2.60   1.7510   1.2840
+    C6   DN7  2.60   1.7510   1.2840
+   DC6   DN7  2.60   1.7510   1.2840
+    O6    C5  2.60   1.1680   1.3960
+   DO6    C5  2.60   1.1680   1.3960
+    O6   DC5  2.60   1.1680   1.3960
+   DO6   DC5  2.60   1.1680   1.3960
+    N7    C4  2.60   1.2840   1.2440
+   DN7    C4  2.60   1.2840   1.2440
+    N7   DC4  2.60   1.2840   1.2440
+   DN7   DC4  2.60   1.2840   1.2440
+    N9    N7  2.60   0.9280   1.2840
+   DN9    N7  2.60   0.9280   1.2840
+    N9   DN7  2.60   0.9280   1.2840
+   DN9   DN7  2.60   0.9280   1.2840
+    C8    C5  2.60   0.8860   1.3960
+   DC8    C5  2.60   0.8860   1.3960
+    C8   DC5  2.60   0.8860   1.3960
+   DC8   DC5  2.60   0.8860   1.3960
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -8503,25 +9598,335 @@
         P   O2P
       O3'    +P
   [ exclusions ]
-   ; ai  aj
-   DO4'  LPX
-   DO4'  LPRA
-   DO4'  LPRB
-   O4'   LPX
-   O4'   LPRA
-   O4'   LPRB
-   LPX   LPRA
-   LPX   LPRB
-   LPRA  LPRB
-   DN3   LP3
-   N3    LP3
-   DN7   LP7
-   N7    LP7
-   DO6   LP6A
-   DO6   LP6B
-   O6    LP6A
-   O6    LP6B
-   LP6A  LP6B
+  ; ai  aj
+  DO4'   LPX
+  DO4'   LPRA
+  DO4'   LPRB
+  O4'    LPX
+  O4'    LPRA
+  O4'    LPRB
+  LPX    LPRA
+  LPX    LPRB
+  LPRA   LPRB
+  C4'    LPX
+  C4'    LPRA
+  C4'    LPRB
+  DC4'   LPX
+  DC4'   LPRA
+  DC4'   LPRB
+  C1'    LPX
+  DC1'   LPRA
+  DC1'   LPRB
+  C3'    LPX
+  C3'    LPRA
+  C3'    LPRB
+  DC3'   LPX
+  DC3'   LPRA
+  DC3'   LPRB
+  C2'    LPX
+  C2'    LPRA
+  C2'    LPRB
+  DC2'   LPX
+  DC2'   LPRA
+  DC2'   LPRB
+  O5'    -O3'
+  O5'    -DO3'
+  DO5'   -O3'
+  DO5'   -DO3'
+  LPHA   LPHB
+  N9     LPX
+  N9     LPRA
+  N9     LPRB
+  DN9    LPX
+  DN9    LPRA
+  DN9    LPRB
+  DN3    LP3
+  N3     LP3
+  C2     LP3
+  DC2    LP3
+  C4     LP3
+  DC4    LP3
+  N2     LP3
+  DN2    LP3
+  N9     LP3
+  DN9    LP3
+  C5     LP3
+  DC5    LP3
+  N1     LP3
+  DN1    LP3
+  DN7    LP7
+  N7     LP7
+  C8     LP7
+  DC8    LP7
+  C5     LP7
+  DC5    LP7
+  N9     LP7
+  DN9    LP7
+  C4     LP7
+  DC4    LP7
+  C6     LP7
+  DC6    LP7
+  DO6    LP6A
+  DO6    LP6B
+  O6     LP6A
+  O6     LP6B
+  LP6A   LP6B
+  C6     LP6A
+  C6     LP6B
+  DC6    LP6A
+  DC6    LP6B
+  C5     LP6A
+  C5     LP6B
+  DC5    LP6A
+  DC5    LP6B
+  N1     LP6A
+  N1     LP6B
+  DN1    LP6A
+  DN1    LP6B
+  N9     C4  
+  N9     DC4 
+  DN9    C4  
+  DN9    DC4 
+  C4     N3  
+  C4     DN3 
+  DC4    N3  
+  DC4    DN3 
+  N3     C2  
+  N3     DC2 
+  DN3    C2  
+  DN3    DC2 
+  C2     N1  
+  C2     DN1 
+  DC2    N1  
+  DC2    DN1 
+  N1     C6  
+  N1     DC6 
+  DN1    C6  
+  DN1    DC6 
+  C6     C5  
+  C6     DC5 
+  DC6    C5  
+  DC6    DC5 
+  C5     C4  
+  C5     DC4 
+  DC5    C4  
+  DC5    DC4 
+  N9     C8  
+  N9     DC8 
+  DN9    C8  
+  DN9    DC8 
+  C8     N7  
+  C8     DN7 
+  DC8    N7  
+  DC8    DN7 
+  C5     N7  
+  C5     DN7 
+  DC5    N7  
+  DC5    DN7 
+  C6     O6  
+  C6     DO6 
+  DC6    O6  
+  DC6    DO6 
+  C2     N2  
+  C2     DN2 
+  DC2    N2  
+  DC2    DN2 
+  N9     C1' 
+  N9     DC1'
+  DN9    C1' 
+  DN9    DC1'
+  C1'    C2' 
+  C1'    DC2'
+  DC1'   C2' 
+  DC1'   DC2'
+  C2'    C3' 
+  C2'    DC3'
+  DC2'   C3' 
+  DC2'   DC3'
+  C3'    O3' 
+  C3'    DO3'
+  DC3'   O3' 
+  DC3'   DO3'
+  C3'    C4' 
+  C3'    DC4'
+  DC3'   C4' 
+  DC3'   DC4'
+  C4'    O4' 
+  C4'    DO4'
+  DC4'   O4' 
+  DC4'   DO4'
+  O4'    C1' 
+  O4'    DC1'
+  DO4'   C1' 
+  DO4'   DC1'
+  C4'    C5' 
+  C4'    DC5'
+  DC4'   C5' 
+  DC4'   DC5'
+  C5'    O5' 
+  C5'    DO5'
+  DC5'   O5' 
+  DC5'   DO5'
+  O5'    P   
+  O5'    DP  
+  DO5'   P   
+  DO5'   DP  
+  P      O1P 
+  P      DO1P
+  DP     O1P 
+  DP     DO1P
+  P      O2P 
+  P      DO2P
+  DP     O2P 
+  DP     DO2P
+  O3'    +P  
+  O3'    +DP 
+  DO3'   +P  
+  DO3'   +DP 
+  N9     N3  
+  N9     DN3 
+  DN9    N3  
+  DN9    DN3 
+  N9     C5  
+  N9     DC5 
+  DN9    C5  
+  DN9    DC5 
+  C8     C4  
+  C8     DC4 
+  DC8    C4  
+  DC8    DC4 
+  C1'    C4  
+  C1'    DC4 
+  DC1'   C4  
+  DC1'   DC4 
+  C4     C2  
+  C4     DC2 
+  DC4    C2  
+  DC4    DC2 
+  C5     N3  
+  C5     DN3 
+  DC5    N3  
+  DC5    DN3 
+  N3     N1  
+  N3     DN1 
+  DN3    N1  
+  DN3    DN1 
+  N3     N2  
+  N3     DN2 
+  DN3    N2  
+  DN3    DN2 
+  C2     C6  
+  C2     DC6 
+  DC2    C6  
+  DC2    DC6 
+  N2     N1  
+  N2     DN1 
+  DN2    N1  
+  DN2    DN1 
+  N1     C5  
+  N1     DC5 
+  DN1    C5  
+  DN1    DC5 
+  N1     O6  
+  N1     DO6 
+  DN1    O6  
+  DN1    DO6 
+  C6     C4  
+  C6     DC4 
+  DC6    C4  
+  DC6    DC4 
+  C6     N7  
+  C6     DN7 
+  DC6    N7  
+  DC6    DN7 
+  O6     C5  
+  O6     DC5 
+  DO6    C5  
+  DO6    DC5 
+  N7     C4  
+  N7     DC4 
+  DN7    C4  
+  DN7    DC4 
+  N9     N7  
+  N9     DN7 
+  DN9    N7  
+  DN9    DN7 
+  C1'    C8  
+  C1'    DC8 
+  DC1'   C8  
+  DC1'   DC8 
+  C8     C5  
+  C8     DC5 
+  DC8    C5  
+  DC8    DC5 
+  N9     C2' 
+  N9     DC2'
+  DN9    C2' 
+  DN9    DC2'
+  N9     O4' 
+  N9     DO4'
+  DN9    O4' 
+  DN9    DO4'
+  C1'    C3' 
+  C1'    DC3'
+  DC1'   C3' 
+  DC1'   DC3'
+  O4'    C2' 
+  O4'    DC2'
+  DO4'   C2' 
+  DO4'   DC2'
+  C2'    O3' 
+  C2'    DO3'
+  DC2'   O3' 
+  DC2'   DO3'
+  C2'    C4' 
+  C2'    DC4'
+  DC2'   C4' 
+  DC2'   DC4'
+  C4'    O3' 
+  C4'    DO3'
+  DC4'   O3' 
+  DC4'   DO3'
+  C3'    +P  
+  C3'    +DP 
+  DC3'   +P  
+  DC3'   +DP 
+  C3'    O4' 
+  C3'    DO4'
+  DC3'   O4' 
+  DC3'   DO4'
+  C3'    C5' 
+  C3'    DC5'
+  DC3'   C5' 
+  DC3'   DC5'
+  C4'    C1' 
+  C4'    DC1'
+  DC4'   C1' 
+  DC4'   DC1'
+  C5'    O4' 
+  C5'    DO4'
+  DC5'   O4' 
+  DC5'   DO4'
+  C4'    O5' 
+  C4'    DO5'
+  DC4'   O5' 
+  DC4'   DO5'
+  C5'    P   
+  C5'    DP  
+  DC5'   P   
+  DC5'   DP  
+  O5'    O1P 
+  O5'    DO1P
+  DO5'   O1P 
+  DO5'   DO1P
+  O5'    O2P 
+  O5'    DO2P
+  DO5'   O2P 
+  DO5'   DO2P
+  O2P    O1P 
+  O2P    DO1P
+  DO2P   O1P 
+  DO2P   DO1P
   [ impropers ]
        C2    N3    N1    N2
        C6    N1    C5    O6
@@ -8537,211 +9942,263 @@
      DO1P   O1P     P   O5'  -O3' 0.60000    1.00000    1.40000
      DO2P   O2P     P  -O3'   O5' 0.60000    1.00000    1.40000
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-    N9    C4   0.9280   1.2440
-   DN9    C4   0.9280   1.2440
-    N9   DC4   0.9280   1.2440
-   DN9   DC4   0.9280   1.2440
-    C4    N3   1.2440   1.2450
-   DC4    N3   1.2440   1.2450
-    C4   DN3   1.2440   1.2450
-   DC4   DN3   1.2440   1.2450
-    N3    C2   1.2450   1.4610
-   DN3    C2   1.2450   1.4610
-    N3   DC2   1.2450   1.4610
-   DN3   DC2   1.2450   1.4610
-    C2    N1   1.4610   0.1520
-   DC2    N1   1.4610   0.1520
-    C2   DN1   1.4610   0.1520
-   DC2   DN1   1.4610   0.1520
-    N1    C6   0.1520   1.7510
-   DN1    C6   0.1520   1.7510
-    N1   DC6   0.1520   1.7510
-   DN1   DC6   0.1520   1.7510
-    C6    C5   1.7510   1.3960
-   DC6    C5   1.7510   1.3960
-    C6   DC5   1.7510   1.3960
-   DC6   DC5   1.7510   1.3960
-    C5    C4   1.3960   1.2440
-   DC5    C4   1.3960   1.2440
-    C5   DC4   1.3960   1.2440
-   DC5   DC4   1.3960   1.2440
-    N9    C8   0.9280   0.8860
-   DN9    C8   0.9280   0.8860
-    N9   DC8   0.9280   0.8860
-   DN9   DC8   0.9280   0.8860
-    C8    N7   0.8860   1.2840
-   DC8    N7   0.8860   1.2840
-    C8   DN7   0.8860   1.2840
-   DC8   DN7   0.8860   1.2840
-    C5    N7   1.3960   1.2840
-   DC5    N7   1.3960   1.2840
-    C5   DN7   1.3960   1.2840
-   DC5   DN7   1.3960   1.2840
-    C6    O6   1.7510   1.1680
-   DC6    O6   1.7510   1.1680
-    C6   DO6   1.7510   1.1680
-   DC6   DO6   1.7510   1.1680
-    C2    N2   1.4610   0.5290
-   DC2    N2   1.4610   0.5290
-    C2   DN2   1.4610   0.5290
-   DC2   DN2   1.4610   0.5290
-    N9   C1'   0.9280   1.1030
-   DN9   C1'   0.9280   1.1030
-    N9  DC1'   0.9280   1.1030
-   DN9  DC1'   0.9280   1.1030
-   C1'   C2'   1.1030   1.3000
-  DC1'   C2'   1.1030   1.3000
-   C1'  DC2'   1.1030   1.3000
-  DC1'  DC2'   1.1030   1.3000
-   C2'   C3'   1.3000   0.8620
-  DC2'   C3'   1.3000   0.8620
-   C2'  DC3'   1.3000   0.8620
-  DC2'  DC3'   1.3000   0.8620
-   C3'   O3'   0.8620   0.1810
-  DC3'   O3'   0.8620   0.1810
-   C3'  DO3'   0.8620   0.1810
-  DC3'  DO3'   0.8620   0.1810
-   C3'   C4'   0.8620   1.1030
-  DC3'   C4'   0.8620   1.1030
-   C3'  DC4'   0.8620   1.1030
-  DC3'  DC4'   0.8620   1.1030
-   C4'   O4'   1.1030   1.5450
-  DC4'   O4'   1.1030   1.5450
-   C4'  DO4'   1.1030   1.5450
-  DC4'  DO4'   1.1030   1.5450
-   O4'   C1'   1.5450   1.1030
-  DO4'   C1'   1.5450   1.1030
-   O4'  DC1'   1.5450   1.1030
-  DO4'  DC1'   1.5450   1.1030
-   C4'   C5'   1.1030   0.8620
-  DC4'   C5'   1.1030   0.8620
-   C4'  DC5'   1.1030   0.8620
-  DC4'  DC5'   1.1030   0.8620
-   C5'   O5'   0.8620   0.1810
-  DC5'   O5'   0.8620   0.1810
-   C5'  DO5'   0.8620   0.1810
-  DC5'  DO5'   0.8620   0.1810
-   O5'     P   0.1810   2.0980
-  DO5'     P   0.1810   2.0980
-   O5'    DP   0.1810   2.0980
-  DO5'    DP   0.1810   2.0980
-     P   O1P   2.0980   1.0830
-    DP   O1P   2.0980   1.0830
-     P  DO1P   2.0980   1.0830
-    DP  DO1P   2.0980   1.0830
-     P   O2P   2.0980   1.0830
-    DP   O2P   2.0980   1.0830
-     P  DO2P   2.0980   1.0830
-    DP  DO2P   2.0980   1.0830
-   O3'    +P   0.1810   2.0980
-  DO3'    +P   0.1810   2.0980
-   O3'   +DP   0.1810   2.0980
-  DO3'   +DP   0.1810   2.0980
-   O3'  +O5'   0.1810   0.1810
-  DO3'  +O5'   0.1810   0.1810
-   O3' +DO5'   0.1810   0.1810
-  DO3' +DO5'   0.1810   0.1810
-   O3'  +O1P   0.1810   1.0830
-  DO3'  +O1P   0.1810   1.0830
-   O3' +DO1P   0.1810   1.0830
-  DO3' +DO1P   0.1810   1.0830
-   O3'  +O2P   0.1810   1.0830
-  DO3'  +O2P   0.1810   1.0830
-   O3' +DO2P   0.1810   1.0830
-  DO3' +DO2P   0.1810   1.0830
-    N9    N3   0.9280   1.2450
-   DN9    N3   0.9280   1.2450
-    N9   DN3   0.9280   1.2450
-   DN9   DN3   0.9280   1.2450
-    C4    C2   1.2440   1.4610
-   DC4    C2   1.2440   1.4610
-    C4   DC2   1.2440   1.4610
-   DC4   DC2   1.2440   1.4610
-    N3    N1   1.2450   0.1520
-   DN3    N1   1.2450   0.1520
-    N3   DN1   1.2450   0.1520
-   DN3   DN1   1.2450   0.1520
-    C2    C6   1.4610   1.7510
-   DC2    C6   1.4610   1.7510
-    C2   DC6   1.4610   1.7510
-   DC2   DC6   1.4610   1.7510
-    N1    C5   0.1520   1.3960
-   DN1    C5   0.1520   1.3960
-    N1   DC5   0.1520   1.3960
-   DN1   DC5   0.1520   1.3960
-    C6    C4   1.7510   1.2440
-   DC6    C4   1.7510   1.2440
-    C6   DC4   1.7510   1.2440
-   DC6   DC4   1.7510   1.2440
-    N9    N7   0.9280   1.2840
-   DN9    N7   0.9280   1.2840
-    N9   DN7   0.9280   1.2840
-   DN9   DN7   0.9280   1.2840
-    C8    C5   0.8860   1.3960
-   DC8    C5   0.8860   1.3960
-    C8   DC5   0.8860   1.3960
-   DC8   DC5   0.8860   1.3960
-    N9   C2'   0.9280   1.3000
-   DN9   C2'   0.9280   1.3000
-    N9  DC2'   0.9280   1.3000
-   DN9  DC2'   0.9280   1.3000
-   C1'   O2'   1.1030   1.3000
-  DC1'   O2'   1.1030   1.3000
-   C1'  DO2'   1.1030   1.3000
-  DC1'  DO2'   1.1030   1.3000
-   C1'   O2'   1.1030   1.3000
-  DC1'   O2'   1.1030   1.3000
-   C1'  DO2'   1.1030   1.3000
-  DC1'  DO2'   1.1030   1.3000
-   C3'   O2'   0.8620   1.3000
-  DC3'   O2'   0.8620   1.3000
-   C3'  DO2'   0.8620   1.3000
-  DC3'  DO2'   0.8620   1.3000
-   C2'   O3'   1.3000   0.1810
-  DC2'   O3'   1.3000   0.1810
-   C2'  DO3'   1.3000   0.1810
-  DC2'  DO3'   1.3000   0.1810
-   C2'   O3'   1.3000   0.1810
-  DC2'   O3'   1.3000   0.1810
-   C2'  DO3'   1.3000   0.1810
-  DC2'  DO3'   1.3000   0.1810
-   C4'   O3'   1.1030   0.1810
-  DC4'   O3'   1.1030   0.1810
-   C4'  DO3'   1.1030   0.1810
-  DC4'  DO3'   1.1030   0.1810
-   C3'   O4'   0.8620   1.5450
-  DC3'   O4'   0.8620   1.5450
-   C3'  DO4'   0.8620   1.5450
-  DC3'  DO4'   0.8620   1.5450
-   C4'   C1'   1.1030   1.1030
-  DC4'   C1'   1.1030   1.1030
-   C4'  DC1'   1.1030   1.1030
-  DC4'  DC1'   1.1030   1.1030
-   C4'   C1'   1.1030   1.1030
-  DC4'   C1'   1.1030   1.1030
-   C4'  DC1'   1.1030   1.1030
-  DC4'  DC1'   1.1030   1.1030
-   C4'   O5'   1.1030   0.1810
-  DC4'   O5'   1.1030   0.1810
-   C4'  DO5'   1.1030   0.1810
-  DC4'  DO5'   1.1030   0.1810
-   C5'     P   0.8620   2.0980
-  DC5'     P   0.8620   2.0980
-   C5'    DP   0.8620   2.0980
-  DC5'    DP   0.8620   2.0980
-   O5'   O1P   0.1810   1.0830
-  DO5'   O1P   0.1810   1.0830
-   O5'  DO1P   0.1810   1.0830
-  DO5'  DO1P   0.1810   1.0830
-   O5'   O1P   0.1810   1.0830
-  DO5'   O1P   0.1810   1.0830
-   O5'  DO1P   0.1810   1.0830
-  DO5'  DO1P   0.1810   1.0830
-   O2P   O1P   1.0830   1.0830
-  DO2P   O1P   1.0830   1.0830
-   O2P  DO1P   1.0830   1.0830
-  DO2P  DO1P   1.0830   1.0830
+  ; ai    aj  a      alpha_i  alpha_j
+    N9    C4  2.60   0.9280   1.2440
+   DN9    C4  2.60   0.9280   1.2440
+    N9   DC4  2.60   0.9280   1.2440
+   DN9   DC4  2.60   0.9280   1.2440
+    C4    N3  2.60   1.2440   1.2450
+   DC4    N3  2.60   1.2440   1.2450
+    C4   DN3  2.60   1.2440   1.2450
+   DC4   DN3  2.60   1.2440   1.2450
+    N3    C2  2.60   1.2450   1.4610
+   DN3    C2  2.60   1.2450   1.4610
+    N3   DC2  2.60   1.2450   1.4610
+   DN3   DC2  2.60   1.2450   1.4610
+    C2    N1  2.60   1.4610   0.1520
+   DC2    N1  2.60   1.4610   0.1520
+    C2   DN1  2.60   1.4610   0.1520
+   DC2   DN1  2.60   1.4610   0.1520
+    N1    C6  2.60   0.1520   1.7510
+   DN1    C6  2.60   0.1520   1.7510
+    N1   DC6  2.60   0.1520   1.7510
+   DN1   DC6  2.60   0.1520   1.7510
+    C6    C5  2.60   1.7510   1.3960
+   DC6    C5  2.60   1.7510   1.3960
+    C6   DC5  2.60   1.7510   1.3960
+   DC6   DC5  2.60   1.7510   1.3960
+    C5    C4  2.60   1.3960   1.2440
+   DC5    C4  2.60   1.3960   1.2440
+    C5   DC4  2.60   1.3960   1.2440
+   DC5   DC4  2.60   1.3960   1.2440
+    N9    C8  2.60   0.9280   0.8860
+   DN9    C8  2.60   0.9280   0.8860
+    N9   DC8  2.60   0.9280   0.8860
+   DN9   DC8  2.60   0.9280   0.8860
+    C8    N7  2.60   0.8860   1.2840
+   DC8    N7  2.60   0.8860   1.2840
+    C8   DN7  2.60   0.8860   1.2840
+   DC8   DN7  2.60   0.8860   1.2840
+    C5    N7  2.60   1.3960   1.2840
+   DC5    N7  2.60   1.3960   1.2840
+    C5   DN7  2.60   1.3960   1.2840
+   DC5   DN7  2.60   1.3960   1.2840
+    C6    O6  2.60   1.7510   1.1680
+   DC6    O6  2.60   1.7510   1.1680
+    C6   DO6  2.60   1.7510   1.1680
+   DC6   DO6  2.60   1.7510   1.1680
+    C2    N2  2.60   1.4610   0.5290
+   DC2    N2  2.60   1.4610   0.5290
+    C2   DN2  2.60   1.4610   0.5290
+   DC2   DN2  2.60   1.4610   0.5290
+    N9   C1'  2.60   0.9280   1.1030
+   DN9   C1'  2.60   0.9280   1.1030
+    N9  DC1'  2.60   0.9280   1.1030
+   DN9  DC1'  2.60   0.9280   1.1030
+   C1'   C2'  2.60   1.1030   1.3000
+  DC1'   C2'  2.60   1.1030   1.3000
+   C1'  DC2'  2.60   1.1030   1.3000
+  DC1'  DC2'  2.60   1.1030   1.3000
+   C2'   C3'  2.60   1.3000   0.8620
+  DC2'   C3'  2.60   1.3000   0.8620
+   C2'  DC3'  2.60   1.3000   0.8620
+  DC2'  DC3'  2.60   1.3000   0.8620
+   C3'   O3'  2.60   0.8620   0.1810
+  DC3'   O3'  2.60   0.8620   0.1810
+   C3'  DO3'  2.60   0.8620   0.1810
+  DC3'  DO3'  2.60   0.8620   0.1810
+   C3'   C4'  2.60   0.8620   1.1030
+  DC3'   C4'  2.60   0.8620   1.1030
+   C3'  DC4'  2.60   0.8620   1.1030
+  DC3'  DC4'  2.60   0.8620   1.1030
+   C4'   O4'  2.60   1.1030   1.5450
+  DC4'   O4'  2.60   1.1030   1.5450
+   C4'  DO4'  2.60   1.1030   1.5450
+  DC4'  DO4'  2.60   1.1030   1.5450
+   O4'   C1'  2.60   1.5450   1.1030
+  DO4'   C1'  2.60   1.5450   1.1030
+   O4'  DC1'  2.60   1.5450   1.1030
+  DO4'  DC1'  2.60   1.5450   1.1030
+   C4'   C5'  2.60   1.1030   0.8620
+  DC4'   C5'  2.60   1.1030   0.8620
+   C4'  DC5'  2.60   1.1030   0.8620
+  DC4'  DC5'  2.60   1.1030   0.8620
+   C5'   O5'  2.60   0.8620   0.1810
+  DC5'   O5'  2.60   0.8620   0.1810
+   C5'  DO5'  2.60   0.8620   0.1810
+  DC5'  DO5'  2.60   0.8620   0.1810
+   O5'     P  2.60   0.1810   2.0980
+  DO5'     P  2.60   0.1810   2.0980
+   O5'    DP  2.60   0.1810   2.0980
+  DO5'    DP  2.60   0.1810   2.0980
+     P   O1P  2.60   2.0980   1.0830
+    DP   O1P  2.60   2.0980   1.0830
+     P  DO1P  2.60   2.0980   1.0830
+    DP  DO1P  2.60   2.0980   1.0830
+     P   O2P  2.60   2.0980   1.0830
+    DP   O2P  2.60   2.0980   1.0830
+     P  DO2P  2.60   2.0980   1.0830
+    DP  DO2P  2.60   2.0980   1.0830
+   O3'    +P  2.60   0.1810   2.0980
+  DO3'    +P  2.60   0.1810   2.0980
+   O3'   +DP  2.60   0.1810   2.0980
+  DO3'   +DP  2.60   0.1810   2.0980
+   O3'  +O5'   2.60  0.1810   0.1810
+  DO3'  +O5'   2.60  0.1810   0.1810
+   O3' +DO5'   2.60  0.1810   0.1810
+  DO3' +DO5'   2.60  0.1810   0.1810
+   O3'  +O1P   2.60  0.1810   1.0830
+  DO3'  +O1P   2.60  0.1810   1.0830
+   O3' +DO1P   2.60  0.1810   1.0830
+  DO3' +DO1P   2.60  0.1810   1.0830
+   O3'  +O2P   2.60  0.1810   1.0830
+  DO3'  +O2P   2.60  0.1810   1.0830
+   O3' +DO2P   2.60  0.1810   1.0830
+  DO3' +DO2P   2.60  0.1810   1.0830
+    N9    N3  2.60   0.9280   1.2450
+   DN9    N3  2.60   0.9280   1.2450
+    N9   DN3  2.60   0.9280   1.2450
+   DN9   DN3  2.60   0.9280   1.2450
+    N9    C5  2.60   0.9280   1.3960
+   DN9    C5  2.60   0.9280   1.3960
+    N9   DC5  2.60   0.9280   1.3960
+   DN9   DC5  2.60   0.9280   1.3960
+    C8    C4  2.60   0.8860   1.2440
+   DC8    C4  2.60   0.8860   1.2440
+    C8   DC4  2.60   0.8860   1.2440
+   DC8   DC4  2.60   0.8860   1.2440
+   C1'    C4  2.60   1.1030   1.2440
+  DC1'    C4  2.60   1.1030   1.2440
+   C1'   DC4  2.60   1.1030   1.2440
+  DC1'   DC4  2.60   1.1030   1.2440
+    C4    C2  2.60   1.2440   1.4610
+   DC4    C2  2.60   1.2440   1.4610
+    C4   DC2  2.60   1.2440   1.4610
+   DC4   DC2  2.60   1.2440   1.4610
+    C5    N3  2.60   1.3960   1.2450
+   DC5    N3  2.60   1.3960   1.2450
+    C5   DN3  2.60   1.3960   1.2450
+   DC5   DN3  2.60   1.3960   1.2450
+    N3    N1  2.60   1.2450   0.1520
+   DN3    N1  2.60   1.2450   0.1520
+    N3   DN1  2.60   1.2450   0.1520
+   DN3   DN1  2.60   1.2450   0.1520
+    N3    N2  2.60   1.2450   0.5290
+   DN3    N2  2.60   1.2450   0.5290
+    N3   DN2  2.60   1.2450   0.5290
+   DN3   DN2  2.60   1.2450   0.5290
+    C2    C6  2.60   1.4610   1.7510
+   DC2    C6  2.60   1.4610   1.7510
+    C2   DC6  2.60   1.4610   1.7510
+   DC2   DC6  2.60   1.4610   1.7510
+    N2    N1  2.60   0.5290   0.1520
+   DN2    N1  2.60   0.5290   0.1520
+    N2   DN1  2.60   0.5290   0.1520
+   DN2   DN1  2.60   0.5290   0.1520
+    N1    C5  2.60   0.1520   1.3960
+   DN1    C5  2.60   0.1520   1.3960
+    N1   DC5  2.60   0.1520   1.3960
+   DN1   DC5  2.60   0.1520   1.3960
+    N1    O6  2.60   0.1520   1.1680
+   DN1    O6  2.60   0.1520   1.1680
+    N1   DO6  2.60   0.1520   1.1680
+   DN1   DO6  2.60   0.1520   1.1680
+    C6    C4  2.60   1.7510   1.2440
+   DC6    C4  2.60   1.7510   1.2440
+    C6   DC4  2.60   1.7510   1.2440
+   DC6   DC4  2.60   1.7510   1.2440
+    C6    N7  2.60   1.7510   1.2840
+   DC6    N7  2.60   1.7510   1.2840
+    C6   DN7  2.60   1.7510   1.2840
+   DC6   DN7  2.60   1.7510   1.2840
+    O6    C5  2.60   1.1680   1.3960
+   DO6    C5  2.60   1.1680   1.3960
+    O6   DC5  2.60   1.1680   1.3960
+   DO6   DC5  2.60   1.1680   1.3960
+    N7    C4  2.60   1.2840   1.2440
+   DN7    C4  2.60   1.2840   1.2440
+    N7   DC4  2.60   1.2840   1.2440
+   DN7   DC4  2.60   1.2840   1.2440
+    N9    N7  2.60   0.9280   1.2840
+   DN9    N7  2.60   0.9280   1.2840
+    N9   DN7  2.60   0.9280   1.2840
+   DN9   DN7  2.60   0.9280   1.2840
+   C1'    C8  2.60   1.1030   0.8860
+  DC1'    C8  2.60   1.1030   0.8860
+   C1'   DC8  2.60   1.1030   0.8860
+  DC1'   DC8  2.60   1.1030   0.8860
+    C8    C5  2.60   0.8860   1.3960
+   DC8    C5  2.60   0.8860   1.3960
+    C8   DC5  2.60   0.8860   1.3960
+   DC8   DC5  2.60   0.8860   1.3960
+    N9   C2'  2.60   0.9280   1.3000
+   DN9   C2'  2.60   0.9280   1.3000
+    N9  DC2'  2.60   0.9280   1.3000
+   DN9  DC2'  2.60   0.9280   1.3000
+    N9   O4'  2.60   0.9280   1.5450
+   DN9   O4'  2.60   0.9280   1.5450
+    N9  DO4'  2.60   0.9280   1.5450
+   DN9  DO4'  2.60   0.9280   1.5450
+   C1'   C3'  2.60   1.1030   0.8620
+  DC1'   C3'  2.60   1.1030   0.8620
+   C1'  DC3'  2.60   1.1030   0.8620
+  DC1'  DC3'  2.60   1.1030   0.8620
+   O4'   C2'  2.60   1.5450   1.3000
+  DO4'   C2'  2.60   1.5450   1.3000
+   O4'  DC2'  2.60   1.5450   1.3000
+  DO4'  DC2'  2.60   1.5450   1.3000
+   C2'   O3'  2.60   1.3000   0.1810
+  DC2'   O3'  2.60   1.3000   0.1810
+   C2'  DO3'  2.60   1.3000   0.1810
+  DC2'  DO3'  2.60   1.3000   0.1810
+   C2'   C4'  2.60   1.3000   1.1030
+  DC2'   C4'  2.60   1.3000   1.1030
+   C2'  DC4'  2.60   1.3000   1.1030
+  DC2'  DC4'  2.60   1.3000   1.1030
+   C4'   O3'  2.60   1.1030   0.1810
+  DC4'   O3'  2.60   1.1030   0.1810
+   C4'  DO3'  2.60   1.1030   0.1810
+  DC4'  DO3'  2.60   1.1030   0.1810
+   C3'    +P  2.60   0.8620   2.0980
+  DC3'    +P  2.60   0.8620   2.0980
+   C3'   +DP  2.60   0.8620   2.0980
+  DC3'   +DP  2.60   0.8620   2.0980
+   C3'   O4'  2.60   0.8620   1.5450
+  DC3'   O4'  2.60   0.8620   1.5450
+   C3'  DO4'  2.60   0.8620   1.5450
+  DC3'  DO4'  2.60   0.8620   1.5450
+   C3'   C5'  2.60   0.8620   0.8620
+  DC3'   C5'  2.60   0.8620   0.8620
+   C3'  DC5'  2.60   0.8620   0.8620
+  DC3'  DC5'  2.60   0.8620   0.8620
+   C4'   C1'  2.60   1.1030   1.1030
+  DC4'   C1'  2.60   1.1030   1.1030
+   C4'  DC1'  2.60   1.1030   1.1030
+  DC4'  DC1'  2.60   1.1030   1.1030
+   C5'   O4'  2.60   0.8620   1.5450
+  DC5'   O4'  2.60   0.8620   1.5450
+   C5'  DO4'  2.60   0.8620   1.5450
+  DC5'  DO4'  2.60   0.8620   1.5450
+   C4'   O5'  2.60   1.1030   0.1810
+  DC4'   O5'  2.60   1.1030   0.1810
+   C4'  DO5'  2.60   1.1030   0.1810
+  DC4'  DO5'  2.60   1.1030   0.1810
+   C5'     P  2.60   0.8620   2.0980
+  DC5'     P  2.60   0.8620   2.0980
+   C5'    DP  2.60   0.8620   2.0980
+  DC5'    DP  2.60   0.8620   2.0980
+   O5'   O1P  2.60   0.1810   1.0830
+  DO5'   O1P  2.60   0.1810   1.0830
+   O5'  DO1P  2.60   0.1810   1.0830
+  DO5'  DO1P  2.60   0.1810   1.0830
+   O5'   O2P  2.60   0.1810   1.0830
+  DO5'   O2P  2.60   0.1810   1.0830
+   O5'  DO2P  2.60   0.1810   1.0830
+  DO5'  DO2P  2.60   0.1810   1.0830
+   O2P   O1P  2.60   1.0830   1.0830
+  DO2P   O1P  2.60   1.0830   1.0830
+   O2P  DO1P  2.60   1.0830   1.0830
+  DO2P  DO1P  2.60   1.0830   1.0830
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -8813,17 +10270,125 @@
       C5M   H53
        C6    H6
   [ exclusions ]
-   ; ai  aj
-   DO2   LP2A
-   DO2   LP2B
-   O2    LP2A
-   O2    LP2B
-   LP2A  LP2B
-   DO4   LP4A
-   DO4   LP4B
-   O4    LP4A
-   O4    LP4B
-   LP4A  LP4B
+  ; ai  aj
+  DO2     LP2A
+  DO2    LP2B
+  O2     LP2A
+  O2     LP2B
+  LP2A   LP2B
+  C2     LP2A
+  C2     LP2B
+  DC2    LP2A
+  DC2    LP2B
+  N1     LP2A
+  N1     LP2B
+  DN1    LP2A
+  DN1    LP2B
+  N3     LP2A
+  N3     LP2B
+  DN3    LP2A
+  DN3    LP2B
+  DO4    LP4A
+  DO4    LP4B
+  O4     LP4A
+  O4     LP4B
+  LP4A   LP4B
+  C4     LP2A
+  C4     LP4B
+  DC4    LP4A
+  DC4    LP4B
+  C5     LP4A
+  C5     LP4B
+  DC5    LP4A
+  DC5    LP4B
+  N3     LP4A
+  N3     LP4B
+  DN3    LP4A
+  DN3    LP4B
+  N1     C2  
+  N1     DC2 
+  DN1    C2  
+  DN1    DC2 
+  C2     N3  
+  C2     DN3 
+  DC2    N3  
+  DC2    DN3 
+  N3     C4  
+  N3     DC4 
+  DN3    C4  
+  DN3    DC4 
+  C4     C5  
+  C4     DC5 
+  DC4    C5  
+  DC4    DC5 
+  C5     C6  
+  C5     DC6 
+  DC5    C6  
+  DC5    DC6 
+  C6     N1  
+  C6     DN1 
+  DC6    N1  
+  DC6    DN1 
+  C2     O2  
+  C2     DO2 
+  DC2    O2  
+  DC2    DO2 
+  C4     O4  
+  C4     DO4 
+  DC4    O4  
+  DC4    DO4 
+  C5     C5M 
+  C5     DC5M
+  DC5    C5M 
+  DC5    DC5M
+  N1     N3  
+  N1     DN3 
+  DN1    N3  
+  DN1    DN3 
+  C6     C2  
+  C6     DC2 
+  DC6    C2  
+  DC6    DC2 
+  N1     O2  
+  N1     DO2 
+  DN1    O2  
+  DN1    DO2 
+  C2     C4  
+  C2     DC4 
+  DC2    C4  
+  DC2    DC4 
+  O2     N3  
+  O2     DN3 
+  DO2    N3  
+  DO2    DN3 
+  N3     C5  
+  N3     DC5 
+  DN3    C5  
+  DN3    DC5 
+  N3     O4  
+  N3     DO4 
+  DN3    O4  
+  DN3    DO4 
+  C4     C6  
+  C4     DC6 
+  DC4    C6  
+  DC4    DC6 
+  O4     C5  
+  O4     DC5 
+  DO4    C5  
+  DO4    DC5 
+  C4     C5M 
+  C4     DC5M
+  DC4    C5M 
+  DC4    DC5M
+  C5     N1  
+  C5     DN1 
+  DC5    N1  
+  DC5    DN1 
+  C5M    C6  
+  C5M    DC6 
+  DC5M   C6  
+  DC5M   DC6 
   [ impropers ]
        C2    N1    N3    O2
        C4    N3    C5    O4
@@ -8834,63 +10399,91 @@
       DO2    O2    C2    N1    N3 0.69680    1.21940    1.08380
       DO4    O4    C4    N3    C5 0.69680    1.21940    1.08380
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-    N1    C2   1.3090   1.7020
-   DN1    C2   1.3090   1.7020
-    N1   DC2   1.3090   1.7020
-   DN1   DC2   1.3090   1.7020
-    C2    N3   1.7020   1.2520
-   DC2    N3   1.7020   1.2520
-    C2   DN3   1.7020   1.2520
-   DC2   DN3   1.7020   1.2520
-    N3    C4   1.2520   0.8440
-   DN3    C4   1.2520   0.8440
-    N3   DC4   1.2520   0.8440
-   DN3   DC4   1.2520   0.8440
-    C4    C5   0.8440   1.4230
-   DC4    C5   0.8440   1.4230
-    C4   DC5   0.8440   1.4230
-   DC4   DC5   0.8440   1.4230
-    C5    C6   1.4230   0.9910
-   DC5    C6   1.4230   0.9910
-    C5   DC6   1.4230   0.9910
-   DC5   DC6   1.4230   0.9910
-    C6    N1   0.9910   1.3090
-   DC6    N1   0.9910   1.3090
-    C6   DN1   0.9910   1.3090
-   DC6   DN1   0.9910   1.3090
-    C2    O2   1.7020   2.0690
-   DC2    O2   1.7020   2.0690
-    C2   DO2   1.7020   2.0690
-   DC2   DO2   1.7020   2.0690
-    C4    O4   0.8440   2.0430
-   DC4    O4   0.8440   2.0430
-    C4   DO4   0.8440   2.0430
-   DC4   DO4   0.8440   2.0430
-    C5   C5M   1.4230   0.5350
-   DC5   C5M   1.4230   0.5350
-    C5  DC5M   1.4230   0.5350
-   DC5  DC5M   1.4230   0.5350
-    N1    N3   1.3090   1.2520
-   DN1    N3   1.3090   1.2520
-    N1   DN3   1.3090   1.2520
-   DN1   DN3   1.3090   1.2520
-    C2    C4   1.7020   0.8440
-   DC2    C4   1.7020   0.8440
-    C2   DC4   1.7020   0.8440
-   DC2   DC4   1.7020   0.8440
-    N3    C5   1.2520   1.4230
-   DN3    C5   1.2520   1.4230
-    N3   DC5   1.2520   1.4230
-   DN3   DC5   1.2520   1.4230
-    C4    C6   0.8440   0.9910
-   DC4    C6   0.8440   0.9910
-    C4   DC6   0.8440   0.9910
-   DC4   DC6   0.8440   0.9910
-    C5    N1   1.4230   1.3090
-   DC5    N1   1.4230   1.3090
-    C5   DN1   1.4230   1.3090
-   DC5   DN1   1.4230   1.3090
+  ; ai    aj  a      alpha_i  alpha_j
+    N1    C2  2.60   1.3090   1.7020
+   DN1    C2  2.60   1.3090   1.7020
+    N1   DC2  2.60   1.3090   1.7020
+   DN1   DC2  2.60   1.3090   1.7020
+    C2    N3  2.60   1.7020   1.2520
+   DC2    N3  2.60   1.7020   1.2520
+    C2   DN3  2.60   1.7020   1.2520
+   DC2   DN3  2.60   1.7020   1.2520
+    N3    C4  2.60   1.2520   0.8440
+   DN3    C4  2.60   1.2520   0.8440
+    N3   DC4  2.60   1.2520   0.8440
+   DN3   DC4  2.60   1.2520   0.8440
+    C4    C5  2.60   0.8440   1.4230
+   DC4    C5  2.60   0.8440   1.4230
+    C4   DC5  2.60   0.8440   1.4230
+   DC4   DC5  2.60   0.8440   1.4230
+    C5    C6  2.60   1.4230   0.9910
+   DC5    C6  2.60   1.4230   0.9910
+    C5   DC6  2.60   1.4230   0.9910
+   DC5   DC6  2.60   1.4230   0.9910
+    C6    N1  2.60   0.9910   1.3090
+   DC6    N1  2.60   0.9910   1.3090
+    C6   DN1  2.60   0.9910   1.3090
+   DC6   DN1  2.60   0.9910   1.3090
+    C2    O2  2.60   1.7020   2.0690
+   DC2    O2  2.60   1.7020   2.0690
+    C2   DO2  2.60   1.7020   2.0690
+   DC2   DO2  2.60   1.7020   2.0690
+    C4    O4  2.60   0.8440   2.0430
+   DC4    O4  2.60   0.8440   2.0430
+    C4   DO4  2.60   0.8440   2.0430
+   DC4   DO4  2.60   0.8440   2.0430
+    C5   C5M  2.60   1.4230   0.5350
+   DC5   C5M  2.60   1.4230   0.5350
+    C5  DC5M  2.60   1.4230   0.5350
+   DC5  DC5M  2.60   1.4230   0.5350
+    N1    N3  2.60   1.3090   1.2520
+   DN1    N3  2.60   1.3090   1.2520
+    N1   DN3  2.60   1.3090   1.2520
+   DN1   DN3  2.60   1.3090   1.2520
+    C6    C2  2.60   0.9910   1.7020
+   DC6    C2  2.60   0.9910   1.7020
+    C6   DC2  2.60   0.9910   1.7020
+   DC6   DC2  2.60   0.9910   1.7020
+    N1    O2  2.60   1.3090   2.0690
+   DN1    O2  2.60   1.3090   2.0690
+    N1   DO2  2.60   1.3090   2.0690
+   DN1   DO2  2.60   1.3090   2.0690
+    C2    C4  2.60   1.7020   0.8440
+   DC2    C4  2.60   1.7020   0.8440
+    C2   DC4  2.60   1.7020   0.8440
+   DC2   DC4  2.60   1.7020   0.8440
+    O2    N3  2.60   2.0690   1.2520
+   DO2    N3  2.60   2.0690   1.2520
+    O2   DN3  2.60   2.0690   1.2520
+   DO2   DN3  2.60   2.0690   1.2520
+    N3    C5  2.60   1.2520   1.4230
+   DN3    C5  2.60   1.2520   1.4230
+    N3   DC5  2.60   1.2520   1.4230
+   DN3   DC5  2.60   1.2520   1.4230
+    N3    O4  2.60   1.2520   2.0430
+   DN3    O4  2.60   1.2520   2.0430
+    N3   DO4  2.60   1.2520   2.0430
+   DN3   DO4  2.60   1.2520   2.0430
+    C4    C6  2.60   0.8440   0.9910
+   DC4    C6  2.60   0.8440   0.9910
+    C4   DC6  2.60   0.8440   0.9910
+   DC4   DC6  2.60   0.8440   0.9910
+    O4    C5  2.60   2.0430   1.4230
+   DO4    C5  2.60   2.0430   1.4230
+    O4   DC5  2.60   2.0430   1.4230
+   DO4   DC5  2.60   2.0430   1.4230
+    C4   C5M  2.60   0.8440   0.5350
+   DC4   C5M  2.60   0.8440   0.5350
+    C4  DC5M  2.60   0.8440   0.5350
+   DC4  DC5M  2.60   0.8440   0.5350
+    C5    N1  2.60   1.4230   1.3090
+   DC5    N1  2.60   1.4230   1.3090
+    C5   DN1  2.60   1.4230   1.3090
+   DC5   DN1  2.60   1.4230   1.3090
+   C5M    C6  2.60   0.5350   0.9910
+  DC5M    C6  2.60   0.5350   0.9910
+   C5M   DC6  2.60   0.5350   0.9910
+  DC5M   DC6  2.60   0.5350   0.9910
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -9016,26 +10609,294 @@
         P   O2P
       O3'    +P
   [ exclusions ]
-   ; ai  aj
-   DO4'  LPX
-   DO4'  LPRA
-   DO4'  LPRB
-   O4'   LPX
-   O4'   LPRA
-   O4'   LPRB
-   LPX   LPRA
-   LPX   LPRB
-   LPRA  LPRB
-   DO2   LP2A
-   DO2   LP2B
-   O2    LP2A
-   O2    LP2B
-   LP2A  LP2B
-   DO4   LP4A
-   DO4   LP4B
-   O4    LP4A
-   O4    LP4B
-   LP4A  LP4B
+  ; ai  aj
+  DO4'   LPX
+  DO4'   LPRA
+  DO4'   LPRB
+  O4'    LPX
+  O4'    LPRA
+  O4'    LPRB
+  LPX    LPRA
+  LPX    LPRB
+  LPRA   LPRB
+  C4'    LPX
+  C4'    LPRA
+  C4'    LPRB
+  DC4'   LPX
+  DC4'   LPRA
+  DC4'   LPRB
+  C1'    LPX
+  DC1'   LPRA
+  DC1'   LPRB
+  C3'    LPX
+  C3'    LPRA
+  C3'    LPRB
+  DC3'   LPX
+  DC3'   LPRA
+  DC3'   LPRB
+  C2'    LPX
+  C2'    LPRA
+  C2'    LPRB
+  DC2'   LPX
+  DC2'   LPRA
+  DC2'   LPRB
+  O5'    -O3'
+  O5'    -DO3'
+  DO5'   -O3'
+  DO5'   -DO3'
+  LPHA   LPHB
+  N1     LPX
+  N1     LPRA
+  N1     LPRB
+  DN1    LPX
+  DN1    LPRA
+  DN1    LPRB
+  DO2     LP2A
+  DO2    LP2B
+  O2     LP2A
+  O2     LP2B
+  LP2A   LP2B
+  C2     LP2A
+  C2     LP2B
+  DC2    LP2A
+  DC2    LP2B
+  N1     LP2A
+  N1     LP2B
+  DN1    LP2A
+  DN1    LP2B
+  N3     LP2A
+  N3     LP2B
+  DN3    LP2A
+  DN3    LP2B
+  DO4    LP4A
+  DO4    LP4B
+  O4     LP4A
+  O4     LP4B
+  LP4A   LP4B
+  C4     LP2A
+  C4     LP4B
+  DC4    LP4A
+  DC4    LP4B
+  C5     LP4A
+  C5     LP4B
+  DC5    LP4A
+  DC5    LP4B
+  N3     LP4A
+  N3     LP4B
+  DN3    LP4A
+  DN3    LP4B
+  N1     C2  
+  N1     DC2 
+  DN1    C2  
+  DN1    DC2 
+  C2     N3  
+  C2     DN3 
+  DC2    N3  
+  DC2    DN3 
+  N3     C4  
+  N3     DC4 
+  DN3    C4  
+  DN3    DC4 
+  C4     C5  
+  C4     DC5 
+  DC4    C5  
+  DC4    DC5 
+  C5     C6  
+  C5     DC6 
+  DC5    C6  
+  DC5    DC6 
+  C6     N1  
+  C6     DN1 
+  DC6    N1  
+  DC6    DN1 
+  C2     O2  
+  C2     DO2 
+  DC2    O2  
+  DC2    DO2 
+  C4     O4  
+  C4     DO4 
+  DC4    O4  
+  DC4    DO4 
+  C5     C5M 
+  C5     DC5M
+  DC5    C5M 
+  DC5    DC5M
+  N1     C1' 
+  N1     DC1'
+  DN1    C1' 
+  DN1    DC1'
+  C1'    C2' 
+  C1'    DC2'
+  DC1'   C2' 
+  DC1'   DC2'
+  C2'    C3' 
+  C2'    DC3'
+  DC2'   C3' 
+  DC2'   DC3'
+  C3'    O3' 
+  C3'    DO3'
+  DC3'   O3' 
+  DC3'   DO3'
+  C3'    C4' 
+  C3'    DC4'
+  DC3'   C4' 
+  DC3'   DC4'
+  C4'    O4' 
+  C4'    DO4'
+  DC4'   O4' 
+  DC4'   DO4'
+  O4'    C1' 
+  O4'    DC1'
+  DO4'   C1' 
+  DO4'   DC1'
+  C4'    C5' 
+  C4'    DC5'
+  DC4'   C5' 
+  DC4'   DC5'
+  C5'    O5' 
+  C5'    DO5'
+  DC5'   O5' 
+  DC5'   DO5'
+  O5'    P   
+  O5'    DP  
+  DO5'   P   
+  DO5'   DP  
+  P      O1P 
+  P      DO1P
+  DP     O1P 
+  DP     DO1P
+  P      O2P 
+  P      DO2P
+  DP     O2P 
+  DP     DO2P
+  O3'    +P  
+  O3'    +DP 
+  DO3'   +P  
+  DO3'   +DP 
+  N1     N3  
+  N1     DN3 
+  DN1    N3  
+  DN1    DN3 
+  C6     C2  
+  C6     DC2 
+  DC6    C2  
+  DC6    DC2 
+  N1     O2  
+  N1     DO2 
+  DN1    O2  
+  DN1    DO2 
+  C1'    C2  
+  C1'    DC2 
+  DC1'   C2  
+  DC1'   DC2 
+  C2     C4  
+  C2     DC4 
+  DC2    C4  
+  DC2    DC4 
+  O2     N3  
+  O2     DN3 
+  DO2    N3  
+  DO2    DN3 
+  N3     C5  
+  N3     DC5 
+  DN3    C5  
+  DN3    DC5 
+  N3     O4  
+  N3     DO4 
+  DN3    O4  
+  DN3    DO4 
+  C4     C6  
+  C4     DC6 
+  DC4    C6  
+  DC4    DC6 
+  O4     C5  
+  O4     DC5 
+  DO4    C5  
+  DO4    DC5 
+  C4     C5M 
+  C4     DC5M
+  DC4    C5M 
+  DC4    DC5M
+  C5     N1  
+  C5     DN1 
+  DC5    N1  
+  DC5    DN1 
+  C5M    C6  
+  C5M    DC6 
+  DC5M   C6  
+  DC5M   DC6 
+  C6     C1' 
+  C6     DC1'
+  DC6    C1' 
+  DC6    DC1'
+  N1     C2' 
+  N1     DC2'
+  DN1    C2' 
+  DN1    DC2'
+  N1     O4' 
+  N1     DO4'
+  DN1    O4' 
+  DN1    DO4'
+  C1'    C3' 
+  C1'    DC3'
+  DC1'   C3' 
+  DC1'   DC3'
+  O4'    C2' 
+  O4'    DC2'
+  DO4'   C2' 
+  DO4'   DC2'
+  C2'    O3' 
+  C2'    DO3'
+  DC2'   O3' 
+  DC2'   DO3'
+  C2'    C4' 
+  C2'    DC4'
+  DC2'   C4' 
+  DC2'   DC4'
+  C4'    O3' 
+  C4'    DO3'
+  DC4'   O3' 
+  DC4'   DO3'
+  C3'    +P  
+  C3'    +DP 
+  DC3'   +P  
+  DC3'   +DP 
+  C3'    O4' 
+  C3'    DO4'
+  DC3'   O4' 
+  DC3'   DO4'
+  C3'    C5' 
+  C3'    DC5'
+  DC3'   C5' 
+  DC3'   DC5'
+  C4'    C1' 
+  C4'    DC1'
+  DC4'   C1' 
+  DC4'   DC1'
+  C5'    O4' 
+  C5'    DO4'
+  DC5'   O4' 
+  DC5'   DO4'
+  C4'    O5' 
+  C4'    DO5'
+  DC4'   O5' 
+  DC4'   DO5'
+  C5'    P   
+  C5'    DP  
+  DC5'   P   
+  DC5'   DP  
+  O5'    O1P 
+  O5'    DO1P
+  DO5'   O1P 
+  DO5'   DO1P
+  O5'    O2P 
+  O5'    DO2P
+  DO5'   O2P 
+  DO5'   DO2P
+  O2P    O1P 
+  O2P    DO1P
+  DO2P   O1P 
+  DO2P   DO1P
   [ impropers ]
        C2    N1    N3    O2
        C4    N3    C5    O4
@@ -9050,187 +10911,231 @@
      DO1P   O1P     P   O5'  -O3' 0.60000    1.00000    1.40000
      DO2P   O2P     P  -O3'   O5' 0.60000    1.00000    1.40000
   [ thole_polarization ]
-  ; ai    aj   alpha_i  alpha_j
-    N1    C2   1.3090   1.7020
-   DN1    C2   1.3090   1.7020
-    N1   DC2   1.3090   1.7020
-   DN1   DC2   1.3090   1.7020
-    C2    N3   1.7020   1.2520
-   DC2    N3   1.7020   1.2520
-    C2   DN3   1.7020   1.2520
-   DC2   DN3   1.7020   1.2520
-    N3    C4   1.2520   0.8440
-   DN3    C4   1.2520   0.8440
-    N3   DC4   1.2520   0.8440
-   DN3   DC4   1.2520   0.8440
-    C4    C5   0.8440   1.4230
-   DC4    C5   0.8440   1.4230
-    C4   DC5   0.8440   1.4230
-   DC4   DC5   0.8440   1.4230
-    C5    C6   1.4230   0.9910
-   DC5    C6   1.4230   0.9910
-    C5   DC6   1.4230   0.9910
-   DC5   DC6   1.4230   0.9910
-    C6    N1   0.9910   1.3090
-   DC6    N1   0.9910   1.3090
-    C6   DN1   0.9910   1.3090
-   DC6   DN1   0.9910   1.3090
-    C2    O2   1.7020   2.0690
-   DC2    O2   1.7020   2.0690
-    C2   DO2   1.7020   2.0690
-   DC2   DO2   1.7020   2.0690
-    C4    O4   0.8440   2.0430
-   DC4    O4   0.8440   2.0430
-    C4   DO4   0.8440   2.0430
-   DC4   DO4   0.8440   2.0430
-    C5   C5M   1.4230   0.5350
-   DC5   C5M   1.4230   0.5350
-    C5  DC5M   1.4230   0.5350
-   DC5  DC5M   1.4230   0.5350
-    N1   C1'   1.3090   1.1030
-   DN1   C1'   1.3090   1.1030
-    N1  DC1'   1.3090   1.1030
-   DN1  DC1'   1.3090   1.1030
-   C1'   C2'   1.1030   1.3000
-  DC1'   C2'   1.1030   1.3000
-   C1'  DC2'   1.1030   1.3000
-  DC1'  DC2'   1.1030   1.3000
-   C2'   C3'   1.3000   0.8620
-  DC2'   C3'   1.3000   0.8620
-   C2'  DC3'   1.3000   0.8620
-  DC2'  DC3'   1.3000   0.8620
-   C3'   O3'   0.8620   0.1810
-  DC3'   O3'   0.8620   0.1810
-   C3'  DO3'   0.8620   0.1810
-  DC3'  DO3'   0.8620   0.1810
-   C3'   C4'   0.8620   1.1030
-  DC3'   C4'   0.8620   1.1030
-   C3'  DC4'   0.8620   1.1030
-  DC3'  DC4'   0.8620   1.1030
-   C4'   O4'   1.1030   1.5450
-  DC4'   O4'   1.1030   1.5450
-   C4'  DO4'   1.1030   1.5450
-  DC4'  DO4'   1.1030   1.5450
-   O4'   C1'   1.5450   1.1030
-  DO4'   C1'   1.5450   1.1030
-   O4'  DC1'   1.5450   1.1030
-  DO4'  DC1'   1.5450   1.1030
-   C4'   C5'   1.1030   0.8620
-  DC4'   C5'   1.1030   0.8620
-   C4'  DC5'   1.1030   0.8620
-  DC4'  DC5'   1.1030   0.8620
-   C5'   O5'   0.8620   0.1810
-  DC5'   O5'   0.8620   0.1810
-   C5'  DO5'   0.8620   0.1810
-  DC5'  DO5'   0.8620   0.1810
-   O5'     P   0.1810   2.0980
-  DO5'     P   0.1810   2.0980
-   O5'    DP   0.1810   2.0980
-  DO5'    DP   0.1810   2.0980
-     P   O1P   2.0980   1.0830
-    DP   O1P   2.0980   1.0830
-     P  DO1P   2.0980   1.0830
-    DP  DO1P   2.0980   1.0830
-     P   O2P   2.0980   1.0830
-    DP   O2P   2.0980   1.0830
-     P  DO2P   2.0980   1.0830
-    DP  DO2P   2.0980   1.0830
-   O3'    +P   0.1810   2.0980
-  DO3'    +P   0.1810   2.0980
-   O3'   +DP   0.1810   2.0980
-  DO3'   +DP   0.1810   2.0980
-   O3'  +O5'   0.1810   0.1810
-  DO3'  +O5'   0.1810   0.1810
-   O3' +DO5'   0.1810   0.1810
-  DO3' +DO5'   0.1810   0.1810
-   O3'  +O1P   0.1810   1.0830
-  DO3'  +O1P   0.1810   1.0830
-   O3' +DO1P   0.1810   1.0830
-  DO3' +DO1P   0.1810   1.0830
-   O3'  +O2P   0.1810   1.0830
-  DO3'  +O2P   0.1810   1.0830
-   O3' +DO2P   0.1810   1.0830
-  DO3' +DO2P   0.1810   1.0830
-    N1    N3   1.3090   1.2520
-   DN1    N3   1.3090   1.2520
-    N1   DN3   1.3090   1.2520
-   DN1   DN3   1.3090   1.2520
-    C2    C4   1.7020   0.8440
-   DC2    C4   1.7020   0.8440
-    C2   DC4   1.7020   0.8440
-   DC2   DC4   1.7020   0.8440
-    N3    C5   1.2520   1.4230
-   DN3    C5   1.2520   1.4230
-    N3   DC5   1.2520   1.4230
-   DN3   DC5   1.2520   1.4230
-    C4    C6   0.8440   0.9910
-   DC4    C6   0.8440   0.9910
-    C4   DC6   0.8440   0.9910
-   DC4   DC6   0.8440   0.9910
-    C5    N1   1.4230   1.3090
-   DC5    N1   1.4230   1.3090
-    C5   DN1   1.4230   1.3090
-   DC5   DN1   1.4230   1.3090
-    N1   C2'   1.3090   1.3000
-   DN1   C2'   1.3090   1.3000
-    N1  DC2'   1.3090   1.3000
-   DN1  DC2'   1.3090   1.3000
-   C1'   O2'   1.1030   1.3000
-  DC1'   O2'   1.1030   1.3000
-   C1'  DO2'   1.1030   1.3000
-  DC1'  DO2'   1.1030   1.3000
-   C1'   O2'   1.1030   1.3000
-  DC1'   O2'   1.1030   1.3000
-   C1'  DO2'   1.1030   1.3000
-  DC1'  DO2'   1.1030   1.3000
-   C3'   O2'   0.8620   1.3000
-  DC3'   O2'   0.8620   1.3000
-   C3'  DO2'   0.8620   1.3000
-  DC3'  DO2'   0.8620   1.3000
-   C2'   O3'   1.3000   0.1810
-  DC2'   O3'   1.3000   0.1810
-   C2'  DO3'   1.3000   0.1810
-  DC2'  DO3'   1.3000   0.1810
-   C2'   O3'   1.3000   0.1810
-  DC2'   O3'   1.3000   0.1810
-   C2'  DO3'   1.3000   0.1810
-  DC2'  DO3'   1.3000   0.1810
-   C4'   O3'   1.1030   0.1810
-  DC4'   O3'   1.1030   0.1810
-   C4'  DO3'   1.1030   0.1810
-  DC4'  DO3'   1.1030   0.1810
-   C3'   O4'   0.8620   1.5450
-  DC3'   O4'   0.8620   1.5450
-   C3'  DO4'   0.8620   1.5450
-  DC3'  DO4'   0.8620   1.5450
-   C4'   C1'   1.1030   1.1030
-  DC4'   C1'   1.1030   1.1030
-   C4'  DC1'   1.1030   1.1030
-  DC4'  DC1'   1.1030   1.1030
-   C4'   C1'   1.1030   1.1030
-  DC4'   C1'   1.1030   1.1030
-   C4'  DC1'   1.1030   1.1030
-  DC4'  DC1'   1.1030   1.1030
-   C4'   O5'   1.1030   0.1810
-  DC4'   O5'   1.1030   0.1810
-   C4'  DO5'   1.1030   0.1810
-  DC4'  DO5'   1.1030   0.1810
-   C5'     P   0.8620   2.0980
-  DC5'     P   0.8620   2.0980
-   C5'    DP   0.8620   2.0980
-  DC5'    DP   0.8620   2.0980
-   O5'   O1P   0.1810   1.0830
-  DO5'   O1P   0.1810   1.0830
-   O5'  DO1P   0.1810   1.0830
-  DO5'  DO1P   0.1810   1.0830
-   O5'   O1P   0.1810   1.0830
-  DO5'   O1P   0.1810   1.0830
-   O5'  DO1P   0.1810   1.0830
-  DO5'  DO1P   0.1810   1.0830
-   O2P   O1P   1.0830   1.0830
-  DO2P   O1P   1.0830   1.0830
-   O2P  DO1P   1.0830   1.0830
-  DO2P  DO1P   1.0830   1.0830
+  ; ai    aj  a      alpha_i  alpha_j
+    N1    C2  2.60   1.3090   1.7020
+   DN1    C2  2.60   1.3090   1.7020
+    N1   DC2  2.60   1.3090   1.7020
+   DN1   DC2  2.60   1.3090   1.7020
+    C2    N3  2.60   1.7020   1.2520
+   DC2    N3  2.60   1.7020   1.2520
+    C2   DN3  2.60   1.7020   1.2520
+   DC2   DN3  2.60   1.7020   1.2520
+    N3    C4  2.60   1.2520   0.8440
+   DN3    C4  2.60   1.2520   0.8440
+    N3   DC4  2.60   1.2520   0.8440
+   DN3   DC4  2.60   1.2520   0.8440
+    C4    C5  2.60   0.8440   1.4230
+   DC4    C5  2.60   0.8440   1.4230
+    C4   DC5  2.60   0.8440   1.4230
+   DC4   DC5  2.60   0.8440   1.4230
+    C5    C6  2.60   1.4230   0.9910
+   DC5    C6  2.60   1.4230   0.9910
+    C5   DC6  2.60   1.4230   0.9910
+   DC5   DC6  2.60   1.4230   0.9910
+    C6    N1  2.60   0.9910   1.3090
+   DC6    N1  2.60   0.9910   1.3090
+    C6   DN1  2.60   0.9910   1.3090
+   DC6   DN1  2.60   0.9910   1.3090
+    C2    O2  2.60   1.7020   2.0690
+   DC2    O2  2.60   1.7020   2.0690
+    C2   DO2  2.60   1.7020   2.0690
+   DC2   DO2  2.60   1.7020   2.0690
+    C4    O4  2.60   0.8440   2.0430
+   DC4    O4  2.60   0.8440   2.0430
+    C4   DO4  2.60   0.8440   2.0430
+   DC4   DO4  2.60   0.8440   2.0430
+    C5   C5M  2.60   1.4230   0.5350
+   DC5   C5M  2.60   1.4230   0.5350
+    C5  DC5M  2.60   1.4230   0.5350
+   DC5  DC5M  2.60   1.4230   0.5350
+    N1   C1'  2.60   1.3090   1.1030
+   DN1   C1'  2.60   1.3090   1.1030
+    N1  DC1'  2.60   1.3090   1.1030
+   DN1  DC1'  2.60   1.3090   1.1030
+   C1'   C2'  2.60   1.1030   1.3000
+  DC1'   C2'  2.60   1.1030   1.3000
+   C1'  DC2'  2.60   1.1030   1.3000
+  DC1'  DC2'  2.60   1.1030   1.3000
+   C2'   C3'  2.60   1.3000   0.8620
+  DC2'   C3'  2.60   1.3000   0.8620
+   C2'  DC3'  2.60   1.3000   0.8620
+  DC2'  DC3'  2.60   1.3000   0.8620
+   C3'   O3'  2.60   0.8620   0.1810
+  DC3'   O3'  2.60   0.8620   0.1810
+   C3'  DO3'  2.60   0.8620   0.1810
+  DC3'  DO3'  2.60   0.8620   0.1810
+   C3'   C4'  2.60   0.8620   1.1030
+  DC3'   C4'  2.60   0.8620   1.1030
+   C3'  DC4'  2.60   0.8620   1.1030
+  DC3'  DC4'  2.60   0.8620   1.1030
+   C4'   O4'  2.60   1.1030   1.5450
+  DC4'   O4'  2.60   1.1030   1.5450
+   C4'  DO4'  2.60   1.1030   1.5450
+  DC4'  DO4'  2.60   1.1030   1.5450
+   O4'   C1'  2.60   1.5450   1.1030
+  DO4'   C1'  2.60   1.5450   1.1030
+   O4'  DC1'  2.60   1.5450   1.1030
+  DO4'  DC1'  2.60   1.5450   1.1030
+   C4'   C5'  2.60   1.1030   0.8620
+  DC4'   C5'  2.60   1.1030   0.8620
+   C4'  DC5'  2.60   1.1030   0.8620
+  DC4'  DC5'  2.60   1.1030   0.8620
+   C5'   O5'  2.60   0.8620   0.1810
+  DC5'   O5'  2.60   0.8620   0.1810
+   C5'  DO5'  2.60   0.8620   0.1810
+  DC5'  DO5'  2.60   0.8620   0.1810
+   O5'     P  2.60   0.1810   2.0980
+  DO5'     P  2.60   0.1810   2.0980
+   O5'    DP  2.60   0.1810   2.0980
+  DO5'    DP  2.60   0.1810   2.0980
+     P   O1P  2.60   2.0980   1.0830
+    DP   O1P  2.60   2.0980   1.0830
+     P  DO1P  2.60   2.0980   1.0830
+    DP  DO1P  2.60   2.0980   1.0830
+     P   O2P  2.60   2.0980   1.0830
+    DP   O2P  2.60   2.0980   1.0830
+     P  DO2P  2.60   2.0980   1.0830
+    DP  DO2P  2.60   2.0980   1.0830
+   O3'    +P  2.60   0.1810   2.0980
+  DO3'    +P  2.60   0.1810   2.0980
+   O3'   +DP  2.60   0.1810   2.0980
+  DO3'   +DP  2.60   0.1810   2.0980
+   O3'  +O5'   2.60  0.1810   0.1810
+  DO3'  +O5'   2.60  0.1810   0.1810
+   O3' +DO5'   2.60  0.1810   0.1810
+  DO3' +DO5'   2.60  0.1810   0.1810
+   O3'  +O1P   2.60  0.1810   1.0830
+  DO3'  +O1P   2.60  0.1810   1.0830
+   O3' +DO1P   2.60  0.1810   1.0830
+  DO3' +DO1P   2.60  0.1810   1.0830
+   O3'  +O2P   2.60  0.1810   1.0830
+  DO3'  +O2P   2.60  0.1810   1.0830
+   O3' +DO2P   2.60  0.1810   1.0830
+  DO3' +DO2P   2.60  0.1810   1.0830
+    N1    N3  2.60   1.3090   1.2520
+   DN1    N3  2.60   1.3090   1.2520
+    N1   DN3  2.60   1.3090   1.2520
+   DN1   DN3  2.60   1.3090   1.2520
+    C6    C2  2.60   0.9910   1.7020
+   DC6    C2  2.60   0.9910   1.7020
+    C6   DC2  2.60   0.9910   1.7020
+   DC6   DC2  2.60   0.9910   1.7020
+    N1    O2  2.60   1.3090   2.0690
+   DN1    O2  2.60   1.3090   2.0690
+    N1   DO2  2.60   1.3090   2.0690
+   DN1   DO2  2.60   1.3090   2.0690
+   C1'    C2  2.60   1.1030   1.7020
+  DC1'    C2  2.60   1.1030   1.7020
+   C1'   DC2  2.60   1.1030   1.7020
+  DC1'   DC2  2.60   1.1030   1.7020
+    C2    C4  2.60   1.7020   0.8440
+   DC2    C4  2.60   1.7020   0.8440
+    C2   DC4  2.60   1.7020   0.8440
+   DC2   DC4  2.60   1.7020   0.8440
+    O2    N3  2.60   2.0690   1.2520
+   DO2    N3  2.60   2.0690   1.2520
+    O2   DN3  2.60   2.0690   1.2520
+   DO2   DN3  2.60   2.0690   1.2520
+    N3    C5  2.60   1.2520   1.4230
+   DN3    C5  2.60   1.2520   1.4230
+    N3   DC5  2.60   1.2520   1.4230
+   DN3   DC5  2.60   1.2520   1.4230
+    N3    O4  2.60   1.2520   2.0430
+   DN3    O4  2.60   1.2520   2.0430
+    N3   DO4  2.60   1.2520   2.0430
+   DN3   DO4  2.60   1.2520   2.0430
+    C4    C6  2.60   0.8440   0.9910
+   DC4    C6  2.60   0.8440   0.9910
+    C4   DC6  2.60   0.8440   0.9910
+   DC4   DC6  2.60   0.8440   0.9910
+    O4    C5  2.60   2.0430   1.4230
+   DO4    C5  2.60   2.0430   1.4230
+    O4   DC5  2.60   2.0430   1.4230
+   DO4   DC5  2.60   2.0430   1.4230
+    C4   C5M  2.60   0.8440   0.5350
+   DC4   C5M  2.60   0.8440   0.5350
+    C4  DC5M  2.60   0.8440   0.5350
+   DC4  DC5M  2.60   0.8440   0.5350
+    C5    N1  2.60   1.4230   1.3090
+   DC5    N1  2.60   1.4230   1.3090
+    C5   DN1  2.60   1.4230   1.3090
+   DC5   DN1  2.60   1.4230   1.3090
+   C5M    C6  2.60   0.5350   0.9910
+  DC5M    C6  2.60   0.5350   0.9910
+   C5M   DC6  2.60   0.5350   0.9910
+  DC5M   DC6  2.60   0.5350   0.9910
+    C6   C1'  2.60   0.9910   1.1030
+   DC6   C1'  2.60   0.9910   1.1030
+    C6  DC1'  2.60   0.9910   1.1030
+   DC6  DC1'  2.60   0.9910   1.1030
+    N1   C2'  2.60   1.3090   1.3000
+   DN1   C2'  2.60   1.3090   1.3000
+    N1  DC2'  2.60   1.3090   1.3000
+   DN1  DC2'  2.60   1.3090   1.3000
+    N1   O4'  2.60   1.3090   1.5450
+   DN1   O4'  2.60   1.3090   1.5450
+    N1  DO4'  2.60   1.3090   1.5450
+   DN1  DO4'  2.60   1.3090   1.5450
+   C1'   C3'  2.60   1.1030   0.8620
+  DC1'   C3'  2.60   1.1030   0.8620
+   C1'  DC3'  2.60   1.1030   0.8620
+  DC1'  DC3'  2.60   1.1030   0.8620
+   O4'   C2'  2.60   1.5450   1.3000
+  DO4'   C2'  2.60   1.5450   1.3000
+   O4'  DC2'  2.60   1.5450   1.3000
+  DO4'  DC2'  2.60   1.5450   1.3000
+   C2'   O3'  2.60   1.3000   0.1810
+  DC2'   O3'  2.60   1.3000   0.1810
+   C2'  DO3'  2.60   1.3000   0.1810
+  DC2'  DO3'  2.60   1.3000   0.1810
+   C2'   C4'  2.60   1.3000   1.1030
+  DC2'   C4'  2.60   1.3000   1.1030
+   C2'  DC4'  2.60   1.3000   1.1030
+  DC2'  DC4'  2.60   1.3000   1.1030
+   C4'   O3'  2.60   1.1030   0.1810
+  DC4'   O3'  2.60   1.1030   0.1810
+   C4'  DO3'  2.60   1.1030   0.1810
+  DC4'  DO3'  2.60   1.1030   0.1810
+   C3'    +P  2.60   0.8620   2.0980
+  DC3'    +P  2.60   0.8620   2.0980
+   C3'   +DP  2.60   0.8620   2.0980
+  DC3'   +DP  2.60   0.8620   2.0980
+   C3'   O4'  2.60   0.8620   1.5450
+  DC3'   O4'  2.60   0.8620   1.5450
+   C3'  DO4'  2.60   0.8620   1.5450
+  DC3'  DO4'  2.60   0.8620   1.5450
+   C3'   C5'  2.60   0.8620   0.8620
+  DC3'   C5'  2.60   0.8620   0.8620
+   C3'  DC5'  2.60   0.8620   0.8620
+  DC3'  DC5'  2.60   0.8620   0.8620
+   C4'   C1'  2.60   1.1030   1.1030
+  DC4'   C1'  2.60   1.1030   1.1030
+   C4'  DC1'  2.60   1.1030   1.1030
+  DC4'  DC1'  2.60   1.1030   1.1030
+   C5'   O4'  2.60   0.8620   1.5450
+  DC5'   O4'  2.60   0.8620   1.5450
+   C5'  DO4'  2.60   0.8620   1.5450
+  DC5'  DO4'  2.60   0.8620   1.5450
+   C4'   O5'  2.60   1.1030   0.1810
+  DC4'   O5'  2.60   1.1030   0.1810
+   C4'  DO5'  2.60   1.1030   0.1810
+  DC4'  DO5'  2.60   1.1030   0.1810
+   C5'     P  2.60   0.8620   2.0980
+  DC5'     P  2.60   0.8620   2.0980
+   C5'    DP  2.60   0.8620   2.0980
+  DC5'    DP  2.60   0.8620   2.0980
+   O5'   O1P  2.60   0.1810   1.0830
+  DO5'   O1P  2.60   0.1810   1.0830
+   O5'  DO1P  2.60   0.1810   1.0830
+  DO5'  DO1P  2.60   0.1810   1.0830
+   O5'   O2P  2.60   0.1810   1.0830
+  DO5'   O2P  2.60   0.1810   1.0830
+   O5'  DO2P  2.60   0.1810   1.0830
+  DO5'  DO2P  2.60   0.1810   1.0830
+   O2P   O1P  2.60   1.0830   1.0830
+  DO2P   O1P  2.60   1.0830   1.0830
+   O2P  DO1P  2.60   1.0830   1.0830
+  DO2P  DO1P  2.60   1.0830   1.0830
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d

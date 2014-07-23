@@ -73,6 +73,10 @@
   C     LPT4
   DC    LPT3
   DC    LPT4
+  C     DOT1
+  DC    DOT1
+  C     DOT2
+  DC    DOT2
   CA    LPT1
   CA    LPT2
   DCA   LPT1
@@ -182,8 +186,21 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
-  HT2   LPT3
-  HT2   LPT4
+  LPT1  LPT3
+  LPT1  LPT4
+  LPT2  LPT3
+  LPT2  LPT4
+  DOT1  DOT2
+  DOT1  OT2
+  DOT1  LPT3
+  DOT1  LPT4
+  OT1   LPT3
+  OT1   LPT4
+  DOT2  OT1
+  DOT2  LPT1
+  DOT2  LPT2
+  OT2   LPT1
+  OT2   LPT2
   C     LPT1
   C     LPT2
   DC    LPT1
@@ -296,6 +313,21 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  LPT1  LPT3
+  LPT1  LPT4
+  LPT2  LPT3
+  LPT2  LPT4
+  DOT1  DOT2
+  DOT1  OT2
+  DOT1  LPT3
+  DOT1  LPT4
+  OT1   LPT3
+  OT1   LPT4
+  DOT2  OT1
+  DOT2  LPT1
+  DOT2  LPT2
+  OT2   LPT1
+  OT2   LPT2
   C     LPT1
   C     LPT2
   DC    LPT1
@@ -304,6 +336,10 @@
   C     LPT4
   DC    LPT3
   DC    LPT4
+  C     DOT1
+  DC    DOT1
+  C     DOT2
+  DC    DOT2
   CA    LPT1
   CA    LPT2
   DCA   LPT1
@@ -400,15 +436,28 @@
   DOT1  LPT1
   DOT1  LPT2
   OT1   LPT1
-  OT1   LPT2
+  OT2   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
-  HT2   LPT3
-  HT2   LPT4
+  LPT1  LPT3
+  LPT1  LPT4
+  LPT2  LPT3
+  LPT2  LPT4
+  DOT1  DOT2
+  DOT1  OT2
+  DOT1  LPT3
+  DOT1  LPT4
+  OT1   LPT3
+  OT1   LPT4
+  DOT2  OT1
+  DOT2  LPT1
+  DOT2  LPT2
+  OT2   LPT1
+  OT2   LPT2
   C     LPT1
   C     LPT2
   DC    LPT1
@@ -521,13 +570,28 @@
   DOT1  LPT1
   DOT1  LPT2
   OT1   LPT1
-  OT2   LPT2
+  OT1   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  LPT1  LPT3
+  LPT1  LPT4
+  LPT2  LPT3
+  LPT2  LPT4
+  DOT1  DOT2
+  DOT1  OT2
+  DOT1  LPT3
+  DOT1  LPT4
+  OT1   LPT3
+  OT1   LPT4
+  DOT2  OT1
+  DOT2  LPT1
+  DOT2  LPT2
+  OT2   LPT1
+  OT2   LPT2
   C     LPT1
   C     LPT2
   DC    LPT1
@@ -536,6 +600,10 @@
   C     LPT4
   DC    LPT3
   DC    LPT4
+  C     DOT1
+  DC    DOT1
+  C     DOT2
+  DC    DOT2
   CA    LPT1
   CA    LPT2
   DCA   LPT1
@@ -668,6 +736,21 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  LPT1  LPT3
+  LPT1  LPT4
+  LPT2  LPT3
+  LPT2  LPT4
+  DOT1  DOT2
+  DOT1  OT2
+  DOT1  LPT3
+  DOT1  LPT4
+  OT1   LPT3
+  OT1   LPT4
+  DOT2  OT1
+  DOT2  LPT1
+  DOT2  LPT2
+  OT2   LPT1
+  OT2   LPT2
   C     LPT1
   C     LPT2
   DC    LPT1
@@ -676,6 +759,10 @@
   C     LPT4
   DC    LPT3
   DC    LPT4
+  C     DOT1
+  DC    DOT1
+  C     DOT2
+  DC    DOT2
   CA    LPT1
   CA    LPT2
   DCA   LPT1
@@ -764,15 +851,28 @@
   DOT1  LPT1
   DOT1  LPT2
   OT1   LPT1
-  OT1   LPT2
+  OT2   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
-  HT2   LPT3
-  HT2   LPT4
+  LPT1  LPT3
+  LPT1  LPT4
+  LPT2  LPT3
+  LPT2  LPT4
+  DOT1  DOT2
+  DOT1  OT2
+  DOT1  LPT3
+  DOT1  LPT4
+  OT1   LPT3
+  OT1   LPT4
+  DOT2  OT1
+  DOT2  LPT1
+  DOT2  LPT2
+  OT2   LPT1
+  OT2   LPT2
   C     LPT1
   C     LPT2
   DC    LPT1
