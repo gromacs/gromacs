@@ -1,14 +1,15 @@
 
 ; ions.itp with polarizable ions
 
+; Monovalent ions
 [ moleculetype ]
 ; molname   nrexcl
-NA      1
+LI      1
 
 [ atoms ]
 ; id    type    resnr   resname     at name         cg nr      charge
-   1    SODD    1       NA          SOD             1          1.68760
-   2    D       1       NA          DSOD            1         -0.68760
+   1    LID     1       LI          LI              1          1.31043
+   2    D       1       LI          DLI             2         -0.31043
 
 [ bonds ]
 ; i  j  func
@@ -16,29 +17,42 @@ NA      1
 
 [ moleculetype ]
 ; molname   nrexcl
-MG      1
-
-[ atoms ]
-; id    type    resnr   resname     at name         cg nr      charge
-   1    MAGD    1       MG          MAG             1          2.47524
-   2    D       1       MG          DMAG            1         -0.47524
-
-[ bonds ]
-; i  j  func
-  1  2  1
-
-[ moleculetype ]
-; molname   nrexcl
 K       1
 
 [ atoms ]
 ; id    type    resnr   resname     at name         cg nr      charge
-   1    POT     1       K           POT             1          2.58097
-   2    D       1       K           DPOT            1         -1.58097
+   1    POTD    1       K           POT             1          2.58097
+   2    D       1       K           DPOT            2         -1.58097
 
 [ bonds ]
 ; i  j  func
   1  2  1        
+
+[ moleculetype ]
+; molname   nrexcl
+NA      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    SODD    1       NA          SOD             1          1.68760
+   2    D       1       NA          DSOD            2         -0.68760
+
+[ bonds ]
+; i  j  func
+  1  2  1  
+
+[ moleculetype ]
+; molname   nrexcl
+RB      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    RBD     1       RB          RB              1          3.03116
+   2    D       1       RB          DRB             2         -2.03116
+
+[ bonds ]
+; i  j  func
+  1  2  1  
 
 [ moleculetype ]
 ; molname   nrexcl
@@ -46,12 +60,26 @@ CS     1
 
 [ atoms ]
 ; id    type    resnr   resname     at name         cg nr      charge
-   1    CS      1       CS          CS              1          3.66588
-   2    D       1       CS          DCS             1         -2.66588
+   1    CSD     1       CS          CS              1          3.66588
+   2    D       1       CS          DCS             2         -2.66588
 
 [ bonds ]
 ; i  j  func
   1  2  1        
+
+; Divalent ions
+[ moleculetype ]
+; molname   nrexcl
+MG      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    MAGD    1       MG          MAG             1          2.47524
+   2    D       1       MG          DMAG            2         -0.47524
+
+[ bonds ]
+; i  j  func
+  1  2  1
 
 [ moleculetype ]
 ; molname   nrexcl
@@ -59,16 +87,12 @@ CAL     1
 
 [ atoms ]
 ; id    type    resnr   resname     at name         cg nr      charge
-   1    CALD    1       CAL         CAL             1          2.00000    
+   1    CALD    1       CAL         CAL             1          3.21474    
+   2    D       1       CAL         DCAL            2         -1.21474
 
-[ moleculetype ]
-; molname   nrexcl
-CL      1
-
-[ atoms ]
-; id    type    resnr   resname     at name         cg nr      charge
-   1    CLA     1       CL          CLA             1          2.45720
-   2    D       1       CL          DCLA            1         -3.45720    
+[ bonds ]
+; i  j  func
+  1  2  1  
 
 [ moleculetype ]
 ; molname   nrexcl
@@ -77,8 +101,88 @@ ZN      1
 [ atoms ]
 ; id    type    resnr   resname     at name         cg nr      charge
    1    ZND     1       ZN          ZN              1          3.12463
-   2    D       1       ZN          DZN             1         -1.12463
+   2    D       1       ZN          DZN             2         -1.12463
 
 [ bonds ]
 ; i  j  func
   1  2  1   
+
+[ moleculetype ]
+; molname   nrexcl
+SR      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    SRD     1       SR          SR              1          3.61862
+   2    D       1       SR          DSR             2         -1.61862
+
+[ bonds ]
+; i  j  func
+  1  2  1
+
+[ moleculetype ]
+; molname   nrexcl
+BA      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    BAD     1       BA          BA              1          4.16744
+   2    D       1       BA          DBA             2         -2.16744
+
+[ bonds ]
+; i  j  func
+  1  2  1
+
+; Anions - halides
+[ moleculetype ]
+; molname   nrexcl
+F       1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    FAD     1       F           F               1          1.31913
+   2    D       1       F           DF              1         -2.31913
+
+[ bonds ]
+; i  j  func
+  1  2  1  
+
+[ moleculetype ]
+; molname   nrexcl
+CL      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    CLAD    1       CL          CLA             1          2.45720
+   2    D       1       CL          DCLA            2         -3.45720
+
+[ bonds ]
+; i  j  func
+  1  2  1  
+
+[ moleculetype ]
+; molname   nrexcl
+BR      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    BRAD    1       BR          BR              1          2.98070
+   2    D       1       BR          DBR             2         -3.98070
+
+[ bonds ]
+; i  j  func
+  1  2  1  
+
+[ moleculetype ]
+; molname   nrexcl
+I       1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    IAD     1       I           I               1          3.73305
+   2    D       1       I           DI              2         -4.73305
+
+[ bonds ]
+; i  j  func
+  1  2  1  
+ 

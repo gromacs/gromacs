@@ -1622,9 +1622,18 @@
 	 LP2A   OD2    CG    CB      3      110.000   0.0350
 	 LP2B   OD2    CG    CB      3      250.000   0.0350
 
+[ BA ]
+  [ atoms ]
+	   BA    BAD    4.16744   0
+	  DBA      D   -2.16744   1
+  [ bonds ]
+	   BA   DBA
+  [ thole_polarization ]
+  ; ai	  aj   a	 alpha_i	alpha_j
+
 [ BR ]
   [ atoms ]
-	   BR     BR    2.98070   0
+	   BR   BRAD    2.98070   0
 	  DBR      D   -3.98070   1
   [ bonds ]
 	   BR   DBR
@@ -1640,14 +1649,14 @@
 
 [ CLA ]
   [ atoms ]
-	  CLA    CLA    2.45720   0
+	  CLA   CLAD    2.45720   0
 	 DCLA      D   -3.45720   1
   [ bonds ]
 	  CLA  DCLA
 
 [ CS ]
   [ atoms ]
-	   CS     CS    3.66588   0
+	   CS    CSD    3.66588   0
 	  DCS      D   -2.66588   1
   [ bonds ]
 	   CS   DCS
@@ -2076,7 +2085,7 @@
 
 [ F ]
   [ atoms ]
-	    F      F    1.31913   0
+	    F    FAD    1.31913   0
 	   DF      D   -2.31913   1
   [ bonds ]
 	    F    DF
@@ -4114,7 +4123,7 @@
 
 [ I ]
   [ atoms ]
-	    I      I    3.73305   0
+	    I    IAD    3.73305   0
 	   DI      D   -4.73305   1
   [ bonds ]
 	    I    DI
@@ -4621,7 +4630,7 @@
 
 [ LI ]
   [ atoms ]
-	   LI     LI    1.31043   0
+	   LI    LID    1.31043   0
 	  DLI      D   -0.31043   1
   [ bonds ]
 	   LI   DLI
@@ -5512,7 +5521,7 @@
 
 [ POT ]
   [ atoms ]
-	  POT    POT    2.58097   0
+	  POT   POTD    2.58097   0
 	 DPOT      D   -1.58097   1
   [ bonds ]
 	  POT  DPOT
@@ -5758,7 +5767,7 @@
 
 [ RB ]
   [ atoms ]
-	   RB     RB    3.03116   0
+	   RB    RBD    3.03116   0
 	  DRB      D   -2.03116   1
   [ bonds ]
 	   RB   DRB
@@ -5979,6 +5988,15 @@
 	 DSOD      D   -0.68760   1
   [ bonds ]
 	  SOD  DSOD
+
+[ SR ]
+  [ atoms ]
+	   SR    SRD    3.61862   0
+	  DSR      D   -1.61862   1
+  [ bonds ]
+	   SR   DSR
+  [ thole_polarization ]
+  ; ai	  aj   a	 alpha_i	alpha_j
 
 [ SWM4 ]
   [ atoms ]
