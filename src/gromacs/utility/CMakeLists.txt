@@ -53,7 +53,7 @@ set(UTILITY_PUBLIC_HEADERS
     real.h
     smalloc.h
     stringutil.h
-    uniqueptr.h)
+    )
 gmx_install_headers(utility ${UTILITY_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
