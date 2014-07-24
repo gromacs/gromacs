@@ -757,8 +757,10 @@ void write_top(FILE *out, char *pr, char *molname,
  * special bonds have been made */
 static void add_drude_lp_ssbonds(t_params *psv, int ai, int aj)
 {
-    char ss_lpa[] = "4   -0.045   -0.09   -3.1";
-    char ss_lpb[] = "4   -0.045   -0.09    3.1";
+    /* Nasty, hard-coded values here but only because we can't store them
+     * in the .rtp file in any way, since they rely on inter-residue atoms */
+    char ss_lpa[] = "4   -0.135847248   -0.131015228   -2.467798394";
+    char ss_lpb[] = "4   -0.135847248   -0.131015228    2.467798394";
 
     /* add vsite parameters for both sulfurs - two LP added to each */
     add_vsite3_rtp_param(psv, ai+2, ai, ai-4, aj, ss_lpa);
