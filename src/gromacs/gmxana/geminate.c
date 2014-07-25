@@ -37,7 +37,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "geminate.h"

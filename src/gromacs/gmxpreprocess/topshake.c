@@ -42,7 +42,7 @@
 
 #include "gromacs/math/units.h"
 #include "readir.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "topshake.h"
 #include "toppush.h"
 #include "toputil.h"

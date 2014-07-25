@@ -38,11 +38,11 @@
 
 #include "config.h"
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/fileio/confio.h"
-#include "macros.h"
-#include "names.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "addconf.h"

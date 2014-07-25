@@ -39,12 +39,12 @@
 #include <math.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/topology/index.h"
-#include "typedefs.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gstat.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/fileio/tpxio.h"

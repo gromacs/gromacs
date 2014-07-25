@@ -39,7 +39,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "fflibutil.h"
 #include "hackblock.h"
 #include "xlate.h"

@@ -39,8 +39,8 @@
 #ifndef _adress_h_
 #define _adress_h_
 
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C"

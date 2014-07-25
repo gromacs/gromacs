@@ -37,14 +37,14 @@
 #include "config.h"
 
 #include <math.h>
-#include "types/simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "network.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/math/units.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/genborn.h"
 #include "genborn_allvsall.h"
 
 

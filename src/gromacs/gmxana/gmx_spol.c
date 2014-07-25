@@ -36,9 +36,9 @@
  */
 #include "config.h"
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gstat.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/fileio/tpxio.h"

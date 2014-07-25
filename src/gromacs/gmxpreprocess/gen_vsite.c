@@ -47,7 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "toputil.h"
 #include "gromacs/math/units.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/futil.h"
 #include "gpp_atomtype.h"
 #include "fflibutil.h"

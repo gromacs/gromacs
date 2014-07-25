@@ -592,8 +592,6 @@ include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
-# Required for now to make old code compile
-include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)

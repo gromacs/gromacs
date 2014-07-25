@@ -39,11 +39,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"

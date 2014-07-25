@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_PDB2TOP_H
 #define GMX_GMXPREPROCESS_PDB2TOP_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "grompp-impl.h"
 #include "gpp_atomtype.h"
 #include "toputil.h"

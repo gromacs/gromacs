@@ -40,13 +40,13 @@
 
 #include "config.h"
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "macros.h"
-#include "network.h"
-#include "copyrite.h"
-#include "gmx_omp_nthreads.h"
-#include "md_logging.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/md_logging.h"
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

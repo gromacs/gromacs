@@ -36,8 +36,8 @@
 #include "config.h"
 
 #include <string.h>
-#include "types/commrec.h"
-#include "domdec_network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/domdec_network.h"
 
 #include "gromacs/utility/gmxmpi.h"
 

@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
 #define GMX_GMXPREPROCESS_GEN_VSITE_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "grompp-impl.h"
 #include "gpp_atomtype.h"
 #include "hackblock.h"

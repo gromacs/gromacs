@@ -41,15 +41,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
-#include "pme.h"
-#include "network.h"
-#include "domdec.h"
-#include "sighandler.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/sighandler.h"
 
 #include "gromacs/utility/gmxmpi.h"
 

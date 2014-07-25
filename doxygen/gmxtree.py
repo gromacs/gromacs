@@ -734,7 +734,7 @@ class GromacsTree(object):
 
     def find_include_file(self, includedpath):
         """Find a file object corresponding to an include path."""
-        for testdir in ('src', 'src/gromacs/legacyheaders', 'src/external/thread_mpi/include',
+        for testdir in ('src', 'src/external/thread_mpi/include',
                 'src/external/tng_io/include'):
             testpath = os.path.join(testdir, includedpath)
             if testpath in self._files:

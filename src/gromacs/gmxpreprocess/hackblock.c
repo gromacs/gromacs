@@ -41,7 +41,7 @@
 #include "hackblock.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };

@@ -48,7 +48,7 @@
 #ifndef GMX_ESSENTIALDYNAMICS_EDSAM_H
 #define GMX_ESSENTIALDYNAMICS_EDSAM_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/filenm.h"
 
 #ifdef __cplusplus

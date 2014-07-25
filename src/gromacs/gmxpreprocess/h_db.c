@@ -47,7 +47,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "fflibutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 /* Number of control atoms for each 'add' type.
  *

@@ -43,10 +43,10 @@
 
 #include <cuda.h>
 
-#include "types/simple.h"
-#include "types/nbnxn_pairlist.h"
-#include "types/nb_verlet.h"
-#include "types/force_flags.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/nbnxn_pairlist.h"
+#include "gromacs/legacyheaders/types/nb_verlet.h"
+#include "gromacs/legacyheaders/types/force_flags.h"
 #include "../nbnxn_consts.h"
 
 #ifdef TMPI_ATOMICS
@@ -56,7 +56,7 @@
 #include "nbnxn_cuda_types.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
 #include "nbnxn_cuda.h"
-#include "nbnxn_cuda_data_mgmt.h"
+#include "gromacs/legacyheaders/nbnxn_cuda_data_mgmt.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/cstringutil.h"

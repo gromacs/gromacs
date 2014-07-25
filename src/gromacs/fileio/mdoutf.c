@@ -42,8 +42,8 @@
 #include "xtcio.h"
 #include "tngio.h"
 #include "trajectory_writing.h"
-#include "checkpoint.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"

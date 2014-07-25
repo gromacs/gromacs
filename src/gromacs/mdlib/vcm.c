@@ -37,13 +37,13 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "config.h"
 
-#include "macros.h"
-#include "vcm.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-#include "names.h"
-#include "txtdump.h"
-#include "network.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/pbcutil/pbc.h"
 
 t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir)

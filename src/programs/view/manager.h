@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/pbcutil/rmpbc.h"
 

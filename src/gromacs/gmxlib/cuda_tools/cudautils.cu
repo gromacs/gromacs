@@ -36,7 +36,7 @@
 #include <stdlib.h>
 
 #include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "cudautils.cuh"
 
 /*** Generic CUDA data operation wrappers ***/

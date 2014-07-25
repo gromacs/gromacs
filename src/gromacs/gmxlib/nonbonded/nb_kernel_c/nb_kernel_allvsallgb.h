@@ -37,8 +37,8 @@
 
 #include "config.h"
 
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "../nb_kernel.h"
 
 void

@@ -39,7 +39,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "topdirs.h"
 #include "toputil.h"
 #include "gpp_atomtype.h"

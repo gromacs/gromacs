@@ -40,14 +40,14 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/futil.h"
-#include "bondf.h"
-#include "copyrite.h"
-#include "disre.h"
-#include "main.h"
+#include "gromacs/legacyheaders/bondf.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/main.h"
 #include "gromacs/topology/mtop_util.h"
 
 #include "gromacs/math/vec.h"

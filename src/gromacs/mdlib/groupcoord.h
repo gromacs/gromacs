@@ -50,8 +50,8 @@
 #include "config.h"
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 
 
 /*! \brief Select local atoms of a group.
