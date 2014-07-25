@@ -68,20 +68,13 @@ See \ref page_unittesting for more details.
 \endif
 
 When compiling, the include search path is set to `src/`.  This means that
-source files include headers as
+files include headers as
 
     #include "gromacs/<module>/<file>.h"
 
 The following is also possible for intra-module headers:
 
     #include "<file>.h"
-
-Header files include other headers using
-
-    #include "../<othermodule>/<file>.h"
-
-because relative paths work best for installed headers.  For non-installed
-headers, the path relative to `src/` is sometimes also used.
 
 For historical reasons, there are directories `src/gromacs/gmxana/`,
 `src/gromacs/gmxlib/`, `src/gromacs/mdlib/`, and `src/gromacs/gmxpreprocess/`
