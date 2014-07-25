@@ -329,8 +329,6 @@ def main():
                       help='Source tree root directory')
     parser.add_option('-B', '--build-root',
                       help='Build tree root directory')
-    parser.add_option('--installed',
-                      help='Read list of installed files from given file')
     parser.add_option('-l', '--log',
                       help='Write issues into a given log file in addition to stderr')
     parser.add_option('--ignore',
@@ -343,12 +341,6 @@ def main():
                       help='Do not write status messages')
     options, args = parser.parse_args()
 
-    installedlist = []
-    if options.installed:
-        with open(options.installed, 'r') as outfile:
-            for line in outfile:
-                installedlist.append(line.strip())
-
     reporter = Reporter(options.log)
     if options.ignore:
         reporter.load_filters(options.ignore)
@@ -356,7 +348,7 @@ def main():
     if not options.quiet:
         sys.stderr.write('Scanning source tree...\n')
     tree = GromacsTree(options.source_root, options.build_root, reporter)
-    tree.set_installed_file_list(installedlist)
+    tree.load_installed_file_list()
     if not options.quiet:
         sys.stderr.write('Reading source files...\n')
     tree.scan_files()
