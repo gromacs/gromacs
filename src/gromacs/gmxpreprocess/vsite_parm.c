@@ -48,10 +48,10 @@
 #include "gromacs/math/vec.h"
 #include "toputil.h"
 #include "gromacs/math/units.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/cstringutil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 typedef struct {
     t_iatom a[4];

@@ -38,10 +38,10 @@
 #ifndef _sim_util_h
 #define _sim_util_h
 
-#include "typedefs.h"
-#include "mdebin.h"
-#include "update.h"
-#include "vcm.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/vcm.h"
 #include "../fileio/enxio.h"
 #include "../fileio/mdoutf.h"
 #include "../timing/wallcycle.h"

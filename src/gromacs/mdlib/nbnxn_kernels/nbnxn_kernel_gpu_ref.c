@@ -36,9 +36,9 @@
 
 #include <math.h>
 
-#include "types/simple.h"
-#include "typedefs.h"
-#include "force.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/force.h"
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

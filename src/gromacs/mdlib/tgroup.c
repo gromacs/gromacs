@@ -39,16 +39,16 @@
 
 
 #include <math.h>
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
-#include "tgroup.h"
+#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/math/vec.h"
-#include "network.h"
-#include "update.h"
-#include "rbin.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/rbin.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
 static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
 {

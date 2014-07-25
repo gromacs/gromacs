@@ -89,10 +89,6 @@ that do not follow the above rules.  The installed headers for these are in
 `src/gromacs/legacyheaders/`.  The aim is to gradually get rid of these
 directories and move code into proper modules.
 
-For similar historical reasons, the include path also includes
-`src/gromacs/legacyheaders/`.  It is preferred that new code does not depend on
-this.
-
 Documentation organization
 ==========================
 

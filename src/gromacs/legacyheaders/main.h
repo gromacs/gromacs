@@ -40,8 +40,8 @@
 
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
 #include "../fileio/filenm.h"
 
 #ifdef __cplusplus

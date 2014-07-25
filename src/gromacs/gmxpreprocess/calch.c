@@ -36,7 +36,7 @@
  */
 #include "config.h"
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "calch.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

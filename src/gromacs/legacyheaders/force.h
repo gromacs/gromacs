@@ -39,12 +39,12 @@
 #define _force_h
 
 
-#include "typedefs.h"
-#include "types/force_flags.h"
-#include "network.h"
-#include "tgroup.h"
-#include "vsite.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/genborn.h"
 
 #include "../timing/wallcycle.h"
 

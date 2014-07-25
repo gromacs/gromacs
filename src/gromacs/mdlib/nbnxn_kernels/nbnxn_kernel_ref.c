@@ -37,9 +37,9 @@
 #include <math.h>
 #include <assert.h>
 
-#include "typedefs.h"
-#include "force.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"

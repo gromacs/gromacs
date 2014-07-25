@@ -38,9 +38,9 @@
 #ifndef _QMMM_h
 #define _QMMM_h
 
-#include "typedefs.h"
-#include "network.h"
-#include "tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
 
 #ifdef __cplusplus
 extern "C" {

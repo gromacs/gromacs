@@ -41,7 +41,7 @@
 #include <algorithm>
 
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "x11.h"
 #include "popup.h"

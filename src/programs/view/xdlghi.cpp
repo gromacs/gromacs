@@ -41,7 +41,7 @@
 
 #include <algorithm>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "xutil.h"
 #include "xdlghi.h"
 #include "fgrid.h"

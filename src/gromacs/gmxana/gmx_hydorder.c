@@ -38,8 +38,8 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gstat.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"

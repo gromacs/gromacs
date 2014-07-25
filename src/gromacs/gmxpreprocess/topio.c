@@ -47,20 +47,20 @@
 #include <sys/types.h>
 
 #include "gromacs/utility/futil.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/units.h"
-#include "macros.h"
-#include "names.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
-#include "warninp.h"
+#include "gromacs/legacyheaders/warninp.h"
 #include "vsite_parm.h"
 
 #include "grompp-impl.h"
@@ -72,7 +72,7 @@
 #include "topshake.h"
 #include "gmxcpp.h"
 #include "gpp_bond_atomtype.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/math/utilities.h"
 
 #define OPENDIR     '[' /* starting sign for directive */

@@ -42,15 +42,15 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/futil.h"
 #include "xdrf.h"
 #include "filenm.h"
 #include "pdbio.h"
 #include "tpxio.h"
 #include "trxio.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gmxfio.h"
 

@@ -39,8 +39,8 @@
 #include <string.h>
 
 #include "gromacs/utility/cstringutil.h"
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gstat.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/futil.h"
@@ -52,7 +52,7 @@
 #include "binsearch.h"
 #include "powerspect.h"
 #include "gmx_ana.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"

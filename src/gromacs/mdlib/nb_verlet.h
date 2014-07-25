@@ -37,7 +37,7 @@
 #define NB_VERLET_H
 
 #include "nbnxn_pairlist.h"
-#include "types/nbnxn_cuda_types_ext.h"
+#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 
 #ifdef __cplusplus
 extern "C" {

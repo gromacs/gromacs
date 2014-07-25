@@ -38,14 +38,14 @@
 
 #include <stdlib.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/topology/index.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"

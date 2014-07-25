@@ -43,9 +43,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
@@ -59,10 +59,10 @@
 #include "ter_db.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "genhydro.h"
-#include "readinp.h"
+#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/topology/index.h"
 #include "fflibutil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/strdb.h"

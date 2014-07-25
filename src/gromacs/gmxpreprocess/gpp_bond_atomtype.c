@@ -36,7 +36,7 @@
  */
 #include "config.h"
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gpp_bond_atomtype.h"
 
 #include "gromacs/topology/symtab.h"
