@@ -35,9 +35,9 @@
 
 function usage() {
     echo "usage: reformat_all.sh [-f|--force]"
-    echo "           [--filter=(uncrustify|copyright)] [--pattern=<pattern>]"
-    echo "           [<action>]"
-    echo "<action>: (list-files|uncrustify*|copyright) (*=default)"
+    echo "           [--filter=(uncrustify|copyright|includesort)]"
+    echo "           [--pattern=<pattern>] [<action>] [-B=<build dir>]"
+    echo "<action>: (list-files|uncrustify*|copyright|includesort) (*=default)"
 }
 
 filter=default
@@ -46,12 +46,14 @@ patterns=()
 action=uncrustify
 for arg in "$@" ; do
     if [[ "$arg" == "list-files" || "$arg" == "uncrustify" ||
-          "$arg" == "copyright" ]] ; then
+          "$arg" == "copyright" || "$arg" == "includesort" ]] ; then
         action=$arg
     elif [[ "$arg" == --filter=* ]] ; then
         filter=${arg#--filter=}
     elif [[ "$arg" == --pattern=* ]] ; then
         patterns[${#patterns[@]}]=${arg#--pattern=}
+    elif [[ "$arg" == -B=* ]] ; then
+        builddir=${arg#-B=}
     elif [[ "$arg" == "-f" || "$arg" == "--force" ]] ; then
         force=1
     else
@@ -90,6 +92,13 @@ case "$action" in
     copyright)
         command="xargs admin/copyright.py --check"
         ;;
+    includesort)
+        if [ -z "${builddir}" ] ; then
+            echo "Build directory must be set with -B for includesort."
+            exit 2
+        fi
+        command="docs/doxygen/includesorter.py -S . -B ${builddir} -F -"
+        ;;
     *)
         echo "Unknown action: $action"
         exit 2
@@ -100,11 +109,14 @@ if [[ "$filter" == "default" ]] ; then
 fi
 
 case "$filter" in
+    includesort)
+        filter_re="(uncrustify|includesort)"
+        ;;
     uncrustify)
         filter_re="(uncrustify|uncrustify_only)"
         ;;
     copyright)
-        filter_re="(uncrustify|copyright)"
+        filter_re="(uncrustify|copyright|includesort)"
         ;;
     *)
         echo "Unknown filter mode: $filter"
