@@ -35,12 +35,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "ns.h"
-#include "genborn.h"
-#include "qmmmrec.h"
+#include "gromacs/legacyheaders/types/ns.h"
+#include "gromacs/legacyheaders/types/genborn.h"
+#include "gromacs/legacyheaders/types/qmmmrec.h"
 #include "../../topology/idef.h"
-#include "interaction_const.h"
-#include "hw_info.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 
 #ifdef __cplusplus
 extern "C" {

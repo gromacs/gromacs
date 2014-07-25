@@ -36,8 +36,8 @@
  */
 #include "config.h"
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/commandline/pargs.h"
 
 /*

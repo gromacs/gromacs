@@ -60,7 +60,7 @@
 #ifndef GMX_IMD_IMD_H
 #define GMX_IMD_IMD_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "../fileio/filenm.h"
 #include "../timing/wallcycle.h"
 

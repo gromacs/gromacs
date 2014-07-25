@@ -39,7 +39,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "constr.h"
+#include "gromacs/legacyheaders/constr.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"

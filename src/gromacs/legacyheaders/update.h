@@ -38,9 +38,9 @@
 #ifndef _update_h
 #define _update_h
 
-#include "typedefs.h"
-#include "tgroup.h"
-#include "network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/network.h"
 
 #include "../timing/wallcycle.h"
 

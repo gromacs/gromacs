@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_RESALL_H
 #define GMX_GMXPREPROCESS_RESALL_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "hackblock.h"
 #include "gpp_atomtype.h"
 #include "grompp-impl.h"

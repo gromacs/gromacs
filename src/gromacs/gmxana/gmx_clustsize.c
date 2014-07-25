@@ -38,8 +38,8 @@
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/commandline/pargs.h"
@@ -49,10 +49,10 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/smalloc.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/math/units.h"
-#include "coulomb.h"
-#include "pme.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/pme.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/topology/mtop_util.h"

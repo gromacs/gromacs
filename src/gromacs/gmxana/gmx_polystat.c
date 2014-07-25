@@ -39,15 +39,15 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

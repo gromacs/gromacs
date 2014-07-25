@@ -39,8 +39,8 @@
 
 #include <math.h>
 
-#include "macros.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gmx_ana.h"
 #include "sfactor.h"
 

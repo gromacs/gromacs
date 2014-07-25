@@ -39,10 +39,10 @@
 #include <string.h>
 
 #include "gromacs/utility/smalloc.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "warninp.h"
+#include "gromacs/legacyheaders/warninp.h"
 
 typedef struct warninp {
     gmx_bool bAllowWarnings;

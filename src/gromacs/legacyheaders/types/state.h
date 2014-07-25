@@ -38,7 +38,7 @@
 #define _state_h_
 
 
-#include "simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "../../swap/enums.h"
 
 #ifdef __cplusplus

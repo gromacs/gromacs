@@ -36,8 +36,8 @@
  */
 #include "config.h"
 
-#include "typedefs.h"
-#include "names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/names.h"
 
 /* note: these arrays should correspond to enums in include/types/enums.h */
 

@@ -39,10 +39,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "readir.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/trnio.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/txtdump.h"
 
 #include "gromacs/utility/fatalerror.h"
 

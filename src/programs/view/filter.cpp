@@ -42,7 +42,7 @@
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/index.h"
 #include "xdlghi.h"
 #include "dialogs.h"

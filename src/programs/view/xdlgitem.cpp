@@ -43,7 +43,7 @@
 
 #include <algorithm>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "Xstuff.h"
 #include "xdlgitem.h"
 

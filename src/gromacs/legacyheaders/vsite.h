@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "../pbcutil/ishift.h"
 
 #ifdef __cplusplus

@@ -41,20 +41,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "force.h"
+#include "gromacs/legacyheaders/force.h"
 #include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "network.h"
-#include "ns.h"
-#include "nrnb.h"
-#include "bondf.h"
-#include "txtdump.h"
-#include "qmmm.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/bondf.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/utility/fatalerror.h"
 
 /* ORCA interface routines */

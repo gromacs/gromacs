@@ -38,19 +38,19 @@
 
 #include <math.h>
 #include "gromacs/math/utilities.h"
-#include "typedefs.h"
-#include "names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
-#include "network.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/math/units.h"
-#include "force.h"
+#include "gromacs/legacyheaders/force.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "macros.h"
-#include "tables.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/tables.h"
 
 /* All the possible (implemented) table functions */
 enum {
