@@ -1117,13 +1117,34 @@ class DocumentationSet(object):
                 member.add_parent_compound(compound)
                 compound.add_member(member)
 
-    def load_file_details(self):
-        """Load detailed XML files for all files and possible parents of files."""
+    def load_file_details(self, filelist=None):
+        """Load detailed XML files for all files and possible parents of files.
+
+        If filelist is set, it should be a list of file paths, and details will
+        be loaded only for files in those paths.  The path format should match
+        what Doxygen writes into the files (with Gromacs setup, it seems to be
+        absolute paths)."""
         for compound in self._compounds.itervalues():
-            if isinstance(compound, (File, Directory, Group)):
+            if isinstance(compound, (Directory, Group)):
                 compound.load_details()
+            elif not filelist and isinstance(compound, File):
+                compound.load_details()
+                self._files[compound.get_path()] = compound
+        if filelist:
+            # We can't access the full path from the File object before the
+            # details are loaded, because Doxygen does not write that into
+            # index.xml.  But we can use the Directory objects (which were
+            # loaded above) to get the path.
+            for compound in self._compounds.itervalues():
                 if isinstance(compound, File):
-                    self._files[compound.get_path()] = compound
+                    dirobj = compound.get_directory()
+                    if not dirobj:
+                        continue
+                    abspath = compound.get_directory().get_path()
+                    abspath = os.path.join(abspath, compound.get_name())
+                    if abspath in filelist:
+                        compound.load_details()
+                        self._files[compound.get_path()] = compound
 
     def load_details(self):
         """Load detailed XML files for each compound."""
