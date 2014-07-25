@@ -50,7 +50,7 @@ MACRO(GMX_TEST_FLOAT_FORMAT FP_IEEE754 FP_BIG_ENDIAN_BYTE FP_BIG_ENDIAN_WORD)
         MESSAGE(STATUS "Checking floating point format")
 
         TRY_COMPILE(HAVE_${FP_IEEE754} "${CMAKE_BINARY_DIR}"    
-                    "${CMAKE_SOURCE_DIR}/cmake/TestFloatFormat.c"
+                    "${CMAKE_SOURCE_DIR}/cmake/TestFloatFormat.cpp"
                     COPY_FILE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestFloatFormat.bin")  
 
         if(HAVE_${FP_IEEE754})
