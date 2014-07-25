@@ -69,8 +69,13 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
+#else
+            static SimpleInputData singleton_arraydata;
+            return singleton_arraydata.data_;
+#endif
         }
 
         SimpleInputData() : data_(1, false)

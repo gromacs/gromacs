@@ -131,7 +131,9 @@ set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT
 enable_language(C)
 enable_language(CXX)
 
+set(CPACK_PACKAGE_NAME "gromacs")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
 set(CPACK_PACKAGE_VENDOR "gromacs.org")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance molecular simulation")
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
@@ -449,6 +451,9 @@ include(gmxManageSharedLibraries)
 # tests. This exports LIBXML2_FOUND, which we should not use because
 # it does not tell us that linking will succeed. Instead, we test that
 # next.
+if(DEFINED LIBXML2_LIBRARIES)
+  set(LibXml2_FIND_QUIETLY TRUE)
+endif()
 find_package(LibXml2)
 include(gmxTestLibXml2)
 gmx_test_libxml2(HAVE_LIBXML2)
