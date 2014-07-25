@@ -44,10 +44,10 @@
 #include <unistd.h> // for usleep()
 #endif
 
-#include "typedefs.h"
-#include "macros.h"
-#include "names.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/utilities.h"

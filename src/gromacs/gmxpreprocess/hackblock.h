@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_HACKBLOCK_H
 #define GMX_GMXPREPROCESS_HACKBLOCK_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "grompp-impl.h"
 #include "gpp_atomtype.h"

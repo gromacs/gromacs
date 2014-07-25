@@ -65,17 +65,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-#include "coulomb.h"
+#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/utility/fatalerror.h"
-#include "pme.h"
-#include "network.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/math/units.h"
-#include "nrnb.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/fft/parallel_3dfft.h"

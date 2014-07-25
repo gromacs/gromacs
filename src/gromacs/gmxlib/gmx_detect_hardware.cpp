@@ -47,16 +47,16 @@
 #include <unistd.h>
 #endif
 
-#include "types/enums.h"
-#include "types/hw_info.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "md_logging.h"
-#include "gmx_cpuid.h"
-#include "gpu_utils.h"
-#include "copyrite.h"
-#include "gmx_detect_hardware.h"
-#include "md_logging.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/gmx_cpuid.h"
+#include "gromacs/legacyheaders/gpu_utils.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_detect_hardware.h"
+#include "gromacs/legacyheaders/md_logging.h"
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"

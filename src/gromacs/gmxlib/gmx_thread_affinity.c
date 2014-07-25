@@ -45,14 +45,14 @@
 
 #include "thread_mpi/threads.h"
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "types/hw_info.h"
-#include "copyrite.h"
-#include "gmx_cpuid.h"
-#include "gmx_omp_nthreads.h"
-#include "md_logging.h"
-#include "gmx_thread_affinity.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_cpuid.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/gmx_thread_affinity.h"
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"

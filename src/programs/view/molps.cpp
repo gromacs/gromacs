@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/fileio/writeps.h"
 #include "gromacs/utility/smalloc.h"

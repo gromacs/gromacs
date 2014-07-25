@@ -39,8 +39,8 @@
 #include <string.h>
 #include <assert.h>
 
-#include "types/commrec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "nbnxn_consts.h"
@@ -51,9 +51,9 @@
 #endif
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
-#include "gmx_omp_nthreads.h"
-#include "nrnb.h"
-#include "ns.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"

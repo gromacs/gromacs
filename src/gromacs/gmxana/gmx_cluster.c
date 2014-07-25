@@ -40,15 +40,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/math/vec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/random/random.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -58,7 +58,7 @@
 #include "gromacs/fileio/matio.h"
 #include "cmat.h"
 #include "gromacs/fileio/trnio.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"

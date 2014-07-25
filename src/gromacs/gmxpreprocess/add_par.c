@@ -38,10 +38,10 @@
 #include "config.h"
 
 #include <string.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "grompp-impl.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "toputil.h"
 #include "hackblock.h"
 #include "gromacs/utility/cstringutil.h"

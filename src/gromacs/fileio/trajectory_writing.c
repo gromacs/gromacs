@@ -34,11 +34,11 @@
  */
 #include "config.h"
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "sim_util.h"
-#include "mdrun.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/mdrun.h"
 #include "confio.h"
 #include "trajectory_writing.h"
 #include "mdoutf.h"

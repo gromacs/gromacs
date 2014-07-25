@@ -37,7 +37,7 @@
 #ifndef GMX_GMXPREPROCESS_ADDCONF_H
 #define GMX_GMXPREPROCESS_ADDCONF_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

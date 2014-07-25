@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_ADD_PAR_H
 #define GMX_GMXPREPROCESS_ADD_PAR_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "pdb2top.h"
 
 #ifdef __cplusplus

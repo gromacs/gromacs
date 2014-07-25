@@ -37,10 +37,10 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "config.h"
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "princ.h"
 
 #include "gromacs/linearalgebra/nrjac.h"

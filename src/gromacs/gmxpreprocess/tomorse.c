@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "grompp-impl.h"
 #include "gromacs/utility/futil.h"

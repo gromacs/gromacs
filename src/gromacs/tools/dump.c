@@ -41,11 +41,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "macros.h"
-#include "txtdump.h"
-#include "names.h"
-#include "txtdump.h"
-#include "checkpoint.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/enxio.h"

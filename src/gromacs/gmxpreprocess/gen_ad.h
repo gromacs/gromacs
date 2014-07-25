@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_GEN_AD_H
 #define GMX_GMXPREPROCESS_GEN_AD_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "toputil.h"
 #include "gpp_nextnb.h"
 #include "resall.h"

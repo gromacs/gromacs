@@ -40,11 +40,11 @@
 
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/confio.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/futil.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "addconf.h"
 #include "read-conformation.h"

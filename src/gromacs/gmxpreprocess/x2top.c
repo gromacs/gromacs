@@ -40,16 +40,16 @@
 
 #include <assert.h>
 
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/utilities.h"
-#include "macros.h"
-#include "bondf.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/units.h"
-#include "txtdump.h"
-#include "readinp.h"
-#include "names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/names.h"
 #include "toppush.h"
 #include "pdb2top.h"
 #include "gen_ad.h"

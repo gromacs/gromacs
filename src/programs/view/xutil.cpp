@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "xutil.h"
 #include "Xstuff.h"
 

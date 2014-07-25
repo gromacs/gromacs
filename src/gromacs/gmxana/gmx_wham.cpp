@@ -51,15 +51,15 @@
 #include <sstream>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/random/random.h"
 #include "gmx_ana.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/xvgr.h"
 

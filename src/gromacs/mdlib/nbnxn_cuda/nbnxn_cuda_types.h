@@ -46,9 +46,9 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
-#include "types/interaction_const.h"
-#include "types/nbnxn_pairlist.h"
-#include "types/nbnxn_cuda_types_ext.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/nbnxn_pairlist.h"
+#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
 
 /* CUDA versions from 5.0 above support texture objects. */

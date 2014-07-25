@@ -40,9 +40,9 @@
 #include <math.h>
 #include <string.h>
 #include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "ebin.h"
+#include "gromacs/legacyheaders/ebin.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
