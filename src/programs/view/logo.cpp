@@ -38,10 +38,10 @@
 
 #include <stdlib.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "xutil.h"
 #include "Xstuff.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "logo.h"
 
 #include "gromacs/utility/real.h"

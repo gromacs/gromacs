@@ -39,7 +39,7 @@
 
 #include "config.h"
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 float
 calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float *dvda,

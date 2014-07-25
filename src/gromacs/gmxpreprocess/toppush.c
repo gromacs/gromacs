@@ -41,13 +41,13 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "macros.h"
-#include "names.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "toputil.h"
 #include "toppush.h"
 #include "topdirs.h"
 #include "readir.h"
-#include "warninp.h"
+#include "gromacs/legacyheaders/warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
 

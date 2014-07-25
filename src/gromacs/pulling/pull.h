@@ -50,7 +50,7 @@
 #ifndef GMX_PULLING_PULL_H
 #define GMX_PULLING_PULL_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "../fileio/filenm.h"
 
 #ifdef __cplusplus

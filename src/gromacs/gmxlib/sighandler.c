@@ -38,9 +38,9 @@
 
 #include <stdlib.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "sighandler.h"
+#include "gromacs/legacyheaders/sighandler.h"
 
 const char *gmx_stop_cond_name[] =
 {

@@ -42,7 +42,7 @@
 #include <string.h>
 
 #include "gromacs/utility/futil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"

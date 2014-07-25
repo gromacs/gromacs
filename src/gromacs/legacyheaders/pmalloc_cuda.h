@@ -39,7 +39,7 @@
 #include "config.h"
 
 #include <stdlib.h>
-#include "types/simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;

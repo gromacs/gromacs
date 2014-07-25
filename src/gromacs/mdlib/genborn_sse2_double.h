@@ -39,7 +39,7 @@
 
 #include "config.h"
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 int
 calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,

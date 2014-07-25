@@ -45,7 +45,7 @@
 #include <unistd.h>
 #endif
 
-#include "network.h"
+#include "gromacs/legacyheaders/network.h"
 #include "fflibutil.h"
 
 #include "gromacs/utility/cstringutil.h"

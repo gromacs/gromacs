@@ -39,9 +39,9 @@
 #include <string.h>
 #include <float.h>
 #include <math.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "mdebin.h"
+#include "gromacs/legacyheaders/mdebin.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"

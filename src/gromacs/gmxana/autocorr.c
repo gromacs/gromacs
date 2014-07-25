@@ -40,13 +40,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "macros.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
 #include "gstat.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
 #include "correl.h"

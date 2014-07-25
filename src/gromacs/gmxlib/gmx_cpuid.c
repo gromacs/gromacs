@@ -58,7 +58,7 @@
 #include <unistd.h>
 #endif
 
-#include "gmx_cpuid.h"
+#include "gromacs/legacyheaders/gmx_cpuid.h"
 
 
 

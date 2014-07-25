@@ -38,7 +38,7 @@
 #ifndef _viewit_h
 #define _viewit_h
 
-#include "types/oenv.h"
+#include "gromacs/legacyheaders/types/oenv.h"
 #include "../fileio/filenm.h"
 
 #ifdef __cplusplus

@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_TOPIO_H
 #define GMX_GMXPREPROCESS_TOPIO_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "readir.h"
 #include "grompp-impl.h"
 #include "gpp_atomtype.h"

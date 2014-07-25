@@ -40,8 +40,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "gromacs/math/vec.h"

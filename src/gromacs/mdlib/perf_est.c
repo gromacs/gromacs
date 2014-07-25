@@ -42,8 +42,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "perf_est.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/perf_est.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "nbnxn_search.h"
 #include "nbnxn_consts.h"
 

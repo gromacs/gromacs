@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
@@ -50,7 +50,7 @@
 #include "toputil.h"
 #include "topio.h"
 #include "gpp_nextnb.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "pgutil.h"
 #include "resall.h"

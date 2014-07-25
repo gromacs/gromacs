@@ -39,7 +39,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
@@ -49,7 +49,7 @@
 #include "ter_db.h"
 #include "resall.h"
 #include "pgutil.h"
-#include "network.h"
+#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"

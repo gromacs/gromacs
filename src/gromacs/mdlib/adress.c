@@ -37,8 +37,8 @@
 #include "adress.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 
 #include "gromacs/utility/fatalerror.h"

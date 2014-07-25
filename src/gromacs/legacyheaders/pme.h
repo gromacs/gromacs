@@ -39,7 +39,7 @@
 #define _pme_h
 
 #include <stdio.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "../math/gmxcomplex.h"
 #include "../timing/wallcycle.h"
 #include "../timing/walltime_accounting.h"

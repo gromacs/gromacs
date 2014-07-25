@@ -41,7 +41,7 @@
 
 #include "topdirs.h"
 #include "toputil.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gpp_atomtype.h"
 
 #include "gromacs/topology/symtab.h"

@@ -40,19 +40,19 @@
 #include <sys/time.h>
 #endif
 
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/utility/cstringutil.h"
-#include "readinp.h"
-#include "calcgrid.h"
-#include "checkpoint.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gmx_ana.h"
-#include "names.h"
-#include "perf_est.h"
-#include "inputrec.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/perf_est.h"
+#include "gromacs/legacyheaders/inputrec.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/math/utilities.h"
 

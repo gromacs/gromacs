@@ -39,10 +39,10 @@
 #include <math.h>
 
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"

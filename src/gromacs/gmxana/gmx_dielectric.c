@@ -40,13 +40,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "copyrite.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gstat.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "gromacs/utility/fatalerror.h"

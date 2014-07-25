@@ -39,7 +39,7 @@
 #define _checkpoint_h
 
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "../fileio/gmxfio.h"
 #include "../fileio/filenm.h"
 

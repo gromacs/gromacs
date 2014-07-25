@@ -38,7 +38,7 @@
 #include <stdlib.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
@@ -47,7 +47,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gmx_ana.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 
 static const double bohr = 0.529177249;  /* conversion factor to compensate for VMD plugin conversion... */
 

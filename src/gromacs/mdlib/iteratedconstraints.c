@@ -37,12 +37,12 @@
 #include "config.h"
 
 #include <math.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "mdrun.h"
-#include "md_support.h"
-#include "md_logging.h"
-#include "types/iteratedconstraints.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/md_support.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/types/iteratedconstraints.h"
 
 #ifdef GMX_DOUBLE
 #define CONVERGEITER  0.000000001

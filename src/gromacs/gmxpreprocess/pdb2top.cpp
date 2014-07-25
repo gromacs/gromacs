@@ -41,7 +41,7 @@
 #include <ctype.h>
 
 #include "gromacs/math/vec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/futil.h"
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
@@ -59,7 +59,7 @@
 #include "add_par.h"
 #include "toputil.h"
 #include "fflibutil.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/topology/residuetypes.h"

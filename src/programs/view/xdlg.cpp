@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gromacs/utility/cstringutil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "Xstuff.h"
 #include "xutil.h"

@@ -41,14 +41,14 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "readinp.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gstat.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"

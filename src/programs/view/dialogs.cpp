@@ -41,12 +41,12 @@
 #include <unistd.h> // for fork()
 #endif
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "x11.h"
 #include "xdlghi.h"
 #include "xmb.h"
 #include "dialogs.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "nmol.h"
 #include "manager.h"
 
