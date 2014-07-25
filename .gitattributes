@@ -8,9 +8,9 @@ CMakeLists.txt  filter=copyright
 *.cmake         filter=copyright
 *.cmakein       filter=copyright
 *.py            filter=copyright
-*.l             filter=copyright
-*.y             filter=copyright
-*.pre           filter=copyright
+*.l             filter=includesort
+*.y             filter=includesort
+*.pre           filter=includesort
 *.tex           filter=copyright
 *.bm            filter=copyright
 # Exceptions: extra files to include
@@ -41,3 +41,4 @@ src/gromacs/selection/parser.h          !filter
 src/gromacs/selection/scanner.cpp       !filter
 src/gromacs/selection/scanner_flex.h    !filter
 nb_kernel_Elec*                         filter=copyright
+nb_kernel*pre                           filter=copyright
