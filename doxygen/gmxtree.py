@@ -50,6 +50,7 @@ rules that come from GROMACS-specific knowledge.  In the future, more such
 customizations will be added.
 """
 
+import collections
 import os
 import os.path
 import re
@@ -96,14 +97,43 @@ class IncludedFile(object):
     def is_relative(self):
         return self._is_relative
 
+    def get_included_path(self):
+        return self._included_path
+
     def get_including_file(self):
         return self._including_file
 
     def get_file(self):
         return self._included_file
 
+    def get_line_number(self):
+        return self._line_number
+
     def get_reporter_location(self):
         return reporter.Location(self._including_file.get_abspath(), self._line_number)
+
+class IncludeBlock(object):
+
+    """Block of consequent #include directives in a file."""
+
+    def __init__(self, first_included_file):
+        self._first_line = first_included_file.get_line_number()
+        self._last_line = self._first_line
+        self._files = []
+        self.add_file(first_included_file)
+
+    def add_file(self, included_file):
+        self._files.append(included_file)
+        self._last_line = included_file.get_line_number()
+
+    def get_includes(self):
+        return self._files
+
+    def get_first_line(self):
+        return self._first_line
+
+    def get_last_line(self):
+        return self._last_line
 
 class File(object):
 
@@ -121,6 +151,9 @@ class File(object):
         self._apitype = DocType.none
         self._modules = set()
         self._includes = []
+        self._include_blocks = []
+        self._main_header = None
+        self._lines = None
         directory.add_file(self)
 
     def set_doc_xml(self, rawdoc, sourcetree):
@@ -140,6 +173,11 @@ class File(object):
         """Mark the file installed."""
         self._installed = True
 
+    def set_main_header(self, included_file):
+        """Set the main header file for a source file."""
+        assert self.is_source_file()
+        self._main_header = included_file
+
     def _process_include(self, lineno, is_system, includedpath, sourcetree):
         """Process #include directive during scan()."""
         is_relative = False
@@ -153,21 +191,36 @@ class File(object):
                 fileobj = sourcetree.get_file(fullpath)
             else:
                 fileobj = sourcetree.find_include_file(includedpath)
-        self._includes.append(IncludedFile(self, lineno, fileobj, includedpath,
-                is_relative, is_system))
+        included_file = IncludedFile(self, lineno, fileobj, includedpath,
+            is_relative, is_system)
+        self._includes.append(included_file)
+        return included_file
 
-    def scan_contents(self, sourcetree):
+    def scan_contents(self, sourcetree, keep_contents):
         """Scan the file contents and initialize information based on it."""
         # TODO: Consider a more robust regex.
         include_re = r'^#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
+        current_block = None
+        # TODO: Consider reading directly into this list, and iterate that.
+        lines = []
         with open(self._abspath, 'r') as scanfile:
             for lineno, line in enumerate(scanfile, 1):
+                lines.append(line)
                 match = re.match(include_re, line)
                 if match:
                     is_system = (match.group('quote') == '<')
                     includedpath = match.group('path')
-                    self._process_include(lineno, is_system, includedpath,
-                            sourcetree)
+                    included_file = self._process_include(lineno, is_system,
+                            includedpath, sourcetree)
+                    if current_block is None:
+                        current_block = IncludeBlock(included_file)
+                        self._include_blocks.append(current_block)
+                    else:
+                        current_block.add_file(included_file)
+                elif line and not line.isspace():
+                    current_block = None
+        if keep_contents:
+            self._lines = lines
 
     def get_reporter_location(self):
         return reporter.Location(self._abspath, None)
@@ -198,6 +251,9 @@ class File(object):
 
     def get_name(self):
         return os.path.basename(self._abspath)
+
+    def get_directory(self):
+        return self._dir
 
     def get_doc_type(self):
         if not self._rawdoc:
@@ -237,6 +293,15 @@ class File(object):
 
     def get_includes(self):
         return self._includes
+
+    def get_include_blocks(self):
+        return self._include_blocks
+
+    def get_main_header(self):
+        return self._main_header
+
+    def get_contents(self):
+        return self._lines
 
 class GeneratedFile(File):
     pass
@@ -543,6 +608,16 @@ class GromacsTree(object):
         self._namespaces = set()
         self._members = set()
         self._walk_dir(os.path.join(self._source_root, 'src'))
+        for fileobj in self.get_files():
+            if fileobj and fileobj.is_source_file() and not fileobj.is_external():
+                (basedir, name) = os.path.split(fileobj.get_abspath())
+                (basename, ext) = os.path.splitext(name)
+                header = self.get_file(os.path.join(basedir, basename + '.h'))
+                if not header and ext == '.cu':
+                    header = self.get_file(os.path.join(basedir, basename + '.cuh'))
+                if header:
+                    fileobj.set_main_header(header)
+                # TODO: Add logic for finding the file being tested by a test file
         rootdir = self._get_dir(os.path.join('src', 'gromacs'))
         for subdir in rootdir.get_subdirectories():
             self._create_module(subdir)
@@ -599,11 +674,15 @@ class GromacsTree(object):
         rootdir.set_module(moduleobj)
         self._modules[name] = moduleobj
 
-    def scan_files(self):
+    def scan_files(self, only_files=None, keep_contents=False):
         """Read source files to initialize #include dependencies."""
-        for fileobj in self._files.itervalues():
+        if only_files:
+            filelist = only_files
+        else:
+            filelist = self._files.itervalues()
+        for fileobj in filelist:
             if not fileobj.is_external():
-                fileobj.scan_contents(self)
+                fileobj.scan_contents(self, keep_contents)
                 module = fileobj.get_module()
                 if module:
                     for includedfile in fileobj.get_includes():
@@ -613,7 +692,7 @@ class GromacsTree(object):
                             if othermodule and othermodule != module:
                                 module.add_dependency(othermodule, includedfile)
 
-    def load_xml(self, only_files=False):
+    def load_xml(self, only_files=None):
         """Load Doxygen XML information.
 
         If only_files is True, XML data is not loaded for code constructs, but
@@ -622,7 +701,11 @@ class GromacsTree(object):
         xmldir = os.path.join(self._build_root, 'doxygen', 'xml')
         self._docset = xml.DocumentationSet(xmldir, self._reporter)
         if only_files:
-            self._docset.load_file_details()
+            if isinstance(only_files, collections.Iterable):
+                filelist = [x.get_abspath() for x in only_files]
+                self._docset.load_file_details(filelist)
+            else:
+                self._docset.load_file_details()
         else:
             self._docset.load_details()
             self._docset.merge_duplicates()
@@ -675,11 +758,15 @@ class GromacsTree(object):
         """Load Doxygen XML file information."""
         for filedoc in self._docset.get_files():
             path = filedoc.get_path()
+            if not path:
+                # In case of only partially loaded file information,
+                # the path information is not set for unloaded files.
+                continue
             if not os.path.isabs(path):
                 self._reporter.xml_assert(filedoc.get_xml_path(),
                         "expected absolute path in Doxygen-produced XML file")
                 continue
-            extension = os.path.splitext(filedoc.get_path())[1]
+            extension = os.path.splitext(path)[1]
             # We don't care about Markdown files that only produce pages
             # (and fail the directory check below).
             if extension == '.md':
