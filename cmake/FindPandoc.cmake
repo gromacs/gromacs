@@ -39,8 +39,8 @@
 
 include(FindPackageHandleStandardArgs)
 
-if(Pandoc_FIND_QUIETLY OR DEFINED PANDOC_EXECUTABLE)
-  set(PANDOC_FIND_QUIETLY TRUE)
+if(DEFINED PANDOC_EXECUTABLE)
+  set(Pandoc_FIND_QUIETLY TRUE)
 endif()
 
 find_program(PANDOC_EXECUTABLE
