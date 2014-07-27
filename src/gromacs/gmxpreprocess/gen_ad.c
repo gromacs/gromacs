@@ -675,7 +675,7 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, int fty
     switch (ftype)
     {
         case F_THOLE_POL:
-            natoms = 2;
+            natoms = 4;
             btype = ebtsTHOLE;
             ptr = "thole polarization";
             break;

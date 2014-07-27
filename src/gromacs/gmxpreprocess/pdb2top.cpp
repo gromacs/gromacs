@@ -778,7 +778,9 @@ static void add_drude_ssbonds_thole(t_atoms *atoms, int nssbonds, t_ssbond *ssbo
 
     int             i, ri, rj;
     atom_id         ai, aj;
+    char            buf[STRLEN];
     enum            { etSG, etCB };
+    const real      alpha[] = { 0.001888, 0.002686 };
     const real      tfac[] = { 1.082, 1.067 };
 
     /* loop over all special bonds to add Thole screening to these */ 
@@ -800,41 +802,17 @@ static void add_drude_ssbonds_thole(t_atoms *atoms, int nssbonds, t_ssbond *ssbo
         if ((strncmp(*(atoms->atomname[ai]),"SG",2)==0) &&
             (strncmp(*(atoms->atomname[aj]),"SG",2)==0))
         {
-            /* 1SG - 2SG */
-            add_thole_param(ps, ai, aj, tfac[etSG], tfac[etSG]);
+            /* 1SG - 2SG and Drudes */
+            sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", alpha[etSG], alpha[etSG], tfac[etSG], tfac[etSG]);
+            add_thole_param(ps, ai, ai+1, aj, aj+1, buf);
 
-            /* 1SG - 2DSG */
-            add_thole_param(ps, ai, aj+1, tfac[etSG], tfac[etSG]);
+            /* 1SG - 2CB and Drudes */
+            sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", alpha[etSG], alpha[etCB], tfac[etSG], tfac[etCB]);
+            add_thole_param(ps, ai, ai+1, aj-4, aj-3, buf);
 
-            /* 1SG - 2CB */
-            add_thole_param(ps, ai, aj-4, tfac[etSG], tfac[etCB]);
-
-            /* 1SG - 2DCB */
-            add_thole_param(ps, ai, aj-3, tfac[etSG], tfac[etCB]);
-
-            /* 1DSG - 2SG */
-            add_thole_param(ps, ai+1, aj, tfac[etSG], tfac[etSG]);
-
-            /* 1DSG - 2DSG */
-            add_thole_param(ps, ai+1, aj+1, tfac[etSG], tfac[etSG]);
-
-            /* 1DSG - 2CB */
-            add_thole_param(ps, ai+1, aj-4, tfac[etSG], tfac[etCB]);
-
-            /* 1DSG - 2DCB */
-            add_thole_param(ps, ai+1, aj-3, tfac[etSG], tfac[etCB]);
-
-            /* 1CB - 2SG */
-            add_thole_param(ps, ai-4, aj, tfac[etCB], tfac[etSG]);
-
-            /* 1CB - 2DSG */
-            add_thole_param(ps, ai-4, aj+1, tfac[etCB], tfac[etSG]);
-
-            /* 1DCB - 2SG */
-            add_thole_param(ps, ai-3, aj, tfac[etCB], tfac[etSG]);
-
-            /* 1DCB - 2DSG */
-            add_thole_param(ps, ai-3, aj+1, tfac[etCB], tfac[etSG]);
+            /* 1CB - 2SG and Drudes */
+            sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", alpha[etCB], alpha[etSG], tfac[etCB], tfac[etSG]);
+            add_thole_param(ps, ai-4, ai-3, aj, aj+1, buf);
         }
     }
 }
@@ -1068,15 +1046,15 @@ static void clean_bonds(t_params *ps)
 
 /* Clean up merged thole factors, since they can be changed in the .tdb file.
  * This function is similar to clean_bonds, but we need to retain 
- * the second instance of a parameter instead of the first, so rather than
+ * the second instance of a Thole factor and an alpha, so rather than
  * make clean_bonds more convoluted, there's a new function to handle all that. */
 static void clean_tholes(t_params *ps, t_atoms *atoms)
 {
     int     i, j, k;
     int     start;
-    float   alpha[2], ai[2], aj[2];  /* tmp values for sscanf */
+    real    alphai[2], alphaj[2], ai[2], aj[2];  /* tmp values for sscanf */
     char    buf[STRLEN];
-    atom_id a;
+    atom_id tmp1, tmp2;
 
     start = ps->nr; /* save original number for later printing */
 
@@ -1085,11 +1063,21 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
         /* swap, if necessary */
         for (i = 0; (i < ps->nr); i++)
         {
-            if (ps->param[i].a[1] < ps->param[i].a[0])
+            if (ps->param[i].a[2] < ps->param[i].a[0])
             {
-                a                 = ps->param[i].a[0];
-                ps->param[i].a[0] = ps->param[i].a[1];
-                ps->param[i].a[1] = a;
+                /* swap atoms */
+                /* need to do the swap in pairs, e.g. (ai,dai) x (aj,daj) */
+                /* a[0] = ai, a[1] = dai, a[2] = aj, a[3] = daj */
+                tmp1              = ps->param[i].a[0];  /* atom i */
+                tmp2              = ps->param[i].a[1];  /* drude on atom i */
+                ps->param[i].a[0] = ps->param[i].a[2];
+                ps->param[i].a[1] = ps->param[i].a[3];
+                ps->param[i].a[2] = tmp1;
+                ps->param[i].a[3] = tmp2;
+                /* swap alphas and Tholes */
+                sscanf(ps->param[i].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", aj[0], ai[0], alphaj[0], alphai[0]);
+                set_p_string(&(ps->param[i]), buf); 
             }
         }
 
@@ -1098,39 +1086,47 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
 
         /* Remove doubles, but here keep the second instance of a parameter if it is duplicated */
         j = 0;
+        /* TODO: remove, debugging */
+        /* fprintf(stdout, "Before loop: ps->nr = %d\n", ps->nr); */
+
         for (i = 1; (i < ps->nr); i++)
         {
             /* keep second instance of any duplicates */
             if ((ps->param[i].a[0] == ps->param[j].a[0]) &&
-                (ps->param[i].a[1] == ps->param[j].a[1]))
+                (ps->param[i].a[2] == ps->param[j].a[2]))
             {
+                /* TODO: remove, debugging */
+                /*
+                fprintf(stdout, "Duplicate found for atoms: %d - %d, j = %d, i = %d\n", ps->param[i].a[0]+1, ps->param[i].a[1]+1, j, i);
+                */
+
                 /* Check to see if either of the atoms is a CB */
-                /* We need this because CB Thole values vary based on the nature of
+                /* We need this because CB Thole and alpha values vary based on the nature of
                  * of the residue, but only a single value can be used in the .tdb,
                  * so here we preserve whatever value is in the rtp (index j)
                  * by copying it to ps->param[i].s before param[i] is copied into param[j].
                  * We only need to check one set, because we've already determined that
                  * they're the same! */
-                if (is_cbeta(atoms, ps->param[i].a[0]) || is_cbeta_drude(atoms, ps->param[i].a[0]))
+                if (is_cbeta(atoms, ps->param[i].a[0]) || is_cbeta_drude(atoms, ps->param[i].a[1]))
                 {
                     /* here, ai[0] is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
+                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
                     /* only change value if we need to */
                     if (ai[0] != ai[1])
                     {
-                        sprintf(buf, "%4.2f%10.4f%10.4f", alpha[0], ai[0], aj[1]);
+                        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[0], aj[1], alphai[0], alphaj[1]);
                         set_p_string(&(ps->param[i]), buf);
                     }
                 }
-                else if (is_cbeta(atoms, ps->param[i].a[1]) || is_cbeta_drude(atoms, ps->param[i].a[1]))
+                else if (is_cbeta(atoms, ps->param[i].a[2]) || is_cbeta_drude(atoms, ps->param[i].a[3]))
                 {
                     /* here, aj[0] is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
+                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
                     if (aj[0] != aj[1])
                     {
-                        sprintf(buf, "%4.2f%10.4f%10.4f", alpha[0], ai[1], aj[0]);
+                        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[0], alphai[1], alphaj[0]);
                         set_p_string(&(ps->param[i]), buf);
                     }
                 }
@@ -1147,23 +1143,30 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
             }
             /* keep all unique entries */
             else if ((ps->param[i].a[0] != ps->param[j].a[0]) ||
-                     (ps->param[i].a[1] != ps->param[j].a[1]))
+                     (ps->param[i].a[2] != ps->param[j].a[2]))
             {
+                /* TODO: remove, debugging */
+                /*
+                fprintf(stdout, "Unique entries found in Thole:\n");
+                fprintf(stdout, "    i = %d a[0] = %d, a[1] = %d\n", i, ps->param[i].a[0]+1, ps->param[i].a[1]+1);
+                fprintf(stdout, "    j = %d a[0] = %d, a[1] = %d\n", j, ps->param[j].a[0]+1, ps->param[j].a[1]+1);
+                */
+
                 j++;
                 if (is_cbeta(atoms, ps->param[i].a[0]))
                 {
                     /* here, ai[0] is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
-                    sprintf(buf, "%4.2f%8.4f%8.4f", alpha[0], ai[0], aj[1]);
+                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
+                    sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[0], aj[1], alphai[0], alphaj[1]);
                     set_p_string(&(ps->param[i]), buf);
                 }
-                else if (is_cbeta(atoms, ps->param[i].a[1]))
+                else if (is_cbeta(atoms, ps->param[i].a[2]))
                 {
                     /* here, aj[0] is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
-                    sprintf(buf, "%4.2f%8.4f%8.4f", alpha[0], ai[1], aj[0]);
+                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
+                    sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[0], alphai[1], alphaj[0]);
                     set_p_string(&(ps->param[i]), buf);
                 }
 
@@ -1174,12 +1177,11 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
             }
         }
 
-        fprintf(stderr, "Number of Thole pairs was %d, now %d\n", start, j);
-        ps->nr = j;
+        fprintf(stderr, "Number of Thole quadruplets was %d, now %d\n", start, ps->nr);
     }
     else
     {
-        fprintf(stderr, "No Thole pairs\n");
+        fprintf(stderr, "No Thole quadruplets\n");
     }
 }
 
@@ -1691,7 +1693,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
     int         nthole = 0;
     const char *ptr;
     int         nres = atoms->nres;
-    atom_id     thole_atomid[2];
+    atom_id     thole_atomid[4];
     gmx_bool    bAddThole;
 
     if (debug)
@@ -1710,7 +1712,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
         for (j = 0; j < restp[residx].rb[ebtsTHOLE].nb; j++)
         {
             bAddThole = TRUE;
-            for (k = 0; k < 2 && bAddThole; k++)
+            for (k = 0; k < 4 && bAddThole; k++)
             {
                 thole_atomid[k] = search_atom(restp[residx].rb[ebtsTHOLE].b[j].a[k],
                                               i, atoms, ptr, TRUE);
@@ -1722,7 +1724,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
             }
             else
             {
-                add_param(ps, thole_atomid[0], thole_atomid[1], NULL, restp[residx].rb[ebtsTHOLE].b[j].s);
+                add_thole_param(ps, thole_atomid[0], thole_atomid[1], thole_atomid[2], thole_atomid[3], restp[residx].rb[ebtsTHOLE].b[j].s);
                 nthole++;
             }
         }
@@ -1734,7 +1736,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
             }
         }
     }
-    fprintf(stderr, "wrote %d Thole pairs.\n", nthole);
+    fprintf(stderr, "wrote %d Thole quadruplets.\n", nthole);
 }
 
 static void gen_aniso(t_params *ps, t_restp *restp, t_atoms *atoms)

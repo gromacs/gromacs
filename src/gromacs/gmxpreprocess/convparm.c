@@ -259,12 +259,12 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->wpol.rOD    = old[5];
             break;
         case F_THOLE_POL:
-            newparam->thole.a      = old[0];
-            newparam->thole.alpha1 = old[1];
-            newparam->thole.alpha2 = old[2];
-            if ((old[1] > 0) && (old[2] > 0))
+            newparam->thole.alpha1 = old[0];
+            newparam->thole.alpha2 = old[1];
+            newparam->thole.a      = old[2] + old[3];
+            if ((old[0] > 0) && (old[1] > 0))
             {
-                newparam->thole.rfac = old[0]*pow(old[1]*old[2], -1.0/6.0);
+                newparam->thole.rfac = (old[2]+old[3])*pow(old[0]*old[1], -1.0/6.0);
             }
             else
             {

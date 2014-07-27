@@ -47,7 +47,7 @@
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap", "anisotropic_polarization", "polarization", "thole_polarization", "virtual_sites2", "virtual_sites3", "virtual_sites4" };
-const int   btsNiatoms[ebtsNR] = { 2, 3, 4, 4, 2, 5, 5, 1, 2, 3, 4, 5 };
+const int   btsNiatoms[ebtsNR] = { 2, 3, 4, 4, 2, 5, 5, 1, 4, 3, 4, 5 };
 
 static void free_t_bonded(t_rbonded *rb)
 {

@@ -1059,7 +1059,9 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
                        rvec fshift[], real afac)
 {
     rvec r12;
-    real r12sq, r12_1, r12n, r12bar, v0, v1, fscal, ebar, fff;
+    real r12sq, r12_1, r12bar, v0, v1, fscal, ebar, fff;
+    real polyau1, polyau2;
+    real r;
     int  m, t;
 
     t      = pbc_rvec_sub(pbc, xi, xj, r12);                      /*  3 */
@@ -1067,13 +1069,19 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
     r12sq  = iprod(r12, r12);                                     /*  5 */
     r12_1  = gmx_invsqrt(r12sq);                                  /*  5 */
     r12bar = afac/r12_1;                                          /*  5 */
-    v0     = qq*ONE_4PI_EPS0*r12_1;                               /*  2 */
+    v0     = qq*ONE_4PI_EPS0_CHARMM*r12_1;                        /*  2 */
     ebar   = exp(-r12bar);                                        /*  5 */
     v1     = (1-(1+0.5*r12bar)*ebar);                             /*  4 */
-    fscal  = ((v0*r12_1)*v1 - v0*0.5*afac*ebar*(r12bar+1))*r12_1; /* 9 */
+    /* previous method for calculating fscal led to massive forces;
+     * present code is the way CHARMM does it - jal */
+    polyau1 = 1.0 + (0.5*r12bar);
+    polyau2 = 1.0 + (r12bar*(polyau1));
+    r = 1.0/r12_1;
+    fscal = (qq/pow(r, 3.0))*(polyau2*ebar);
+
     if (debug)
     {
-        fprintf(debug, "THOLE: v0 = %.3f v1 = %.3f r12= % .3f r12bar = %.3f fscal = %.3f  ebar = %.3f\n", v0, v1, 1/r12_1, r12bar, fscal, ebar);
+        fprintf(debug, "THOLE: v0 = %.3f v1 = %.3f r12= % .3f r12bar = %.3f fscal = %.3f  ebar = %.8f\n", v0, v1, 1/r12_1, r12bar, fscal, ebar);
     }
 
     for (m = 0; (m < DIM); m++)
@@ -1086,7 +1094,7 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
     }             /* 15 */
 
     return v0*v1; /* 1 */
-    /* 54 */
+    /* 54 - no idea if this flop count is correct any more - jal */
 }
 
 real thole_pol(int nbonds,
@@ -1098,31 +1106,46 @@ real thole_pol(int nbonds,
                int gmx_unused *global_atom_index)
 {
     /* Screened interaction between two particles */
-    int  i, type, a1, a2;
-    real q1, q2, qq, a, al1, al2, afac;
+    int  i, type, a1, da1, a2, da2;
+    real q1, qd1, q2, qd2, qq, a, al1, al2, afac;
     real V = 0;
 
     for (i = 0; (i < nbonds); )
     {
         type  = forceatoms[i++];
         a1    = forceatoms[i++];
+        da1   = forceatoms[i++];
         a2    = forceatoms[i++];
+        da2   = forceatoms[i++];
         q1    = md->chargeA[a1];
+        qd1   = md->chargeA[da1];
         q2    = md->chargeA[a2];
+        qd2   = md->chargeA[da2];
         a     = forceparams[type].thole.a;
         al1   = forceparams[type].thole.alpha1;
         al2   = forceparams[type].thole.alpha2;
-        qq    = q1*q2;
         afac  = a*pow(al1*al2, -1.0/6.0);
 
         if (debug)
         {
-            fprintf(debug, "THOLE: a1 = %d, a2 = %d, q1 = %f, q2 = %f\n",
-                    a1, a2, q1, q2);
-            fprintf(debug, "THOLE: a = %f, al1 = %f, al2 = %f, qq = %f, afac = %f\n", 
-                    a, al1, al2, qq, afac);
+            fprintf(debug, "THOLE: a1 = %d, da1 = %d, a2 = %d, da2 = %d, q1 = %f, q2 = %f\n", a1, da1, a2, da2, q1, q2);
+            fprintf(debug, "THOLE: a = %f, al1 = %f, al2 = %f, qq = %f, afac = %f\n", a, al1, al2, qq, afac);
         }
+        /* atom 1 - atom 2 */
+        qq    = q1*q2;
         V    += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq, fshift, afac);
+
+        /* atom 2 - Drude 1 */
+        qq    = q2*qd1;
+        V    += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, qq, fshift, afac);
+
+        /* atom 1 - Drude 2 */
+        qq    = q1*qd2;
+        V    += do_1_thole(x[a1], x[da2], f[a1], f[da2], pbc, qq, fshift, afac);
+
+        /* Drude 1 - Drude 2 */
+        qq    = qd1*qd2;
+        V    += do_1_thole(x[da1], x[da2], f[da1], f[da2], pbc, qq, fshift, afac);
     }
     /* 290 flops */
     return V;
