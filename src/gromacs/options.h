@@ -146,6 +146,7 @@
 #ifndef GMX_OPTIONS_H
 #define GMX_OPTIONS_H
 
+#include "fileio/filenm.h"
 #include "options/basicoptions.h"
 #include "options/filenameoption.h"
 #include "options/filenameoptionmanager.h"
