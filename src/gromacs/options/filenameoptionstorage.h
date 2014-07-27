@@ -104,6 +104,7 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         FileNameOptionInfo      info_;
         FileNameOptionManager  *manager_;
         int                     fileType_;
+        const char             *defaultExtension_;
         bool                    bRead_;
         bool                    bWrite_;
         bool                    bLibrary_;

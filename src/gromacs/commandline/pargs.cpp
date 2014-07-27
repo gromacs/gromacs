@@ -336,16 +336,23 @@ void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)
     const bool        bMultiple = ((fnm->flag & ffMULT)  != 0);
     const char *const name      = &fnm->opt[1];
     const char *      defName   = fnm->fn;
+    int               defType   = -1;
     if (defName == NULL)
     {
         defName = ftp2defnm(fnm->ftp);
+    }
+    else if (std::strchr(defName, '.') != NULL)
+    {
+        defType = fn2ftp(defName);
+        GMX_RELEASE_ASSERT(defType != efNR,
+                           "File name option specifies an invalid extension");
     }
     fileNameOptions_.push_back(FileNameData(fnm));
     FileNameData &data = fileNameOptions_.back();
     data.optionInfo = options->addOption(
                 FileNameOption(name).storeVector(&data.values)
-                    .defaultBasename(defName).legacyType(fnm->ftp)
-                    .legacyOptionalBehavior()
+                    .defaultBasename(defName).defaultType(defType)
+                    .legacyType(fnm->ftp).legacyOptionalBehavior()
                     .readWriteFlags(bRead, bWrite).required(!bOptional)
                     .libraryFile(bLibrary).multiValue(bMultiple)
                     .description(ftp2desc(fnm->ftp)));
