@@ -185,11 +185,11 @@ int gmx_sorient(int argc, char *argv[])
         { efTRX, NULL,  NULL,  ffREAD },
         { efTPS, NULL,  NULL,  ffREAD },
         { efNDX, NULL,  NULL,  ffOPTRD },
-        { efXVG, NULL,  "sori.xvg",  ffWRITE },
-        { efXVG, "-no", "snor.xvg",  ffWRITE },
-        { efXVG, "-ro", "sord.xvg",  ffWRITE },
-        { efXVG, "-co", "scum.xvg",  ffWRITE },
-        { efXVG, "-rc", "scount.xvg",  ffWRITE }
+        { efXVG, NULL,  "sori",   ffWRITE },
+        { efXVG, "-no", "snor",   ffWRITE },
+        { efXVG, "-ro", "sord",   ffWRITE },
+        { efXVG, "-co", "scum",   ffWRITE },
+        { efXVG, "-rc", "scount", ffWRITE }
     };
 #define NFILE asize(fnm)
 
