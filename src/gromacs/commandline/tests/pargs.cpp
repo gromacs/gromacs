@@ -376,6 +376,23 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaultFileName)
     done_filenms(nfile(), fnm);
 }
 
+TEST_F(ParseCommonArgsTest, ParseFileArgsWithCustomDefaultExtension)
+{
+    t_filenm          fnm[] = {
+        { efTRX, "-o1", "conf1.gro", ffWRITE },
+        { efTRX, "-o2", "conf2.pdb", ffWRITE },
+        { efTRX, "-o3", "conf3.gro", ffWRITE }
+    };
+    const char *const cmdline[] = {
+        "test", "-o2", "-o3", "test"
+    };
+    parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, gmx::EmptyArrayRef());
+    EXPECT_STREQ("conf1.gro", opt2fn("-o1", nfile(), fnm));
+    EXPECT_STREQ("conf2.pdb", opt2fn("-o2", nfile(), fnm));
+    EXPECT_STREQ("test.gro", opt2fn("-o3", nfile(), fnm));
+    done_filenms(nfile(), fnm);
+}
+
 /********************************************************************
  * Tests for file name options (input files, dependent on file system contents)
  */
