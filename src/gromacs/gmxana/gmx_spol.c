@@ -207,7 +207,7 @@ int gmx_spol(int argc, char *argv[])
         { efTRX, NULL,  NULL,  ffREAD },
         { efTPX, NULL,  NULL,  ffREAD },
         { efNDX, NULL,  NULL,  ffOPTRD },
-        { efXVG, NULL,  "scdist.xvg",  ffWRITE }
+        { efXVG, NULL,  "scdist",  ffWRITE }
     };
 #define NFILE asize(fnm)
 

@@ -172,9 +172,9 @@ int gmx_enemat(int argc, char *argv[])
 
     t_filenm       fnm[] = {
         { efEDR, "-f", NULL, ffOPTRD },
-        { efDAT, "-groups", "groups.dat", ffREAD },
-        { efDAT, "-eref",   "eref.dat", ffOPTRD },
-        { efXPM, "-emat",   "emat", ffWRITE },
+        { efDAT, "-groups", "groups", ffREAD },
+        { efDAT, "-eref",   "eref",   ffOPTRD },
+        { efXPM, "-emat",   "emat",   ffWRITE },
         { efXVG, "-etot",   "energy", ffWRITE }
     };
 #define NFILE asize(fnm)

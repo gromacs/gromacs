@@ -685,19 +685,19 @@ int gmx_traj(int argc, char *argv[])
         { efTRX, "-f", NULL, ffREAD },
         { efTPS, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD },
-        { efXVG, "-ox", "coord.xvg", ffOPTWR },
-        { efTRX, "-oxt", "coord.xtc", ffOPTWR },
-        { efXVG, "-ov", "veloc.xvg", ffOPTWR },
-        { efXVG, "-of", "force.xvg", ffOPTWR },
-        { efXVG, "-ob", "box.xvg",   ffOPTWR },
-        { efXVG, "-ot", "temp.xvg",  ffOPTWR },
-        { efXVG, "-ekt", "ektrans.xvg", ffOPTWR },
-        { efXVG, "-ekr", "ekrot.xvg", ffOPTWR },
-        { efXVG, "-vd", "veldist.xvg", ffOPTWR },
-        { efPDB, "-cv", "veloc.pdb", ffOPTWR },
-        { efPDB, "-cf", "force.pdb", ffOPTWR },
-        { efXVG, "-av", "all_veloc.xvg", ffOPTWR },
-        { efXVG, "-af", "all_force.xvg", ffOPTWR }
+        { efXVG, "-ox",  "coord",     ffOPTWR },
+        { efTRX, "-oxt", "coord",     ffOPTWR },
+        { efXVG, "-ov",  "veloc",     ffOPTWR },
+        { efXVG, "-of",  "force",     ffOPTWR },
+        { efXVG, "-ob",  "box",       ffOPTWR },
+        { efXVG, "-ot",  "temp",      ffOPTWR },
+        { efXVG, "-ekt", "ektrans",   ffOPTWR },
+        { efXVG, "-ekr", "ekrot",     ffOPTWR },
+        { efXVG, "-vd",  "veldist",   ffOPTWR },
+        { efPDB, "-cv",  "veloc",     ffOPTWR },
+        { efPDB, "-cf",  "force",     ffOPTWR },
+        { efXVG, "-av",  "all_veloc", ffOPTWR },
+        { efXVG, "-af",  "all_force", ffOPTWR }
     };
 #define NFILE asize(fnm)
 

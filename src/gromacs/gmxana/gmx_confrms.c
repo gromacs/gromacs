@@ -516,9 +516,9 @@ int gmx_confrms(int argc, char *argv[])
         { efTPS, "-f1",  "conf1.gro", ffREAD  },
         { efSTX, "-f2",  "conf2",     ffREAD  },
         { efSTO, "-o",   "fit.pdb",   ffWRITE },
-        { efNDX, "-n1", "fit1.ndx",  ffOPTRD },
-        { efNDX, "-n2", "fit2.ndx",  ffOPTRD },
-        { efNDX, "-no", "match.ndx", ffOPTWR }
+        { efNDX, "-n1",  "fit1",      ffOPTRD },
+        { efNDX, "-n2",  "fit2",      ffOPTRD },
+        { efNDX, "-no",  "match",     ffOPTWR }
     };
 #define NFILE asize(fnm)
 

@@ -858,12 +858,12 @@ int gmx_current(int argc, char *argv[])
         { efTPS,  NULL,  NULL, ffREAD }, /* this is for the topology */
         { efNDX, NULL, NULL, ffOPTRD },
         { efTRX, "-f", NULL, ffREAD },   /* and this for the trajectory */
-        { efXVG, "-o", "current.xvg", ffWRITE },
-        { efXVG, "-caf", "caf.xvg", ffOPTWR },
-        { efXVG, "-dsp", "dsp.xvg", ffWRITE },
-        { efXVG, "-md", "md.xvg", ffWRITE },
-        { efXVG, "-mj", "mj.xvg", ffWRITE},
-        { efXVG, "-mc", "mc.xvg", ffOPTWR }
+        { efXVG, "-o",   "current", ffWRITE },
+        { efXVG, "-caf", "caf",     ffOPTWR },
+        { efXVG, "-dsp", "dsp",     ffWRITE },
+        { efXVG, "-md",  "md",      ffWRITE },
+        { efXVG, "-mj",  "mj",      ffWRITE },
+        { efXVG, "-mc",  "mc",      ffOPTWR }
     };
 
 #define NFILE asize(fnm)

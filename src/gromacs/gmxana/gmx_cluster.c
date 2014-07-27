@@ -1517,7 +1517,7 @@ int gmx_cluster(int argc, char *argv[])
         { efXVG, "-sz",   "clust-size", ffOPTWR},
         { efXPM, "-tr",   "clust-trans", ffOPTWR},
         { efXVG, "-ntr",  "clust-trans", ffOPTWR},
-        { efXVG, "-clid", "clust-id.xvg", ffOPTWR},
+        { efXVG, "-clid", "clust-id",   ffOPTWR},
         { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
     };
 #define NFILE asize(fnm)
