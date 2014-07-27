@@ -26,33 +26,11 @@
     D                0.4000 -1.97707    -1
 [ delete ]
  HN
-[ exclusions ]
-     N    CA
-     N   DCA
-    DN    CA
-    DN   DCA
-     N    CB
-     N   DCB
-    DN    CB
-    DN   DCB
-     N     C
-     N    DC
-    DN     C
-    DN    DC
 [ thole_polarization ]
-  ; ai    aj   a     alpha_i    alpha_j
-     N    CA   2.60  0.8950  1.0780
-     N   DCA   2.60  0.8950  1.0780
-    DN    CA   2.60  0.8950  1.0780
-    DN   DCA   2.60  0.8950  1.0780
-     N    CB   2.60  0.8950  2.0800
-     N   DCB   2.60  0.8950  2.0800
-    DN    CB   2.60  0.8950  2.0800
-    DN   DCB   2.60  0.8950  2.0800
-     N     C   2.60  0.8950  0.2950
-     N    DC   2.60  0.8950  0.2950
-    DN     C   2.60  0.8950  0.2950
-    DN    DC   2.60  0.8950  0.2950
+; ai   dai    aj   daj    alpha_i    alpha_j  thole_i  thole_j
+   N    DN    CA   DCA    0.001298  0.000960  0.8950  1.0780
+   N    DN    CB   DCB    0.001298  0.001804  0.8950  2.0800
+   N    DN     C    DC    0.001298  0.000675  0.8950  0.2950
 
 ; NH2 (neutral N-terminus) IS NOT YET AVAILABLE
 
@@ -71,53 +49,12 @@
     D                0.4000 -1.97707    -1
 [ delete ]
  HN
-[ exclusions ]
-     N    CA
-     N   DCA
-    DN    CA
-    DN   DCA
-     N    CB
-     N   DCB
-    DN    CB
-    DN   DCB
-     N     C
-     N    DC
-    DN     C
-    DN    DC
 [ thole_polarization ]
-  ; ai    aj   a     alpha_i    alpha_j
-     N    CA   2.60  0.8950  0.8950
-     N   DCA   2.60  0.8950  0.8950
-    DN    CA   2.60  0.8950  0.8950
-    DN   DCA   2.60  0.8950  0.8950
-     N    CB   2.60  0.8950  2.0800
-     N   DCB   2.60  0.8950  2.0800
-    DN    CB   2.60  0.8950  2.0800
-    DN   DCB   2.60  0.8950  2.0800
-     N     C   2.60  0.8950  0.2950
-     N    DC   2.60  0.8950  0.2950
-    DN     C   2.60  0.8950  0.2950
-    DN    DC   2.60  0.8950  0.2950
-    CA    CB   2.60  0.8950  2.0800
-    CA   DCB   2.60  0.8950  2.0800
-   DCA    CB   2.60  0.8950  2.0800
-   DCA   DCB   2.60  0.8950  2.0800
-    CA     C   2.60  0.8950  0.8990
-    CA    DC   2.60  0.8950  0.8990
-   DCA     C   2.60  0.8950  0.8990
-   DCA    DC   2.60  0.8950  0.8990
-    CA   OT1   2.60  0.8950  2.3990
-    CA  DOT1   2.60  0.8950  2.3990
-   DCA   OT1   2.60  0.8950  2.3990
-   DCA  DOT1   2.60  0.8950  2.3990
-    CA   OT2   2.60  0.8950  2.3990
-    CA  DOT2   2.60  0.8950  2.3990
-   DCA   OT2   2.60  0.8950  2.3990
-   DCA  DOT2   2.60  0.8950  2.3990
-    CB     C   2.60  2.0800  0.8990
-   DCB     C   2.60  2.0800  0.8990
-    CB    DC   2.60  2.0800  0.8990
-   DCB    DC   2.60  2.0800  0.8990
+; ai   dai    aj   daj    alpha_i    alpha_j  thole_i  thole_j
+   N    DN    CA   DCA    0.001298  0.001656  0.8950  0.8950
+   N    DN    CB   DCB    0.001298  0.001804  0.8950  2.0800
+   N    DN     C    DC    0.001298  0.000675  0.8950  0.2950
+  CA   DCA    CB   DCB    0.001656  0.001804  0.8950  2.0800
 
 ; Gly N-terminus, charged, in polypeptide
 ; CHARMM name: GNTE (formerly GLYP)
@@ -142,37 +79,13 @@
     D                0.4000 -1.97707    -1
 [ delete ]
  HN
-[ exclusions ]
-     N    CA
-     N   DCA
-    DN    CA
-    DN   DCA
-     N     C
-     N    DC
-    DN     C
-    DN    DC
 [ thole_polarization ]
-  ; ai    aj   a     alpha_i    alpha_j
-     N    CA   2.60  0.8950  0.8950
-     N   DCA   2.60  0.8950  0.8950
-    DN    CA   2.60  0.8950  0.8950
-    DN   DCA   2.60  0.8950  0.8950
-     N     C   2.60  0.8950  0.2950
-     N    DC   2.60  0.8950  0.2950
-    DN     C   2.60  0.8950  0.2950
-    DN    DC   2.60  0.8950  0.2950
-    CA     C   2.60  0.8950  0.2950
-    CA    DC   2.60  0.8950  0.2950
-   DCA     C   2.60  0.8950  0.2950
-   DCA    DC   2.60  0.8950  0.2950
-     C     O   2.60  0.2950  0.3100
-    DC     O   2.60  0.2950  0.3100
-     C    DO   2.60  0.2950  0.3100
-    DC    DO   2.60  0.2950  0.3100
-    CA     O   2.60  0.8950  0.3100
-    CA    DO   2.60  0.8950  0.3100
-   DCA     O   2.60  0.8950  0.3100
-   DCA    DO   2.60  0.8950  0.3100
+; ai   dai    aj   daj    alpha_i    alpha_j  thole_i  thole_j
+   N    DN    CA   DCA    0.001298  0.001656  0.8950  0.8950
+   N    DN     C    DC    0.001298  0.000675  0.8950  0.2950
+  CA   DCA     C    DC    0.001656  0.000675  0.8950  0.2950
+   C    DC     O    DO    0.000675  0.000651  0.2950  0.3100
+  CA   DCA     O    DO    0.001656  0.000651  0.8950  0.3100
 
 ; charged Gly N-terminus of single amino acid
 [ GNTS ]
@@ -190,73 +103,12 @@
     D                0.4000 -1.97707    -1
 [ delete ]
  HN
-[ exclusions ]
-     N    CA
-     N   DCA
-    DN    CA
-    DN   DCA
-     N     C
-     N    DC
-    DN     C
-    DN    DC
-; TODO: CHECK THIS - experimental
+; EXPERIMENTAL
 [ thole_polarization ]
-  ; ai    aj   a     alpha_i    alpha_j
-     N    CA   2.60  0.8950  0.8950
-     N   DCA   2.60  0.8950  0.8950
-    DN    CA   2.60  0.8950  0.8950
-    DN   DCA   2.60  0.8950  0.8950
-     N     C   2.60  0.8950  0.2950
-     N    DC   2.60  0.8950  0.2950
-    DN     C   2.60  0.8950  0.2950
-    DN    DC   2.60  0.8950  0.2950
-    CA     C   2.60  0.8950  0.2950
-    CA    DC   2.60  0.8950  0.2950
-   DCA     C   2.60  0.8950  0.2950
-   DCA    DC   2.60  0.8950  0.2950
-     C     O   2.60  0.2950  0.3100
-    DC     O   2.60  0.2950  0.3100
-     C    DO   2.60  0.2950  0.3100
-    DC    DO   2.60  0.2950  0.3100
-    CA     O   2.60  0.8950  0.3100
-    CA    DO   2.60  0.8950  0.3100
-   DCA     O   2.60  0.8950  0.3100
-   DCA    DO   2.60  0.8950  0.3100
-
-; Pro N-terminus, charged, in polypeptide
-; CHARMM name: PROP
-; MAY REQUIRE FURTHER OPTIMIZATION - EXPERIMENTAL
-[ PRO-NH2+ ]
-[ replace ]
- N    N     ND3P2A  13.6070  2.04042
- DN   DN    D        0.4000 -2.11042
- CD   CD    CD32A   11.6110  2.29891
- DCD  DCD   D        0.4000 -2.17991
- HD1  HD1   HDA2C    1.0080  0.10400
- HD2  HD2   HDA2C    1.0080  0.10400
- CA   CA    CD31C   11.6110  2.29391
- DCA  DCA   D        0.4000 -2.17991
- HA   HA    HDA1C    1.0080  0.10400
- C    C     CD2O1A  11.6110  2.53830
- DC   DC    D        0.4000 -2.01030
- O    O     OD2C1A  15.5994  1.43310
- DO   DO    D        0.4000 -1.43310
- LPOA LPOA  LP       0.0000 -0.37100
- LPOB LPOB  LP       0.0000 -0.21500
- CB   CB    CD32A   11.6110  2.15325
- DCB  DCB   D        0.4000 -2.26925
- HB1  HB1   HDA2A    1.0080  0.08400
- HB2  HB2   HDA2A    1.0080  0.08400
- CG   CG    CD32A   11.6110  2.34102
- DCG  DCG   D        0.4000 -2.48402
- HG1  HG1   HDA2A    1.0080  0.07100
- HG2  HG2   HDA2A    1.0080  0.07100
-[ add ]
- 2  4   H   N   CA   C
-    HDP1B            1.0080  0.26600   -1
- 1  14  DN  N 
-    D                0.4000 -1.97707    -1
-; TODO: Add Thole - residue is experimental anyway...
+; ai   dai    aj   daj    alpha_i    alpha_j  thole_i  thole_j
+   N    DN    CA   DCA    0.001298  0.001656  0.8950  0.8950
+   N    DN     C    DC    0.001298  0.001016  0.8950  0.8990
+  CA   DCA     C    DC    0.001656  0.001016  0.8950  0.8990
 
 [ 5TER ]
 [ replace ]
@@ -290,6 +142,13 @@
    O5'   LP5A
    O5'   LP5B
    LP5A  LP5B
+[ thole_polarization ]
+; ai   dai    aj   daj    alpha_i    alpha_j  thole_i  thole_j
+ C5'  DC5'   O5'  DO5'    0.001000   0.001028 1.3000   1.3000
+ C5'  DC5'   C4'  DC4'    0.001000   0.001562 1.3000   1.1030
+ C5'  DC5'   C3'  DC3'    0.001000   0.001642 1.3000   0.8620
+ C5'  DC5'   O4'  DO4'    0.001000   0.000618 1.3000   1.1030
+ O5'  DO5'   C4'  DC4'    0.001028   0.001562 1.3000   1.1030
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al   a11        a22        a33
    DO5'    O5'   C5'   LP5A  LP5B 0.81080 1.121620 0.97300

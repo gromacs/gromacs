@@ -30,10 +30,15 @@ C.M. Baker, V.M. Anisimov, and A.D. MacKerell, Jr. (2011) Development of CHARMM
 Polarizable Force Field for Nucleic Acid Bases Based on the Classical Drude
 Oscillator Model. J Phys Chem B 115: 580-596.
 
-A. Savelyev and A.D. MacKerell, Jr. (20xx) All-Atom Polarizable Force Field for
-DNA Based on the Classical Drude Oscillator Model. J Comput Chem (Submitted).
+A. Savelyev and A.D. MacKerell, Jr. (2014) All-Atom Polarizable Force Field for
+DNA Based on the Classical Drude Oscillator Model. J Comput Chem 35: 1219-1239.
+
+A. Savelyev and A.D. MacKerell, Jr. (2014) Balancing the Interactions of Ions,
+Water, and DNA in the Drude Polarizable Force Field. J Phys Chem B 118: 
+6742-6757. 
 
 (RNA force field under development)
+J.A. Lemkul, A. Savelyev, and A.D. MacKerell, Jr. Work in progress.
 
 ** SWM4-NDP water
 
