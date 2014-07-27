@@ -43,6 +43,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/utility/exceptions.h"
@@ -128,6 +129,46 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
     EXPECT_NO_THROW_GMX(options.finish());
 
     EXPECT_EQ("testfile.ndx", value);
+}
+
+TEST(FileNameOptionTest, HandlesRequiredCustomDefaultExtension)
+{
+    gmx::Options           options(NULL, NULL);
+    std::string            value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value).required()
+                                    .filetype(gmx::eftTrajectory).outputFile()
+                                    .defaultBasename("testfile")
+                                    .defaultType(efPDB)));
+    EXPECT_EQ("testfile.pdb", value);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ("testfile.pdb", value);
+}
+
+TEST(FileNameOptionTest, HandlesOptionalCustomDefaultExtension)
+{
+    gmx::Options           options(NULL, NULL);
+    std::string            value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value)
+                                    .filetype(gmx::eftTrajectory).outputFile()
+                                    .defaultBasename("testfile")
+                                    .defaultType(efPDB)));
+    EXPECT_TRUE(value.empty());
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ("testfile.pdb", value);
 }
 
 TEST(FileNameOptionTest, GivesErrorOnUnknownFileSuffix)
