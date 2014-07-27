@@ -45,6 +45,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
@@ -101,6 +102,25 @@ TEST_F(FileNameOptionManagerTest, AddsMissingExtension)
     EXPECT_NO_THROW_GMX(options_.finish());
 
     EXPECT_EQ("testfile.xtc", value);
+}
+
+TEST_F(FileNameOptionManagerTest, AddsMissingCustomDefaultExtension)
+{
+    std::string value;
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                FileNameOption("f").store(&value)
+                                    .filetype(gmx::eftTrajectory).outputFile()
+                                    .defaultType(efPDB)));
+
+    gmx::OptionsAssigner assigner(&options_);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("testfile"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_EQ("testfile.pdb", value);
 }
 
 TEST_F(FileNameOptionManagerTest, GivesErrorOnMissingInputFile)

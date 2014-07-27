@@ -202,7 +202,7 @@ FileTypeHandler::isValidType(int fileType) const
 FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
                                              FileNameOptionManager *manager)
     : MyBase(settings), info_(this), manager_(manager), fileType_(-1),
-      bRead_(settings.bRead_), bWrite_(settings.bWrite_),
+      defaultExtension_(""), bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
@@ -224,10 +224,31 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
             }
         }
     }
+    FileTypeHandler typeHandler(fileType_);
+    if (settings.defaultType_ >= 0 && settings.defaultType_ < efNR)
+    {
+        // This also assures that the default type is not a generic type.
+        GMX_RELEASE_ASSERT(typeHandler.isValidType(settings.defaultType_),
+                           "Default type for a file option is not an accepted "
+                           "type for the option");
+        FileTypeHandler defaultHandler(settings.defaultType_);
+        defaultExtension_ = defaultHandler.extension(0);
+    }
+    else if (typeHandler.extensionCount() > 0)
+    {
+        defaultExtension_ = typeHandler.extension(0);
+    }
     if (settings.defaultBasename_ != NULL)
     {
         std::string defaultValue(settings.defaultBasename_);
-        defaultValue.append(defaultExtension());
+        int         type = fn2ftp(settings.defaultBasename_);
+        GMX_RELEASE_ASSERT(type == efNR || type == settings.defaultType_,
+                           "Default basename has an extension that does not "
+                           "match the default type");
+        if (type == efNR)
+        {
+            defaultValue.append(defaultExtension());
+        }
         setDefaultValueIfSet(defaultValue);
         if (isRequired() || settings.bLegacyOptionalBehavior_)
         {
@@ -388,12 +409,7 @@ bool FileNameOptionStorage::isTrajectoryOption() const
 
 const char *FileNameOptionStorage::defaultExtension() const
 {
-    FileTypeHandler typeHandler(fileType_);
-    if (typeHandler.extensionCount() == 0)
-    {
-        return "";
-    }
-    return typeHandler.extension(0);
+    return defaultExtension_;
 }
 
 std::vector<const char *> FileNameOptionStorage::extensions() const
