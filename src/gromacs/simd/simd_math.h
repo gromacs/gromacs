@@ -172,6 +172,42 @@ gmx_simd_invsqrt_f(gmx_simd_float_t x)
     return lu;
 }
 
+/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD float.
+ *
+ * Identical to gmx_simd_invsqrt_f but avoids fp-exception for non-masked entries.
+ *
+ *  \param x Argument that must be >0 for masked entries
+ *  \param m Masked entries
+ *  \return 1/x. Result is undefined if your argument was invalid or entry was not masked.
+ */
+#ifdef NDEBUG
+#define gmx_simd_invsqrt_mask_f(x, m) gmx_simd_invsqrt_f(x)
+#else
+static gmx_inline gmx_simd_float_t
+gmx_simd_invsqrt_mask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    return gmx_simd_invsqrt_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), x, m));
+}
+#endif
+
+/*! \brief Calculate 1/sqrt(x) for non-masked entries of SIMD float.
+ *
+ * Identical to gmx_simd_invsqrt_f but avoids fp-exception for masked entries.
+ *
+ *  \param x Argument that must be >0 for non-masked entries
+ *  \param m Masked entries
+ *  \return 1/x. Result is undefined if your argument was invalid or entry was masked.
+ */
+#ifdef NDEBUG
+#define gmx_simd_invsqrt_notmask_f(x, m) gmx_simd_invsqrt_f(x)
+#else
+static gmx_inline gmx_simd_float_t
+gmx_simd_invsqrt_notmask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    return gmx_simd_invsqrt_f(gmx_simd_blendv_f(x, gmx_simd_set1_f(1.0f), m));
+}
+#endif
+
 /*! \brief Calculate 1/sqrt(x) for two SIMD floats.
  *
  * You should normally call the real-precision routine \ref gmx_simd_invsqrt_pair_r.
@@ -230,6 +266,42 @@ gmx_simd_inv_f(gmx_simd_float_t x)
     return lu;
 }
 
+/*! \brief Calculate 1/x for masked entries of SIMD float.
+ *
+ * Identical to gmx_simd_inv_f but avoids fp-exception for non-masked entries.
+ *
+ *  \param x Argument that must be nonzero for masked entries
+ *  \param m Masked entries
+ *  \return 1/x. Result is undefined if your argument was invalid or entry was not masked.
+ */
+#ifdef NDEBUG
+#define gmx_simd_inv_mask_f(x, m) gmx_simd_inv_f(x)
+#else
+static gmx_inline gmx_simd_float_t
+gmx_simd_inv_mask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    return gmx_simd_inv_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), x, m));
+}
+#endif
+
+/*! \brief Calculate 1/x for non-masked entries of SIMD float.
+ *
+ * Identical to gmx_simd_inv_f but avoids fp-exception for masked entries.
+ *
+ *  \param x Argument that must be nonzero for non-masked entries
+ *  \param m Masked entries
+ *  \return 1/x. Result is undefined if your argument was invalid or entry was masked.
+ */
+#ifdef NDEBUG
+#define gmx_simd_inv_notmask_f(x, m) gmx_simd_inv_f(x)
+#else
+static gmx_inline gmx_simd_float_t
+gmx_simd_inv_notmask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    return gmx_simd_inv_f(gmx_simd_blendv_f(x, gmx_simd_set1_f(1.0f), m));
+}
+#endif
+
 /*! \brief Calculate sqrt(x) correctly for SIMD floats, including argument 0.0.
  *
  * You should normally call the real-precision routine \ref gmx_simd_sqrt_r.
@@ -245,7 +317,7 @@ gmx_simd_sqrt_f(gmx_simd_float_t x)
     gmx_simd_float_t  res;
 
     mask = gmx_simd_cmpeq_f(x, gmx_simd_setzero_f());
-    res  = gmx_simd_blendnotzero_f(gmx_simd_invsqrt_f(x), mask);
+    res  = gmx_simd_blendnotzero_f(gmx_simd_invsqrt_notmask_f(x, mask), mask);
     return gmx_simd_mul_f(res, x);
 }
 
@@ -439,7 +511,7 @@ gmx_simd_erf_f(gmx_simd_float_t x)
     gmx_simd_float_t        pA0, pA1, pB0, pB1, pC0, pC1;
     gmx_simd_float_t        expmx2;
     gmx_simd_float_t        res_erf, res_erfc, res;
-    gmx_simd_fbool_t        mask;
+    gmx_simd_fbool_t        mask, msk_erf;
 
     /* Calculate erf() */
     x2   = gmx_simd_mul_f(x, x);
@@ -458,7 +530,8 @@ gmx_simd_erf_f(gmx_simd_float_t x)
 
     /* Calculate erfc */
     y       = gmx_simd_fabs_f(x);
-    t       = gmx_simd_inv_f(y);
+    msk_erf = gmx_simd_cmplt_f(y, gmx_simd_set1_f(0.75f));
+    t       = gmx_simd_inv_notmask_f(y, msk_erf);
     w       = gmx_simd_sub_f(t, one);
     t2      = gmx_simd_mul_f(t, t);
     w2      = gmx_simd_mul_f(w, w);
@@ -501,8 +574,7 @@ gmx_simd_erf_f(gmx_simd_float_t x)
     res_erfc = gmx_simd_blendv_f(res_erfc, gmx_simd_sub_f(two, res_erfc), mask);
 
     /* Select erf() or erfc() */
-    mask = gmx_simd_cmplt_f(y, gmx_simd_set1_f(0.75f));
-    res  = gmx_simd_blendv_f(gmx_simd_sub_f(one, res_erfc), res_erf, mask);
+    res  = gmx_simd_blendv_f(gmx_simd_sub_f(one, res_erfc), res_erf, msk_erf);
 
     return res;
 }
@@ -586,7 +658,7 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
     gmx_simd_float_t        pA0, pA1, pB0, pB1, pC0, pC1;
     gmx_simd_float_t        expmx2, corr;
     gmx_simd_float_t        res_erf, res_erfc, res;
-    gmx_simd_fbool_t        mask;
+    gmx_simd_fbool_t        mask, msk_erf;
 
     /* Calculate erf() */
     x2     = gmx_simd_mul_f(x, x);
@@ -605,7 +677,8 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
 
     /* Calculate erfc */
     y       = gmx_simd_fabs_f(x);
-    t       = gmx_simd_inv_f(y);
+    msk_erf = gmx_simd_cmplt_f(y, gmx_simd_set1_f(0.75f));
+    t       = gmx_simd_inv_notmask_f(y, msk_erf);
     w       = gmx_simd_sub_f(t, one);
     t2      = gmx_simd_mul_f(t, t);
     w2      = gmx_simd_mul_f(w, w);
@@ -680,8 +753,7 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
     res_erfc = gmx_simd_blendv_f(res_erfc, gmx_simd_sub_f(two, res_erfc), mask);
 
     /* Select erf() or erfc() */
-    mask = gmx_simd_cmplt_f(y, gmx_simd_set1_f(0.75f));
-    res  = gmx_simd_blendv_f(res_erfc, gmx_simd_sub_f(one, res_erf), mask);
+    res  = gmx_simd_blendv_f(res_erfc, gmx_simd_sub_f(one, res_erf), msk_erf);
 
     return res;
 }
@@ -917,7 +989,7 @@ gmx_simd_tan_f(gmx_simd_float_t x)
     p       = gmx_simd_fmadd_f(p, x2, CT1);
     p       = gmx_simd_fmadd_f(x2, gmx_simd_mul_f(p, x), x);
 
-    p       = gmx_simd_blendv_f( p, gmx_simd_inv_f(p), mask);
+    p       = gmx_simd_blendv_f( p, gmx_simd_inv_mask_f(p, mask), mask);
     return p;
 }
 
@@ -943,13 +1015,14 @@ gmx_simd_asin_f(gmx_simd_float_t x)
     gmx_simd_float_t       xabs;
     gmx_simd_float_t       z, z1, z2, q, q1, q2;
     gmx_simd_float_t       pA, pB;
-    gmx_simd_fbool_t       mask;
+    gmx_simd_fbool_t       mask, mask2;
 
     xabs  = gmx_simd_fabs_f(x);
     mask  = gmx_simd_cmplt_f(half, xabs);
     z1    = gmx_simd_mul_f(half, gmx_simd_sub_f(one, xabs));
-    q1    = gmx_simd_mul_f(z1, gmx_simd_invsqrt_f(z1));
-    q1    = gmx_simd_blendnotzero_f(q1, gmx_simd_cmpeq_f(xabs, one));
+    mask2 = gmx_simd_cmpeq_f(xabs, one);
+    q1    = gmx_simd_mul_f(z1, gmx_simd_invsqrt_notmask_f(z1, mask2));
+    q1    = gmx_simd_blendnotzero_f(q1, mask2);
     q2    = xabs;
     z2    = gmx_simd_mul_f(q2, q2);
     z     = gmx_simd_blendv_f(z2, z1, mask);
@@ -989,15 +1062,16 @@ gmx_simd_acos_f(gmx_simd_float_t x)
     const gmx_simd_float_t halfpi    = gmx_simd_set1_f((float)M_PI/2.0f);
     gmx_simd_float_t       xabs;
     gmx_simd_float_t       z, z1, z2, z3;
-    gmx_simd_fbool_t       mask1, mask2;
+    gmx_simd_fbool_t       mask1, mask2, mask3;
 
     xabs  = gmx_simd_fabs_f(x);
     mask1 = gmx_simd_cmplt_f(half, xabs);
     mask2 = gmx_simd_cmplt_f(gmx_simd_setzero_f(), x);
 
     z     = gmx_simd_mul_f(half, gmx_simd_sub_f(one, xabs));
-    z     = gmx_simd_mul_f(z, gmx_simd_invsqrt_f(z));
-    z     = gmx_simd_blendnotzero_f(z, gmx_simd_cmpeq_f(xabs, one));
+    mask3 = gmx_simd_cmpeq_f(xabs, one);
+    z     = gmx_simd_mul_f(z, gmx_simd_invsqrt_notmask_f(z, mask3));
+    z     = gmx_simd_blendnotzero_f(z, mask3);
     z     = gmx_simd_blendv_f(x, z, mask1);
     z     = gmx_simd_asin_f(z);
 
@@ -1029,13 +1103,14 @@ gmx_simd_atan_f(gmx_simd_float_t x)
     const gmx_simd_float_t CA7       = gmx_simd_set1_f(-0.1420273631811141967773f);
     const gmx_simd_float_t CA5       = gmx_simd_set1_f(0.1999269574880599975585f);
     const gmx_simd_float_t CA3       = gmx_simd_set1_f(-0.3333310186862945556640f);
+    const gmx_simd_float_t one       = gmx_simd_set1_f(1.0f);
     gmx_simd_float_t       x2, x3, x4, pA, pB;
     gmx_simd_fbool_t       mask, mask2;
 
     mask  = gmx_simd_cmplt_f(x, gmx_simd_setzero_f());
     x     = gmx_simd_fabs_f(x);
-    mask2 = gmx_simd_cmplt_f(gmx_simd_set1_f(1.0f), x);
-    x     = gmx_simd_blendv_f(x, gmx_simd_inv_f(x), mask2);
+    mask2 = gmx_simd_cmplt_f(one, x);
+    x     = gmx_simd_blendv_f(x, gmx_simd_inv_mask_f(x, mask2), mask2);
 
     x2    = gmx_simd_mul_f(x, x);
     x3    = gmx_simd_mul_f(x2, x);
@@ -1089,7 +1164,7 @@ gmx_simd_atan2_f(gmx_simd_float_t y, gmx_simd_float_t x)
     aoffset   = gmx_simd_blendv_f(aoffset, pi, mask_xlt0);
     aoffset   = gmx_simd_blendv_f(aoffset, gmx_simd_fneg_f(aoffset), mask_ylt0);
 
-    xinv      = gmx_simd_blendnotzero_f(gmx_simd_inv_f(x), mask_x0);
+    xinv      = gmx_simd_blendnotzero_f(gmx_simd_inv_notmask_f(x, mask_x0), mask_x0);
     p         = gmx_simd_mul_f(y, xinv);
     p         = gmx_simd_atan_f(p);
     p         = gmx_simd_add_f(p, aoffset);
