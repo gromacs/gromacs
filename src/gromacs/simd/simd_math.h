@@ -605,7 +605,13 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
 
     /* Calculate erfc */
     y       = gmx_simd_fabs_f(x);
+#ifndef NDEBUG
+    mask    = gmx_simd_cmpeq_f(y, gmx_simd_setzero_f());
+    t       = gmx_simd_blendv_f(y, one, mask);
+    t       = gmx_simd_inv_f(t);
+#else
     t       = gmx_simd_inv_f(y);
+#endif
     w       = gmx_simd_sub_f(t, one);
     t2      = gmx_simd_mul_f(t, t);
     w2      = gmx_simd_mul_f(w, w);
