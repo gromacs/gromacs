@@ -47,6 +47,9 @@
 #ifdef HAVE__FINITE
 #include <float.h>
 #endif
+#ifndef GMX_NATIVE_WINDOWS
+#include <fenv.h>
+#endif
 
 int gmx_nint(real a)
 {
@@ -850,4 +853,34 @@ int gmx_greatest_common_divisor(int p, int q)
         p   = tmp;
     }
     return p;
+}
+
+void gmx_feenableexcept()
+{
+#ifdef HAVE_FEENABLEEXCEPT
+    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+#elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+    /* Author:  David N. Williams
+     * License:  Public Domain
+     *
+     * Might also work on non-Apple Unix. But should be tested
+     * before enabling.
+     */
+    unsigned int  excepts = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
+    static fenv_t fenv;
+    unsigned int  new_excepts = excepts & FE_ALL_EXCEPT,
+                  old_excepts; // previous masks
+
+    if (fegetenv (&fenv) )
+    {
+        return -1;
+    }
+    old_excepts = fenv.__control & FE_ALL_EXCEPT;
+
+    // unmask
+    fenv.__control &= ~new_excepts;
+    fenv.__mxcsr   &= ~(new_excepts << 7);
+
+    return ( fesetenv (&fenv) ? -1 : old_excepts );
+#endif
 }

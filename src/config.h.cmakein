@@ -358,6 +358,9 @@
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
 
+/* Define if we have feenableexcept */
+#cmakedefine HAVE_FEENABLEEXCEPT
+
 /* Define if we have zlib */
 #cmakedefine HAVE_ZLIB
 
