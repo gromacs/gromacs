@@ -60,7 +60,7 @@ class Simd4MathTest : public Simd4Test
     public:
         ::testing::AssertionResult
                              compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                                      real refFunc(real x),     gmx_simd4_real_t simd4Func(gmx_simd4_real_t x));
+                                                      real refFunc(real x),     gmx_simd4_real_t gmx_simdcall simd4Func(gmx_simd4_real_t x));
 };
 
 /*! \brief Test approximate equality of SIMD4 vs reference version of a function.
@@ -85,7 +85,7 @@ class Simd4MathTest : public Simd4Test
  */
 ::testing::AssertionResult
 Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                        real refFunc(real x),     gmx_simd4_real_t simd4Func(gmx_simd4_real_t x))
+                                        real refFunc(real x),     gmx_simd4_real_t gmx_simdcall simd4Func(gmx_simd4_real_t x))
 {
     std::vector<real>            vx(GMX_SIMD4_WIDTH);
     std::vector<real>            vref(GMX_SIMD4_WIDTH);

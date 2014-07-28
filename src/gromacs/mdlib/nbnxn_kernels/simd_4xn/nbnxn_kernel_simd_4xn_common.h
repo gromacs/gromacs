@@ -56,7 +56,7 @@
 
 #include "../nbnxn_kernel_simd_utils.h"
 
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_load_simd_4xn_interactions(int gmx_unused             excl,
                                gmx_exclfilter gmx_unused  filter_S0,
                                gmx_exclfilter gmx_unused  filter_S1,

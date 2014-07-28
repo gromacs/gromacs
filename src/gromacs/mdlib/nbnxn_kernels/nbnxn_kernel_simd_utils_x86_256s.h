@@ -97,7 +97,7 @@ gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_real_t *c)
 #endif /* GMX_NBNXN_SIMD_2XNN */
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_shuffle_4_ps_fil01_to_2_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3,
                                __m128 *out0, __m128 *out1)
 {
@@ -110,7 +110,7 @@ gmx_shuffle_4_ps_fil01_to_2_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3,
 }
 
 /* Collect element 2 of the 4 inputs to out */
-static gmx_inline __m128
+static gmx_inline __m128 gmx_simdcall
 gmx_shuffle_4_ps_fil2_to_1_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3)
 {
     __m128 _c01, _c23;
@@ -122,7 +122,7 @@ gmx_shuffle_4_ps_fil2_to_1_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3)
 }
 
 /* Sum the elements within each input register and return the sums */
-static gmx_inline __m128
+static gmx_inline __m128 gmx_simdcall
 gmx_mm_transpose_sum4_pr(__m256 in0, __m256 in1,
                          __m256 in2, __m256 in3)
 {
@@ -135,7 +135,7 @@ gmx_mm_transpose_sum4_pr(__m256 in0, __m256 in1,
 }
 
 /* Sum the elements of halfs of each input register and return the sums */
-static gmx_inline __m128
+static gmx_inline __m128 gmx_simdcall
 gmx_mm_transpose_sum4h_pr(__m256 in0, __m256 in2)
 {
     in0 = _mm256_hadd_ps(in0, _mm256_setzero_ps());
@@ -147,7 +147,7 @@ gmx_mm_transpose_sum4h_pr(__m256 in0, __m256 in2)
 }
 
 /* Put two 128-bit 4-float registers into one 256-bit 8-float register */
-static gmx_inline __m256
+static gmx_inline __m256 gmx_simdcall
 gmx_2_mm_to_m256(__m128 in0, __m128 in1)
 {
     return _mm256_insertf128_ps(_mm256_castps128_ps256(in0), in1, 1);
@@ -243,7 +243,7 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
     *ctab1_S = gmx_2_mm_to_m256(ctabt_S[2], ctabt_S[3]);
 }
 
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
                __m256 *ctab0_S, __m256 *ctab1_S, __m256 *ctabv_S)
 {
@@ -289,7 +289,7 @@ gmx_load_exclusion_filter(const unsigned *i)
     return gmx_simd_load_i(i);
 }
 
-static gmx_inline gmx_simd_bool_t
+static gmx_inline gmx_simd_bool_t gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return _mm256_castsi256_ps(_mm256_cmpeq_epi32(_mm256_andnot_si256(m0, m1), _mm256_setzero_si256()));
@@ -313,7 +313,7 @@ gmx_load_exclusion_filter(const unsigned *i)
     return gmx_simd_load_r((real *) (i));
 }
 
-static gmx_inline gmx_simd_bool_t
+static gmx_inline gmx_simd_bool_t gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c);
