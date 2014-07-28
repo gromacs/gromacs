@@ -1464,6 +1464,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
+#ifndef NDEBUG
+    if (integrator[inputrec->eI].func != do_tpi &&
+        inputrec->cutoff_scheme == ecutsVERLET)
+    {
+        gmx_feenableexcept();
+    }
+#endif
     if (PAR(cr))
     {
         /* The master rank decided on the use of GPUs,
