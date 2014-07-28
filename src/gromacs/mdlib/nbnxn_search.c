@@ -4337,6 +4337,12 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
 
     grid = &nbs->grid[0];
 
+    if (min_ci_balanced <= 0 || grid->nc >= min_ci_balanced || grid->nc == 0)
+    {
+        /* We don't need to worry */
+        return = -1;
+    }
+
     ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*GPU_NSUBCELL_X);
     ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*GPU_NSUBCELL_Y);
     ls[ZZ] = (grid->c1[ZZ] - grid->c0[ZZ])*grid->ncx*grid->ncy/(grid->nc*GPU_NSUBCELL_Z);
@@ -4385,22 +4391,14 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
         nsp_est = nsp_est_nl;
     }
 
-    if (min_ci_balanced <= 0 || grid->nc >= min_ci_balanced || grid->nc == 0)
-    {
-        /* We don't need to worry */
-        nsubpair_max = -1;
-    }
-    else
-    {
-        /* Thus the (average) maximum j-list size should be as follows */
-        nsubpair_max = max(1, (int)(nsp_est/min_ci_balanced+0.5));
+    /* Thus the (average) maximum j-list size should be as follows */
+    nsubpair_max = max(1, (int)(nsp_est/min_ci_balanced+0.5));
 
-        /* Since the target value is a maximum (this avoids high outliers,
-         * which lead to load imbalance), not average, we add half the
-         * number of pairs in a cj4 block to get the average about right.
-         */
-        nsubpair_max += GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE/2;
-    }
+    /* Since the target value is a maximum (this avoids high outliers,
+     * which lead to load imbalance), not average, we add half the
+     * number of pairs in a cj4 block to get the average about right.
+     */
+    nsubpair_max += GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE/2;
 
     if (debug)
     {
