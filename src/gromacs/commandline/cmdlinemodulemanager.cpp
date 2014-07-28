@@ -311,6 +311,8 @@ CommandLineModuleManager::Impl::Impl(const char                *binaryName,
       helpModule_(NULL), singleModule_(NULL),
       bQuiet_(false)
 {
+    GMX_RELEASE_ASSERT(binaryName_.find('-') == std::string::npos,
+                       "Help export does not currently work with binary names with dashes");
 }
 
 void CommandLineModuleManager::Impl::addModule(CommandLineModulePointer module)

@@ -64,8 +64,13 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
+#else
+            static SimpleInputData singleton_lifetime;
+            return singleton_lifetime.data_;
+#endif
         }
 
         SimpleInputData() : data_(1, false)
@@ -86,8 +91,13 @@ class MultiDataSetInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
             static MultiDataSetInputData singleton;
             return singleton.data_;
+#else
+            static MultiDataSetInputData singleton_lifetime;
+            return singleton_lifetime.data_;
+#endif
         }
 
         MultiDataSetInputData() : data_(2, false)
