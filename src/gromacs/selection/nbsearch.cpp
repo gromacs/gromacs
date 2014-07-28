@@ -287,12 +287,14 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     cutoff_         = cutoff;
     if (cutoff_ <= 0)
     {
-        cutoff_     = GMX_REAL_MAX;
+        cutoff_     = cutoff2_ = GMX_REAL_MAX;
         bTryGrid_   = false;
     }
-    cutoff2_        = sqr(cutoff_);
-    bXY_            = false;
-
+    else
+    {
+        cutoff2_        = sqr(cutoff_);
+    }
+    bXY_             = false;
     nref_            = 0;
     xref_            = NULL;
     refExclusionIds_ = NULL;
