@@ -96,7 +96,7 @@
 #define gmx_simd4_dotproduct3_f   gmx_simd4_dotproduct3_f_sse4_1
 
 /* SIMD reduction function */
-static gmx_inline float
+static gmx_inline gmx_simdcall float
 gmx_simd_reduce_f_sse4_1(__m128 a)
 {
     float  f;
@@ -108,7 +108,7 @@ gmx_simd_reduce_f_sse4_1(__m128 a)
 }
 
 /* SIMD4 Dotproduct helper function */
-static gmx_inline float
+static gmx_inline gmx_simdcall float
 gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
 {
     float f;
@@ -116,7 +116,7 @@ gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
     return f;
 }
 
-static gmx_inline double
+static gmx_inline gmx_simdcall double
 gmx_simd_reduce_d_sse4_1(__m128d a)
 {
     double  f;

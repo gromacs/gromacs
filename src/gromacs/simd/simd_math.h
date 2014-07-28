@@ -101,7 +101,7 @@
  * \param d term 4 (multiple values)
  * \return sum of terms 1-4 (multiple values)
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_sum4_f(gmx_simd_float_t a, gmx_simd_float_t b,
                 gmx_simd_float_t c, gmx_simd_float_t d)
 {
@@ -120,7 +120,7 @@ gmx_simd_sum4_f(gmx_simd_float_t a, gmx_simd_float_t b,
  * with the exception that negative zero is not considered to be negative
  * on architectures where \ref GMX_SIMD_HAVE_LOGICAL is not set.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_xor_sign_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
 #ifdef GMX_SIMD_HAVE_LOGICAL
@@ -139,7 +139,7 @@ gmx_simd_xor_sign_f(gmx_simd_float_t a, gmx_simd_float_t b)
  *  \param x  The reference (starting) value x for which we want 1/sqrt(x).
  *  \return   An improved approximation with roughly twice as many bits of accuracy.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_rsqrt_iter_f(gmx_simd_float_t lu, gmx_simd_float_t x)
 {
 #    ifdef GMX_SIMD_HAVE_FMA
@@ -156,7 +156,7 @@ gmx_simd_rsqrt_iter_f(gmx_simd_float_t lu, gmx_simd_float_t x)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_invsqrt_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t lu = gmx_simd_rsqrt_f(x);
@@ -184,7 +184,7 @@ gmx_simd_invsqrt_f(gmx_simd_float_t x)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static gmx_inline void
+static gmx_inline gmx_simdcall void
 gmx_simd_invsqrt_pair_f(gmx_simd_float_t x0,    gmx_simd_float_t x1,
                         gmx_simd_float_t *out0, gmx_simd_float_t *out1)
 {
@@ -201,7 +201,7 @@ gmx_simd_invsqrt_pair_f(gmx_simd_float_t x0,    gmx_simd_float_t x1,
  *  \param x  The reference (starting) value x for which we want 1/x.
  *  \return   An improved approximation with roughly twice as many bits of accuracy.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_rcp_iter_f(gmx_simd_float_t lu, gmx_simd_float_t x)
 {
     return gmx_simd_mul_f(lu, gmx_simd_fnmadd_f(lu, x, gmx_simd_set1_f(2.0f)));
@@ -214,7 +214,7 @@ gmx_simd_rcp_iter_f(gmx_simd_float_t lu, gmx_simd_float_t x)
  *  \param x Argument that must be nonzero. This routine does not check arguments.
  *  \return 1/x. Result is undefined if your argument was invalid.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_inv_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t lu = gmx_simd_rcp_f(x);
@@ -238,7 +238,7 @@ gmx_simd_inv_f(gmx_simd_float_t x)
  *  \return sqrt(x). If x=0, the result will correctly be set to 0.
  *          The result is undefined if the input value is negative.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_sqrt_f(gmx_simd_float_t x)
 {
     gmx_simd_fbool_t  mask;
@@ -257,7 +257,7 @@ gmx_simd_sqrt_f(gmx_simd_float_t x)
  * \result The natural logarithm of x. Undefined if argument is invalid.
  */
 #ifndef gmx_simd_log_f
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_log_f(gmx_simd_float_t x)
 {
     const gmx_simd_float_t  half       = gmx_simd_set1_f(0.5f);
@@ -301,7 +301,7 @@ gmx_simd_log_f(gmx_simd_float_t x)
  * \param x Argument.
  * \result 2^x. Undefined if input argument caused overflow.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_exp2_f(gmx_simd_float_t x)
 {
     /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
@@ -347,7 +347,7 @@ gmx_simd_exp2_f(gmx_simd_float_t x)
  * \param x Argument.
  * \result exp(x). Undefined if input argument caused overflow.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_exp_f(gmx_simd_float_t x)
 {
     const gmx_simd_float_t  argscale     = gmx_simd_set1_f(1.44269504088896341f);
@@ -397,7 +397,7 @@ gmx_simd_exp_f(gmx_simd_float_t x)
  * This routine achieves very close to full precision, but we do not care about
  * the last bit or the subnormal result range.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_erf_f(gmx_simd_float_t x)
 {
     /* Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1] */
@@ -520,7 +520,7 @@ gmx_simd_erf_f(gmx_simd_float_t x)
  * (think results that are in the ballpark of 10^-30 for single precision,
  * or 10^-200 for double) since that is not relevant for MD.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_erfc_f(gmx_simd_float_t x)
 {
     /* Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1] */
@@ -698,7 +698,7 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
  * magnitudes of the argument we inherently begin to lose accuracy due to the
  * argument reduction, despite using extended precision arithmetics internally.
  */
-static gmx_inline void
+static gmx_inline gmx_simdcall void
 gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t *cosval)
 {
     /* Constants to subtract Pi/4*x from y while minimizing precision loss */
@@ -819,7 +819,7 @@ gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref gmx_simd_sincos_r and waste a factor 2 in performance.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_sin_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t s, c;
@@ -837,7 +837,7 @@ gmx_simd_sin_f(gmx_simd_float_t x)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref gmx_simd_sincos_r and waste a factor 2 in performance.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_cos_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t s, c;
@@ -852,7 +852,7 @@ gmx_simd_cos_f(gmx_simd_float_t x)
  * \param x The argument to evaluate tan for
  * \result Tan(x)
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_tan_f(gmx_simd_float_t x)
 {
     const gmx_simd_float_t  argred0         = gmx_simd_set1_f(1.5703125);
@@ -928,7 +928,7 @@ gmx_simd_tan_f(gmx_simd_float_t x)
  * \param x The argument to evaluate asin for
  * \result Asin(x)
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_asin_f(gmx_simd_float_t x)
 {
     const gmx_simd_float_t limitlow   = gmx_simd_set1_f(1e-4f);
@@ -980,7 +980,7 @@ gmx_simd_asin_f(gmx_simd_float_t x)
  * \param x The argument to evaluate acos for
  * \result Acos(x)
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_acos_f(gmx_simd_float_t x)
 {
     const gmx_simd_float_t one       = gmx_simd_set1_f(1.0f);
@@ -1017,7 +1017,7 @@ gmx_simd_acos_f(gmx_simd_float_t x)
  * \param x The argument to evaluate atan for
  * \result Atan(x), same argument/value range as standard math library.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_atan_f(gmx_simd_float_t x)
 {
     const gmx_simd_float_t halfpi    = gmx_simd_set1_f(M_PI/2);
@@ -1070,7 +1070,7 @@ gmx_simd_atan_f(gmx_simd_float_t x)
  * of any concern in Gromacs, and in particular it will not affect calculations
  * of angles from vectors.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_atan2_f(gmx_simd_float_t y, gmx_simd_float_t x)
 {
     const gmx_simd_float_t pi          = gmx_simd_set1_f(M_PI);
@@ -1175,7 +1175,7 @@ gmx_simd_atan2_f(gmx_simd_float_t y, gmx_simd_float_t x)
  * added to \f$1/r\f$ the error will be insignificant.
  *
  */
-static gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_pmecorrF_f(gmx_simd_float_t z2)
 {
     const gmx_simd_float_t  FN6      = gmx_simd_set1_f(-1.7357322914161492954e-8f);
@@ -1251,7 +1251,7 @@ gmx_simd_pmecorrF_f(gmx_simd_float_t z2)
  * This approximation achieves an accuracy slightly lower than 1e-6; when
  * added to \f$1/r\f$ the error will be insignificant.
  */
-static gmx_simd_float_t
+static gmx_inline gmx_simdcall gmx_simd_float_t
 gmx_simd_pmecorrV_f(gmx_simd_float_t z2)
 {
     const gmx_simd_float_t  VN6      = gmx_simd_set1_f(1.9296833005951166339e-8f);
@@ -1307,7 +1307,7 @@ gmx_simd_pmecorrV_f(gmx_simd_float_t z2)
  *
  * \copydetails gmx_simd_sum4_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_sum4_d(gmx_simd_double_t a, gmx_simd_double_t b,
                 gmx_simd_double_t c, gmx_simd_double_t d)
 {
@@ -1326,7 +1326,7 @@ gmx_simd_sum4_d(gmx_simd_double_t a, gmx_simd_double_t b,
  * with the exception that negative zero is not considered to be negative
  * on architectures where \ref GMX_SIMD_HAVE_LOGICAL is not set.
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_xor_sign_d(gmx_simd_double_t a, gmx_simd_double_t b)
 {
 #ifdef GMX_SIMD_HAVE_LOGICAL
@@ -1340,7 +1340,7 @@ gmx_simd_xor_sign_d(gmx_simd_double_t a, gmx_simd_double_t b)
  *
  * \copydetails gmx_simd_rsqrt_iter_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_rsqrt_iter_d(gmx_simd_double_t lu, gmx_simd_double_t x)
 {
 #ifdef GMX_SIMD_HAVE_FMA
@@ -1355,7 +1355,7 @@ gmx_simd_rsqrt_iter_d(gmx_simd_double_t lu, gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_invsqrt_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_invsqrt_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t lu = gmx_simd_rsqrt_d(x);
@@ -1378,7 +1378,7 @@ gmx_simd_invsqrt_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_invsqrt_pair_f
  */
-static gmx_inline void
+static gmx_inline gmx_simdcall void
 gmx_simd_invsqrt_pair_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
                         gmx_simd_double_t *out0, gmx_simd_double_t *out1)
 {
@@ -1418,7 +1418,7 @@ gmx_simd_invsqrt_pair_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
  *
  * \copydetails gmx_simd_rcp_iter_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_rcp_iter_d(gmx_simd_double_t lu, gmx_simd_double_t x)
 {
     return gmx_simd_mul_d(lu, gmx_simd_fnmadd_d(lu, x, gmx_simd_set1_d(2.0)));
@@ -1428,7 +1428,7 @@ gmx_simd_rcp_iter_d(gmx_simd_double_t lu, gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_inv_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_inv_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t lu = gmx_simd_rcp_d(x);
@@ -1451,7 +1451,7 @@ gmx_simd_inv_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_sqrt_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_sqrt_d(gmx_simd_double_t x)
 {
     gmx_simd_dbool_t   mask;
@@ -1466,7 +1466,7 @@ gmx_simd_sqrt_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_log_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_log_d(gmx_simd_double_t x)
 {
     const gmx_simd_double_t  half       = gmx_simd_set1_d(0.5);
@@ -1511,7 +1511,7 @@ gmx_simd_log_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_exp2_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_exp2_d(gmx_simd_double_t x)
 {
     const gmx_simd_double_t  arglimit      = gmx_simd_set1_d(1022.0);
@@ -1557,7 +1557,7 @@ gmx_simd_exp2_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_exp_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_exp_d(gmx_simd_double_t x)
 {
     const gmx_simd_double_t  argscale      = gmx_simd_set1_d(1.44269504088896340735992468100);
@@ -1610,7 +1610,7 @@ gmx_simd_exp_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_erf_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_erf_d(gmx_simd_double_t x)
 {
     /* Coefficients for minimax approximation of erf(x)=x*(CAoffset + P(x^2)/Q(x^2)) in range [-0.75,0.75] */
@@ -1795,7 +1795,7 @@ gmx_simd_erf_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_erfc_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_erfc_d(gmx_simd_double_t x)
 {
     /* Coefficients for minimax approximation of erf(x)=x*(CAoffset + P(x^2)/Q(x^2)) in range [-0.75,0.75] */
@@ -1980,7 +1980,7 @@ gmx_simd_erfc_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_sincos_f
  */
-static gmx_inline void
+static gmx_inline gmx_simdcall void
 gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_double_t *cosval)
 {
     /* Constants to subtract Pi/4*x from y while minimizing precision loss */
@@ -2107,7 +2107,7 @@ gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_doubl
  *
  * \copydetails gmx_simd_sin_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_sin_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t s, c;
@@ -2119,7 +2119,7 @@ gmx_simd_sin_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_cos_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_cos_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t s, c;
@@ -2131,7 +2131,7 @@ gmx_simd_cos_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_tan_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_tan_d(gmx_simd_double_t x)
 {
     const gmx_simd_double_t  argred0         = gmx_simd_set1_d(2*0.78539816290140151978);
@@ -2222,7 +2222,7 @@ gmx_simd_tan_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_asin_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_asin_d(gmx_simd_double_t x)
 {
     /* Same algorithm as cephes library */
@@ -2349,7 +2349,7 @@ gmx_simd_asin_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_acos_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_acos_d(gmx_simd_double_t x)
 {
     const gmx_simd_double_t one        = gmx_simd_set1_d(1.0);
@@ -2382,7 +2382,7 @@ gmx_simd_acos_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_atan_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_atan_d(gmx_simd_double_t x)
 {
     /* Same algorithm as cephes library */
@@ -2467,7 +2467,7 @@ gmx_simd_atan_d(gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_atan2_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_atan2_d(gmx_simd_double_t y, gmx_simd_double_t x)
 {
     const gmx_simd_double_t pi          = gmx_simd_set1_d(M_PI);
@@ -2499,7 +2499,7 @@ gmx_simd_atan2_d(gmx_simd_double_t y, gmx_simd_double_t x)
  *
  * \copydetails gmx_simd_pmecorrF_f
  */
-static gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_pmecorrF_d(gmx_simd_double_t z2)
 {
     const gmx_simd_double_t  FN10     = gmx_simd_set1_d(-8.0072854618360083154e-14);
@@ -2556,7 +2556,7 @@ gmx_simd_pmecorrF_d(gmx_simd_double_t z2)
  *
  * \copydetails gmx_simd_pmecorrV_f
  */
-static gmx_simd_double_t
+static gmx_inline gmx_simdcall gmx_simd_double_t
 gmx_simd_pmecorrV_d(gmx_simd_double_t z2)
 {
     const gmx_simd_double_t  VN9      = gmx_simd_set1_d(-9.3723776169321855475e-13);
@@ -2625,7 +2625,7 @@ gmx_simd_pmecorrV_d(gmx_simd_double_t z2)
  *
  * \copydetails gmx_simd_sum4_f
  */
-static gmx_inline gmx_simd4_float_t
+static gmx_inline gmx_simdcall gmx_simd4_float_t
 gmx_simd4_sum4_f(gmx_simd4_float_t a, gmx_simd4_float_t b,
                  gmx_simd4_float_t c, gmx_simd4_float_t d)
 {
@@ -2636,7 +2636,7 @@ gmx_simd4_sum4_f(gmx_simd4_float_t a, gmx_simd4_float_t b,
  *
  * \copydetails gmx_simd_rsqrt_iter_f
  */
-static gmx_inline gmx_simd4_float_t
+static gmx_inline gmx_simdcall gmx_simd4_float_t
 gmx_simd4_rsqrt_iter_f(gmx_simd4_float_t lu, gmx_simd4_float_t x)
 {
 #    ifdef GMX_SIMD_HAVE_FMA
@@ -2650,7 +2650,7 @@ gmx_simd4_rsqrt_iter_f(gmx_simd4_float_t lu, gmx_simd4_float_t x)
  *
  * \copydetails gmx_simd_invsqrt_f
  */
-static gmx_inline gmx_simd4_float_t
+static gmx_inline gmx_simdcall gmx_simd4_float_t
 gmx_simd4_invsqrt_f(gmx_simd4_float_t x)
 {
     gmx_simd4_float_t lu = gmx_simd4_rsqrt_f(x);
@@ -2680,7 +2680,7 @@ gmx_simd4_invsqrt_f(gmx_simd4_float_t x)
  *
  * \copydetails gmx_simd_sum4_f
  */
-static gmx_inline gmx_simd4_double_t
+static gmx_inline gmx_simdcall gmx_simd4_double_t
 gmx_simd4_sum4_d(gmx_simd4_double_t a, gmx_simd4_double_t b,
                  gmx_simd4_double_t c, gmx_simd4_double_t d)
 {
@@ -2691,7 +2691,7 @@ gmx_simd4_sum4_d(gmx_simd4_double_t a, gmx_simd4_double_t b,
  *
  * \copydetails gmx_simd_rsqrt_iter_f
  */
-static gmx_inline gmx_simd4_double_t
+static gmx_inline gmx_simdcall gmx_simd4_double_t
 gmx_simd4_rsqrt_iter_d(gmx_simd4_double_t lu, gmx_simd4_double_t x)
 {
 #ifdef GMX_SIMD_HAVE_FMA
@@ -2705,7 +2705,7 @@ gmx_simd4_rsqrt_iter_d(gmx_simd4_double_t lu, gmx_simd4_double_t x)
  *
  * \copydetails gmx_simd_invsqrt_f
  */
-static gmx_inline gmx_simd4_double_t
+static gmx_inline gmx_simdcall gmx_simd4_double_t
 gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
 {
     gmx_simd4_double_t lu = gmx_simd4_rsqrt_d(x);

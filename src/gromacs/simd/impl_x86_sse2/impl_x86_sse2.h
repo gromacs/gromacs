@@ -249,7 +249,7 @@
 /****************************************************
  * SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static gmx_inline __m128
+static gmx_inline gmx_simdcall __m128
 gmx_simd_get_exponent_f_sse2(__m128 x)
 {
     const __m128  expmask      = _mm_castsi128_ps(_mm_set1_epi32(0x7F800000));
@@ -261,7 +261,7 @@ gmx_simd_get_exponent_f_sse2(__m128 x)
     return _mm_cvtepi32_ps(iexp);
 }
 
-static gmx_inline __m128
+static gmx_inline gmx_simdcall __m128
 gmx_simd_get_mantissa_f_sse2(__m128 x)
 {
     const __m128 mantmask = _mm_castsi128_ps(_mm_set1_epi32(0x007FFFFF));
@@ -271,7 +271,7 @@ gmx_simd_get_mantissa_f_sse2(__m128 x)
     return _mm_or_ps(x, one);
 }
 
-static gmx_inline __m128
+static gmx_inline gmx_simdcall __m128
 gmx_simd_set_exponent_f_sse2(__m128 x)
 {
     const __m128i expbias      = _mm_set1_epi32(127);
@@ -281,7 +281,7 @@ gmx_simd_set_exponent_f_sse2(__m128 x)
     return _mm_castsi128_ps(iexp);
 }
 
-static gmx_inline __m128i
+static gmx_inline gmx_simdcall __m128i
 gmx_simd_mul_fi_sse2(__m128i a, __m128i b)
 {
     __m128i a1 = _mm_srli_si128(a, 4); /* - a[3] a[2] a[1] */
@@ -295,7 +295,7 @@ gmx_simd_mul_fi_sse2(__m128i a, __m128i b)
     return _mm_unpacklo_epi32(c, c1);
 }
 
-static gmx_inline float
+static gmx_inline gmx_simdcall float
 gmx_simd_reduce_f_sse2(__m128 a)
 {
     __m128 b;
@@ -309,7 +309,7 @@ gmx_simd_reduce_f_sse2(__m128 a)
 /****************************************************
  * DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static gmx_inline __m128d
+static gmx_inline gmx_simdcall __m128d
 gmx_simd_get_exponent_d_sse2(__m128d x)
 {
     /* Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds */
@@ -323,7 +323,7 @@ gmx_simd_get_exponent_d_sse2(__m128d x)
     return _mm_cvtepi32_pd(iexp);
 }
 
-static gmx_inline __m128d
+static gmx_inline gmx_simdcall __m128d
 gmx_simd_get_mantissa_d_sse2(__m128d x)
 {
     /* Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds */
@@ -334,7 +334,7 @@ gmx_simd_get_mantissa_d_sse2(__m128d x)
     return _mm_or_pd(x, one);
 }
 
-static gmx_inline __m128d
+static gmx_inline gmx_simdcall __m128d
 gmx_simd_set_exponent_d_sse2(__m128d x)
 {
     const __m128i  expbias      = _mm_set1_epi32(1023);
@@ -347,7 +347,7 @@ gmx_simd_set_exponent_d_sse2(__m128d x)
     return _mm_castsi128_pd(iexp);
 }
 
-static gmx_inline __m128i
+static gmx_inline gmx_simdcall __m128i
 gmx_simd_mul_di_sse2(__m128i a, __m128i b)
 {
     __m128i c;
@@ -359,7 +359,7 @@ gmx_simd_mul_di_sse2(__m128i a, __m128i b)
     return _mm_shuffle_epi32(c, _MM_SHUFFLE(3, 1, 2, 0)); /* 0 0 a[1]*b[1] a[0]*b[0] */
 }
 
-static gmx_inline double
+static gmx_inline gmx_simdcall double
 gmx_simd_reduce_d_sse2(__m128d a)
 {
     __m128d b;
@@ -436,7 +436,7 @@ gmx_simd_check_and_reset_overflow(void)
 #define gmx_simd4_reduce_f               gmx_simd_reduce_f
 
 /* SIMD4 Dotproduct helper function */
-static gmx_inline float
+static gmx_inline gmx_simdcall float
 gmx_simd4_dotproduct3_f_sse2(__m128 a, __m128 b)
 {
     float  f;
