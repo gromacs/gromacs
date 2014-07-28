@@ -161,6 +161,13 @@ check_int_multiply_for_overflow(gmx_int64_t  a,
 int
 gmx_greatest_common_divisor(int p, int q);
 
+
+/*! \brief Enable floating-point exceptions if supported on OS
+ *
+ * Enables all supported exceptions. On POSIX div-by-zero, invalid, overflow.
+ */
+void gmx_feenableexcept();
+
 #ifdef __cplusplus
 }
 #endif

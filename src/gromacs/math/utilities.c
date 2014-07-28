@@ -47,6 +47,9 @@
 #ifdef HAVE__FINITE
 #include <float.h>
 #endif
+#if defined HAVE_FEENABLEEXCEPT && !defined NDEBUG
+#include <fenv.h>
+#endif
 
 int gmx_nint(real a)
 {
@@ -850,4 +853,11 @@ int gmx_greatest_common_divisor(int p, int q)
         p   = tmp;
     }
     return p;
+}
+
+void gmx_feenableexcept()
+{
+#if defined HAVE_FEENABLEEXCEPT && !defined NDEBUG
+    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+#endif
 }
