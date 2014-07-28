@@ -293,5 +293,24 @@ if (SIMD_CHANGED AND DEFINED SIMD_STATUS_MESSAGE)
     message(STATUS "${SIMD_STATUS_MESSAGE}")
 endif()
 
+# By default, 32-bit windows cannot pass SIMD (SSE/AVX) arguments in registers,
+# and even on 64-bit (all platforms) it is only used for a handful of arguments.
+# The __vectorcall (MSVC, from MSVC2013) or __regcall (ICC) calling conventions
+# enable this, which is critical to enable 32-bit SIMD and improves performance
+# for 64-bit SIMD.
+# Check if the compiler supports one of these, and in that case set gmx_simdcall
+# to that string. If we do not have any such calling convention modifier, set it
+# to an empty string.
+if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
+    foreach(callconv __vectorcall __regcall "")
+        set(callconv_compile_var "_callconv_${callconv}")
+        check_c_source_compiles("int ${callconv} f(int i) {return i;} int main(void) {return f(0);}" ${callconv_compile_var})
+        if(${callconv_compile_var})
+            set(GMX_SIMD_CALLING_CONVENTION "${callconv}" CACHE INTERNAL "Calling convention for SIMD routines" FORCE)
+            break()
+        endif()
+    endforeach()
+endif()
+
 endmacro()
 
