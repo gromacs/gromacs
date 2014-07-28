@@ -231,12 +231,12 @@ elseif(${GMX_SIMD} STREQUAL "AVX2_256")
 
     gmx_find_cflag_for_source(CFLAGS_AVX2 "C compiler AVX2 flag"
                               "#include<immintrin.h>
-                              int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_fmadd_ps(x,x,x);return _mm256_movemask_ps(x);}"
+                              int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
                               SIMD_C_FLAGS
                               "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX2 "C++ compiler AVX2 flag"
                                 "#include<immintrin.h>
-                                int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_fmadd_ps(x,x,x);return _mm256_movemask_ps(x);}"
+                                int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
                                 SIMD_CXX_FLAGS
                                 "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
 

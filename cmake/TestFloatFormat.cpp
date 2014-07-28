@@ -32,26 +32,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include <stdio.h>
 
-#include <assert.h>
+volatile const double abc [10] = {
+    /* Zero-terminated strings encoded as floating-point numbers */
+    /* "GROMACSX" in ascii    */
+    (double)  3.80279098314984902657e+35, (double) 0.0,
+    /* "GROMACSX" in ebcdic   */
+    (double) -1.37384666579378297437e+38, (double) 0.0,
+    /* "D__float" (vax)       */
+    (double)  3.53802595280598432000e+18, (double) 0.0,
+    /* "IBMHEXFP" s390/ascii  */
+    (double)  1.77977764695171661377e+10, (double) 0.0,
+    /* "IBMHEXFP" s390/ebcdic */
+    (double) -5.22995989424860458374e+10, (double) 0.0,
+};
 
-#include "gromacs/utility/basedefinitions.h"
+int
+main()
+{
+    /* Check that a double is 8 bytes - compilation dies if it isnt */
+    extern char xyz [sizeof(double) == 8 ? 1 : -1];
+    int         i;
+    double      d;
 
-/* We only use the C interface of ThreeFry and r123array2x64. This file is a
-   replacment for the original from the Random123 distribution. It sets all
-   defines (they all start with R123_), which are used by those parts of
-   Random123 being used. Instead of determining values based on the Compiler
-   (Name, Version, ..) we set values based on our assumptions in Gromacs, and
-   the defines used in Gromacs */
-
-/* Random123 isn't used from Cuda thus this can always be empty */
-#define R123_CUDA_DEVICE
-/* For "inline" use the Gromacs own gmx_inline */
-#define R123_STATIC_INLINE static gmx_inline
-/* force_inline isn't used in Gromacs - if it matters for a compiler it probably
-   not only matters here and should be defined in basedefinitions.h */
-#define R123_FORCE_INLINE(decl) decl
-/* We assume in Gromacs that assert is available outside of Cuda */
-#define R123_ASSERT assert
-/* Not used  (only used by C++ interface of ThreeFry) */
-#define R123_STATIC_ASSERT(expr, msg)
+    /* Make sure some compilers do not optimize away the entire structure
+     * with floating-point data by using it to produce a return value.
+     */
+    for (i = 0, d = 0; i < 10; i++)
+    {
+        d += abc[i];
+    }
+    return (d == 12345.0);
+}

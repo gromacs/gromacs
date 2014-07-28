@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,29 +32,5 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-#TODO: add check that source doesn't contain any untracked files
-if(NOT CPACK_INSTALL_CMAKE_PROJECTS) #building source package
-    get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
-    if (NOT EXISTS "${CMAKE_BINARY_DIR}/share/man/man1/gmx-view.1" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/install-guide/final/INSTALL" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/online.html" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/programs/gmx-view.html")
-        message(FATAL_ERROR
-            "To create a complete source package, bash completions, "
-            "man and HTML pages, and INSTALL need to be generated. "
-            "Run 'make completion man html install-guide' to build "
-            "these parts. You can also configure with "
-            "GMX_BUILD_HELP=ON to automatically build the HTML parts.")
-    endif()
-else()
-    if (NOT CPACK_GMX_BUILD_HELP)
-        message(WARNING
-            "To create a complete binary package, bash completions, and "
-            "man and HTML pages need to be generated. "
-            "You need to configure with GMX_BUILD_HELP=ON to include all "
-            "in the binary package.")
-        # Building the man, html, ... targets is not sufficient because than the
-        # install is still not done.
-    endif()
-endif()
+gmx_add_unit_test(RandomUnitTests random-test
+                  random.cpp)
