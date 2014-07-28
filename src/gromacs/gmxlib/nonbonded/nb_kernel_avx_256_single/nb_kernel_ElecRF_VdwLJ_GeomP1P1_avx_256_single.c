@@ -299,7 +299,7 @@ nb_kernel_ElecRF_VdwLJ_GeomP1P1_VF_avx_256_single
             dummy_mask = gmx_mm256_set_m128(gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx+4)),_mm_setzero_si128())),
                                             gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128())));
                                             
-            jnrA       = (jnrlistA>=0) ? jnrlistA : 0;
+            jnrA       = (jnrlistA>=0) ? jnrlistA : 0; /* TODO: is it possible to change this so that displacement won't be 0 without affecting the result? If so we can enable all exceptions also for group kernels */
             jnrB       = (jnrlistB>=0) ? jnrlistB : 0;
             jnrC       = (jnrlistC>=0) ? jnrlistC : 0;
             jnrD       = (jnrlistD>=0) ? jnrlistD : 0;

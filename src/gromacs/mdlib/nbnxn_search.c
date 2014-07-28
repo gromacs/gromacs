@@ -436,6 +436,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 
     if (n > grid->na_sc)
     {
+        assert(atom_density!=0); /*TODO: is this a bug if this is 0 or is this allowed to happen? happens e.g. for nbnxn-ljpme-LB-geometric*/
         /* target cell length */
         if (grid->bSimple)
         {

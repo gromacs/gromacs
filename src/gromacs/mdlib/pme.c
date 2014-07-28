@@ -1743,7 +1743,7 @@ static void pmegrids_destroy(pmegrids_t *grids)
 
 static void realloc_work(pme_work_t *work, int nkx)
 {
-    int simd_width;
+    int simd_width, i;
 
     if (nkx > work->nalloc)
     {
@@ -1770,6 +1770,11 @@ static void realloc_work(pme_work_t *work, int nkx)
         snew_aligned(work->tmp2,  work->nalloc+simd_width, simd_width*sizeof(real));
         snew_aligned(work->eterm, work->nalloc+simd_width, simd_width*sizeof(real));
         srenew(work->m2inv, work->nalloc);
+        for (i=0; i<work->nalloc+simd_width; i++)
+        {
+            work->denom[i] = 1; /* init to 1 to avoid 1/0 exceptions of simd padded elements */
+            work->tmp2[i] = 1; /*same for erfc (which should be OK but our simd_erfc_f isn't ok with 0) */
+        }
     }
 }
 
@@ -2264,7 +2269,9 @@ static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, gmx_bool bLB,
                 tmp2[kx]  = sqrt(factor*m2k);
             }
 
+            if (kxstart+mhyk+mhzk==0) tmp2[0]=1; /*TODO: find a better way to skip. ideally our gmx_simd_erfc_f wouldn't do 1/0 for erfc(0)*/
             calc_exponentials_lj(kxstart, kxend, tmp1, tmp2, denom);
+            if (kxstart+mhyk+mhzk==0) tmp2[0]=0;
 
             for (kx = kxstart; kx < kxend; kx++)
             {
@@ -2397,7 +2404,9 @@ static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, gmx_bool bLB,
                 tmp2[kx]  = sqrt(factor*m2k);
             }
 
+            if (kxstart+mhyk+mhzk==0) tmp2[0]=1;
             calc_exponentials_lj(kxstart, kxend, tmp1, tmp2, denom);
+            if (kxstart+mhyk+mhzk==0) tmp2[0]=0;
 
             for (kx = kxstart; kx < kxend; kx++)
             {

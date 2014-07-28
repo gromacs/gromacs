@@ -605,7 +605,7 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
 
     /* Calculate erfc */
     y       = gmx_simd_fabs_f(x);
-    t       = gmx_simd_inv_f(y);
+    t       = gmx_simd_inv_f(y);  /* TODO: is there a way to avoid 1/0 for x=0? */
     w       = gmx_simd_sub_f(t, one);
     t2      = gmx_simd_mul_f(t, t);
     w2      = gmx_simd_mul_f(w, w);

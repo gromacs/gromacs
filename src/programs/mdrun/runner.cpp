@@ -47,6 +47,16 @@
 #include <unistd.h>
 #endif
 
+#ifdef __GNUC__
+#define HAVE_FEENABLEEXCEPT /* TODO: replace with cmake check */
+#endif
+#ifdef HAVE_FEENABLEEXCEPT
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <fenv.h>
+#endif
+
 #include "typedefs.h"
 #include "oenv.h"
 #include "force.h"
@@ -1514,6 +1524,17 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           hw_opt->nthreads_omp_pme,
                           (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
+
+#ifdef HAVE_FEENABLEEXCEPT
+    if (inputrec->cutoff_scheme == ecutsVERLET)
+    {
+        feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+    }
+    else
+    {
+        feenableexcept(FE_OVERFLOW);
+    }
+#endif
 
     if (PAR(cr))
     {
