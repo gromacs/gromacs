@@ -34,6 +34,6 @@
  */
 #include "gromacs/utility/baseversion-gen.h"
 
-const char _gmx_ver_string[] = "VERSION @GMX_PROJECT_VERSION_STR@";
-const char _gmx_full_git_hash[] = "@GMX_GIT_HEAD_HASH@";
-const char _gmx_central_base_hash[] = "@GMX_GIT_REMOTE_HASH@";
+const char _gmx_ver_string[] = "VERSION @GMX_VERSION_STRING_FULL@";
+const char _gmx_full_git_hash[] = "@GMX_VERSION_FULL_HASH@";
+const char _gmx_central_base_hash[] = "@GMX_VERSION_CENTRAL_BASE_HASH@";
