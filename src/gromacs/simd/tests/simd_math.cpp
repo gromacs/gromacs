@@ -60,7 +60,7 @@ class SimdMathTest : public SimdTest
     public:
         ::testing::AssertionResult
                             compareSimdMathFunction(const char * refFuncExpr, const char *simdFuncExpr,
-                                                    real refFunc(real x),     gmx_simd_real_t simdFunc(gmx_simd_real_t x));
+                                                    real refFunc(real x),     gmx_simd_real_t gmx_simdcall simdFunc(gmx_simd_real_t x));
 };
 
 /*! \brief Test approximate equality of SIMD vs reference version of a function.
@@ -84,7 +84,7 @@ class SimdMathTest : public SimdTest
  */
 ::testing::AssertionResult
 SimdMathTest::compareSimdMathFunction(const char * refFuncExpr, const char *simdFuncExpr,
-                                      real refFunc(real x),     gmx_simd_real_t simdFunc(gmx_simd_real_t x))
+                                      real refFunc(real x),     gmx_simd_real_t gmx_simdcall simdFunc(gmx_simd_real_t x))
 {
     std::vector<real>            vx(GMX_SIMD_REAL_WIDTH);
     std::vector<real>            vref(GMX_SIMD_REAL_WIDTH);
@@ -208,7 +208,7 @@ TEST_F(SimdMathTest, gmxSimdInvsqrtR)
 }
 
 /*! \brief Function wrapper to return first result when testing \ref gmx_simd_invsqrt_pair_r */
-gmx_simd_real_t
+gmx_simd_real_t gmx_simdcall
 tst_invsqrt_pair0(gmx_simd_real_t x)
 {
     gmx_simd_real_t r0, r1;
@@ -217,7 +217,7 @@ tst_invsqrt_pair0(gmx_simd_real_t x)
 }
 
 /*! \brief Function wrapper to return second result when testing \ref gmx_simd_invsqrt_pair_r */
-gmx_simd_real_t
+gmx_simd_real_t gmx_simdcall
 tst_invsqrt_pair1(gmx_simd_real_t x)
 {
     gmx_simd_real_t r0, r1;

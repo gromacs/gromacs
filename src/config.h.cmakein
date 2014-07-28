@@ -123,6 +123,9 @@
 /* String for SIMD instruction choice (for writing to log files and stdout) */
 #define GMX_SIMD_STRING "@GMX_SIMD@"
 
+/* Calling convention string (if any) for routines with SIMD variable args */
+#define gmx_simdcall @GMX_SIMD_CALLING_CONVENTION@
+
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN
 

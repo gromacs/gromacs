@@ -127,7 +127,7 @@
 #define gmx_simd4_cvt_f2d                _mm256_cvtps_pd
 #define gmx_simd4_cvt_d2f                _mm256_cvtpd_ps
 
-static gmx_inline double
+static gmx_inline double gmx_simdcall
 gmx_simd4_reduce_d_avx_128_fma(__m256d a)
 {
     double  f;
@@ -140,7 +140,7 @@ gmx_simd4_reduce_d_avx_128_fma(__m256d a)
     return f;
 }
 
-static gmx_inline double
+static gmx_inline double gmx_simdcall
 gmx_simd4_dotproduct3_d_avx_128_fma(__m256d a, __m256d b)
 {
     double  d;
