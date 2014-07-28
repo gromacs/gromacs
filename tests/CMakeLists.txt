@@ -38,15 +38,15 @@ option(REGRESSIONTEST_DOWNLOAD
     "Automatically download regressiontests. Tests can be run with ctest." OFF)
 
 if(REGRESSIONTEST_DOWNLOAD)
-    if("${PROJECT_VERSION}" MATCHES "-dev")
-      set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/${REGRESSIONTEST_BRANCH})
-      set(REGRESSIONTEST_PATH "${CMAKE_CURRENT_BINARY_DIR}/regressiontests"
-           CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+    if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)
+        set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/${REGRESSIONTEST_BRANCH})
+        set(REGRESSIONTEST_PATH "${CMAKE_CURRENT_BINARY_DIR}/regressiontests"
+            CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
     else()
         set(REGRESSIONTEST_URL http://gerrit.gromacs.org/download/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
         set(REGRESSIONTEST_PATH
-           "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"
-           CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+            "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"
+            CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
     endif()
     set(REGRESSIONTEST_FILE "${CMAKE_CURRENT_BINARY_DIR}/regressiontests.tgz")
     message("Downloading: ${REGRESSIONTEST_URL}")
