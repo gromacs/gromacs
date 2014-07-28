@@ -780,9 +780,9 @@
 #endif
 #endif
 
-        cr2_S0        = gmx_simd_mul_r(lje_c2_S, rsq_S0);
+        cr2_S0        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S0,wco_S0));
 #ifndef HALF_LJ
-        cr2_S2        = gmx_simd_mul_r(lje_c2_S, rsq_S2);
+        cr2_S2        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S2,wco_S2));
 #endif
         expmcr2_S0    = gmx_simd_exp_r(gmx_simd_mul_r(mone_S, cr2_S0));
 #ifndef HALF_LJ
