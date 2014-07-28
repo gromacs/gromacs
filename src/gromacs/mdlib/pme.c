@@ -1745,7 +1745,7 @@ static void pmegrids_destroy(pmegrids_t *grids)
 
 static void realloc_work(pme_work_t *work, int nkx)
 {
-    int simd_width;
+    int simd_width, i;
 
     if (nkx > work->nalloc)
     {
@@ -1772,6 +1772,12 @@ static void realloc_work(pme_work_t *work, int nkx)
         snew_aligned(work->tmp2,  work->nalloc+simd_width, simd_width*sizeof(real));
         snew_aligned(work->eterm, work->nalloc+simd_width, simd_width*sizeof(real));
         srenew(work->m2inv, work->nalloc);
+#ifndef NDEBUG
+        for (i = 0; i < work->nalloc+simd_width; i++)
+        {
+            work->denom[i] = 1; /* init to 1 to avoid 1/0 exceptions of simd padded elements */
+        }
+#endif
     }
 }
 

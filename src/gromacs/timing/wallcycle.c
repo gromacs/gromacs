@@ -623,7 +623,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 {
     double     *cyc_sum;
     double      tot, tot_for_pp, tot_for_rest, tot_gpu, tot_cpu_overlap, gpu_cpu_ratio, tot_k;
-    double      c2t, c2t_pp, c2t_pme;
+    double      c2t, c2t_pp, c2t_pme = 0;
     int         i, j, npp, nth_pp, nth_pme, nth_tot;
     char        buf[STRLEN];
     const char *hline = "-----------------------------------------------------------------------------";
@@ -652,7 +652,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     {
         c2t     = realtime/tot;
         c2t_pp  = c2t * nth_tot / (double) (npp*nth_pp);
-        c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
+        if (npme > 0)
+        {
+            c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
+        }
     }
     else
     {
