@@ -120,36 +120,27 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
 tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
 list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
 
-file(GLOB LIBGROMACS_HEADERS *.h)
+set(LIBGROMACS_HEADERS
+    analysisdata.h
+    commandline.h
+    options.h
+    selection.h
+    trajectoryanalysis.h
+    utility.h)
 configure_file(version.h.cmakein version.h)
 gmx_install_headers("" ${LIBGROMACS_HEADERS})
 gmx_install_headers("" ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
-# Add target that generates baseversion-gen.c every time make is run
-# if git version info is requested, or create it statically.
-# This code is here instead of utility/CMakeLists.txt because CMake
-# ignores set_source_file_properties from subdirectories.
-set(GENERATED_VERSION_FILE
-    ${CMAKE_CURRENT_BINARY_DIR}/utility/baseversion-gen.c)
-set(GENERATED_VERSION_FILE_SOURCE
-    ${CMAKE_CURRENT_SOURCE_DIR}/utility/baseversion-gen.c.cmakein)
+# This code is here instead of utility/CMakeLists.txt, because CMake
+# custom commands and source file properties can only be set in the directory
+# that contains the target that uses them.
+set(GENERATED_VERSION_FILE utility/baseversion-gen.c)
+gmx_configure_version_file(
+    utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
+    REMOTE_HASH)
 if (GMX_GIT_VERSION_INFO)
-    add_custom_target(gmx-version ALL
-            COMMAND ${CMAKE_COMMAND}
-                -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
-                -D PROJECT_VERSION="${PROJECT_VERSION}"
-                -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-                -D VERSION_CMAKEIN=${GENERATED_VERSION_FILE_SOURCE}
-                -D VERSION_OUT=${GENERATED_VERSION_FILE}
-                -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            DEPENDS ${GENERATED_VERSION_FILE_SOURCE}
-            COMMENT "Generating git version information")
     set_source_files_properties(${GENERATED_VERSION_FILE}
                                 PROPERTIES GENERATED true)
-else()
-    set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
-    configure_file(${GENERATED_VERSION_FILE_SOURCE} ${GENERATED_VERSION_FILE})
 endif()
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
@@ -168,9 +159,6 @@ if (GMX_GPU)
             DEBUG -g -D_DEBUG_=1)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
-endif()
-if (GMX_GIT_VERSION_INFO)
-    add_dependencies(libgromacs gmx-version)
 endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
