@@ -56,6 +56,7 @@
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
@@ -147,7 +148,7 @@ class CMainCommandLineModule : public CommandLineModuleInterface
 CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
     : options_(NULL, NULL), bHelp_(false), bHidden_(false),
       bQuiet_(false), bVersion_(false), bCopyright_(true),
-      niceLevel_(19), bBackup_(true), debugLevel_(0)
+      niceLevel_(19), bBackup_(true), bFpexcept_(false), debugLevel_(0)
 {
     binaryInfoSettings_.copyright(true);
 }
@@ -173,6 +174,8 @@ void CommandLineCommonOptionsHolder::initOptions()
                            .description("Set the nicelevel (default depends on command)"));
     options_.addOption(BooleanOption("backup").store(&bBackup_)
                            .description("Write backups if output files exist"));
+    options_.addOption(BooleanOption("fpexcept").store(&bFpexcept_)
+                           .hidden().description("Enable floating-point exceptions"));
     options_.addOption(IntegerOption("debug").store(&debugLevel_)
                            .hidden().defaultValueIfSet(1)
                            .description("Write file with debug information, "
@@ -590,6 +593,11 @@ int CommandLineModuleManager::run(int argc, char *argv[])
             gmx_set_nice(optionsHolder.niceLevel());
             bNiceSet = true;
         }
+    }
+    if (optionsHolder.enableFPExceptions())
+    {
+        //TODO: currently it is always enabled for mdrun (verlet) and tests.
+        gmx_feenableexcept();
     }
 
     int rc = 0;
