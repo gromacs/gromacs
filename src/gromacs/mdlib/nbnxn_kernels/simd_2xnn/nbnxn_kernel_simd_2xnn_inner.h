@@ -65,7 +65,7 @@
 /* Without exclusions and energies we only need to mask the cut-off,
  * this can be faster with blendv.
  */
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_SIMD_HAVE_BLENDV && !defined COUNT_PAIRS
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES || defined LJ_EWALD_GEOM) && defined GMX_SIMD_HAVE_BLENDV
 /* With RF and tabulated Coulomb we replace cmp+and with sub+blendv.
  * With gcc this is slower, except for RF on Sandy Bridge.
  * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
@@ -328,10 +328,10 @@
         tmp = gmx_simd_align_r(tmpa);
         for (i = 0; i < UNROLLI; i += 2)
         {
-            gmx_simd_store_r(tmp, i == 0 ? wco_S0 : wco_S2);
+            gmx_simd_store_r(tmp, gmx_simd_sub_r(rc2_S, i == 0 ? rsq_S0 : rsq_S2));
             for (j = 0; j < 2*UNROLLJ; j++)
             {
-                if (!(tmp[j] == 0))
+                if (tmp[j] >= 0)
                 {
                     npair++;
                 }
@@ -780,9 +780,10 @@
 #endif
 #endif
 
-        cr2_S0        = gmx_simd_mul_r(lje_c2_S, rsq_S0);
+        /* Mask for the cut-off to avoid overflow in gmx_simd_exp_r */
+        cr2_S0        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S0, wco_S0));
 #ifndef HALF_LJ
-        cr2_S2        = gmx_simd_mul_r(lje_c2_S, rsq_S2);
+        cr2_S2        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S2, wco_S2));
 #endif
         expmcr2_S0    = gmx_simd_exp_r(gmx_simd_mul_r(mone_S, cr2_S0));
 #ifndef HALF_LJ
