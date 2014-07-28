@@ -417,6 +417,7 @@ check_function_exists(sqrtf             HAVE_SQRTF)
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
+check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
