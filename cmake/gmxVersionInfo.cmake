@@ -1,0 +1,332 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2014, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
+# Sets version information variables and provides CMake functions for
+# generating files based on them
+#
+# This script provides the following basic version variables that need to be
+# maintained manually:
+#   GMX_VERSION_MAJOR      Major version number.
+#   GMX_VERSION_MINOR      Minor version number.
+#   GMX_VERSION_PATCH      Patch version number.
+#       Should always be defined: zero for, e.g., 5.0.
+#   GMX_VERSION_SUFFIX     String suffix to add to numeric version string.
+#       "-dev" is automatically added when not building from a source package,
+#       and does not need to be kept here.
+#   LIBRARY_SOVERSION      so version for the built libraries.
+#       Should be increased for each binary incompatible release (in GROMACS,
+#       the typical policy is to increase it for each major/minor version
+#       change, but not for patch releases, even if the latter may not always
+#       be fully binary compatible).
+#   LIBRARY_VERSION        Full library version.
+#   REGRESSIONTEST_BRANCH  For builds not from source packages, name of the
+#       regressiontests branch at gerrit.gromacs.org whose HEAD can test this
+#       code, *if* this code is recent enough (i.e., contains all changes from
+#       the corresponding code branch that affects the regression test
+#       results).
+# They are collected into a single section below.
+# The following variables are set based on these:
+#   GMX_VERSION            String composed from GMX_VERSION_* numeric variables
+#       above. Example: 4.6.1, 5.0
+#   GMX_VERSION_STRING     String with GMX_VERSION suffixed with the given
+#       suffix and possibly "-dev" for builds not from a source package.
+#   GMX_VERSION_NUMERIC    Numeric version number (e.g., 40601 for 4.6.1).
+#   GMX_API_VERSION        Numeric API version.
+#       This is currently set automatically to GMX_VERSION_NUMERIC, but may
+#       become manually maintained in the future if there will be releases
+#       where the API does not change, but programs/libraries do.
+#       In such a case, this should be the first version where the current API
+#       appeared.
+#   REGRESSIONTEST_VERSION For source packages, version number of the
+#       matching regressiontests tarball.  Not used for builds not from source
+#       packages.
+# The latter two are used to generate gromacs/version.h to allow software
+# written against the GROMACS API to provide some #ifdef'ed code to support
+# multiple GROMACS versions.
+#
+# The following variables are defined without manual intervention:
+#   SOURCE_IS_SOURCE_DISTRIBUTION  The source tree is from a source tarball.
+#   SOURCE_IS_GIT_REPOSITORY       The source tree is a git repository.
+# Note that both can be false if the tree has been extracted, e.g., as a
+# tarball directly from git.
+#
+# This script also declares machinery to generate and obtain version
+# information from a git repository.  This is enabled by default if the source
+# tree is a git, but can be disabled with
+#   GMX_GIT_VERSION_INFO           Advanced CMake variable to disable git
+#                                  version info generation.
+# The main interface to this machinery is the gmx_configure_version_file()
+# CMake function.  The signature is
+#   gmx_configure_version_file(<input> <output> TARGET <target>
+#                              [REMOTE_HASH] [SOURCE_FILE])
+#   <input>      Specify the input and output files as for configure_file().
+#   <output>     The configuration is done with configure_file(... @ONLY) with
+#                the following variables defined (as well as all the
+#                GMX_VERSION* variables from above):
+#                  GMX_VERSION_STRING_FULL
+#                  GMX_VERSION_FULL_HASH
+#                  GMX_VERSION_CENTRAL_BASE_HASH
+#                The output file is created during build time, so any dependent
+#                targets should specify it as a dependency.
+#   <target>     Name of the custom target to create.  Any target that depends
+#                on the <output> should add a target-level dependency to this
+#                name.
+#   REMOTE_HASH  Currently, this has no effect, but it signifies that the
+#                <input> file is using the CENTRAL_BASE_HASH variable.
+#                This variable is much more expensive to initialize than the
+#                others, so this allows local changes in this file to only
+#                compute that value when required if that becomes necessary.
+#   SOURCE_FILE  Signals that <output> will be used as a source file.
+#                The function will set properties for the source file
+#                appropriately to signify that it is generated.
+# As an alternative to using this script, also the following variables are
+# provided (can be useful when generating more complex CMake scripts that do
+# build-time tasks):
+#   VERSION_INFO_CMAKE_SCRIPT
+#       Absolute path to a CMake script that can be included using include()
+#       to declare the GMX_VERSION_* variables documented for
+#       gmx_configure_version_file().
+#   VERSION_INFO_DEPS
+#       If a custom target depends on VERSION_INFO_CMAKE_SCRIPT, then it
+#       should add ${VERSION_INFO_DEPS} using add_dependencies() to ensure
+#       the script is generated and up-to-date before the target runs.
+#       add_dependencies() requires a dependency, so it is necessary to check
+#       whether this list is empty before using it.
+#
+# TODO: Describe how to interpret the git version string.
+#
+# Other variables set here are not intended for use outside this file.
+# The scripts gmxGenerateVersionInfo.cmake and gmxConfigureVersionInfo.cmake
+# are used internally by this machinery, as well as VersionInfo.cmake.cmakein.
+
+#####################################################################
+# Basic nature of the source tree
+
+set(SOURCE_IS_GIT_REPOSITORY OFF)
+set(SOURCE_IS_SOURCE_DISTRIBUTION OFF)
+if (EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    set(SOURCE_IS_GIT_REPOSITORY ON)
+endif()
+# This file is excluded from CPack source packages, but part of the repository,
+# so it should get included everywhere else.
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/admin/.isreposource")
+    set(SOURCE_IS_SOURCE_DISTRIBUTION ON)
+endif()
+
+#####################################################################
+# Manually maintained version info
+
+set(GMX_VERSION_MAJOR 5)
+set(GMX_VERSION_MINOR 1)
+set(GMX_VERSION_PATCH 0)
+set(GMX_VERSION_SUFFIX "")
+
+set(LIBRARY_SOVERSION 1)
+set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
+
+set(REGRESSIONTEST_BRANCH "refs/heads/master")
+
+#####################################################################
+# General version management based on manually set numbers
+
+if (GMX_VERSION_PATCH)
+    set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_MINOR}.${GMX_VERSION_PATCH}")
+else()
+    set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_MINOR}")
+endif()
+set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
+if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)
+    set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-dev")
+endif()
+
+set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
+
+math(EXPR GMX_VERSION_NUMERIC
+     "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_MINOR}*100 + ${GMX_VERSION_PATCH}")
+set(GMX_API_VERSION ${NUM_VERSION})
+
+#####################################################################
+# git version info management
+
+# There can be clusters where git and CMake can run on nodes where the other is
+# not available, accessing the same source tree.
+# Should be unlikely, but doesn't hurt to check.
+set(_git_info_default OFF)
+if (SOURCE_IS_GIT_REPOSITORY)
+    find_package(Git)
+    if (GIT_FOUND)
+        set(_git_info_default ON)
+    endif()
+endif()
+option(GMX_GIT_VERSION_INFO "Generate git version information" ${_git_info_default})
+mark_as_advanced(GMX_GIT_VERSION_INFO)
+# Detect preconditions for version info generation if it is requested.
+if (GMX_GIT_VERSION_INFO)
+    if (NOT SOURCE_IS_GIT_REPOSITORY)
+        message(FATAL_ERROR
+            "Cannot generate git version information from source tree not under git. "
+            "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
+    endif()
+    # We need at least git v1.5.3 be able to parse git's date output.
+    if (NOT GIT_FOUND OR GIT_VERSION_STRING VERSION_LESS "1.5.3")
+        message(FATAL_ERROR
+            "No compatible git version found (>= 1.5.3 required). "
+            "Won't be able to generate development version information. "
+            "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
+    endif()
+endif()
+
+# The first two are also for use outside this file, encapsulating the details
+# of how to use the generated VersionInfo.cmake.
+set(VERSION_INFO_CMAKE_FILE   ${PROJECT_BINARY_DIR}/VersionInfo.cmake)
+set(VERSION_INFO_DEPS)
+# Capture the location of the necessary files in internal variables for use in
+# the function below.
+set(VERSION_INFO_CMAKEIN_FILE     ${CMAKE_CURRENT_LIST_DIR}/VersionInfo.cmake.cmakein)
+set(VERSION_INFO_CONFIGURE_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/gmxConfigureVersionInfo.cmake)
+
+# Rules to create the VersionInfo.cmake file.
+# For git info, the sequence is:
+#   1. (configure time) VersionInfo.cmake.cmakein -> VersionInfo-partial.cmake.cmakein
+#        - Set all variables that are known at configure time.
+#   2. (build time)     VersionInfo-partial.cmake.cmakein -> VersionInfo.cmake
+#        - Set variables that may change as result of repository state changes
+#          (i.e., everything that requires running git).
+#        - Runs every time as a git-version-info target, but the output file
+#          timestamp only changes if its contents actually change.
+#        - Depending on the native build system, this may run once per build
+#          or once per each time it is required for step 3.
+#   3. (build time)     VersionInfo.cmake -> other files
+#        - Set variables in files specified with gmx_configure_version_file()
+#          using the values generated in step 2.
+#        - Each file runs as a custom target that depends on the previous
+#          steps, and updates the output file only if the VersionInfo.cmake
+#          file has changed.
+# Without git info, the sequence is:
+#  1. (configure time) VersionInfo.cmake.cmakein -> VersionInfo.cmake
+#        - Everything is known at configure time, so the output is generated
+#          immediately with all variables set (git info will be empty).
+#  2. (build time)     VersionInfo.cmake -> other files
+#        - As with git info, processes files from gmx_configure_version_file().
+#        - These are again custom targets that use the output from step 1, so
+#          they get regenerated only when the static version info changes.
+if (GMX_GIT_VERSION_INFO)
+    # Configure information known at this time into a partially filled
+    # version info file.
+    set(VERSION_INFO_CMAKEIN_FILE_PARTIAL
+        ${PROJECT_BINARY_DIR}/VersionInfo-partial.cmake.cmakein)
+    # Leave these to be substituted by the custom target below.
+    set(GMX_VERSION_STRING_FULL       "\@GMX_VERSION_STRING_FULL\@")
+    set(GMX_VERSION_FULL_HASH         "\@GMX_VERSION_FULL_HASH\@")
+    set(GMX_VERSION_CENTRAL_BASE_HASH "\@GMX_VERSION_CENTRAL_BASE_HASH\@")
+    configure_file(${VERSION_INFO_CMAKEIN_FILE}
+                   ${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
+                   @ONLY)
+    # If generating the version info, create a target that runs on every build
+    # and does the actual git calls, storing the results into a CMake script.
+    # This needs to be run at build time to update the version information
+    # properly when the git hash changes, but the build system does not.
+    # All targets added by gmx_configure_version_file() use the information
+    # from this script to get their variables from, removing the need to run
+    # git multiple times and simplifying reuse for other purposes.
+    add_custom_target(git-version-info
+        COMMAND ${CMAKE_COMMAND}
+            -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
+            -D PROJECT_VERSION=${GMX_VERSION_STRING}
+            -D PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+            -D VERSION_CMAKEIN=${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
+            -D VERSION_OUT=${VERSION_INFO_CMAKE_FILE}
+            -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfo.cmake
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        COMMENT "Generating git version information"
+        VERBATIM)
+    set(VERSION_INFO_DEPS git-version-info)
+else()
+    # If the version info is static, just generate the CMake script with the
+    # version variables during the CMake run.
+    set(GMX_VERSION_STRING_FULL       ${GMX_VERSION_STRING})
+    set(GMX_VERSION_FULL_HASH         "")
+    set(GMX_VERSION_CENTRAL_BASE_HASH "")
+    configure_file(${VERSION_INFO_CMAKEIN_FILE} ${VERSION_INFO_CMAKE_FILE})
+endif()
+unset(GMX_VERSION_STRING_FULL)
+unset(GMX_VERSION_FULL_HASH)
+unset(GMX_VERSION_CENTRAL_BASE_HASH)
+
+# The main user-visible interface to the machinery.
+# See documentation at the top of the script.
+function (gmx_configure_version_file INFILE OUTFILE)
+    include(CMakeParseArguments)
+    set(_options REMOTE_HASH SOURCE_FILE)
+    set(_one_value_args TARGET)
+    cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
+    if (ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
+    endif()
+    if (NOT ARG_TARGET)
+        message(FATAL_ERROR "Target name must be specified with TARGET <target>")
+    endif()
+    # Mimic configure_file()
+    if (NOT IS_ABSOLUTE ${INFILE})
+        set(INFILE ${CMAKE_CURRENT_SOURCE_DIR}/${INFILE})
+    endif()
+    # There is no way in CMake to reliably create this as a custom command
+    # (it would need to depend on a file created by add_custom_target(), but
+    # there is no way to specify that as a dependency that would work with
+    # various generators), so we always run it, but it will only update the
+    # output file if it actually changes.
+    #
+    # In principle, if we are not generating git version info, this could be
+    # created statically at configure time, but it is simpler for using code
+    # that this target is always created.
+    #
+    # There is no comment, since this will always be run, so the comment would
+    # always be printed. There is little value in extra comments beyond the
+    # standard progress messages from CMake for this case and the
+    # "Generating git version information" that is printed by the first target.
+    add_custom_target(${ARG_TARGET}
+        COMMAND ${CMAKE_COMMAND}
+            -D VERSION_VARIABLES=${VERSION_INFO_CMAKE_FILE}
+            -D VERSION_CMAKEIN=${INFILE}
+            -D VERSION_OUT=${OUTFILE}
+            -P ${VERSION_INFO_CONFIGURE_SCRIPT}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        VERBATIM)
+    if (VERSION_INFO_DEPS)
+        add_dependencies(${ARG_TARGET} ${VERSION_INFO_DEPS})
+    endif()
+    if (ARG_SOURCE_FILE)
+        set_source_files_properties(${OUTFILE} PROPERTIES GENERATED true)
+    endif()
+endfunction()
