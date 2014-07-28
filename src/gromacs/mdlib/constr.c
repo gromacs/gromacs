@@ -606,8 +606,14 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         /* Combine virial and error info of the other threads */
         for (i = 1; i < nth; i++)
         {
-            m_add(vir_r_m_dr, constr->vir_r_m_dr_th[i], vir_r_m_dr);
             settle_error = constr->settle_error[i];
+        }
+        if (vir != NULL)
+        {
+            for (i = 1; i < nth; i++)
+            {
+                m_add(vir_r_m_dr, constr->vir_r_m_dr_th[i], vir_r_m_dr);
+            }
         }
 
         if (econq == econqCoord && settle_error >= 0)

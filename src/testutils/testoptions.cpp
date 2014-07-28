@@ -43,8 +43,16 @@
 
 #include "testoptions.h"
 
+#include "config.h"
+
 #include <cstdio>
 #include <cstdlib>
+#if defined HAVE_FEENABLEEXCEPT && !defined NDEBUG
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <fenv.h>
+#endif
 
 #include <list>
 
@@ -145,6 +153,9 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
 
 void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
 {
+#if defined HAVE_FEENABLEEXCEPT && !defined NDEBUG
+    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+#endif
     gmx::initForCommandLine(argc, argv);
     try
     {

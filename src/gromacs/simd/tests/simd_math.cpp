@@ -123,7 +123,8 @@ SimdMathTest::compareSimdMathFunction(const char * refFuncExpr, const char *simd
         {
             absDiff = fabs(vref[i]-vtst[i]);
             absOk   = absOk  && ( absDiff < absTol_ );
-            signOk  = signOk && ( vref[i]*vtst[i] >= 0 );
+            signOk  = signOk && ( (vref[i] >= 0 && vtst[i] >= 0) ||
+                                  (vref[i] <= 0 && vtst[i] <= 0));
 
             if (absDiff >= absTol_)
             {
@@ -475,8 +476,15 @@ TEST_F(SimdMathTest, gmxSimdAtan2R)
 /*! \brief Evaluate reference version of PME force correction. */
 real ref_pmecorrF(real x)
 {
-    real y = sqrt(x);
-    return 2*exp(-x)/(sqrt(M_PI)*x) - gmx_erfd(y)/(x*y);
+    if (x != 0)
+    {
+        real y = sqrt(x);
+        return 2*exp(-x)/(sqrt(M_PI)*x) - gmx_erfd(y)/(x*y);
+    }
+    else
+    {
+        return -4/(3*sqrt(M_PI));
+    }
 }
 
 // The PME corrections will be added to ~1/r2, so absolute tolerance of EPS is fine.
