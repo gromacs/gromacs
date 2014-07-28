@@ -56,6 +56,7 @@
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/common.h"
@@ -145,6 +146,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
 
 void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
 {
+    gmx_feenableexcept();
     gmx::initForCommandLine(argc, argv);
     try
     {
