@@ -101,6 +101,9 @@ int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
      */
     ndx      = 0;
     ndx_excl = 0;
+#if __ICC == 1400 || __ICL == 1400
+#pragma novector /* Work-around for incorrect vectorization */
+#endif
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
