@@ -94,6 +94,10 @@ function(gmx_detect_simd _suggested_simd)
     if(NOT DEFINED GMX_SIMD)
         if(GMX_TARGET_BGQ)
             set(${_suggested_simd} "IBM_QPX")
+        elseif(GMX_TARGET_FUJITSU_SPARC64)
+            # HPC-ACE is always present. In the future we
+            # should add detection for HPC-ACE2 here.
+            set(${_suggested_simd} "Sparc64_HPC_ACE")
         elseif(GMX_TARGET_X86)
             gmx_suggest_x86_simd(${_suggested_simd})
         else()
