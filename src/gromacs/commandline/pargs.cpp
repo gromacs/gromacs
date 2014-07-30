@@ -798,7 +798,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         if (context != NULL && !(FF(PCA_QUIET)))
         {
             gmx::Options options(NULL, NULL);
-            options.setDescription(gmx::ConstArrayRef<const char *>(desc, ndesc));
+            options.setDescription(gmx::ConstArrayRefFromArray(desc, ndesc));
             for (i = 0; i < nfile; i++)
             {
                 gmx::filenmToOptions(&options, &fnm[i]);
@@ -810,7 +810,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx::CommandLineHelpWriter(options)
                 .setShowDescriptions(true)
                 .setTimeUnitString(output_env_get_time_unit(*oenv))
-                .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
+                .setKnownIssues(gmx::ConstArrayRefFromArray(bugs, nbugs))
                 .writeHelp(*context);
         }
     }
