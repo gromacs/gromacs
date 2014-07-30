@@ -167,6 +167,11 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     real bU_bin_limit      = 50;
     real bU_logV_bin_limit = bU_bin_limit + 10;
 
+    if (inputrec->cutoff_scheme == ecutsVERLET)
+    {
+        gmx_fatal(FARGS, "TPI does not work (yet) with the Verlet cut-off scheme");
+    }
+
     nnodes = cr->nnodes;
 
     top = gmx_mtop_generate_local_top(top_global, inputrec);
