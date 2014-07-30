@@ -265,6 +265,8 @@ elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
 
 elseif(${GMX_SIMD} STREQUAL "SPARC64_HPC_ACE")
 
+    # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
+
     set(GMX_SIMD_SPARC64_HPC_ACE 1)
     set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions")
 
