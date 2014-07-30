@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,47 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# GMock uses tuples extensively, and MSVC bundles a tuple library that
-# is not compatible with the standard. r675 of googletest works around
-# this properly, but that's not in GMock 1.7.0. That logic is
-# duplicated here. See
-# https://code.google.com/p/googletest/source/detail?r=675#, but note
-# that its summary does not represent its code correctly.
+# - Define macro to check if all of the following work:
+# sched_getaffinity()
+# sched_setaffinity()
+# CPU_ZERO()
+# CPU_SET()
+# CPU_ISSET()
+# CPU_CLR()
+# CPU_COUNT()
+
+#  test_sched_affinity(VARIABLE)
 #
-# This function should be called to get the compile definitions
-# suitable for working around MSVC to compile GMock, if any.
-# Returns a string of options in VARIABLE
-function(GET_MSVC_TUPLE_WORKAROUND_DEFINITIONS VARIABLE)
-    set(${VARIABLE} "")
-    if(MSVC AND MSVC_VERSION VERSION_EQUAL 1700)
-        # Fixes Visual Studio 2012
-        set(${VARIABLE} "_VARIADIC_MAX=10")
-    endif()
-    set(${VARIABLE} ${${VARIABLE}} PARENT_SCOPE)
-endfunction()
+#  VARIABLE will be set to true if all of the functions link fine.
+
+MACRO(test_sched_affinity VARIABLE)
+
+  if(NOT DEFINED sched_affinity_compile)
+    MESSAGE(STATUS "Checking for sched.h GNU affinity API")
+
+    check_c_source_compiles(
+      "#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+#include <sched.h>
+int main(void) {
+  int i;
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  sched_getaffinity(0, sizeof(cpu_set_t), &mask);
+  if(CPU_ISSET(0,&mask))
+  {
+    CPU_CLR(0,&mask);   
+    CPU_SET(0,&mask);
+  }
+  sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+  return CPU_COUNT(&mask);
+}" sched_affinity_compile)
+  endif(NOT DEFINED sched_affinity_compile)
+
+  if(sched_affinity_compile)
+    set(${VARIABLE} 1 CACHE INTERNAL "Result of test for sched.h GNU affinity API" FORCE)
+  else()
+    set(${VARIABLE} 0 CACHE INTERNAL "Result of	test for sched.h GNU affinity API" FORCE)
+  endif()
+ENDMACRO(test_sched_affinity VARIABLE)
