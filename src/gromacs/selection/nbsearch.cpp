@@ -606,14 +606,14 @@ void AnalysisNeighborhoodPairSearchImpl::startSearch(
 {
     if (positions.index_ < 0)
     {
-        testPositions_ = ConstArrayRef<rvec>(positions.x_, positions.count_);
+        testPositions_ = ConstArrayRefFromArray(positions.x_, positions.count_);
         reset(0);
     }
     else
     {
         // Somewhat of a hack: setup the array such that only the last position
         // will be used.
-        testPositions_ = ConstArrayRef<rvec>(positions.x_, positions.index_ + 1);
+        testPositions_ = ConstArrayRefFromArray(positions.x_, positions.index_ + 1);
         reset(positions.index_);
     }
 }
