@@ -371,7 +371,7 @@ ConstArrayRef<const char *> FileNameOptionStorage::extensions() const
     const FileTypeRegistry &registry    = FileTypeRegistry::instance();
     const FileTypeHandler  &typeHandler = registry.handlerForType(filetype_, legacyType_);
     const ExtensionList    &extensions  = typeHandler.extensions();
-    return ConstArrayRef<const char *>(extensions.begin(), extensions.end());
+    return constArrayRefFromVector<const char *>(extensions.begin(), extensions.end());
 }
 
 /********************************************************************
