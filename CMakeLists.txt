@@ -435,6 +435,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
     include(gmxManageBlueGene)
 endif()
 
+if(${CMAKE_CXX_COMPILER_ID} MATCHES Fujitsu OR
+   (${CMAKE_CXX_COMPILER_ID} MATCHES unknown AND ${CMAKE_CXX_COMPILER} MATCHES ^FCC))
+    include(gmxManageFujitsuSparc64)
+endif()
+
 ########################################################################
 #Process MPI settings
 ########################################################################
