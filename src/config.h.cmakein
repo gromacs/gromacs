@@ -307,11 +307,8 @@
 /* Define to 1 if you have the sysconf() function */
 #cmakedefine HAVE_SYSCONF
 
-/* Define to 1 if you have the sched_getaffinity() function */
-#cmakedefine HAVE_SCHED_GETAFFINITY
-
-/* Define to 1 if you have the sched_setaffinity() function */
-#cmakedefine HAVE_SCHED_SETAFFINITY
+/* Define to 1 if you have the all the affinity functions in sched.h */
+#cmakedefine HAVE_SCHED_AFFINITY
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
