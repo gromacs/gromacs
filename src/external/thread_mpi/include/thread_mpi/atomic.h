@@ -169,7 +169,8 @@ extern "C"
 #elif defined(__FUJITSU) && defined(__sparc__)
 
 /* Fujitsu FX10 SPARC compiler requires gcc compatibility with -Xg */
-#error Atomics support for Fujitsu FX10 compiler requires -Xg (gcc compatibility)
+#warning Atomics support for Fujitsu FX10 compiler requires -Xg (gcc compatibility)
+#define TMPI_NO_ATOMICS
 
 #elif defined(_CRAYC)
 
