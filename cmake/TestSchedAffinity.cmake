@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,47 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# As stated in README.Gromacs, this file is not part of GMock, but is written
-# specifically for the GROMACS build system from scratch.
+# - Define macro to check if all of the following work:
+# sched_getaffinity()
+# sched_setaffinity()
+# CPU_ZERO()
+# CPU_SET()
+# CPU_ISSET()
+# CPU_CLR()
+# CPU_COUNT()
 
-include(gmxGetGmockTupleWorkaround)
-get_gmock_tuple_workaround(GMOCK_COMPILE_DEFINITIONS)
-set(GMOCK_COMPILE_DEFINITIONS ${GMOCK_COMPILE_DEFINITIONS} PARENT_SCOPE)
+#  test_sched_affinity(VARIABLE)
+#
+#  VARIABLE will be set to true if all of the functions link fine.
 
-# GTest/GMock suggest linking with pthreads when available for thread safety
-set(CMAKE_THREAD_PREFER_PTHREAD 1)
-find_package(Threads)
-set(PTHREADS_LIBRARIES)
-if (CMAKE_USE_PTHREADS_INIT)
-    set(PTHREADS_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-endif()
+MACRO(test_sched_affinity VARIABLE)
 
-set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(GTEST_DIR ${GMOCK_DIR}/gtest)
-set(GTEST_SOURCES ${GTEST_DIR}/src/gtest-all.cc)
-set(GMOCK_SOURCES ${GMOCK_DIR}/src/gmock-all.cc)
+  if(NOT DEFINED sched_affinity_compile)
+    MESSAGE(STATUS "Checking for sched.h GNU affinity API")
 
-set(GTEST_INCLUDE_DIRS ${GTEST_DIR}/include)
-set(GMOCK_INCLUDE_DIRS ${GMOCK_DIR}/include ${GTEST_INCLUDE_DIRS})
+    check_c_source_compiles(
+      "#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+#include <sched.h>
+int main(void) {
+  int i;
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  sched_getaffinity(0, sizeof(cpu_set_t), &mask);
+  if(CPU_ISSET(0,&mask))
+  {
+    CPU_CLR(0,&mask);
+    CPU_SET(0,&mask);
+  }
+  sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+  return CPU_COUNT(&mask);
+}" sched_affinity_compile)
+  endif(NOT DEFINED sched_affinity_compile)
 
-include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
-include_directories(BEFORE ${GTEST_DIR})
-include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
-include_directories(BEFORE ${GMOCK_DIR})
-add_library(gmock STATIC ${GMOCK_SOURCES} ${GTEST_SOURCES})
-set_property(TARGET gmock APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-
-set(GMOCK_LIBRARIES gmock ${PTHREADS_LIBRARIES} PARENT_SCOPE)
-set(GTEST_LIBRARIES ${GMOCK_LIBRARIES} PARENT_SCOPE)
-set(GMOCK_INCLUDE_DIRS ${GMOCK_INCLUDE_DIRS} PARENT_SCOPE)
-set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIRS} PARENT_SCOPE)
+  if(sched_affinity_compile)
+    set(${VARIABLE} 1 CACHE INTERNAL "Result of test for sched.h GNU affinity API" FORCE)
+  else()
+    set(${VARIABLE} 0 CACHE INTERNAL "Result of test for sched.h GNU affinity API" FORCE)
+  endif()
+ENDMACRO(test_sched_affinity VARIABLE)
