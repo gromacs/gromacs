@@ -32,21 +32,42 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# GMock uses tuples extensively, and MSVC bundles a tuple library that
-# is not compatible with the standard. r675 of googletest works around
-# this properly, but that's not in GMock 1.7.0. That logic is
-# duplicated here. See
+# GMock uses tuples extensively, but since it is part of tr1 we cannot
+# assume it is present - the Fujitsu compilers on K computer is one
+# example of a system where it is not, and this is likely the case for many
+# embedded systems too.
+#
+# In general, we can ask gmock to use its own internal implementation by
+# defining GTEST_USE_OWN_TR1_TUPLE=1. This is safe for Gromacs, since we do
+# not use tr1/tuple.h elsewhere. However, this workaround itself will not
+# compile on MSVC - but this is the only architecture we know where it does
+# not work. To make things even worse, on MSVC even the standard tr1/tuple
+# implementation is not fully compatible, but we can make it work by setting
+# _VARIADIC_MAX=10. This is similar to r675 of googletest, which is still not
+# present in GMock 1.7.0. See
 # https://code.google.com/p/googletest/source/detail?r=675#, but note
 # that its summary does not represent its code correctly.
 #
+# To make all this work without user intervention, we first check what compiler
+# we have, and if it is not MSVC we simply use the internal version. If we are
+# using MSVC, we rely on the compiler's version, but set the variable necessary
+# to make it compatible.
+#
 # This function should be called to get the compile definitions
-# suitable for working around MSVC to compile GMock, if any.
+# suitable for making sure we have a tuple implementation that works with gmock.
+#
 # Returns a string of options in VARIABLE
-function(GET_MSVC_TUPLE_WORKAROUND_DEFINITIONS VARIABLE)
+function(GET_GMOCK_TUPLE_WORKAROUND VARIABLE)
     set(${VARIABLE} "")
-    if(MSVC AND MSVC_VERSION VERSION_EQUAL 1700)
-        # Fixes Visual Studio 2012
-        set(${VARIABLE} "_VARIADIC_MAX=10")
+    if(MSVC OR (WIN32 AND CMAKE_C_COMPILER_ID MATCHES "Intel"))
+        if(MSVC_VERSION VERSION_EQUAL 1700)
+            # Fixes Visual Studio 2012
+            set(${VARIABLE} "_VARIADIC_MAX=10")
+        endif()
+        # For MSVC different from 2012, or Intel on Windows, we reply on tr1/tuple working.
+    else()
+        # Use the built-in version on all other compilers.
+        set(${VARIABLE} "GTEST_USE_OWN_TR1_TUPLE=1")
     endif()
     set(${VARIABLE} ${${VARIABLE}} PARENT_SCOPE)
 endfunction()
