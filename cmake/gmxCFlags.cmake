@@ -243,6 +243,19 @@ MACRO(gmx_c_flags)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
     endif()
 
+    # Fujitsu compilers on PrimeHPC/Sparc64
+    if(${CMAKE_C_COMPILER_ID} MATCHES Fujitsu OR
+       (${CMAKE_C_COMPILER_ID} MATCHES unknown AND ${CMAKE_C_COMPILER} MATCHES ^fcc))
+        GMX_TEST_CFLAG(CFLAG_GNUCOMPAT "-Xg -w" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAG_OPT "-Kfast,reduction,swp,simd=2,uxsimd,fsimple -x100 -DGMX_RELAXED_DOUBLE_PRECISION" GMXC_CFLAGS)
+    endif()
+
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES Fujitsu OR
+       (${CMAKE_CXX_COMPILER_ID} MATCHES unknown AND ${CMAKE_CXX_COMPILER} MATCHES ^FCC))
+        GMX_TEST_CXXFLAG(CXXFLAG_GNUCOMPAT "-Xg -w" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAG_OPT "-Kfast,reduction,swp,simd=2,uxsimd,fsimple -x100 -DGMX_RELAXED_DOUBLE_PRECISION" GMXC_CXXFLAGS)
+    endif()
+
     # now actually set the flags:
     if (NOT GMX_SKIP_DEFAULT_CFLAGS)
         gmx_set_cmake_compiler_flags()
