@@ -1,3 +1,4 @@
+	
 This directory contains source code for Google C++ Testing and Mocking
 Frameworks.
 
@@ -14,3 +15,9 @@ gmock-1.7.0/gtest/src/
 
 The file CMakeLists.txt in this directory is part of the Gromacs build system
 and has been written from scratch.
+
+In the default version, gmock-1.7.0 assumes wcscasecmp() to be present on Linux.
+This is not the case on all platforms, so on line 1610 of gtest/src/gtest.cc
+we have added a define to only use this if GTEST_HAS_WCSCASECMP is set. Since
+we never set this define, we fall back on the alternative internal implementation
+which should be perfectly fine for now.
