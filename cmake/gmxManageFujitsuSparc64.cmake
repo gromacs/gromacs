@@ -32,24 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# the name of the target operating system
-set(CMAKE_SYSTEM_NAME Linux CACHE STRING "Cross-compiling for Fujitsu Sparc64")
+# Managing configuration for Fujitsu PrimeHPC Sparc64
+# For now this is mainly used for K computer.
+message(STATUS "Configuring for Fujitsu Sparc64")
 
-set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
-
-# set the compiler
-set(CMAKE_C_COMPILER mpifccpx)
-set(CMAKE_CXX_COMPILER mpiFCCpx)
-set(CMAKE_C_COMPILER_ID "Fujitsu" CACHE STRING "Prevent CMake from adding GNU-specific linker flags (-rdynamic)" FORCE)
-
-set(CMAKE_C_FLAGS "-Kopenmp -Kfast,reduction,swp,simd=2,uxsimd -x500 -Xg -DGMX_RELAXED_DOUBLE_PRECISION -w" CACHE STRING "Fujitsu Sparc64 C Flags" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}" CACHE STRING "Fujitsu Sparc64 C++ Flags" FORCE)
-set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Use native 1.0/sqrt(x) on Fujitsu Sparc64" FORCE)
-
-set(GMX_THREAD_MPI OFF CACHE BOOL "Use real MPI instead" FORCE)
-set(GMX_MPI ON CACHE BOOL "Use MPI library" FORCE)
-set(GMX_DOUBLE ON CACHE BOOL "Use double by default on Fujitsu Sparc64 (due to HPC-ACE)" FORCE)
-set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on Fujitsu Sparc64" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Use static linking by default on Fujitsu Sparc64" FORCE)
+set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on Fujitsu Sparc64" FORCE)
 
-set(GMX_SIMD "Sparc64_HPC_ACE" CACHE STRING "Enabling Sparc64 HPC-ACE SIMD when using Fujitsu Sparc64 toolchain")
+set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Use native 1.0/sqrt(x) on Fujitsu Sparc64" FORCE)
+set(GMX_X11 OFF CACHE BOOL "X11 not compatible with Fujitsu Sparc64 cross-compile, disabled." FORCE)
+

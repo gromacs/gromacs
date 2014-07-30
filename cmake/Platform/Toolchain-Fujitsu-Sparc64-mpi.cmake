@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,29 +32,20 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# - Define function to detect whether the compiler's target
-# - architecture is one for which GROMACS has special treatment
-#   (e.g. SIMD instructions)
-#
-# Sets GMX_TARGET_X86 or GMX_TARGET_BGQ if targetting that
-# architecture. May set other such variables if/when there is future
-# need.
+# the name of the target operating system
+set(CMAKE_SYSTEM_NAME Linux CACHE STRING "Cross-compiling for Fujitsu Sparc64, with MPI")
+set(CMAKE_SYSTEM_PROCESSOR "s64fx")
 
-function(gmx_detect_target_architecture)
-    if (NOT DEFINED GMX_TARGET_X86)
-        try_compile(GMX_TARGET_X86 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestX86.c")
-    endif()
-    if (NOT DEFINED GMX_TARGET_BGQ)
-        try_compile(GMX_TARGET_BGQ ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestBlueGeneQ.c")
-    endif()
-    if (NOT DEFINED GMX_TARGET_MIC)
-        try_compile(GMX_TARGET_MIC ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestMIC.c")
-    endif()
-    if (NOT DEFINED GMX_TARGET_FUJITSU_SPARC64)
-        try_compile(GMX_TARGET_FUJITSU_SPARC64 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestFujitsuSparc64.c")
-    endif()
-endfunction()
+set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
+
+# set the compiler
+set(CMAKE_C_COMPILER mpifccpx)
+set(CMAKE_CXX_COMPILER mpiFCCpx)
+
+# Prevent CMake from adding GNU-specific linker flags (-rdynamic)" FORCE)
+set(CMAKE_C_COMPILER_ID "Fujitsu" CACHE STRING "Fujistu C cross-compiler" FORCE)
+set(CMAKE_CXX_COMPILER_ID "Fujitsu" CACHE STRING "Fujistu C++ cross-compiler" FORCE)
+
+# FindOpenMP.cmake does not try -Kopenmp,but the package will try specific
+# flags based on the compier ID.
+set(OMP_FLAG_Fujitsu "-Kopenmp")

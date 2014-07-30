@@ -34,21 +34,20 @@
 
 # the name of the target operating system
 set(CMAKE_SYSTEM_NAME Linux CACHE STRING "Cross-compiling for Fujitsu Sparc64")
+# Set the identification to the same value we would get on the nodes (uname -m)
+set(CMAKE_SYSTEM_PROCESSOR "s64fx")
 
 set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
 
 # set the compiler
 set(CMAKE_C_COMPILER fccpx)
 set(CMAKE_CXX_COMPILER FCCpx)
-set(CMAKE_C_COMPILER_ID "Fujitsu" CACHE STRING "Prevent CMake from adding GNU-specific linker flags (-rdynamic)" FORCE)
 
-set(CMAKE_C_FLAGS "-Kopenmp -Kfast,reduction,swp,simd=2,uxsimd -x500 -Xg -DGMX_RELAXED_DOUBLE_PRECISION -w" CACHE STRING "Fujitsu Sparc64 C Flags" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}" CACHE STRING "Fujitsu Sparc64 C++ Flags" FORCE)
-set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Use native 1.0/sqrt(x) on Fujitsu Sparc64" FORCE)
+# Prevent CMake from adding GNU-specific linker flags (-rdynamic)" FORCE)
+# A patch has been submitted to make CMake itself handle this in the future
+set(CMAKE_C_COMPILER_ID "Fujitsu" CACHE STRING "Fujistu C cross-compiler" FORCE)
+set(CMAKE_CXX_COMPILER_ID "Fujitsu" CACHE STRING "Fujistu C++ cross-compiler" FORCE)
 
-# By default CMake will use thread-mpi
-set(GMX_DOUBLE ON CACHE BOOL "Use double by default on Fujitsu Sparc64 (due to HPC-ACE)" FORCE)
-set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on Fujitsu Sparc64" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Use static linking by default on Fujitsu Sparc64" FORCE)
-
-set(GMX_SIMD "Sparc64_HPC_ACE" CACHE STRING "Enabling Sparc64 HPC-ACE SIMD when using Fujitsu Sparc64 toolchain")
+# FindOpenMP.cmake does not try -Kopenmp,but the package will try specific
+# flags based on the compier ID.
+set(OMP_FLAG_Fujitsu "-Kopenmp")
