@@ -419,6 +419,12 @@ static real grid_atom_density(int n, rvec corner0, rvec corner1)
 {
     rvec size;
 
+    if (n == 0)
+    {
+        /* To avoid zero density we use a minimum of 1 atom */
+        n = 1;
+    }
+
     rvec_sub(corner1, corner0, size);
 
     return n/(size[XX]*size[YY]*size[ZZ]);
@@ -439,6 +445,8 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 
     if (n > grid->na_sc)
     {
+        assert(atom_density > 0);
+
         /* target cell length */
         if (grid->bSimple)
         {
@@ -1814,7 +1822,8 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
         nbs->ePBC = ePBC;
         copy_mat(box, nbs->box);
 
-        if (atom_density >= 0)
+        /* Avoid zero density */
+        if (atom_density > 0)
         {
             grid->atom_density = atom_density;
         }
@@ -1830,12 +1839,21 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
          * for the local atoms (dd_zone=0).
          */
         nbs->natoms_nonlocal = a1 - nmoved;
+
+        if (debug)
+        {
+            fprintf(debug, "natoms_local = %5d atom_density = %5.1f\n",
+                    nbs->natoms_local, grid->atom_density);
+        }
     }
     else
     {
         nbs->natoms_nonlocal = max(nbs->natoms_nonlocal, a1);
     }
 
+    /* We always use the home zone (grid[0]) for setting the cell size,
+     * since determining densities for non-local zones is difficult.
+     */
     nc_max_grid = set_grid_size_xy(nbs, grid,
                                    dd_zone, n-nmoved, corner0, corner1,
                                    nbs->grid[0].atom_density);
