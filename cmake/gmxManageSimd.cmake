@@ -52,12 +52,28 @@ macro(gmx_use_clang_as_with_gnu_compilers_on_osx)
 endmacro()
 
 
-macro(gmx_test_simd)
+macro(gmx_manage_simd)
 #
 # To improve backward compatibility on x86 SIMD architectures,
 # we set the flags for all SIMD instructions that are supported, not only
 # the most recent instruction set. I.e., if your machine supports AVX2_256,
 # we will set flags both for AVX2_256, AVX_256, SSE4.1, and SSE2 support.
+
+set(GMX_SIMD_ACCURACY_BITS_SINGLE 22 CACHE STRING "Target mantissa bits for SIMD single math")
+set(GMX_SIMD_ACCURACY_BITS_DOUBLE 44 CACHE STRING "Target mantissa bits for SIMD double math")
+mark_as_advanced(GMX_SIMD_ACCURACY_BITS_SINGLE)
+mark_as_advanced(GMX_SIMD_ACCURACY_BITS_DOUBLE)
+
+if(${GMX_SIMD_ACCURACY_BITS_SINGLE} GREATER 22)
+    message(STATUS "Note: Full mantissa accuracy (including least significant bit) requested for SIMD single math. Presently we cannot get the least significant bit correct since that would require different algorithms - reducing to 22 bits.")
+    set(GMX_SIMD_ACCURACY_BITS_SINGLE 22 CACHE STRING "Target mantissa bits for SIMD single math" FORCE)
+endif()
+
+if(${GMX_SIMD_ACCURACY_BITS_DOUBLE} GREATER 51)
+    message(STATUS "Note: Full mantissa accuracy (including least significant bit) requested for SIMD double math. Presently we can\
+not get the least significant bit correct since that would require different algorithms - reducing to 51 bits.")
+    set(GMX_SIMD_ACCURACY_BITS_DOUBLE 51 CACHE STRING "Target mantissa bits for SIMD double math" FORCE)
+endif()
 
 if(${GMX_SIMD} STREQUAL "NONE")
     # nothing to do configuration-wise
