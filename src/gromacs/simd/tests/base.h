@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,8 @@
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  * \ingroup module_simd
  */
+#include "config.h"
+
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -81,14 +83,16 @@ class SimdBaseTest : public ::testing::Test
          * The default absolute tolerance is set to 0, which means the we always
          * check the ulp tolerance by default (passing the absolute tolerance
          * test would otherwise mean we approve the test instantly).
-         * The default ulp tolerance is set to 10 units in single, and 255 units
-         * in double precision.
-         * Most SIMD math functions achieve 2-3 ulp accuracy in single, but by
-         * being a bit liberal we avoid tests failing on aggressive compilers.
          *
-         * For double precision we only aim to achieve twice the accuracy of
-         * single. This way we can make do with a single extra iteration
-         * in some algorithms, in particular 1/sqrt(x).
+         * The default ulp tolerance is set based on the target number of
+         * bits requested for single or double precision, depending on what
+         * the default Gromacs precision is. We add two bits to avoid
+         * tests failing due to corner cases where compiler optimization might
+         * cause a slight precision loss e.g. for very small numbers.
+         *
+         * Most SIMD math functions actually achieve 2-3 ulp accuracy in single,
+         * but by being a bit liberal we only catch real errors rather than
+         * doing compiler-standard-compliance debugging.
          *
          * The range is used by derived classes to test math functions. The
          * default test range will be [1,10], which is intentionally
@@ -97,9 +101,9 @@ class SimdBaseTest : public ::testing::Test
          */
         SimdBaseTest() :
 #ifdef GMX_DOUBLE
-            ulpTol_(255LL), // Aim for roughly twice the precision we have in single.
+            ulpTol_((1LL << (2 + std::numeric_limits<double>::digits-GMX_SIMD_ACCURACY_BITS_DOUBLE))),
 #else
-            ulpTol_(10LL),  // Be a bit liberal so compiler optimization doesn't bite us.
+            ulpTol_((1LL << (2 + std::numeric_limits<float>::digits-GMX_SIMD_ACCURACY_BITS_SINGLE))),
 #endif
             absTol_(0), range_(std::pair<real, real>(1, 10))
         {
