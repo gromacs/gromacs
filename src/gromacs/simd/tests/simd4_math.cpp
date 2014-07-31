@@ -204,6 +204,14 @@ TEST_F(Simd4MathTest, gmxSimd4InvsqrtR)
     GMX_EXPECT_SIMD4_FUNC_NEAR(ref_invsqrt, gmx_simd4_invsqrt_r);
 }
 
+TEST_F(Simd4MathTest, gmxSimd4InvsqrtSingleaccuracyR)
+{
+    setRange(1e-10, 1e10);
+    /* Increase the allowed error by the difference between the actual precision and single */
+    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    GMX_EXPECT_SIMD4_FUNC_NEAR(ref_invsqrt, gmx_simd4_invsqrt_singleaccuracy_r);
+}
+
 }      // namespace
 
 #endif // GMX_SIMD4_HAVE_REAL
