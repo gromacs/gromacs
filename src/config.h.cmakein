@@ -129,6 +129,12 @@
 /* String for SIMD instruction choice (for writing to log files and stdout) */
 #define GMX_SIMD_STRING "@GMX_SIMD@"
 
+/* Target mantissa accuracy for SIMD single precision math */
+#define GMX_SIMD_ACCURACY_BITS_SINGLE @GMX_SIMD_ACCURACY_BITS_SINGLE@
+
+/* Target mantissa accuracy for SIMD double precision math */
+#define GMX_SIMD_ACCURACY_BITS_DOUBLE @GMX_SIMD_ACCURACY_BITS_DOUBLE@
+
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN
 
