@@ -281,6 +281,20 @@ TEST_F(SimdMathTest, gmxSimdExp2R)
 {
     setRange(-100, 100);
     GMX_EXPECT_SIMD_FUNC_NEAR(ref_exp2, gmx_simd_exp2_r);
+
+    // We do not care about the SIMD implementation getting denormal values right,
+    // but they must be clamped to zero rather than producing garbage.
+    // Check by setting the absolute tolerance to machine precision.
+    setAbsTol(GMX_REAL_EPS);
+    // First two values will have denormal results in single, third value in double too.
+    GMX_EXPECT_SIMD_REAL_NEAR(gmx_simd_setzero_r(), gmx_simd_exp_r(setSimdRealFrom3R(-150.0, -300.0, -1050.0)));
+
+    // Reset absolute tolerance to enforce ULP checking
+    setAbsTol(0.0);
+
+    // Make sure that underflowing values are set to zero.
+    // First two values underflow in single, third value in double too.
+    GMX_EXPECT_SIMD_REAL_NEAR(gmx_simd_setzero_r(), gmx_simd_exp_r(setSimdRealFrom3R(-200.0, -600.0, -1500.0)));
 }
 #endif
 
@@ -294,6 +308,20 @@ TEST_F(SimdMathTest, gmxSimdExpR)
 {
     setRange(-75, 75);
     GMX_EXPECT_SIMD_FUNC_NEAR(ref_exp, gmx_simd_exp_r);
+
+    // We do not care about the SIMD implementation getting denormal values right,
+    // but they must be clamped to zero rather than producing garbage.
+    // Check by setting the absolute tolerance to machine precision.
+    setAbsTol(GMX_REAL_EPS);
+    // First two values will have denormal results in single, third value in double too.
+    GMX_EXPECT_SIMD_REAL_NEAR(gmx_simd_setzero_r(), gmx_simd_exp_r(setSimdRealFrom3R(-90.0, -100.0, -725.0)));
+
+    // Reset absolute tolerance to enforce ULP checking
+    setAbsTol(0.0);
+
+    // Make sure that underflowing values are set to zero.
+    // First two values underflow in single, third value in double too.
+    GMX_EXPECT_SIMD_REAL_NEAR(gmx_simd_setzero_r(), gmx_simd_exp_r(setSimdRealFrom3R(-150.0, -300.0, -800.0)));
 }
 
 /*! \brief Function wrapper for erf(x), with argument/return in default Gromacs precision.
