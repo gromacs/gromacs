@@ -670,10 +670,12 @@ endif()
 # Process SIMD instruction settings
 ##################################################
 # This checks what flags to add in order to
-# support the SIMD instructions we need, and sets
-# correct defines for the SIMD instructions supported.
-include(gmxTestSimd)
-gmx_test_simd()
+# support the SIMD instructions we need, it sets
+# correct defines for the SIMD instructions supported,
+# and adds advanced options to control accuracy
+# for SIMD math operations.
+include(gmxManageSimd)
+gmx_manage_simd()
 
 
 # Process QM/MM Settings

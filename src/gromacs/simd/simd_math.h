@@ -68,15 +68,6 @@
  *  \{
  */
 
-/*! \brief We accept lsb errors for 1/sqrt(x) and 1/x, so float target is 22 bits */
-#define GMX_SIMD_MATH_TARGET_SINGLE_BITS 22
-
-/*! \brief We accept "double" that has 2x single precision - 44 bits.
- *
- * This way two Newton-Raphson iterations will suffice in double precision.
- */
-#define GMX_SIMD_MATH_TARGET_DOUBLE_BITS 44
-
 /*! \} */
 
 #ifdef GMX_SIMD_HAVE_FLOAT
@@ -160,13 +151,13 @@ static gmx_inline gmx_simd_float_t
 gmx_simd_invsqrt_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t lu = gmx_simd_rsqrt_f(x);
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_f(lu, x);
 #endif
     return lu;
@@ -218,13 +209,13 @@ static gmx_inline gmx_simd_float_t
 gmx_simd_inv_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t lu = gmx_simd_rcp_f(x);
-#if (GMX_SIMD_RCP_BITS < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rcp_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rcp_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rcp_iter_f(lu, x);
 #endif
     return lu;
@@ -1299,6 +1290,10 @@ gmx_simd_pmecorrV_f(gmx_simd_float_t z2)
  *  \{
  */
 
+/* For most cases we (obviously) want double precision accuracy when using
+ * double precision SIMD. However, some architectures (e.g. Fujitsu) only
+ * provide double-precision
+
 /****************************************
  * DOUBLE PRECISION SIMD MATH FUNCTIONS *
  ****************************************/
@@ -1359,16 +1354,16 @@ static gmx_inline gmx_simd_double_t
 gmx_simd_invsqrt_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t lu = gmx_simd_rsqrt_d(x);
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
     return lu;
@@ -1387,22 +1382,22 @@ gmx_simd_invsqrt_pair_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
     gmx_simd_float_t  luf = gmx_simd_rsqrt_f(xf);
     gmx_simd_double_t lu0, lu1;
     /* Intermediate target is single - mantissa+1 bits */
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = gmx_simd_rsqrt_iter_f(luf, xf);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = gmx_simd_rsqrt_iter_f(luf, xf);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = gmx_simd_rsqrt_iter_f(luf, xf);
 #endif
     gmx_simd_cvt_f2dd(luf, &lu0, &lu1);
     /* Last iteration(s) performed in double - if we had 22 bits, this gets us to 44 (~1e-15) */
-#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu0 = gmx_simd_rsqrt_iter_d(lu0, x0);
     lu1 = gmx_simd_rsqrt_iter_d(lu1, x1);
 #endif
-#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS*2 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu0 = gmx_simd_rsqrt_iter_d(lu0, x0);
     lu1 = gmx_simd_rsqrt_iter_d(lu1, x1);
 #endif
@@ -1432,16 +1427,16 @@ static gmx_inline gmx_simd_double_t
 gmx_simd_inv_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t lu = gmx_simd_rcp_d(x);
-#if (GMX_SIMD_RCP_BITS < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*8 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RCP_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
     return lu;
@@ -2654,13 +2649,13 @@ static gmx_inline gmx_simd4_float_t
 gmx_simd4_invsqrt_f(gmx_simd4_float_t x)
 {
     gmx_simd4_float_t lu = gmx_simd4_rsqrt_f(x);
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd4_rsqrt_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd4_rsqrt_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd4_rsqrt_iter_f(lu, x);
 #endif
     return lu;
@@ -2709,16 +2704,16 @@ static gmx_inline gmx_simd4_double_t
 gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
 {
     gmx_simd4_double_t lu = gmx_simd4_rsqrt_d(x);
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd4_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd4_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd4_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd4_rsqrt_iter_d(lu, x);
 #endif
     return lu;
