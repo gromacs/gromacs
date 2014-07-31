@@ -70,15 +70,6 @@
  *  \{
  */
 
-/*! \brief We accept lsb errors for 1/sqrt(x) and 1/x, so float target is 22 bits */
-#define GMX_SIMD_MATH_TARGET_SINGLE_BITS 22
-
-/*! \brief We accept "double" that has 2x single precision - 44 bits.
- *
- * This way two Newton-Raphson iterations will suffice in double precision.
- */
-#define GMX_SIMD_MATH_TARGET_DOUBLE_BITS 44
-
 /*! \} */
 
 #ifdef GMX_SIMD_HAVE_FLOAT
@@ -164,13 +155,13 @@ static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_invsqrt_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t lu = gmx_simd_rsqrt_f(x);
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rsqrt_iter_f(lu, x);
 #endif
     return lu;
@@ -264,13 +255,13 @@ static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_inv_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t lu = gmx_simd_rcp_f(x);
-#if (GMX_SIMD_RCP_BITS < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rcp_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rcp_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd_rcp_iter_f(lu, x);
 #endif
     return lu;
@@ -1457,16 +1448,16 @@ static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_invsqrt_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t lu = gmx_simd_rsqrt_d(x);
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
     return lu;
@@ -1513,22 +1504,22 @@ gmx_simd_invsqrt_pair_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
     gmx_simd_float_t  luf = gmx_simd_rsqrt_f(xf);
     gmx_simd_double_t lu0, lu1;
     /* Intermediate target is single - mantissa+1 bits */
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = gmx_simd_rsqrt_iter_f(luf, xf);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = gmx_simd_rsqrt_iter_f(luf, xf);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = gmx_simd_rsqrt_iter_f(luf, xf);
 #endif
     gmx_simd_cvt_f2dd(luf, &lu0, &lu1);
     /* Last iteration(s) performed in double - if we had 22 bits, this gets us to 44 (~1e-15) */
-#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu0 = gmx_simd_rsqrt_iter_d(lu0, x0);
     lu1 = gmx_simd_rsqrt_iter_d(lu1, x1);
 #endif
-#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS*2 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu0 = gmx_simd_rsqrt_iter_d(lu0, x0);
     lu1 = gmx_simd_rsqrt_iter_d(lu1, x1);
 #endif
@@ -1560,16 +1551,16 @@ static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_inv_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t lu = gmx_simd_rcp_d(x);
-#if (GMX_SIMD_RCP_BITS < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*8 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RCP_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
     return lu;
@@ -2762,6 +2753,1120 @@ gmx_simd_pmecorrV_d(gmx_simd_double_t z2)
 
 /*! \} */
 
+
+/*! \name SIMD math functions for double prec. data, single prec. accuracy
+ *
+ *  \note In some cases we do not need full double accuracy of individual
+ *        SIMD math functions, although the data is stored in double precision
+ *        SIMD registers. This might be the case for special algorithms, or
+ *        if the architecture does not support single precision.
+ *        Since the full double precision evaluation of math functions
+ *        typically require much more expensive polynomial approximations
+ *        these functions implement the algorithms used in the single precision
+ *        SIMD math functions, but they operate on double precision
+ *        SIMD variables.
+ *
+ *  \note You should normally not use these functions directly, but the
+ *        real-precision wrappers instead. When Gromacs is compiled in single
+ *        precision, those will be aliases to the normal single precision
+ *        SIMD math functions.
+ *  \{
+ */
+
+/*********************************************************************
+ * SIMD MATH FUNCTIONS WITH DOUBLE PREC. DATA, SINGLE PREC. ACCURACY *
+ *********************************************************************/
+
+/*! \brief Calculate 1/sqrt(x) for SIMD double, but in single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_invsqrt_singleaccuracy_r.
+ *
+ *  \param x Argument that must be >0. This routine does not check arguments.
+ *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_invsqrt_singleaccuracy_d(gmx_simd_double_t x)
+{
+    gmx_simd_double_t lu = gmx_simd_rsqrt_d(x);
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
+#endif
+    return lu;
+}
+
+/*! \brief Calculate 1/sqrt(x) for two SIMD SIMD doubles, but single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_invsqrt_pair_singleaccuracy_r.
+ *
+ * \param x0  First set of arguments, x0 must be positive - no argument checking.
+ * \param x1  Second set of arguments, x1 must be positive - no argument checking.
+ * \param[out] out0  Result 1/sqrt(x0)
+ * \param[out] out1  Result 1/sqrt(x1)
+ *
+ *  In particular for double precision we can sometimes calculate square root
+ *  pairs slightly faster by using single precision until the very last step.
+ */
+static gmx_inline void gmx_simdcall
+gmx_simd_invsqrt_pair_singleaccuracy_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
+                                       gmx_simd_double_t *out0, gmx_simd_double_t *out1)
+{
+#if (defined GMX_SIMD_HAVE_FLOAT) && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
+    gmx_simd_float_t  xf  = gmx_simd_cvt_dd2f(x0, x1);
+    gmx_simd_float_t  luf = gmx_simd_rsqrt_f(xf);
+    gmx_simd_double_t lu0, lu1;
+    /* Intermediate target is single - mantissa+1 bits */
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+    gmx_simd_cvt_f2dd(luf, &lu0, &lu1);
+    /* We now have single-precision accuracy values in lu0/lu1 */
+    *out0 = lu0;
+    *out1 = lu1;
+#else
+    *out0 = gmx_simd_invsqrt_singleaccuracy_d(x0);
+    *out1 = gmx_simd_invsqrt_singleaccuracy_d(x1);
+#endif
+}
+
+
+/*! \brief Calculate 1/x for SIMD double, but in single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_inv_singleaccuracy_r.
+ *
+ *  \param x Argument that must be nonzero. This routine does not check arguments.
+ *  \return 1/x. Result is undefined if your argument was invalid.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_inv_singleaccuracy_d(gmx_simd_double_t x)
+{
+    gmx_simd_double_t lu = gmx_simd_rcp_d(x);
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
+#endif
+    return lu;
+}
+
+/*! \brief Calculate sqrt(x) (correct for 0.0) for SIMD double, single accuracy.
+ *
+ * You should normally call the real-precision routine \ref gmx_simd_sqrt_r.
+ *
+ *  \param x Argument that must be >=0.
+ *  \return sqrt(x). If x=0, the result will correctly be set to 0.
+ *          The result is undefined if the input value is negative.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_sqrt_singleaccuracy_d(gmx_simd_double_t x)
+{
+    gmx_simd_dbool_t   mask;
+    gmx_simd_double_t  res;
+
+    mask = gmx_simd_cmpeq_d(x, gmx_simd_setzero_d());
+    res  = gmx_simd_blendnotzero_d(gmx_simd_invsqrt_singleaccuracy_d(x), mask);
+    return gmx_simd_mul_d(res, x);
+}
+
+/*! \brief SIMD log(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_log_singleaccuracy_r.
+ *
+ * \param x Argument, should be >0.
+ * \result The natural logarithm of x. Undefined if argument is invalid.
+ */
+#ifndef gmx_simd_log_singleaccuracy_d
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_log_singleaccuracy_d(gmx_simd_double_t x)
+{
+    const gmx_simd_double_t  half       = gmx_simd_set1_d(0.5);
+    const gmx_simd_double_t  one        = gmx_simd_set1_d(1.0);
+    const gmx_simd_double_t  sqrt2      = gmx_simd_set1_d(sqrt(2.0));
+    const gmx_simd_double_t  corr       = gmx_simd_set1_d(0.693147180559945286226764);
+    const gmx_simd_double_t  CL9        = gmx_simd_set1_d(0.2371599674224853515625);
+    const gmx_simd_double_t  CL7        = gmx_simd_set1_d(0.285279005765914916992188);
+    const gmx_simd_double_t  CL5        = gmx_simd_set1_d(0.400005519390106201171875);
+    const gmx_simd_double_t  CL3        = gmx_simd_set1_d(0.666666567325592041015625);
+    const gmx_simd_double_t  CL1        = gmx_simd_set1_d(2.0);
+    gmx_simd_double_t        fexp, x2, p;
+    gmx_simd_dbool_t         mask;
+
+    fexp  = gmx_simd_get_exponent_d(x);
+    x     = gmx_simd_get_mantissa_d(x);
+
+    mask  = gmx_simd_cmplt_d(sqrt2, x);
+    /* Adjust to non-IEEE format for x>sqrt(2): exponent += 1, mantissa *= 0.5 */
+    fexp  = gmx_simd_add_d(fexp, gmx_simd_blendzero_d(one, mask));
+    x     = gmx_simd_mul_d(x, gmx_simd_blendv_d(one, half, mask));
+
+    x     = gmx_simd_mul_d( gmx_simd_sub_d(x, one), gmx_simd_inv_singleaccuracy_d( gmx_simd_add_d(x, one) ) );
+    x2    = gmx_simd_mul_d(x, x);
+
+    p     = gmx_simd_fmadd_d(CL9, x2, CL7);
+    p     = gmx_simd_fmadd_d(p, x2, CL5);
+    p     = gmx_simd_fmadd_d(p, x2, CL3);
+    p     = gmx_simd_fmadd_d(p, x2, CL1);
+    p     = gmx_simd_fmadd_d(p, x, gmx_simd_mul_d(corr, fexp));
+
+    return p;
+}
+#endif
+
+#ifndef gmx_simd_exp2_singleaccuracy_d
+/*! \brief SIMD 2^x. Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_exp2_singleaccuracy_r.
+ *
+ * \param x Argument.
+ * \result 2^x. Undefined if input argument caused overflow.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_exp2_singleaccuracy_d(gmx_simd_double_t x)
+{
+    /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
+    const gmx_simd_double_t  arglimit = gmx_simd_set1_d(126.0);
+    const gmx_simd_double_t  CC6      = gmx_simd_set1_d(0.0001534581200287996416911311);
+    const gmx_simd_double_t  CC5      = gmx_simd_set1_d(0.001339993121934088894618990);
+    const gmx_simd_double_t  CC4      = gmx_simd_set1_d(0.009618488957115180159497841);
+    const gmx_simd_double_t  CC3      = gmx_simd_set1_d(0.05550328776964726865751735);
+    const gmx_simd_double_t  CC2      = gmx_simd_set1_d(0.2402264689063408646490722);
+    const gmx_simd_double_t  CC1      = gmx_simd_set1_d(0.6931472057372680777553816);
+    const gmx_simd_double_t  one      = gmx_simd_set1_d(1.0);
+
+    gmx_simd_double_t        fexppart;
+    gmx_simd_double_t        intpart;
+    gmx_simd_double_t        p;
+    gmx_simd_dbool_t         valuemask;
+
+    fexppart  = gmx_simd_set_exponent_d(x);
+    intpart   = gmx_simd_round_d(x);
+    valuemask = gmx_simd_cmple_d(gmx_simd_fabs_d(x), arglimit);
+    fexppart  = gmx_simd_blendzero_d(fexppart, valuemask);
+    x         = gmx_simd_sub_d(x, intpart);
+
+    p         = gmx_simd_fmadd_d(CC6, x, CC5);
+    p         = gmx_simd_fmadd_d(p, x, CC4);
+    p         = gmx_simd_fmadd_d(p, x, CC3);
+    p         = gmx_simd_fmadd_d(p, x, CC2);
+    p         = gmx_simd_fmadd_d(p, x, CC1);
+    p         = gmx_simd_fmadd_d(p, x, one);
+    x         = gmx_simd_mul_d(p, fexppart);
+    return x;
+}
+#endif
+
+#ifndef gmx_simd_exp_singleaccuracy_d
+/*! \brief SIMD exp(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_exp_singleaccuracy_r.
+ *
+ * \param x Argument.
+ * \result exp(x). Undefined if input argument caused overflow.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_exp_singleaccuracy_d(gmx_simd_double_t x)
+{
+    const gmx_simd_double_t  argscale     = gmx_simd_set1_d(1.44269504088896341);
+    /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
+    const gmx_simd_double_t  arglimit     = gmx_simd_set1_d(126.0);
+    const gmx_simd_double_t  invargscale  = gmx_simd_set1_d(0.69314718055994528623);
+    const gmx_simd_double_t  CC4          = gmx_simd_set1_d(0.00136324646882712841033936);
+    const gmx_simd_double_t  CC3          = gmx_simd_set1_d(0.00836596917361021041870117);
+    const gmx_simd_double_t  CC2          = gmx_simd_set1_d(0.0416710823774337768554688);
+    const gmx_simd_double_t  CC1          = gmx_simd_set1_d(0.166665524244308471679688);
+    const gmx_simd_double_t  CC0          = gmx_simd_set1_d(0.499999850988388061523438);
+    const gmx_simd_double_t  one          = gmx_simd_set1_d(1.0);
+    gmx_simd_double_t        fexppart;
+    gmx_simd_double_t        intpart;
+    gmx_simd_double_t        y, p;
+    gmx_simd_dbool_t         valuemask;
+
+    y         = gmx_simd_mul_d(x, argscale);
+    fexppart  = gmx_simd_set_exponent_d(y);  /* rounds to nearest int internally */
+    intpart   = gmx_simd_round_d(y);         /* use same rounding algorithm here */
+    valuemask = gmx_simd_cmple_d(gmx_simd_fabs_d(y), arglimit);
+    fexppart  = gmx_simd_blendzero_d(fexppart, valuemask);
+
+    /* Extended precision arithmetics not needed since
+     * we have double precision and only need single accuracy.
+     */
+    x         = gmx_simd_fnmadd_d(invargscale, intpart, x);
+
+    p         = gmx_simd_fmadd_d(CC4, x, CC3);
+    p         = gmx_simd_fmadd_d(p, x, CC2);
+    p         = gmx_simd_fmadd_d(p, x, CC1);
+    p         = gmx_simd_fmadd_d(p, x, CC0);
+    p         = gmx_simd_fmadd_d(gmx_simd_mul_d(x, x), p, x);
+    p         = gmx_simd_add_d(p, one);
+    x         = gmx_simd_mul_d(p, fexppart);
+    return x;
+}
+#endif
+
+/*! \brief SIMD erf(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_erf_singleaccuracy_r.
+ *
+ * \param x The value to calculate erf(x) for.
+ * \result erf(x)
+ *
+ * This routine achieves very close to single precision, but we do not care about
+ * the last bit or the subnormal result range.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_erf_singleaccuracy_d(gmx_simd_double_t x)
+{
+    /* Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1] */
+    const gmx_simd_double_t  CA6      = gmx_simd_set1_d(7.853861353153693e-5);
+    const gmx_simd_double_t  CA5      = gmx_simd_set1_d(-8.010193625184903e-4);
+    const gmx_simd_double_t  CA4      = gmx_simd_set1_d(5.188327685732524e-3);
+    const gmx_simd_double_t  CA3      = gmx_simd_set1_d(-2.685381193529856e-2);
+    const gmx_simd_double_t  CA2      = gmx_simd_set1_d(1.128358514861418e-1);
+    const gmx_simd_double_t  CA1      = gmx_simd_set1_d(-3.761262582423300e-1);
+    const gmx_simd_double_t  CA0      = gmx_simd_set1_d(1.128379165726710);
+    /* Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2] */
+    const gmx_simd_double_t  CB9      = gmx_simd_set1_d(-0.0018629930017603923);
+    const gmx_simd_double_t  CB8      = gmx_simd_set1_d(0.003909821287598495);
+    const gmx_simd_double_t  CB7      = gmx_simd_set1_d(-0.0052094582210355615);
+    const gmx_simd_double_t  CB6      = gmx_simd_set1_d(0.005685614362160572);
+    const gmx_simd_double_t  CB5      = gmx_simd_set1_d(-0.0025367682853477272);
+    const gmx_simd_double_t  CB4      = gmx_simd_set1_d(-0.010199799682318782);
+    const gmx_simd_double_t  CB3      = gmx_simd_set1_d(0.04369575504816542);
+    const gmx_simd_double_t  CB2      = gmx_simd_set1_d(-0.11884063474674492);
+    const gmx_simd_double_t  CB1      = gmx_simd_set1_d(0.2732120154030589);
+    const gmx_simd_double_t  CB0      = gmx_simd_set1_d(0.42758357702025784);
+    /* Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19] */
+    const gmx_simd_double_t  CC10     = gmx_simd_set1_d(-0.0445555913112064);
+    const gmx_simd_double_t  CC9      = gmx_simd_set1_d(0.21376355144663348);
+    const gmx_simd_double_t  CC8      = gmx_simd_set1_d(-0.3473187200259257);
+    const gmx_simd_double_t  CC7      = gmx_simd_set1_d(0.016690861551248114);
+    const gmx_simd_double_t  CC6      = gmx_simd_set1_d(0.7560973182491192);
+    const gmx_simd_double_t  CC5      = gmx_simd_set1_d(-1.2137903600145787);
+    const gmx_simd_double_t  CC4      = gmx_simd_set1_d(0.8411872321232948);
+    const gmx_simd_double_t  CC3      = gmx_simd_set1_d(-0.08670413896296343);
+    const gmx_simd_double_t  CC2      = gmx_simd_set1_d(-0.27124782687240334);
+    const gmx_simd_double_t  CC1      = gmx_simd_set1_d(-0.0007502488047806069);
+    const gmx_simd_double_t  CC0      = gmx_simd_set1_d(0.5642114853803148);
+    const gmx_simd_double_t  one      = gmx_simd_set1_d(1.0);
+    const gmx_simd_double_t  two      = gmx_simd_set1_d(2.0);
+
+    gmx_simd_double_t        x2, x4, y;
+    gmx_simd_double_t        t, t2, w, w2;
+    gmx_simd_double_t        pA0, pA1, pB0, pB1, pC0, pC1;
+    gmx_simd_double_t        expmx2;
+    gmx_simd_double_t        res_erf, res_erfc, res;
+    gmx_simd_dbool_t         mask;
+
+    /* Calculate erf() */
+    x2   = gmx_simd_mul_d(x, x);
+    x4   = gmx_simd_mul_d(x2, x2);
+
+    pA0  = gmx_simd_fmadd_d(CA6, x4, CA4);
+    pA1  = gmx_simd_fmadd_d(CA5, x4, CA3);
+    pA0  = gmx_simd_fmadd_d(pA0, x4, CA2);
+    pA1  = gmx_simd_fmadd_d(pA1, x4, CA1);
+    pA0  = gmx_simd_mul_d(pA0, x4);
+    pA0  = gmx_simd_fmadd_d(pA1, x2, pA0);
+    /* Constant term must come last for precision reasons */
+    pA0  = gmx_simd_add_d(pA0, CA0);
+
+    res_erf = gmx_simd_mul_d(x, pA0);
+
+    /* Calculate erfc */
+    y       = gmx_simd_fabs_d(x);
+    t       = gmx_simd_inv_singleaccuracy_d(y);
+    w       = gmx_simd_sub_d(t, one);
+    t2      = gmx_simd_mul_d(t, t);
+    w2      = gmx_simd_mul_d(w, w);
+
+    expmx2  = gmx_simd_exp_singleaccuracy_d( gmx_simd_fneg_d( gmx_simd_mul_d(y, y)));
+
+    pB1  = gmx_simd_fmadd_d(CB9, w2, CB7);
+    pB0  = gmx_simd_fmadd_d(CB8, w2, CB6);
+    pB1  = gmx_simd_fmadd_d(pB1, w2, CB5);
+    pB0  = gmx_simd_fmadd_d(pB0, w2, CB4);
+    pB1  = gmx_simd_fmadd_d(pB1, w2, CB3);
+    pB0  = gmx_simd_fmadd_d(pB0, w2, CB2);
+    pB1  = gmx_simd_fmadd_d(pB1, w2, CB1);
+    pB0  = gmx_simd_fmadd_d(pB0, w2, CB0);
+    pB0  = gmx_simd_fmadd_d(pB1, w, pB0);
+
+    pC0  = gmx_simd_fmadd_d(CC10, t2, CC8);
+    pC1  = gmx_simd_fmadd_d(CC9, t2, CC7);
+    pC0  = gmx_simd_fmadd_d(pC0, t2, CC6);
+    pC1  = gmx_simd_fmadd_d(pC1, t2, CC5);
+    pC0  = gmx_simd_fmadd_d(pC0, t2, CC4);
+    pC1  = gmx_simd_fmadd_d(pC1, t2, CC3);
+    pC0  = gmx_simd_fmadd_d(pC0, t2, CC2);
+    pC1  = gmx_simd_fmadd_d(pC1, t2, CC1);
+
+    pC0  = gmx_simd_fmadd_d(pC0, t2, CC0);
+    pC0  = gmx_simd_fmadd_d(pC1, t, pC0);
+    pC0  = gmx_simd_mul_d(pC0, t);
+
+    /* SELECT pB0 or pC0 for erfc() */
+    mask     = gmx_simd_cmplt_d(two, y);
+    res_erfc = gmx_simd_blendv_d(pB0, pC0, mask);
+    res_erfc = gmx_simd_mul_d(res_erfc, expmx2);
+
+    /* erfc(x<0) = 2-erfc(|x|) */
+    mask     = gmx_simd_cmplt_d(x, gmx_simd_setzero_d());
+    res_erfc = gmx_simd_blendv_d(res_erfc, gmx_simd_sub_d(two, res_erfc), mask);
+
+    /* Select erf() or erfc() */
+    mask = gmx_simd_cmplt_d(y, gmx_simd_set1_d(0.75));
+    res  = gmx_simd_blendv_d(gmx_simd_sub_d(one, res_erfc), res_erf, mask);
+
+    return res;
+}
+
+/*! \brief SIMD erfc(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_erfc_singleaccuracy_r.
+ *
+ * \param x The value to calculate erfc(x) for.
+ * \result erfc(x)
+ *
+ * This routine achieves singleprecision (bar the last bit) over most of the
+ * input range, but for large arguments where the result is getting close
+ * to the minimum representable numbers we accept slightly larger errors
+ * (think results that are in the ballpark of 10^-30) since that is not
+ * relevant for MD.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_erfc_singleaccuracy_d(gmx_simd_double_t x)
+{
+    /* Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1] */
+    const gmx_simd_double_t  CA6      = gmx_simd_set1_d(7.853861353153693e-5);
+    const gmx_simd_double_t  CA5      = gmx_simd_set1_d(-8.010193625184903e-4);
+    const gmx_simd_double_t  CA4      = gmx_simd_set1_d(5.188327685732524e-3);
+    const gmx_simd_double_t  CA3      = gmx_simd_set1_d(-2.685381193529856e-2);
+    const gmx_simd_double_t  CA2      = gmx_simd_set1_d(1.128358514861418e-1);
+    const gmx_simd_double_t  CA1      = gmx_simd_set1_d(-3.761262582423300e-1);
+    const gmx_simd_double_t  CA0      = gmx_simd_set1_d(1.128379165726710);
+    /* Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2] */
+    const gmx_simd_double_t  CB9      = gmx_simd_set1_d(-0.0018629930017603923);
+    const gmx_simd_double_t  CB8      = gmx_simd_set1_d(0.003909821287598495);
+    const gmx_simd_double_t  CB7      = gmx_simd_set1_d(-0.0052094582210355615);
+    const gmx_simd_double_t  CB6      = gmx_simd_set1_d(0.005685614362160572);
+    const gmx_simd_double_t  CB5      = gmx_simd_set1_d(-0.0025367682853477272);
+    const gmx_simd_double_t  CB4      = gmx_simd_set1_d(-0.010199799682318782);
+    const gmx_simd_double_t  CB3      = gmx_simd_set1_d(0.04369575504816542);
+    const gmx_simd_double_t  CB2      = gmx_simd_set1_d(-0.11884063474674492);
+    const gmx_simd_double_t  CB1      = gmx_simd_set1_d(0.2732120154030589);
+    const gmx_simd_double_t  CB0      = gmx_simd_set1_d(0.42758357702025784);
+    /* Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19] */
+    const gmx_simd_double_t  CC10     = gmx_simd_set1_d(-0.0445555913112064);
+    const gmx_simd_double_t  CC9      = gmx_simd_set1_d(0.21376355144663348);
+    const gmx_simd_double_t  CC8      = gmx_simd_set1_d(-0.3473187200259257);
+    const gmx_simd_double_t  CC7      = gmx_simd_set1_d(0.016690861551248114);
+    const gmx_simd_double_t  CC6      = gmx_simd_set1_d(0.7560973182491192);
+    const gmx_simd_double_t  CC5      = gmx_simd_set1_d(-1.2137903600145787);
+    const gmx_simd_double_t  CC4      = gmx_simd_set1_d(0.8411872321232948);
+    const gmx_simd_double_t  CC3      = gmx_simd_set1_d(-0.08670413896296343);
+    const gmx_simd_double_t  CC2      = gmx_simd_set1_d(-0.27124782687240334);
+    const gmx_simd_double_t  CC1      = gmx_simd_set1_d(-0.0007502488047806069);
+    const gmx_simd_double_t  CC0      = gmx_simd_set1_d(0.5642114853803148);
+    const gmx_simd_double_t  one      = gmx_simd_set1_d(1.0);
+    const gmx_simd_double_t  two      = gmx_simd_set1_d(2.0);
+
+    gmx_simd_double_t        x2, x4, y;
+    gmx_simd_double_t        t, t2, w, w2;
+    gmx_simd_double_t        pA0, pA1, pB0, pB1, pC0, pC1;
+    gmx_simd_double_t        expmx2;
+    gmx_simd_double_t        res_erf, res_erfc, res;
+    gmx_simd_dbool_t         mask;
+
+    /* Calculate erf() */
+    x2     = gmx_simd_mul_d(x, x);
+    x4     = gmx_simd_mul_d(x2, x2);
+
+    pA0  = gmx_simd_fmadd_d(CA6, x4, CA4);
+    pA1  = gmx_simd_fmadd_d(CA5, x4, CA3);
+    pA0  = gmx_simd_fmadd_d(pA0, x4, CA2);
+    pA1  = gmx_simd_fmadd_d(pA1, x4, CA1);
+    pA1  = gmx_simd_mul_d(pA1, x2);
+    pA0  = gmx_simd_fmadd_d(pA0, x4, pA1);
+    /* Constant term must come last for precision reasons */
+    pA0  = gmx_simd_add_d(pA0, CA0);
+
+    res_erf = gmx_simd_mul_d(x, pA0);
+
+    /* Calculate erfc */
+    y       = gmx_simd_fabs_d(x);
+    t       = gmx_simd_inv_singleaccuracy_d(y);
+    w       = gmx_simd_sub_d(t, one);
+    t2      = gmx_simd_mul_d(t, t);
+    w2      = gmx_simd_mul_d(w, w);
+
+    expmx2  = gmx_simd_exp_singleaccuracy_d( gmx_simd_fneg_d( gmx_simd_mul_d(y, y) ) );
+
+    pB1  = gmx_simd_fmadd_d(CB9, w2, CB7);
+    pB0  = gmx_simd_fmadd_d(CB8, w2, CB6);
+    pB1  = gmx_simd_fmadd_d(pB1, w2, CB5);
+    pB0  = gmx_simd_fmadd_d(pB0, w2, CB4);
+    pB1  = gmx_simd_fmadd_d(pB1, w2, CB3);
+    pB0  = gmx_simd_fmadd_d(pB0, w2, CB2);
+    pB1  = gmx_simd_fmadd_d(pB1, w2, CB1);
+    pB0  = gmx_simd_fmadd_d(pB0, w2, CB0);
+    pB0  = gmx_simd_fmadd_d(pB1, w, pB0);
+
+    pC0  = gmx_simd_fmadd_d(CC10, t2, CC8);
+    pC1  = gmx_simd_fmadd_d(CC9, t2, CC7);
+    pC0  = gmx_simd_fmadd_d(pC0, t2, CC6);
+    pC1  = gmx_simd_fmadd_d(pC1, t2, CC5);
+    pC0  = gmx_simd_fmadd_d(pC0, t2, CC4);
+    pC1  = gmx_simd_fmadd_d(pC1, t2, CC3);
+    pC0  = gmx_simd_fmadd_d(pC0, t2, CC2);
+    pC1  = gmx_simd_fmadd_d(pC1, t2, CC1);
+
+    pC0  = gmx_simd_fmadd_d(pC0, t2, CC0);
+    pC0  = gmx_simd_fmadd_d(pC1, t, pC0);
+    pC0  = gmx_simd_mul_d(pC0, t);
+
+    /* SELECT pB0 or pC0 for erfc() */
+    mask     = gmx_simd_cmplt_d(two, y);
+    res_erfc = gmx_simd_blendv_d(pB0, pC0, mask);
+    res_erfc = gmx_simd_mul_d(res_erfc, expmx2);
+
+    /* erfc(x<0) = 2-erfc(|x|) */
+    mask     = gmx_simd_cmplt_d(x, gmx_simd_setzero_d());
+    res_erfc = gmx_simd_blendv_d(res_erfc, gmx_simd_sub_d(two, res_erfc), mask);
+
+    /* Select erf() or erfc() */
+    mask = gmx_simd_cmplt_d(y, gmx_simd_set1_d(0.75));
+    res  = gmx_simd_blendv_d(res_erfc, gmx_simd_sub_d(one, res_erf), mask);
+
+    return res;
+}
+
+/*! \brief SIMD sin \& cos. Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_sincos_singleaccuracy_r.
+ *
+ * \param x The argument to evaluate sin/cos for
+ * \param[out] sinval Sin(x)
+ * \param[out] cosval Cos(x)
+ *
+ */
+static gmx_inline void gmx_simdcall
+gmx_simd_sincos_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_double_t *cosval)
+{
+    /* Constants to subtract Pi/4*x from y while minimizing precision loss */
+    const gmx_simd_double_t  argred0         = gmx_simd_set1_d(2*0.78539816290140151978);
+    const gmx_simd_double_t  argred1         = gmx_simd_set1_d(2*4.9604678871439933374e-10);
+    const gmx_simd_double_t  argred2         = gmx_simd_set1_d(2*1.1258708853173288931e-18);
+    const gmx_simd_double_t  two_over_pi     = gmx_simd_set1_d(2.0/M_PI);
+    const gmx_simd_double_t  const_sin2      = gmx_simd_set1_d(-1.9515295891e-4);
+    const gmx_simd_double_t  const_sin1      = gmx_simd_set1_d( 8.3321608736e-3);
+    const gmx_simd_double_t  const_sin0      = gmx_simd_set1_d(-1.6666654611e-1);
+    const gmx_simd_double_t  const_cos2      = gmx_simd_set1_d( 2.443315711809948e-5);
+    const gmx_simd_double_t  const_cos1      = gmx_simd_set1_d(-1.388731625493765e-3);
+    const gmx_simd_double_t  const_cos0      = gmx_simd_set1_d( 4.166664568298827e-2);
+
+    const gmx_simd_double_t  half            = gmx_simd_set1_d(0.5);
+    const gmx_simd_double_t  one             = gmx_simd_set1_d(1.0);
+    gmx_simd_double_t        ssign, csign;
+    gmx_simd_double_t        x2, y, z, psin, pcos, sss, ccc;
+    gmx_simd_dbool_t         mask;
+#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+    const gmx_simd_dint32_t  ione            = gmx_simd_set1_di(1);
+    const gmx_simd_dint32_t  itwo            = gmx_simd_set1_di(2);
+    gmx_simd_dint32_t        iy;
+
+    z       = gmx_simd_mul_d(x, two_over_pi);
+    iy      = gmx_simd_cvt_d2i(z);
+    y       = gmx_simd_round_d(z);
+
+    mask    = gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(iy, ione), gmx_simd_setzero_di()));
+    ssign   = gmx_simd_blendzero_d(gmx_simd_set1_d(-0.0), gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(iy, itwo), itwo)));
+    csign   = gmx_simd_blendzero_d(gmx_simd_set1_d(-0.0), gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(gmx_simd_add_di(iy, ione), itwo), itwo)));
+#else
+    const gmx_simd_double_t  quarter         = gmx_simd_set1_d(0.25);
+    const gmx_simd_double_t  minusquarter    = gmx_simd_set1_d(-0.25);
+    gmx_simd_double_t        q;
+    gmx_simd_dbool_t         m1, m2, m3;
+
+    /* The most obvious way to find the arguments quadrant in the unit circle
+     * to calculate the sign is to use integer arithmetic, but that is not
+     * present in all SIMD implementations. As an alternative, we have devised a
+     * pure floating-point algorithm that uses truncation for argument reduction
+     * so that we get a new value 0<=q<1 over the unit circle, and then
+     * do floating-point comparisons with fractions. This is likely to be
+     * slightly slower (~10%) due to the longer latencies of floating-point, so
+     * we only use it when integer SIMD arithmetic is not present.
+     */
+    ssign   = x;
+    x       = gmx_simd_fabs_d(x);
+    /* It is critical that half-way cases are rounded down */
+    z       = gmx_simd_fmadd_d(x, two_over_pi, half);
+    y       = gmx_simd_trunc_d(z);
+    q       = gmx_simd_mul_d(z, quarter);
+    q       = gmx_simd_sub_d(q, gmx_simd_trunc_d(q));
+    /* z now starts at 0.0 for x=-pi/4 (although neg. values cannot occur), and
+     * then increased by 1.0 as x increases by 2*Pi, when it resets to 0.0.
+     * This removes the 2*Pi periodicity without using any integer arithmetic.
+     * First check if y had the value 2 or 3, set csign if true.
+     */
+    q       = gmx_simd_sub_d(q, half);
+    /* If we have logical operations we can work directly on the signbit, which
+     * saves instructions. Otherwise we need to represent signs as +1.0/-1.0.
+     * Thus, if you are altering defines to debug alternative code paths, the
+     * two GMX_SIMD_HAVE_LOGICAL sections in this routine must either both be
+     * active or inactive - you will get errors if only one is used.
+     */
+#    ifdef GMX_SIMD_HAVE_LOGICAL
+    ssign   = gmx_simd_and_d(ssign, gmx_simd_set1_d(-0.0));
+    csign   = gmx_simd_andnot_d(q, gmx_simd_set1_d(-0.0));
+    ssign   = gmx_simd_xor_d(ssign, csign);
+#    else
+    csign   = gmx_simd_xor_sign_d(gmx_simd_set1_d(-1.0), q);
+
+    ssign   = gmx_simd_xor_sign_d(ssign, csign);    /* swap ssign if csign was set. */
+#    endif
+    /* Check if y had value 1 or 3 (remember we subtracted 0.5 from q) */
+    m1      = gmx_simd_cmplt_d(q, minusquarter);
+    m2      = gmx_simd_cmple_d(gmx_simd_setzero_d(), q);
+    m3      = gmx_simd_cmplt_d(q, quarter);
+    m2      = gmx_simd_and_db(m2, m3);
+    mask    = gmx_simd_or_db(m1, m2);
+    /* where mask is FALSE, set sign. */
+    csign   = gmx_simd_xor_sign_d(csign, gmx_simd_blendv_d(gmx_simd_set1_d(-1.0), one, mask));
+#endif
+    x       = gmx_simd_fnmadd_d(y, argred0, x);
+    x       = gmx_simd_fnmadd_d(y, argred1, x);
+    x       = gmx_simd_fnmadd_d(y, argred2, x);
+    x2      = gmx_simd_mul_d(x, x);
+
+    psin    = gmx_simd_fmadd_d(const_sin2, x2, const_sin1);
+    psin    = gmx_simd_fmadd_d(psin, x2, const_sin0);
+    psin    = gmx_simd_fmadd_d(psin, gmx_simd_mul_d(x, x2), x);
+    pcos    = gmx_simd_fmadd_d(const_cos2, x2, const_cos1);
+    pcos    = gmx_simd_fmadd_d(pcos, x2, const_cos0);
+    pcos    = gmx_simd_fmsub_d(pcos, x2, half);
+    pcos    = gmx_simd_fmadd_d(pcos, x2, one);
+
+    sss     = gmx_simd_blendv_d(pcos, psin, mask);
+    ccc     = gmx_simd_blendv_d(psin, pcos, mask);
+    /* See comment for GMX_SIMD_HAVE_LOGICAL section above. */
+#ifdef GMX_SIMD_HAVE_LOGICAL
+    *sinval = gmx_simd_xor_d(sss, ssign);
+    *cosval = gmx_simd_xor_d(ccc, csign);
+#else
+    *sinval = gmx_simd_xor_sign_d(sss, ssign);
+    *cosval = gmx_simd_xor_sign_d(ccc, csign);
+#endif
+}
+
+/*! \brief SIMD sin(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_sin_singleaccuracy_r.
+ *
+ * \param x The argument to evaluate sin for
+ * \result Sin(x)
+ *
+ * \attention Do NOT call both sin & cos if you need both results, since each of them
+ * will then call \ref gmx_simd_sincos_r and waste a factor 2 in performance.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_sin_singleaccuracy_d(gmx_simd_double_t x)
+{
+    gmx_simd_double_t s, c;
+    gmx_simd_sincos_singleaccuracy_d(x, &s, &c);
+    return s;
+}
+
+/*! \brief SIMD cos(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_cos_singleaccuracy_r.
+ *
+ * \param x The argument to evaluate cos for
+ * \result Cos(x)
+ *
+ * \attention Do NOT call both sin & cos if you need both results, since each of them
+ * will then call \ref gmx_simd_sincos_r and waste a factor 2 in performance.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_cos_singleaccuracy_d(gmx_simd_double_t x)
+{
+    gmx_simd_double_t s, c;
+    gmx_simd_sincos_singleaccuracy_d(x, &s, &c);
+    return c;
+}
+
+/*! \brief SIMD tan(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_tan_singleaccuracy_r.
+ *
+ * \param x The argument to evaluate tan for
+ * \result Tan(x)
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_tan_singleaccuracy_d(gmx_simd_double_t x)
+{
+    const gmx_simd_double_t  argred0         = gmx_simd_set1_d(2*0.78539816290140151978);
+    const gmx_simd_double_t  argred1         = gmx_simd_set1_d(2*4.9604678871439933374e-10);
+    const gmx_simd_double_t  argred2         = gmx_simd_set1_d(2*1.1258708853173288931e-18);
+    const gmx_simd_double_t  two_over_pi     = gmx_simd_set1_d(2.0/M_PI);
+    const gmx_simd_double_t  CT6             = gmx_simd_set1_d(0.009498288995810566122993911);
+    const gmx_simd_double_t  CT5             = gmx_simd_set1_d(0.002895755790837379295226923);
+    const gmx_simd_double_t  CT4             = gmx_simd_set1_d(0.02460087336161924491836265);
+    const gmx_simd_double_t  CT3             = gmx_simd_set1_d(0.05334912882656359828045988);
+    const gmx_simd_double_t  CT2             = gmx_simd_set1_d(0.1333989091464957704418495);
+    const gmx_simd_double_t  CT1             = gmx_simd_set1_d(0.3333307599244198227797507);
+
+    gmx_simd_double_t        x2, p, y, z;
+    gmx_simd_dbool_t         mask;
+
+#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+    gmx_simd_dint32_t  iy;
+    gmx_simd_dint32_t  ione = gmx_simd_set1_di(1);
+
+    z       = gmx_simd_mul_d(x, two_over_pi);
+    iy      = gmx_simd_cvt_d2i(z);
+    y       = gmx_simd_round_d(z);
+    mask    = gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(iy, ione), ione));
+
+    x       = gmx_simd_fnmadd_d(y, argred0, x);
+    x       = gmx_simd_fnmadd_d(y, argred1, x);
+    x       = gmx_simd_fnmadd_d(y, argred2, x);
+    x       = gmx_simd_xor_d(gmx_simd_blendzero_d(gmx_simd_set1_d(-0.0), mask), x);
+#else
+    const gmx_simd_double_t  quarter         = gmx_simd_set1_d(0.25);
+    const gmx_simd_double_t  half            = gmx_simd_set1_d(0.5);
+    const gmx_simd_double_t  threequarter    = gmx_simd_set1_d(0.75);
+    gmx_simd_double_t        w, q;
+    gmx_simd_dbool_t         m1, m2, m3;
+
+    w       = gmx_simd_fabs_d(x);
+    z       = gmx_simd_fmadd_d(w, two_over_pi, half);
+    y       = gmx_simd_trunc_d(z);
+    q       = gmx_simd_mul_d(z, quarter);
+    q       = gmx_simd_sub_d(q, gmx_simd_trunc_d(q));
+    m1      = gmx_simd_cmple_d(quarter, q);
+    m2      = gmx_simd_cmplt_d(q, half);
+    m3      = gmx_simd_cmple_d(threequarter, q);
+    m1      = gmx_simd_and_db(m1, m2);
+    mask    = gmx_simd_or_db(m1, m3);
+    w       = gmx_simd_fnmadd_d(y, argred0, w);
+    w       = gmx_simd_fnmadd_d(y, argred1, w);
+    w       = gmx_simd_fnmadd_d(y, argred2, w);
+
+    w       = gmx_simd_blendv_d(w, gmx_simd_fneg_d(w), mask);
+    x       = gmx_simd_xor_sign_d(w, x);
+#endif
+    x2      = gmx_simd_mul_d(x, x);
+    p       = gmx_simd_fmadd_d(CT6, x2, CT5);
+    p       = gmx_simd_fmadd_d(p, x2, CT4);
+    p       = gmx_simd_fmadd_d(p, x2, CT3);
+    p       = gmx_simd_fmadd_d(p, x2, CT2);
+    p       = gmx_simd_fmadd_d(p, x2, CT1);
+    p       = gmx_simd_fmadd_d(x2, gmx_simd_mul_d(p, x), x);
+
+    p       = gmx_simd_blendv_d( p, gmx_simd_inv_singleaccuracy_d(p), mask);
+    return p;
+}
+
+/*! \brief SIMD asin(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_asin_singleaccuracy_r.
+ *
+ * \param x The argument to evaluate asin for
+ * \result Asin(x)
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_asin_singleaccuracy_d(gmx_simd_double_t x)
+{
+    const gmx_simd_double_t limitlow   = gmx_simd_set1_d(1e-4);
+    const gmx_simd_double_t half       = gmx_simd_set1_d(0.5);
+    const gmx_simd_double_t one        = gmx_simd_set1_d(1.0);
+    const gmx_simd_double_t halfpi     = gmx_simd_set1_d(M_PI/2.0);
+    const gmx_simd_double_t CC5        = gmx_simd_set1_d(4.2163199048E-2);
+    const gmx_simd_double_t CC4        = gmx_simd_set1_d(2.4181311049E-2);
+    const gmx_simd_double_t CC3        = gmx_simd_set1_d(4.5470025998E-2);
+    const gmx_simd_double_t CC2        = gmx_simd_set1_d(7.4953002686E-2);
+    const gmx_simd_double_t CC1        = gmx_simd_set1_d(1.6666752422E-1);
+    gmx_simd_double_t       xabs;
+    gmx_simd_double_t       z, z1, z2, q, q1, q2;
+    gmx_simd_double_t       pA, pB;
+    gmx_simd_dbool_t        mask;
+
+    xabs  = gmx_simd_fabs_d(x);
+    mask  = gmx_simd_cmplt_d(half, xabs);
+    z1    = gmx_simd_mul_d(half, gmx_simd_sub_d(one, xabs));
+    q1    = gmx_simd_mul_d(z1, gmx_simd_invsqrt_singleaccuracy_d(z1));
+    q1    = gmx_simd_blendnotzero_d(q1, gmx_simd_cmpeq_d(xabs, one));
+    q2    = xabs;
+    z2    = gmx_simd_mul_d(q2, q2);
+    z     = gmx_simd_blendv_d(z2, z1, mask);
+    q     = gmx_simd_blendv_d(q2, q1, mask);
+
+    z2    = gmx_simd_mul_d(z, z);
+    pA    = gmx_simd_fmadd_d(CC5, z2, CC3);
+    pB    = gmx_simd_fmadd_d(CC4, z2, CC2);
+    pA    = gmx_simd_fmadd_d(pA, z2, CC1);
+    pA    = gmx_simd_mul_d(pA, z);
+    z     = gmx_simd_fmadd_d(pB, z2, pA);
+    z     = gmx_simd_fmadd_d(z, q, q);
+    q2    = gmx_simd_sub_d(halfpi, z);
+    q2    = gmx_simd_sub_d(q2, z);
+    z     = gmx_simd_blendv_d(z, q2, mask);
+
+    mask  = gmx_simd_cmplt_d(limitlow, xabs);
+    z     = gmx_simd_blendv_d( xabs, z, mask );
+    z     = gmx_simd_xor_sign_d(z, x);
+
+    return z;
+}
+
+/*! \brief SIMD acos(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_acos_singleaccuracy_r.
+ *
+ * \param x The argument to evaluate acos for
+ * \result Acos(x)
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_acos_singleaccuracy_d(gmx_simd_double_t x)
+{
+    const gmx_simd_double_t one       = gmx_simd_set1_d(1.0);
+    const gmx_simd_double_t half      = gmx_simd_set1_d(0.5);
+    const gmx_simd_double_t pi        = gmx_simd_set1_d(M_PI);
+    const gmx_simd_double_t halfpi    = gmx_simd_set1_d(M_PI/2.0);
+    gmx_simd_double_t       xabs;
+    gmx_simd_double_t       z, z1, z2, z3;
+    gmx_simd_dbool_t        mask1, mask2;
+
+    xabs  = gmx_simd_fabs_d(x);
+    mask1 = gmx_simd_cmplt_d(half, xabs);
+    mask2 = gmx_simd_cmplt_d(gmx_simd_setzero_d(), x);
+
+    z     = gmx_simd_mul_d(half, gmx_simd_sub_d(one, xabs));
+    z     = gmx_simd_mul_d(z, gmx_simd_invsqrt_singleaccuracy_d(z));
+    z     = gmx_simd_blendnotzero_d(z, gmx_simd_cmpeq_d(xabs, one));
+    z     = gmx_simd_blendv_d(x, z, mask1);
+    z     = gmx_simd_asin_singleaccuracy_d(z);
+
+    z2    = gmx_simd_add_d(z, z);
+    z1    = gmx_simd_sub_d(pi, z2);
+    z3    = gmx_simd_sub_d(halfpi, z);
+    z     = gmx_simd_blendv_d(z1, z2, mask2);
+    z     = gmx_simd_blendv_d(z3, z, mask1);
+
+    return z;
+}
+
+/*! \brief SIMD asin(x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_atan_singleaccuracy_r.
+ *
+ * \param x The argument to evaluate atan for
+ * \result Atan(x), same argument/value range as standard math library.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_atan_singleaccuracy_d(gmx_simd_double_t x)
+{
+    const gmx_simd_double_t halfpi    = gmx_simd_set1_d(M_PI/2);
+    const gmx_simd_double_t CA17      = gmx_simd_set1_d(0.002823638962581753730774);
+    const gmx_simd_double_t CA15      = gmx_simd_set1_d(-0.01595690287649631500244);
+    const gmx_simd_double_t CA13      = gmx_simd_set1_d(0.04250498861074447631836);
+    const gmx_simd_double_t CA11      = gmx_simd_set1_d(-0.07489009201526641845703);
+    const gmx_simd_double_t CA9       = gmx_simd_set1_d(0.1063479334115982055664);
+    const gmx_simd_double_t CA7       = gmx_simd_set1_d(-0.1420273631811141967773);
+    const gmx_simd_double_t CA5       = gmx_simd_set1_d(0.1999269574880599975585);
+    const gmx_simd_double_t CA3       = gmx_simd_set1_d(-0.3333310186862945556640);
+    gmx_simd_double_t       x2, x3, x4, pA, pB;
+    gmx_simd_dbool_t        mask, mask2;
+
+    mask  = gmx_simd_cmplt_d(x, gmx_simd_setzero_d());
+    x     = gmx_simd_fabs_d(x);
+    mask2 = gmx_simd_cmplt_d(gmx_simd_set1_d(1.0), x);
+    x     = gmx_simd_blendv_d(x, gmx_simd_inv_singleaccuracy_d(x), mask2);
+
+    x2    = gmx_simd_mul_d(x, x);
+    x3    = gmx_simd_mul_d(x2, x);
+    x4    = gmx_simd_mul_d(x2, x2);
+    pA    = gmx_simd_fmadd_d(CA17, x4, CA13);
+    pB    = gmx_simd_fmadd_d(CA15, x4, CA11);
+    pA    = gmx_simd_fmadd_d(pA, x4, CA9);
+    pB    = gmx_simd_fmadd_d(pB, x4, CA7);
+    pA    = gmx_simd_fmadd_d(pA, x4, CA5);
+    pB    = gmx_simd_fmadd_d(pB, x4, CA3);
+    pA    = gmx_simd_fmadd_d(pA, x2, pB);
+    pA    = gmx_simd_fmadd_d(pA, x3, x);
+
+    pA    = gmx_simd_blendv_d(pA, gmx_simd_sub_d(halfpi, pA), mask2);
+    pA    = gmx_simd_blendv_d(pA, gmx_simd_fneg_d(pA), mask);
+
+    return pA;
+}
+
+/*! \brief SIMD atan2(y,x). Double precision SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_atan2_singleaccuracy_r.
+ *
+ * \param y Y component of vector, any quartile
+ * \param x X component of vector, any quartile
+ * \result Atan(y,x), same argument/value range as standard math library.
+ *
+ * \note This routine should provide correct results for all finite
+ * non-zero or positive-zero arguments. However, negative zero arguments will
+ * be treated as positive zero, which means the return value will deviate from
+ * the standard math library atan2(y,x) for those cases. That should not be
+ * of any concern in Gromacs, and in particular it will not affect calculations
+ * of angles from vectors.
+ */
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_atan2_singleaccuracy_d(gmx_simd_double_t y, gmx_simd_double_t x)
+{
+    const gmx_simd_double_t pi          = gmx_simd_set1_d(M_PI);
+    const gmx_simd_double_t halfpi      = gmx_simd_set1_d(M_PI/2.0);
+    gmx_simd_double_t       xinv, p, aoffset;
+    gmx_simd_dbool_t        mask_x0, mask_y0, mask_xlt0, mask_ylt0;
+
+    mask_x0   = gmx_simd_cmpeq_d(x, gmx_simd_setzero_d());
+    mask_y0   = gmx_simd_cmpeq_d(y, gmx_simd_setzero_d());
+    mask_xlt0 = gmx_simd_cmplt_d(x, gmx_simd_setzero_d());
+    mask_ylt0 = gmx_simd_cmplt_d(y, gmx_simd_setzero_d());
+
+    aoffset   = gmx_simd_blendzero_d(halfpi, mask_x0);
+    aoffset   = gmx_simd_blendnotzero_d(aoffset, mask_y0);
+
+    aoffset   = gmx_simd_blendv_d(aoffset, pi, mask_xlt0);
+    aoffset   = gmx_simd_blendv_d(aoffset, gmx_simd_fneg_d(aoffset), mask_ylt0);
+
+    xinv      = gmx_simd_blendnotzero_d(gmx_simd_inv_singleaccuracy_d(x), mask_x0);
+    p         = gmx_simd_mul_d(y, xinv);
+    p         = gmx_simd_atan_singleaccuracy_d(p);
+    p         = gmx_simd_add_d(p, aoffset);
+
+    return p;
+}
+
+/*! \brief Analytical PME force correction, double SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_pmecorrF_singleaccuracy_r.
+ *
+ * \param z2 \f$(r \beta)^2\f$ - see below for details.
+ * \result Correction factor to coulomb force - see below for details.
+ *
+ * This routine is meant to enable analytical evaluation of the
+ * direct-space PME electrostatic force to avoid tables.
+ *
+ * The direct-space potential should be \f$ \mbox{erfc}(\beta r)/r\f$, but there
+ * are some problems evaluating that:
+ *
+ * First, the error function is difficult (read: expensive) to
+ * approxmiate accurately for intermediate to large arguments, and
+ * this happens already in ranges of \f$(\beta r)\f$ that occur in simulations.
+ * Second, we now try to avoid calculating potentials in Gromacs but
+ * use forces directly.
+ *
+ * We can simply things slight by noting that the PME part is really
+ * a correction to the normal Coulomb force since \f$\mbox{erfc}(z)=1-\mbox{erf}(z)\f$, i.e.
+ * \f[
+ * V = \frac{1}{r} - \frac{\mbox{erf}(\beta r)}{r}
+ * \f]
+ * The first term we already have from the inverse square root, so
+ * that we can leave out of this routine.
+ *
+ * For pme tolerances of 1e-3 to 1e-8 and cutoffs of 0.5nm to 1.8nm,
+ * the argument \f$beta r\f$ will be in the range 0.15 to ~4. Use your
+ * favorite plotting program to realize how well-behaved \f$\frac{\mbox{erf}(z)}{z}\f$ is
+ * in this range!
+ *
+ * We approximate \f$f(z)=\mbox{erf}(z)/z\f$ with a rational minimax polynomial.
+ * However, it turns out it is more efficient to approximate \f$f(z)/z\f$ and
+ * then only use even powers. This is another minor optimization, since
+ * we actually \a want \f$f(z)/z\f$, because it is going to be multiplied by
+ * the vector between the two atoms to get the vectorial force. The
+ * fastest flops are the ones we can avoid calculating!
+ *
+ * So, here's how it should be used:
+ *
+ * 1. Calculate \f$r^2\f$.
+ * 2. Multiply by \f$\beta^2\f$, so you get \f$z^2=(\beta r)^2\f$.
+ * 3. Evaluate this routine with \f$z^2\f$ as the argument.
+ * 4. The return value is the expression:
+ *
+ * \f[
+ *    \frac{2 \exp{-z^2}}{\sqrt{\pi} z^2}-\frac{\mbox{erf}(z)}{z^3}
+ * \f]
+ *
+ * 5. Multiply the entire expression by \f$\beta^3\f$. This will get you
+ *
+ *  \f[
+ *    \frac{2 \beta^3 \exp(-z^2)}{\sqrt{\pi} z^2} - \frac{\beta^3 \mbox{erf}(z)}{z^3}
+ *  \f]
+ *
+ *    or, switching back to \f$r\f$ (since \f$z=r \beta\f$):
+ *
+ *  \f[
+ *    \frac{2 \beta \exp(-r^2 \beta^2)}{\sqrt{\pi} r^2} - \frac{\mbox{erf}(r \beta)}{r^3}
+ *  \f]
+ *
+ *    With a bit of math exercise you should be able to confirm that
+ *    this is exactly
+ *
+ *  \f[
+ *   \frac{\frac{d}{dr}\left( \frac{\mbox{erf}(\beta r)}{r} \right)}{r}
+ *  \f]
+ *
+ * 6. Add the result to \f$r^{-3}\f$, multiply by the product of the charges,
+ *    and you have your force (divided by \f$r\f$). A final multiplication
+ *    with the vector connecting the two particles and you have your
+ *    vectorial force to add to the particles.
+ *
+ * This approximation achieves an accuracy slightly lower than 1e-6; when
+ * added to \f$1/r\f$ the error will be insignificant.
+ *
+ */
+static gmx_simd_double_t gmx_simdcall
+gmx_simd_pmecorrF_singleaccuracy_d(gmx_simd_double_t z2)
+{
+    const gmx_simd_double_t  FN6      = gmx_simd_set1_d(-1.7357322914161492954e-8);
+    const gmx_simd_double_t  FN5      = gmx_simd_set1_d(1.4703624142580877519e-6);
+    const gmx_simd_double_t  FN4      = gmx_simd_set1_d(-0.000053401640219807709149);
+    const gmx_simd_double_t  FN3      = gmx_simd_set1_d(0.0010054721316683106153);
+    const gmx_simd_double_t  FN2      = gmx_simd_set1_d(-0.019278317264888380590);
+    const gmx_simd_double_t  FN1      = gmx_simd_set1_d(0.069670166153766424023);
+    const gmx_simd_double_t  FN0      = gmx_simd_set1_d(-0.75225204789749321333);
+
+    const gmx_simd_double_t  FD4      = gmx_simd_set1_d(0.0011193462567257629232);
+    const gmx_simd_double_t  FD3      = gmx_simd_set1_d(0.014866955030185295499);
+    const gmx_simd_double_t  FD2      = gmx_simd_set1_d(0.11583842382862377919);
+    const gmx_simd_double_t  FD1      = gmx_simd_set1_d(0.50736591960530292870);
+    const gmx_simd_double_t  FD0      = gmx_simd_set1_d(1.0);
+
+    gmx_simd_double_t        z4;
+    gmx_simd_double_t        polyFN0, polyFN1, polyFD0, polyFD1;
+
+    z4             = gmx_simd_mul_d(z2, z2);
+
+    polyFD0        = gmx_simd_fmadd_d(FD4, z4, FD2);
+    polyFD1        = gmx_simd_fmadd_d(FD3, z4, FD1);
+    polyFD0        = gmx_simd_fmadd_d(polyFD0, z4, FD0);
+    polyFD0        = gmx_simd_fmadd_d(polyFD1, z2, polyFD0);
+
+    polyFD0        = gmx_simd_inv_singleaccuracy_d(polyFD0);
+
+    polyFN0        = gmx_simd_fmadd_d(FN6, z4, FN4);
+    polyFN1        = gmx_simd_fmadd_d(FN5, z4, FN3);
+    polyFN0        = gmx_simd_fmadd_d(polyFN0, z4, FN2);
+    polyFN1        = gmx_simd_fmadd_d(polyFN1, z4, FN1);
+    polyFN0        = gmx_simd_fmadd_d(polyFN0, z4, FN0);
+    polyFN0        = gmx_simd_fmadd_d(polyFN1, z2, polyFN0);
+
+    return gmx_simd_mul_d(polyFN0, polyFD0);
+}
+
+
+
+/*! \brief Analytical PME potential correction, double SIMD data, single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_pmecorrV_singleaccuracy_r.
+ *
+ * \param z2 \f$(r \beta)^2\f$ - see below for details.
+ * \result Correction factor to coulomb potential - see below for details.
+ *
+ * See \ref gmx_simd_pmecorrF_f for details about the approximation.
+ *
+ * This routine calculates \f$\mbox{erf}(z)/z\f$, although you should provide \f$z^2\f$
+ * as the input argument.
+ *
+ * Here's how it should be used:
+ *
+ * 1. Calculate \f$r^2\f$.
+ * 2. Multiply by \f$\beta^2\f$, so you get \f$z^2=\beta^2*r^2\f$.
+ * 3. Evaluate this routine with z^2 as the argument.
+ * 4. The return value is the expression:
+ *
+ *  \f[
+ *   \frac{\mbox{erf}(z)}{z}
+ *  \f]
+ *
+ * 5. Multiply the entire expression by beta and switching back to \f$r\f$ (since \f$z=r \beta\f$):
+ *
+ *  \f[
+ *    \frac{\mbox{erf}(r \beta)}{r}
+ *  \f]
+ *
+ * 6. Subtract the result from \f$1/r\f$, multiply by the product of the charges,
+ *    and you have your potential.
+ *
+ * This approximation achieves an accuracy slightly lower than 1e-6; when
+ * added to \f$1/r\f$ the error will be insignificant.
+ */
+static gmx_simd_double_t gmx_simdcall
+gmx_simd_pmecorrV_singleaccuracy_d(gmx_simd_double_t z2)
+{
+    const gmx_simd_double_t  VN6      = gmx_simd_set1_d(1.9296833005951166339e-8);
+    const gmx_simd_double_t  VN5      = gmx_simd_set1_d(-1.4213390571557850962e-6);
+    const gmx_simd_double_t  VN4      = gmx_simd_set1_d(0.000041603292906656984871);
+    const gmx_simd_double_t  VN3      = gmx_simd_set1_d(-0.00013134036773265025626);
+    const gmx_simd_double_t  VN2      = gmx_simd_set1_d(0.038657983986041781264);
+    const gmx_simd_double_t  VN1      = gmx_simd_set1_d(0.11285044772717598220);
+    const gmx_simd_double_t  VN0      = gmx_simd_set1_d(1.1283802385263030286);
+
+    const gmx_simd_double_t  VD3      = gmx_simd_set1_d(0.0066752224023576045451);
+    const gmx_simd_double_t  VD2      = gmx_simd_set1_d(0.078647795836373922256);
+    const gmx_simd_double_t  VD1      = gmx_simd_set1_d(0.43336185284710920150);
+    const gmx_simd_double_t  VD0      = gmx_simd_set1_d(1.0);
+
+    gmx_simd_double_t        z4;
+    gmx_simd_double_t        polyVN0, polyVN1, polyVD0, polyVD1;
+
+    z4             = gmx_simd_mul_d(z2, z2);
+
+    polyVD1        = gmx_simd_fmadd_d(VD3, z4, VD1);
+    polyVD0        = gmx_simd_fmadd_d(VD2, z4, VD0);
+    polyVD0        = gmx_simd_fmadd_d(polyVD1, z2, polyVD0);
+
+    polyVD0        = gmx_simd_inv_singleaccuracy_d(polyVD0);
+
+    polyVN0        = gmx_simd_fmadd_d(VN6, z4, VN4);
+    polyVN1        = gmx_simd_fmadd_d(VN5, z4, VN3);
+    polyVN0        = gmx_simd_fmadd_d(polyVN0, z4, VN2);
+    polyVN1        = gmx_simd_fmadd_d(polyVN1, z4, VN1);
+    polyVN0        = gmx_simd_fmadd_d(polyVN0, z4, VN0);
+    polyVN0        = gmx_simd_fmadd_d(polyVN1, z2, polyVN0);
+
+    return gmx_simd_mul_d(polyVN0, polyVD0);
+}
+
 #endif
 
 
@@ -2811,13 +3916,13 @@ static gmx_inline gmx_simd4_float_t gmx_simdcall
 gmx_simd4_invsqrt_f(gmx_simd4_float_t x)
 {
     gmx_simd4_float_t lu = gmx_simd4_rsqrt_f(x);
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd4_rsqrt_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd4_rsqrt_iter_f(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_SINGLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = gmx_simd4_rsqrt_iter_f(lu, x);
 #endif
     return lu;
@@ -2866,20 +3971,46 @@ static gmx_inline gmx_simd4_double_t gmx_simdcall
 gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
 {
     gmx_simd4_double_t lu = gmx_simd4_rsqrt_d(x);
-#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd4_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd4_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd4_rsqrt_iter_d(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_MATH_TARGET_DOUBLE_BITS)
+#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = gmx_simd4_rsqrt_iter_d(lu, x);
 #endif
     return lu;
 }
+
+/**********************************************************************
+ * SIMD4 MATH FUNCTIONS WITH DOUBLE PREC. DATA, SINGLE PREC. ACCURACY *
+ **********************************************************************/
+
+/*! \brief Calculate 1/sqrt(x) for SIMD4 double, but in single accuracy.
+ *
+ * \copydetails gmx_simd_invsqrt_singleaccuracy_d
+ */
+static gmx_inline gmx_simd4_double_t gmx_simdcall
+gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
+{
+    gmx_simd4_double_t lu = gmx_simd4_rsqrt_d(x);
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd4_rsqrt_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd4_rsqrt_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd4_rsqrt_iter_d(lu, x);
+#endif
+    return lu;
+}
+
+
 #endif /* GMX_SIMD4_HAVE_DOUBLE */
 
 /*! \} */
@@ -2888,29 +4019,83 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
 /* Set defines based on default Gromacs precision */
 #ifdef GMX_DOUBLE
 /* Documentation in single branch below */
+
 #    define gmx_simd_sum4_r           gmx_simd_sum4_d
 #    define gmx_simd_xor_sign_r       gmx_simd_xor_sign_d
-#    define gmx_simd_invsqrt_r        gmx_simd_invsqrt_d
-#    define gmx_simd_invsqrt_pair_r   gmx_simd_invsqrt_pair_d
-#    define gmx_simd_sqrt_r           gmx_simd_sqrt_d
-#    define gmx_simd_inv_r            gmx_simd_inv_d
-#    define gmx_simd_log_r            gmx_simd_log_d
-#    define gmx_simd_exp2_r           gmx_simd_exp2_d
-#    define gmx_simd_exp_r            gmx_simd_exp_d
-#    define gmx_simd_erf_r            gmx_simd_erf_d
-#    define gmx_simd_erfc_r           gmx_simd_erfc_d
-#    define gmx_simd_sincos_r         gmx_simd_sincos_d
-#    define gmx_simd_sin_r            gmx_simd_sin_d
-#    define gmx_simd_cos_r            gmx_simd_cos_d
-#    define gmx_simd_tan_r            gmx_simd_tan_d
-#    define gmx_simd_asin_r           gmx_simd_asin_d
-#    define gmx_simd_acos_r           gmx_simd_acos_d
-#    define gmx_simd_atan_r           gmx_simd_atan_d
-#    define gmx_simd_atan2_r          gmx_simd_atan2_d
-#    define gmx_simd_pmecorrF_r       gmx_simd_pmecorrF_d
-#    define gmx_simd_pmecorrV_r       gmx_simd_pmecorrV_d
 #    define gmx_simd4_sum4_r          gmx_simd4_sum4_d
-#    define gmx_simd4_invsqrt_r       gmx_simd4_invsqrt_d
+
+/* On hardware that only supports double precision SIMD it is possible to use
+ * the faster _singleaccuracy_d routines everywhere by setting the requested SIMD
+ * accuracy to single precision.
+ */
+#if (GMX_SIMD_ACCURACY_BITS_DOUBLE > GMX_SIMD_ACCURACY_BITS_SINGLE)
+
+#        define gmx_simd_invsqrt_r        gmx_simd_invsqrt_d
+#        define gmx_simd_invsqrt_pair_r   gmx_simd_invsqrt_pair_d
+#        define gmx_simd_sqrt_r           gmx_simd_sqrt_d
+#        define gmx_simd_inv_r            gmx_simd_inv_d
+#        define gmx_simd_log_r            gmx_simd_log_d
+#        define gmx_simd_exp2_r           gmx_simd_exp2_d
+#        define gmx_simd_exp_r            gmx_simd_exp_d
+#        define gmx_simd_erf_r            gmx_simd_erf_d
+#        define gmx_simd_erfc_r           gmx_simd_erfc_d
+#        define gmx_simd_sincos_r         gmx_simd_sincos_d
+#        define gmx_simd_sin_r            gmx_simd_sin_d
+#        define gmx_simd_cos_r            gmx_simd_cos_d
+#        define gmx_simd_tan_r            gmx_simd_tan_d
+#        define gmx_simd_asin_r           gmx_simd_asin_d
+#        define gmx_simd_acos_r           gmx_simd_acos_d
+#        define gmx_simd_atan_r           gmx_simd_atan_d
+#        define gmx_simd_atan2_r          gmx_simd_atan2_d
+#        define gmx_simd_pmecorrF_r       gmx_simd_pmecorrF_d
+#        define gmx_simd_pmecorrV_r       gmx_simd_pmecorrV_d
+#        define gmx_simd4_invsqrt_r       gmx_simd4_invsqrt_d
+
+#else
+
+#        define gmx_simd_invsqrt_r        gmx_simd_invsqrt_singleaccuracy_d
+#        define gmx_simd_invsqrt_pair_r   gmx_simd_invsqrt_pair_singleaccuracy_d
+#        define gmx_simd_sqrt_r           gmx_simd_sqrt_singleaccuracy_d
+#        define gmx_simd_inv_r            gmx_simd_inv_singleaccuracy_d
+#        define gmx_simd_log_r            gmx_simd_log_singleaccuracy_d
+#        define gmx_simd_exp2_r           gmx_simd_exp2_singleaccuracy_d
+#        define gmx_simd_exp_r            gmx_simd_exp_singleaccuracy_d
+#        define gmx_simd_erf_r            gmx_simd_erf_singleaccuracy_d
+#        define gmx_simd_erfc_r           gmx_simd_erfc_singleaccuracy_d
+#        define gmx_simd_sincos_r         gmx_simd_sincos_singleaccuracy_d
+#        define gmx_simd_sin_r            gmx_simd_sin_singleaccuracy_d
+#        define gmx_simd_cos_r            gmx_simd_cos_singleaccuracy_d
+#        define gmx_simd_tan_r            gmx_simd_tan_singleaccuracy_d
+#        define gmx_simd_asin_r           gmx_simd_asin_singleaccuracy_d
+#        define gmx_simd_acos_r           gmx_simd_acos_singleaccuracy_d
+#        define gmx_simd_atan_r           gmx_simd_atan_singleaccuracy_d
+#        define gmx_simd_atan2_r          gmx_simd_atan2_singleaccuracy_d
+#        define gmx_simd_pmecorrF_r       gmx_simd_pmecorrF_singleaccuracy_d
+#        define gmx_simd_pmecorrV_r       gmx_simd_pmecorrV_singleaccuracy_d
+#        define gmx_simd4_invsqrt_r       gmx_simd4_invsqrt_singleaccuracy_d
+
+#endif
+
+#    define gmx_simd_invsqrt_singleaccuracy_r        gmx_simd_invsqrt_singleaccuracy_d
+#    define gmx_simd_invsqrt_pair_singleaccuracy_r   gmx_simd_invsqrt_pair_singleaccuracy_d
+#    define gmx_simd_sqrt_singleaccuracy_r           gmx_simd_sqrt_singleaccuracy_d
+#    define gmx_simd_inv_singleaccuracy_r            gmx_simd_inv_singleaccuracy_d
+#    define gmx_simd_log_singleaccuracy_r            gmx_simd_log_singleaccuracy_d
+#    define gmx_simd_exp2_singleaccuracy_r           gmx_simd_exp2_singleaccuracy_d
+#    define gmx_simd_exp_singleaccuracy_r            gmx_simd_exp_singleaccuracy_d
+#    define gmx_simd_erf_singleaccuracy_r            gmx_simd_erf_singleaccuracy_d
+#    define gmx_simd_erfc_singleaccuracy_r           gmx_simd_erfc_singleaccuracy_d
+#    define gmx_simd_sincos_singleaccuracy_r         gmx_simd_sincos_singleaccuracy_d
+#    define gmx_simd_sin_singleaccuracy_r            gmx_simd_sin_singleaccuracy_d
+#    define gmx_simd_cos_singleaccuracy_r            gmx_simd_cos_singleaccuracy_d
+#    define gmx_simd_tan_singleaccuracy_r            gmx_simd_tan_singleaccuracy_d
+#    define gmx_simd_asin_singleaccuracy_r           gmx_simd_asin_singleaccuracy_d
+#    define gmx_simd_acos_singleaccuracy_r           gmx_simd_acos_singleaccuracy_d
+#    define gmx_simd_atan_singleaccuracy_r           gmx_simd_atan_singleaccuracy_d
+#    define gmx_simd_atan2_singleaccuracy_r          gmx_simd_atan2_singleaccuracy_d
+#    define gmx_simd_pmecorrF_singleaccuracy_r       gmx_simd_pmecorrF_singleaccuracy_d
+#    define gmx_simd_pmecorrV_singleaccuracy_r       gmx_simd_pmecorrV_singleaccuracy_d
+#    define gmx_simd4_invsqrt_singleaccuracy_r       gmx_simd4_invsqrt_singleaccuracy_d
 
 #else /* GMX_DOUBLE */
 
@@ -3046,6 +4231,178 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
  */
 #    define gmx_simd_pmecorrV_r       gmx_simd_pmecorrV_f
 
+/*! \brief Calculate 1/sqrt(x) for SIMD, only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_invsqrt_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_invsqrt_singleaccuracy_r        gmx_simd_invsqrt_f
+
+/*! \brief Calculate 1/sqrt(x) for SIMD pair, only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_invsqrt_pair_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_invsqrt_pair_singleaccuracy_r   gmx_simd_invsqrt_pair_f
+
+/*! \brief Calculate sqrt(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_sqrt_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_sqrt_singleaccuracy_r           gmx_simd_sqrt_f
+
+/*! \brief Calculate 1/x for SIMD real, only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_inv_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_inv_singleaccuracy_r            gmx_simd_inv_f
+
+/*! \brief SIMD real log(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_log_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_log_singleaccuracy_r            gmx_simd_log_f
+
+/*! \brief SIMD real 2^x, only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_exp2_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_exp2_singleaccuracy_r           gmx_simd_exp2_f
+
+/*! \brief SIMD real e^x, only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_exp_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_exp_singleaccuracy_r            gmx_simd_exp_f
+
+/*! \brief SIMD real erf(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_erf_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_erf_singleaccuracy_r            gmx_simd_erf_f
+
+/*! \brief SIMD real erfc(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_erfc_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_erfc_singleaccuracy_r           gmx_simd_erfc_f
+
+/*! \brief SIMD real sin \& cos, only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_sincos_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_sincos_singleaccuracy_r         gmx_simd_sincos_f
+
+/*! \brief SIMD real sin(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_sin_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_sin_singleaccuracy_r            gmx_simd_sin_f
+
+/*! \brief SIMD real cos(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_cos_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_cos_singleaccuracy_r            gmx_simd_cos_f
+
+/*! \brief SIMD real tan(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_tan_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_tan_singleaccuracy_r            gmx_simd_tan_f
+
+/*! \brief SIMD real asin(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_asin_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_asin_singleaccuracy_r           gmx_simd_asin_f
+
+/*! \brief SIMD real acos(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_acos_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_acos_singleaccuracy_r           gmx_simd_acos_f
+
+/*! \brief SIMD real atan(x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_atan_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_atan_singleaccuracy_r           gmx_simd_atan_f
+
+/*! \brief SIMD real atan2(y,x), only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_atan2_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_atan2_singleaccuracy_r          gmx_simd_atan2_f
+
+/*! \brief SIMD Analytic PME force corr., only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_pmecorrF_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_pmecorrF_singleaccuracy_r       gmx_simd_pmecorrF_f
+
+/*! \brief SIMD Analytic PME potential corr., only targeting single accuracy.
+ *
+ * \copydetails gmx_simd_pmecorrV_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_pmecorrV_singleaccuracy_r       gmx_simd_pmecorrV_f
+
+
 /*! \}
  * \name SIMD4 math functions
  * \{
@@ -3062,6 +4419,15 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
  * \copydetails gmx_simd_invsqrt_f
  */
 #    define gmx_simd4_invsqrt_r       gmx_simd4_invsqrt_f
+
+/*! \brief 1/sqrt(x) for SIMD4 real. Single accuracy, even for double prec.
+ *
+ * \copydetails gmx_simd4_invsqrt_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd4_invsqrt_singleaccuracy_r       gmx_simd4_invsqrt_f
 
 /*! \} */
 
