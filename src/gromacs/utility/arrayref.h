@@ -140,31 +140,19 @@ class ArrayRef
         /*! \brief
          * Constructs a reference to a particular range.
          *
-         * \param[in] begin  Pointer to the beginning of a range.
-         * \param[in] end    Pointer to the end of a range.
-         *
-         * Passed pointers must remain valid for the lifetime of this object.
-         */
-        ArrayRef(pointer begin, pointer end)
-            : begin_(begin), end_(end)
-        {
-            GMX_ASSERT(end >= begin, "Invalid range");
-        }
-        /*! \brief
-         * Constructs a reference to a particular range in a std::vector.
-         *
-         * \param[in] begin  Iterator to the beginning of a range.
-         * \param[in] end    Iterator to the end of a range.
+         * \param[in] begin  Iterator or pointer to the beginning of a range.
+         * \param[in] end    Iterator or pointer to the end of a range.
          *
          * The referenced vector must remain valid and not be reallocated for
          * the lifetime of this object.
          */
-        ArrayRef(typename std::vector<value_type>::iterator begin,
-                 typename std::vector<value_type>::iterator end)
+        template <typename P>
+        ArrayRef(P begin, P end)
             : begin_((begin != end) ? &*begin : NULL),
               end_(begin_+(end-begin))
         {
             GMX_ASSERT(end >= begin, "Invalid range");
+            GMX_ASSERT(begin == end || end_-1 == &*(end-1), "Range not contiguous");
         }
         /*! \brief
          * Constructs a reference to an array.
@@ -350,31 +338,19 @@ class ConstArrayRef
         /*! \brief
          * Constructs a reference to a particular range.
          *
-         * \param[in] begin  Pointer to the beginning of a range.
-         * \param[in] end    Pointer to the end of a range.
-         *
-         * Passed pointers must remain valid for the lifetime of this object.
-         */
-        ConstArrayRef(const_pointer begin, const_pointer end)
-            : begin_(begin), end_(end)
-        {
-            GMX_ASSERT(end >= begin, "Invalid range");
-        }
-        /*! \brief
-         * Constructs a reference to a particular range in a std::vector.
-         *
-         * \param[in] begin  Iterator to the beginning of a range.
-         * \param[in] end    Iterator to the end of a range.
+         * \param[in] begin  Iterator or pointer to the beginning of a range.
+         * \param[in] end    Iterator or pointer to the end of a range.
          *
          * The referenced vector must remain valid and not be reallocated for
          * the lifetime of this object.
          */
-        ConstArrayRef(typename std::vector<value_type>::const_iterator begin,
-                      typename std::vector<value_type>::const_iterator end)
+        template <typename P>
+        ConstArrayRef(P begin, P end)
             : begin_((begin != end) ? &*begin : NULL),
               end_(begin_+(end-begin))
         {
             GMX_ASSERT(end >= begin, "Invalid range");
+            GMX_ASSERT(begin == end || end_-1 == &*(end-1), "Range not contiguous");
         }
         /*! \brief
          * Constructs a reference to an array.
