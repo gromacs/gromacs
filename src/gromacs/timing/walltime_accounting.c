@@ -174,7 +174,7 @@ walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_acco
     return walltime_accounting->start_time_stamp;
 }
 
-double
+gmx_int64_t
 walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accounting)
 {
     return walltime_accounting->nsteps_done;
