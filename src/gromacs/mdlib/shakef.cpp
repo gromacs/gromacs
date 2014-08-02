@@ -108,8 +108,6 @@ void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
     int          ix, iy, iz, jx, jy, jz;
     real         toler, rpij2, rrpr, tx, ty, tz, diff, acor, im, jm;
     real         xh, yh, zh, rijx, rijy, rijz;
-    real         tix, tiy, tiz;
-    real         tjx, tjy, tjz;
     int          nit, error, nconv;
     real         iconvf;
 
@@ -196,7 +194,6 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
     real     L1, tol2, toler;
     real     mm    = 0., tmp;
     int      error = 0;
-    real     g, vscale, rscale, rvscale;
 
     if (ncon > shaked->nalloc)
     {
@@ -499,14 +496,10 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
      *     second part of rattle algorithm
      */
 
-    const   real mytol = 1e-10;
-
-    int          ll, i, j, i3, j3, l3, ii;
+    int          ll, i, j, i3, j3, l3;
     int          ix, iy, iz, jx, jy, jz;
-    real         toler, rijd, vpijd, vx, vy, vz, diff, acor, xdotd, fac, im, jm, imdt, jmdt;
+    real         toler, vpijd, vx, vy, vz, acor, xdotd, fac, im, jm;
     real         xh, yh, zh, rijx, rijy, rijz;
-    real         tix, tiy, tiz;
-    real         tjx, tjy, tjz;
     int          nit, error, nconv;
     real         veta, vscale_nhc, iconvf;
 

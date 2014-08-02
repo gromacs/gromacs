@@ -194,7 +194,7 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
 static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
 {
     real *nbfp;
-    int   i, j, k, atnr;
+    int   i, j, atnr;
     real  c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
     real  c6, c12;
 
@@ -262,7 +262,6 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                  int                     cginfo,
                  int                    *cg_sp)
 {
-    const t_blocka       *excl;
     t_atom               *atom;
     int                   j, k;
     int                   j0, j1, nj;
@@ -507,7 +506,6 @@ check_solvent(FILE  *                fp,
               cginfo_mb_t           *cginfo_mb)
 {
     const t_block     *   cgs;
-    const t_block     *   mols;
     const gmx_moltype_t  *molt;
     int                   mb, mol, cg_mol, at_offset, cg_offset, am, cgm, i, nmol_ch, nmol;
     int                   n_solvent_parameters;
@@ -519,8 +517,6 @@ check_solvent(FILE  *                fp,
     {
         fprintf(debug, "Going to determine what solvent types we have.\n");
     }
-
-    mols = &mtop->mols;
 
     n_solvent_parameters = 0;
     solvent_parameters   = NULL;
@@ -636,13 +632,12 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     gmx_bool             *type_VDW;
     int                  *cginfo;
     int                   cg_offset, a_offset, cgm, am;
-    int                   mb, m, ncg_tot, cg, a0, a1, gid, ai, j, aj, excl_nalloc;
+    int                   mb, m, cg, a0, a1, gid, ai, j, aj, excl_nalloc;
     int                  *a_con;
     int                   ftype;
     int                   ia;
     gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bHavePerturbedAtoms;
 
-    ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb, mtop->nmolblock);
 
     snew(type_VDW, fr->ntype);
@@ -989,7 +984,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
 {
     const t_atoms  *atoms, *atoms_tpi;
     const t_blocka *excl;
-    int             mb, nmol, nmolc, i, j, tpi, tpj, j1, j2, k, n, nexcl, q;
+    int             mb, nmol, nmolc, i, j, tpi, tpj, j1, j2, k, nexcl, q;
     gmx_int64_t     npair, npair_ij, tmpi, tmpj;
     double          csix, ctwelve;
     int             ntp, *typecount;
@@ -1917,8 +1912,6 @@ void init_interaction_const_tables(FILE                *fp,
                                    gmx_bool             bUsesSimpleTables,
                                    real                 rtab)
 {
-    real spacing;
-
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
         init_ewald_f_table(ic, bUsesSimpleTables, rtab);
@@ -2325,7 +2318,7 @@ void init_forcerec(FILE              *fp,
                    gmx_bool           bNoSolvOpt,
                    real               print_force)
 {
-    int            i, j, m, natoms, ngrp, negp_pp, negptable, egi, egj;
+    int            i, m, negp_pp, negptable, egi, egj;
     real           rtab;
     char          *env;
     double         dbl;
@@ -2333,7 +2326,6 @@ void init_forcerec(FILE              *fp,
     gmx_bool       bGenericKernelOnly;
     gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
-    t_nblists     *nbl;
     int           *nm_ind, egp_flags;
 
     if (fr->hwinfo == NULL)
@@ -2349,8 +2341,6 @@ void init_forcerec(FILE              *fp,
     fr->use_simd_kernels = TRUE;
 
     fr->bDomDec = DOMAINDECOMP(cr);
-
-    natoms = mtop->natoms;
 
     if (check_box(ir->ePBC, box))
     {
@@ -3091,7 +3081,6 @@ void init_forcerec(FILE              *fp,
                     egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
                     if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL))
                     {
-                        nbl = &(fr->nblists[m]);
                         if (fr->nnblists > 1)
                         {
                             fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = m;

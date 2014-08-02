@@ -49,12 +49,11 @@
 
 t_mdatoms *init_mdatoms(FILE *fp, gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 {
-    int                     mb, a, g, nmol;
+    int                     a;
     double                  tmA, tmB;
     t_atom                 *atom;
     t_mdatoms              *md;
     gmx_mtop_atomloop_all_t aloop;
-    t_ilist                *ilist;
 
     snew(md, 1);
 
@@ -117,15 +116,12 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
     int                   i;
     t_grpopts            *opts;
     gmx_groups_t         *groups;
-    gmx_molblock_t       *molblock;
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
     opts = &ir->opts;
 
     groups = &mtop->groups;
-
-    molblock = mtop->molblock;
 
     /* Index==NULL indicates no DD (unless we have a DD node with no
      * atoms), so also check for homenr. This should be
@@ -233,7 +229,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 #pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) schedule(static)
     for (i = 0; i < md->nr; i++)
     {
-        int      g, ag, molb;
+        int      g, ag;
         real     mA, mB, fac;
         real     c6, c12;
         t_atom  *atom;
