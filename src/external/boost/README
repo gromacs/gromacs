@@ -1,7 +1,9 @@
 Steps to produce minimal version of BOOST:
 1) Download Boost (current minimal version is derived from 1.55.0)
 2) Extract
-3) Edit Boost files to uncomment unnessary includes (search for GMX in minimal version and copy all changes)
+3) Edit Boost files to uncomment unnessary includes and
+   implement some changes required for portability
+   (search for GMX in minimal version and copy all changes)
 4) run bcp with required files (currently exception/all.hpp, scoped_ptr.hpp)
 5) delete source files which are not required. Currently:
  	libs/smart_ptr/src/sp_collector.cpp

@@ -131,6 +131,12 @@ boost
             return ep;
             }
 
+            // GMX MODIFICATION:
+            // The static object initializer caused name clashes with the Fujitsu
+            // compilers (based on an early clang) when multiple files with identical
+            // names were linked together. We solve this by directly calling the
+            // function to get the static exception object when errors occur instead.
+#if 0
         template <class Exception>
         struct
         exception_ptr_static_exception_object
@@ -142,6 +148,8 @@ boost
         exception_ptr const
         exception_ptr_static_exception_object<Exception>::
         e = get_static_exception_object<Exception>();
+#endif
+            // END OF GMX MODIFICATION
         }
 
 #if defined(__GNUC__)
@@ -316,13 +324,17 @@ boost
                 bad_alloc:
                     {
                     BOOST_ASSERT(!e);
-                    return exception_detail::exception_ptr_static_exception_object<bad_alloc_>::e;
+                    // GMX MODIFICATION: Next line has been changed from
+                    // return exception_detail::exception_ptr_static_exception_object<bad_alloc_>::e;
+                    return get_static_exception_object<bad_alloc_>();
                     }
                 case exception_detail::clone_current_exception_result::
                 bad_exception:
                     {
                     BOOST_ASSERT(!e);
-                    return exception_detail::exception_ptr_static_exception_object<bad_exception_>::e;
+                    // GMX MODIFICATION: Next line has been changed from
+                    // return exception_detail::exception_ptr_static_exception_object<bad_exception_>::e;
+                    return get_static_exception_object<bad_exception_>();
                     }
                 default:
                     BOOST_ASSERT(0);
@@ -443,12 +455,16 @@ boost
         catch(
         std::bad_alloc & )
             {
-            ret=exception_detail::exception_ptr_static_exception_object<exception_detail::bad_alloc_>::e;
+            // GMX MODIFICATION: Next line has been changed from
+            // ret=exception_detail::exception_ptr_static_exception_object<exception_detail::bad_alloc_>::e;
+            ret=exception_detail::get_static_exception_object<exception_detail::bad_alloc_>();
             }
         catch(
         ... )
             {
-            ret=exception_detail::exception_ptr_static_exception_object<exception_detail::bad_exception_>::e;
+            // GMX MODIFICATION: Next line has been changed from
+            // ret=exception_detail::exception_ptr_static_exception_object<exception_detail::bad_exception_>::e;
+            ret=exception_detail::get_static_exception_object<exception_detail::bad_exception_>();
             }
         BOOST_ASSERT(ret);
         return ret;
