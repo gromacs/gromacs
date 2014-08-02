@@ -128,7 +128,7 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
                   rvec x[], rvec v[], t_vcm *vcm)
 {
     int    i, g, m;
-    real   m0, xx, xy, xz, yy, yz, zz;
+    real   m0;
     rvec   j0;
 
     if (vcm->mode != ecmNO)
@@ -186,8 +186,7 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
 void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
                    rvec x[], rvec v[], t_vcm *vcm)
 {
-    int  i, g, m;
-    real tm, tm_1;
+    int  i, g;
     rvec dv, dx;
 
     if (vcm->mode != ecmNO)
@@ -291,7 +290,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
     int    m, g;
     real   ekcm, ekrot, tm, tm_1, Temp_cm;
     rvec   jcm;
-    tensor Icm, Tcm;
+    tensor Icm;
 
     /* First analyse the total results */
     if (vcm->mode != ecmNO)

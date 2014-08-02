@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <algorithm>
 
 #include "types/commrec.h"
 #include "typedefs.h"
@@ -263,10 +264,8 @@ static void do_update_vv_vel(int start, int nrend, double dt,
                              unsigned short cACC[], rvec v[], rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
-    double imass, w_dt;
+    double w_dt;
     int    gf = 0, ga = 0;
-    rvec   vrel;
-    real   u, vn, vv, va, vb, vnrel;
     int    n, d;
     double g, mv1, mv2;
 
@@ -313,7 +312,6 @@ static void do_update_vv_pos(int start, int nrend, double dt,
                              rvec x[], rvec xprime[], rvec v[],
                              gmx_bool bExtended, real veta)
 {
-    double imass, w_dt;
     int    gf = 0;
     int    n, d;
     double g, mr1, mr2;
@@ -398,8 +396,6 @@ static void do_update_visc(int start, int nrend, double dt,
             }
             for (d = 0; d < DIM; d++)
             {
-                vn             = v[n][d];
-
                 if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
                 {
                     vn  = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
@@ -466,7 +462,7 @@ static gmx_stochd_t *init_stochd(t_inputrec *ir)
 {
     gmx_stochd_t   *sd;
     gmx_sd_const_t *sdc;
-    int             ngtc, n, th;
+    int             ngtc, n;
     real            y;
 
     snew(sd, 1);
@@ -539,7 +535,7 @@ static gmx_stochd_t *init_stochd(t_inputrec *ir)
 
         for (n = 0; n < ngtc; n++)
         {
-            reft = max(0.0, opts->ref_t[n]);
+            reft = std::max<real>(0, opts->ref_t[n]);
             if ((opts->tau_t[n] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
             {
                 sd->randomize_group[n] = TRUE;
@@ -665,10 +661,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
                 {
                     ga  = cACC[n];
                 }
-                if (cTC)
-                {
-                    gt  = cTC[n];
-                }
 
                 for (d = 0; d < DIM; d++)
                 {
@@ -697,10 +689,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
                 if (cFREEZE)
                 {
                     gf  = cFREEZE[n];
-                }
-                if (cACC)
-                {
-                    ga  = cACC[n];
                 }
                 if (cTC)
                 {
@@ -780,7 +768,6 @@ static void do_update_sd2(gmx_stochd_t *sd,
      * half of the update, needs to be remembered for the second half.
      */
     rvec  *sd_V;
-    real   kT;
     int    gf = 0, ga = 0, gt = 0;
     real   vn = 0, Vmh, Xmh;
     real   ism;
@@ -1334,7 +1321,7 @@ void update_tcouple(gmx_int64_t       step,
 {
     gmx_bool   bTCouple = FALSE;
     real       dttc;
-    int        i, start, end, homenr, offset;
+    int        i, offset;
 
     /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
     if (inputrec->etc != etcNO &&
@@ -1552,12 +1539,11 @@ void update_constraints(FILE             *fplog,
                         gmx_bool          bCalcVir,
                         real              vetanew)
 {
-    gmx_bool             bExtended, bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
+    gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double               dt;
-    real                 dt_1;
-    int                  start, homenr, nrend, i, n, m, g, d;
+    int                  start, homenr, nrend, i, m;
     tensor               vir_con;
-    rvec                *vbuf, *xprime = NULL;
+    rvec                *xprime = NULL;
     int                  nth, th;
 
     if (constr)
@@ -1577,7 +1563,6 @@ void update_constraints(FILE             *fplog,
     nrend  = start+homenr;
 
     dt   = inputrec->delta_t;
-    dt_1 = 1.0/dt;
 
     /*
      *  Steps (7C, 8C)
@@ -1788,20 +1773,11 @@ void update_box(FILE             *fplog,
                 t_nrnb           *nrnb,
                 gmx_update_t      upd)
 {
-    gmx_bool             bExtended, bLastStep, bLog = FALSE, bEner = FALSE;
     double               dt;
-    real                 dt_1;
-    int                  start, homenr, nrend, i, n, m, g;
-    tensor               vir_con;
+    int                  start, homenr, i, n, m;
 
     start  = 0;
     homenr = md->homenr;
-    nrend  = start+homenr;
-
-    bExtended =
-        (inputrec->etc == etcNOSEHOOVER) ||
-        (inputrec->epc == epcPARRINELLORAHMAN) ||
-        (inputrec->epc == epcMTTK);
 
     dt = inputrec->delta_t;
 
@@ -1903,16 +1879,11 @@ void update_coords(FILE             *fplog,
                    gmx_constr_t      constr,
                    t_idef           *idef)
 {
-    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
+    gmx_bool          bNH, bPR, bDoConstr = FALSE;
     double            dt, alpha;
-    real             *imass, *imassin;
     rvec             *force;
-    real              dt_1;
-    int               start, homenr, nrend, i, j, d, n, m, g;
-    int               blen0, blen1, iatom, jatom, nshake, nsettle, nconstr, nexpand;
-    int              *icom = NULL;
-    tensor            vir_con;
-    rvec             *vcom, *xcom, *vall, *xall, *xin, *vin, *forcein, *fall, *xpall, *xprimein, *xprime;
+    int               start, homenr, nrend;
+    rvec             *xprime;
     int               nth, th;
 
     bDoConstr = (NULL != constr);
@@ -1931,7 +1902,6 @@ void update_coords(FILE             *fplog,
     xprime = get_xprime(state, upd);
 
     dt   = inputrec->delta_t;
-    dt_1 = 1.0/dt;
 
     /* We need to update the NMR restraint history when time averaging is used */
     if (state->flags & (1<<estDISRE_RM3TAV))
@@ -2147,7 +2117,6 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, co
                                             t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr_t constr)
 {
 
-    int  i;
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
 
     if (ir->etc == etcANDERSEN && constr != NULL)
