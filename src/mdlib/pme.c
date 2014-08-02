@@ -3746,7 +3746,8 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                     if (bCommY)
                     {
                         commbuf = commbuf_y;
-                        buf_my  = ty1 - offy;
+                        /* The y-size of the communication buffer is order-1 */
+                        buf_my  = pmegrid->order - 1;
                         if (bCommX)
                         {
                             /* We index commbuf modulo the local grid size */
