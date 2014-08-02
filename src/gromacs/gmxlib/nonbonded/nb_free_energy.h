@@ -41,6 +41,10 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void
 gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                           rvec * gmx_restrict              xx,
@@ -59,5 +63,9 @@ real
                                    real dlfac_vdw[2], real sigma6_def, real sigma6_min,
                                    real sigma2_def, real sigma2_min,
                                    real *velectot, real *vvdwtot, real *dvdl);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
