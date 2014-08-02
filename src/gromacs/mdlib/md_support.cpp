@@ -768,3 +768,100 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
     *bNotLastFrame = (fr->natoms >= 0);
 
 }
+
+void set_state_entries(t_state *state, const t_inputrec *ir)
+{
+    /* The entries in the state in the tpx file might not correspond
+     * with what is needed, so we correct this here.
+     */
+    state->flags = 0;
+    if (ir->efep != efepNO || ir->bExpanded)
+    {
+        state->flags |= (1<<estLAMBDA);
+        state->flags |= (1<<estFEPSTATE);
+    }
+    state->flags |= (1<<estX);
+    if (state->lambda == NULL)
+    {
+        snew(state->lambda, efptNR);
+    }
+    if (state->x == NULL)
+    {
+        snew(state->x, state->nalloc);
+    }
+    if (EI_DYNAMICS(ir->eI))
+    {
+        state->flags |= (1<<estV);
+        if (state->v == NULL)
+        {
+            snew(state->v, state->nalloc);
+        }
+    }
+    if (ir->eI == eiSD2)
+    {
+        state->flags |= (1<<estSDX);
+        if (state->sd_X == NULL)
+        {
+            /* sd_X is not stored in the tpx file, so we need to allocate it */
+            snew(state->sd_X, state->nalloc);
+        }
+    }
+    if (ir->eI == eiCG)
+    {
+        state->flags |= (1<<estCGP);
+        if (state->cg_p == NULL)
+        {
+            /* cg_p is not stored in the tpx file, so we need to allocate it */
+            snew(state->cg_p, state->nalloc);
+        }
+    }
+
+    state->nnhpres = 0;
+    if (ir->ePBC != epbcNONE)
+    {
+        state->flags |= (1<<estBOX);
+        if (PRESERVE_SHAPE(*ir))
+        {
+            state->flags |= (1<<estBOX_REL);
+        }
+        if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK))
+        {
+            state->flags |= (1<<estBOXV);
+        }
+        if (ir->epc != epcNO)
+        {
+            if (IR_NPT_TROTTER(ir) || (IR_NPH_TROTTER(ir)))
+            {
+                state->nnhpres = 1;
+                state->flags  |= (1<<estNHPRES_XI);
+                state->flags  |= (1<<estNHPRES_VXI);
+                state->flags  |= (1<<estSVIR_PREV);
+                state->flags  |= (1<<estFVIR_PREV);
+                state->flags  |= (1<<estVETA);
+                state->flags  |= (1<<estVOL0);
+            }
+            else
+            {
+                state->flags |= (1<<estPRES_PREV);
+            }
+        }
+    }
+
+    if (ir->etc == etcNOSEHOOVER)
+    {
+        state->flags |= (1<<estNH_XI);
+        state->flags |= (1<<estNH_VXI);
+    }
+
+    if (ir->etc == etcVRESCALE)
+    {
+        state->flags |= (1<<estTC_INT);
+    }
+
+    init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
+    init_ekinstate(&state->ekinstate, ir);
+
+    init_energyhistory(&state->enerhist);
+    init_df_history(&state->dfhist, ir->fepvals->n_lambda);
+    state->swapstate.eSwapCoords = ir->eSwapCoords;
+}

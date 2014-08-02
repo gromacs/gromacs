@@ -108,11 +108,11 @@ void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
     int          ix, iy, iz, jx, jy, jz;
     real         toler, rpij2, rrpr, tx, ty, tz, diff, acor, im, jm;
     real         xh, yh, zh, rijx, rijy, rijz;
-    real         tix, tiy, tiz;
-    real         tjx, tjy, tjz;
     int          nit, error, nconv;
     real         iconvf;
 
+    // TODO nconv is used solely as a boolean, so we should write the
+    // code like that
     error = 0;
     nconv = 1;
     for (nit = 0; (nit < maxnit) && (nconv != 0) && (error == 0); nit++)
@@ -149,7 +149,7 @@ void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
 
             if (iconvf > 1)
             {
-                nconv   = iconvf;
+                nconv   = static_cast<int>(iconvf);
                 rrpr    = rijx*tx+rijy*ty+rijz*tz;
 
                 if (rrpr < toler*mytol)
@@ -196,7 +196,6 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
     real     L1, tol2, toler;
     real     mm    = 0., tmp;
     int      error = 0;
-    real     g, vscale, rscale, rvscale;
 
     if (ncon > shaked->nalloc)
     {
@@ -315,19 +314,20 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
             /* 21 flops */
         }
 
-        /* Correct the lagrange multipliers for the length  */
-        /* (more details would be useful here . . . )*/
+        // TODO resolve in Redmine #1255 that this deletion is correct
+        // /* Correct the lagrange multipliers for the length  */
+        // /* (more details would be useful here . . . )*/
 
-        type  = ia[0];
-        if (bFEP)
-        {
-            toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
-        }
-        else
-        {
-            toler     = ip[type].constr.dA;
-            lagr[ll] *= toler;
-        }
+        // type  = ia[0];
+        // if (bFEP)
+        // {
+        //     toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
+        // }
+        // else
+        // {
+        //     toler     = ip[type].constr.dA;
+        //     lagr[ll] *= toler;
+        // }
     }
 
     return nit;
@@ -499,20 +499,18 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
      *     second part of rattle algorithm
      */
 
-    const   real mytol = 1e-10;
-
-    int          ll, i, j, i3, j3, l3, ii;
+    int          ll, i, j, i3, j3, l3;
     int          ix, iy, iz, jx, jy, jz;
-    real         toler, rijd, vpijd, vx, vy, vz, diff, acor, xdotd, fac, im, jm, imdt, jmdt;
+    real         toler, vpijd, vx, vy, vz, acor, xdotd, fac, im, jm;
     real         xh, yh, zh, rijx, rijy, rijz;
-    real         tix, tiy, tiz;
-    real         tjx, tjy, tjz;
     int          nit, error, nconv;
     real         veta, vscale_nhc, iconvf;
 
     veta       = vetavar->veta;
     vscale_nhc = vetavar->vscale_nhc[0];  /* for now, just use the first state */
 
+    // TODO nconv is used solely as a boolean, so we should write the
+    // code like that
     error = 0;
     nconv = 1;
     for (nit = 0; (nit < maxnit) && (nconv != 0) && (error == 0); nit++)
@@ -548,7 +546,7 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
 
             if (iconvf > 1)
             {
-                nconv     = iconvf;
+                nconv     = static_cast<int>(iconvf);
                 fac       = omega*2.0*m2[ll]/toler;
                 acor      = -fac*xdotd;
                 lagr[ll] += acor;

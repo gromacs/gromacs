@@ -153,9 +153,10 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
 
 static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
 {
-    int   i, j, k, atnr;
-    real  c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
-    real *grid;
+    int        i, j, k, atnr;
+    real       c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real      *grid;
+    const real oneOverSix = 1.0 / 6.0;
 
     /* For LJ-PME simulations, we correct the energies with the reciprocal space
      * inside of the cut-off. To do this the non-bonded kernels needs to have
@@ -176,8 +177,8 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
             if (fr->ljpme_combination_rule == eljpmeLB
                 && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
             {
-                sigmai = pow(c12i / c6i, 1.0/6.0);
-                sigmaj = pow(c12j / c6j, 1.0/6.0);
+                sigmai = pow(c12i / c6i, oneOverSix);
+                sigmaj = pow(c12j / c6j, oneOverSix);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
                 c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
@@ -193,10 +194,11 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
 
 static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
 {
-    real *nbfp;
-    int   i, j, k, atnr;
-    real  c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
-    real  c6, c12;
+    real      *nbfp;
+    int        i, j, atnr;
+    real       c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real       c6, c12;
+    const real oneOverSix = 1.0 / 6.0;
 
     atnr = idef->atnr;
     snew(nbfp, 2*atnr*atnr);
@@ -213,8 +215,8 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
             if (comb_rule == eCOMB_ARITHMETIC
                 && !gmx_numzero(c6) && !gmx_numzero(c12))
             {
-                sigmai = pow(c12i / c6i, 1.0/6.0);
-                sigmaj = pow(c12j / c6j, 1.0/6.0);
+                sigmai = pow(c12i / c6i, oneOverSix);
+                sigmaj = pow(c12j / c6j, oneOverSix);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
                 c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
@@ -262,7 +264,6 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                  int                     cginfo,
                  int                    *cg_sp)
 {
-    const t_blocka       *excl;
     t_atom               *atom;
     int                   j, k;
     int                   j0, j1, nj;
@@ -507,9 +508,8 @@ check_solvent(FILE  *                fp,
               cginfo_mb_t           *cginfo_mb)
 {
     const t_block     *   cgs;
-    const t_block     *   mols;
     const gmx_moltype_t  *molt;
-    int                   mb, mol, cg_mol, at_offset, cg_offset, am, cgm, i, nmol_ch, nmol;
+    int                   mb, mol, cg_mol, at_offset, am, cgm, i, nmol_ch, nmol;
     int                   n_solvent_parameters;
     solvent_parameters_t *solvent_parameters;
     int                 **cg_sp;
@@ -520,14 +520,11 @@ check_solvent(FILE  *                fp,
         fprintf(debug, "Going to determine what solvent types we have.\n");
     }
 
-    mols = &mtop->mols;
-
     n_solvent_parameters = 0;
     solvent_parameters   = NULL;
     /* Allocate temporary array for solvent type */
     snew(cg_sp, mtop->nmolblock);
 
-    cg_offset = 0;
     at_offset = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
@@ -555,7 +552,6 @@ check_solvent(FILE  *                fp,
                                  &cg_sp[mb][cgm+cg_mol]);
             }
         }
-        cg_offset += cgs->nr;
         at_offset += cgs->index[cgs->nr];
     }
 
@@ -635,14 +631,13 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     cginfo_mb_t          *cginfo_mb;
     gmx_bool             *type_VDW;
     int                  *cginfo;
-    int                   cg_offset, a_offset, cgm, am;
-    int                   mb, m, ncg_tot, cg, a0, a1, gid, ai, j, aj, excl_nalloc;
+    int                   cg_offset, a_offset;
+    int                   mb, m, cg, a0, a1, gid, ai, j, aj, excl_nalloc;
     int                  *a_con;
     int                   ftype;
     int                   ia;
     gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bHavePerturbedAtoms;
 
-    ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb, mtop->nmolblock);
 
     snew(type_VDW, fr->ntype);
@@ -677,10 +672,9 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
          * Otherwise we make an array of #mol times #cgs per molecule.
          */
         bId = TRUE;
-        am  = 0;
         for (m = 0; m < molb->nmol; m++)
         {
-            am = m*cgs->index[cgs->nr];
+            int am = m*cgs->index[cgs->nr];
             for (cg = 0; cg < cgs->nr; cg++)
             {
                 a0 = cgs->index[cg];
@@ -734,8 +728,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
 
         for (m = 0; m < (bId ? 1 : molb->nmol); m++)
         {
-            cgm = m*cgs->nr;
-            am  = m*cgs->index[cgs->nr];
+            int cgm = m*cgs->nr;
+            int am  = m*cgs->index[cgs->nr];
             for (cg = 0; cg < cgs->nr; cg++)
             {
                 a0 = cgs->index[cg];
@@ -989,7 +983,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
 {
     const t_atoms  *atoms, *atoms_tpi;
     const t_blocka *excl;
-    int             mb, nmol, nmolc, i, j, tpi, tpj, j1, j2, k, n, nexcl, q;
+    int             mb, nmol, nmolc, i, j, tpi, tpj, j1, j2, k, nexcl, q;
     gmx_int64_t     npair, npair_ij, tmpi, tmpj;
     double          csix, ctwelve;
     int             ntp, *typecount;
@@ -1917,8 +1911,6 @@ void init_interaction_const_tables(FILE                *fp,
                                    gmx_bool             bUsesSimpleTables,
                                    real                 rtab)
 {
-    real spacing;
-
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
         init_ewald_f_table(ic, bUsesSimpleTables, rtab);
@@ -1980,6 +1972,8 @@ init_interaction_const(FILE                       *fp,
 {
     interaction_const_t *ic;
     gmx_bool             bUsesSimpleTables = TRUE;
+    const real           minusSix          = -6.0;
+    const real           minusTwelve       = -12.0;
 
     snew(ic, 1);
 
@@ -2006,14 +2000,14 @@ init_interaction_const(FILE                       *fp,
     {
         case eintmodPOTSHIFT:
             /* Only shift the potential, don't touch the force */
-            ic->dispersion_shift.cpot = -pow(ic->rvdw, -6.0);
-            ic->repulsion_shift.cpot  = -pow(ic->rvdw, -12.0);
+            ic->dispersion_shift.cpot = -pow(ic->rvdw, minusSix);
+            ic->repulsion_shift.cpot  = -pow(ic->rvdw, minusTwelve);
             if (EVDW_PME(ic->vdwtype))
             {
                 real crc2;
 
                 crc2            = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-                ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
+                ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, minusSix);
             }
             break;
         case eintmodFORCESWITCH:
@@ -2325,7 +2319,7 @@ void init_forcerec(FILE              *fp,
                    gmx_bool           bNoSolvOpt,
                    real               print_force)
 {
-    int            i, j, m, natoms, ngrp, negp_pp, negptable, egi, egj;
+    int            i, m, negp_pp, negptable, egi, egj;
     real           rtab;
     char          *env;
     double         dbl;
@@ -2333,7 +2327,6 @@ void init_forcerec(FILE              *fp,
     gmx_bool       bGenericKernelOnly;
     gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
-    t_nblists     *nbl;
     int           *nm_ind, egp_flags;
 
     if (fr->hwinfo == NULL)
@@ -2349,8 +2342,6 @@ void init_forcerec(FILE              *fp,
     fr->use_simd_kernels = TRUE;
 
     fr->bDomDec = DOMAINDECOMP(cr);
-
-    natoms = mtop->natoms;
 
     if (check_box(ir->ePBC, box))
     {
@@ -2443,7 +2434,7 @@ void init_forcerec(FILE              *fp,
     if (env != NULL)
     {
         dbl = 0;
-        sscanf(env, "%lf", &dbl);
+        sscanf(env, "%20lf", &dbl);
         fr->sc_sigma6_min = pow(dbl, 6);
         if (fp)
         {
@@ -3091,7 +3082,6 @@ void init_forcerec(FILE              *fp,
                     egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
                     if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL))
                     {
-                        nbl = &(fr->nblists[m]);
                         if (fr->nnblists > 1)
                         {
                             fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = m;

@@ -41,12 +41,12 @@
 
 #include "typedefs.h"
 #include "main.h"
-#include "mvdata.h"
 #include "types/commrec.h"
 #include "network.h"
 #include "gromacs/math/vec.h"
 #include "tgroup.h"
 
+#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -79,15 +79,13 @@ static void bc_strings(const t_commrec *cr, t_symtab *symtab, int nr, char ****n
 {
     int     i;
     int    *handle;
-    char ***NM;
 
     snew(handle, nr);
     if (MASTER(cr))
     {
-        NM = *nm;
         for (i = 0; (i < nr); i++)
         {
-            handle[i] = lookup_symtab(symtab, NM[i]);
+            handle[i] = lookup_symtab(symtab, (*nm)[i]);
         }
     }
     nblock_bc(cr, nr, handle);
@@ -95,7 +93,6 @@ static void bc_strings(const t_commrec *cr, t_symtab *symtab, int nr, char ****n
     if (!MASTER(cr))
     {
         snew_bc(cr, *nm, nr);
-        NM = *nm;
         for (i = 0; (i < nr); i++)
         {
             (*nm)[i] = get_symtab_handle(symtab, handle[i]);
@@ -187,8 +184,6 @@ static void bc_grps(const t_commrec *cr, t_grps grps[])
 
 static void bc_atoms(const t_commrec *cr, t_symtab *symtab, t_atoms *atoms)
 {
-    int dummy;
-
     block_bc(cr, atoms->nr);
     snew_bc(cr, atoms->atom, atoms->nr);
     nblock_bc(cr, atoms->nr, atoms->atom);
@@ -205,7 +200,6 @@ static void bc_atoms(const t_commrec *cr, t_symtab *symtab, t_atoms *atoms)
 static void bc_groups(const t_commrec *cr, t_symtab *symtab,
                       int natoms, gmx_groups_t *groups)
 {
-    int dummy;
     int g, n;
 
     bc_grps(cr, groups->grps);
@@ -372,7 +366,7 @@ static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
 
 static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 {
-    int i, j, nelem, ngrid;
+    int i, nelem, ngrid;
 
     block_bc(cr, cmap_grid->ngrid);
     block_bc(cr, cmap_grid->grid_spacing);
@@ -394,8 +388,6 @@ static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 
 static void bc_ffparams(const t_commrec *cr, gmx_ffparams_t *ffp)
 {
-    int i;
-
     block_bc(cr, ffp->ntypes);
     block_bc(cr, ffp->atnr);
     snew_bc(cr, ffp->functype, ffp->ntypes);
@@ -557,8 +549,6 @@ static void bc_adress(const t_commrec *cr, t_adress *adress)
 
 static void bc_imd(const t_commrec *cr, t_IMD *imd)
 {
-    int g;
-
     block_bc(cr, *imd);
     snew_bc(cr, imd->ind, imd->nat);
     nblock_bc(cr, imd->nat, imd->ind);
@@ -566,7 +556,6 @@ static void bc_imd(const t_commrec *cr, t_IMD *imd)
 
 static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
 {
-    gmx_bool bAlloc = TRUE;
     int      i;
 
     block_bc(cr, fep->nstdhdl);
@@ -603,9 +592,6 @@ static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
 
 static void bc_expandedvals(const t_commrec *cr, t_expanded *expand, int n_lambda)
 {
-    gmx_bool bAlloc = TRUE;
-    int      i;
-
     block_bc(cr, expand->nstexpanded);
     block_bc(cr, expand->elamstats);
     block_bc(cr, expand->elmcmove);
@@ -639,9 +625,6 @@ static void bc_expandedvals(const t_commrec *cr, t_expanded *expand, int n_lambd
 
 static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda)
 {
-    gmx_bool bAlloc = TRUE;
-    int      i;
-
     block_bc(cr, simtemp->simtemp_low);
     block_bc(cr, simtemp->simtemp_high);
     block_bc(cr, simtemp->eSimTempScale);
@@ -680,7 +663,6 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
-    gmx_bool bAlloc = TRUE;
     int      i;
 
     block_bc(cr, *inputrec);
@@ -755,8 +737,6 @@ static void bc_moltype(const t_commrec *cr, t_symtab *symtab,
 
 static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
 {
-    gmx_bool bAlloc = TRUE;
-
     block_bc(cr, molb->type);
     block_bc(cr, molb->nmol);
     block_bc(cr, molb->natoms_mol);
@@ -799,7 +779,9 @@ static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
     nblock_bc(cr, nr, atomtypes->S_hct);
 }
 
-
+/*! \brief Broadcasts ir and mtop from the master to all nodes in
+ * cr->mpi_comm_mygroup. */
+static
 void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 {
     int i;
@@ -845,4 +827,10 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 
     bc_block(cr, &mtop->mols);
     bc_groups(cr, &mtop->symtab, mtop->natoms, &mtop->groups);
+}
+
+void init_parallel(t_commrec *cr, t_inputrec *inputrec,
+                   gmx_mtop_t *mtop)
+{
+    bcast_ir_mtop(cr, inputrec, mtop);
 }

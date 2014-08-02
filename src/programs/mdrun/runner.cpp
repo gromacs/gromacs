@@ -65,7 +65,6 @@
 #include "domdec.h"
 #include "coulomb.h"
 #include "constr.h"
-#include "mvdata.h"
 #include "checkpoint.h"
 #include "gromacs/topology/mtop_util.h"
 #include "sighandler.h"

@@ -38,6 +38,8 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <algorithm>
+#include <cmath>
 
 #include "gromacs/fileio/confio.h"
 #include "types/commrec.h"
@@ -171,10 +173,10 @@ static int pcomp(const void *p1, const void *p2)
         return db;
     }
 
-    min1 = min(a1->iatom[1], a1->iatom[2]);
-    max1 = max(a1->iatom[1], a1->iatom[2]);
-    min2 = min(a2->iatom[1], a2->iatom[2]);
-    max2 = max(a2->iatom[1], a2->iatom[2]);
+    min1 = std::min(a1->iatom[1], a1->iatom[2]);
+    max1 = std::max(a1->iatom[1], a1->iatom[2]);
+    min2 = std::min(a2->iatom[1], a2->iatom[2]);
+    max2 = std::max(a2->iatom[1], a2->iatom[2]);
 
     if (min1 == min2)
     {
@@ -204,10 +206,6 @@ int n_flexible_constraints(struct gmx_constr *constr)
 
 void too_many_constraint_warnings(int eConstrAlg, int warncount)
 {
-    const char *abort = "- aborting to avoid logfile runaway.\n"
-        "This normally happens when your system is not sufficiently equilibrated,"
-        "or if you are changing lambda too fast in free energy simulations.\n";
-
     gmx_fatal(FARGS,
               "Too many %s warnings (%d)\n"
               "If you know what you are doing you can %s"
@@ -327,13 +325,12 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    real veta, real vetanew)
 {
     gmx_bool    bOK, bDump;
-    int         start, homenr, nrend;
-    int         i, j, d;
-    int         ncons, settle_error;
+    int         start, homenr;
+    int         i, j;
+    int         settle_error;
     tensor      vir_r_m_dr;
-    rvec       *vstor;
     real        scaled_delta_t;
-    real        invdt, vir_fac, t;
+    real        invdt, vir_fac = 0, t;
     t_ilist    *settle;
     int         nsettle;
     t_pbc       pbc, *pbc_null;
@@ -351,7 +348,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     start  = 0;
     homenr = md->homenr;
-    nrend  = start+homenr;
 
     scaled_delta_t = step_scaling * ir->delta_t;
 
@@ -594,7 +590,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             {
                 char buf[256];
                 sprintf(buf,
-                        "\nstep " "%"GMX_PRId64 ": Water molecule starting at atom %d can not be "
+                        "\nstep " "%" GMX_PRId64 ": Water molecule starting at atom %d can not be "
                         "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
                         step, ddglatnr(cr->dd, settle->iatoms[settle_error*(1+NRAL(F_SETTLE))+1]));
                 if (fplog)
@@ -637,7 +633,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 vir_fac = 0.5;
                 break;
             default:
-                vir_fac = 0;
                 gmx_incons("Unsupported constraint quantity for virial");
         }
 
@@ -1171,7 +1166,7 @@ static real constr_r_max_moltype(gmx_moltype_t *molt, t_iparams *iparams,
         if (EI_DYNAMICS(ir->eI))
         {
             lam1 = ir->fepvals->init_lambda + (ir->init_step + ir->nsteps)*ir->fepvals->delta_lambda;
-            rmax = max(rmax, (1 - lam1)*sqrt(r2maxA) + lam1*sqrt(r2maxB));
+            rmax = std::max(rmax, (1 - lam1)*std::sqrt(r2maxA) + lam1*std::sqrt(r2maxB));
         }
     }
 
@@ -1189,9 +1184,9 @@ real constr_r_max(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir)
     rmax = 0;
     for (mt = 0; mt < mtop->nmoltype; mt++)
     {
-        rmax = max(rmax,
-                   constr_r_max_moltype(&mtop->moltype[mt],
-                                        mtop->ffparams.iparams, ir));
+        rmax = std::max(rmax,
+                        constr_r_max_moltype(&mtop->moltype[mt],
+                                             mtop->ffparams.iparams, ir));
     }
 
     if (fplog)
@@ -1207,7 +1202,7 @@ gmx_constr_t init_constraints(FILE *fplog,
                               gmx_edsam_t ed, t_state *state,
                               t_commrec *cr)
 {
-    int                  ncon, nset, nmol, settle_type, i, natoms, mt, nflexcon;
+    int                  ncon, nset, nmol, settle_type, i, mt, nflexcon;
     struct gmx_constr   *constr;
     char                *env;
     t_ilist             *ilist;
@@ -1341,7 +1336,7 @@ gmx_constr_t init_constraints(FILE *fplog,
     if (env)
     {
         constr->maxwarn = 0;
-        sscanf(env, "%d", &constr->maxwarn);
+        sscanf(env, "%8d", &constr->maxwarn);
         if (fplog)
         {
             fprintf(fplog,
@@ -1392,7 +1387,7 @@ gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop)
     const t_block       *cgs;
     const t_ilist       *il;
     int                  mb;
-    int                  nat, *at2cg, cg, a, ftype, i;
+    int                 *at2cg, cg, a, ftype, i;
     gmx_bool             bInterCG;
 
     bInterCG = FALSE;
@@ -1439,7 +1434,7 @@ gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop)
     const t_block       *cgs;
     const t_ilist       *il;
     int                  mb;
-    int                  nat, *at2cg, cg, a, ftype, i;
+    int                 *at2cg, cg, a, ftype, i;
     gmx_bool             bInterCG;
 
     bInterCG = FALSE;
