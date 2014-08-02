@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,10 @@
 #include "nb_kernel.h"
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void
 gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                           rvec * gmx_restrict              xx,
@@ -59,5 +63,9 @@ real
                                    real dlfac_vdw[2], real sigma6_def, real sigma6_min,
                                    real sigma2_def, real sigma2_min,
                                    real *velectot, real *vvdwtot, real *dvdl);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

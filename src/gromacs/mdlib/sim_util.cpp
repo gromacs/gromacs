@@ -281,8 +281,7 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
                         tensor vir_part, t_graph *graph, matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
 {
-    int    i, j;
-    tensor virtest;
+    int    i;
 
     /* The short-range virial from surrounding boxes */
     clear_mat(vir_part);
@@ -352,7 +351,7 @@ static void posres_wrapper(FILE *fplog,
     {
         for (i = 0; i < enerd->n_lambda; i++)
         {
-            real dvdl_dum, lambda_dum;
+            real lambda_dum;
 
             lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : ir->fepvals->all_lambda[efptRESTRAINT][i-1]);
             v          = posres(top->idef.il[F_POSRES].nr, top->idef.il[F_POSRES].iatoms,
@@ -425,7 +424,7 @@ static void pme_receive_force_ener(FILE           *fplog,
                                    gmx_enerdata_t *enerd,
                                    t_forcerec     *fr)
 {
-    real   e_q, e_lj, v, dvdl_q, dvdl_lj;
+    real   e_q, e_lj, dvdl_q, dvdl_lj;
     float  cycles_ppdpme, cycles_seppme;
 
     cycles_ppdpme = wallcycle_stop(wcycle, ewcPPDURINGPME);
@@ -548,8 +547,7 @@ static void do_nb_verlet(t_forcerec *fr,
                          t_nrnb *nrnb,
                          gmx_wallcycle_t wcycle)
 {
-    int                        nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
-    char                      *env;
+    int                        enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     nonbonded_verlet_group_t  *nbvg;
     gmx_bool                   bCUDA;
 
@@ -821,23 +819,19 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          gmx_bool bBornRadii,
                          int flags)
 {
-    int                 cg0, cg1, i, j;
+    int                 cg1, i, j;
     int                 start, homenr;
-    int                 nb_kernel_type;
     double              mu[2*DIM];
-    gmx_bool            bSepDVDL, bStateChanged, bNS, bFillGrid, bCalcCGCM, bBS;
+    gmx_bool            bSepDVDL, bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool            bDoLongRange, bDoForces, bSepLRF, bUseGPU, bUseOrEmulGPU;
     gmx_bool            bDiffKernels = FALSE;
-    matrix              boxs;
     rvec                vzero, box_diag;
-    real                e, v, dvdl;
     float               cycles_pme, cycles_force, cycles_wait_gpu;
     nonbonded_verlet_t *nbv;
 
     cycles_force    = 0;
     cycles_wait_gpu = 0;
     nbv             = fr->nbv;
-    nb_kernel_type  = fr->nbv->grp[0].kernel_type;
 
     start  = 0;
     homenr = mdatoms->homenr;
@@ -846,7 +840,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     clear_mat(vir_force);
 
-    cg0 = 0;
     if (DOMAINDECOMP(cr))
     {
         cg1 = cr->dd->ncg_tot;
@@ -912,6 +905,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 #ifdef GMX_MPI
     if (!(cr->duty & DUTY_PME))
     {
+        gmx_bool bBS;
+        matrix   boxs;
+
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
          * and domain decomposition does not use the graph,
@@ -1585,12 +1581,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     int        cg0, cg1, i, j;
     int        start, homenr;
     double     mu[2*DIM];
-    gmx_bool   bSepDVDL, bStateChanged, bNS, bFillGrid, bCalcCGCM, bBS;
-    gmx_bool   bDoLongRangeNS, bDoForces, bDoPotential, bSepLRF;
+    gmx_bool   bSepDVDL, bStateChanged, bNS, bFillGrid, bCalcCGCM;
+    gmx_bool   bDoLongRangeNS, bDoForces, bSepLRF;
     gmx_bool   bDoAdressWF;
-    matrix     boxs;
-    rvec       vzero, box_diag;
-    real       e, v, dvdlambda[efptNR];
     t_pbc      pbc;
     float      cycles_pme, cycles_force;
 
@@ -1623,7 +1616,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     bFillGrid      = (bNS && bStateChanged);
     bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces      = (flags & GMX_FORCE_FORCES);
-    bDoPotential   = (flags & GMX_FORCE_ENERGY);
     bSepLRF        = ((inputrec->nstcalclr > 1) && bDoForces &&
                       (flags & GMX_FORCE_SEPLRF) && (flags & GMX_FORCE_DO_LR));
 
@@ -1681,6 +1673,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 #ifdef GMX_MPI
     if (!(cr->duty & DUTY_PME))
     {
+        gmx_bool bBS;
+        matrix   boxs;
+
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
          * and domain decomposition does not use the graph,
@@ -2206,7 +2201,8 @@ integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
     double invscale, invscale2, invscale3;
     double r, ea, eb, ec, pa, pb, pc, pd;
     double y0, f, g, h;
-    int    ri, offset, tabfactor;
+    int    ri, offset;
+    double tabfactor;
 
     invscale  = 1.0/scale;
     invscale2 = invscale*invscale;
@@ -2267,11 +2263,10 @@ integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 {
-    double   eners[2], virs[2], enersum, virsum, y0, f, g, h;
-    double   r0, r1, r, rc3, rc9, ea, eb, ec, pa, pb, pc, pd;
-    double   invscale, invscale2, invscale3;
-    int      ri0, ri1, ri, i, offstart, offset;
-    real     scale, *vdwtab, tabfactor, tmp;
+    double   eners[2], virs[2], enersum, virsum;
+    double   r0, rc3, rc9;
+    int      ri0, ri1, i;
+    real     scale, *vdwtab;
 
     fr->enershiftsix    = 0;
     fr->enershifttwelve = 0;
@@ -2306,8 +2301,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             vdwtab = fr->nblists[0].table_vdw.data;
 
             /* Round the cut-offs to exact table values for precision */
-            ri0  = floor(fr->rvdw_switch*scale);
-            ri1  = ceil(fr->rvdw*scale);
+            ri0  = static_cast<int>(floor(fr->rvdw_switch*scale));
+            ri1  = static_cast<int>(ceil(fr->rvdw*scale));
 
             /* The code below has some support for handling force-switching, i.e.
              * when the force (instead of potential) is switched over a limited
@@ -2328,7 +2323,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             ri0  = (fr->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
 
             r0   = ri0/scale;
-            r1   = ri1/scale;
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
@@ -2655,10 +2649,9 @@ void finish_run(FILE *fplog, t_commrec *cr,
                 nonbonded_verlet_t *nbv,
                 gmx_bool bWriteStat)
 {
-    int     i, j;
     t_nrnb *nrnb_tot = NULL;
-    real    delta_t;
-    double  nbfs, mflop;
+    double  delta_t  = 0;
+    double  nbfs     = 0, mflop = 0;
     double  elapsed_time,
             elapsed_time_over_all_ranks,
             elapsed_time_over_all_threads,
@@ -2725,10 +2718,6 @@ void finish_run(FILE *fplog, t_commrec *cr,
         if (EI_DYNAMICS(inputrec->eI))
         {
             delta_t = inputrec->delta_t;
-        }
-        else
-        {
-            delta_t = 0;
         }
 
         if (fplog)
@@ -2831,8 +2820,7 @@ void init_md(FILE *fplog,
              tensor force_vir, tensor shake_vir, rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags)
 {
-    int  i, j, n;
-    real tmpt, mod;
+    int  i;
 
     /* Initial values */
     *t = *t0       = ir->init_t;

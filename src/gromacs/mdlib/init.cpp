@@ -57,8 +57,6 @@
 
 void set_state_entries(t_state *state, const t_inputrec *ir)
 {
-    int nnhpres;
-
     /* The entries in the state in the tpx file might not correspond
      * with what is needed, so we correct this here.
      */
