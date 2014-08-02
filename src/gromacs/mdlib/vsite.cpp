@@ -40,6 +40,8 @@
 
 #include <stdio.h>
 
+#include <algorithm>
+
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -271,7 +273,7 @@ static void constr_vsite4FDN(rvec xi, rvec xj, rvec xk, rvec xl, rvec x,
 static int constr_vsiten(t_iatom *ia, t_iparams ip[],
                          rvec *x, t_pbc *pbc)
 {
-    rvec xs, x1, dx;
+    rvec x1, dx;
     dvec dsum;
     int  n3, av, ai, i;
     real a;
@@ -316,12 +318,11 @@ void construct_vsites_thread(gmx_vsite_t *vsite,
     gmx_bool   bPBCAll;
     rvec       xpbc, xv, vv, dx;
     real       a1, b1, c1, inv_dt;
-    int        i, inc, ii, nra, nr, tp, ftype;
+    int        i, inc, nra, nr, tp, ftype;
     t_iatom    avsite, ai, aj, ak, al, pbc_atom;
     t_iatom   *ia;
     t_pbc     *pbc_null2;
     int       *vsite_pbc, ishift;
-    rvec       reftmp, vtmp, rtmp;
 
     if (v != NULL)
     {
@@ -490,7 +491,6 @@ void construct_vsites(gmx_vsite_t *vsite,
 {
     t_pbc     pbc, *pbc_null;
     gmx_bool  bDomDec;
-    int       nthreads;
 
     bDomDec = cr && DOMAINDECOMP(cr);
 
@@ -543,7 +543,6 @@ static void spread_vsite2(t_iatom ia[], real a,
     rvec    fi, fj, dx;
     t_iatom av, ai, aj;
     ivec    di;
-    real    b;
     int     siv, sij;
 
     av = ia[1];
@@ -670,10 +669,10 @@ static void spread_vsite3FD(t_iatom ia[], real a, real b,
                             gmx_bool VirCorr, matrix dxdf,
                             t_pbc *pbc, t_graph *g)
 {
-    real    fx, fy, fz, c, invl, fproj, a1;
+    real    c, invl, fproj, a1;
     rvec    xvi, xij, xjk, xix, fv, temp;
     t_iatom av, ai, aj, ak;
-    int     svi, sji, skj, d;
+    int     svi, sji, skj;
     ivec    di;
 
     av = ia[1];
@@ -1312,7 +1311,7 @@ static void spread_vsite_f_thread(gmx_vsite_t *vsite,
 {
     gmx_bool   bPBCAll;
     real       a1, b1, c1;
-    int        i, inc, m, nra, nr, tp, ftype;
+    int        i, inc, nra, nr, tp, ftype;
     t_iatom   *ia;
     t_pbc     *pbc_null2;
     int       *vsite_pbc;
@@ -1556,7 +1555,7 @@ static int *atom2cg(t_block *cgs)
 static int count_intercg_vsite(gmx_mtop_t *mtop,
                                gmx_bool   *bHaveChargeGroups)
 {
-    int             mb, mt, ftype, nral, i, cg, a;
+    int             mb, ftype, nral, i, cg, a;
     gmx_molblock_t *molb;
     gmx_moltype_t  *molt;
     int            *a2cg;
@@ -1609,7 +1608,7 @@ static int **get_vsite_pbc(t_iparams *iparams, t_ilist *ilist,
                            t_atom *atom, t_mdatoms *md,
                            t_block *cgs, int *a2cg)
 {
-    int      ftype, nral, i, j, vsi, vsite, cg_v, cg_c, a, nc3 = 0;
+    int      ftype, nral, i, j, vsi, vsite, cg_v, a, nc3 = 0;
     t_ilist *il;
     t_iatom *ia;
     int    **vsite_pbc, *vsite_pbc_f;
@@ -1751,11 +1750,10 @@ gmx_vsite_t *init_vsite(gmx_mtop_t *mtop, t_commrec *cr,
                         gmx_bool bSerial_NoPBC)
 {
     int            nvsite, i;
-    int           *a2cg, cg;
+    int           *a2cg;
     gmx_vsite_t   *vsite;
     int            mt;
     gmx_moltype_t *molt;
-    int            nthreads;
 
     /* check if there are vsites */
     nvsite = 0;
@@ -1890,7 +1888,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                     {
                         for (j = i + 1; j < i + nral1; j++)
                         {
-                            vsite_atom_range = max(vsite_atom_range, iat[j]);
+                            vsite_atom_range = std::max(vsite_atom_range, iat[j]);
                         }
                     }
                 }
@@ -1906,10 +1904,10 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                         /* The 3 below is from 1+NRAL(ftype)=3 */
                         vs_ind_end = i + ip[iat[i]].vsiten.n*3;
 
-                        vsite_atom_range = max(vsite_atom_range, iat[i+1]);
+                        vsite_atom_range = std::max(vsite_atom_range, iat[i+1]);
                         while (i < vs_ind_end)
                         {
-                            vsite_atom_range = max(vsite_atom_range, iat[i+2]);
+                            vsite_atom_range = std::max(vsite_atom_range, iat[i+2]);
                             i               += 3;
                         }
                     }

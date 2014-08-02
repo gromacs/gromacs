@@ -38,6 +38,8 @@
 
 #include <assert.h>
 
+#include <algorithm>
+
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
@@ -92,7 +94,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
 {
     /* general routine for both barostat and thermostat nose hoover chains */
 
-    int           i, j, mi, mj, jmax;
+    int           i, j, mi, mj;
     double        Ekin, Efac, reft, kT, nd;
     double        dt;
     t_grp_tcstat *tcstat;
@@ -127,7 +129,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
         {
             iQinv = &(MassQ->QPinv[i*nh]);
             nd    = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
-            reft  = max(0.0, opts->ref_t[0]);
+            reft  = std::max<real>(0, opts->ref_t[0]);
             Ekin  = sqr(*veta)/MassQ->Winv;
         }
         else
@@ -135,7 +137,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
             iQinv  = &(MassQ->Qinv[i*nh]);
             tcstat = &ekind->tcstat[i];
             nd     = opts->nrdf[i];
-            reft   = max(0.0, opts->ref_t[i]);
+            reft   = std::max<real>(0, opts->ref_t[i]);
             if (bEkinAveVel)
             {
                 Ekin = 2*trace(tcstat->ekinf)*tcstat->ekinscalef_nhc;
@@ -227,9 +229,9 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
 
     real   pscal;
     double alpha;
-    int    i, j, d, n, nwall;
-    real   T, GW, vol;
-    tensor Winvm, ekinmod, localpres;
+    int    nwall;
+    real   GW, vol;
+    tensor ekinmod, localpres;
 
     /* The heat bath is coupled to a separate barostat, the last temperature group.  In the
        2006 Tuckerman et al paper., the order is iL_{T_baro} iL {T_part}
@@ -373,8 +375,8 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
          * The pressure and compressibility always occur as a product,
          * therefore the pressure unit drops out.
          */
-        maxl = max(box[XX][XX], box[YY][YY]);
-        maxl = max(maxl, box[ZZ][ZZ]);
+        maxl = std::max(box[XX][XX], box[YY][YY]);
+        maxl = std::max(maxl, box[ZZ][ZZ]);
         for (d = 0; d < DIM; d++)
         {
             for (n = 0; n < DIM; n++)
@@ -531,7 +533,7 @@ void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
 {
     int     d, n;
     real    scalar_pressure, xy_pressure, p_corr_z;
-    char   *ptr, buf[STRLEN];
+    char    buf[STRLEN];
 
     /*
      *  Calculate the scaling matrix mu
@@ -704,9 +706,9 @@ void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
 
         if ((opts->tau_t[i] > 0) && (T > 0.0))
         {
-            reft                    = max(0.0, opts->ref_t[i]);
+            reft                    = std::max<real>(0, opts->ref_t[i]);
             lll                     = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-            ekind->tcstat[i].lambda = max(min(lll, 1.25), 0.8);
+            ekind->tcstat[i].lambda = std::max<real>(std::min<real>(lll, 1.25), 0.8);
         }
         else
         {
@@ -779,7 +781,7 @@ void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
 
     for (i = 0; (i < opts->ngtc); i++)
     {
-        reft     = max(0.0, opts->ref_t[i]);
+        reft     = std::max<real>(0, opts->ref_t[i]);
         oldvxi   = vxi[i];
         vxi[i]  += dt*MassQ->Qinv[i]*(ekind->tcstat[i].Th - reft);
         xi[i]   += dt*(oldvxi + vxi[i])*0.5;
@@ -818,16 +820,14 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
 {
 
-    int             n, i, j, d, ntgrp, ngtc, gc = 0;
+    int             n, i, d, ngtc, gc = 0;
     t_grp_tcstat   *tcstat;
     t_grpopts      *opts;
     gmx_int64_t     step_eff;
-    real            ecorr, pcorr, dvdlcorr;
-    real            bmass, qmass, reft, kT, dt, nd;
-    tensor          dumpres, dumvir;
+    real            dt;
     double         *scalefac, dtc;
     int            *trotter_seq;
-    rvec            sumv = {0, 0, 0}, consk;
+    rvec            sumv = {0, 0, 0};
     gmx_bool        bCouple;
 
     if (trotter_seqno <= ettTSEQ2)
@@ -949,16 +949,12 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
 
 extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
 {
-    int           n, i, j, d, ntgrp, ngtc, nnhpres, nh, gc = 0;
-    t_grp_tcstat *tcstat;
+    int           n, i, j, d, ngtc, nh;
     t_grpopts    *opts;
-    real          ecorr, pcorr, dvdlcorr;
-    real          bmass, qmass, reft, kT, dt, ndj, nd;
-    tensor        dumpres, dumvir;
+    real          reft, kT, ndj, nd;
 
     opts    = &(ir->opts); /* just for ease of referencing */
     ngtc    = ir->opts.ngtc;
-    nnhpres = state->nnhpres;
     nh      = state->nhchainlength;
 
     if (ir->eI == eiMD)
@@ -1019,7 +1015,7 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
         {
             if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
             {
-                reft = max(0.0, opts->ref_t[i]);
+                reft = std::max<real>(0, opts->ref_t[i]);
                 nd   = opts->nrdf[i];
                 kT   = BOLTZ*reft;
                 for (j = 0; j < nh; j++)
@@ -1037,7 +1033,6 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
             }
             else
             {
-                reft = 0.0;
                 for (j = 0; j < nh; j++)
                 {
                     MassQ->Qinv[i*nh+j] = 0.0;
@@ -1049,16 +1044,12 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
 
 int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
 {
-    int           n, i, j, d, ntgrp, ngtc, nnhpres, nh, gc = 0;
-    t_grp_tcstat *tcstat;
+    int           i, j, nnhpres, nh;
     t_grpopts    *opts;
-    real          ecorr, pcorr, dvdlcorr;
-    real          bmass, qmass, reft, kT, dt, ndj, nd;
-    tensor        dumpres, dumvir;
+    real          bmass, qmass, reft, kT;
     int         **trotter_seq;
 
     opts    = &(ir->opts); /* just for ease of referencing */
-    ngtc    = state->ngtc;
     nnhpres = state->nnhpres;
     nh      = state->nhchainlength;
 
@@ -1203,7 +1194,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     /* barostat temperature */
     if ((ir->tau_p > 0) && (opts->ref_t[0] > 0))
     {
-        reft = max(0.0, opts->ref_t[0]);
+        reft = std::max<real>(0, opts->ref_t[0]);
         kT   = BOLTZ*reft;
         for (i = 0; i < nnhpres; i++)
         {
@@ -1236,11 +1227,12 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
 
 real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 {
-    int     i, j, nd, ndj, bmass, qmass, ngtcall;
-    real    ener_npt, reft, eta, kT, tau;
+    int     i, j;
+    real    nd, ndj;
+    real    ener_npt, reft, kT;
     double *ivxi, *ixi;
     double *iQinv;
-    real    vol, dbaro, W, Q;
+    real    vol;
     int     nh = state->nhchainlength;
 
     ener_npt = 0;
@@ -1288,7 +1280,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
             ivxi  = &state->nhpres_vxi[i*nh];
             ixi   = &state->nhpres_xi[i*nh];
             iQinv = &(MassQ->QPinv[i*nh]);
-            reft  = max(ir->opts.ref_t[0], 0); /* using 'System' temperature */
+            reft  = std::max<real>(ir->opts.ref_t[0], 0.0); /* using 'System' temperature */
             kT    = BOLTZ * reft;
 
             for (j = 0; j < nh; j++)
@@ -1316,7 +1308,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
             iQinv = &(MassQ->Qinv[i*nh]);
 
             nd   = ir->opts.nrdf[i];
-            reft = max(ir->opts.ref_t[i], 0);
+            reft = std::max<real>(ir->opts.ref_t[i], 0);
             kT   = BOLTZ * reft;
 
             if (nd > 0)
@@ -1633,7 +1625,7 @@ void update_annealing_target_temp(t_grpopts *opts, real t)
             case  eannPERIODIC:
                 /* calculate time modulo the period */
                 pert  = opts->anneal_time[i][npoints-1];
-                n     = t / pert;
+                n     = static_cast<int>(t / pert);
                 thist = t - n*pert; /* modulo time */
                 /* Make sure rounding didn't get us outside the interval */
                 if (fabs(thist-pert) < GMX_REAL_EPS*100)
