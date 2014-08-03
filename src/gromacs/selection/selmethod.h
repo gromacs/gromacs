@@ -556,6 +556,11 @@ typedef void  (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * For \ref STR_VALUE methods, the pointers stored in \p out->s are discarded
  * without freeing; it is the responsibility of this function to provide
  * pointers that can be discarded without memory leaks.
+ *
+ * If the method accesses \p fr outside the index group specified in \p g or
+ * what it receives from its parameters, it must check that \p fr actually
+ * contains such an atom in case the \p fr has been loaded from a trajectory
+ * that only contains a subset of the system.
  */
 typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out,
@@ -584,6 +589,11 @@ typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * For \ref STR_VALUE methods, the pointers stored in \p out->s are discarded
  * without freeing; it is the responsibility of this function to provide
  * pointers that can be discarded without memory leaks.
+ *
+ * If the method accesses \p fr outside the atoms referenced in \p pos or
+ * what it receives from its parameters, it must check that \p fr actually
+ * contains such an atom in case the \p fr has been loaded from a trajectory
+ * that only contains a subset of the system.
  */
 typedef void  (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                                     gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out,
