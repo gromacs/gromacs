@@ -236,10 +236,17 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc);
 void
 gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int maxn);
 
+/*! \brief
+ * Returns maximum atom index that appears in an index group.
+ *
+ * \param[in]  g      Index group to query.
+ * \returns    Largest atom index that appears in \p g, or zero if \p g is empty.
+ */
+int
+gmx_ana_index_get_max_index(gmx_ana_index_t *g);
 /** Checks whether an index group is sorted. */
 bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g);
-
 /*! \brief
  * Checks whether an index group has atoms from a defined range.
  *

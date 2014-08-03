@@ -1601,7 +1601,7 @@ init_item_minmax_groups(const SelectionTreeElementPointer &sel)
  * \param[in,out] sc   Selection collection data.
  *
  * The evaluation group of each \ref SEL_ROOT element corresponding to a
- * selection in \p sc is set to NULL.  The evaluation grop for \ref SEL_ROOT
+ * selection in \p sc is set to NULL.  The evaluation group for \ref SEL_ROOT
  * elements corresponding to subexpressions that need full evaluation is set
  * to \c sc->gall.
  */
@@ -1976,8 +1976,7 @@ evaluate_boolean_static_part(gmx_sel_evaluate_t                *data,
     {
         child->cdata->evaluate = &_gmx_sel_evaluate_static;
         /* The cgrp has only been allocated if it originated from an
-         * external index group. In that case, we need special handling
-         * to preserve the name of the group and to not leak memory.
+         * external index group.
          * If cgrp has been set in make_static(), it is not allocated,
          * and hence we can overwrite it safely. */
         if (child->u.cgrp.nalloc_index > 0)
@@ -2440,6 +2439,51 @@ init_root_item(const SelectionTreeElementPointer &root,
 
 
 /********************************************************************
+ * REQUIRED ATOMS ANALYSIS
+ ********************************************************************/
+
+/*! \brief
+ * Finds the highest atom index required to evaluate a selection subtree.
+ *
+ * \param[in] sel  Root of the selection subtree to process.
+ *
+ * For evaluation that starts from a \ref SEL_ROOT element with a fixed group,
+ * children will never extend the evaluation group except for method parameter
+ * evaluation (which have their own root element), so it is sufficient to check
+ * the root.  However, children of \ref SEL_EXPRESSION elements (i.e., the
+ * method parameters) may have been independently evaluated to a static group
+ * that no longer has a separate root, so those need to be checked as well.
+ *
+ * Position calculations are not considered here, but are analyzed through the
+ * position calculation collection in the main compilation method.
+ */
+static void
+init_required_atoms(const SelectionTreeElementPointer &sel, int *maxAtomIndex)
+{
+    // Process children.
+    if (sel->type != SEL_SUBEXPRREF)
+    {
+        SelectionTreeElementPointer child = sel->child;
+        while (child)
+        {
+            init_required_atoms(child, maxAtomIndex);
+            child = child->next;
+        }
+    }
+
+    if (sel->type == SEL_ROOT
+        || (sel->type == SEL_CONST && sel->v.type == GROUP_VALUE))
+    {
+        if (sel->u.cgrp.isize > 0)
+        {
+            *maxAtomIndex =
+                std::max(*maxAtomIndex, gmx_ana_index_get_max_index(&sel->u.cgrp));
+        }
+    }
+}
+
+
+/********************************************************************
  * FINAL SUBEXPRESSION OPTIMIZATION
  ********************************************************************/
 
@@ -2832,9 +2876,10 @@ SelectionCompiler::compile(SelectionCollection *coll)
         coll->printTree(stderr, false);
     }
 
-    /* Initialize evaluation groups, position calculations for methods, perform
-     * some final optimization, and free the memory allocated for the
-     * compilation. */
+    // Initialize evaluation groups, maximum atom index needed for evaluation,
+    // position calculations for methods, perform some final optimization, and
+    // free the memory allocated for the compilation.
+    coll->impl_->maxAtomIndex_ = 0;
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
     PositionCalculationCollection::typeFromEnum(coll->impl_->rpost_.c_str(),
@@ -2844,10 +2889,14 @@ SelectionCompiler::compile(SelectionCollection *coll)
     {
         init_root_item(item, &sc->gall);
         postprocess_item_subexpressions(item);
+        init_required_atoms(item, &coll->impl_->maxAtomIndex_);
         init_item_comg(item, &sc->pcc, post, flags);
         free_item_compilerdata(item);
         item = item->next;
     }
+    coll->impl_->maxAtomIndex_ =
+        std::max(coll->impl_->maxAtomIndex_,
+                 sc->pcc.getHighestRequiredAtomIndex());
 
     /* Allocate memory for the evaluation memory pool. */
     _gmx_sel_mempool_reserve(sc->mempool, 0);
