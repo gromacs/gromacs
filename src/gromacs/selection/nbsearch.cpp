@@ -57,19 +57,24 @@
  */
 #include "gromacs/selection/nbsearch.h"
 
-#include <math.h>
+#include <cmath>
+#include <cstring>
 
 #include <algorithm>
 #include <vector>
 
 #include "thread_mpi/mutex.h"
 
+#include "gromacs/legacyheaders/names.h"
+
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -96,10 +101,12 @@ class AnalysisNeighborhoodSearchImpl
          * Initializes the search with a given box and reference positions.
          *
          * \param[in]     mode      Search mode to use.
+         * \param[in]     bXY       Whether to use 2D searching.
          * \param[in]     pbc       PBC information.
          * \param[in]     positions Set of reference positions.
          */
         void init(AnalysisNeighborhood::SearchMode     mode,
+                  bool                                 bXY,
                   const t_pbc                         *pbc,
                   const AnalysisNeighborhoodPositions &positions);
         PairSearchImplPointer getPairSearch();
@@ -116,14 +123,14 @@ class AnalysisNeighborhoodSearchImpl
          * \param[in]     pbc  Information about the box.
          * \returns  false if grid search is not suitable.
          */
-        bool initGridCells(const t_pbc *pbc);
+        bool initGridCells(const t_pbc &pbc);
         /*! \brief
          * Sets ua a search grid for a given box.
          *
          * \param[in]     pbc  Information about the box.
          * \returns  false if grid search is not suitable.
          */
-        bool initGrid(const t_pbc *pbc);
+        bool initGrid(const t_pbc &pbc);
         /*! \brief
          * Maps a point into a grid cell.
          *
@@ -154,6 +161,8 @@ class AnalysisNeighborhoodSearchImpl
         real                    cutoff_;
         //! The cutoff squared.
         real                    cutoff2_;
+        //! Whether to do searching in XY plane only.
+        bool                    bXY_;
 
         //! Number of reference points for the current frame.
         int                     nref_;
@@ -162,7 +171,7 @@ class AnalysisNeighborhoodSearchImpl
         //! Reference position ids (NULL if not available).
         const int              *refid_;
         //! PBC data.
-        t_pbc                  *pbc_;
+        t_pbc                   pbc_;
 
         //! Number of excluded reference positions for current test particle.
         int                     nexcl_;
@@ -237,6 +246,8 @@ class AnalysisNeighborhoodPairSearchImpl
         rvec                                    xtest_;
         //! Stores the previous returned position during a pair loop.
         int                                     previ_;
+        //! Stores the pair distance corresponding to previ_;
+        real                                    prevr2_;
         //! Stores the current exclusion index during loops.
         int                                     exclind_;
         //! Stores the test particle cell index during loops.
@@ -263,11 +274,12 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
         bTryGrid_   = false;
     }
     cutoff2_        = sqr(cutoff_);
+    bXY_            = false;
 
     nref_           = 0;
     xref_           = NULL;
     refid_          = NULL;
-    pbc_            = NULL;
+    std::memset(&pbc_, 0, sizeof(pbc_));
 
     nexcl_          = 0;
     excl_           = NULL;
@@ -356,16 +368,16 @@ void AnalysisNeighborhoodSearchImpl::initGridCellNeighborList()
     }
 }
 
-bool AnalysisNeighborhoodSearchImpl::initGridCells(const t_pbc *pbc)
+bool AnalysisNeighborhoodSearchImpl::initGridCells(const t_pbc &pbc)
 {
     const real targetsize =
-        pow(pbc->box[XX][XX] * pbc->box[YY][YY] * pbc->box[ZZ][ZZ]
+        pow(pbc.box[XX][XX] * pbc.box[YY][YY] * pbc.box[ZZ][ZZ]
             * 10 / nref_, static_cast<real>(1./3.));
 
     int cellCount = 1;
     for (int dd = 0; dd < DIM; ++dd)
     {
-        ncelldim_[dd] = static_cast<int>(pbc->box[dd][dd] / targetsize);
+        ncelldim_[dd] = static_cast<int>(pbc.box[dd][dd] / targetsize);
         cellCount    *= ncelldim_[dd];
         if (ncelldim_[dd] < 3)
         {
@@ -386,10 +398,10 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(const t_pbc *pbc)
     return true;
 }
 
-bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc *pbc)
+bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc &pbc)
 {
     /* TODO: This check could be improved. */
-    if (0.5*pbc->max_cutoff2 < cutoff2_)
+    if (0.5*pbc.max_cutoff2 < cutoff2_)
     {
         return false;
     }
@@ -399,12 +411,12 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc *pbc)
         return false;
     }
 
-    bTric_ = TRICLINIC(pbc->box);
+    bTric_ = TRICLINIC(pbc.box);
     if (bTric_)
     {
         for (int dd = 0; dd < DIM; ++dd)
         {
-            svmul(1.0 / ncelldim_[dd], pbc->box[dd], cellbox_[dd]);
+            svmul(1.0 / ncelldim_[dd], pbc.box[dd], cellbox_[dd]);
         }
         m_inv_ur0(cellbox_, recipcell_);
     }
@@ -412,7 +424,7 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc *pbc)
     {
         for (int dd = 0; dd < DIM; ++dd)
         {
-            cellbox_[dd][dd]   = pbc->box[dd][dd] / ncelldim_[dd];
+            cellbox_[dd][dd]   = pbc.box[dd][dd] / ncelldim_[dd];
             recipcell_[dd][dd] = 1.0 / cellbox_[dd][dd];
         }
     }
@@ -462,17 +474,42 @@ void AnalysisNeighborhoodSearchImpl::addToGridCell(const ivec cell, int i)
 
 void AnalysisNeighborhoodSearchImpl::init(
         AnalysisNeighborhood::SearchMode     mode,
+        bool                                 bXY,
         const t_pbc                         *pbc,
         const AnalysisNeighborhoodPositions &positions)
 {
     GMX_RELEASE_ASSERT(positions.index_ == -1,
                        "Individual indexed positions not supported as reference");
-    pbc_  = const_cast<t_pbc *>(pbc);
+    bXY_ = bXY;
+    if (bXY_ && pbc->ePBC != epbcNONE)
+    {
+        if (pbc->ePBC != epbcXY && pbc->ePBC != epbcXYZ)
+        {
+            std::string message =
+                formatString("Computations in the XY plane are not supported with PBC type '%s'",
+                             EPBC(pbc->ePBC));
+            GMX_THROW(NotImplementedError(message));
+        }
+        if (std::fabs(pbc->box[ZZ][XX]) > GMX_REAL_EPS*pbc->box[ZZ][ZZ] ||
+            std::fabs(pbc->box[ZZ][YY]) > GMX_REAL_EPS*pbc->box[ZZ][ZZ])
+        {
+            GMX_THROW(NotImplementedError("Computations in the XY plane are not supported when the last box vector is not parallel to the Z axis"));
+        }
+        set_pbc(&pbc_, epbcXY, const_cast<rvec *>(pbc->box));
+    }
+    else if (pbc != NULL)
+    {
+        pbc_  = *pbc;
+    }
+    else
+    {
+        pbc_.ePBC = epbcNONE;
+    }
     nref_ = positions.count_;
     // TODO: Consider whether it would be possible to support grid searching in
     // more cases.
     if (mode == AnalysisNeighborhood::eSearchMode_Simple
-        || pbc_ == NULL || pbc_->ePBC != epbcXYZ)
+        || pbc_.ePBC != epbcXYZ)
     {
         bGrid_ = false;
     }
@@ -494,7 +531,7 @@ void AnalysisNeighborhoodSearchImpl::init(
         {
             copy_rvec(positions.x_[i], xref_alloc_[i]);
         }
-        put_atoms_in_triclinic_unitcell(ecenterTRIC, pbc_->box,
+        put_atoms_in_triclinic_unitcell(ecenterTRIC, pbc_.box,
                                         nref_, xref_alloc_);
         for (int i = 0; i < nref_; ++i)
         {
@@ -544,12 +581,14 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
         copy_rvec(testPositions_[testIndex_], xtest_);
         if (search_.bGrid_)
         {
-            put_atoms_in_triclinic_unitcell(ecenterTRIC, search_.pbc_->box,
+            put_atoms_in_triclinic_unitcell(ecenterTRIC,
+                                            const_cast<rvec *>(search_.pbc_.box),
                                             1, &xtest_);
             search_.mapPointToGridCell(xtest_, testcell_);
         }
     }
     previ_     = -1;
+    prevr2_    = 0.0;
     exclind_   = 0;
     prevnbi_   = 0;
     prevcai_   = -1;
@@ -623,6 +662,8 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
     {
         if (search_.bGrid_)
         {
+            GMX_RELEASE_ASSERT(!search_.bXY_, "Grid-based XY searches not implemented");
+
             int nbi = prevnbi_;
             int cai = prevcai_ + 1;
 
@@ -646,7 +687,7 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                         continue;
                     }
                     rvec       dx;
-                    pbc_dx_aiuc(search_.pbc_, xtest_, search_.xref_[i], dx);
+                    pbc_dx_aiuc(&search_.pbc_, xtest_, search_.xref_[i], dx);
                     const real r2 = norm2(dx);
                     if (r2 <= search_.cutoff2_)
                     {
@@ -655,6 +696,7 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                             prevnbi_ = nbi;
                             prevcai_ = cai;
                             previ_   = i;
+                            prevr2_  = r2;
                             return true;
                         }
                     }
@@ -672,20 +714,24 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                     continue;
                 }
                 rvec dx;
-                if (search_.pbc_)
+                if (search_.pbc_.ePBC != epbcNONE)
                 {
-                    pbc_dx(search_.pbc_, xtest_, search_.xref_[i], dx);
+                    pbc_dx(&search_.pbc_, xtest_, search_.xref_[i], dx);
                 }
                 else
                 {
                     rvec_sub(xtest_, search_.xref_[i], dx);
                 }
-                const real r2 = norm2(dx);
+                const real r2
+                    = search_.bXY_
+                        ? dx[XX]*dx[XX] + dx[YY]*dx[YY]
+                        : norm2(dx);
                 if (r2 <= search_.cutoff2_)
                 {
                     if (action(i, r2))
                     {
-                        previ_ = i;
+                        previ_  = i;
+                        prevr2_ = r2;
                         return true;
                     }
                 }
@@ -705,7 +751,7 @@ void AnalysisNeighborhoodPairSearchImpl::initFoundPair(
     }
     else
     {
-        *pair = AnalysisNeighborhoodPair(previ_, testIndex_);
+        *pair = AnalysisNeighborhoodPair(previ_, testIndex_, prevr2_);
     }
 }
 
@@ -786,7 +832,7 @@ class AnalysisNeighborhood::Impl
         typedef AnalysisNeighborhoodSearch::ImplPointer SearchImplPointer;
         typedef std::vector<SearchImplPointer> SearchList;
 
-        Impl() : cutoff_(0), mode_(eSearchMode_Automatic)
+        Impl() : cutoff_(0), mode_(eSearchMode_Automatic), bXY_(false)
         {
         }
         ~Impl()
@@ -805,6 +851,7 @@ class AnalysisNeighborhood::Impl
         SearchList              searchList_;
         real                    cutoff_;
         SearchMode              mode_;
+        bool                    bXY_;
 };
 
 AnalysisNeighborhood::Impl::SearchImplPointer
@@ -846,6 +893,11 @@ void AnalysisNeighborhood::setCutoff(real cutoff)
     impl_->cutoff_ = cutoff;
 }
 
+void AnalysisNeighborhood::setXYMode(bool bXY)
+{
+    impl_->bXY_ = bXY;
+}
+
 void AnalysisNeighborhood::setMode(SearchMode mode)
 {
     impl_->mode_ = mode;
@@ -861,7 +913,7 @@ AnalysisNeighborhood::initSearch(const t_pbc                         *pbc,
                                  const AnalysisNeighborhoodPositions &positions)
 {
     Impl::SearchImplPointer search(impl_->getSearch());
-    search->init(mode(), pbc, positions);
+    search->init(mode(), impl_->bXY_, pbc, positions);
     return AnalysisNeighborhoodSearch(search);
 }
 
@@ -924,7 +976,7 @@ AnalysisNeighborhoodSearch::nearestPoint(
     int           closestPoint = -1;
     MindistAction action(&closestPoint, &minDist2);
     (void)pairSearch.searchNext(action);
-    return AnalysisNeighborhoodPair(closestPoint, 0);
+    return AnalysisNeighborhoodPair(closestPoint, 0, minDist2);
 }
 
 AnalysisNeighborhoodPairSearch
