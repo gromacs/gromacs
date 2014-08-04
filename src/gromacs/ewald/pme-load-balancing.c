@@ -100,6 +100,8 @@ const char *pmelblim_str[epmelblimNR] =
 struct pme_load_balancing {
     gmx_bool     bSepPMERanks;       /* Do we have separate PME ranks? */
     gmx_bool     bActive;            /* Is PME tuning active? */
+    gmx_int64_t  step_rel_stop;      /* Stop the tuning after this value of step_rel */
+    gmx_bool     bTriggerOnDLB;      /* Trigger balancing only on DD DLB */
     gmx_bool     bBalance;           /* Are we in the balancing phase, i.e. trying different setups? */
     int          nstage;             /* the current maximum number of stages */
 
@@ -112,10 +114,11 @@ struct pme_load_balancing {
     matrix       box_start;          /* the initial simulation box */
     int          n;                  /* the count of setup as well as the allocation size */
     pme_setup_t *setup;              /* the PME+cutoff setups */
-    int          cur;                /* the current setup */
-    int          fastest;            /* fastest setup up till now */
-    int          start;              /* start of setup range to consider in stage>0 */
-    int          end;                /* end   of setup range to consider in stage>0 */
+    int          cur;                /* the index (in setup) of current setup */
+    int          fastest;            /* index of the fastest setup up till now */
+    int          lower_limit;        /* Don't go below this setup index */
+    int          start;              /* start of setup index range to consider in stage>0 */
+    int          end;                /* end   of setup index range to consider in stage>0 */
     int          elimited;           /* was the balancing limited, uses enum above */
     int          cutoff_scheme;      /* Verlet or group cut-offs */
 
@@ -126,17 +129,18 @@ struct pme_load_balancing {
 };
 
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
+                      t_commrec *cr, FILE *fp_log,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
                       struct gmx_pme_t *pmedata,
-                      gmx_bool bUseGPU, gmx_bool bSepPMERanks,
+                      gmx_bool bUseGPU,
                       gmx_bool *bPrinting)
 {
     pme_load_balancing_t pme_lb;
     real                 spm, sp;
     int                  d;
 
-    if ((!bUseGPU && !bSepPMERanks) || !wallcycle_have_counter())
+    if ((!bUseGPU && (cr->duty & DUTY_PME)) || !wallcycle_have_counter())
     {
         /* Unless the number of atoms inside the cut-off is very small,
          * PME tuning will not help with CPU-only runs without PME ranks.
@@ -148,7 +152,10 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
 
     snew(pme_lb, 1);
 
-    pme_lb->bSepPMERanks  = bSepPMERanks;
+    pme_lb->bSepPMERanks  = !(cr->duty & DUTY_PME);
+
+    /* Initially we turn on balancing directly on based on PP/PME imbalance */
+    pme_lb->bTriggerOnDLB = FALSE;
 
     /* Any number of stages >= 2 is supported */
     pme_lb->nstage   = 2;
@@ -228,10 +235,11 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
 
     pme_lb->stage = 0;
 
-    pme_lb->fastest  = 0;
-    pme_lb->start    = 0;
-    pme_lb->end      = 0;
-    pme_lb->elimited = epmelblimNO;
+    pme_lb->fastest     = 0;
+    pme_lb->lower_limit = 0;
+    pme_lb->start       = 0;
+    pme_lb->end         = 0;
+    pme_lb->elimited    = epmelblimNO;
 
     pme_lb->cycles_n = 0;
     pme_lb->cycles_c = 0;
@@ -240,15 +248,34 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
      * CPU-only without PME ranks PME tuning will only help with few atoms
      * in the cut-off sphere.
      */
-    pme_lb->bActive  = (wallcycle_have_counter() && (bUseGPU || bSepPMERanks));
+    pme_lb->bActive  = (wallcycle_have_counter() && (bUseGPU ||
+                                                     pme_lb->bSepPMERanks));
 
     /* With GPUs and no separate PME ranks we can't measure the PP/PME
      * imbalance, so we start balancing right away.
      * Otherwise we only balance after we observe imbalannce.
      */
-    pme_lb->bBalance = (pme_lb->bActive && (bUseGPU && !bSepPMERanks));
+    pme_lb->bBalance = (pme_lb->bActive && (bUseGPU && !pme_lb->bSepPMERanks));
 
-    *pme_lb_p  = pme_lb;
+    pme_lb->step_rel_stop = PMETune_period*ir->nstlist;
+
+    /* Delay DD load balancing when GPUs are used */
+    if (pme_lb->bActive && DOMAINDECOMP(cr) && cr->dd->nnodes > 1 && bUseGPU)
+    {
+        /* Lock DLB=auto to off (does nothing when DLB=yes/no.
+         * With GPUs and separate PME nodes, we want to first
+         * do PME tuning without DLB, since DLB might limit
+         * the cut-off, which never improves performance.
+         * We allow for DLB + PME tuning after a first round of tuning.
+         */
+        dd_dlb_set_lock(cr->dd, TRUE);
+        if (dd_dlb_is_locked(cr->dd))
+        {
+            md_print_warn(cr, fp_log, "NOTE: DLB will not turn on during the first phase of PME tuning\n");
+        }
+    }
+
+    *pme_lb_p = pme_lb;
 
     *bPrinting = pme_lb->bBalance;
 }
@@ -456,7 +483,7 @@ static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
 
 static void switch_to_stage1(pme_load_balancing_t pme_lb)
 {
-    pme_lb->start = 0;
+    pme_lb->start = pme_lb->lower_limit;
     while (pme_lb->start+1 < pme_lb->n &&
            (pme_lb->setup[pme_lb->start].count == 0 ||
             pme_lb->setup[pme_lb->start].cycles >
@@ -485,7 +512,7 @@ static void switch_to_stage1(pme_load_balancing_t pme_lb)
     pme_lb->cur = pme_lb->start - 1;
 }
 
-/* Try to adjust the PME grid and Coulomb cut-off.
+/* Process the timings and try to adjust the PME grid and Coulomb cut-off.
  * The adjustment is done to generate a different non-bonded PP and PME load.
  * With separate PME nodes (PP and PME on different processes) or with
  * a GPU (PP on GPU, PME on CPU), PP and PME run on different resources
@@ -495,9 +522,8 @@ static void switch_to_stage1(pme_load_balancing_t pme_lb)
  * times and acquiring enough statistics, the best performing setup is chosen.
  * Here we try to take into account fluctuations and changes due to external
  * factors as well as DD load balancing.
- * Returns TRUE the load balancing continues, FALSE is the balancing is done.
  */
-static gmx_bool
+static void
 pme_load_balance(pme_load_balancing_t       pme_lb,
                  t_commrec                 *cr,
                  FILE                      *fp_err,
@@ -517,11 +543,6 @@ pme_load_balance(pme_load_balancing_t       pme_lb,
     real         rtab;
     gmx_bool     bUsesSimpleTables = TRUE;
 
-    if (pme_lb->stage == pme_lb->nstage)
-    {
-        return FALSE;
-    }
-
     if (PAR(cr))
     {
         gmx_sumd(1, &cycles, cr);
@@ -538,7 +559,7 @@ pme_load_balance(pme_load_balancing_t       pme_lb,
         /* Skip the first cycle, because the first step after a switch
          * is much slower due to allocation and/or caching effects.
          */
-        return TRUE;
+        return;
     }
 
     sprintf(buf, "step %4s: ", gmx_step_str(step, sbuf));
@@ -564,7 +585,7 @@ pme_load_balance(pme_load_balancing_t       pme_lb,
                         "Increased the number stages to %d"
                         " and ignoring the previous performance\n",
                         set->grid[XX], set->grid[YY], set->grid[ZZ],
-                        cycles*1e-6, set->cycles*1e-6, PME_LB_ACCEL_TOL,
+                        set->cycles*1e-6, cycles*1e-6, PME_LB_ACCEL_TOL,
                         pme_lb->nstage);
             }
         }
@@ -589,7 +610,7 @@ pme_load_balance(pme_load_balancing_t       pme_lb,
              * better overal performance can be obtained with a slightly
              * shorter cut-off and better DD load balancing.
              */
-            change_dd_dlb_cutoff_limit(cr);
+            change_dd_dlb_cutoff_limit(cr, pme_lb->setup[pme_lb->fastest].rlistlong);
         }
     }
     cycles_fast = pme_lb->setup[pme_lb->fastest].cycles;
@@ -678,7 +699,7 @@ pme_load_balance(pme_load_balancing_t       pme_lb,
 
     if (pme_lb->stage > 0 && pme_lb->end == 1)
     {
-        pme_lb->cur   = 0;
+        pme_lb->cur   = pme_lb->lower_limit;
         pme_lb->stage = pme_lb->nstage;
     }
     else if (pme_lb->stage > 0 && pme_lb->end > 1)
@@ -695,6 +716,7 @@ pme_load_balance(pme_load_balancing_t       pme_lb,
             if (pme_lb->cur == pme_lb->end)
             {
                 pme_lb->stage++;
+
                 pme_lb->cur = pme_lb->start;
             }
         }
@@ -714,16 +736,28 @@ pme_load_balance(pme_load_balancing_t       pme_lb,
         OK = change_dd_cutoff(cr, state, ir, pme_lb->setup[pme_lb->cur].rlistlong);
         if (!OK)
         {
-            /* Failsafe solution */
+            /* For some reason the chosen cut-off is incompatible with DD.
+             * We should continue scanning a more limited range of cut-off's.
+             */
             if (pme_lb->cur > 1 && pme_lb->stage == pme_lb->nstage)
             {
+                /* stage=nstage says we're finished, but we should continue
+                 * balancing, so we set back stage which was just incremented.
+                 */
                 pme_lb->stage--;
             }
-            pme_lb->fastest  = 0;
-            pme_lb->start    = 0;
-            pme_lb->end      = pme_lb->cur;
-            pme_lb->cur      = pme_lb->start;
-            pme_lb->elimited = epmelblimDD;
+            if (pme_lb->cur <= pme_lb->fastest)
+            {
+                /* This should not happen, as we set limits on the DLB bounds.
+                 * But we implement a complete failsafe solution anyhow.
+                 */
+                pme_lb->fastest = pme_lb->lower_limit;
+                pme_lb->start   = pme_lb->lower_limit;
+            }
+            /* Limit the range to below the current cut-off, scan from start */
+            pme_lb->end         = pme_lb->cur;
+            pme_lb->cur         = pme_lb->start;
+            pme_lb->elimited    = epmelblimDD;
             print_loadbal_limited(fp_err, fp_log, step, pme_lb);
         }
     }
@@ -815,8 +849,21 @@ pme_load_balance(pme_load_balancing_t       pme_lb,
     {
         print_grid(fp_err, fp_log, "", "optimal", set, -1);
     }
+}
 
-    return TRUE;
+static void continue_pme_loadbal(pme_load_balancing_t pme_lb)
+{
+    /* Add 2 tuning stages, keep the detected end of the setup range */
+    pme_lb->nstage          += 2;
+    if (pme_lb->bSepPMERanks)
+    {
+        /* With separate PME ranks DLB should always lower the PP load and it
+         * could increase, but not lower, the PP load, so we only need to scan
+         * longer cut-off's.
+         */
+        pme_lb->lower_limit  = pme_lb->cur;
+    }
+    pme_lb->start            = pme_lb->lower_limit;
 }
 
 void pme_loadbal_do(pme_load_balancing_t  pme_lb,
@@ -859,40 +906,79 @@ void pme_loadbal_do(pme_load_balancing_t  pme_lb,
     /* PME grid + cut-off optimization with GPUs or PME nodes */
     if (!pme_lb->bBalance && pme_lb->bSepPMERanks)
     {
-        if (DDMASTER(cr->dd))
+        if (pme_lb->bTriggerOnDLB)
         {
-            /* PME node load is too high, start tuning */
-            pme_lb->bBalance = (dd_pme_f_ratio(cr->dd) >= PME_LB_TRIGGER_FAC);
+            pme_lb->bBalance = dd_dlb_is_on(cr->dd);
         }
-        dd_bcast(cr->dd, sizeof(gmx_bool), &pme_lb->bBalance);
-
-        if (pme_lb->bBalance &&
-            use_GPU(fr->nbv) && DOMAINDECOMP(cr) &&
-            pme_lb->bSepPMERanks)
+        else
         {
-            /* Lock DLB=auto to off (does nothing when DLB=yes/no).
-             * With GPUs + separate PME ranks, we don't want DLB.
-             * This could happen when we scan coarse grids and
-             * it would then never be turned off again.
-             * This would hurt performance at the final, optimal
-             * grid spacing, where DLB almost never helps.
-             * Also, DLB can limit the cut-off for PME tuning.
+            if (DDMASTER(cr->dd))
+            {
+                /* PME node load is too high, start tuning */
+                pme_lb->bBalance =
+                    (dd_pme_f_ratio(cr->dd) >= PME_LB_TRIGGER_FAC);
+            }
+            dd_bcast(cr->dd, sizeof(gmx_bool), &pme_lb->bBalance);
+        }
+
+        pme_lb->bActive = (pme_lb->bBalance ||
+                           step_rel <= pme_lb->step_rel_stop);
+    }
+
+    if (pme_lb->bBalance && pme_lb->stage == pme_lb->nstage)
+    {
+        /* The position in the code of this balancing termination is strange.
+         * You would expect to have it after the call to pme_load_balance()
+         * below, since there pme_lb->stage is updated.
+         * But when terminating directly after deciding on and selecting the
+         * optimal setp, DLB will turn on right away if it was locked before.
+         * This might be due to PME reinitialization. So we check stage here
+         * to allow for another nstlist steps with DLB locked to stabilize
+         * the performance.
+         */
+        pme_lb->bBalance = FALSE;
+
+        if (DOMAINDECOMP(cr) && dd_dlb_is_locked(cr->dd))
+        {
+            /* Unlock the DLB=auto, DLB is allowed to activate */
+            dd_dlb_set_lock(cr->dd, FALSE);
+            md_print_warn(cr, fp_log, "NOTE: DLB can now turn on, when beneficial\n");
+
+            /* We don't deactivate the tuning yet, since we will balance again
+             * after DLB gets turned on, if it does within PMETune_period.
              */
-            dd_dlb_set_lock(cr->dd, TRUE);
+            continue_pme_loadbal(pme_lb);
+            pme_lb->bTriggerOnDLB = TRUE;
+            pme_lb->step_rel_stop = step_rel + PMETune_period*ir->nstlist;
+        }
+        else
+        {
+            /* We're completely done with PME tuning */
+            pme_lb->bActive = FALSE;
+        }
+
+        if (DOMAINDECOMP(cr))
+        {
+            /* Set the cut-off limit to the final selected cut-off,
+             * so we don't have artificial DLB limits.
+             * This also ensures that we won't disable the currently
+             * optimal setting during a second round of PME balancing.
+             */
+            change_dd_dlb_cutoff_limit(cr, fr->ic->rlistlong);
         }
     }
 
     if (pme_lb->bBalance)
     {
-        /* init_step might not be a multiple of nstlist,
-         * but the first cycle is always skipped anyhow.
+        /* We might not have collected nstlist steps in cycles yet,
+         * since init_step might not be a multiple of nstlist,
+         * but the first data collected is skipped anyhow.
          */
-        pme_lb->bBalance =
-            pme_load_balance(pme_lb, cr,
-                             fp_err, fp_log,
-                             ir, state, pme_lb->cycles_c - cycles_prev,
-                             fr->ic, fr->nbv, &fr->pmedata,
-                             step);
+        pme_load_balance(pme_lb, cr,
+                         fp_err, fp_log,
+                         ir, state, pme_lb->cycles_c - cycles_prev,
+                         fr->ic, fr->nbv, &fr->pmedata,
+                         step);
 
         /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
         fr->ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
@@ -906,33 +992,25 @@ void pme_loadbal_do(pme_load_balancing_t  pme_lb,
         {
             calc_enervirdiff(NULL, ir->eDispCorr, fr);
         }
-
-        if (!pme_lb->bBalance &&
-            DOMAINDECOMP(cr) &&
-            dd_dlb_is_locked(cr->dd))
-        {
-            /* Unlock the DLB=auto, DLB is allowed to activate
-             * (but we don't expect it to activate in most cases).
-             */
-            dd_dlb_set_lock(cr->dd, FALSE);
-        }
     }
 
     if (!pme_lb->bBalance &&
-        (!pme_lb->bSepPMERanks || (step_rel <= PMETune_period*ir->nstlist)))
+        (!pme_lb->bSepPMERanks || (step_rel <= pme_lb->step_rel_stop)))
     {
         /* We have just deactivated the balancing and we're not measuring PP/PME
-         * imbalance during the first 50*nstlist steps: deactivate the tuning.
+         * imbalance during the first steps of the run: deactivate the tuning.
          */
         pme_lb->bActive = FALSE;
     }
 
-    *bPrinting = pme_lb->bBalance;
-}
+    if (!(pme_lb->bActive) && DOMAINDECOMP(cr) && dd_dlb_is_locked(cr->dd))
+    {
+        /* Make sure DLB is allowed when we deactivate PME tuning */
+        dd_dlb_set_lock(cr->dd, FALSE);
+        md_print_warn(cr, fp_log, "NOTE: DLB can now turn on, when beneficial\n");
+    }
 
-void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n)
-{
-    pme_lb->nstage += n;
+    *bPrinting = pme_lb->bBalance;
 }
 
 static int pme_grid_points(const pme_setup_t *setup)
