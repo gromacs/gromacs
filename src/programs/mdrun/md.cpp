@@ -212,6 +212,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
     gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
+    /* After 50 nstlist periods of not observing imbalance: never tune PME */
+    const int            PMETune_period = 50;
+    gmx_int64_t          PMETune_step_stop = 0;
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
@@ -487,7 +490,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         else
         {
             /* Separate PME nodes, we can measure the PP/PME load balance */
-            bPMETuneTry = TRUE;
+            bPMETuneTry       = TRUE;
+            PMETune_step_stop = PMETune_period*ir->nstlist;
+        }
+
+        /* Delay DD load balancing with GPU + seperate PME nodes or env.var. */
+        if (use_GPU(fr->nbv) && DOMAINDECOMP(cr) &&
+            (!(cr->duty & DUTY_PME) || getenv("GMX_PMELOADBAL_DLB_DELAY") != NULL))
+        {
+            /* Lock DLB=auto (does nothing when DLB=yes/no.
+             * With GPUs and separate PME nodes, we want to first
+             * do PME tuning without DLB, since DLB might limit
+             * the cut-off, which never improves performance.
+             * We allow for DLB + PME tuning after a first round of tuning.
+             */
+            dd_dlb_set_lock(cr->dd, TRUE);
         }
     }
 
@@ -1876,7 +1893,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     }
                     dd_bcast(cr->dd, sizeof(gmx_bool), &bPMETuneRunning);
 
-                    if (bPMETuneRunning || step_rel > ir->nstlist*50)
+                    if (bPMETuneRunning || step > PMETune_step_stop)
                     {
                         bPMETuneTry     = FALSE;
                     }
@@ -1905,6 +1922,28 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     if (ir->eDispCorr != edispcNO)
                     {
                         calc_enervirdiff(NULL, ir->eDispCorr, fr);
+                    }
+
+                    if (!bPMETuneRunning &&
+                        DOMAINDECOMP(cr) &&
+                        dd_dlb_get_lock(cr->dd))
+                    {
+                        /* Unlock the DLB=auto, DLB is allowed to activate */
+                        dd_dlb_set_lock(cr->dd, FALSE);
+                        /* We allow for another round of PME tuning,
+                         * since DLB will affect the PP/PME load balance.
+                         */
+                        if (cr->duty & DUTY_PME)
+                        {
+                            bPMETuneRunning   = TRUE;
+                        }
+                        else
+                        {
+                            bPMETuneTry       = TRUE;
+                            PMETune_step_stop = step + PMETune_period*ir->nstlist;
+                        }
+                        /* Set up the balancing to continue later */
+                        continue_pme_loadbal(pme_loadbal);
                     }
                 }
                 cycles_pmes = 0;

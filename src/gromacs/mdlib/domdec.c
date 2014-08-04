@@ -270,6 +270,10 @@ typedef struct gmx_domdec_comm
 
     /* The DLB option */
     int      eDLB;
+    /* Is eDLB=edlbAUTO locked such that we currently can't turn it on? */
+    gmx_bool bDLB_locked;
+    /* With eDLB=edlbAUTO, should we check if to DLB on at the next DD? */
+    gmx_bool bCheckDLB;
     /* Are we actually using DLB? */
     gmx_bool bDynLoadBal;
 
@@ -6675,7 +6679,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->eDLB = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
+    comm->eDLB        = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
+    comm->bDLB_locked = FALSE;
+    comm->bCheckDLB   = TRUE;
 
     comm->bDynLoadBal = (comm->eDLB == edlbYES);
     if (fplog)
@@ -7566,6 +7572,21 @@ void change_dd_dlb_cutoff_limit(t_commrec *cr)
 
     /* Change the cut-off limit */
     comm->PMELoadBal_max_cutoff = comm->cutoff;
+}
+
+gmx_bool dd_dlb_get_lock(const gmx_domdec_t *dd)
+{
+    return dd->comm->bDLB_locked;
+}
+
+void dd_dlb_set_lock(gmx_domdec_t *dd, gmx_bool bValue)
+{
+    /* We can only lock the DLB when it is set to auto, otherwise don't lock */
+    if (dd->comm->eDLB == edlbAUTO)
+    {
+        dd->comm->bDLB_locked = bValue;
+        dd->comm->bCheckDLB   = TRUE;
+    }
 }
 
 static void merge_cg_buffers(int ncell,
@@ -9334,15 +9355,17 @@ void dd_partition_system(FILE                *fplog,
     /* Check if we have recorded loads on the nodes */
     if (comm->bRecordLoad && dd_load_count(comm))
     {
-        if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal)
+        if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal && !comm->bDLB_locked)
         {
             /* Check if we should use DLB at the second partitioning
-             * and every 100 partitionings,
+             * (or after locking) and every 100 partitionings,
              * so the extra communication cost is negligible.
              */
             n         = max(100, nstglobalcomm);
-            bCheckDLB = (comm->n_load_collect == 0 ||
+            bCheckDLB = (comm->bCheckDLB ||
                          comm->n_load_have % n == n-1);
+
+            comm->bCheckDLB = FALSE;
         }
         else
         {
