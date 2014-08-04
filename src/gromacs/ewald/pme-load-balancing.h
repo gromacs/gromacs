@@ -54,10 +54,11 @@ typedef struct pme_load_balancing *pme_load_balancing_t;
  * or that we should measure timings and potentially balance later.
  */
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
+                      t_commrec *cr, FILE *fp_log,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
                       struct gmx_pme_t *pmedata,
-                      gmx_bool bUseGPU, gmx_bool bSepPMERanks,
+                      gmx_bool bUseGPU,
                       gmx_bool *bPMELoadBalActive);
 
 /* Process the cycles measured over the last nstlist steps and then
@@ -74,9 +75,6 @@ void pme_loadbal_do(pme_load_balancing_t  pme_lb,
                     gmx_int64_t           step,
                     gmx_int64_t           step_rel,
                     gmx_bool             *bActive);
-
-/* Restart the PME load balancing discarding all timings gathered up till now */
-void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
 
 /* Finish the PME load balancing and print the settings when fplog!=NULL */
 void pme_loadbal_done(pme_load_balancing_t pme_lb,
