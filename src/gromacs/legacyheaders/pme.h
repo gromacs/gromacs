@@ -152,6 +152,7 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 /* Initialize the PME-only side of the PME <-> PP communication */
 
 void gmx_pme_send_parameters(t_commrec *cr,
+                             const interaction_const_t *ic,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
                              real *sqrt_c6A, real *sqrt_c6B,
