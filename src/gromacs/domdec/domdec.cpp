@@ -301,6 +301,8 @@ typedef struct gmx_domdec_comm
     int      eDLB;
     /* Is eDLB=edlbAUTO locked such that we currently can't turn it on? */
     gmx_bool bDLB_locked;
+    /* With eDLB=edlbAUTO, should we check if to DLB on at the next DD? */
+    gmx_bool bCheckDLB;
     /* Are we actually using DLB? */
     gmx_bool bDynLoadBal;
 
@@ -6706,6 +6708,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     comm->eDLB        = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
     comm->bDLB_locked = FALSE;
+    comm->bCheckDLB   = TRUE;
 
     comm->bDynLoadBal = (comm->eDLB == edlbYES);
     if (fplog)
@@ -7590,7 +7593,7 @@ gmx_bool change_dd_cutoff(t_commrec *cr, t_state *state, t_inputrec *ir,
     return bCutoffAllowed;
 }
 
-void change_dd_dlb_cutoff_limit(t_commrec *cr)
+void change_dd_dlb_cutoff_limit(t_commrec *cr, real cutoff)
 {
     gmx_domdec_comm_t *comm;
 
@@ -7600,7 +7603,18 @@ void change_dd_dlb_cutoff_limit(t_commrec *cr)
     comm->bPMELoadBalDLBLimits = TRUE;
 
     /* Change the cut-off limit */
-    comm->PMELoadBal_max_cutoff = comm->cutoff;
+    comm->PMELoadBal_max_cutoff = cutoff;
+
+    if (debug)
+    {
+        fprintf(debug, "PME load balancing set a limit to the DLB staggering such that a %f cut-off will continue to fit\n",
+                comm->PMELoadBal_max_cutoff);
+    }
+}
+
+gmx_bool dd_dlb_is_on(const gmx_domdec_t *dd)
+{
+    return dd->comm->bDynLoadBal;
 }
 
 gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd)
@@ -7614,7 +7628,39 @@ void dd_dlb_set_lock(gmx_domdec_t *dd, gmx_bool bValue)
     if (dd->comm->eDLB == edlbAUTO)
     {
         dd->comm->bDLB_locked = bValue;
+        dd->comm->bCheckDLB   = TRUE;
     }
+}
+
+/* Returns if we should collect the load imbalance data, so we can check
+ * if to trigger dynamic load balancing. This function should not be called
+ * multiple times, since it might change the comm->bCheckDLB state, which
+ * is used to avoid collecting the timing data at every repartitioning.
+ */
+static gmx_bool process_bCheckDLB(gmx_domdec_t *dd)
+{
+    gmx_domdec_comm_t *comm = dd->comm;
+    gmx_bool           bCheckDLB;
+
+    if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal && !dd_dlb_is_locked(dd))
+    {
+        /* Check if we should use DLB at the second partitioning
+         * (or after locking) and every 100 partitionings,
+         * so the extra communication cost is negligible.
+         */
+        const int nddp_chk_dlb = 100;
+
+        bCheckDLB = (comm->bCheckDLB ||
+                     comm->n_load_have % nddp_chk_dlb == nddp_chk_dlb - 1);
+
+        comm->bCheckDLB = FALSE;
+    }
+    else
+    {
+        bCheckDLB = FALSE;
+    }
+
+    return bCheckDLB;
 }
 
 static void merge_cg_buffers(int ncell,
@@ -9385,20 +9431,7 @@ void dd_partition_system(FILE                *fplog,
     /* Check if we have recorded loads on the nodes */
     if (comm->bRecordLoad && dd_load_count(comm) > 0)
     {
-        if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal && !dd_dlb_is_locked(dd))
-        {
-            /* Check if we should use DLB at the second partitioning
-             * and every 100 partitionings,
-             * so the extra communication cost is negligible.
-             */
-            const int nddp_chk_dlb = 100;
-            bCheckDLB = (comm->n_load_collect == 0 ||
-                         comm->n_load_have % nddp_chk_dlb == nddp_chk_dlb - 1);
-        }
-        else
-        {
-            bCheckDLB = FALSE;
-        }
+        bCheckDLB = process_bCheckDLB(dd);
 
         /* Print load every nstlog, first and last step to the log file */
         bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
