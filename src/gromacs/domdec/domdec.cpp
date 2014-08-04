@@ -301,6 +301,8 @@ typedef struct gmx_domdec_comm
     int      eDLB;
     /* Is eDLB=edlbAUTO locked such that we currently can't turn it on? */
     gmx_bool bDLB_locked;
+    /* With eDLB=edlbAUTO, should we check if to DLB on at the next DD? */
+    gmx_bool bCheckDLB;
     /* Are we actually using DLB? */
     gmx_bool bDynLoadBal;
 
@@ -6691,6 +6693,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     comm->eDLB        = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
     comm->bDLB_locked = FALSE;
+    comm->bCheckDLB   = TRUE;
 
     comm->bDynLoadBal = (comm->eDLB == edlbYES);
     if (fplog)
@@ -7599,6 +7602,7 @@ void dd_dlb_set_lock(gmx_domdec_t *dd, gmx_bool bValue)
     if (dd->comm->eDLB == edlbAUTO)
     {
         dd->comm->bDLB_locked = bValue;
+        dd->comm->bCheckDLB   = TRUE;
     }
 }
 
@@ -9373,12 +9377,14 @@ void dd_partition_system(FILE                *fplog,
         if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal && !dd_dlb_is_locked(dd))
         {
             /* Check if we should use DLB at the second partitioning
-             * and every 100 partitionings,
+             * (or after locking) and every 100 partitionings,
              * so the extra communication cost is negligible.
              */
             const int nddp_chk_dlb = 100;
-            bCheckDLB = (comm->n_load_collect == 0 ||
+            bCheckDLB = (comm->bCheckDLB ||
                          comm->n_load_have % nddp_chk_dlb == nddp_chk_dlb - 1);
+
+            comm->bCheckDLB = FALSE;
         }
         else
         {

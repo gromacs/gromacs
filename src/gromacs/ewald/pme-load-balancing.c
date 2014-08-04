@@ -103,6 +103,7 @@ struct pme_load_balancing {
     pme_setup_t *setup;              /* the PME+cutoff setups */
     int          cur;                /* the current setup */
     int          fastest;            /* fastest setup up till now */
+    int          lower_limit;        /* Don't go under this setup */
     int          start;              /* start of setup range to consider in stage>0 */
     int          end;                /* end   of setup range to consider in stage>0 */
     int          elimited;           /* was the balancing limited, uses enum above */
@@ -200,10 +201,11 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
 
     pme_lb->stage = 0;
 
-    pme_lb->fastest  = 0;
-    pme_lb->start    = 0;
-    pme_lb->end      = 0;
-    pme_lb->elimited = epmelblimNO;
+    pme_lb->fastest     = 0;
+    pme_lb->lower_limit = 0;
+    pme_lb->start       = 0;
+    pme_lb->end         = 0;
+    pme_lb->elimited    = epmelblimNO;
 
     *pme_lb_p = pme_lb;
 }
@@ -411,7 +413,7 @@ static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
 
 static void switch_to_stage1(pme_load_balancing_t pme_lb)
 {
-    pme_lb->start = 0;
+    pme_lb->start = pme_lb->lower_limit;
     while (pme_lb->start+1 < pme_lb->n &&
            (pme_lb->setup[pme_lb->start].count == 0 ||
             pme_lb->setup[pme_lb->start].cycles >
@@ -620,7 +622,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
 
     if (pme_lb->stage > 0 && pme_lb->end == 1)
     {
-        pme_lb->cur   = 0;
+        pme_lb->cur   = pme_lb->lower_limit;
         pme_lb->stage = pme_lb->nstage;
     }
     else if (pme_lb->stage > 0 && pme_lb->end > 1)
@@ -661,8 +663,8 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
             {
                 pme_lb->stage--;
             }
-            pme_lb->fastest  = 0;
-            pme_lb->start    = 0;
+            pme_lb->fastest  = pme_lb->lower_limit;
+            pme_lb->start    = pme_lb->lower_limit;
             pme_lb->end      = pme_lb->cur;
             pme_lb->cur      = pme_lb->start;
             pme_lb->elimited = epmelblimDD;
@@ -761,9 +763,16 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
     return TRUE;
 }
 
-void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n)
+void continue_pme_loadbal(pme_load_balancing_t pme_lb)
 {
-    pme_lb->nstage += n;
+    /* Add 2 tuning stages, keep the detected end of the setup range */
+    pme_lb->nstage      += 2;
+    /* Don't go below the current cut-off as we don't want the DLB to limit
+     * the cut-off to a smaller value. This is done as this function is only
+     * called with GPUs + seperate PME nodes where a shorter cut-off is slower.
+     */
+    pme_lb->lower_limit  = pme_lb->cur;
+    pme_lb->start        = pme_lb->lower_limit;
 }
 
 static int pme_grid_points(const pme_setup_t *setup)
