@@ -750,9 +750,15 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
     return TRUE;
 }
 
-void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n)
+void continue_pme_loadbal(pme_load_balancing_t pme_lb)
 {
-    pme_lb->nstage += n;
+    /* Add 2 tuning stages, keep the detected upper limit */
+    pme_lb->nstage += 2;
+    /* Don't go below the current cut-off as we don't want the DLB to limit
+     * the cut-off to a smaller value. This is done as this function is only
+     * called with GPUs + seperate PME nodes where a shorter cut-off is slower.
+     */
+    pme_lb->start   = pme_lb->cur;
 }
 
 static int pme_grid_points(const pme_setup_t *setup)
