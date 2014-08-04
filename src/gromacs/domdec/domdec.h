@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -173,10 +173,13 @@ gmx_bool change_dd_cutoff(t_commrec *cr, t_state *state, t_inputrec *ir,
  *
  * Domain boundary changes due to the DD dynamic load balancing can limit
  * the cut-off distance that can be set in change_dd_cutoff. This function
- * limits the DLB such that using the currently set cut-off should still be
+ * limits the DLB such that using the passed (pair-list) cut-off should still be
  * possible after subsequently setting a shorter cut-off with change_dd_cutoff.
  */
-void change_dd_dlb_cutoff_limit(t_commrec *cr);
+void change_dd_dlb_cutoff_limit(t_commrec *cr, real cutoff);
+
+/*! \brief Return if we are currently using dynamic load balancing */
+gmx_bool dd_dlb_is_on(const gmx_domdec_t *dd);
 
 /*! \brief Return if the DLB lock is set */
 gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd);

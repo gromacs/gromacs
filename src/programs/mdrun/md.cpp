@@ -487,8 +487,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
      */
     if ((Flags & MD_TUNEPME) && EEL_PME(fr->eeltype) && !bRerunMD)
     {
-        pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata,
-                         use_GPU(fr->nbv), !(cr->duty & DUTY_PME),
+        pme_loadbal_init(&pme_loadbal, cr, fplog, ir, state->box,
+                         fr->ic, fr->pmedata, use_GPU(fr->nbv),
                          &bPMETuneActive);
         cycles_pmes = 0;
     }
