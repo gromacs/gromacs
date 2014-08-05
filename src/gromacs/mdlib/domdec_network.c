@@ -219,43 +219,56 @@ void dd_sendrecv2_rvec(const gmx_domdec_t gmx_unused *dd,
 void dd_bcast(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *data)
 {
 #ifdef GMX_MPI
-#ifdef GMX_BLUEGENE
-    if (nbytes > 0)
+    if (dd->nnodes > 1)
     {
-#endif
-    MPI_Bcast(data, nbytes, MPI_BYTE,
-              DDMASTERRANK(dd), dd->mpi_comm_all);
 #ifdef GMX_BLUEGENE
-}
+        if (nbytes > 0)
+        {
 #endif
+            MPI_Bcast(data, nbytes, MPI_BYTE,
+                      DDMASTERRANK(dd), dd->mpi_comm_all);
+#ifdef GMX_BLUEGENE
+        }
+#endif
+    }
 #endif
 }
 
 void dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
 {
-    if (DDMASTER(dd))
+    if (DDMASTER(dd) || dd->nnodes == 1)
     {
         memcpy(dest, src, nbytes);
     }
 #ifdef GMX_MPI
-#ifdef GMX_BLUEGENE
-    if (nbytes > 0)
+    if (dd->nnodes > 1)
     {
-#endif
-    MPI_Bcast(dest, nbytes, MPI_BYTE,
-              DDMASTERRANK(dd), dd->mpi_comm_all);
 #ifdef GMX_BLUEGENE
-}
+        if (nbytes > 0)
+        {
 #endif
+            MPI_Bcast(dest, nbytes, MPI_BYTE,
+                      DDMASTERRANK(dd), dd->mpi_comm_all);
+#ifdef GMX_BLUEGENE
+        }
+#endif
+    }
 #endif
 }
 
 void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *src, void gmx_unused *dest)
 {
 #ifdef GMX_MPI
-    MPI_Scatter(src, nbytes, MPI_BYTE,
-                dest, nbytes, MPI_BYTE,
-                DDMASTERRANK(dd), dd->mpi_comm_all);
+    if (dd->nnodes > 1)
+    {
+        MPI_Scatter(src, nbytes, MPI_BYTE,
+                    dest, nbytes, MPI_BYTE,
+                    DDMASTERRANK(dd), dd->mpi_comm_all);
+    }
+    else
+    {
+        memcpy(dest, src, nbytes);
+    }
 #endif
 }
 
@@ -275,14 +288,21 @@ void dd_scatterv(gmx_domdec_t gmx_unused *dd,
 #ifdef GMX_MPI
     int dum;
 
-    if (rcount == 0)
+    if (dd->nnodes > 1)
     {
-        /* MPI does not allow NULL pointers */
-        rbuf = &dum;
+        if (rcount == 0)
+        {
+            /* MPI does not allow NULL pointers */
+            rbuf = &dum;
+        }
+        MPI_Scatterv(sbuf, scounts, disps, MPI_BYTE,
+                     rbuf, rcount, MPI_BYTE,
+                     DDMASTERRANK(dd), dd->mpi_comm_all);
     }
-    MPI_Scatterv(sbuf, scounts, disps, MPI_BYTE,
-                 rbuf, rcount, MPI_BYTE,
-                 DDMASTERRANK(dd), dd->mpi_comm_all);
+    else
+    {
+        memcpy(rbuf, sbuf, rcount);
+    }
 #endif
 }
 
