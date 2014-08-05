@@ -38,19 +38,22 @@ option(REGRESSIONTEST_DOWNLOAD
     "Automatically download regressiontests. Tests can be run with ctest." OFF)
 
 if(REGRESSIONTEST_DOWNLOAD)
+    set(REGRESSIONTEST_FILE "${CMAKE_CURRENT_BINARY_DIR}/regressiontests.tgz")
     if("${PROJECT_VERSION}" MATCHES "-dev")
-      set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/${REGRESSIONTEST_BRANCH})
-      set(REGRESSIONTEST_PATH "${CMAKE_CURRENT_BINARY_DIR}/regressiontests"
-           CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+        set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/${REGRESSIONTEST_BRANCH})
+        set(REGRESSIONTEST_PATH "${CMAKE_CURRENT_BINARY_DIR}/regressiontests"
+            CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+        message("Downloading: ${REGRESSIONTEST_URL}")
+        file(DOWNLOAD ${REGRESSIONTEST_URL} "${REGRESSIONTEST_FILE}" SHOW_PROGRESS STATUS status LOG log)
     else()
         set(REGRESSIONTEST_URL http://gerrit.gromacs.org/download/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
         set(REGRESSIONTEST_PATH
-           "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"
-           CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+            "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"
+            CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+        message("Downloading: ${REGRESSIONTEST_URL}")
+        file(DOWNLOAD ${REGRESSIONTEST_URL} "${REGRESSIONTEST_FILE}" SHOW_PROGRESS STATUS status LOG log 
+             EXPECTED_MD5 ${REGRESSIONTEST_MD5SUM})
     endif()
-    set(REGRESSIONTEST_FILE "${CMAKE_CURRENT_BINARY_DIR}/regressiontests.tgz")
-    message("Downloading: ${REGRESSIONTEST_URL}")
-    file(DOWNLOAD ${REGRESSIONTEST_URL} "${REGRESSIONTEST_FILE}" SHOW_PROGRESS STATUS status LOG log)
     list(GET status 0 status_code)
     list(GET status 1 status_string)
 
