@@ -246,7 +246,7 @@ void bcast_state(const t_commrec *cr, t_state *state)
     int      i, nnht, nnhtp;
     gmx_bool bAlloc;
 
-    if (!PAR(cr))
+    if (!PAR(cr) || (cr->nnodes - cr->npmenodes <= 1))
     {
         return;
     }
