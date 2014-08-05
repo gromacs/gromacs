@@ -64,6 +64,9 @@ set(PROJECT_VERSION "5.0.1-dev")
 # number of the regressiontest tarball against which the code tarball
 # can be tested. This will be the version of the last patch release.
 set(REGRESSIONTEST_VERSION "5.0.1-dev")
+# The MD5 checksum of the regressiontest tarball. Only used if "-dev"
+# is not present in the PROJECT_VERSION
+set(REGRESSIONTEST_MD5SUM "a07524afebca5013540d4f2f72df2dce")
 # If this is not a released tarball, "-dev" will be present in
 # PROJECT_VERSION, and REGRESSIONTEST_BRANCH specifies the name of the
 # gerrit.gromacs.org branch whose HEAD can test this code, *if* this
