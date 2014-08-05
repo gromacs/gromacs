@@ -478,6 +478,11 @@ static const ivec dd_zp2[dd_zp2n] = {{0, 0, 4}, {1, 3, 4}};
 #define dd_zp1n 1
 static const ivec dd_zp1[dd_zp1n] = {{0, 0, 2}};
 
+/* The 0D setup */
+#define dd_z0n  1
+#define dd_zp0n 1
+static const ivec dd_zp0[dd_zp0n] = {{0, 0, 1}};
+
 /* Factors used to avoid problems due to rounding issues */
 #define DD_CELL_MARGIN       1.0001
 #define DD_CELL_MARGIN2      1.00005
@@ -5262,6 +5267,13 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 
     bSepPME = (dd->pme_nodeid >= 0);
 
+    if (dd->ndim == 0 && bSepPME)
+    {
+        /* Without decomposition, but with PME nodes, we need the load */
+        comm->load[0].mdf = comm->cycl[ddCyclPPduringPME];
+        comm->load[0].pme = comm->cycl[ddCyclPME];
+    }
+
     for (d = dd->ndim-1; d >= 0; d--)
     {
         dim = dd->dim[d];
@@ -5440,7 +5452,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
 {
     char               buf[STRLEN];
     int                npp, npme, nnodes, d, limp;
-    float              imbal, pme_f_ratio, lossf, lossp = 0;
+    float              imbal, pme_f_ratio, lossf = 0, lossp = 0;
     gmx_bool           bLim;
     gmx_domdec_comm_t *comm;
 
@@ -5450,15 +5462,18 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         npp    = dd->nnodes;
         npme   = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
         nnodes = npp + npme;
-        imbal  = comm->load_max*npp/comm->load_sum - 1;
-        lossf  = dd_force_imb_perf_loss(dd);
-        sprintf(buf, " Average load imbalance: %.1f %%\n", imbal*100);
-        fprintf(fplog, "%s", buf);
-        fprintf(stderr, "\n");
-        fprintf(stderr, "%s", buf);
-        sprintf(buf, " Part of the total run time spent waiting due to load imbalance: %.1f %%\n", lossf*100);
-        fprintf(fplog, "%s", buf);
-        fprintf(stderr, "%s", buf);
+        if (dd->nnodes > 1)
+        {
+            imbal  = comm->load_max*npp/comm->load_sum - 1;
+            lossf  = dd_force_imb_perf_loss(dd);
+            sprintf(buf, " Average load imbalance: %.1f %%\n", imbal*100);
+            fprintf(fplog, "%s", buf);
+            fprintf(stderr, "\n");
+            fprintf(stderr, "%s", buf);
+            sprintf(buf, " Part of the total run time spent waiting due to load imbalance: %.1f %%\n", lossf*100);
+            fprintf(fplog, "%s", buf);
+            fprintf(stderr, "%s", buf);
+        }
         bLim = FALSE;
         if (comm->bDynLoadBal)
         {
@@ -5583,7 +5598,10 @@ static void dd_print_load(FILE *fplog, gmx_domdec_t *dd, gmx_int64_t step)
         fprintf(fplog, "  vol min/aver %5.3f%c",
                 dd_vol_min(dd), flags ? '!' : ' ');
     }
-    fprintf(fplog, " load imb.: force %4.1f%%", dd_f_imbal(dd)*100);
+    if (dd->nnodes > 1)
+    {
+        fprintf(fplog, " load imb.: force %4.1f%%", dd_f_imbal(dd)*100);
+    }
     if (dd->comm->cycl_n[ddCyclPME])
     {
         fprintf(fplog, "  pme mesh/force %5.3f", dd_pme_f_ratio(dd));
@@ -5598,7 +5616,10 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
         fprintf(stderr, "vol %4.2f%c ",
                 dd_vol_min(dd), dd_load_flags(dd) ? '!' : ' ');
     }
-    fprintf(stderr, "imb F %2d%% ", (int)(dd_f_imbal(dd)*100+0.5));
+    if (dd->nnodes > 1)
+    {
+        fprintf(stderr, "imb F %2d%% ", (int)(dd_f_imbal(dd)*100+0.5));
+    }
     if (dd->comm->cycl_n[ddCyclPME])
     {
         fprintf(stderr, "pme/F %4.2f ", dd_pme_f_ratio(dd));
@@ -5731,8 +5752,13 @@ static void make_load_communicators(gmx_domdec_t gmx_unused *dd)
         fprintf(debug, "Making load communicators\n");
     }
 
-    snew(dd->comm->load, dd->ndim);
-    snew(dd->comm->mpi_comm_load, dd->ndim);
+    snew(dd->comm->load,          std::max(dd->ndim, 1));
+    snew(dd->comm->mpi_comm_load, std::max(dd->ndim, 1));
+
+    if (dd->ndim == 0)
+    {
+        return;
+    }
 
     clear_ivec(loc);
     make_load_communicator(dd, 0, loc);
@@ -5825,6 +5851,14 @@ void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd)
             for (i = 0; i < nzonep; i++)
             {
                 copy_ivec(dd_zp1[i], dd_zp[i]);
+            }
+            break;
+        case 0:
+            nzone  = dd_z0n;
+            nzonep = dd_zp0n;
+            for (i = 0; i < nzonep; i++)
+            {
+                copy_ivec(dd_zp0[i], dd_zp[i]);
             }
             break;
         default:
