@@ -721,11 +721,6 @@ real dd_choose_grid(FILE *fplog,
         {
             if (cr->npmenodes > 0)
             {
-                if (cr->nnodes <= 2)
-                {
-                    gmx_fatal(FARGS,
-                              "Cannot have separate PME ranks with 2 or fewer ranks");
-                }
                 if (cr->npmenodes >= cr->nnodes)
                 {
                     gmx_fatal(FARGS,
