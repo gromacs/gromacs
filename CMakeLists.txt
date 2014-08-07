@@ -307,6 +307,10 @@ option(GMX_BUILD_FOR_COVERAGE
        OFF)
 mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
+option(GMX_DEVELOPER_BUILD
+    "Enable Developer convenience features: always build unit-tests"
+    OFF)
+mark_as_advanced(GMX_DEVELOPER_BUILD)
 
 ######################################################################
 # Detect OpenMP support
