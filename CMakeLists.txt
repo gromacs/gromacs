@@ -307,6 +307,10 @@ option(GMX_BUILD_FOR_COVERAGE
        OFF)
 mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
+option(GMX_DEVELOPER_BUILD
+    "Enable Developer convience features: always build unit-tests"
+    OFF)
+mark_as_advanced(GMX_DEVELOPER_BUILD)
 
 ######################################################################
 # Detect OpenMP support
@@ -893,6 +897,10 @@ if (GMX_BUILD_FOR_COVERAGE)
     # be triggered by using an API against its specification isn't usually
     # worth the effort.
     add_definitions(-DNDEBUG -DBOOST_DISABLE_ASSERTS -DGMX_DISABLE_ASSERTS)
+endif()
+
+if(NOT GMX_DEVELOPER_BUILD)
+    set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
 endif()
 
 if (BUILD_TESTING)
