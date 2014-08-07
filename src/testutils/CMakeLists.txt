@@ -36,7 +36,7 @@ include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
 include_directories(${LIBXML2_INCLUDE_DIR})
 file(GLOB TESTUTILS_SOURCES *.cpp)
 
-add_library(testutils STATIC ${TESTUTILS_SOURCES})
+add_library(testutils STATIC EXCLUDE_FROM_ALL ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
 set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
 target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
