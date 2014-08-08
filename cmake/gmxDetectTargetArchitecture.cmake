@@ -53,4 +53,11 @@ function(gmx_detect_target_architecture)
         try_compile(GMX_TARGET_MIC ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestMIC.c")
     endif()
+
+    if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+        set(GMX_64BIT_BUILD 1 CACHE INTERNAL "Build 64-bit binary (64 bit pointers)" FORCE)
+    else()
+        set(GMX_64BIT_BUILD 0 CACHE INTERNAL "Build 64-bit binary (64 bit pointers)" FORCE)
+    endif()
+
 endfunction()

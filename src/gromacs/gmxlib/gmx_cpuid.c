@@ -294,7 +294,9 @@ execute_x86cpuid(unsigned int   level,
     *ebx = 0;
     *edx = 0;
 #if defined(__i386__) && defined(__PIC__)
-    /* Avoid clobbering the global offset table in 32-bit pic code (ebx register) */
+    /* Avoid clobbering the global offset table in i386 32-bit pic code (ebx register).
+     * Note that x32 uses the x86-64 conventions, so there we can clobber ebx.
+     */
     __asm__ __volatile__ ("xchgl %%ebx, %1  \n\t"
                           "cpuid            \n\t"
                           "xchgl %%ebx, %1  \n\t"

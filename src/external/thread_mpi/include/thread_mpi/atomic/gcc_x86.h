@@ -97,6 +97,9 @@ typedef struct tMPI_Spinlock
    which didn't have cmpxchg, etc (they were introduced as only as 'recently'
    as the 486, and gcc on some Linux versions still target 80386 by default).
 
+   Technically __x86_64__ is set for x32 too (which is a 32-bit build), but
+   that cannot happen on 80386.
+
    We also specifically check for icc, because intrinsics are not always
    supported there.
 
@@ -162,13 +165,14 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                                       void              *newval)
 {
     void* prev;
-#ifndef __x86_64__
-    __asm__ __volatile__("lock ; cmpxchgl %1,%2"
+    /* We need this detection to work already in CMake, where GMX_64BIT_BUILD is not yet set */
+#if defined __x86_64__
+    __asm__ __volatile__("lock ; cmpxchgq %1,%2"
                          : "=a" (prev)
                          : "q" (newval), "m" (a->value), "0" (oldval)
                          : "memory");
 #else
-    __asm__ __volatile__("lock ; cmpxchgq %1,%2"
+    __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a" (prev)
                          : "q" (newval), "m" (a->value), "0" (oldval)
                          : "memory");
@@ -194,14 +198,14 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     void *volatile *ret = (void* volatile*)b;
-#ifndef __LP64__
-    __asm__ __volatile__("\txchgl %0, %1;"
+    /* We need this detection to work already in CMake, where GMX_64BIT_BUILD is not yet set */
+#if defined(__LP64__)
+    __asm__ __volatile__("\txchgq %0, %1;"
                          : "+r" (ret), "+m" (a->value)
                          :
                          : "memory");
-
 #else
-    __asm__ __volatile__("\txchgq %0, %1;"
+    __asm__ __volatile__("\txchgl %0, %1;"
                          : "+r" (ret), "+m" (a->value)
                          :
                          : "memory");
