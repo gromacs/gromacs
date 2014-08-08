@@ -38,6 +38,7 @@
 
 
 #include <limits.h>
+#define __STDC_LIMIT_MACROS
 #include <stdint.h>
 /* This code is executed for x86 and x86-64, with these compilers:
  * GNU
@@ -162,16 +163,18 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                                       void              *newval)
 {
     void* prev;
-#ifndef __x86_64__
+#if defined(UINTPTR_MAX) && defined(UINT32_MAX) && (UINTPTR_MAX==UINT32_MAX)
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a" (prev)
                          : "q" (newval), "m" (a->value), "0" (oldval)
                          : "memory");
-#else
+#elif defined(UINTPTR_MAX) && defined(UINT32_MAX) && (UINTPTR_MAX>UINT32_MAX)
     __asm__ __volatile__("lock ; cmpxchgq %1,%2"
                          : "=a" (prev)
                          : "q" (newval), "m" (a->value), "0" (oldval)
                          : "memory");
+#else
+#    error Cannot detect whether this is a 32-bit or 64-bit x86 build.
 #endif
     return prev == oldval;
 }
@@ -194,17 +197,18 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     void *volatile *ret = (void* volatile*)b;
-#ifndef __LP64__
+#if defined(UINTPTR_MAX) && defined(UINT32_MAX) && (UINTPTR_MAX==UINT32_MAX)
     __asm__ __volatile__("\txchgl %0, %1;"
                          : "+r" (ret), "+m" (a->value)
                          :
                          : "memory");
-
-#else
+#elif defined(UINTPTR_MAX) && defined(UINT32_MAX) && (UINTPTR_MAX>UINT32_MAX)
     __asm__ __volatile__("\txchgq %0, %1;"
                          : "+r" (ret), "+m" (a->value)
                          :
                          : "memory");
+#else
+#    error Cannot detect whether this is a 32-bit or 64-bit x86 build.
 #endif
     return (void*)ret;
 }
