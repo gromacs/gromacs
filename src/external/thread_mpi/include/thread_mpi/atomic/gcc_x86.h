@@ -162,7 +162,7 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                                       void              *newval)
 {
     void* prev;
-#ifndef __x86_64__
+#if (UINTPTR_MAX==UINT32_MAX)
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a" (prev)
                          : "q" (newval), "m" (a->value), "0" (oldval)
@@ -194,12 +194,11 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     void *volatile *ret = (void* volatile*)b;
-#ifndef __LP64__
+#if (UINTPTR_MAX==UINT32_MAX)
     __asm__ __volatile__("\txchgl %0, %1;"
                          : "+r" (ret), "+m" (a->value)
                          :
                          : "memory");
-
 #else
     __asm__ __volatile__("\txchgq %0, %1;"
                          : "+r" (ret), "+m" (a->value)
