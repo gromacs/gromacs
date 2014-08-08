@@ -37,6 +37,7 @@
 
 include(gmxGetGmockTupleWorkaround)
 get_gmock_tuple_workaround(GMOCK_COMPILE_DEFINITIONS)
+set(GMOCK_COMPILE_DEFINITIONS "_GNU_SOURCE=1;${GMOCK_COMPILE_DEFINITIONS}")
 set(GMOCK_COMPILE_DEFINITIONS ${GMOCK_COMPILE_DEFINITIONS} PARENT_SCOPE)
 
 # GTest/GMock suggest linking with pthreads when available for thread safety
