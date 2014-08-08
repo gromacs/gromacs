@@ -139,6 +139,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultipointModules)
     EXPECT_NO_THROW_GMX(data.addModule(mod2));
 }
 
+#ifdef GTEST_HAS_TYPED_TEST
 
 /********************************************************************
  * Input data for tests below.
@@ -445,5 +446,16 @@ TYPED_TEST(AnalysisDataCommonTest, LimitedStorageWorks)
     ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticStorageCheckerModule(1));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
 }
+
+#else
+
+TEST(DISABLED_AnalysisDataCommonTest, GenericTests)
+{
+    ADD_FAILURE()
+    << "Tests for generic AnalysisData functionality require support for "
+    << "Google Test typed tests."
+}
+
+#endif
 
 } // namespace
