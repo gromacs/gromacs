@@ -293,7 +293,7 @@ execute_x86cpuid(unsigned int   level,
     *ecx = ecxval;
     *ebx = 0;
     *edx = 0;
-#if defined(__i386__) && defined(__PIC__)
+#if !defined(GMX_64BIT_BUILD) && defined(__PIC__)
     /* Avoid clobbering the global offset table in 32-bit pic code (ebx register) */
     __asm__ __volatile__ ("xchgl %%ebx, %1  \n\t"
                           "cpuid            \n\t"

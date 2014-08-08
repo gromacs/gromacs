@@ -147,10 +147,12 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
 
     __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
     __eieio();
-#if (!defined (__LP64__) ) && (!defined(__powerpc64__) )
-    ret = __compare_and_swap((int *)&(a->value), (int*)&oldv, (int)newv);
-#else
+    /* We need this detection to work already in CMake, where GMX_64BIT_BUILD is not yet set */
+#if defined(GMX_64BIT_BUILD) || defined(__LP64__) || defined(__LLP64__) || \
+    (defined(__LONG_MAX__) && (__LONG_MAX__==9223372036854775807L))
     ret = __compare_and_swaplp((long *)&(a->value), (long*)&oldv, (long)newv);
+#else
+    ret = __compare_and_swap((int *)&(a->value), (int*)&oldv, (int)newv);
 #endif
     __isync();
     __fence();

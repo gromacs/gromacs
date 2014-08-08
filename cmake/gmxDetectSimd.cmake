@@ -51,21 +51,25 @@ include(gmxTestInlineASM)
 
 function(gmx_suggest_x86_simd _suggested_simd)
 
+    set(_compile_definitions "-DGMX_CPUID_STANDALONE -I${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders")
+    
+    # Get CPU SIMD properties information
+    if(GMX_TARGET_X86)
+        set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
+    endif()
+    
     gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
-
     if(GMX_X86_GCC_INLINE_ASM)
-        set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM")
-    else()
-        set(GCC_INLINE_ASM_DEFINE "")
+        set(_compile_definitions "${_compile_definitions} -DGMX_X86_GCC_INLINE_ASM")
+    endif()
+
+    # Check if we are doing a 64-bit build
+    if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+        set(_compile_definitions "${_compile_definitions} -DGMX_64BIT_BUILD")
     endif()
 
     message(STATUS "Detecting best SIMD instructions for this CPU")
 
-    # Get CPU SIMD properties information
-    set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders -DGMX_CPUID_STANDALONE")
-    if(GMX_TARGET_X86)
-        set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
-    endif()
     try_run(GMX_CPUID_RUN_SIMD GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
