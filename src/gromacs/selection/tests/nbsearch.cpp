@@ -52,11 +52,13 @@
 
 #include <algorithm>
 #include <limits>
+#include <numeric>
 #include <vector>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/testasserts.h"
@@ -74,7 +76,8 @@ class NeighborhoodSearchTestData
         struct RefPair
         {
             RefPair(int refIndex, real distance)
-                : refIndex(refIndex), distance(distance), bFound(false)
+                : refIndex(refIndex), distance(distance), bFound(false),
+                  bExcluded(false)
             {
             }
 
@@ -85,7 +88,12 @@ class NeighborhoodSearchTestData
 
             int                 refIndex;
             real                distance;
+            // The variables below are state variables that are only used
+            // during the actual testing after creating a copy of the reference
+            // pair list, not as part of the reference data.
+            // Simpler to have just a single structure for both purposes.
             bool                bFound;
+            bool                bExcluded;
         };
 
         struct TestPosition
@@ -279,6 +287,105 @@ void NeighborhoodSearchTestData::computeReferencesInternal(t_pbc *pbc, bool bXY)
 }
 
 /********************************************************************
+ * ExclusionsHelper
+ */
+
+class ExclusionsHelper
+{
+    public:
+        static void markExcludedPairs(RefPairList *refPairs, int testIndex,
+                                      const t_blocka *excls);
+
+        ExclusionsHelper(int refPosCount, int testPosCount);
+
+        void generateExclusions();
+
+        const t_blocka *exclusions() const { return &excls_; }
+
+        gmx::ConstArrayRef<int> refPosIds() const
+        {
+            return gmx::ConstArrayRef<int>(exclusionIds_.begin(),
+                                           exclusionIds_.begin() + refPosCount_);
+        }
+        gmx::ConstArrayRef<int> testPosIds() const
+        {
+            return gmx::ConstArrayRef<int>(exclusionIds_.begin(),
+                                           exclusionIds_.begin() + testPosCount_);
+        }
+
+    private:
+        int              refPosCount_;
+        int              testPosCount_;
+        std::vector<int> exclusionIds_;
+        std::vector<int> exclsIndex_;
+        std::vector<int> exclsAtoms_;
+        t_blocka         excls_;
+};
+
+// static
+void ExclusionsHelper::markExcludedPairs(RefPairList *refPairs, int testIndex,
+                                         const t_blocka *excls)
+{
+    int count = 0;
+    for (int i = excls->index[testIndex]; i < excls->index[testIndex + 1]; ++i)
+    {
+        const int                           excludedIndex = excls->a[i];
+        NeighborhoodSearchTestData::RefPair searchPair(excludedIndex, 0.0);
+        RefPairList::iterator               excludedRefPair
+            = std::lower_bound(refPairs->begin(), refPairs->end(), searchPair);
+        if (excludedRefPair != refPairs->end()
+            && excludedRefPair->refIndex == excludedIndex)
+        {
+            excludedRefPair->bFound    = true;
+            excludedRefPair->bExcluded = true;
+            ++count;
+        }
+    }
+}
+
+ExclusionsHelper::ExclusionsHelper(int refPosCount, int testPosCount)
+    : refPosCount_(refPosCount), testPosCount_(testPosCount)
+{
+    // Generate an array of 0, 1, 2, ...
+    // TODO: Make the tests work also with non-trivial exclusion IDs,
+    // and test that.
+    exclusionIds_.resize(std::max(refPosCount, testPosCount), 1);
+    exclusionIds_[0] = 0;
+    std::partial_sum(exclusionIds_.begin(), exclusionIds_.end(),
+                     exclusionIds_.begin());
+
+    excls_.nr           = 0;
+    excls_.index        = NULL;
+    excls_.nra          = 0;
+    excls_.a            = NULL;
+    excls_.nalloc_index = 0;
+    excls_.nalloc_a     = 0;
+}
+
+void ExclusionsHelper::generateExclusions()
+{
+    // TODO: Consider a better set of test data, where the density of the
+    // particles would be higher, or where the exclusions would not be random,
+    // to make a higher percentage of the exclusions to actually be within the
+    // cutoff.
+    exclsIndex_.reserve(testPosCount_ + 1);
+    exclsAtoms_.reserve(testPosCount_ * 20);
+    exclsIndex_.push_back(0);
+    for (int i = 0; i < testPosCount_; ++i)
+    {
+        for (int j = 0; j < 20; ++j)
+        {
+            exclsAtoms_.push_back(i + j*3);
+        }
+        exclsIndex_.push_back(exclsAtoms_.size());
+    }
+    excls_.nr    = exclsIndex_.size();
+    excls_.index = &exclsIndex_[0];
+    excls_.nra   = exclsAtoms_.size();
+    excls_.a     = &exclsAtoms_[0];
+}
+
+/********************************************************************
  * NeighborhoodSearchTest
  */
 
@@ -293,6 +400,10 @@ class NeighborhoodSearchTest : public ::testing::Test
                               const NeighborhoodSearchTestData &data);
         void testPairSearch(gmx::AnalysisNeighborhoodSearch  *search,
                             const NeighborhoodSearchTestData &data);
+        void testPairSearchFull(gmx::AnalysisNeighborhoodSearch          *search,
+                                const NeighborhoodSearchTestData         &data,
+                                const gmx::AnalysisNeighborhoodPositions &pos,
+                                const t_blocka                           *excls);
 
         gmx::AnalysisNeighborhood        nb_;
 };
@@ -345,57 +456,118 @@ void NeighborhoodSearchTest::testNearestPoint(
     }
 }
 
+/*! \brief
+ * Helper function to check that all expected pairs were found.
+ */
+static void checkAllPairsFound(const RefPairList &refPairs)
+{
+    // This could be elegantly expressed with Google Mock matchers, but that
+    // has a significant effect on the runtime of the tests...
+    for (RefPairList::const_iterator i = refPairs.begin(); i != refPairs.end(); ++i)
+    {
+        if (!i->bFound)
+        {
+            ADD_FAILURE()
+            << "Some pairs within the cutoff were not found.";
+            break;
+        }
+    }
+}
+
 void NeighborhoodSearchTest::testPairSearch(
         gmx::AnalysisNeighborhoodSearch  *search,
         const NeighborhoodSearchTestData &data)
 {
-    NeighborhoodSearchTestData::TestPositionList::const_iterator i;
-    // TODO: Test also searching all the test positions in a single search;
-    // currently the implementation just contains this loop, though, but in
-    // the future that may trigger a different code path.
-    for (i = data.testPositions_.begin(); i != data.testPositions_.end(); ++i)
+    testPairSearchFull(search, data, data.testPositions(), NULL);
+}
+
+void NeighborhoodSearchTest::testPairSearchFull(
+        gmx::AnalysisNeighborhoodSearch          *search,
+        const NeighborhoodSearchTestData         &data,
+        const gmx::AnalysisNeighborhoodPositions &pos,
+        const t_blocka                           *excls)
+{
+    // TODO: Some parts of this code do not work properly if pos does not
+    // contain all the test positions.
+    std::set<int> remainingTestPositions;
+    for (size_t i = 0; i < data.testPositions_.size(); ++i)
     {
-        RefPairList                         refPairs = i->refPairs;
-        gmx::AnalysisNeighborhoodPairSearch pairSearch
-            = search->startPairSearch(i->x);
-        gmx::AnalysisNeighborhoodPair       pair;
-        while (pairSearch.findNextPair(&pair))
+        remainingTestPositions.insert(i);
+    }
+    gmx::AnalysisNeighborhoodPairSearch pairSearch
+        = search->startPairSearch(pos);
+    gmx::AnalysisNeighborhoodPair       pair;
+    // TODO: There is an ordering assumption here that may break in the future:
+    // all pairs for a test position are assumed to be returned consencutively.
+    RefPairList refPairs;
+    int         prevTestPos = -1;
+    while (pairSearch.findNextPair(&pair))
+    {
+        if (pair.testIndex() != prevTestPos)
         {
-            EXPECT_EQ(0, pair.testIndex());
-            NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(),
-                                                           sqrt(pair.distance2()));
-            RefPairList::iterator               foundRefPair
-                = std::lower_bound(refPairs.begin(), refPairs.end(), searchPair);
-            if (foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex())
+            if (prevTestPos != -1)
+            {
+                checkAllPairsFound(refPairs);
+            }
+            const int testIndex = pair.testIndex();
+            if (remainingTestPositions.count(testIndex) == 0)
             {
                 ADD_FAILURE()
-                << "Expected: Position " << pair.refIndex()
-                << " is within cutoff.\n"
-                << "  Actual: It is not.";
+                << "Pairs for test position " << testIndex
+                << " are returned more than once.";
             }
-            else if (foundRefPair->bFound)
+            remainingTestPositions.erase(testIndex);
+            refPairs = data.testPositions_[testIndex].refPairs;
+            if (excls != NULL)
             {
-                ADD_FAILURE()
-                << "Expected: Position " << pair.refIndex()
-                << " is returned only once.\n"
-                << "  Actual: It is returned multiple times.";
+                ExclusionsHelper::markExcludedPairs(&refPairs, testIndex, excls);
             }
-            else
-            {
-                foundRefPair->bFound = true;
-                EXPECT_REAL_EQ_TOL(foundRefPair->distance, searchPair.distance,
-                                   gmx::test::ulpTolerance(64));
-            }
+            prevTestPos = testIndex;
         }
-        for (RefPairList::const_iterator j = refPairs.begin(); j != refPairs.end(); ++j)
+
+        NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(),
+                                                       sqrt(pair.distance2()));
+        RefPairList::iterator               foundRefPair
+            = std::lower_bound(refPairs.begin(), refPairs.end(), searchPair);
+        if (foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex())
         {
-            if (!j->bFound)
-            {
-                ADD_FAILURE()
-                << "Expected: All pairs within cutoff will be returned.\n"
-                << "  Actual: Position " << j->refIndex << " is not found.";
-                break;
-            }
+            ADD_FAILURE()
+            << "Expected: Pair (ref: " << pair.refIndex() << ", test: "
+            << pair.testIndex() << ") is not within the cutoff.\n"
+            << "  Actual: It is returned.";
+        }
+        else if (foundRefPair->bExcluded)
+        {
+            ADD_FAILURE()
+            << "Expected: Pair (ref: " << pair.refIndex() << ", test: "
+            << pair.testIndex() << ") is excluded from the search.\n"
+            << "  Actual: It is returned.";
+        }
+        else if (foundRefPair->bFound)
+        {
+            ADD_FAILURE()
+            << "Expected: Pair (ref: " << pair.refIndex() << ", test: "
+            << pair.testIndex() << ") is returned only once.\n"
+            << "  Actual: It is returned multiple times.";
+        }
+        else
+        {
+            foundRefPair->bFound = true;
+            EXPECT_REAL_EQ_TOL(foundRefPair->distance, searchPair.distance,
+                               gmx::test::ulpTolerance(64))
+            << "Distance computed by the neighborhood search does not match.";
+        }
+    }
+    checkAllPairsFound(refPairs);
+    for (std::set<int>::const_iterator i = remainingTestPositions.begin();
+         i != remainingTestPositions.end(); ++i)
+    {
+        if (!data.testPositions_[*i].refPairs.empty())
+        {
+            ADD_FAILURE()
+            << "Expected: Pairs would be returned for test position " << *i << ".\n"
+            << "  Actual: None were returned.";
+            break;
         }
     }
 }
@@ -637,14 +809,16 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
     testPairSearch(&search2, data);
 
     gmx::AnalysisNeighborhoodPair pair;
-    pairSearch1.findNextPair(&pair);
+    ASSERT_TRUE(pairSearch1.findNextPair(&pair))
+    << "Test data did not contain any pairs for position 0 (problem in the test).";
     EXPECT_EQ(0, pair.testIndex());
     {
         NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), sqrt(pair.distance2()));
         EXPECT_TRUE(data.containsPair(0, searchPair));
     }
 
-    pairSearch2.findNextPair(&pair);
+    ASSERT_TRUE(pairSearch2.findNextPair(&pair))
+    << "Test data did not contain any pairs for position 1 (problem in the test).";
     EXPECT_EQ(1, pair.testIndex());
     {
         NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), sqrt(pair.distance2()));
@@ -679,6 +853,46 @@ TEST_F(NeighborhoodSearchTest, HandlesSkippingPairs)
         pairSearch.skipRemainingPairsForTestPosition();
         ++currentIndex;
     }
+}
+
+TEST_F(NeighborhoodSearchTest, SimpleSearchExclusions)
+{
+    const NeighborhoodSearchTestData &data = RandomBoxFullPBCData::get();
+
+    ExclusionsHelper                  helper(data.refPosCount_, data.testPositions_.size());
+    helper.generateExclusions();
+
+    nb_.setCutoff(data.cutoff_);
+    nb_.setTopologyExclusions(helper.exclusions());
+    nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Simple);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(&data.pbc_,
+                       data.refPositions().exclusionIds(helper.refPosIds()));
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
+
+    testPairSearchFull(&search, data,
+                       data.testPositions().exclusionIds(helper.testPosIds()),
+                       helper.exclusions());
+}
+
+TEST_F(NeighborhoodSearchTest, GridSearchExclusions)
+{
+    const NeighborhoodSearchTestData &data = RandomBoxFullPBCData::get();
+
+    ExclusionsHelper                  helper(data.refPosCount_, data.testPositions_.size());
+    helper.generateExclusions();
+
+    nb_.setCutoff(data.cutoff_);
+    nb_.setTopologyExclusions(helper.exclusions());
+    nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Grid);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(&data.pbc_,
+                       data.refPositions().exclusionIds(helper.refPosIds()));
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
+
+    testPairSearchFull(&search, data,
+                       data.testPositions().exclusionIds(helper.testPosIds()),
+                       helper.exclusions());
 }
 
 } // namespace
