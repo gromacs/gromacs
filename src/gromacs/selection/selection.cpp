@@ -247,8 +247,13 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
 
 Selection::operator AnalysisNeighborhoodPositions() const
 {
-    return AnalysisNeighborhoodPositions(data().rawPositions_.x,
-                                         data().rawPositions_.count());
+    AnalysisNeighborhoodPositions pos(data().rawPositions_.x,
+                                      data().rawPositions_.count());
+    if (hasOnlyAtoms())
+    {
+        pos.exclusionIds(atomIndices());
+    }
+    return pos;
 }
 
 
@@ -347,9 +352,15 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
 
 SelectionPosition::operator AnalysisNeighborhoodPositions() const
 {
-    return AnalysisNeighborhoodPositions(sel_->rawPositions_.x,
-                                         sel_->rawPositions_.count())
-               .selectSingleFromArray(i_);
+    AnalysisNeighborhoodPositions pos(sel_->rawPositions_.x,
+                                      sel_->rawPositions_.count());
+    if (sel_->hasOnlyAtoms())
+    {
+        // TODO: Move atomIndices() such that it can be reused here as well.
+        pos.exclusionIds(ConstArrayRef<int>(sel_->rawPositions_.m.mapb.a,
+                                            sel_->rawPositions_.m.mapb.nra));
+    }
+    return pos.selectSingleFromArray(i_);
 }
 
 } // namespace gmx

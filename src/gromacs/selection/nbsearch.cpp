@@ -70,6 +70,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -102,11 +103,13 @@ class AnalysisNeighborhoodSearchImpl
          *
          * \param[in]     mode      Search mode to use.
          * \param[in]     bXY       Whether to use 2D searching.
+         * \param[in]     excls     Exclusions.
          * \param[in]     pbc       PBC information.
          * \param[in]     positions Set of reference positions.
          */
         void init(AnalysisNeighborhood::SearchMode     mode,
                   bool                                 bXY,
+                  const t_blocka                      *excls,
                   const t_pbc                         *pbc,
                   const AnalysisNeighborhoodPositions &positions);
         PairSearchImplPointer getPairSearch();
@@ -168,15 +171,12 @@ class AnalysisNeighborhoodSearchImpl
         int                     nref_;
         //! Reference point positions.
         const rvec             *xref_;
-        //! Reference position ids (NULL if not available).
-        const int              *refid_;
+        //! Reference position exclusion IDs.
+        const int              *refExclusionIds_;
+        //! Exclusions.
+        const t_blocka         *excls_;
         //! PBC data.
         t_pbc                   pbc_;
-
-        //! Number of excluded reference positions for current test particle.
-        int                     nexcl_;
-        //! Exclusions for current test particle.
-        int                    *excl_;
 
         //! Whether grid searching is actually used for the current positions.
         bool                    bGrid_;
@@ -217,6 +217,8 @@ class AnalysisNeighborhoodPairSearchImpl
         {
             clear_rvec(xtest_);
             clear_ivec(testcell_);
+            nexcl_ = 0;
+            excl_  = NULL;
             reset(-1);
         }
 
@@ -240,6 +242,12 @@ class AnalysisNeighborhoodPairSearchImpl
         const AnalysisNeighborhoodSearchImpl   &search_;
         //! Reference to the test positions.
         ConstArrayRef<rvec>                     testPositions_;
+        //! Reference to the test exclusion indices.
+        const int                              *testExclusionIds_;
+        //! Number of excluded reference positions for current test particle.
+        int                                     nexcl_;
+        //! Exclusions for current test particle.
+        const int                              *excl_;
         //! Index of the currently active test position in \p testPositions_.
         int                                     testIndex_;
         //! Stores test position during a pair loop.
@@ -276,13 +284,10 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     cutoff2_        = sqr(cutoff_);
     bXY_            = false;
 
-    nref_           = 0;
-    xref_           = NULL;
-    refid_          = NULL;
+    nref_            = 0;
+    xref_            = NULL;
+    refExclusionIds_ = NULL;
     std::memset(&pbc_, 0, sizeof(pbc_));
-
-    nexcl_          = 0;
-    excl_           = NULL;
 
     bGrid_          = false;
 
@@ -475,6 +480,7 @@ void AnalysisNeighborhoodSearchImpl::addToGridCell(const ivec cell, int i)
 void AnalysisNeighborhoodSearchImpl::init(
         AnalysisNeighborhood::SearchMode     mode,
         bool                                 bXY,
+        const t_blocka                      *excls,
         const t_pbc                         *pbc,
         const AnalysisNeighborhoodPositions &positions)
 {
@@ -545,29 +551,17 @@ void AnalysisNeighborhoodSearchImpl::init(
     {
         xref_ = positions.x_;
     }
-    // TODO: Once exclusions are supported, this may need to be initialized.
-    refid_ = NULL;
+    excls_           = excls;
+    refExclusionIds_ = NULL;
+    if (excls != NULL)
+    {
+        // TODO: Check that the IDs are ascending, or remove the limitation.
+        refExclusionIds_ = positions.exclusionIds_;
+        GMX_RELEASE_ASSERT(refExclusionIds_ != NULL,
+                           "Exclusion IDs must be set for reference positions "
+                           "when exclusions are enabled");
+    }
 }
-
-#if 0
-/*! \brief
- * Sets the exclusions for the next neighborhood search.
- *
- * \param[in,out] d     Neighborhood search data structure.
- * \param[in]     nexcl Number of reference positions to exclude from next
- *      search.
- * \param[in]     excl  Indices of reference positions to exclude.
- *
- * The set exclusions remain in effect until the next call of this function.
- */
-void
-gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t *d, int nexcl, int excl[])
-{
-
-    d->nexcl = nexcl;
-    d->excl  = excl;
-}
-#endif
 
 /********************************************************************
  * AnalysisNeighborhoodPairSearchImpl
@@ -585,6 +579,21 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
                                             const_cast<rvec *>(search_.pbc_.box),
                                             1, &xtest_);
             search_.mapPointToGridCell(xtest_, testcell_);
+        }
+        if (search_.excls_ != NULL)
+        {
+            const int exclIndex  = testExclusionIds_[testIndex];
+            if (exclIndex < search_.excls_->nr)
+            {
+                const int startIndex = search_.excls_->index[exclIndex];
+                nexcl_ = search_.excls_->index[exclIndex + 1] - startIndex;
+                excl_  = &search_.excls_->a[startIndex];
+            }
+            else
+            {
+                nexcl_ = 0;
+                excl_  = NULL;
+            }
         }
     }
     previ_     = -1;
@@ -605,34 +614,17 @@ void AnalysisNeighborhoodPairSearchImpl::nextTestPosition()
 
 bool AnalysisNeighborhoodPairSearchImpl::isExcluded(int j)
 {
-    if (exclind_ < search_.nexcl_)
+    if (exclind_ < nexcl_)
     {
-        if (search_.refid_)
+        const int refId = search_.refExclusionIds_[j];
+        while (exclind_ < nexcl_ && excl_[exclind_] < refId)
         {
-            while (exclind_ < search_.nexcl_
-                   && search_.excl_[exclind_] < search_.refid_[j])
-            {
-                ++exclind_;
-            }
-            if (exclind_ < search_.nexcl_
-                && search_.refid_[j] == search_.excl_[exclind_])
-            {
-                ++exclind_;
-                return true;
-            }
+            ++exclind_;
         }
-        else
+        if (exclind_ < nexcl_ && refId == excl_[exclind_])
         {
-            while (search_.bGrid_ && exclind_ < search_.nexcl_
-                   && search_.excl_[exclind_] < j)
-            {
-                ++exclind_;
-            }
-            if (search_.excl_[exclind_] == j)
-            {
-                ++exclind_;
-                return true;
-            }
+            ++exclind_;
+            return true;
         }
     }
     return false;
@@ -641,6 +633,9 @@ bool AnalysisNeighborhoodPairSearchImpl::isExcluded(int j)
 void AnalysisNeighborhoodPairSearchImpl::startSearch(
         const AnalysisNeighborhoodPositions &positions)
 {
+    testExclusionIds_ = positions.exclusionIds_;
+    GMX_RELEASE_ASSERT(search_.excls_ == NULL || testExclusionIds_ != NULL,
+                       "Exclusion IDs must be set when exclusions are enabled");
     if (positions.index_ < 0)
     {
         testPositions_ = ConstArrayRef<rvec>(positions.x_, positions.count_);
@@ -832,7 +827,7 @@ class AnalysisNeighborhood::Impl
         typedef AnalysisNeighborhoodSearch::ImplPointer SearchImplPointer;
         typedef std::vector<SearchImplPointer> SearchList;
 
-        Impl() : cutoff_(0), mode_(eSearchMode_Automatic), bXY_(false)
+        Impl() : cutoff_(0), excls_(NULL), mode_(eSearchMode_Automatic), bXY_(false)
         {
         }
         ~Impl()
@@ -850,6 +845,7 @@ class AnalysisNeighborhood::Impl
         tMPI::mutex             createSearchMutex_;
         SearchList              searchList_;
         real                    cutoff_;
+        const t_blocka         *excls_;
         SearchMode              mode_;
         bool                    bXY_;
 };
@@ -898,6 +894,13 @@ void AnalysisNeighborhood::setXYMode(bool bXY)
     impl_->bXY_ = bXY;
 }
 
+void AnalysisNeighborhood::setTopologyExclusions(const t_blocka *excls)
+{
+    GMX_RELEASE_ASSERT(impl_->searchList_.empty(),
+                       "Changing the exclusions after initSearch() not currently supported");
+    impl_->excls_ = excls;
+}
+
 void AnalysisNeighborhood::setMode(SearchMode mode)
 {
     impl_->mode_ = mode;
@@ -913,7 +916,7 @@ AnalysisNeighborhood::initSearch(const t_pbc                         *pbc,
                                  const AnalysisNeighborhoodPositions &positions)
 {
     Impl::SearchImplPointer search(impl_->getSearch());
-    search->init(mode(), impl_->bXY_, pbc, positions);
+    search->init(mode(), impl_->bXY_, impl_->excls_, pbc, positions);
     return AnalysisNeighborhoodSearch(search);
 }
 
