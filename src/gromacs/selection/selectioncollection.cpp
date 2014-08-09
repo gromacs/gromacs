@@ -775,7 +775,7 @@ SelectionCollection::compile()
         const internal::SelectionData &sel = **iter;
         if (sel.hasFlag(efSelection_OnlyAtoms))
         {
-            if (sel.type() != INDEX_ATOM)
+            if (!sel.hasOnlyAtoms())
             {
                 std::string message = formatString(
                             "Selection '%s' does not evaluate to individual atoms. "
