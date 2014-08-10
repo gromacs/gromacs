@@ -293,7 +293,9 @@ void TrajectoryAnalysisModule::optionsFinished(
 }
 
 
-void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe & /*fr*/)
+void TrajectoryAnalysisModule::initAfterFirstFrame(
+        const TrajectoryAnalysisSettings & /*settings*/,
+        const t_trxframe                 & /*fr*/)
 {
 }
 
