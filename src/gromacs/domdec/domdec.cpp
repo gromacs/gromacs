@@ -9857,7 +9857,7 @@ void dd_partition_system(FILE                *fplog,
     if (ir->bPull)
     {
         /* Update the local pull groups */
-        dd_make_local_pull_groups(dd, ir->pull, mdatoms);
+        dd_make_local_pull_groups(cr, ir->pull, mdatoms);
     }
 
     if (ir->bRot)
