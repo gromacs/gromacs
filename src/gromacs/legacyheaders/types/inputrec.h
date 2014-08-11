@@ -226,6 +226,8 @@ typedef struct {
 
     /* Variables not present in mdp, but used at run time */
     t_pull_group  *dyna;       /* dynamic groups for use with local constraints */
+    gmx_bool       bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
+
     rvec          *rbuf;       /* COM calculation buffer */
     dvec          *dbuf;       /* COM calculation buffer */
     double        *dbuf_cyl;   /* cylinder ref. groups COM calculation buffer */
