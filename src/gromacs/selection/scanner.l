@@ -63,6 +63,10 @@
 // this call.
 #define ADD_TOKEN _gmx_sel_lexer_add_token(yytext, yyleng, state)
 
+// Set YY_BREAK to an empty value to avoid warnings (for the PGI compiler)
+// when we have return statements followed by break. Instead, we add breaks
+// manually.
+#define YY_BREAK
 %}
 
 INTEGER    [[:digit:]]+
@@ -120,12 +124,12 @@ COMMENT    (#.*)
     }
 %}
 
-{COMMENT}
+{COMMENT}       break;
 {INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
 {REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 {STRING}        { yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
-\\\n            { _gmx_sel_lexer_add_token(" ", 1, state); }
+\\\n            { _gmx_sel_lexer_add_token(" ", 1, state); break; }
 ";"|\n          {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
@@ -137,6 +141,7 @@ COMMENT    (#.*)
                     {
                         _gmx_sel_lexer_add_token(" ", 1, state);
                     }
+                    break;
                 }
 
 <cmdstart><<EOF>> { state->bCmdStart = true; yyterminate(); }
@@ -157,6 +162,6 @@ not|"!"         { ADD_TOKEN; return NOT; }
 
 {IDENTIFIER}    { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
 
-[[:space:]]+    { _gmx_sel_lexer_add_token(" ", 1, state); }
+[[:space:]]+    { _gmx_sel_lexer_add_token(" ", 1, state); break; }
 [_[:alnum:]]+   { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 .               { ADD_TOKEN; return yytext[0]; }

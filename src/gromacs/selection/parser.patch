@@ -1,0 +1,11 @@
+--- parser.cpp 2014-08-11 22:24:31.000000000 +0200
++++ parser.cpp 2014-08-11 22:24:40.000000000 +0200
+@@ -963,7 +963,7 @@
+     void *scanner;
+ #endif
+ {
+-  FILE *yyo = yyoutput;
++  FILE *yyo gmx_unused = yyoutput;
+   YYUSE (yyo);
+   if (!yyvaluep)
+     return;

@@ -340,7 +340,7 @@ extern int _gmx_sel_yylex (yyscan_t yyscanner);
 #undef YY_DECL
 #endif
 
-#line 163 "scanner.l"
+#line 168 "scanner.l"
 
 #line 346 "scanner_flex.h"
 #undef _gmx_sel_yyIN_HEADER
