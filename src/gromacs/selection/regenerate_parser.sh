@@ -6,6 +6,10 @@
 # The commands are run only if the generated files are older than the
 # Bison/Flex input files, or if a '-f' flag is provided.
 
+# Note: You can check parser.cpp/scanner.cpp for the exact versions of
+# bison/flex that were used in the generation. Some OSs have older versions
+# of these tools installed.
+
 FORCE=
 if [ "x$1" == "x-f" ] ; then
     FORCE=1
@@ -25,5 +29,7 @@ if [[ -f $dirname/parser.y && -f $dirname/scanner.l ]] ; then
     cd $dirname
 fi
 
-[[ $FORCE || parser.y  -nt parser.cpp ]]  && $BISON -t -o parser.cpp --defines=parser.h parser.y
-[[ $FORCE || scanner.l -nt scanner.cpp ]] && $FLEX -o scanner.cpp scanner.l
+# We apply some trivial patches to the output to avoid warnings for PGI (and maybe other) compilers
+[[ $FORCE || parser.y  -nt parser.cpp ]]  && $BISON -t -o parser.tmp --defines=parser.h parser.y && patch -p0 < parser.patch && rm parser.tmp
+[[ $FORCE || scanner.l -nt scanner.cpp ]] && $FLEX -o scanner.tmp scanner.l && patch -p0 < scanner.patch && rm scanner.tmp
+

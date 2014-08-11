@@ -963,7 +963,7 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, scanner)
     void *scanner;
 #endif
 {
-  FILE *yyo = yyoutput;
+  FILE *yyo gmx_unused = yyoutput;
   YYUSE (yyo);
   if (!yyvaluep)
     return;
