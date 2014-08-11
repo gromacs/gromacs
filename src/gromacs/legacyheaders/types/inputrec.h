@@ -215,6 +215,9 @@ typedef struct {
     real    *init_lambda_weights; /* user-specified initial weights to start with  */
 } t_expanded;
 
+/* Forward declarations for a structure in t_pull */
+typedef struct pull_comm_t pull_comm_t;
+
 typedef struct {
     int            ngroup;         /* number of pull groups */
     int            ncoord;         /* number of pull coordinates */
@@ -237,15 +240,8 @@ typedef struct {
     gmx_bool       bPotential;   /* Are there coordinates with potential? */
     gmx_bool       bConstraint;  /* Are there constrained coordinates? */
     gmx_bool       bCylinder;    /* Is group 0 a cylinder group? */
-    t_pull_group  *dyna;         /* dynamic groups for use with local constraints */
-    gmx_bool       bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
-
-    rvec          *rbuf;         /* COM calculation buffer */
-    dvec          *dbuf;         /* COM calculation buffer */
-    double        *dbuf_cyl;     /* cylinder ref. groups COM calculation buffer */
-
-    FILE          *out_x;        /* output file for pull data */
-    FILE          *out_f;        /* output file for pull data */
+    t_pull_group  *dyna;         /* dynamic groups for use with geom=cylinder */
+    pull_comm_t   *comm;         /* The communication data */
 } t_pull;
 
 
