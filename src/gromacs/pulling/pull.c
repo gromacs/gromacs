@@ -38,6 +38,8 @@
 
 #include "pull.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -1155,21 +1157,24 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
                     rvec *x, rvec *f, tensor vir, real *dvdlambda)
 {
-    real V, dVdl;
+    real V = 0, dVdl;
 
     assert(pull != NULL);
 
-    pull_calc_coms(cr, pull, md, pbc, t, x, NULL);
-
-    do_pull_pot(pull, pbc, t, lambda,
-                &V, MASTER(cr) ? vir : NULL, &dVdl);
-
-    /* Distribute forces over pulled groups */
-    apply_forces(pull, md, f);
-
-    if (MASTER(cr))
+    if (pull->comm.bParticipate)
     {
-        *dvdlambda += dVdl;
+        pull_calc_coms(cr, pull, md, pbc, t, x, NULL);
+
+        do_pull_pot(pull, pbc, t, lambda,
+                    &V, MASTER(cr) ? vir : NULL, &dVdl);
+
+        /* Distribute forces over the pull groups */
+        apply_forces(pull, md, f);
+
+        if (MASTER(cr))
+        {
+            *dvdlambda += dVdl;
+        }
     }
 
     return (MASTER(cr) ? V : 0.0);
@@ -1181,9 +1186,12 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
 {
     assert(pull != NULL);
 
-    pull_calc_coms(cr, pull, md, pbc, t, x, xp);
+    if (pull->comm.bParticipate)
+    {
+        pull_calc_coms(cr, pull, md, pbc, t, x, xp);
 
-    do_constraint(pull, pbc, xp, v, MASTER(cr), vir, dt, t);
+        do_constraint(pull, pbc, xp, v, MASTER(cr), vir, dt, t);
+    }
 }
 
 static void make_local_pull_group(gmx_ga2la_t ga2la,
@@ -1224,10 +1232,17 @@ static void make_local_pull_group(gmx_ga2la_t ga2la,
     }
 }
 
-void dd_make_local_pull_groups(gmx_domdec_t *dd, struct pull_t *pull, t_mdatoms *md)
+void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md)
 {
-    gmx_ga2la_t ga2la;
-    int         g;
+    gmx_domdec_t *dd;
+    pull_comm_t  *comm;
+    gmx_ga2la_t   ga2la;
+    gmx_bool      bMustParticipate;
+    int           g;
+
+    dd = cr->dd;
+
+    comm = &pull->comm;
 
     if (dd)
     {
@@ -1238,10 +1253,102 @@ void dd_make_local_pull_groups(gmx_domdec_t *dd, struct pull_t *pull, t_mdatoms 
         ga2la = NULL;
     }
 
+    /* We always make the master node participate, such that it can do i/o
+     * and to simplify MC type extensions people might have.
+     */
+    bMustParticipate = (comm->bParticipateAll || (dd != NULL && DDMASTER(dd)));
+
     for (g = 0; g < pull->ngroup; g++)
     {
+        int a;
+
         make_local_pull_group(ga2la, &pull->group[g],
                               0, md->homenr);
+
+        /* We should participate if we have pull or pbc atoms */
+        if (!bMustParticipate &&
+            (pull->group[g].nat_loc > 0 ||
+             (pull->group[g].params.pbcatom >= 0 &&
+              ga2la_get_home(dd->ga2la, pull->group[g].params.pbcatom, &a))))
+        {
+            bMustParticipate = TRUE;
+        }
+    }
+
+    if (!comm->bParticipateAll)
+    {
+        /* Keep currently not required ranks in the communicator
+         * if they needed to participate up to 20 decompositions ago.
+         * This avoids frequent rebuilds due to atoms jumping back and forth.
+         */
+        const gmx_int64_t history_count = 20;
+        gmx_bool          bWillParticipate;
+        int               count[2];
+
+        /* Increase the decomposition counter for the current call */
+        comm->setup_count++;
+
+        if (bMustParticipate)
+        {
+            comm->must_count = comm->setup_count;
+        }
+
+        bWillParticipate =
+            bMustParticipate ||
+            (comm->bParticipate &&
+             comm->must_count >= comm->setup_count - history_count);
+
+        if (debug)
+        {
+            fprintf(debug, "Our DD rank (%3d) pull #atoms>0 or master: %d, will be part %d\n",
+                    dd->rank, bMustParticipate, bWillParticipate);
+        }
+
+        if (bWillParticipate)
+        {
+            /* Count the number of ranks that we want to have participating */
+            count[0] = 1;
+            /* Count the number of ranks that need to be added */
+            count[1] = comm->bParticipate ? 0 : 1;
+        }
+        else
+        {
+            count[0] = 0;
+            count[1] = 0;
+        }
+
+        /* The cost of this global operation will be less that the cost
+         * of the extra MPI_Comm_split calls that we can avoid.
+         */
+        gmx_sumi(2, count, cr);
+
+        /* If we are missing ranks or if we have 20% more ranks than needed
+         * we make a new sub-communicator.
+         */
+        if (count[1] > 0 || 6*count[0] < 5*comm->nparticipate)
+        {
+            if (debug)
+            {
+                fprintf(debug, "Creating new pull subcommunicator of size %d\n",
+                        count[0]);
+            }
+
+#ifdef GMX_MPI
+            if (comm->mpi_comm_com != MPI_COMM_NULL)
+            {
+                MPI_Comm_free(&comm->mpi_comm_com);
+            }
+
+            /* This might be an extremely expensive operation, so we try
+             * to avoid this splitting as much as possible.
+             */
+            MPI_Comm_split(dd->mpi_comm_all, bWillParticipate ? 0 : 1, dd->rank,
+                           &comm->mpi_comm_com);
+#endif
+
+            comm->bParticipate = bWillParticipate;
+            comm->nparticipate = count[0];
+        }
     }
 
     /* Since the PBC of atoms might have changed, we need to update the PBC */
@@ -1434,6 +1541,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
           gmx_bool bOutFile, unsigned long Flags)
 {
     struct pull_t *pull;
+    pull_comm_t   *comm;
     int            g, c, m;
 
     snew(pull, 1);
@@ -1601,9 +1709,6 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         }
     }
 
-    pull->rbuf     = NULL;
-    pull->dbuf     = NULL;
-    pull->dbuf_cyl = NULL;
     pull->bRefAt   = FALSE;
     pull->cosdim   = -1;
     for (g = 0; g < pull->ngroup; g++)
@@ -1719,6 +1824,30 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         }
     }
 
+    comm = &pull->comm;
+
+#ifdef GMX_MPI
+    /* Use a sub-communicator when we have more than 32 ranks */
+    comm->bParticipateAll = (cr == NULL || !DOMAINDECOMP(cr) ||
+                             cr->dd->nnodes <= 32 ||
+                             getenv("GMX_PULL_PARTICIPATE_ALL") != NULL);
+    /* This sub-commicator is not used with comm->bParticipateAll,
+     * so we can always initialize it to NULL.
+     */
+    comm->mpi_comm_com    = MPI_COMM_NULL;
+    comm->nparticipate    = 0;
+#else
+    /* No MPI: 1 rank: all ranks pull */
+    comm->bParticipateAll = TRUE;
+#endif
+    comm->bParticipate    = comm->bParticipateAll;
+    comm->setup_count     = 0;
+    comm->must_count      = 0;
+
+    comm->rbuf     = NULL;
+    comm->dbuf     = NULL;
+    comm->dbuf_cyl = NULL;
+
     /* We still need to initialize the PBC reference coordinates */
     pull->bSetPBCatoms = TRUE;
 
@@ -1778,9 +1907,15 @@ static void destroy_pull(struct pull_t *pull)
     sfree(pull->dyna);
     sfree(pull->coord);
 
-    sfree(pull->rbuf);
-    sfree(pull->dbuf);
-    sfree(pull->dbuf_cyl);
+#ifdef GMX_MPI
+    if (pull->comm.mpi_comm_com != MPI_COMM_NULL)
+    {
+        MPI_Comm_free(&pull->comm.mpi_comm_com);
+    }
+#endif
+    sfree(pull->comm.rbuf);
+    sfree(pull->comm.dbuf);
+    sfree(pull->comm.dbuf_cyl);
 
     sfree(pull);
 }
