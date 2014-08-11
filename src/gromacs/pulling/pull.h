@@ -122,11 +122,11 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
 /*! \brief Make a selection of the home atoms for all pull groups.
  * Should be called at every domain decomposition.
  *
- * \param dd             Structure containing domain decomposition data.
+ * \param cr             Structure for communication info.
  * \param pull           The pull group.
  * \param md             All atoms.
  */
-void dd_make_local_pull_groups(gmx_domdec_t *dd,
+void dd_make_local_pull_groups(t_commrec *cr,
                                struct pull_t *pull, t_mdatoms *md);
 
 

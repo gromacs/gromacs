@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <stdlib.h>
 
@@ -53,6 +55,92 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+
+static void pull_reduce_real(t_commrec   *cr,
+                             pull_comm_t *comm,
+                             int          n,
+                             real        *data)
+{
+    if (cr != NULL && PAR(cr))
+    {
+        if (comm->bParticipateAll)
+        {
+            /* Sum the contributions over all DD ranks */
+            gmx_sum(n, data, cr);
+        }
+        else
+        {
+#ifdef GMX_MPI
+#ifdef GMX_DOUBLE
+#define GMX_MPI_REAL MPI_DOUBLE
+#else
+#define GMX_MPI_REAL MPI_FLOAT
+#endif
+#ifdef MPI_IN_PLACE_EXISTS
+            MPI_Allreduce(MPI_IN_PLACE, data, n, GMX_MPI_REAL, MPI_SUM,
+                          comm->mpi_comm_com);
+#else
+            real *buf;
+
+            snew(buf, n);
+
+            MPI_Allreduce(data, buf, n, GMX_MPI_REAL, MPI_SUM,
+                          comm->mpi_comm_com);
+
+            /* Copy the result from the buffer to the input/output data */
+            for (i = 0; i < nr; i++)
+            {
+                data[i] = buf[i];
+            }
+            sfree(buf);
+#endif
+#undef GMX_MPI_REAL
+#else
+            gmx_incons("comm->bParticipateAll=FALSE without GMX_MPI");
+#endif
+        }
+    }
+}
+
+static void pull_reduce_double(t_commrec   *cr,
+                               pull_comm_t *comm,
+                               int          n,
+                               double      *data)
+{
+    if (cr != NULL && PAR(cr))
+    {
+        if (comm->bParticipateAll)
+        {
+            /* Sum the contributions over all DD ranks */
+            gmx_sumd(n, data, cr);
+        }
+        else
+        {
+#ifdef GMX_MPI
+#ifdef MPI_IN_PLACE_EXISTS
+            MPI_Allreduce(MPI_IN_PLACE, data, n, MPI_DOUBLE, MPI_SUM,
+                          comm->mpi_comm_com);
+#else
+            double *buf;
+
+            snew(buf, n);
+
+            MPI_Allreduce(data, buf, n, MPI_DOUBLE, MPI_SUM,
+                          comm->mpi_comm_com);
+
+            /* Copy the result from the buffer to the input/output data */
+            for (i = 0; i < nr; i++)
+            {
+                data[i] = buf[i];
+            }
+            sfree(buf);
+#endif
+#else
+            gmx_incons("comm->bParticipateAll=FALSE without GMX_MPI");
+#endif
+        }
+    }
+}
 
 static void pull_set_pbcatom(t_commrec *cr, pull_group_work_t *pgrp,
                              rvec *x,
@@ -99,8 +187,11 @@ static void pull_set_pbcatoms(t_commrec *cr, struct pull_t *pull,
 
     if (cr && PAR(cr) && n > 0)
     {
-        /* Sum over the nodes to get x_pbc from the home node of pbcatom */
-        gmx_sum(pull->ngroup*DIM, x_pbc[0], cr);
+        /* Sum over participating ranks to get x_pbc from the home ranks.
+         * This can be very expensive at high parallelization, so we only
+         * do this after each DD repartitioning.
+         */
+        pull_reduce_real(cr, &pull->comm, pull->ngroup*DIM, x_pbc[0]);
     }
 }
 
@@ -112,11 +203,14 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
     int           c, i, ii, m, start, end;
     rvec          g_x, dx, dir;
     double        inv_cyl_r2;
+    pull_comm_t  *comm;
     gmx_ga2la_t   ga2la = NULL;
 
-    if (pull->dbuf_cyl == NULL)
+    comm = &pull->comm;
+
+    if (comm->dbuf_cyl == NULL)
     {
-        snew(pull->dbuf_cyl, pull->ncoord*stride);
+        snew(comm->dbuf_cyl, pull->ncoord*stride);
     }
 
     if (cr && DOMAINDECOMP(cr))
@@ -243,21 +337,21 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                 }
             }
         }
-        pull->dbuf_cyl[c*stride+0] = wmass;
-        pull->dbuf_cyl[c*stride+1] = wwmass;
-        pull->dbuf_cyl[c*stride+2] = sum_a;
-        pull->dbuf_cyl[c*stride+3] = radf_fac0[XX];
-        pull->dbuf_cyl[c*stride+4] = radf_fac0[YY];
-        pull->dbuf_cyl[c*stride+5] = radf_fac0[ZZ];
-        pull->dbuf_cyl[c*stride+6] = radf_fac1[XX];
-        pull->dbuf_cyl[c*stride+7] = radf_fac1[YY];
-        pull->dbuf_cyl[c*stride+8] = radf_fac1[ZZ];
+        comm->dbuf_cyl[c*stride+0] = wmass;
+        comm->dbuf_cyl[c*stride+1] = wwmass;
+        comm->dbuf_cyl[c*stride+2] = sum_a;
+        comm->dbuf_cyl[c*stride+3] = radf_fac0[XX];
+        comm->dbuf_cyl[c*stride+4] = radf_fac0[YY];
+        comm->dbuf_cyl[c*stride+5] = radf_fac0[ZZ];
+        comm->dbuf_cyl[c*stride+6] = radf_fac1[XX];
+        comm->dbuf_cyl[c*stride+7] = radf_fac1[YY];
+        comm->dbuf_cyl[c*stride+8] = radf_fac1[ZZ];
     }
 
     if (cr != NULL && PAR(cr))
     {
         /* Sum the contributions over the ranks */
-        gmx_sumd(pull->ncoord*stride, pull->dbuf_cyl, cr);
+        pull_reduce_double(cr, comm, pull->ncoord*stride, comm->dbuf_cyl);
     }
 
     for (c = 0; c < pull->ncoord; c++)
@@ -274,8 +368,8 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
             pdyna = &pull->dyna[c];
             pgrp  = &pull->group[pcrd->params.group[1]];
 
-            wmass          = pull->dbuf_cyl[c*stride+0];
-            wwmass         = pull->dbuf_cyl[c*stride+1];
+            wmass          = comm->dbuf_cyl[c*stride+0];
+            wwmass         = comm->dbuf_cyl[c*stride+1];
             pdyna->mwscale = 1.0/wmass;
             /* Cylinder pulling can't be used with constraints, but we set
              * wscale and invtm anyhow, in case someone would like to use them.
@@ -291,7 +385,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
             for (m = 0; m < DIM; m++)
             {
                 g_x[m]         = pgrp->x[m] - pcrd->vec[m]*pcrd->value_ref;
-                dist           = -pcrd->vec[m]*pull->dbuf_cyl[c*stride+2]*pdyna->mwscale;
+                dist           = -pcrd->vec[m]*comm->dbuf_cyl[c*stride+2]*pdyna->mwscale;
                 pdyna->x[m]    = g_x[m] - dist;
                 pcrd->cyl_dev += dist;
             }
@@ -302,8 +396,8 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
              */
             for (m = 0; m < DIM; m++)
             {
-                pcrd->ffrad[m] = (pull->dbuf_cyl[c*stride+6+m] +
-                                  pull->dbuf_cyl[c*stride+3+m]*pcrd->cyl_dev)/wmass;
+                pcrd->ffrad[m] = (comm->dbuf_cyl[c*stride+6+m] +
+                                  comm->dbuf_cyl[c*stride+3+m]*pcrd->cyl_dev)/wmass;
             }
 
             if (debug)
@@ -335,21 +429,24 @@ void pull_calc_coms(t_commrec *cr,
                     struct pull_t *pull, t_mdatoms *md, t_pbc *pbc, double t,
                     rvec x[], rvec *xp)
 {
-    int  g;
-    real twopi_box = 0;
+    int          g;
+    real         twopi_box = 0;
+    pull_comm_t *comm;
 
-    if (pull->rbuf == NULL)
+    comm = &pull->comm;
+
+    if (comm->rbuf == NULL)
     {
-        snew(pull->rbuf, pull->ngroup);
+        snew(comm->rbuf, pull->ngroup);
     }
-    if (pull->dbuf == NULL)
+    if (comm->dbuf == NULL)
     {
-        snew(pull->dbuf, 3*pull->ngroup);
+        snew(comm->dbuf, 3*pull->ngroup);
     }
 
-    if (pull->bRefAt && pull->bSetPBCatoms)
+    if (pull->bRefAt && comm->bSetPBCatoms)
     {
-        pull_set_pbcatoms(cr, pull, x, pull->rbuf);
+        pull_set_pbcatoms(cr, pull, x, comm->rbuf);
 
         if (cr != NULL && DOMAINDECOMP(cr))
         {
@@ -360,7 +457,7 @@ void pull_calc_coms(t_commrec *cr,
              * are irrelevant, as long all atoms in the group are within
              * half a box distance of the reference coordinate.
              */
-            pull->bSetPBCatoms = FALSE;
+            comm->bSetPBCatoms = FALSE;
         }
     }
 
@@ -403,7 +500,7 @@ void pull_calc_coms(t_commrec *cr,
                 if (pgrp->epgrppbc == epgrppbcREFAT)
                 {
                     /* Set the pbc atom */
-                    copy_rvec(pull->rbuf[g], x_pbc);
+                    copy_rvec(comm->rbuf[g], x_pbc);
                 }
 
                 for (i = 0; i < pgrp->nat_loc; i++)
@@ -492,11 +589,11 @@ void pull_calc_coms(t_commrec *cr,
                 }
 
                 /* Copy local sums to a buffer for global summing */
-                copy_dvec(com, pull->dbuf[g*3]);
-                copy_dvec(comp, pull->dbuf[g*3+1]);
-                pull->dbuf[g*3+2][0] = wmass;
-                pull->dbuf[g*3+2][1] = wwmass;
-                pull->dbuf[g*3+2][2] = 0;
+                copy_dvec(com,  comm->dbuf[g*3]);
+                copy_dvec(comp, comm->dbuf[g*3 + 1]);
+                comm->dbuf[g*3 + 2][0] = wmass;
+                comm->dbuf[g*3 + 2][1] = wwmass;
+                comm->dbuf[g*3 + 2][2] = 0;
             }
             else
             {
@@ -538,24 +635,20 @@ void pull_calc_coms(t_commrec *cr,
                 }
 
                 /* Copy local sums to a buffer for global summing */
-                pull->dbuf[g*3  ][0] = cm;
-                pull->dbuf[g*3  ][1] = sm;
-                pull->dbuf[g*3  ][2] = 0;
-                pull->dbuf[g*3+1][0] = ccm;
-                pull->dbuf[g*3+1][1] = csm;
-                pull->dbuf[g*3+1][2] = ssm;
-                pull->dbuf[g*3+2][0] = cmp;
-                pull->dbuf[g*3+2][1] = smp;
-                pull->dbuf[g*3+2][2] = 0;
+                comm->dbuf[g*3  ][0] = cm;
+                comm->dbuf[g*3  ][1] = sm;
+                comm->dbuf[g*3  ][2] = 0;
+                comm->dbuf[g*3+1][0] = ccm;
+                comm->dbuf[g*3+1][1] = csm;
+                comm->dbuf[g*3+1][2] = ssm;
+                comm->dbuf[g*3+2][0] = cmp;
+                comm->dbuf[g*3+2][1] = smp;
+                comm->dbuf[g*3+2][2] = 0;
             }
         }
     }
 
-    if (cr && PAR(cr))
-    {
-        /* Sum the contributions over the nodes */
-        gmx_sumd(pull->ngroup*3*DIM, pull->dbuf[0], cr);
-    }
+    pull_reduce_double(cr, comm, pull->ngroup*3*DIM, comm->dbuf[0]);
 
     for (g = 0; g < pull->ngroup; g++)
     {
@@ -570,8 +663,8 @@ void pull_calc_coms(t_commrec *cr,
                 int    m;
 
                 /* Determine the inverse mass */
-                wmass             = pull->dbuf[g*3+2][0];
-                wwmass            = pull->dbuf[g*3+2][1];
+                wmass             = comm->dbuf[g*3+2][0];
+                wwmass            = comm->dbuf[g*3+2][1];
                 pgrp->mwscale     = 1.0/wmass;
                 /* invtm==0 signals a frozen group, so then we should keep it zero */
                 if (pgrp->invtm != 0)
@@ -582,17 +675,17 @@ void pull_calc_coms(t_commrec *cr,
                 /* Divide by the total mass */
                 for (m = 0; m < DIM; m++)
                 {
-                    pgrp->x[m]    = pull->dbuf[g*3  ][m]*pgrp->mwscale;
+                    pgrp->x[m]      = comm->dbuf[g*3  ][m]*pgrp->mwscale;
                     if (xp)
                     {
-                        pgrp->xp[m] = pull->dbuf[g*3+1][m]*pgrp->mwscale;
+                        pgrp->xp[m] = comm->dbuf[g*3+1][m]*pgrp->mwscale;
                     }
                     if (pgrp->epgrppbc == epgrppbcREFAT)
                     {
-                        pgrp->x[m]    += pull->rbuf[g][m];
+                        pgrp->x[m]      += comm->rbuf[g][m];
                         if (xp)
                         {
-                            pgrp->xp[m] += pull->rbuf[g][m];
+                            pgrp->xp[m] += comm->rbuf[g][m];
                         }
                     }
                 }
@@ -604,14 +697,14 @@ void pull_calc_coms(t_commrec *cr,
                 int    i, ii;
 
                 /* Determine the optimal location of the cosine weight */
-                csw                   = pull->dbuf[g*3][0];
-                snw                   = pull->dbuf[g*3][1];
+                csw                   = comm->dbuf[g*3][0];
+                snw                   = comm->dbuf[g*3][1];
                 pgrp->x[pull->cosdim] = atan2_0_2pi(snw, csw)/twopi_box;
                 /* Set the weights for the local atoms */
                 wmass  = sqrt(csw*csw + snw*snw);
-                wwmass = (pull->dbuf[g*3+1][0]*csw*csw +
-                          pull->dbuf[g*3+1][1]*csw*snw +
-                          pull->dbuf[g*3+1][2]*snw*snw)/(wmass*wmass);
+                wwmass = (comm->dbuf[g*3+1][0]*csw*csw +
+                          comm->dbuf[g*3+1][1]*csw*snw +
+                          comm->dbuf[g*3+1][2]*snw*snw)/(wmass*wmass);
 
                 pgrp->mwscale = 1.0/wmass;
                 pgrp->wscale  = wmass/wwmass;
@@ -627,8 +720,8 @@ void pull_calc_coms(t_commrec *cr,
                 }
                 if (xp)
                 {
-                    csw                    = pull->dbuf[g*3+2][0];
-                    snw                    = pull->dbuf[g*3+2][1];
+                    csw                    = comm->dbuf[g*3+2][0];
+                    snw                    = comm->dbuf[g*3+2][1];
                     pgrp->xp[pull->cosdim] = atan2_0_2pi(snw, csw)/twopi_box;
                 }
             }
