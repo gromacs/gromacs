@@ -1,0 +1,11 @@
+--- scanner.tmp	2014-08-11 22:43:16.000000000 +0200
++++ scanner.cpp	2014-08-11 22:43:19.000000000 +0200
+@@ -344,7 +344,7 @@
+ 
+ #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
+ 
+-#define _gmx_sel_yywrap(yyscanner) 1
++static inline int _gmx_sel_yywrap(yyscan_t yyscanner) { return 1; }
+ #define YY_SKIP_YYWRAP
+ 
+ typedef unsigned char YY_CHAR;

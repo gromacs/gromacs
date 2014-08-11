@@ -488,7 +488,11 @@ class AverageInputData
 class MockAverageHistogram : public gmx::AbstractAverageHistogram
 {
     public:
-        MockAverageHistogram() {}
+        // The default constructor is not used yet, and since this leads to
+        // warnings with PGI compilers it is commented out for now.
+        // Just remove the comment when you start using it.
+        // MockAverageHistogram() {}
+
         //! Creates a histogram module with defined bin parameters.
         explicit MockAverageHistogram(const gmx::AnalysisHistogramSettings &settings)
             : AbstractAverageHistogram(settings)

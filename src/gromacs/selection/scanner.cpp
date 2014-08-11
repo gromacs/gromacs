@@ -5,9 +5,14 @@
 // since flex defines INT32_MAX etc. in such cases.
 #include "gromacs/legacyheaders/types/simple.h"
 
+// Set YY_BREAK to an empty value to avoid warnings (for the PGI compiler)
+// when we have return statements followed by break. Instead, we add breaks
+// manually.
+#define YY_BREAK
 
 
-#line 11 "scanner.cpp"
+
+#line 16 "scanner.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -16,7 +21,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 37
+#define YY_FLEX_SUBMINOR_VERSION 35
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -166,7 +171,15 @@ typedef void* yyscan_t;
 
 /* Size of default input buffer. */
 #ifndef YY_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k.
+ * Moreover, YY_BUF_SIZE is 2*YY_READ_BUF_SIZE in the general case.
+ * Ditto for the __ia64__ case accordingly.
+ */
+#define YY_BUF_SIZE 32768
+#else
 #define YY_BUF_SIZE 16384
+#endif /* __ia64__ */
 #endif
 
 /* The state buf must be large enough to hold one state per character in the main buffer.
@@ -176,11 +189,6 @@ typedef void* yyscan_t;
 #ifndef YY_TYPEDEF_YY_BUFFER_STATE
 #define YY_TYPEDEF_YY_BUFFER_STATE
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
-#endif
-
-#ifndef YY_TYPEDEF_YY_SIZE_T
-#define YY_TYPEDEF_YY_SIZE_T
-typedef size_t yy_size_t;
 #endif
 
 #define EOB_ACT_CONTINUE_SCAN 0
@@ -205,6 +213,11 @@ typedef size_t yy_size_t;
 
 #define unput(c) yyunput( c, yyg->yytext_ptr , yyscanner )
 
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
+
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
 struct yy_buffer_state
@@ -222,7 +235,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	yy_size_t yy_n_chars;
+	int yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -301,7 +314,7 @@ static void _gmx_sel_yy_init_buffer (YY_BUFFER_STATE b,FILE *file ,yyscan_t yysc
 
 YY_BUFFER_STATE _gmx_sel_yy_scan_buffer (char *base,yy_size_t size ,yyscan_t yyscanner );
 YY_BUFFER_STATE _gmx_sel_yy_scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
-YY_BUFFER_STATE _gmx_sel_yy_scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
+YY_BUFFER_STATE _gmx_sel_yy_scan_bytes (yyconst char *bytes,int len ,yyscan_t yyscanner );
 
 void *_gmx_sel_yyalloc (yy_size_t ,yyscan_t yyscanner );
 void *_gmx_sel_yyrealloc (void *,yy_size_t ,yyscan_t yyscanner );
@@ -331,7 +344,7 @@ void _gmx_sel_yyfree (void * ,yyscan_t yyscanner );
 
 #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
 
-#define _gmx_sel_yywrap(yyscanner) 1
+static inline int _gmx_sel_yywrap(yyscan_t yyscanner) { return 1; }
 #define YY_SKIP_YYWRAP
 
 typedef unsigned char YY_CHAR;
@@ -537,7 +550,7 @@ static yyconst flex_int16_t yy_chk[151] =
  * \ingroup module_selection
  */
 
-#line 56 "scanner.l"
+#line 61 "scanner.l"
 #include "gromacs/utility/cstringutil.h"
 
 #include "parser.h"
@@ -552,7 +565,7 @@ static yyconst flex_int16_t yy_chk[151] =
 
 
 
-#line 556 "scanner.cpp"
+#line 569 "scanner.cpp"
 
 #define INITIAL 0
 #define matchof 1
@@ -584,8 +597,8 @@ struct yyguts_t
     size_t yy_buffer_stack_max; /**< capacity of stack. */
     YY_BUFFER_STATE * yy_buffer_stack; /**< Stack as an array. */
     char yy_hold_char;
-    yy_size_t yy_n_chars;
-    yy_size_t yyleng_r;
+    int yy_n_chars;
+    int yyleng_r;
     char *yy_c_buf_p;
     int yy_init;
     int yy_start;
@@ -632,17 +645,13 @@ FILE *_gmx_sel_yyget_out (yyscan_t yyscanner );
 
 void _gmx_sel_yyset_out  (FILE * out_str ,yyscan_t yyscanner );
 
-yy_size_t _gmx_sel_yyget_leng (yyscan_t yyscanner );
+int _gmx_sel_yyget_leng (yyscan_t yyscanner );
 
 char *_gmx_sel_yyget_text (yyscan_t yyscanner );
 
 int _gmx_sel_yyget_lineno (yyscan_t yyscanner );
 
 void _gmx_sel_yyset_lineno (int line_number ,yyscan_t yyscanner );
-
-int _gmx_sel_yyget_column  (yyscan_t yyscanner );
-
-void _gmx_sel_yyset_column (int column_no ,yyscan_t yyscanner );
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -678,7 +687,12 @@ static int input (yyscan_t yyscanner );
 
 /* Amount of stuff to slurp up with each read. */
 #ifndef YY_READ_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k */
+#define YY_READ_BUF_SIZE 16384
+#else
 #define YY_READ_BUF_SIZE 8192
+#endif /* __ia64__ */
 #endif
 
 /* Copy whatever the last rule matched to the standard output. */
@@ -780,7 +794,7 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 90 "scanner.l"
+#line 95 "scanner.l"
 
 
 
@@ -814,7 +828,7 @@ YY_DECL
     }
 
 
-#line 818 "scanner.cpp"
+#line 832 "scanner.cpp"
 
 	if ( !yyg->yy_init )
 		{
@@ -895,34 +909,34 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 123 "scanner.l"
-
+#line 128 "scanner.l"
+break;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 124 "scanner.l"
+#line 129 "scanner.l"
 { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 125 "scanner.l"
+#line 130 "scanner.l"
 { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 126 "scanner.l"
+#line 131 "scanner.l"
 { yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 128 "scanner.l"
-{ _gmx_sel_lexer_add_token(" ", 1, state); }
+#line 133 "scanner.l"
+{ _gmx_sel_lexer_add_token(" ", 1, state); break; }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 129 "scanner.l"
+#line 134 "scanner.l"
 {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
@@ -934,97 +948,98 @@ YY_RULE_SETUP
                     {
                         _gmx_sel_lexer_add_token(" ", 1, state);
                     }
+                    break;
                 }
 	YY_BREAK
 case YY_STATE_EOF(cmdstart):
-#line 142 "scanner.l"
+#line 148 "scanner.l"
 { state->bCmdStart = true; yyterminate(); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(matchof):
 case YY_STATE_EOF(matchbool):
-#line 143 "scanner.l"
+#line 149 "scanner.l"
 { state->bCmdStart = true; return CMD_SEP; }
 	YY_BREAK
 
 case 7:
 YY_RULE_SETUP
-#line 146 "scanner.l"
+#line 152 "scanner.l"
 { ADD_TOKEN; yylval->i = 1; return TOK_INT; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 147 "scanner.l"
+#line 153 "scanner.l"
 { ADD_TOKEN; yylval->i = 0; return TOK_INT; }
 	YY_BREAK
 
 case 9:
 YY_RULE_SETUP
-#line 149 "scanner.l"
+#line 155 "scanner.l"
 { ADD_TOKEN; return GROUP; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 150 "scanner.l"
+#line 156 "scanner.l"
 { ADD_TOKEN; return TO; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 151 "scanner.l"
+#line 157 "scanner.l"
 { ADD_TOKEN; BEGIN(0); return OF; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 152 "scanner.l"
+#line 158 "scanner.l"
 { ADD_TOKEN; return AND; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 153 "scanner.l"
+#line 159 "scanner.l"
 { ADD_TOKEN; return OR; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 154 "scanner.l"
+#line 160 "scanner.l"
 { ADD_TOKEN; return XOR; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 155 "scanner.l"
+#line 161 "scanner.l"
 { ADD_TOKEN; return NOT; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 156 "scanner.l"
+#line 162 "scanner.l"
 { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 158 "scanner.l"
+#line 164 "scanner.l"
 { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
-#line 160 "scanner.l"
-{ _gmx_sel_lexer_add_token(" ", 1, state); }
+#line 166 "scanner.l"
+{ _gmx_sel_lexer_add_token(" ", 1, state); break; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 161 "scanner.l"
+#line 167 "scanner.l"
 { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 162 "scanner.l"
+#line 168 "scanner.l"
 { ADD_TOKEN; return yytext[0]; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 163 "scanner.l"
+#line 169 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1028 "scanner.cpp"
+#line 1043 "scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1210,21 +1225,21 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 	else
 		{
-			yy_size_t num_to_read =
+			int num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
 			{ /* Not enough room in the buffer - grow it. */
 
 			/* just a shorter name for the current buffer */
-			YY_BUFFER_STATE b = YY_CURRENT_BUFFER_LVALUE;
+			YY_BUFFER_STATE b = YY_CURRENT_BUFFER;
 
 			int yy_c_buf_p_offset =
 				(int) (yyg->yy_c_buf_p - b->yy_ch_buf);
 
 			if ( b->yy_is_our_buffer )
 				{
-				yy_size_t new_size = b->yy_buf_size * 2;
+				int new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1255,7 +1270,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			yyg->yy_n_chars, num_to_read );
+			yyg->yy_n_chars, (size_t) num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = yyg->yy_n_chars;
 		}
@@ -1352,7 +1367,6 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 	yy_is_jam = (yy_current_state == 75);
 
-	(void)yyg;
 	return yy_is_jam ? 0 : yy_current_state;
 }
 
@@ -1369,7 +1383,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 		{ /* need to shift things up to make room */
 		/* +2 for EOB chars. */
-		register yy_size_t number_to_move = yyg->yy_n_chars + 2;
+		register int number_to_move = yyg->yy_n_chars + 2;
 		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
 		register char *source =
@@ -1419,7 +1433,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		else
 			{ /* need more input */
-			yy_size_t offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
+			int offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
 			++yyg->yy_c_buf_p;
 
 			switch ( yy_get_next_buffer( yyscanner ) )
@@ -1699,7 +1713,7 @@ void _gmx_sel_yypop_buffer_state (yyscan_t yyscanner)
  */
 static void _gmx_sel_yyensure_buffer_stack (yyscan_t yyscanner)
 {
-	yy_size_t num_to_alloc;
+	int num_to_alloc;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
 	if (!yyg->yy_buffer_stack) {
@@ -1797,12 +1811,12 @@ YY_BUFFER_STATE _gmx_sel_yy_scan_string (yyconst char * yystr , yyscan_t yyscann
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE _gmx_sel_yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len , yyscan_t yyscanner)
+YY_BUFFER_STATE _gmx_sel_yy_scan_bytes  (yyconst char * yybytes, int  _yybytes_len , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	yy_size_t i;
+	int i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -1912,7 +1926,7 @@ FILE *_gmx_sel_yyget_out  (yyscan_t yyscanner)
 /** Get the length of the current token.
  * @param yyscanner The scanner object.
  */
-yy_size_t _gmx_sel_yyget_leng  (yyscan_t yyscanner)
+int _gmx_sel_yyget_leng  (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
     return yyleng;
@@ -1948,7 +1962,7 @@ void _gmx_sel_yyset_lineno (int  line_number , yyscan_t yyscanner)
 
         /* lineno is only valid if an input buffer exists. */
         if (! YY_CURRENT_BUFFER )
-           YY_FATAL_ERROR( "_gmx_sel_yyset_lineno called with no buffer" );
+           yy_fatal_error( "_gmx_sel_yyset_lineno called with no buffer" , yyscanner); 
     
     yylineno = line_number;
 }
@@ -1963,7 +1977,7 @@ void _gmx_sel_yyset_column (int  column_no , yyscan_t yyscanner)
 
         /* column is only valid if an input buffer exists. */
         if (! YY_CURRENT_BUFFER )
-           YY_FATAL_ERROR( "_gmx_sel_yyset_column called with no buffer" );
+           yy_fatal_error( "_gmx_sel_yyset_column called with no buffer" , yyscanner); 
     
     yycolumn = column_no;
 }
@@ -2175,4 +2189,4 @@ void _gmx_sel_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 163 "scanner.l"
+#line 169 "scanner.l"

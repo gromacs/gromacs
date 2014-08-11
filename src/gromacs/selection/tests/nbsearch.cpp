@@ -73,10 +73,15 @@ class NeighborhoodSearchTestData
     public:
         struct TestPosition
         {
-            TestPosition() : refMinDist(0.0), refNearestPoint(-1)
-            {
-                clear_rvec(x);
-            }
+
+            // The default constructor is not used for now, and since
+            // leads to warnings with PGI compilers it is commented out.
+            // Just remove this when you start using it.
+            //
+            // TestPosition() : refMinDist(0.0), refNearestPoint(-1)
+            // {
+            //     clear_rvec(x);
+            // }
             explicit TestPosition(const rvec x)
                 : refMinDist(0.0), refNearestPoint(-1)
             {
