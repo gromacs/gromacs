@@ -1318,7 +1318,7 @@ static void deform(gmx_update_t upd,
         x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
         x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
     }
-    if (*scale_tot)
+    if (scale_tot != NULL)
     {
         /* The transposes of the scaling matrices are stored,
          * so we need to do matrix multiplication in the inverse order.

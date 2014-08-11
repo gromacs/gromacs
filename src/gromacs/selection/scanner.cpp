@@ -331,7 +331,7 @@ void _gmx_sel_yyfree (void * ,yyscan_t yyscanner );
 
 #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
 
-#define _gmx_sel_yywrap(yyscanner) 1
+static int _gmx_sel_yywrap(yyscan_t yyscanner) { return 1; }
 #define YY_SKIP_YYWRAP
 
 typedef unsigned char YY_CHAR;
