@@ -50,6 +50,8 @@
 #ifndef GMX_PULLING_PULL_INTERNAL_H
 #define GMX_PULLING_PULL_INTERNAL_H
 
+#include "config.h"
+
 #include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
@@ -98,6 +100,23 @@ typedef struct
 }
 pull_coord_work_t;
 
+typedef struct {
+    gmx_bool    bParticipateAll; /* Do all ranks always participate in pulling? */
+    gmx_bool    bParticipate;    /* Does our rank participate in pulling? */
+#ifdef GMX_MPI
+    MPI_Comm    mpi_comm_com;    /* Communicator for pulling */
+#endif
+    int         nparticipate;    /* The number of ranks participating */
+
+    gmx_int64_t setup_count;     /* The number of decomposition calls */
+    gmx_int64_t must_count;      /* The last count our rank needed to be part */
+
+    rvec       *rbuf;            /* COM calculation buffer */
+    dvec       *dbuf;            /* COM calculation buffer */
+    double     *dbuf_cyl;        /* cylinder ref. groups calculation buffer */
+}
+pull_comm_t;
+
 struct pull_t
 {
     pull_params_t      params;       /* The pull parameters, from inputrec */
@@ -117,11 +136,11 @@ struct pull_t
     pull_coord_work_t *coord;        /* The pull group param and work data */
 
     gmx_bool           bCylinder;    /* Is group 0 a cylinder group? */
+
     gmx_bool           bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
-    rvec              *rbuf;         /* COM calculation buffer */
-    dvec              *dbuf;         /* COM calculation buffer */
-    double            *dbuf_cyl;     /* cylinder ref. groups COM calculation buffer */
+    pull_comm_t        comm;         /* Communication parameters, communicator and buffers */
+
     FILE              *out_x;        /* Output file for pull data */
     FILE              *out_f;        /* Output file for pull data */
 };
