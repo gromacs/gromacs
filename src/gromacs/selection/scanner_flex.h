@@ -9,9 +9,14 @@
 // since flex defines INT32_MAX etc. in such cases.
 #include "gromacs/legacyheaders/types/simple.h"
 
+// Set YY_BREAK to an empty value to avoid warnings (for the PGI compiler)
+// when we have return statements followed by break. Instead, we add breaks
+// manually.
+#define YY_BREAK
 
 
-#line 15 "scanner_flex.h"
+
+#line 20 "scanner_flex.h"
 
 #define  YY_INT_ALIGNED short int
 
@@ -340,8 +345,8 @@ extern int _gmx_sel_yylex (yyscan_t yyscanner);
 #undef YY_DECL
 #endif
 
-#line 163 "scanner.l"
+#line 169 "scanner.l"
 
-#line 346 "scanner_flex.h"
+#line 351 "scanner_flex.h"
 #undef _gmx_sel_yyIN_HEADER
 #endif /* _gmx_sel_yyHEADER_H */
