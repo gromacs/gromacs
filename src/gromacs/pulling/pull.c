@@ -932,6 +932,9 @@ void dd_make_local_pull_groups(gmx_domdec_t *dd, t_pull *pull, t_mdatoms *md)
         make_local_pull_group(ga2la, &pull->group[g],
                               0, md->homenr);
     }
+
+    /* Since the PBC of atoms might have changed, we need to update the PBC */
+    pull->bSetPBCatoms = TRUE;
 }
 
 static void init_pull_group_index(FILE *fplog, t_commrec *cr,
@@ -1242,6 +1245,9 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
 
         snew(pull->dyna, pull->ncoord);
     }
+
+    /* We still need to initialize the PBC reference coordinates */
+    pull->bSetPBCatoms = TRUE;
 
     /* Only do I/O when we are doing dynamics and if we are the MASTER */
     pull->out_x = NULL;
