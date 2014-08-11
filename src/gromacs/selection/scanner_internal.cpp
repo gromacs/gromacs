@@ -324,8 +324,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                 GMX_THROW(gmx::InternalError("Unsupported variable type"));
                 return INVALID;
         }
-        delete yylval->sel;
-        return INVALID; /* Should not be reached. */
+        /* This position should not be reached. */
     }
     /* For method symbols, return the correct type */
     if (symtype == gmx::SelectionParserSymbol::MethodSymbol)

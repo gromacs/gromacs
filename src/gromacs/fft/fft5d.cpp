@@ -89,19 +89,18 @@ static tMPI::mutex big_fftw_mutex;
 #define FFTW_UNLOCK try { big_fftw_mutex.unlock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 #endif /* GMX_FFT_FFTW3 */
 
+#ifdef GMX_MPI
 /* largest factor smaller than sqrt */
-static int lfactor(int z)
+static int new_lfactor(int z)
 {
-    int i;
-    for (i = static_cast<int>(sqrt(static_cast<double>(z)));; i--)
+    int i = static_cast<int>(sqrt(static_cast<double>(z)));
+    while (z%i != 0)
     {
-        if (z%i == 0)
-        {
-            return i;
-        }
+        i--;
     }
-    return 1;
+    return i;
 }
+#endif
 
 /* largest factor */
 static int l2factor(int z)
@@ -109,16 +108,17 @@ static int l2factor(int z)
     int i;
     if (z == 1)
     {
-        return 1;
+        i = 1;
     }
-    for (i = z/2;; i--)
+    else
     {
-        if (z%i == 0)
+        i = z/2;
+        while (z%i != 0)
         {
-            return i;
+            i--;
         }
     }
-    return 1;
+    return i;
 }
 
 /* largest prime factor: WARNING: slow recursion, only use for small numbers */
