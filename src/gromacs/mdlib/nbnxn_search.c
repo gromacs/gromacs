@@ -1931,6 +1931,9 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
     float        *bbcz;
     nbnxn_bb_t   *bb;
     int           ncd, sc;
+#ifdef GMX_OPENMP
+    int           nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#endif
 
     grid = &nbs->grid[0];
 
@@ -1957,7 +1960,7 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
     bbcz = grid->bbcz_simple;
     bb   = grid->bb_simple;
 
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
+#pragma omp parallel for num_threads(nthreads) schedule(static)
     for (sc = 0; sc < grid->nc; sc++)
     {
         int c, tx, na;
@@ -4473,6 +4476,9 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
 {
     int nsci, ncj4, nexcl;
     int n, i;
+#ifdef GMX_OPENMP
+    int nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#endif
 
     if (nblc->bSimple)
     {
@@ -4513,7 +4519,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
+#pragma omp parallel for num_threads(nthreads) schedule(static)
     for (n = 0; n < nnbl; n++)
     {
         int                     sci_offset;

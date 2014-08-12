@@ -121,6 +121,9 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
     t_grpopts            *opts;
     gmx_groups_t         *groups;
     gmx_molblock_t       *molblock;
+#ifdef GMX_OPENMP
+    int                   nthreads = gmx_omp_nthreads_get(emntDefault);
+#endif
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
@@ -233,7 +236,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 
     alook = gmx_mtop_atomlookup_init(mtop);
 
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) schedule(static)
+#pragma omp parallel for num_threads(nthreads) schedule(static)
     for (i = 0; i < md->nr; i++)
     {
         int      g, ag, molb;
