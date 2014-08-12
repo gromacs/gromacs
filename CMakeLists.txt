@@ -725,10 +725,7 @@ if(GMX_LOAD_PLUGINS)
   # so, should we use plug-ins?
   if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
     if(NOT VMD_QUIETLY)
-      MESSAGE(STATUS
-          "Found the ability to use plug-ins when building shared libaries, "
-          "so will compile to use plug-ins (e.g. to read VMD-supported file "
-          "formats).")
+      MESSAGE(STATUS "Using dlopen for plugins (e.g VMD-supported file formats)")
     endif()
     if(NOT GMX_VMD_PLUGIN_PATH)
       find_package(VMD)
