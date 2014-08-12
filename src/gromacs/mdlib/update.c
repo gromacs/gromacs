@@ -1771,7 +1771,9 @@ void update_constraints(FILE             *fplog,
         }
         else
         {
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntUpdate)) schedule(static)
+            nth = gmx_omp_nthreads_get(emntUpdate);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
             for (i = start; i < nrend; i++)
             {
                 copy_rvec(upd->xp[i], state->x[i]);
