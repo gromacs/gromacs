@@ -549,6 +549,9 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     int      start, end;
     rvec    *x1, *x2;
     real     dvdl_constr;
+#ifdef GMX_OPENMP
+    int      nthreads = gmx_omp_nthreads_get(emntUpdate);
+#endif
 
     s1 = &ems1->s;
     s2 = &ems2->s;
@@ -586,7 +589,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     x1 = s1->x;
     x2 = s2->x;
 
-#pragma omp parallel num_threads(gmx_omp_nthreads_get(emntUpdate))
+#pragma omp parallel num_threads(nthreads)
     {
         int gf, i, m;
 
