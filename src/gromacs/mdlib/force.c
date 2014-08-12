@@ -116,10 +116,12 @@ static void reduce_thread_forces(int n, rvec *f,
                                  real *dvdl_q, real *dvdl_lj,
                                  int nthreads, f_thread_t *f_t)
 {
-    int t, i;
+    int               t, i;
+    int nthreads_loop gmx_unused;
 
     /* This reduction can run over any number of threads */
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntBonded)) private(t) schedule(static)
+    nthreads_loop = gmx_omp_nthreads_get(emntBonded);
+#pragma omp parallel for num_threads(nthreads_loop) private(t) schedule(static)
     for (i = 0; i < n; i++)
     {
         for (t = 1; t < nthreads; t++)

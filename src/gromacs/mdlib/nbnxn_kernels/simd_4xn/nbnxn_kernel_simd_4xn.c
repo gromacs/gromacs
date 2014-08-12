@@ -268,10 +268,11 @@ nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
                       real                      gmx_unused *Vvdw)
 #ifdef GMX_NBNXN_SIMD_4XN
 {
-    int                nnbl;
-    nbnxn_pairlist_t **nbl;
-    int                coulkt, vdwkt = 0;
-    int                nb;
+    int                         nnbl;
+    nbnxn_pairlist_t          **nbl;
+    int                         coulkt, vdwkt = 0;
+    int                         nb;
+    int                nthreads gmx_unused;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
@@ -343,7 +344,8 @@ nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         gmx_incons("Unsupported VdW interaction type");
     }
 
-#pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
+    nthreads = gmx_omp_nthreads_get(emntNonbonded);
+#pragma omp parallel for schedule(static) num_threads(nthreads)
     for (nb = 0; nb < nnbl; nb++)
     {
         nbnxn_atomdata_output_t *out;
