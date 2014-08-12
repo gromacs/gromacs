@@ -182,6 +182,7 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
     int                coult;
     int                vdwt;
     int                nb;
+    int                nthreads gmx_unused;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
@@ -239,7 +240,8 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
         gmx_incons("Unsupported vdwtype in nbnxn reference kernel");
     }
 
-#pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
+    nthreads = gmx_omp_nthreads_get(emntNonbonded);
+#pragma omp parallel for schedule(static) num_threads(nthreads)
     for (nb = 0; nb < nnbl; nb++)
     {
         nbnxn_atomdata_output_t *out;
