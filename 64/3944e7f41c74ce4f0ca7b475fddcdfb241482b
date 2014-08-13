@@ -1,0 +1,9 @@
+Code-Review+1: Roland Schulz <roland@rschulz.eu>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+1: Erik Lindahl <erik@kth.se>
+Verified+2: Jenkins Buildbot
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Wed, 13 Aug 2014 23:38:23 +0200
+Reviewed-on: https://gerrit.gromacs.org/3828
+Project: gromacs
+Branch: refs/heads/master
