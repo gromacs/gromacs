@@ -1087,9 +1087,12 @@ radius. The force acts towards the center of the sphere. The following distance 
 \beq
   d_g(\ve{r}_i;\ve{R}_i) = |\ve{r}_i-\ve{R}_i|
 \eeq
-{\bfseries Cylinder} ($g=2$): The particle is kept in a cylinder of given radius
-parallel to the $z$-axis. The force from the flat-bottomed potential acts
-towards the axis of the cylinder. The $z$-component of the force is zero.
+{\bfseries Cylinder} ($g=6,7,8$): The particle is kept in a cylinder of given radius
+parallel to the $x$ ($g=6$), $y$ ($g=7$), or $z$-axis ($g=8$). For backwards compatibility, setting
+$g=2$ is mapped to $g=8$ in the code so that old {\tt .tpr} files and topologies work.  
+The force from the flat-bottomed potential acts towards the axis of the cylinder. 
+The component of the force parallel to the cylinder axis is zero.
+For a cylinder aligned along the $z$-axis:
 \beq
  d_g(\ve{r}_i;\ve{R}_i) = \sqrt{ (x_i-X_i)^2 + (y_i - Y_i)^2 }
 \eeq
