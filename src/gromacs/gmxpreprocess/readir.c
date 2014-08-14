@@ -3818,7 +3818,13 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                         case efbposresSPHERE:
                             AbsRef[XX] = AbsRef[YY] = AbsRef[ZZ] = 1;
                             break;
-                        case efbposresCYLINDER:
+                        case efbposresCYLINDERX:
+                            AbsRef[YY] = AbsRef[ZZ] = 1;
+                            break;
+                        case efbposresCYLINDERY:
+                            AbsRef[XX] = AbsRef[ZZ] = 1;
+                            break;
+                        case efbposresCYLINDERZ:
                             AbsRef[XX] = AbsRef[YY] = 1;
                             break;
                         case efbposresX: /* d=XX */
