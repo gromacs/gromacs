@@ -119,7 +119,7 @@ int get_electrons(t_electron **eltab, const char *fn)
             gmx_fatal(FARGS, "Invalid line in datafile at line %d\n", i+1);
         }
         (*eltab)[i].nr_el    = tempnr;
-        (*eltab)[i].atomname = strdup(tempname);
+        (*eltab)[i].atomname = gmx_strdup(tempname);
     }
     gmx_ffclose(in);
 
@@ -275,7 +275,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
                     slice = (z / (*slWidth));
                 }
                 sought.nr_el    = 0;
-                sought.atomname = strdup(*(top->atoms.atomname[index[n][i]]));
+                sought.atomname = gmx_strdup(*(top->atoms.atomname[index[n][i]]));
 
                 /* now find the number of electrons. This is not efficient. */
                 found = (t_electron *)

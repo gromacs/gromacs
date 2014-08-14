@@ -191,7 +191,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
     j = 0;
     for (k = 0; k < nre; k++)
     {
-        newnm[k] = strdup(nm[k].name);
+        newnm[k] = gmx_strdup(nm[k].name);
         /* Insert dashes in all the names */
         while ((ptr = strchr(newnm[k], ' ')) != NULL)
         {
@@ -2144,7 +2144,7 @@ int gmx_energy(int argc, char *argv[])
         }
         if (bSum)
         {
-            leg[nset] = strdup("Sum");
+            leg[nset] = gmx_strdup("Sum");
             xvgr_legend(out, nset+1, (const char**)leg, oenv);
         }
         else
@@ -2281,14 +2281,14 @@ int gmx_energy(int argc, char *argv[])
                 for (j = 0; j < 3; j++)
                 {
                     sprintf(buf, "eig%d", j+1);
-                    otenleg[(bOvec ? 12 : 3)*i+j] = strdup(buf);
+                    otenleg[(bOvec ? 12 : 3)*i+j] = gmx_strdup(buf);
                 }
                 if (bOvec)
                 {
                     for (j = 0; j < 9; j++)
                     {
                         sprintf(buf, "vec%d%s", j/3+1, j%3 == 0 ? "x" : (j%3 == 1 ? "y" : "z"));
-                        otenleg[12*i+3+j] = strdup(buf);
+                        otenleg[12*i+3+j] = gmx_strdup(buf);
                     }
                 }
             }

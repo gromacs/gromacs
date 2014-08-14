@@ -34,6 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#include <algorithm>
+
 #include "config.h"
 
 #include "typedefs.h"
@@ -88,7 +91,7 @@ gmx_int64_t get_multisim_nsteps(const t_commrec *cr,
         if (steps_out >= 0 && steps_out < nsteps)
         {
             char strbuf[255];
-            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", "%"GMX_PRId64);
+            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", "%" GMX_PRId64);
             fprintf(stderr, strbuf, cr->ms->sim, steps_out);
         }
     }
@@ -117,7 +120,7 @@ int multisim_min(const gmx_multisim_t *ms, int nmin, int n)
     {
         if (bEqual)
         {
-            nmin = min(nmin, buf[0]);
+            nmin = std::min(nmin, buf[0]);
         }
         else
         {
@@ -292,13 +295,12 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     int      i, gsi;
     real     gs_buf[eglsNR];
     tensor   corr_vir, corr_pres;
-    gmx_bool bEner, bPres, bTemp, bVV;
-    gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
+    gmx_bool bEner, bPres, bTemp;
+    gmx_bool bStopCM, bGStat, bIterate,
              bFirstIterate, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
-    real     ekin, temp, prescorr, enercorr, dvdlcorr, dvdl_ekin;
+    real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
-    bRerunMD = flags & CGLO_RERUNMD;
     bStopCM  = flags & CGLO_STOPCM;
     bGStat   = flags & CGLO_GSTAT;
 
@@ -535,7 +537,7 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
             {
                 /* find out between which two value of lambda we should be */
                 frac      = (step*fepvals->delta_lambda);
-                fep_state = floor(frac*fepvals->n_lambda);
+                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
                 /* interpolate between this state and the next */
                 /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
                 frac = (frac*fepvals->n_lambda)-fep_state;
@@ -563,7 +565,7 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
             frac = (step*fepvals->delta_lambda);
             if (fepvals->n_lambda > 0)
             {
-                fep_state = floor(frac*fepvals->n_lambda);
+                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
                 /* interpolate between this state and the next */
                 /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
                 frac = (frac*fepvals->n_lambda)-fep_state;
@@ -751,10 +753,7 @@ void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bNotLastFrame)
 {
-    gmx_bool bAlloc;
     rvec    *xp, *vp;
-
-    bAlloc = (fr->natoms == 0);
 
     if (MASTER(cr) && !*bNotLastFrame)
     {

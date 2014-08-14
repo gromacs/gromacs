@@ -256,7 +256,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line)
         if (fr->title == NULL)
         {
             fgets2(line, STRLEN, fp);
-            fr->title = strdup(line);
+            fr->title = gmx_strdup(line);
         }
         bEnd = FALSE;
         while (!bEnd && fgets2(line, STRLEN, fp))

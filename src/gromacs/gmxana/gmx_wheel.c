@@ -50,6 +50,7 @@
 #include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/writeps.h"
@@ -264,7 +265,7 @@ int gmx_wheel(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-T") == 0)
         {
-            title = strdup(argv[++i]);
+            title = gmx_strdup(argv[++i]);
             fprintf(stderr, "Title will be '%s'\n", title);
         }
         else if (strcmp(argv[i], "-nn") == 0)

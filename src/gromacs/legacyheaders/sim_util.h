@@ -109,7 +109,7 @@ void finish_run(FILE *log, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                wallclock_gpu_t *gputimes,
+                struct nonbonded_verlet_t *nbv,
                 gmx_bool bWriteStat);
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
@@ -138,6 +138,8 @@ void init_md(FILE *fplog,
              rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags);
 /* Routine in sim_util.c */
+
+gmx_bool use_GPU(const struct nonbonded_verlet_t *nbv);
 
 #ifdef __cplusplus
 }

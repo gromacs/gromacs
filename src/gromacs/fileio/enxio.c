@@ -375,7 +375,7 @@ static void edr_strings(XDR *xdr, gmx_bool bRead, int file_version,
         }
         else
         {
-            nm->unit = strdup("kJ/mol");
+            nm->unit = gmx_strdup("kJ/mol");
         }
     }
 }

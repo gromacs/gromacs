@@ -1420,7 +1420,7 @@ int str_nelem(const char *str, int maxptr, char *ptr[])
     int   np = 0;
     char *copy0, *copy;
 
-    copy0 = strdup(str);
+    copy0 = gmx_strdup(str);
     copy  = copy0;
     ltrim(copy);
     while (*copy != '\0')
@@ -1675,7 +1675,7 @@ static void do_wall_params(t_inputrec *ir,
         }
         for (i = 0; i < ir->nwall; i++)
         {
-            opts->wall_atomtype[i] = strdup(names[i]);
+            opts->wall_atomtype[i] = gmx_strdup(names[i]);
         }
 
         if (ir->wall_type == ewt93 || ir->wall_type == ewt104)
@@ -2338,7 +2338,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         if (ir->efep != efepNO)
         {
-            opts->couple_moltype = strdup(is->couple_moltype);
+            opts->couple_moltype = gmx_strdup(is->couple_moltype);
             if (opts->couple_lam0 == opts->couple_lam1)
             {
                 warning(wi, "The lambda=0 and lambda=1 states for coupling are identical");
@@ -2930,7 +2930,7 @@ static void decode_cos(char *s, t_cosines *cosine)
     double  a, phi;
     int     i;
 
-    t = strdup(s);
+    t = gmx_strdup(s);
     trim(t);
 
     cosine->n   = 0;

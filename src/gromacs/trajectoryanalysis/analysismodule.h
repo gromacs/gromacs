@@ -295,7 +295,8 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual void initAfterFirstFrame(const t_trxframe &fr);
+        virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
+                                         const t_trxframe                 &fr);
 
         /*! \brief
          * Starts the analysis of frames.

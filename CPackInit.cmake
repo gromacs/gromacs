@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 #TODO: add check that source doesn't contain any untracked files
-if(CPACK_SOURCE_PACKAGE_FILE_NAME) #building source package
+if(NOT CPACK_INSTALL_CMAKE_PROJECTS) #building source package
     get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
     if (NOT EXISTS "${CMAKE_BINARY_DIR}/share/man/man1/gmx-view.1" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/install-guide/final/INSTALL" OR
@@ -46,5 +46,15 @@ if(CPACK_SOURCE_PACKAGE_FILE_NAME) #building source package
             "Run 'make completion man html install-guide' to build "
             "these parts. You can also configure with "
             "GMX_BUILD_HELP=ON to automatically build the HTML parts.")
+    endif()
+else()
+    if (NOT CPACK_GMX_BUILD_HELP)
+        message(WARNING
+            "To create a complete binary package, bash completions, and "
+            "man and HTML pages need to be generated. "
+            "You need to configure with GMX_BUILD_HELP=ON to include all "
+            "in the binary package.")
+        # Building the man, html, ... targets is not sufficient because than the
+        # install is still not done.
     endif()
 endif()

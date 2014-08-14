@@ -90,12 +90,12 @@ static void get_xlatoms(const char *fn, FILE *fp,
         }
 
         srenew(xl, n+1);
-        xl[n].filebase = strdup(filebase);
+        xl[n].filebase = gmx_strdup(filebase);
 
         /* Use wildcards... */
         if (strcmp(rbuf, "*") != 0)
         {
-            xl[n].res = strdup(rbuf);
+            xl[n].res = gmx_strdup(rbuf);
         }
         else
         {
@@ -108,8 +108,8 @@ static void get_xlatoms(const char *fn, FILE *fp,
             *_ptr = ' ';
         }
 
-        xl[n].atom    = strdup(abuf);
-        xl[n].replace = strdup(repbuf);
+        xl[n].atom    = gmx_strdup(abuf);
+        xl[n].replace = gmx_strdup(repbuf);
         n++;
     }
 
@@ -237,7 +237,7 @@ void rename_atoms(const char *xlfile, const char *ffdir,
                     /* Don't free the old atomname,
                      * since it might be in the symtab.
                      */
-                    ptr0 = strdup(xlatom[i].replace);
+                    ptr0 = gmx_strdup(xlatom[i].replace);
                     if (bVerbose)
                     {
                         printf("Renaming atom '%s' in residue %d %s to '%s'\n",

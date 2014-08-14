@@ -419,7 +419,7 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
             if (bCont)
             {
                 srenew(lines, ++nlines);
-                lines[nlines-1] = strdup(buf);
+                lines[nlines-1] = gmx_strdup(buf);
             }
         }
     }
@@ -774,7 +774,7 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
     dlg->data = data;
     if (title)
     {
-        dlg->title = strdup(title);
+        dlg->title = gmx_strdup(title);
     }
     else
     {

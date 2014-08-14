@@ -52,10 +52,12 @@
 #include <boost/shared_ptr.hpp>
 
 #include "../math/vectypes.h"
+#include "../utility/arrayref.h"
 #include "../utility/common.h"
 #include "../utility/gmxassert.h"
 #include "../utility/real.h"
 
+struct t_blocka;
 struct t_pbc;
 
 namespace gmx
@@ -106,15 +108,31 @@ class AnalysisNeighborhoodPositions
          * to methods that accept positions.
          */
         AnalysisNeighborhoodPositions(const rvec &x)
-            : count_(1), index_(-1), x_(&x)
+            : count_(1), index_(-1), x_(&x), exclusionIds_(NULL)
         {
         }
         /*! \brief
          * Initializes positions from an array of position vectors.
          */
         AnalysisNeighborhoodPositions(const rvec x[], int count)
-            : count_(count), index_(-1), x_(x)
+            : count_(count), index_(-1), x_(x), exclusionIds_(NULL)
         {
+        }
+
+        /*! \brief
+         * Sets indices to use for mapping exclusions to these positions.
+         *
+         * The exclusion IDs can always be set, but they are ignored unless
+         * actual exclusions have been set with
+         * AnalysisNeighborhood::setTopologyExclusions().
+         */
+        AnalysisNeighborhoodPositions &
+        exclusionIds(ConstArrayRef<int> ids)
+        {
+            GMX_ASSERT(static_cast<int>(ids.size()) == count_,
+                       "Exclusion id array should match the number of positions");
+            exclusionIds_ = ids.data();
+            return *this;
         }
 
         /*! \brief
@@ -137,6 +155,7 @@ class AnalysisNeighborhoodPositions
         int                     count_;
         int                     index_;
         const rvec             *x_;
+        const int              *exclusionIds_;
 
         //! To access the positions for initialization.
         friend class internal::AnalysisNeighborhoodSearchImpl;
@@ -167,12 +186,8 @@ class AnalysisNeighborhoodPositions
  * a single thread.
  *
  * \todo
- * Support for exclusions.
- * The 4.5/4.6 C API had very low-level support for exclusions, which was not
- * very convenient to use, and hadn't been tested much.  The internal code that
- * it used to do the exclusion during the search itself is still there, but it
- * needs more thought on what would be a convenient way to initialize it.
- * Can be implemented once there is need for it in some calling code.
+ * Generalize the exclusion machinery to make it easier to use for other cases
+ * than atom-atom exclusions from the topology.
  *
  * \inpublicapi
  * \ingroup module_selection
@@ -196,7 +211,7 @@ class AnalysisNeighborhood
         ~AnalysisNeighborhood();
 
         /*! \brief
-         * Set cutoff distance for the neighborhood searching.
+         * Sets cutoff distance for the neighborhood searching.
          *
          * \param[in]  cutoff Cutoff distance for the search
          *   (<=0 stands for no cutoff).
@@ -207,6 +222,34 @@ class AnalysisNeighborhood
          * Does not throw.
          */
         void setCutoff(real cutoff);
+        /*! \brief
+         * Sets the search to only happen in the XY plane.
+         *
+         * Z component of the coordinates is not used in the searching,
+         * and returned distances are computed in the XY plane.
+         * Only boxes with the third box vector parallel to the Z axis are
+         * currently implemented.
+         *
+         * Does not throw.
+         */
+        void setXYMode(bool bXY);
+        /*! \brief
+         * Sets atom exclusions from a topology.
+         *
+         * The \p excls structure specifies the exclusions from test positions
+         * to reference positions, i.e., a block starting at `excls->index[i]`
+         * specifies the exclusions for test position `i`, and the indices in
+         * `excls->a` are indices of the reference positions.  If `excls->nr`
+         * is smaller than a test position id, then such test positions do not
+         * have any exclusions.
+         * It is assumed that the indices within a block of indices in
+         * `excls->a` is ascending.
+         *
+         * Does not throw.
+         *
+         * \see AnalysisNeighborhoodPositions::exclusionIds()
+         */
+        void setTopologyExclusions(const t_blocka *excls);
         /*! \brief
          * Sets the algorithm to use for searching.
          *
@@ -257,10 +300,10 @@ class AnalysisNeighborhoodPair
 {
     public:
         //! Initializes an invalid pair.
-        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0) {}
+        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0) {}
         //! Initializes a pair object with the given data.
-        AnalysisNeighborhoodPair(int refIndex, int testIndex)
-            : refIndex_(refIndex), testIndex_(testIndex)
+        AnalysisNeighborhoodPair(int refIndex, int testIndex, real distance2)
+            : refIndex_(refIndex), testIndex_(testIndex), distance2_(distance2)
         {
         }
 
@@ -294,10 +337,19 @@ class AnalysisNeighborhoodPair
             GMX_ASSERT(isValid(), "Accessing invalid object");
             return testIndex_;
         }
+        /*! \brief
+         * Returns the squared distance between the pair of positions.
+         */
+        real distance2() const
+        {
+            GMX_ASSERT(isValid(), "Accessing invalid object");
+            return distance2_;
+        }
 
     private:
         int                     refIndex_;
         int                     testIndex_;
+        real                    distance2_;
 };
 
 /*! \brief

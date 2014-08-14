@@ -86,7 +86,7 @@ static t_charge *mk_charge(t_atoms *atoms, t_block *cgs, int *nncg)
                     *(atoms->resinfo[resnr].name),
                     atoms->resinfo[resnr].nr,
                     anr+1);
-            cg[ncg].label = strdup(buf);
+            cg[ncg].label = gmx_strdup(buf);
             ncg++;
         }
     }

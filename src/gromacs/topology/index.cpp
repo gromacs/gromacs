@@ -127,7 +127,7 @@ void add_grp(t_blocka *b, char ***gnames, int nra, atom_id a[], const char *name
 
     srenew(b->index, b->nr+2);
     srenew(*gnames, b->nr+1);
-    (*gnames)[b->nr] = strdup(name);
+    (*gnames)[b->nr] = gmx_strdup(name);
 
     srenew(b->a, b->nra+nra);
     for (i = 0; (i < nra); i++)
@@ -275,9 +275,9 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
                 if (l == nrestp)
                 {
                     srenew(restp, nrestp+1);
-                    restp[nrestp].rname = strdup(rname);
+                    restp[nrestp].rname = gmx_strdup(rname);
                     restp[nrestp].bNeg  = FALSE;
-                    restp[nrestp].gname = strdup(rname);
+                    restp[nrestp].gname = gmx_strdup(rname);
                     nrestp++;
 
                 }
@@ -624,7 +624,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
         if (!found)
         {
             srenew(p_typename, ntypes+1);
-            p_typename[ntypes++] = strdup(restype[i]);
+            p_typename[ntypes++] = gmx_strdup(restype[i]);
         }
     }
 
@@ -706,7 +706,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
     {
         srenew(gb->index, gb->nr+2);
         srenew(*gn, gb->nr+1);
-        (*gn)[gb->nr] = strdup("Water_and_ions");
+        (*gn)[gb->nr] = gmx_strdup("Water_and_ions");
         srenew(gb->a, gb->nra+nwater+nion);
         if (nwater > 0)
         {
@@ -776,7 +776,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
                 b->index[0] = 0;
             }
             b->index[b->nr]     = b->index[b->nr-1];
-            (*grpname)[b->nr-1] = strdup(str);
+            (*grpname)[b->nr-1] = gmx_strdup(str);
         }
         else
         {
@@ -968,7 +968,7 @@ static void rd_groups(t_blocka *grps, char **grpname, char *gnames[],
             fprintf(stderr, "There is one group in the index\n");
             gnr1 = 0;
         }
-        gnames[i] = strdup(grpname[gnr1]);
+        gnames[i] = gmx_strdup(grpname[gnr1]);
         isize[i]  = grps->index[gnr1+1]-grps->index[gnr1];
         snew(index[i], isize[i]);
         for (j = 0; (j < isize[i]); j++)

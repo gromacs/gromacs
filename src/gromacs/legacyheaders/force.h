@@ -149,9 +149,9 @@ gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
  * message to fplog/stderr.
  */
 
-gmx_bool uses_simple_tables(int                 cutoff_scheme,
-                            nonbonded_verlet_t *nbv,
-                            int                 group);
+gmx_bool uses_simple_tables(int                        cutoff_scheme,
+                            struct nonbonded_verlet_t *nbv,
+                            int                        group);
 /* Returns whether simple tables (i.e. not for use with GPUs) are used
  * with the type of kernel indicated.
  */
@@ -286,6 +286,9 @@ extern void do_force_lowlevel(FILE         *fplog,
                               int          flags,
                               float        *cycles_pme);
 /* Call all the force routines */
+
+void free_gpu_resources(const t_forcerec *fr,
+                        const t_commrec  *cr);
 
 #ifdef __cplusplus
 }

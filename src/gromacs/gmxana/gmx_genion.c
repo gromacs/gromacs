@@ -122,7 +122,7 @@ static char *aname(const char *mname)
     char *str;
     int   i;
 
-    str = strdup(mname);
+    str = gmx_strdup(mname);
     i   = strlen(str)-1;
     while (i > 1 && (isdigit(str[i]) || (str[i] == '+') || (str[i] == '-')))
     {
@@ -176,14 +176,14 @@ void sort_ions(int nsa, int nw, int repl[], atom_id index[],
         if (np)
         {
             snew(pptr, 1);
-            pptr[0] = strdup(p_name);
+            pptr[0] = gmx_strdup(p_name);
             snew(paptr, 1);
             paptr[0] = aname(p_name);
         }
         if (nn)
         {
             snew(nptr, 1);
-            nptr[0] = strdup(n_name);
+            nptr[0] = gmx_strdup(n_name);
             snew(naptr, 1);
             naptr[0] = aname(n_name);
         }
@@ -290,7 +290,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
             }
             /* Store this molecules section line */
             srenew(mol_line, nmol_line+1);
-            mol_line[nmol_line] = strdup(buf);
+            mol_line[nmol_line] = gmx_strdup(buf);
             nmol_line++;
         }
     }
