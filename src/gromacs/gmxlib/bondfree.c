@@ -2325,7 +2325,35 @@ real fbposres(int nbonds,
                     svmul(fact, dx, fm);
                 }
                 break;
-            case efbposresCYLINDER:
+            case efbposresCYLINDERX:
+                /* cylidrical flat-bottom posres in y-z plane. fm[XX] = 0. */
+                dr2 = sqr(dx[YY])+sqr(dx[ZZ]);
+                if  (dr2 > 0.0 &&
+                     ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
+                     )
+                {
+                    dr     = sqrt(dr2);
+                    invdr  = 1./dr;
+                    v      = 0.5*kk*sqr(dr - rfb);
+                    fm[YY] = -kk*(dr-rfb)*dx[YY]*invdr; /* Force pointing to the center */
+                    fm[ZZ] = -kk*(dr-rfb)*dx[ZZ]*invdr;
+                }
+                break;
+            case efbposresCYLINDERY:
+                /* cylidrical flat-bottom posres in x-z plane. fm[YY] = 0. */
+                dr2 = sqr(dx[XX])+sqr(dx[ZZ]);
+                if  (dr2 > 0.0 &&
+                     ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
+                     )
+                {
+                    dr     = sqrt(dr2);
+                    invdr  = 1./dr;
+                    v      = 0.5*kk*sqr(dr - rfb);
+                    fm[XX] = -kk*(dr-rfb)*dx[XX]*invdr; /* Force pointing to the center */
+                    fm[ZZ] = -kk*(dr-rfb)*dx[ZZ]*invdr;
+                }
+                break;
+            case efbposresCYLINDERZ:
                 /* cylidrical flat-bottom posres in x-y plane. fm[ZZ] = 0. */
                 dr2 = sqr(dx[XX])+sqr(dx[YY]);
                 if  (dr2 > 0.0 &&
