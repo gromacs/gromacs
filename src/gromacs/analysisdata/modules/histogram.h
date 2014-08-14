@@ -237,13 +237,6 @@ class AnalysisHistogramSettings
 };
 
 
-namespace internal
-{
-
-class BasicHistogramImpl;
-
-}   // namespace internal
-
 class AbstractAverageHistogram;
 
 //! Smart pointer to manage an AbstractAverageHistogram object.
@@ -344,6 +337,10 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * The number of columns for all data sets equals the number of bins in the
  * histogram.
  *
+ * The histograms are accumulated as 64-bit integers within a frame and summed
+ * in double precision across frames, even if the output data is in single
+ * precision.
+ *
  * \inpublicapi
  * \ingroup module_analysisdata
  */
@@ -396,7 +393,9 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        PrivateImplPointer<internal::BasicHistogramImpl> impl_;
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 
         // Copy and assign disallowed by base.
 };
@@ -416,6 +415,9 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
  * All input columns for a data set are averaged into the same histogram.
  * The number of columns for all data sets equals the number of bins in the
  * histogram.
+ *
+ * The histograms are accumulated in double precision, even if the output data
+ * is in single precision.
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -455,7 +457,9 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        PrivateImplPointer<internal::BasicHistogramImpl> impl_;
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 
         // Copy and assign disallowed by base.
 };

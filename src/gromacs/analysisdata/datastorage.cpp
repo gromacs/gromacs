@@ -870,7 +870,7 @@ AnalysisDataStorage::startParallelDataStorage(
         AnalysisDataModuleManager         *modules,
         const AnalysisDataParallelOptions &options)
 {
-    const int pendingLimit = 2 * options.parallelizationFactor() - 1;
+    const int pendingLimit = options.parallelizationFactor();
     impl_->pendingLimit_   = pendingLimit;
     modules->notifyParallelDataStart(data, options);
     // Data needs to be set before calling extendBuffer()
