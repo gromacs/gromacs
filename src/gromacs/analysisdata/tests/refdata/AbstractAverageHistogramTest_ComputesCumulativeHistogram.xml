@@ -1,0 +1,141 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <AnalysisData Name="InputData">
+    <DataFrame Name="Frame0">
+      <Real Name="X">1</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">2</Real>
+          <Real Name="Error">1</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame1">
+      <Real Name="X">1.5</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">1</Real>
+          <Real Name="Error">1</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame2">
+      <Real Name="X">2</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">3</Real>
+          <Real Name="Error">2</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame3">
+      <Real Name="X">2.5</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">4</Real>
+          <Real Name="Error">2</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame4">
+      <Real Name="X">3</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">2</Real>
+          <Real Name="Error">1</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame5">
+      <Real Name="X">3.5</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">0</Real>
+          <Real Name="Error">3</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame6">
+      <Real Name="X">4</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">1</Real>
+          <Real Name="Error">3</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+  </AnalysisData>
+  <AnalysisData Name="CumulativeHistogram">
+    <DataFrame Name="Frame0">
+      <Real Name="X">1.25</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">2</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame1">
+      <Real Name="X">1.75</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">3</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame2">
+      <Real Name="X">2.25</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">6</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame3">
+      <Real Name="X">2.75</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">10</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame4">
+      <Real Name="X">3.25</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">12</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame5">
+      <Real Name="X">3.75</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">12</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame6">
+      <Real Name="X">4.25</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">13</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+  </AnalysisData>
+</ReferenceData>

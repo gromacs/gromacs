@@ -255,6 +255,8 @@ typedef boost::shared_ptr<AbstractAverageHistogram>
  *
  * This class can represent multiple histograms in one object: each column in
  * the data is an independent histogram.
+ * The X values correspond to center of the bins, except for a cumulative
+ * histogram made with makeCumulative().
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -289,6 +291,14 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         AverageHistogramPointer clone() const;
         //! Normalizes the histogram such that the integral over it is one.
         void normalizeProbability();
+        /*! \brief
+         * Makes the histograms cumulative by summing up each bin to all bins
+         * after it.
+         *
+         * The X values in the data are adjusted such that they match the right
+         * edges of bins instead of bin centers.
+         */
+        void makeCumulative();
         //! Scales a single histogram by a uniform scaling factor.
         void scaleSingle(int index, real factor);
         //! Scales all histograms by a uniform scaling factor.
