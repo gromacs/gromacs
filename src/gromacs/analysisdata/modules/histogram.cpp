@@ -331,6 +331,7 @@ AbstractAverageHistogram::clone() const
 {
     AverageHistogramPointer dest(new StaticAverageHistogram());
     copyContents(this, dest.get());
+    dest->settings_ = settings_;
     return dest;
 }
 
@@ -350,6 +351,24 @@ AbstractAverageHistogram::normalizeProbability()
             scaleSingle(c, 1.0 / (sum * xstep()));
         }
     }
+}
+
+void
+AbstractAverageHistogram::makeCumulative()
+{
+    for (int c = 0; c < columnCount(); ++c)
+    {
+        double sum = 0;
+        for (int i = 0; i < rowCount(); ++i)
+        {
+            sum += value(i, c).value();
+            // Clear the error, as we don't cumulate that.
+            value(i, c).clear();
+            value(i, c).setValue(sum);
+        }
+    }
+    setXAxis(settings().firstEdge() + settings().binWidth(),
+             settings().binWidth());
 }
 
 

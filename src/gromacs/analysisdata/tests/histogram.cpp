@@ -521,6 +521,24 @@ TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
 }
 
 
+TEST_F(AbstractAverageHistogramTest, ComputesCumulativeHistogram)
+{
+    const AnalysisDataTestInput &input = AverageInputData::get();
+    MockAverageHistogram         data(
+            gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
+    setupArrayData(input, &data);
+
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(data.done());
+
+    gmx::AverageHistogramPointer cumulative(data.clone());
+    cumulative->makeCumulative();
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("CumulativeHistogram", cumulative.get()));
+    ASSERT_NO_THROW_GMX(cumulative->done());
+}
+
+
 TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidth)
 {
     const AnalysisDataTestInput &input = AverageInputData::get();
