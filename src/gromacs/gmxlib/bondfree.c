@@ -2325,9 +2325,32 @@ real fbposres(int nbonds,
                     svmul(fact, dx, fm);
                 }
                 break;
-            case efbposresCYLINDER:
-                /* cylidrical flat-bottom posres in x-y plane. fm[ZZ] = 0. */
-                dr2 = sqr(dx[XX])+sqr(dx[YY]);
+            case efbposresCYLINDERX:
+                /* cylindrical flat-bottom posres in y-z plane. fm[XX] = 0. */
+            case efbposresCYLINDERY:
+                /* cylindrical flat-bottom posres in x-z plane. fm[YY] = 0. */
+            case efbposresCYLINDERZ:
+                /* cylindrical flat-bottom posres in x-y plane. fm[ZZ] = 0. */
+                fbdim = pr->fbposres.geom - efbposresCYLINDERX;
+                dr2 = 0;
+                if (debug)
+                {
+                    fprintf(debug, "fbdim = %d\n", fbdim);
+                }
+
+                for (d=0; d<DIM; d++)
+                {
+                    if (d != fbdim)
+                    {
+                        dr2 += sqr(dx[d]);
+                    }
+                }
+
+                if (debug)
+                {
+                    fprintf(debug, "dr2 = %.3f\n", dr2);
+                }
+
                 if  (dr2 > 0.0 &&
                      ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
                      )
@@ -2335,8 +2358,17 @@ real fbposres(int nbonds,
                     dr     = sqrt(dr2);
                     invdr  = 1./dr;
                     v      = 0.5*kk*sqr(dr - rfb);
-                    fm[XX] = -kk*(dr-rfb)*dx[XX]*invdr; /* Force pointing to the center */
-                    fm[YY] = -kk*(dr-rfb)*dx[YY]*invdr;
+                    for (d=0; d<DIM; d++)
+                    {
+                        if (d != fbdim)
+                        {
+                            fm[d] = -kk*(dr-rfb)*dx[d]*invdr; /* Force pointing to the center */
+                            if (debug)
+                            {
+                                fprintf(debug, "force loop: d = %d, f = %.3f\n", d, fm[d]); 
+                            }
+                        }
+                    }
                 }
                 break;
             case efbposresX: /* fbdim=XX */
