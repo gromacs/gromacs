@@ -346,7 +346,7 @@ enum {
 /* flat-bottom posres geometries */
 enum {
     efbposresZERO, efbposresSPHERE, efbposresCYLINDER, efbposresX, efbposresY, efbposresZ,
-    efbposresNR
+    efbposresCYLINDERX, efbposresCYLINDERY, efbposresCYLINDERZ, efbposresNR
 };
 
 enum {

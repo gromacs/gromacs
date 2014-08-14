@@ -2255,6 +2255,44 @@ static void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
     }
 }
 
+/*! \brief Computes forces and potential for flat-bottom cylindrical restraints.
+ *         Returns the flat-bottom potential. */
+static real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bool bInvert)
+{
+    int     d;
+    real    dr, dr2, invdr, v, rfb2;
+
+    dr2  = 0.0;
+    rfb2 = sqr(rfb);
+    v    = 0.0;
+
+    for (d = 0; d < DIM; d++)
+    {
+        if (d != fbdim)
+        {
+            dr2 += sqr(dx[d]);
+        }
+    }
+
+    if  (dr2 > 0.0 &&
+         ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
+         )
+    {
+        dr     = sqrt(dr2);
+        invdr  = 1./dr;
+        v      = 0.5*kk*sqr(dr - rfb);
+        for (d = 0; d < DIM; d++)
+        {
+            if (d != fbdim)
+            {
+                fm[d] = -kk*(dr-rfb)*dx[d]*invdr; /* Force pointing to the center */
+            }
+        }
+    }
+
+    return v;
+}
+
 /*! \brief Adds forces of flat-bottomed positions restraints to f[]
  *         and fixes vir_diag. Returns the flat-bottomed potential. */
 real fbposres(int nbonds,
@@ -2329,19 +2367,22 @@ real fbposres(int nbonds,
                     svmul(fact, dx, fm);
                 }
                 break;
+            case efbposresCYLINDERX:
+                /* cylindrical flat-bottom posres in y-z plane. fm[XX] = 0. */
+                fbdim = XX;
+                v     = do_fbposres_cylinder(fbdim, fm, dx, rfb, kk, bInvert);
+                break;
+            case efbposresCYLINDERY:
+                /* cylindrical flat-bottom posres in x-z plane. fm[YY] = 0. */
+                fbdim = YY;
+                v     = do_fbposres_cylinder(fbdim, fm, dx, rfb, kk, bInvert);
+                break;
             case efbposresCYLINDER:
-                /* cylidrical flat-bottom posres in x-y plane. fm[ZZ] = 0. */
-                dr2 = sqr(dx[XX])+sqr(dx[YY]);
-                if  (dr2 > 0.0 &&
-                     ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
-                     )
-                {
-                    dr     = sqrt(dr2);
-                    invdr  = 1./dr;
-                    v      = 0.5*kk*sqr(dr - rfb);
-                    fm[XX] = -kk*(dr-rfb)*dx[XX]*invdr; /* Force pointing to the center */
-                    fm[YY] = -kk*(dr-rfb)*dx[YY]*invdr;
-                }
+            /* equivalent to efbposresCYLINDERZ for backwards compatibility */
+            case efbposresCYLINDERZ:
+                /* cylindrical flat-bottom posres in x-y plane. fm[ZZ] = 0. */
+                fbdim = ZZ;
+                v     = do_fbposres_cylinder(fbdim, fm, dx, rfb, kk, bInvert);
                 break;
             case efbposresX: /* fbdim=XX */
             case efbposresY: /* fbdim=YY */
