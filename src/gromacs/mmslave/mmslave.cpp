@@ -62,6 +62,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/mshift.h"
 
 /* Note: the C-interface is all the way down in this file */
 
@@ -133,8 +134,11 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
     //! FC Data
     fcd_ = (t_fcdata *)calloc(1, sizeof(*fcd_));
 
-    //! Molecular graph
-    //graph_ = mk_graph(fplog, &(ltop_->idef), 0, mtop->natoms, FALSE, FALSE);
+    // Local topology initiated in init_em
+    ltop_ = NULL;
+
+    //! Molecular graph, ditto.
+    graph_ = NULL;
 
     //! MD Atoms
     mdatoms_ = init_mdatoms(fplog, (gmx_mtop_t *)mtop, FALSE);
@@ -157,7 +161,7 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
     //! Check lambda stuff
     int n_lambda = 0;
     init_enerdata(std::min(1,ir->opts.ngener), n_lambda, enerd_);
-    gmx_mdoutf_t *outf = NULL;
+    gmx_mdoutf_t outf = NULL;
     init_em(NULL, "MM-Slave",(t_commrec *)cr, (t_inputrec *)ir,
             &state_, (gmx_mtop_t *)mtop, ems_, &ltop_, &f_, &f_global_,
             &nrnb_, mu_tot_, fr_, &enerd_, &graph_, mdatoms_, &gstat_, vsite_, constr_,
