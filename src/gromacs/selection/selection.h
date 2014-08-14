@@ -104,6 +104,8 @@ class SelectionData
         bool isDynamic() const { return bDynamic_; }
         //! Returns the type of positions in the selection.
         e_index_t type() const { return rawPositions_.m.type; }
+        //! Returns true if the selection only contains positions with a single atom each.
+        bool hasOnlyAtoms() const { return type() == INDEX_ATOM; }
 
         //! Number of positions in the selection.
         int posCount() const { return rawPositions_.count(); }
@@ -323,6 +325,8 @@ class Selection
         bool isDynamic() const { return data().isDynamic(); }
         //! Returns the type of positions in the selection.
         e_index_t type() const { return data().type(); }
+        //! Returns true if the selection only contains positions with a single atom each.
+        bool hasOnlyAtoms() const { return data().hasOnlyAtoms(); }
 
         //! Total number of atoms in the selection.
         int atomCount() const

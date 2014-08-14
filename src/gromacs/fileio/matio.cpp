@@ -143,7 +143,7 @@ int getcmap(FILE *in, const char *fn, t_mapping **map)
         sscanf(line, "%s%s%lf%lf%lf", code, desc, &r, &g, &b);
         m[i].code.c1 = code[0];
         m[i].code.c2 = 0;
-        m[i].desc    = strdup(desc);
+        m[i].desc    = gmx_strdup(desc);
         m[i].rgb.r   = r;
         m[i].rgb.g   = g;
         m[i].rgb.b   = b;
@@ -423,7 +423,7 @@ static void read_xpm_entry(FILE *in, t_matrix *mm)
             line = strchr(line, '\"');
             line++;
             line2string(&line);
-            map[m].desc = strdup(line);
+            map[m].desc = gmx_strdup(line);
             m++;
         }
     }

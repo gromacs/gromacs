@@ -941,7 +941,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
             add_to_string_aligned(&LegendStr, buf);
 
             sprintf(buf2, "%s (degrees)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
         }
         for (g = 0; g < rot->ngrp; g++)
@@ -961,19 +961,19 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
             }
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (degrees)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
 
             sprintf(buf, "tau%d", g);
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (kJ/mol)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
 
             sprintf(buf, "energy%d", g);
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (kJ/mol)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
         }
         fprintf(fp, "#\n");

@@ -41,7 +41,6 @@
  */
 #include "gromacs/commandline/cmdlinehelpmodule.h"
 
-#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -548,7 +547,6 @@ class HelpExportHtml : public HelpExportInterface
 HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
     : links_(eHelpOutputFormat_Html)
 {
-    initProgramLinks(&links_, helpModule);
     File             linksFile("links.dat", "r");
     std::string      line;
     while (linksFile.readLine(&line))
@@ -556,6 +554,7 @@ HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
         links_.addLink(line, "../online/" + line, line);
     }
     linksFile.close();
+    initProgramLinks(&links_, helpModule);
     setupHeaderAndFooter();
 }
 
@@ -618,7 +617,12 @@ void HelpExportHtml::exportModuleGroup(const char                *title,
     {
         const std::string     &tag(module->first);
         std::string            displayName(tag);
-        std::replace(displayName.begin(), displayName.end(), '-', ' ');
+        // TODO: This does not work if the binary name would contain a dash,
+        // but that is not currently the case.
+        size_t                 dashPos = displayName.find('-');
+        GMX_RELEASE_ASSERT(dashPos != std::string::npos,
+                           "There should always be at least one dash in the tag");
+        displayName[dashPos] = ' ';
         indexFile_->writeLine(formatString("<a href=\"%s.html\">%s</a> - %s<br>",
                                            tag.c_str(), displayName.c_str(),
                                            module->second));
@@ -738,8 +742,7 @@ void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter) const
         {
             const char *const moduleName = module->first.c_str();
             std::string       tag(formatString("%s-%s", program, moduleName));
-            std::string       displayName(tag);
-            std::replace(displayName.begin(), displayName.end(), '-', ' ');
+            std::string       displayName(formatString("%s %s", program, moduleName));
             exporter->exportModuleHelp(*module->second, tag, displayName);
         }
     }

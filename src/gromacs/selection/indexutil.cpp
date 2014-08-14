@@ -44,6 +44,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -418,6 +419,19 @@ gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int maxn)
         }
     }
     fprintf(fp, "\n");
+}
+
+int
+gmx_ana_index_get_max_index(gmx_ana_index_t *g)
+{
+    if (g->isize == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return *std::max_element(g->index, g->index + g->isize);
+    }
 }
 
 /*!

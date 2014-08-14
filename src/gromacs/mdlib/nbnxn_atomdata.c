@@ -49,6 +49,7 @@
 #include "gmx_omp_nthreads.h"
 #include "thread_mpi/atomic.h"
 
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"

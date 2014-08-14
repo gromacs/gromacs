@@ -40,6 +40,7 @@
 #include <string.h>
 
 #include "typedefs.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "Xstuff.h"
 #include "x11.h"
@@ -318,7 +319,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     bool            bVerbose = false;
     int             i;
 
-    title = strdup(argv[0]);
+    title = gmx_strdup(argv[0]);
 
     /* First check environment */
     fontname = getenv("GMX_FONT");
@@ -355,7 +356,7 @@ t_x11 *GetX11(int *argc, char *argv[])
                             break;
                         case 't':
                             sfree(title);
-                            title = strdup(argv[++i]);
+                            title = gmx_strdup(argv[++i]);
                             break;
                         case 'v':
                             bVerbose = true;
@@ -481,7 +482,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     {
         x11->bg = LIGHTGREY;
     }
-    x11->title = strdup(title);
+    x11->title = gmx_strdup(title);
     sfree(title);
     x11->wlist              = NULL;
     x11->GetNamedColor      = &GetNamedColor;

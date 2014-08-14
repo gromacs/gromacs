@@ -61,6 +61,8 @@
  */
 #include <string.h>
 
+#include <algorithm>
+
 #include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/centerofmass.h"
@@ -555,6 +557,25 @@ PositionCalculationCollection::createCalculationFromEnum(const char *post, int f
     int          cflags = flags;
     typeFromEnum(post, &type, &cflags);
     return impl_->createCalculation(type, cflags);
+}
+
+int PositionCalculationCollection::getHighestRequiredAtomIndex() const
+{
+    int                result = 0;
+    gmx_ana_poscalc_t *pc     = impl_->first_;
+    while (pc)
+    {
+        // Calculations with a base just copy positions from the base, so
+        // those do not need to be considered in the check.
+        if (!pc->sbase)
+        {
+            gmx_ana_index_t g;
+            gmx_ana_index_set(&g, pc->b.nra, pc->b.a, 0);
+            result = std::max(result, gmx_ana_index_get_max_index(&g));
+        }
+        pc = pc->next;
+    }
+    return result;
 }
 
 void PositionCalculationCollection::initEvaluation()

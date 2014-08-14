@@ -129,7 +129,7 @@ static void fill_ft_ind(int nft, int *ft, t_idef *idef,
                         gmx_fatal(FARGS, "Unsupported function type '%s' selected",
                                   interaction_function[ftype].longname);
                 }
-                grpnames[ind] = strdup(buf);
+                grpnames[ind] = gmx_strdup(buf);
                 ind++;
             }
         }

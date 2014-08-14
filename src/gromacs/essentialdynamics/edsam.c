@@ -1138,7 +1138,7 @@ static void get_flood_enx_names(t_edpar *edi, char** names, int *nnames)  /* get
     {
         srenew(names, count);
         sprintf(buf, "Vfl_%d", count);
-        names[count-1] = strdup(buf);
+        names[count-1] = gmx_strdup(buf);
         actual         = actual->next_edi;
         count++;
     }
@@ -2452,7 +2452,7 @@ static void nice_legend(const char ***setname, int *nsets, char **LegendStr, cha
     sprintf(tmp, "%c %s", EDgroupchar, value);
     add_to_string_aligned(LegendStr, tmp);
     sprintf(tmp2, "%s (%s)", tmp, unit);
-    (*setname)[*nsets] = strdup(tmp2);
+    (*setname)[*nsets] = gmx_strdup(tmp2);
     (*nsets)++;
 }
 

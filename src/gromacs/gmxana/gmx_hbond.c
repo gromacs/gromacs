@@ -4605,7 +4605,7 @@ int gmx_hbond(int argc, char *argv[])
                     gmx_fatal(FARGS, "Could not initiate t_gemParams params.");
                 }
             }
-            gemstring = strdup(gemType[hb->per->gemtype]);
+            gemstring = gmx_strdup(gemType[hb->per->gemtype]);
             do_hbac(opt2fn("-ac", NFILE, fnm), hb, nDump,
                     bMerge, bContact, fit_start, temp, r2cut > 0, smooth_tail_start, oenv,
                     gemstring, nThreads, NN, bBallistic, bGemFit);
@@ -4745,9 +4745,9 @@ int gmx_hbond(int argc, char *argv[])
             if (USE_THIS_GROUP(j) )
             {
                 sprintf(buf, "Donors %s", grpnames[j]);
-                legnames[i++] = strdup(buf);
+                legnames[i++] = gmx_strdup(buf);
                 sprintf(buf, "Acceptors %s", grpnames[j]);
-                legnames[i++] = strdup(buf);
+                legnames[i++] = gmx_strdup(buf);
             }
         }
         if (i != nleg)

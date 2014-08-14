@@ -592,25 +592,25 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
     {
         if ( (cp = getenv("MPIRUN")) != NULL)
         {
-            *cmd_mpirun = strdup(cp);
+            *cmd_mpirun = gmx_strdup(cp);
         }
         else
         {
-            *cmd_mpirun = strdup(def_mpirun);
+            *cmd_mpirun = gmx_strdup(def_mpirun);
         }
     }
     else
     {
-        *cmd_mpirun = strdup(empty_mpirun);
+        *cmd_mpirun = gmx_strdup(empty_mpirun);
     }
 
     if ( (cp = getenv("MDRUN" )) != NULL)
     {
-        *cmd_mdrun  = strdup(cp);
+        *cmd_mdrun  = gmx_strdup(cp);
     }
     else
     {
-        *cmd_mdrun  = strdup(def_mdrun);
+        *cmd_mdrun  = gmx_strdup(def_mdrun);
     }
 }
 

@@ -180,8 +180,8 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
                 ap->bAvail[i] = FALSE;
             }
         }
-        ap->atomnm[ap->nprop] = strdup(atomnm);
-        ap->resnm[ap->nprop]  = strdup(resnm);
+        ap->atomnm[ap->nprop] = gmx_strdup(atomnm);
+        ap->resnm[ap->nprop]  = gmx_strdup(resnm);
         j                     = ap->nprop;
         ap->nprop++;
     }
@@ -252,7 +252,7 @@ static void set_prop(gmx_atomprop_t aps, int eprop)
     ap = &ap2->prop[eprop];
     if (!ap->bSet)
     {
-        ap->db  = strdup(fns[eprop]);
+        ap->db  = gmx_strdup(fns[eprop]);
         ap->def = def[eprop];
         read_prop(aps, eprop, fac[eprop]);
 

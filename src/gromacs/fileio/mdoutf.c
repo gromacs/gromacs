@@ -342,7 +342,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 int i, j;
 
                 snew(xxtc, of->natoms_x_compressed);
-                for (i = 0, j = 0; (i < of->natoms_x_compressed); i++)
+                for (i = 0, j = 0; (i < of->natoms_global); i++)
                 {
                     if (ggrpnr(of->groups, egcCompressedX, i) == 0)
                     {

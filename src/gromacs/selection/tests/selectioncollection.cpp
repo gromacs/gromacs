@@ -41,6 +41,7 @@
  */
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
@@ -583,7 +584,35 @@ TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation3)
     EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
 }
 
-// TODO: Tests for evaluation errors
+TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets)
+{
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 3 to 10"));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    frame_->natoms = 8;
+    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets2)
+{
+    // Evaluating the positions will require atoms 1-9.
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_com of atomnr 2 5 7"));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    frame_->natoms = 8;
+    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets3)
+{
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("mindistance from atomnr 1 to 5 < 2"));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    frame_->natoms = 10;
+    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+}
+
+// TODO: Tests for more evaluation errors
 
 
 /********************************************************************

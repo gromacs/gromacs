@@ -46,6 +46,7 @@
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/selection/selparam.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
@@ -539,7 +540,7 @@ parse_values_varnum(const SelectionParserValueList    &values,
                 param->val.u.r[i++] = value->u.r.r1;
                 break;
             case STR_VALUE:
-                param->val.u.s[i++] = strdup(value->stringValue().c_str());
+                param->val.u.s[i++] = gmx_strdup(value->stringValue().c_str());
                 break;
             case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
             default: /* Should not be reached */
@@ -864,7 +865,7 @@ parse_values_std(const SelectionParserValueList &values,
                     param->val.u.r[i] = value->u.r.r1;
                     break;
                 case STR_VALUE:
-                    param->val.u.s[i] = strdup(value->stringValue().c_str());
+                    param->val.u.s[i] = gmx_strdup(value->stringValue().c_str());
                     break;
                 case POS_VALUE:
                     gmx_ana_pos_init_const(&param->val.u.p[i], value->u.x);

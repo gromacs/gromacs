@@ -51,6 +51,7 @@
 
 #include "gromacs/legacyheaders/oenv.h"
 
+#include "gromacs/fileio/trx.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -84,7 +85,7 @@ namespace gmx
  */
 
 SelectionCollection::Impl::Impl()
-    : debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
+    : maxAtomIndex_(0), debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
 {
     sc_.nvars     = 0;
     sc_.varstrs   = NULL;
@@ -774,7 +775,7 @@ SelectionCollection::compile()
         const internal::SelectionData &sel = **iter;
         if (sel.hasFlag(efSelection_OnlyAtoms))
         {
-            if (sel.type() != INDEX_ATOM)
+            if (!sel.hasOnlyAtoms())
             {
                 std::string message = formatString(
                             "Selection '%s' does not evaluate to individual atoms. "
@@ -800,6 +801,14 @@ SelectionCollection::compile()
 void
 SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
+    if (fr->natoms <= impl_->maxAtomIndex_)
+    {
+        std::string message = formatString(
+                    "Trajectory has less atoms (%d) than what is required for "
+                    "evaluating the provided selections (atoms up to index %d "
+                    "are required).", fr->natoms, impl_->maxAtomIndex_ + 1);
+        GMX_THROW(InconsistentInputError(message));
+    }
     impl_->sc_.pcc.initFrame();
 
     SelectionEvaluator evaluator;
