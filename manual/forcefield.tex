@@ -276,7 +276,9 @@ van der Waals force acting on particle $i$ by particle $j$ as:
 \ve{F}_i = c F(r_{ij}) \frac{\rvij}{r_{ij}}
 \eeq
 For pure Coulomb or Lennard-Jones interactions
-$F(r)=F_\alpha(r)=r^{-(\alpha+1)}$.
+$F(r)~=~F_\alpha(r)~=~c\alpha r^{-(\alpha+1)}$
+where $c$ is a constant depending on the exact force being modeled. In
+the remainder of this section we leave out $c$.
 The shifted force $F_s(r)$ can generally be written as:
 \beq
 \begin{array}{rcl}
@@ -287,7 +289,8 @@ F_s(r)~=&~F_\alpha(r)+S(r)      & r_1 \le r < r_c       \\
 F_s(r)~=&~0             & r_c \le r     
 \end{array}
 \eeq
-When $r_1=0$ this is a traditional shift function, otherwise it acts as a 
+When $r_1=0$ this is a traditional shift function, otherwise the
+function is a 
 switch function. The corresponding shifted coulomb potential then reads:
 \beq
 V_s(r_{ij}) = f \Phi_s (r_{ij}) q_i q_j
@@ -316,26 +319,31 @@ boundary condition at $r_c$:
 \beq
 \begin{array}{rcl}
 \vspace{2mm}
-A &~=~& -\displaystyle
+A &~=~& -\alpha\displaystyle
         \frac{(\alpha+4)r_c~-~(\alpha+1)r_1} {r_c^{\alpha+2}~(r_c-r_1)^2} \\
-B &~=~& \displaystyle
-        \frac{(\alpha+3)r_c~-~(\alpha+1)r_1}{r_c^{\alpha+2}~(r_c-r_1)^3}
+B &~=~& \alpha\displaystyle
+        \frac{(\alpha+3)r_c~-~(\alpha+1)r_1}{r_c^{\alpha+2}~(r_c-r_1)^3}.
 \end{array}
 \eeq
-Thus the total force function is:
+Thus the total force function is ($r_1 \le r < r_c$):
 \beq
-F_s(r) = \frac{\alpha}{r^{\alpha+1}} + A(r-r_1)^2 + B(r-r_1)^3
+F_s(r) = \frac{\alpha}{r^{\alpha+1}} + A(r-r_1)^2 + B(r-r_1)^3.
 \eeq
-and the potential function reads:
+The potential function then reads:
 \beq
-\Phi(r) = \frac{1}{r^\alpha} - \frac{A}{3} (r-r_1)^3 - \frac{B}{4} (r-r_1)^4 - C
+\begin{array}{rcll}
+\Phi_s(r)  & = & \Phi_\alpha(r) - C \quad&r < r_1 \\
+\Phi_s(r)  & = & \displaystyle{\frac{1}{r^{\alpha}} - \frac{A}{3}(r-r_1)^3 + \frac{B}{4}(r-r_1)^4 - C}
+\quad&r_1 \le r < r_c \\
+\Phi_s(r)  & = & 0 \quad&r_c \le r
+\end{array}
 \eeq
 where 
 \beq
-C =  \frac{1}{r_c^\alpha} - \frac{A}{3} (r_c-r_1)^3 - \frac{B}{4} (r_c-r_1)^4
+C =  \frac{1}{r_c^\alpha} - \frac{A}{3} (r_c-r_1)^3 - \frac{B}{4} (r_c-r_1)^4.
 \eeq
 
-When $r_1$ = 0, the modified Coulomb force function is
+When $r_1$ = 0, the modified Coulomb force function is ($r < r_c$):
 \beq
  F_s(r) = \frac{1}{r^2} - \frac{5 r^2}{r_c^4} + \frac{4 r^3}{r_c^5}
 \eeq
@@ -343,11 +351,7 @@ which is identical to the {\em \index{parabolic force}}
 function recommended to be used as a short-range function in 
 conjunction with a \swapindex{Poisson}{solver} 
 for the long-range part~\cite{Berendsen93a}.
-The modified Coulomb potential function is:
-\beq
-\Phi(r) = \frac{1}{r} - \frac{5}{3r_c} + \frac{5r^3}{3r_c^4} - \frac{r^4}{r_c^5}
-\eeq
-See also \figref{shift}.
+See also \figref{shift}. 
 
 \begin{figure}
 \centerline{\includegraphics[width=10cm]{plots/shiftf}}
