@@ -368,7 +368,7 @@ class AnalysisDataStorage
          * far in the future:
          * If \c i is the index of the last frame such that all frames from
          * 0, ..., \c i have been finished, then \p header().index() should be
-         * at most \c 2*parallelizationFactor-1 larger than \c i, where
+         * at most \c parallelizationFactor larger than \c i, where
          * parallelizationFactor is the parallelization factor passed to
          * setParallelOptions().
          * Throws APIError if this constraint is violated.
