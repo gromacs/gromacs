@@ -352,6 +352,22 @@ AbstractAverageHistogram::normalizeProbability()
     }
 }
 
+void
+AbstractAverageHistogram::makeCumulative()
+{
+    for (int c = 0; c < columnCount(); ++c)
+    {
+        double sum = 0;
+        for (int i = 0; i < rowCount(); ++i)
+        {
+            sum += value(i, c).value();
+            // Clear the error, as we don't cumulate that.
+            value(i, c).clear();
+            value(i, c).setValue(sum);
+        }
+    }
+}
+
 
 void
 AbstractAverageHistogram::scaleSingle(int index, real factor)
