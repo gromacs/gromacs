@@ -57,9 +57,6 @@ function (do_pkgconfig)
 endfunction()
 
 function (do_cmake_config)
-    # Remove -dev suffix and similar, since we need a numeric version.
-    # TODO: Make also the full version string available from somewhere.
-    string(REGEX REPLACE "-.*$" "" PACKAGE_VERSION ${PROJECT_VERSION})
     # Install everything into a subdirectory, because
     #  1. CMake expects things to be there for CMAKE_PREFIX_PATH to work, and
     #  2. This nicely isolates files for different suffixes from each other.

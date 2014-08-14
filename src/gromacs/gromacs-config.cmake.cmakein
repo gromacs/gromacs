@@ -81,6 +81,7 @@ set(GROMACS_CXX_COMPILER_VERSION "@CMAKE_CXX_COMPILER_VERSION@")
 include(FindPackageMessage)
 # The version info is set by CMake when it determines whether this file
 # is suitable (by calling the version file, which sets PACKAGE_VERSION).
+# TODO: Make also the full version string available from somewhere.
 set(_gmx_info "${GROMACS_VERSION}")
 if (GROMACS_SUFFIX)
     set(_gmx_info "${_gmx_info} (suffix: ${GROMACS_SUFFIX})")
