@@ -1,4 +1,4 @@
-415
+424
 If You Want Something Done You Have to Do It Yourself_(Highlander II)
 I Live the Life They Wish They Did_(Tricky)
 Jesus Built My Hotrod_(Ministry)
@@ -414,3 +414,12 @@ In the processing of models we must be especially cautious of the human weakness
 You see it through a charmed medium: you can not discern that the gilding is slime and the silk draperies cobwebs; that the marble is sordid slate, and the polished woods mere refuse chips and scale bark._(Mr. Rochester in Jane Eyre by Charlotte Bronte)
 I know poetry is not dead, nor genius lost; nor has Mammon gained power over either, to bind or slay; they will both assert their existence, their presence, their liberty and strength again one day._(Jane Eyre in Jane Eyre by Charlotte Bronte)
 Parallel programming is not about elegance!_(Bill Gropp)
+If you're doing I/O, you're doing it wrong!_(Cannada "Drew" Lewis)
+The easiest way to scale well is to have bad single-core performance_(Blind Freddie)
+Heard a talk introducing a new language called Swift, from a guy named Wozniak, and it had nothing to do with Apple!_(Adam Cadien)
+When doing HPC, don't communica_(Jim Demmel)
+Today we're not going to optimize our CUDA code, cause that's just a rabbit hole of misery!_(Tim Warburton)
+Big Data is like teenage sex: everyone talks about it, nobody really knows how to do it, everyone thinks everyone else is doing it, so everyone claims they are doing it..._(Dan Ariely)
+It seems likely that significant software contributions to existing scientific software projects are not likely to be rewarded through the traditional reputation economy of science. Together these factors provide a reason to expect the over-production of independent scientific software packages, and the underproduction of collaborative projects in which later academics build on the work of earlier ones._(Howison & Herbsleb)
+On average, it takes twenty years for the world's largest super computer to shrink down to the size of your laptop._(Pete Beckman)
+When using an abacus, a human can achieve about 0.1 flops/watt. Super-computers achieve about 2 gigaflops/watt._(John Linford)
