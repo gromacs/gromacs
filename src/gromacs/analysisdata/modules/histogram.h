@@ -270,6 +270,9 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         /*! \brief
          * Creates a copy of the histogram with double the bin width.
          *
+         * \param[in] bIntegerBins If `true`, the first bin in the result will
+         *     cover the first bin from the source. Otherwise, the first bin
+         *     will cover first two bins from the source.
          * \throws std::bad_alloc if out of memory.
          *
          * The caller is responsible of deleting the returned object.
