@@ -1,4 +1,4 @@
-501
+510
 If You Want Something Done You Have to Do It Yourself_(Highlander II)
 I Live the Life They Wish They Did_(Tricky)
 Jesus Built My Hotrod_(Ministry)
@@ -500,3 +500,12 @@ Research ! A mere excuse for idleness; it has never achieved, and will never ach
 Problems worthy of attack prove their worth by hitting back._(Piet Hein)
 You should never bet against anything in science at odds of more than about 10^12 to 1._(Ernest Rutherford)
 X-rays will prove to be a hoax._(Lord Kelvin, while president of the Royal Society)
+If you're doing I/O, you're doing it wrong!_(Cannada "Drew" Lewis)
+The easiest way to scale well is to have bad single-core performance_(Blind Freddie)
+Heard a talk introducing a new language called Swift, from a guy named Wozniak, and it had nothing to do with Apple!_(Adam Cadien)
+When doing HPC, don't communica_(Jim Demmel)
+Today we're not going to optimize our CUDA code, cause that's just a rabbit hole of misery!_(Tim Warburton)
+Big Data is like teenage sex: everyone talks about it, nobody really knows how to do it, everyone thinks everyone else is doing it, so everyone claims they are doing it..._(Dan Ariely)
+It seems likely that significant software contributions to existing scientific software projects are not likely to be rewarded through the traditional reputation economy of science. Together these factors provide a reason to expect the over-production of independent scientific software packages, and the underproduction of collaborative projects in which later academics build on the work of earlier ones._(Howison & Herbsleb)
+On average, it takes twenty years for the world's largest super computer to shrink down to the size of your laptop._(Pete Beckman)
+When using an abacus, a human can achieve about 0.1 flops/watt. Super-computers achieve about 2 gigaflops/watt._(John Linford)
