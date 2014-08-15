@@ -286,7 +286,7 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
 
     AverageHistogramPointer dest(
             new StaticAverageHistogram(
-                    histogramFromBins(xstart(), nbins, 2*xstep())
+                    histogramFromBins(settings().firstEdge(), nbins, 2*xstep())
                         .integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
     dest->allocateValues();
