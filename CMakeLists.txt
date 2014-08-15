@@ -64,6 +64,9 @@ set(PROJECT_VERSION "5.1-dev")
 # number of the regressiontest tarball against which the code tarball
 # can be tested. This will be the version of the last patch release.
 set(REGRESSIONTEST_VERSION "5.0.1-dev")
+# The MD5 checksum of the regressiontest tarball. Only used if "-dev"
+# is not present in the PROJECT_VERSION
+set(REGRESSIONTEST_MD5SUM "a07524afebca5013540d4f2f72df2dce")
 # If this is not a released tarball, "-dev" will be present in
 # PROJECT_VERSION, and REGRESSIONTEST_BRANCH specifies the name of the
 # gerrit.gromacs.org branch whose HEAD can test this code, *if* this
@@ -323,13 +326,19 @@ include(gmxManageOpenMP)
 #####################################################################
 
 # The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
-# are used with permission from CMake v2.8.9 so that GROMACS can detect
-# invalid options with the Intel Compilers.
+# are used with permission from CMake v3.0.0 so that GROMACS can detect
+# invalid options with the Intel Compilers, and we have added a line
+# to detect warnings with the Fujitsu compilers on K computer.
+# CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
+# a semicolon. Since this is also used as a separator in lists inside CMake,
+# that string ends up being split into two separate patterns, and the last
+# part is just a single word that also matches other messages. We solved this
+# by replacing the semicolon with a period that matches any character.
+#
 # These files should be removed from the source tree when a CMake version that
 # includes the features in question becomes required for building GROMACS.
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-
 
 include(gmxCFlags)
 gmx_c_flags()
@@ -408,8 +417,6 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(sigaction         HAVE_SIGACTION)
 check_function_exists(sysconf           HAVE_SYSCONF)
-check_function_exists(sched_setaffinity HAVE_SCHED_SETAFFINITY)
-check_function_exists(sched_getaffinity HAVE_SCHED_GETAFFINITY)
 check_function_exists(rsqrt             HAVE_RSQRT)
 check_function_exists(rsqrtf            HAVE_RSQRTF)
 check_function_exists(sqrtf             HAVE_SQRTF)
@@ -417,6 +424,9 @@ check_function_exists(sqrtf             HAVE_SQRTF)
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
+
+include(TestSchedAffinity)
+test_sched_affinity(HAVE_SCHED_AFFINITY)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
