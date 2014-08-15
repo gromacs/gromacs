@@ -133,7 +133,7 @@ int gmx_covar(int argc, char *argv[])
         { "-pbc",  FALSE,  etBOOL, {&bPBC},
           "Apply corrections for periodic boundary conditions" }
     };
-    FILE           *out;
+    FILE           *out = NULL; /* initialization makes all compilers happy */
     t_trxstatus    *status;
     t_trxstatus    *trjout;
     t_topology      top;
@@ -560,18 +560,7 @@ int gmx_covar(int argc, char *argv[])
         fprintf(stderr, "\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
     }
 
-    fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile);
-
-    sprintf(str, "(%snm\\S2\\N)", bM ? "u " : "");
-    out = xvgropen(eigvalfile,
-                   "Eigenvalues of the covariance matrix",
-                   "Eigenvector index", str, oenv);
-    for (i = 0; (i < end); i++)
-    {
-        fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
-    }
-    ffclose(out);
-
+    /* Set 'end', the maximum eigenvector and -value index used for output */
     if (end == -1)
     {
         if (nframes-1 < ndim)
@@ -586,6 +575,19 @@ int gmx_covar(int argc, char *argv[])
             end = ndim;
         }
     }
+
+    fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile);
+
+    sprintf(str, "(%snm\\S2\\N)", bM ? "u " : "");
+    out = xvgropen(eigvalfile,
+                   "Eigenvalues of the covariance matrix",
+                   "Eigenvector index", str, oenv);
+    for (i = 0; (i < end); i++)
+    {
+        fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
+    }
+    ffclose(out);
+
     if (bFit)
     {
         /* misuse lambda: 0/1 mass weighted analysis no/yes */
