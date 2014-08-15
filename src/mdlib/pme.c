@@ -2899,8 +2899,9 @@ init_overlap_comm(pme_overlap_t *  ol,
     {
         /* s2g0 the local interpolation grid start.
          * s2g1 the local interpolation grid end.
-         * Because grid overlap communication only goes forward,
-         * the grid the slabs for fft's should be rounded down.
+         * Since in calc_pidx we divide particles, and not grid lines,
+         * spatially uniform along dimension x or y, we need to round
+         * s2g0 down and s2g1 up.
          */
         ol->s2g0[i] = ( i   *ndata + 0       )/nnodes;
         ol->s2g1[i] = ((i+1)*ndata + nnodes-1)/nnodes + norder - 1;
@@ -3592,7 +3593,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     int  fft_my, fft_mz;
     int  buf_my = -1;
     int  nsx, nsy, nsz;
-    ivec ne;
+    ivec localcopy_end;
     int  offx, offy, offz, x, y, z, i0, i0t;
     int  sx, sy, sz, fx, fy, fz, tx1, ty1, tz1, ox, oy, oz;
     gmx_bool bClearBufX, bClearBufY, bClearBufXY, bClearBuf;
@@ -3628,8 +3629,14 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
 
     for (d = 0; d < DIM; d++)
     {
-        ne[d] = min(pmegrid->offset[d]+pmegrid->n[d]-(pmegrid->order-1),
-                    local_fft_ndata[d]);
+        /* Determine up to where our thread needs to copy from the
+         * thread-local charge spreading grid to the rank-local FFT grid.
+         * This is up to our spreading grid end minus order-1 and
+         * not beyond the local FFT grid.
+         */
+        localcopy_end[d] =
+            min(pmegrid->offset[d]+pmegrid->n[d]-(pmegrid->order-1),
+                local_fft_ndata[d]);
     }
 
     offx = pmegrid->offset[XX];
@@ -3661,7 +3668,16 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
         pmegrid_g = &pmegrids->grid_th[fx*pmegrids->nc[YY]*pmegrids->nc[ZZ]];
         ox       += pmegrid_g->offset[XX];
         /* Determine the end of our part of the source grid */
-        tx1 = min(ox + pmegrid_g->n[XX], ne[XX]);
+        if (!bCommX)
+        {
+            /* Use our thread local source grid and target grid part */
+            tx1 = min(ox + pmegrid_g->n[XX], localcopy_end[XX]);
+        }
+        else
+        {
+            /* Use our thread local source grid and the spreading range */
+            tx1 = min(ox + pmegrid_g->n[XX], pme->pme_order);
+        }
 
         for (sy = 0; sy >= -pmegrids->nthread_comm[YY]; sy--)
         {
@@ -3677,7 +3693,16 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
             pmegrid_g = &pmegrids->grid_th[fy*pmegrids->nc[ZZ]];
             oy       += pmegrid_g->offset[YY];
             /* Determine the end of our part of the source grid */
-            ty1 = min(oy + pmegrid_g->n[YY], ne[YY]);
+            if (!bCommY)
+            {
+                /* Use our thread local source grid and target grid part */
+                ty1 = min(oy + pmegrid_g->n[YY], localcopy_end[YY]);
+            }
+            else
+            {
+                /* Use our thread local source grid and the spreading range */
+                ty1 = min(oy + pmegrid_g->n[YY], pme->pme_order);
+            }
 
             for (sz = 0; sz >= -pmegrids->nthread_comm[ZZ]; sz--)
             {
@@ -3690,7 +3715,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                 }
                 pmegrid_g = &pmegrids->grid_th[fz];
                 oz       += pmegrid_g->offset[ZZ];
-                tz1       = min(oz + pmegrid_g->n[ZZ], ne[ZZ]);
+                tz1       = min(oz + pmegrid_g->n[ZZ], localcopy_end[ZZ]);
 
                 if (sx == 0 && sy == 0 && sz == 0)
                 {
@@ -3746,8 +3771,13 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                     if (bCommY)
                     {
                         commbuf = commbuf_y;
-                        /* The y-size of the communication buffer is order-1 */
-                        buf_my  = pmegrid->order - 1;
+                        /* The y-size of the communication buffer is set by
+                         * the overlap of the grid part of our local slab
+                         * with the part starting at the next slab.
+                         */
+                        buf_my  =
+                            pme->overlap[1].s2g1[pme->nodeid_minor] -
+                            pme->overlap[1].s2g0[pme->nodeid_minor+1];
                         if (bCommX)
                         {
                             /* We index commbuf modulo the local grid size */
@@ -3860,6 +3890,12 @@ static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid)
             sendptr = overlap->sendbuf + send_index0*local_fft_ndata[ZZ];
             recvptr = overlap->recvbuf;
 
+            if (debug != NULL)
+            {
+                fprintf(debug, "PME fftgrid comm y %2d x %2d x %2d\n",
+                        local_fft_ndata[XX], send_nindex, local_fft_ndata[ZZ]);
+            }
+
 #ifdef GMX_MPI
             MPI_Sendrecv(sendptr, send_size_y*datasize, GMX_MPI_REAL,
                          send_id, ipulse,
@@ -3926,7 +3962,7 @@ static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid)
 
         if (debug != NULL)
         {
-            fprintf(debug, "PME fftgrid comm %2d x %2d x %2d\n",
+            fprintf(debug, "PME fftgrid comm x %2d x %2d x %2d\n",
                     send_nindex, local_fft_ndata[YY], local_fft_ndata[ZZ]);
         }
 
