@@ -2899,8 +2899,9 @@ init_overlap_comm(pme_overlap_t *  ol,
     {
         /* s2g0 the local interpolation grid start.
          * s2g1 the local interpolation grid end.
-         * Because grid overlap communication only goes forward,
-         * the grid the slabs for fft's should be rounded down.
+         * Since in calc_pidx we divide particles, and not grid lines,
+         * spatially uniform along dimension x or y, we need to round
+         * s2g0 down and s2g1 up.
          */
         ol->s2g0[i] = ( i   *ndata + 0       )/nnodes;
         ol->s2g1[i] = ((i+1)*ndata + nnodes-1)/nnodes + norder - 1;
@@ -3746,8 +3747,13 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                     if (bCommY)
                     {
                         commbuf = commbuf_y;
-                        /* The y-size of the communication buffer is order-1 */
-                        buf_my  = pmegrid->order - 1;
+                        /* The y-size of the communication buffer is set by
+                         * the overlap of the grid part of our local slab
+                         * with the part starting at the next slab.
+                         */
+                        buf_my  =
+                            pme->overlap[1].s2g1[pme->nodeid_minor] -
+                            pme->overlap[1].s2g0[pme->nodeid_minor+1];
                         if (bCommX)
                         {
                             /* We index commbuf modulo the local grid size */
@@ -3860,6 +3866,12 @@ static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid)
             sendptr = overlap->sendbuf + send_index0*local_fft_ndata[ZZ];
             recvptr = overlap->recvbuf;
 
+            if (debug != NULL)
+            {
+                fprintf(debug, "PME fftgrid comm y %2d x %2d x %2d\n",
+                        local_fft_ndata[XX], send_nindex, local_fft_ndata[ZZ]);
+            }
+
 #ifdef GMX_MPI
             MPI_Sendrecv(sendptr, send_size_y*datasize, GMX_MPI_REAL,
                          send_id, ipulse,
@@ -3926,7 +3938,7 @@ static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid)
 
         if (debug != NULL)
         {
-            fprintf(debug, "PME fftgrid comm %2d x %2d x %2d\n",
+            fprintf(debug, "PME fftgrid comm x %2d x %2d x %2d\n",
                     send_nindex, local_fft_ndata[YY], local_fft_ndata[ZZ]);
         }
 
