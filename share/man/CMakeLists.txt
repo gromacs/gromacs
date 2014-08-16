@@ -32,13 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(SOURCE_IS_SOURCE_DISTRIBUTION)
-    # Make sure source package contains all man pages.
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/man1/gmx-view.1")
-        message(FATAL_ERROR "Man pages are missing from source package.")
-    endif()
-endif()
-
 add_custom_target(man
     ${CMAKE_COMMAND} -E make_directory man1
     COMMAND ${CMAKE_COMMAND} -E make_directory man7
