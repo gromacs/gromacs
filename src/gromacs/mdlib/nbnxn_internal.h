@@ -40,7 +40,6 @@
 #include "nbnxn_simd.h"
 #include "domdec.h"
 #include "gromacs/timing/cyclecounter.h"
-#include "gromacs/mdlib/nbnxn_pairlist.h"
 
 
 /* Bounding box calculations are (currently) always in single precision, so

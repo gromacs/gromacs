@@ -69,7 +69,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -9770,7 +9769,9 @@ void dd_partition_system(FILE                *fplog,
     if (!(cr->duty & DUTY_PME))
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
-        gmx_pme_send_parameters(cr, mdatoms->nChargePerturbed, mdatoms->nTypePerturbed,
+        gmx_pme_send_parameters(cr,
+                                fr->ic,
+                                mdatoms->nChargePerturbed, mdatoms->nTypePerturbed,
                                 mdatoms->chargeA, mdatoms->chargeB,
                                 mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA, mdatoms->sigmaB,

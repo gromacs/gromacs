@@ -223,11 +223,6 @@ recommends either
   `cmake -DGMX_BUILD_OWN_FFTW=ON`), or
 * that you build FFTW from the source code.
 
-Note that the GROMACS-managed download of the FFTW tarball has a
-slight chance of posing a security risk. If you use this option, you
-will see a warning that advises how you can eliminate this risk
-(before the opportunity has arisen).
-
 If you build FFTW from source yourself, get the most recent version
 and follow its [installation
 guide](http://www.fftw.org/doc/Installation-and-Customization.html#Installation-and-Customization).
@@ -655,13 +650,6 @@ CMakeLists.txt.
     is determined by CMake.
     The name of the directory can be changed using `GMX_LIB_INSTALL_DIR` CMake
     variable.
-`lib/pkgconfig/`
-  : Information about the installed `libgromacs` library for `pkg-config` is
-    installed here.  The `lib/` part adapts to the installation location of the
-    libraries.  The installed files contain the installation prefix as absolute
-    paths.
-`share/cmake/`
-  : CMake package configuration files are installed here.
 `share/gromacs/`
   : Various data files and some documentation go here.
     The `gromacs` part can be changed using `GMX_DATA_INSTALL_DIR`. Using this

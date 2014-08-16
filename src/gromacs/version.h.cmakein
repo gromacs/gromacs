@@ -92,7 +92,7 @@
  * For 4.6 and 5.0 (and likely for some time in the future as well), this
  * tracks the exact \Gromacs version.
  */
-#define GMX_API_VERSION @GMX_API_VERSION@
+#define GMX_API_VERSION @API_VERSION@
 
 /*! \brief
  * Exact \Gromacs version of this set of headers.
@@ -100,6 +100,6 @@
  * This specifies the version number of the actual \Gromacs library that
  * installed these headers.
  */
-#define GMX_VERSION @GMX_VERSION_NUMERIC@
+#define GMX_VERSION @NUM_VERSION@
 
 #endif

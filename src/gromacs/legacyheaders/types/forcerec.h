@@ -39,6 +39,7 @@
 #include "genborn.h"
 #include "qmmmrec.h"
 #include "../../topology/idef.h"
+#include "nb_verlet.h"
 #include "interaction_const.h"
 #include "hw_info.h"
 
@@ -51,7 +52,8 @@ extern "C" {
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
-struct nonbonded_verlet_t;
+
+
 
 /* Structure describing the data in a single table */
 typedef struct
@@ -313,13 +315,13 @@ typedef struct {
     rvec        *shift_vec;
 
     /* The neighborlists including tables */
-    int                        nnblists;
-    int                       *gid2nblists;
-    t_nblists                 *nblists;
+    int                 nnblists;
+    int                *gid2nblists;
+    t_nblists          *nblists;
 
-    int                        cutoff_scheme; /* group- or Verlet-style cutoff */
-    gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
-    struct nonbonded_verlet_t *nbv;
+    int                 cutoff_scheme; /* group- or Verlet-style cutoff */
+    gmx_bool            bNonbonded;    /* true if nonbonded calculations are *not* turned off */
+    nonbonded_verlet_t *nbv;
 
     /* The wall tables (if used) */
     int            nwall;

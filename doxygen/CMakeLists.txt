@@ -95,8 +95,6 @@ if (DOXYGEN_FOUND)
 
     FILE(COPY index.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     configure_file(RunDoxygen.cmake.cmakein RunDoxygen.cmake @ONLY)
-    gmx_configure_version_file(Doxyfile-version.cmakein Doxyfile-version
-                               TARGET doxygen-version)
     add_custom_target(doc-full
         ${CMAKE_COMMAND} -DDOCTYPE=full -P RunDoxygen.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -115,10 +113,28 @@ if (DOXYGEN_FOUND)
         COMMENT "Extracting Doxygen documentation to XML" VERBATIM)
     add_custom_target(doc-all)
     add_dependencies(doc-all doc-full doc-lib doc-user)
-    add_dependencies(doc-full doxygen-version)
-    add_dependencies(doc-lib  doxygen-version)
-    add_dependencies(doc-user doxygen-version)
-    add_dependencies(doc-xml  doxygen-version)
+
+    if (GMX_GIT_VERSION_INFO)
+        add_custom_target(doxygen-version
+                COMMAND ${CMAKE_COMMAND}
+                    -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
+                    -D PROJECT_VERSION="${PROJECT_VERSION}"
+                    -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+                    -D VERSION_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-version.cmakein"
+                    -D VERSION_OUT="${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-version"
+                    -D VERSION_NO_REMOTE_HASH=
+                    -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-version.cmakein
+                COMMENT "Generating version information for Doxygen")
+        add_dependencies(doc-full doxygen-version)
+        add_dependencies(doc-lib doxygen-version)
+        add_dependencies(doc-user doxygen-version)
+        add_dependencies(doc-xml doxygen-version)
+    else()
+        set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
+        configure_file(Doxyfile-version.cmakein Doxyfile-version)
+    endif()
 
     if (USE_PYTHON_SCRIPTS)
         # TODO: Consider whether this is the best name and location for this

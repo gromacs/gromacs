@@ -39,7 +39,6 @@
 
 #include "typedefs.h"
 
-#include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 
 #ifdef __cplusplus

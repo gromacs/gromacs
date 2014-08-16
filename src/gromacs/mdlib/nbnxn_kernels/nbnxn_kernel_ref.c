@@ -48,7 +48,6 @@
 #include "nbnxn_kernel_ref.h"
 #include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"
-#include "gromacs/mdlib/nb_verlet.h"
 
 /*! \brief Typedefs for declaring lookup tables of kernel functions.
  */

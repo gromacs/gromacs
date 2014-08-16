@@ -47,7 +47,7 @@
 #define NBNXN_CUDA_TYPES_H
 
 #include "types/interaction_const.h"
-#include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "types/nbnxn_pairlist.h"
 #include "types/nbnxn_cuda_types_ext.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
 

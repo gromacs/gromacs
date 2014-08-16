@@ -36,8 +36,7 @@
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
-#include "thread_mpi/atomic.h"
-#include "types/nblist.h"
+#include "nblist.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,7 +124,7 @@ typedef struct {
                             */
 } nbnxn_excl_t;
 
-typedef struct nbnxn_pairlist_t {
+typedef struct {
     gmx_cache_protect_t cp0;
 
     nbnxn_alloc_t      *alloc;
@@ -223,7 +222,10 @@ enum {
     ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR
 };
 
-typedef struct nbnxn_atomdata_t {
+/* TODO: Remove need for forward declare */
+struct tMPI_Atomic;
+
+typedef struct {
     nbnxn_alloc_t           *alloc;
     nbnxn_free_t            *free;
     int                      ntype;           /* The number of different atom types                 */
@@ -267,7 +269,7 @@ typedef struct nbnxn_atomdata_t {
     gmx_bool                 bUseBufferFlags;        /* Use the flags or operate on all atoms     */
     nbnxn_buffer_flags_t     buffer_flags;           /* Flags for buffer zeroing+reduc.  */
     gmx_bool                 bUseTreeReduce;         /* Use tree for force reduction */
-    tMPI_Atomic_t           *syncStep;               /* Synchronization step for tree reduce */
+    struct tMPI_Atomic      *syncStep;               /* Synchronization step for tree reduce */
 } nbnxn_atomdata_t;
 
 #ifdef __cplusplus

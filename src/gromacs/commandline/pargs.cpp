@@ -496,7 +496,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         fileOptManager.disableInputOptionChecking(
                 FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
-        options.setDescription(gmx::ConstArrayRef<const char *>(desc, ndesc));
+        options.setDescription(gmx::constArrayRefFromArray<const char *>(desc, ndesc));
 
         options.addOption(
                 gmx::IntegerOption("nice").store(&nicelevel)
@@ -572,7 +572,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx::CommandLineHelpWriter(options)
                 .setShowDescriptions(true)
                 .setTimeUnitString(timeUnitManager.timeUnitAsString())
-                .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
+                .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))
                 .writeHelp(*context);
             return FALSE;
         }

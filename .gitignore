@@ -13,4 +13,3 @@ lib*.pc
 .project
 .cproject
 CMakeLists.txt.user
-/VersionInfo*.cmake

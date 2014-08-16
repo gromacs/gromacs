@@ -47,7 +47,6 @@
 #include "nbnxn_kernel_gpu_ref.h"
 #include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"
-#include "gromacs/mdlib/nb_verlet.h"
 
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)

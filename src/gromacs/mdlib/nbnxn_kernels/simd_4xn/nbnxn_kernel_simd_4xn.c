@@ -41,7 +41,6 @@
 
 #include "typedefs.h"
 
-#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 
 #ifdef GMX_NBNXN_SIMD_4XN
