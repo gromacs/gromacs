@@ -35,13 +35,6 @@
 set(OUTPUT_DIR final)
 set(HTML_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${OUTPUT_DIR})
 
-if(SOURCE_IS_SOURCE_DISTRIBUTION)
-    # Make sure source package contains HTML pages.
-    if(NOT EXISTS "${HTML_PAGE_DIR}/online.html")
-        message(FATAL_ERROR "Online HTML pages are missing from source package.")
-    endif()
-endif()
-
 add_custom_target(html
     ${CMAKE_COMMAND}
     -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
