@@ -345,7 +345,8 @@ gmx_simd_exp2_f(gmx_simd_float_t x)
  * extended precision arithmetics to improve accuracy.
  *
  * \param x Argument.
- * \result exp(x). Undefined if input argument caused overflow.
+ * \result exp(x). Undefined if input argument caused overflow,
+ * which can happen if abs(x) \> 7e13.
  */
 static gmx_inline gmx_simd_float_t
 gmx_simd_exp_f(gmx_simd_float_t x)
@@ -1125,9 +1126,9 @@ gmx_simd_atan2_f(gmx_simd_float_t y, gmx_simd_float_t x)
  * that we can leave out of this routine.
  *
  * For pme tolerances of 1e-3 to 1e-8 and cutoffs of 0.5nm to 1.8nm,
- * the argument \f$beta r\f$ will be in the range 0.15 to ~4. Use your
- * favorite plotting program to realize how well-behaved \f$\frac{\mbox{erf}(z)}{z}\f$ is
- * in this range!
+ * the argument \f$beta r\f$ will be in the range 0.15 to ~4, which is
+ * the range used for the minimax fit. Use your favorite plotting program
+ * to realize how well-behaved \f$\frac{\mbox{erf}(z)}{z}\f$ is in this range!
  *
  * We approximate \f$f(z)=\mbox{erf}(z)/z\f$ with a rational minimax polynomial.
  * However, it turns out it is more efficient to approximate \f$f(z)/z\f$ and
@@ -1171,8 +1172,11 @@ gmx_simd_atan2_f(gmx_simd_float_t y, gmx_simd_float_t x)
  *    with the vector connecting the two particles and you have your
  *    vectorial force to add to the particles.
  *
- * This approximation achieves an accuracy slightly lower than 1e-6; when
- * added to \f$1/r\f$ the error will be insignificant.
+ * This approximation achieves an error slightly lower than 1e-6
+ * in single precision and 1e-11 in double precision
+ * for arguments smaller than 16 (\f$\beta r \leq 4 \f$);
+ * when added to \f$1/r\f$ the error will be insignificant.
+ * For \f$\beta r \geq 7206\f$ the return value can be inf or NaN.
  *
  */
 static gmx_simd_float_t
@@ -1248,8 +1252,12 @@ gmx_simd_pmecorrF_f(gmx_simd_float_t z2)
  * 6. Subtract the result from \f$1/r\f$, multiply by the product of the charges,
  *    and you have your potential.
  *
- * This approximation achieves an accuracy slightly lower than 1e-6; when
- * added to \f$1/r\f$ the error will be insignificant.
+ * This approximation achieves an error slightly lower than 1e-6
+ * in single precision and 4e-11 in double precision
+ * for arguments smaller than 16 (\f$ 0.15 \leq \beta r \leq 4 \f$);
+ * for \f$ \beta r \leq 0.15\f$ the error can be twice as high;
+ * when added to \f$1/r\f$ the error will be insignificant.
+ * For \f$\beta r \geq 7142\f$ the return value can be inf or NaN.
  */
 static gmx_simd_float_t
 gmx_simd_pmecorrV_f(gmx_simd_float_t z2)

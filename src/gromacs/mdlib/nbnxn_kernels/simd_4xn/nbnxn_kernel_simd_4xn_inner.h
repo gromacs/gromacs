@@ -1014,7 +1014,7 @@
 #endif
 #endif
 
-        /* Mask for the cut-off to avoid overflow in gmx_simd_exp_r */
+        /* Mask for the cut-off to avoid overflow of cr2^2 */
         cr2_S0        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S0, wco_vdw_S0));
         cr2_S1        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S1, wco_vdw_S1));
 #ifndef HALF_LJ

@@ -639,14 +639,14 @@ void AnalysisNeighborhoodPairSearchImpl::startSearch(
                        "Exclusion IDs must be set when exclusions are enabled");
     if (positions.index_ < 0)
     {
-        testPositions_ = ConstArrayRef<rvec>(positions.x_, positions.count_);
+        testPositions_ = constArrayRefFromArray<rvec>(positions.x_, positions.count_);
         reset(0);
     }
     else
     {
         // Somewhat of a hack: setup the array such that only the last position
         // will be used.
-        testPositions_ = ConstArrayRef<rvec>(positions.x_, positions.index_ + 1);
+        testPositions_ = constArrayRefFromArray<rvec>(positions.x_, positions.index_ + 1);
         reset(positions.index_);
     }
 }

@@ -574,6 +574,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK(ir->nstlist <= 0);
         sprintf(err_buf, "TPI does not work with full electrostatics other than PME");
         CHECK(EEL_FULL(ir->coulombtype) && !EEL_PME(ir->coulombtype));
+        sprintf(err_buf, "TPI does not work (yet) with the Verlet cut-off scheme");
+        CHECK(ir->cutoff_scheme == ecutsVERLET);
     }
 
     /* SHAKE / LINCS */

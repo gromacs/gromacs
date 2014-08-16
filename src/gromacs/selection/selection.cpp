@@ -357,8 +357,8 @@ SelectionPosition::operator AnalysisNeighborhoodPositions() const
     if (sel_->hasOnlyAtoms())
     {
         // TODO: Move atomIndices() such that it can be reused here as well.
-        pos.exclusionIds(ConstArrayRef<int>(sel_->rawPositions_.m.mapb.a,
-                                            sel_->rawPositions_.m.mapb.nra));
+        pos.exclusionIds(constArrayRefFromArray<int>(sel_->rawPositions_.m.mapb.a,
+                                                     sel_->rawPositions_.m.mapb.nra));
     }
     return pos.selectSingleFromArray(i_);
 }

@@ -201,6 +201,9 @@ set(LIBRARY_SOVERSION 1)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
 
 set(REGRESSIONTEST_BRANCH "refs/heads/master")
+# The MD5 checksum of the regressiontest tarball. Only used if "-dev"
+# is not present in the PROJECT_VERSION
+set(REGRESSIONTEST_MD5SUM "a07524afebca5013540d4f2f72df2dce")
 
 #####################################################################
 # General version management based on manually set numbers
