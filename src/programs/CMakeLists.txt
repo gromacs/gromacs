@@ -80,12 +80,6 @@ else()
     # Completion generation
 
     set(COMPLETION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/completion)
-    if(SOURCE_IS_SOURCE_DISTRIBUTION)
-        # Make sure source package contains the completions.
-        if(NOT EXISTS "${COMPLETION_DIR}/gmx-completion.bash")
-            message(FATAL_ERROR "Shell completions are missing from source package.")
-        endif()
-    endif()
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/completion)
     add_custom_target(completion
         gmx -quiet help -export completion
