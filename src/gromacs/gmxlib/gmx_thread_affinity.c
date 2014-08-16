@@ -33,10 +33,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "config.h"
-#if defined(HAVE_SCHED_H) && defined(HAVE_SCHED_GETAFFINITY)
-#define _GNU_SOURCE
-#include <sched.h>
-#include <sys/syscall.h>
+#if defined(HAVE_SCHED_H)
+#  ifndef _GNU_SOURCE
+#    define _GNU_SOURCE 1
+#  endif
+#  include <sched.h>
+#  include <sys/syscall.h>
 #endif
 #include <string.h>
 #include <errno.h>
@@ -376,7 +378,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
                               int  gmx_unused  nthreads_hw_avail,
                               gmx_bool         bAfterOpenmpInit)
 {
-#ifdef HAVE_SCHED_GETAFFINITY
+#ifdef HAVE_SCHED_AFFINITY
     cpu_set_t mask_current;
     int       i, ret, cpu_count, cpu_set;
     gmx_bool  bAllSet;
@@ -495,5 +497,5 @@ gmx_check_thread_affinity_set(FILE            *fplog,
             fprintf(debug, "Default affinity mask found\n");
         }
     }
-#endif /* HAVE_SCHED_GETAFFINITY */
+#endif /* HAVE_SCHED_AFFINITY */
 }
