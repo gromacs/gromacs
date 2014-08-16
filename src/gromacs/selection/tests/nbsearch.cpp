@@ -304,13 +304,13 @@ class ExclusionsHelper
 
         gmx::ConstArrayRef<int> refPosIds() const
         {
-            return gmx::ConstArrayRef<int>(exclusionIds_.begin(),
-                                           exclusionIds_.begin() + refPosCount_);
+            return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
+                                                     exclusionIds_.begin() + refPosCount_);
         }
         gmx::ConstArrayRef<int> testPosIds() const
         {
-            return gmx::ConstArrayRef<int>(exclusionIds_.begin(),
-                                           exclusionIds_.begin() + testPosCount_);
+            return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
+                                                     exclusionIds_.begin() + testPosCount_);
         }
 
     private:

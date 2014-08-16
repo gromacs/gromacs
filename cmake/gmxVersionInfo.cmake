@@ -55,6 +55,9 @@
 #       code, *if* this code is recent enough (i.e., contains all changes from
 #       the corresponding code branch that affects the regression test
 #       results).
+#   REGRESSIONTEST_MD5SUM
+#       The MD5 checksum of the regressiontest tarball. Only used when building
+#       from a source package.
 # They are collected into a single section below.
 # The following variables are set based on these:
 #   GMX_VERSION            String composed from GMX_VERSION_* numeric variables
@@ -201,6 +204,7 @@ set(LIBRARY_SOVERSION 1)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
 
 set(REGRESSIONTEST_BRANCH "refs/heads/master")
+set(REGRESSIONTEST_MD5SUM "a07524afebca5013540d4f2f72df2dce")
 
 #####################################################################
 # General version management based on manually set numbers

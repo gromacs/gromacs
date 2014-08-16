@@ -421,9 +421,9 @@ ConstArrayRef<int> FileNameOptionStorage::fileTypes() const
     const int genericTypeCount = ftp2generic_count(fileType_);
     if (genericTypeCount > 0)
     {
-        return ConstArrayRef<int>(ftp2generic_list(fileType_), genericTypeCount);
+        return constArrayRefFromArray<int>(ftp2generic_list(fileType_), genericTypeCount);
     }
-    return ConstArrayRef<int>(&fileType_, 1);
+    return constArrayRefFromArray<int>(&fileType_, 1);
 }
 
 /********************************************************************

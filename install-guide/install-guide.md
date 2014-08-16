@@ -223,11 +223,6 @@ recommends either
   `cmake -DGMX_BUILD_OWN_FFTW=ON`), or
 * that you build FFTW from the source code.
 
-Note that the GROMACS-managed download of the FFTW tarball has a
-slight chance of posing a security risk. If you use this option, you
-will see a warning that advises how you can eliminate this risk
-(before the opportunity has arisen).
-
 If you build FFTW from source yourself, get the most recent version
 and follow its [installation
 guide](http://www.fftw.org/doc/Installation-and-Customization.html#Installation-and-Customization).
