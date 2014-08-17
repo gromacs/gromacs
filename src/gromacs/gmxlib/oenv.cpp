@@ -204,28 +204,40 @@ xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
 
 const char *output_env_get_program_name(const output_env_t oenv)
 {
+    const char *programName = NULL;
+
     try
     {
-        return oenv->programContext.fullBinaryPath();
+        programName = oenv->programContext.fullBinaryPath();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return programName;
 }
 
 const char *output_env_get_short_program_name(const output_env_t oenv)
 {
+    const char *programName = NULL;
+
     try
     {
         // TODO: Use the display name once it doesn't break anything.
-        return oenv->programContext.programName();
+        programName = oenv->programContext.programName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return programName;
 }
 
 const char *output_env_get_cmd_line(const output_env_t oenv)
 {
+    const char *commandLine = NULL;
+
     try
     {
-        return oenv->programContext.commandLine();
+        commandLine = oenv->programContext.commandLine();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return commandLine;
 }

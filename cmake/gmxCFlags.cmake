@@ -200,12 +200,18 @@ MACRO(gmx_c_flags)
     endif()
 
     # xlc
+    # The suppressions below stop information messages about -O3
+    # causing non-strict IEEE compliance that changes the semantics of
+    # the program (duh; 1500-036), warnings about correct PBC-related use of
+    # maximum array indices of DIM-sized C arrays (1500-010).
     if (CMAKE_C_COMPILER_ID MATCHES "XL")
         GMX_TEST_CFLAG(CFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_LANG "-qlanglvl=extc99" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010" GMXC_CFLAGS)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
         GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010" GMXC_CXXFLAGS)
     endif()
 
     # msvc

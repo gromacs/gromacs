@@ -618,12 +618,16 @@ const char *GromacsVersion()
 
 const char *ShortProgram(void)
 {
+    const char *programName = NULL;
+
     try
     {
         // TODO: Use the display name once it doesn't break anything.
-        return gmx::getProgramContext().programName();
+        programName = gmx::getProgramContext().programName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return programName;
 }
 
 const char *Program(void)
