@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -70,25 +70,10 @@
 #=============================================================================
 
 include(BlueGeneQ-static)
-__BlueGeneQ_set_static_flags(XL C)
-__BlueGeneQ_set_static_flags(XL CXX)
-
-# This suppression stops the following information message from
-# almost every source file at -O3:
-#   1500-036: (I) The NOSTRICT option (default at OPT(3)) has the potential to alter the semantics of a program.  Please refer to documentation on the STRICT/NOSTRICT option for more information.
-
-# Suppress xlc warnings about correct PBC-related use of maximum array
-# indices resulting in various warnings like
-#   1500-010: (W) WARNING in put_atoms_in_triclinic_unitcell: Infinite loop.  Program may not stop.
-set(COMPILER_SUPPRESSION "-qsuppress=1500-036 -qsuppress=1500-010")
+__BlueGeneQ_set_static_flags(bgclang C)
+__BlueGeneQ_set_static_flags(bgclang CXX)
 
 set(CMAKE_SYSTEM_NAME BlueGeneQ-static CACHE STRING "Cross-compiling for BlueGene/Q" FORCE)
-# xl.ndebug is appropriate for production calculations. For debugging,
-# use xl to add back error checks and assertions. Using the
-# thread-safe compiler version is required, so use (e.g.)
-# CMAKE_C_COMPILER=/bgsys/drivers/ppcfloor/comm/xl.ndebug/bin/mpixlc_r
-# CMAKE_CXX_COMPILER=/bgsys/drivers/ppcfloor/comm/xl.ndebug/bin/mpixlcxx_r
-set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG ${COMPILER_SUPPRESSION}" CACHE STRING "Compiler optimization flags")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG ${COMPILER_SUPPRESSION}" CACHE STRING "Compiler optimization flags")
 
-mark_as_advanced(CMAKE_XL_CreateExportList) # No idea what spams this
+# Use (e.g.) bgclang and bgclang++ as base compilers inside mpicc and
+# mpicxx

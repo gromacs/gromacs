@@ -909,18 +909,22 @@ accuracy and costs twice as much time moving memory around.
 You need to arrange for FFTW to be installed correctly, following the
 above instructions.
 
-`mpicc` is used for compiling and linking. This can make it awkward to
+MPI wrapper compilers should be used for compiling and linking. Both
+xlc and bgclang are supported back ends - either might prove to be
+faster in practice. The MPI wrapper compilers can make it awkward to
 attempt to use IBM's optimized BLAS/LAPACK called ESSL (see the
-section on
-[linear algebra libraries](#linear-algebra-libraries)). Since mdrun is
-the only part of GROMACS that should normally run on the compute
-nodes, and there is nearly no need for linear algebra support for
-mdrun, it is recommended to use the GROMACS built-in linear algebra
-routines - it is rare for this to run slowly.
+section on [linear algebra
+libraries](#linear-algebra-libraries)). Since mdrun is the only part
+of GROMACS that should normally run on the compute nodes, and there is
+nearly no need for linear algebra support for mdrun, it is recommended
+to use the GROMACS built-in linear algebra routines - it is rare for
+this to run slowly.
 
 The recommended configuration is to use
 
-    cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-CXX \
+    cmake .. -DCMAKE_C_COMPILER=mpicc \
+             -DCMAKE_CXX_COMPILER=mpicxx \
+             -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-CXX \
              -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
              -DGMX_MPI=ON \
              -DGMX_BUILD_MDRUN_ONLY=ON
@@ -928,7 +932,9 @@ The recommended configuration is to use
     make install
 
 which will build a statically-linked MPI-enabled mdrun for the compute
-nodes. Otherwise, GROMACS default configuration behaviour applies.
+nodes. Or use the Platform/BlueGeneQ-static-bgclang-cxx
+toolchain file if compiling with bgclang. Otherwise, GROMACS default configuration
+behaviour applies.
 
 It is possible to configure and make the remaining GROMACS tools with
 the compute-node toolchain, but as none of those tools are MPI-aware

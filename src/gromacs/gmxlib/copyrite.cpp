@@ -616,6 +616,10 @@ const char *GromacsVersion()
     return gmx_version();
 }
 
+#ifdef __xlC__
+/* Suppress warning about return value */
+#pragma report(disable, "1540-1101")
+#endif
 const char *ShortProgram(void)
 {
     try

@@ -202,6 +202,10 @@ xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
     return oenv->xvg_format;
 }
 
+#ifdef __xlC__
+/* Suppress warning about return value */
+#pragma report(disable, "1540-1101")
+#endif
 const char *output_env_get_program_name(const output_env_t oenv)
 {
     try
