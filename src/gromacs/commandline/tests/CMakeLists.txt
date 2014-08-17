@@ -58,3 +58,10 @@ gmx_add_unit_test(CommandLineUnitTests commandline-test
                   cmdlineprogramcontext.cpp
                   pargs.cpp
                   $<TARGET_OBJECTS:onlinehelp-test-shared>)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
+    # This suppression stops a very verbose cascade of messages about the
+    # mocks, which is probably a compiler issue.
+    #   1540-2924 (W) Cannot pass an argument of non-POD class type "const gmx::CommandLineHelpContext" through ellipsis.
+    set_property(SOURCE cmdlinemodulemanager.cpp PROPERTY COMPILE_FLAGS "-qsuppress=1540-2924")
+endif()
