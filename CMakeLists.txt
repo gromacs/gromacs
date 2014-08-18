@@ -331,7 +331,7 @@ include(gmxManageOpenMP)
 # The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
 # are used with permission from CMake v3.0.0 so that GROMACS can detect
 # invalid options with the Intel Compilers, and we have added a line
-# to detect warnings with the Fujitsu compilers on K computer.
+# to detect warnings with the Fujitsu compilers on K computer and ICC.
 # CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
 # a semicolon. Since this is also used as a separator in lists inside CMake,
 # that string ends up being split into two separate patterns, and the last
