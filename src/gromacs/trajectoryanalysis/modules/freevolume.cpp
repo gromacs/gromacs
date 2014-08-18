@@ -39,6 +39,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_trajectoryanalysis
  */
+#include "gmxpre.h"
+
 #include "freevolume.h"
 
 #include <string>

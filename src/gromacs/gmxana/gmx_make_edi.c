@@ -36,6 +36,8 @@
  * on the code from g_anaeig. You can reach him as olange@gwdg.de. He
  * probably also holds copyright to the following code.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <math.h>

@@ -37,6 +37,8 @@
  * kernel type 4xn.
  */
 
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include "gromacs/legacyheaders/typedefs.h"

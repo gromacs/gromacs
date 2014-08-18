@@ -35,6 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
 #include <algorithm>
 
 #include "config.h"

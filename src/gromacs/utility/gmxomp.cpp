@@ -38,6 +38,8 @@
  *
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "gromacs/utility/gmxomp.h"
 
 #include "config.h"

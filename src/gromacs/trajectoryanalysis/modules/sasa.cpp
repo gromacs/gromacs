@@ -41,6 +41,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com> (C++ conversion)
  * \ingroup module_trajectoryanalysis
  */
+#include "gmxpre.h"
+
 #include "sasa.h"
 
 #include <algorithm>

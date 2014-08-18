@@ -40,6 +40,8 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
+#include "gmxpre.h"
+
 #include "moduletest.h"
 #include <gtest/gtest.h>
 #include <string>

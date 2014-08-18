@@ -41,6 +41,8 @@
  *  \author Jochen Hub <jhub@gwdg.de>
  */
 
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <ctype.h>

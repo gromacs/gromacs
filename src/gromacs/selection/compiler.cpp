@@ -269,6 +269,8 @@
  * calculated.
  * Currently, no other processing is done.
  */
+#include "gmxpre.h"
+
 #include "compiler.h"
 
 #include <algorithm>

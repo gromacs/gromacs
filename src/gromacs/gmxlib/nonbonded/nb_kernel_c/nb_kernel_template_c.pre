@@ -36,6 +36,8 @@
 #error This file must be processed with the Gromacs pre-preprocessor
 /* #endif */
 /* #if INCLUDE_HEADER */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <math.h>

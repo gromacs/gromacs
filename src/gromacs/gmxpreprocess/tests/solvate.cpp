@@ -39,6 +39,8 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 
+#include "gmxpre.h"
+
 #include "../solvate.h"
 #include "testutils/integrationtests.h"
 #include "testutils/cmdlinetest.h"

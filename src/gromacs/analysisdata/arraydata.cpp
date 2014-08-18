@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
 #include "gromacs/analysisdata/arraydata.h"
 
 #include <algorithm>

@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
+#include "gmxpre.h"
+
 #include "moduletest.h"
 
 #include <map>

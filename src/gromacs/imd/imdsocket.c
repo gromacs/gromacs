@@ -46,6 +46,8 @@
  * \ingroup module_imd
  */
 
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <errno.h>

@@ -52,6 +52,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
+#include "gmxpre.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/trajectoryanalysis/modules/sasa.h"

@@ -39,6 +39,8 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_fileio
  */
+#include "gmxpre.h"
+
 #include <gtest/gtest.h>
 #include <string>
 

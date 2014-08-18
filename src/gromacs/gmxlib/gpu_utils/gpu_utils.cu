@@ -33,6 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include "selection.h"
 
 #include "gromacs/topology/topology.h"
