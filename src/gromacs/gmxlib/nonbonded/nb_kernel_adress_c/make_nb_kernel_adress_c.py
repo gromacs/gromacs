@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -454,8 +454,7 @@ numKernels = 0
 
 fpdecl = open('nb_kernel_' + Arch + '.c','w')
 fpdecl.write( FileHeader )
-fpdecl.write( '#ifndef nb_kernel_' + Arch + '_h\n' )
-fpdecl.write( '#define nb_kernel_' + Arch + '_h\n\n' )
+fpdecl.write( '#include "gmxpre.h"\n\n' )
 fpdecl.write( '#include "../nb_kernel.h"\n\n' )
 
 for KernelElec in ElectrostaticsList:
@@ -538,6 +537,5 @@ for decl in kerneldecl[0:-1]:
 fpdecl.write( kerneldecl[-1] + '\n' )
 fpdecl.write( '};\n\n' )
 fpdecl.write( 'int\n' )
-fpdecl.write( '    kernellist_'+Arch+'_size = sizeof(kernellist_'+Arch+')/sizeof(kernellist_'+Arch+'[0]);\n\n')
-fpdecl.write( '#endif\n')
+fpdecl.write( '    kernellist_'+Arch+'_size = sizeof(kernellist_'+Arch+')/sizeof(kernellist_'+Arch+'[0]);\n')
 fpdecl.close()

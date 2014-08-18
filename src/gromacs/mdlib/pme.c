@@ -57,6 +57,8 @@
  * /Erik 001109
  */
 
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <assert.h>

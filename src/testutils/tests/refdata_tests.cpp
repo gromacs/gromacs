@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
+
 #include "testutils/refdata.h"
 
 #include <vector>

@@ -42,6 +42,8 @@
  * \author Roland Schulz <roland@utk.edu>
  * \ingroup module_fft
  */
+#include "gmxpre.h"
+
 #include <vector>
 
 #include <gtest/gtest.h>

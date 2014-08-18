@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
+
 #include "testutils/stringtest.h"
 
 #include "gromacs/options/basicoptions.h"

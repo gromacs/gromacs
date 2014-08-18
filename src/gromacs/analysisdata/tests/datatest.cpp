@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
 #include "datatest.h"
 
 #include <gmock/gmock.h>

@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "gromacs/utility/init.h"
 
 #include "config.h"

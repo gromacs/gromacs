@@ -51,6 +51,8 @@
  * \ingroup module_selection
  * \endcond
  */
+#include "gmxpre.h"
+
 #include <stdlib.h>
 #include <string.h>
 

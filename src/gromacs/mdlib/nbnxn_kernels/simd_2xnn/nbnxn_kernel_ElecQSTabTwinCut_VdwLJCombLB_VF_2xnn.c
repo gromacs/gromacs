@@ -43,6 +43,8 @@
  * GMX_NBNXN_SIMD_2XNN, so that this file reduces to a stub
  * function definition when the kernel will never be called.
  */
+#include "gmxpre.h"
+
 #define GMX_SIMD_J_UNROLL_SIZE 2
 #include "nbnxn_kernel_simd_2xnn.h"
 

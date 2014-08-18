@@ -40,6 +40,8 @@
  * \ingroup module_commandline
  */
 // For GMX_BINARY_SUFFIX
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <vector>

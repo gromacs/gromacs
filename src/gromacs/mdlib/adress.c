@@ -34,6 +34,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
 #include "adress.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/pbc.h"

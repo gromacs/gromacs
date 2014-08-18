@@ -42,6 +42,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include "gromacs/legacyheaders/macros.h"
 
 #include "gromacs/math/vec.h"

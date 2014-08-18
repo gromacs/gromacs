@@ -45,6 +45,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
+#include "gmxpre.h"
+
 #include <limits>
 #include <vector>
 

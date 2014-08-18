@@ -36,6 +36,8 @@
  */
 /* This file is completely threadsafe - keep it that way! */
 
+#include "gmxpre.h"
+
 #include "config.h"
 #include "gromacs/utility/cstringutil.h"
 #include "pgutil.h"

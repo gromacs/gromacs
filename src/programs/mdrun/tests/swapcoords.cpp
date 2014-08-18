@@ -40,6 +40,8 @@
  * \author Carsten Kutzner <ckutzne@gwdg.de>
  * \ingroup module_mdrun
  */
+#include "gmxpre.h"
+
 #include "moduletest.h"
 
 namespace gmx

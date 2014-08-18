@@ -43,6 +43,7 @@ if(GMX_GPU)
 endif()
 
 configure_file(config.h.cmakein config.h)
+configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
 
 if (BUILD_TESTING)

@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
+#include "gmxpre.h"
+
 #include "mock_helptopic.h"
 
 #include <gmock/gmock.h>

@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
+#include "gmxpre.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/onlinehelp/helpformat.h"

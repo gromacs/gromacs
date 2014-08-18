@@ -36,6 +36,8 @@
  * the use of GMX_INTEGER_BIG_ENDIAN, and the renaming of the
  * functions md5_init, md5_append and md5_finish to have a gmx_ prefix
  * (to avoid name clashes). */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #ifdef GMX_INTEGER_BIG_ENDIAN

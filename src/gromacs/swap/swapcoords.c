@@ -39,6 +39,8 @@
  * \author Carsten Kutzner <ckutzne@gwdg.de>
  * \ingroup module_swap
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <stdio.h>

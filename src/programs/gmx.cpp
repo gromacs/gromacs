@@ -37,6 +37,8 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
+#include "gmxpre.h"
+
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/selection/selhelp.h"

@@ -33,6 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
 #include "config.h"
 /* dens_filter.c
  * Routines for Filters and convolutions
