@@ -39,7 +39,7 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
-#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 
 #ifdef __cplusplus
