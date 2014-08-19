@@ -41,6 +41,8 @@
 #include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 
+#include "config.h"
+
 #ifdef GMX_GPU
 #define FUNC_TERM ;
 #define FUNC_QUALIFIER
