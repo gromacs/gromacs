@@ -38,6 +38,8 @@
 #ifndef _mdebin_bar_h
 #define _mdebin_bar_h
 
+#include "gromacs/legacyheaders/mdebin.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

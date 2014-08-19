@@ -38,6 +38,8 @@
 #ifndef TMPI_MPI_BINDINGS_H_
 #define TMPI_MPI_BINDINGS_H_
 
+#include "tmpi.h"
+
 /** \file
    \brief MPI bindings for thread_mpi/tmpi.h
 

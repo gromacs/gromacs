@@ -73,7 +73,6 @@
 #endif /*MPI_INT64_T*/
 #else
 #ifdef GMX_THREAD_MPI
-#include "thread_mpi/tmpi.h"
 #include "thread_mpi/mpi_bindings.h"
 #else
 typedef void* MPI_Comm;

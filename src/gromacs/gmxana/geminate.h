@@ -35,6 +35,11 @@
 #ifndef _GEMINATE_H
 #define _GEMINATE_H
 
+#include <stddef.h>
+
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
 enum {
     gemNULL, gemNONE, gemDD, gemAD, gemAA, gemA4, gemNR
 };

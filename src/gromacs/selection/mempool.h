@@ -47,6 +47,8 @@
 #ifndef GMX_SELECTION_MEMPOOL_H
 #define GMX_SELECTION_MEMPOOL_H
 
+#include <stddef.h>
+
 struct gmx_ana_index_t;
 
 /** Opaque struct for memory pooling. */
