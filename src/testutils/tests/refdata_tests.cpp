@@ -42,6 +42,7 @@
 #include "testutils/refdata.h"
 
 #include <vector>
+#include <string>
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
@@ -241,7 +242,7 @@ TEST(ReferenceDataTest, HandlesMissingData)
 }
 
 
-TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
+TEST(ReferenceDataTest, DISABLED_HandlesMissingReferenceDataFile)
 {
     using gmx::test::TestReferenceData;
     using gmx::test::TestReferenceChecker;
@@ -258,23 +259,40 @@ TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
 }
 
 
-TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
+TEST(ReferenceDataTest, HandlesSpecialCharactersInString)
 {
     using gmx::test::TestReferenceData;
     using gmx::test::TestReferenceChecker;
 
+    std::string theString("\"<'>\n \r &\\/;");
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkString("\"<'>\n \r &\\/;", "string");
-        // \r is not handled correctly
-        checker.checkStringBlock("\"<'>\n ]]> &\\/;", "stringblock");
+        checker.checkString(theString, "string");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkString("\"<'>\n \r &\\/;", "string");
-        checker.checkStringBlock("\"<'>\n ]]> &\\/;", "stringblock");
+        checker.checkString(theString, "string");
+    }
+}
+
+TEST(ReferenceDataTest, HandlesSpecialCharactersInStringBlock)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+
+    // \r is not handled correctly
+    std::string theString("\"<'>\n ]] > &\\/;");
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkStringBlock(theString, "stringblock");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkStringBlock(theString, "stringblock");
     }
 }
 

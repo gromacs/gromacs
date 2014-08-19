@@ -279,7 +279,6 @@ Intel's MKL documentation for your system.
 * An external TNG library for trajectory-file handling can be used,
   but TNG 1.6 is bundled in the GROMACS source already
 * zlib is used by TNG for compressing some kinds of trajectory data
-* Running the GROMACS test suite requires libxml2
 * Building the GROMACS documentation requires ImageMagick, pdflatex,
   bibtex, doxygen and pandoc.
 * The GROMACS utility programs often write data files in formats

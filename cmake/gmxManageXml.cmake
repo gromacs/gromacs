@@ -32,10 +32,17 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Find libxml2 for use in GROMACS. Currently nothing uses it, so this
+# file is never included.
+#
+# The find_package() exports LIBXML2_FOUND, which we should not use
+# because it does not tell us that linking will succeed. Instead, we
+# test that next.
+
 # - Define macro to check if linking to libxml2 actually works,
 # because the find_package macro is content if one exists.  This can
 # fail in cross-compilation environments, and we want to know about
-# libxml2 so the test binaries are built only when they will work.
+# libxml2 so the binaries are built only when they will work.
 #
 #  GMX_TEST_LIBXML2(VARIABLE)
 #
@@ -57,4 +64,26 @@ function(GMX_TEST_LIBXML2 VARIABLE)
 endfunction()
 
 
+# Stay quiet if detection has already run
+if(DEFINED LIBXML2_LIBRARIES)
+  set(LibXml2_FIND_QUIETLY TRUE)
+endif()
+find_package(LibXml2)
 
+# Test linking really works
+gmx_test_libxml2(HAVE_LIBXML2)
+
+option(GMX_XML "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
+set(PKG_XML "")
+mark_as_advanced(GMX_XML)
+
+if(GMX_XML AND NOT HAVE_LIBXML2)
+    message(FATAL_ERROR "libxml2 not found. Set GMX_XML=OFF to compile without XML support")
+endif()
+if(GMX_XML)
+    include_directories(${LIBXML2_INCLUDE_DIR})
+    set(PKG_XML libxml-2.0)
+    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
+    # If ever using this again, arrange to add dependency on these
+    # libraries to the appropriate linking infrastructure
+endif()

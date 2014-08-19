@@ -21,10 +21,12 @@ functionality of multiple modules.
 Shared code used to implement the tests is in `src/external/gmock-1.7.0/` and
 `src/testutils/` (see below).
 
-The tests are built if `BUILD_TESTING=ON` (the default) and
-`GMX_BUILD_UNITTESTS=ON` (the default if `libxml2` is available) in CMake.
-Each module produces a separate unit test binary (_module_`-test`) under
-`bin/`, which can execute all the tests for that module.
+The tests can be built with `make tests` if `BUILD_TESTING=ON` (the
+default) and `GMX_BUILD_UNITTESTS=ON` (the default) in CMake.  Each
+module produces a separate unit test binary (_module_`-test`) under
+`bin/`, which can execute all the tests for that module. If
+`GMX_DEVELOPER_BUILD=ON` in CMake, the tests will also be built with
+`make`.
 
 The tests can be executed in a few different ways:
  - Build the `test` target (e.g., `make test`):
@@ -108,8 +110,8 @@ a few parts:
    with `-ref-data update`.
 
    The reference data is stored in XML files under
-   `src/gromacs/`<em>module</em>`/tests/refdata/`.  This part of the framework
-   depends on `libxml2`.  For inspecting the reference data in a browser, there
+   `src/gromacs/`<em>module</em>`/tests/refdata/`.
+   For inspecting the reference data in a browser, there
    are XSLT stylesheets that transform the XML files into HTML.  Such custom
    transformations need to be written for each type of test if the output is
    not easy to check otherwise.  Because of security features in browsers, the

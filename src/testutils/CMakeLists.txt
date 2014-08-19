@@ -33,13 +33,13 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
-include_directories(${LIBXML2_INCLUDE_DIR})
+include_directories(../external/rapidxml-1.13)
 file(GLOB TESTUTILS_SOURCES *.cpp)
 
 add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
-set(TESTUTILS_LIBS testutils ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
+set(TESTUTILS_LIBS testutils ${GMOCK_LIBRARIES})
 set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
+target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES})
 
 set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)

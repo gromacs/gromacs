@@ -461,28 +461,9 @@ include(gmxManageSharedLibraries)
 # Find external packages                                               #
 ########################################################################
 
-# Unconditionally find the package, as it is also required for unit
-# tests. This exports LIBXML2_FOUND, which we should not use because
-# it does not tell us that linking will succeed. Instead, we test that
-# next.
-if(DEFINED LIBXML2_LIBRARIES)
-  set(LibXml2_FIND_QUIETLY TRUE)
-endif()
-find_package(LibXml2)
-include(gmxTestLibXml2)
-gmx_test_libxml2(HAVE_LIBXML2)
-option(GMX_XML "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
-set(PKG_XML "")
-mark_as_advanced(GMX_XML)
-# Don't actually do anything, since libxml2 is currently not used by libgromacs
-#if(GMX_XML AND NOT HAVE_LIBXML2)
-#    message(FATAL_ERROR "libxml2 not found. Set GMX_XML=OFF to compile without XML support")
-#endif()
-#if(GMX_XML)
-#    include_directories(${LIBXML2_INCLUDE_DIR})
-#    set(PKG_XML libxml-2.0)
-#    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
-#endif()
+# LibXml2 is no longer required for any part of GROMACS, but is
+# retained for possible future use
+# include(gmxManageXml)
 
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
@@ -584,17 +565,9 @@ if(GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
         "version of Boost included with Gromacs.")
 endif()
 
-if(NOT DEFINED GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
-    message(WARNING "libxml2 not found. Will build GROMACS without unit-tests. This is not recommended, because the unit-tests help to verify that GROMACS functions correctly. Most likely you are missing the libxml2-dev(el) package. After you installed it, set GMX_BUILD_UNITTESTS=ON.")
-endif()
-option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ${HAVE_LIBXML2})
+option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses built-in Google C++ Testing and Mocking Frameworks)" ON)
 mark_as_advanced(GMX_BUILD_UNITTESTS)
 gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
-if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
-    message(FATAL_ERROR
-        "Cannot build unit tests without libxml2. "
-        "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
-endif()
 
 ########################################################################
 # Generate development version info for cache
