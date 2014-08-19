@@ -1,0 +1,6 @@
+This is the tarball from RapidXml version 1.13. It is unmodified,
+except as described below.
+
+rapidxml_print.hpp is modified to make template member declarations
+for print_* functions before the definition of print_node, which uses
+them. This keeps clang-3.5 happy (and doubtless other compilers also).

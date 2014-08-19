@@ -39,6 +39,12 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
+/* Avoid Intel compiler issuing warnings based on parser code that is
+ * unreachable by design of parse<int Flags> in RapidXml. */
+#ifdef __INTEL_COMPILER
+#pragma warning( disable : 185 )
+#endif
+
 #include "refdata.h"
 
 #include <cstdio>
@@ -46,17 +52,20 @@
 
 #include <limits>
 #include <string>
+#include <sstream>
 
 #include <gtest/gtest.h>
-#include <libxml/parser.h>
-#include <libxml/xmlmemory.h>
+#include <rapidxml.hpp>
+#include <rapidxml_print.hpp>
 
 #include "gromacs/fileio/path.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/uniqueptr.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
@@ -65,18 +74,21 @@
 namespace
 {
 
-/*! \internal \brief
- * Global test environment for freeing up libxml2 internal buffers.
- */
-class TestReferenceDataEnvironment : public ::testing::Environment
-{
-    public:
-        //! Frees internal buffers allocated by libxml2.
-        virtual void TearDown()
-        {
-            xmlCleanupParser();
-        }
-};
+//@{
+/*! \brief Helper typedef
+ *
+ * A previous version of this implementation used libxml2 and we might
+ * one day use it again. This implementation uses types that are named
+ * similarly to libxml2, but are based on RapidXml to do the actual
+ * XML parsing. */
+typedef char xmlChar;
+typedef rapidxml::xml_document<xmlChar> xmlDoc;
+typedef gmx::gmx_unique_ptr<xmlDoc>::type xmlDocPtr;
+typedef rapidxml::xml_node<xmlChar> xmlNode;
+typedef xmlNode *xmlNodePtr;
+typedef rapidxml::xml_attribute<xmlChar> xmlAttr;
+typedef xmlAttr *xmlAttrPtr;
+//@}
 
 //! Global reference data mode set with gmx::test::setReferenceDataMode().
 // TODO: Make this a real enum; requires solving a TODO in StringOption.
@@ -113,7 +125,6 @@ void initReferenceData(Options *options)
                 .defaultEnumIndex(0)
                 .storeEnumIndex(&g_referenceDataMode)
                 .description("Operation mode for tests that use reference data"));
-    ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
 }
 
 /********************************************************************
@@ -149,6 +160,12 @@ class TestReferenceData::Impl
          * May be NULL if there was an I/O error in initialization.
          */
         xmlDocPtr               refDoc_;
+        /*! \brief String used to hold the text read from the
+         * reference data file. Since the XML parsing modifies the
+         * string, and the lifetime of the string must match that of
+         * the document parsed from it, this needs to be a data
+         * member. */
+        std::string             fileText_;
         /*! \brief
          * Whether the reference data is being written (true) or compared
          * (false).
@@ -173,7 +190,7 @@ const xmlChar * const TestReferenceData::Impl::cRootNodeName =
 
 
 TestReferenceData::Impl::Impl(ReferenceDataMode mode, bool bSelfTestMode)
-    : refDoc_(NULL), bWrite_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
+    : refDoc_(new xmlDoc), fileText_(), bWrite_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
 {
     std::string dirname  = getReferenceDataPath();
     std::string filename = TestFileManager::getTestSpecificFileName(".xml");
@@ -196,30 +213,55 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode, bool bSelfTestMode)
     }
     if (bWrite_)
     {
-        // TODO: Error checking
-        refDoc_ = xmlNewDoc(cXmlVersion);
-        xmlNodePtr rootNode = xmlNewDocNode(refDoc_, NULL, cRootNodeName, NULL);
-        xmlDocSetRootElement(refDoc_, rootNode);
-        xmlNodePtr xslNode = xmlNewDocPI(refDoc_, cXmlStyleSheetNodeName,
-                                         cXmlStyleSheetContent);
-        xmlAddPrevSibling(rootNode, xslNode);
+        try
+        {
+            xmlNodePtr rootNode = refDoc_->allocate_node(rapidxml::node_element, cRootNodeName);
+            refDoc_->append_node(rootNode);
+            // TODO Somehow, writing the style-sheet information leads
+            // RapidXml to struggle to find the cRootNodeName element
+            // later on, but supporting the XSL is not all that
+            // important either.
+            // xmlNodePtr xslNode = refDoc_->allocate_node(rapidxml::node_pi, cXmlStyleSheetNodeName, cXmlStyleSheetContent);
+            // refDoc_->prepend_node(xslNode);
+        }
+        catch (const std::bad_alloc &)
+        {
+            GMX_THROW(TestException("XML node creation failed"));
+        }
     }
     else
     {
-        refDoc_ = xmlParseFile(fullFilename_.c_str());
-        if (refDoc_ == NULL)
+        try
         {
-            GMX_THROW(TestException("Reference data not parsed successfully: " + fullFilename_));
+            fileText_ = gmx::File::readToString(fullFilename_);
         }
-        xmlNodePtr rootNode = xmlDocGetRootElement(refDoc_);
+        catch (const FileIOError &)
+        {
+            ADD_FAILURE() << "Reference data file could not be read: " + fullFilename_;
+        }
+        if (fileText_.empty())
+        {
+            ADD_FAILURE() << "Reference data file produced no content: " + fullFilename_;
+        }
+        try
+        {
+            // Parsing needs to modify the string in place, but
+            // apparently does so without needing to reallocate, so
+            // casting away the const-ness of the pointer returned by
+            // std::string::c_str works OK.
+            refDoc_->parse<rapidxml::parse_default>(const_cast<xmlChar *>(fileText_.c_str()));
+        }
+        catch (const rapidxml::parse_error &parseError)
+        {
+            GMX_THROW(TestException("Reference data not parsed successfully: " + fullFilename_ + " because " + parseError.what()));
+        }
+        xmlNodePtr rootNode = refDoc_->first_node();
         if (rootNode == NULL)
         {
-            xmlFreeDoc(refDoc_);
             GMX_THROW(TestException("Reference data is empty: " + fullFilename_));
         }
-        if (xmlStrcmp(rootNode->name, cRootNodeName) != 0)
+        if (0 != std::strcmp(rootNode->name(), cRootNodeName))
         {
-            xmlFreeDoc(refDoc_);
             GMX_THROW(TestException("Invalid root node type in " + fullFilename_));
         }
     }
@@ -238,14 +280,17 @@ TestReferenceData::Impl::~Impl()
                 ADD_FAILURE() << "Creation of reference data directory failed for " << dirname;
             }
         }
-        if (xmlSaveFormatFile(fullFilename_.c_str(), refDoc_, 1) == -1)
+        std::ostringstream fileText;
+        xmlNodePtr         rootNode = refDoc_->first_node();
+        rapidxml::print<xmlChar>(fileText, *rootNode);
+        try
+        {
+            gmx::File::writeFileFromString(fullFilename_, fileText.str());
+        }
+        catch (const gmx::FileIOError &)
         {
             ADD_FAILURE() << "Saving reference data failed for " + fullFilename_;
         }
-    }
-    if (refDoc_ != NULL)
-    {
-        xmlFreeDoc(refDoc_);
     }
 }
 
@@ -336,7 +381,7 @@ class TestReferenceChecker::Impl
          * \param[in]  id     Unique identifier of the node (can be NULL, in
          *      which case the next node without an id is matched).
          * \param[in]  value  String value of the value to be compared.
-         * \param[out] bFound true if a matchin value was found.
+         * \param[out] bFound true if a matching value was found.
          * \returns String value for the reference value.
          * \throws  TestException if node creation fails in write mode.
          *
@@ -472,7 +517,7 @@ TestReferenceChecker::Impl::appendPath(const char *id) const
 xmlNodePtr
 TestReferenceChecker::Impl::findNode(const xmlChar *name, const char *id) const
 {
-    if (currNode_ == NULL || currNode_->children == NULL)
+    if (currNode_ == NULL || currNode_->first_node() == NULL)
     {
         return NULL;
     }
@@ -483,53 +528,47 @@ TestReferenceChecker::Impl::findNode(const xmlChar *name, const char *id) const
     {
         if (id == NULL)
         {
-            xmlChar *refId = xmlGetProp(node, cIdAttrName);
+            xmlAttrPtr refId = node->first_attribute(cIdAttrName);
             if (refId == NULL)
             {
-                if (name == NULL || xmlStrcmp(node->name, name) == 0)
+                if (name == NULL || 0 == std::strcmp(node->name(), name))
                 {
                     bWrap = false;
-                    node  = node->next;
+                    node  = node->next_sibling();
                     if (node == NULL)
                     {
                         return NULL;
                     }
                 }
             }
-            else
-            {
-                xmlFree(refId);
-            }
         }
     }
     else
     {
-        node  = currNode_->children;
+        node  = currNode_->first_node();
         bWrap = false;
     }
     do
     {
-        if (name == NULL || xmlStrcmp(node->name, name) == 0)
+        if (name == NULL || 0 == std::strcmp(node->name(), name))
         {
-            xmlChar *refId = xmlGetProp(node, cIdAttrName);
+            xmlAttrPtr refId = node->first_attribute(cIdAttrName);
             if (xmlId == NULL && refId == NULL)
             {
                 return node;
             }
             if (refId != NULL)
             {
-                if (xmlId != NULL && xmlStrcmp(refId, xmlId) == 0)
+                if (xmlId != NULL && 0 == std::strcmp(refId->value(), xmlId))
                 {
-                    xmlFree(refId);
                     return node;
                 }
-                xmlFree(refId);
             }
         }
-        node = node->next;
+        node = node->next_sibling();
         if (bWrap && node == NULL)
         {
-            node = currNode_->children;
+            node = currNode_->first_node();
         }
     }
     while (node != NULL && node != prevFoundNode_);
@@ -549,22 +588,22 @@ TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name,
         *bFound        = true;
         prevFoundNode_ = node;
     }
-    if (node == NULL)
+    else
     {
         if (bWrite_)
         {
-            node = xmlNewTextChild(currNode_, NULL, name, NULL);
-            if (node != NULL && id != NULL)
+            try
             {
-                const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
-                xmlAttrPtr     prop  = xmlNewProp(node, cIdAttrName, xmlId);
-                if (prop == NULL)
+                node = currNode_->document()->allocate_node(rapidxml::node_element, name);
+                currNode_->append_node(node);
+                if (id != NULL)
                 {
-                    xmlFreeNode(node);
-                    node = NULL;
+                    const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
+                    xmlAttrPtr     prop  = currNode_->document()->allocate_attribute(cIdAttrName, xmlId);
+                    node->append_attribute(prop);
                 }
             }
-            if (node == NULL)
+            catch (const std::bad_alloc &)
             {
                 GMX_THROW(TestException("XML node creation failed"));
             }
@@ -592,15 +631,14 @@ TestReferenceChecker::Impl::processItem(const xmlChar *name, const char *id,
     }
     if (bWrite_ && !*bFound)
     {
-        xmlNodeAddContent(node, reinterpret_cast<const xmlChar *>(value));
+        node->value(node->document()->allocate_string(value));
         *bFound = true;
         return std::string(value);
     }
     else
     {
-        xmlChar    *refXmlValue = xmlNodeGetContent(node);
+        xmlChar    *refXmlValue = node->value();
         std::string refValue(reinterpret_cast<const char *>(refXmlValue));
-        xmlFree(refXmlValue);
         return refValue;
     }
 }
@@ -660,7 +698,7 @@ TestReferenceChecker TestReferenceData::rootChecker()
     {
         return TestReferenceChecker(new TestReferenceChecker::Impl(isWriteMode()));
     }
-    xmlNodePtr rootNode = xmlDocGetRootElement(impl_->refDoc_);
+    xmlNodePtr rootNode = impl_->refDoc_->first_node();
     // TODO: The default tolerance for double-precision builds that explicitly
     // call checkFloat() may not be ideal.
     return TestReferenceChecker(
@@ -818,35 +856,33 @@ void TestReferenceChecker::checkStringBlock(const std::string &value,
     {
         std::string    adjustedValue = "\n" + value;
         const xmlChar *xmlValue
-            = reinterpret_cast<const xmlChar *>(adjustedValue.c_str());
+            = node->document()->allocate_string(reinterpret_cast<const xmlChar *>(adjustedValue.c_str()));
+
         // TODO: Figure out if \r and \r\n can be handled without them changing
         // to \n in the roundtrip
         xmlNodePtr cdata
-            = xmlNewCDataBlock(node->doc, xmlValue,
-                               static_cast<int>(adjustedValue.length()));
-        xmlAddChild(node, cdata);
+            = node->document()->allocate_node(rapidxml::node_cdata, NULL, xmlValue);
+        node->append_node(cdata);
     }
     else
     {
-        xmlNodePtr cdata = node->children;
-        while (cdata != NULL && cdata->type != XML_CDATA_SECTION_NODE)
+        xmlNodePtr cdata = node->first_node();
+        while (cdata != NULL && rapidxml::node_cdata != cdata->type())
         {
-            cdata = cdata->next;
+            cdata = cdata->next_sibling();
         }
         if (cdata == NULL)
         {
             ADD_FAILURE() << "Invalid string block element";
             return;
         }
-        xmlChar *refXmlValue = xmlNodeGetContent(cdata);
+        xmlChar *refXmlValue = cdata->value();
         if (refXmlValue[0] != '\n')
         {
             ADD_FAILURE() << "Invalid string block element";
-            xmlFree(refXmlValue);
             return;
         }
         std::string refValue(reinterpret_cast<const char *>(refXmlValue + 1));
-        xmlFree(refXmlValue);
         EXPECT_EQ(refValue, value);
     }
 }
