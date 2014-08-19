@@ -59,6 +59,8 @@
 
 #include "testutils/cmdlinetest.h"
 
+#include "config.h"
+
 namespace
 {
 
