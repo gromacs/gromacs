@@ -38,7 +38,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
 #include "gromacs/utility/cstringutil.h"
 #include "pgutil.h"
 #include <string.h>

@@ -39,8 +39,6 @@
 
 #include "conformation-utilities.h"
 
-#include "config.h"
-
 #include <math.h>
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"

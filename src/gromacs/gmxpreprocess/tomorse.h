@@ -38,8 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_TOMORSE_H
 #define GMX_GMXPREPROCESS_TOMORSE_H
 
-#include "config.h"
-
 #include <stdio.h>
 #include "gromacs/legacyheaders/typedefs.h"
 

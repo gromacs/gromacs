@@ -38,8 +38,6 @@
 
 #include "insert-molecules.h"
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/fileio/confio.h"

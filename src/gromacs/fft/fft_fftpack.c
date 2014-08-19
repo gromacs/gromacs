@@ -37,8 +37,6 @@
 
 #include "gromacs/fft/fft.h"
 
-#include "config.h"
-
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>

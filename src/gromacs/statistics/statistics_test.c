@@ -38,8 +38,6 @@
 
 #include "statistics.h"
 
-#include "config.h"
-
 #include <stdio.h>
 
 #include "gromacs/math/vec.h"

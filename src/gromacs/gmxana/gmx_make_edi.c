@@ -38,8 +38,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include <stdlib.h>
 #include <ctype.h>

@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "cmat.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/macros.h"

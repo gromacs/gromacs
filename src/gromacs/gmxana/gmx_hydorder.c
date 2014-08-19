@@ -35,8 +35,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include <string.h>
 

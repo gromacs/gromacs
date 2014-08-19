@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 /* This file is completely threadsafe - keep it that way! */
 
 #include <stdlib.h>

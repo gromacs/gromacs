@@ -36,8 +36,6 @@
 
 #include "gromacs/topology/mtop_util.h"
 
-#include "config.h"
-
 #include <stdlib.h>
 #include <string.h>
 

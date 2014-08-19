@@ -38,8 +38,6 @@
 
 #include "gromacs/pbcutil/pbc.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <math.h>
 

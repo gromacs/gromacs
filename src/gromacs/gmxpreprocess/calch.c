@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/macros.h"
 #include "calch.h"
 #include "gromacs/math/utilities.h"

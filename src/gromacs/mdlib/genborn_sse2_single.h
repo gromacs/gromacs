@@ -37,8 +37,6 @@
 #ifndef _genborn_sse_h
 #define _genborn_sse_h
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/typedefs.h"
 
 float

@@ -43,8 +43,6 @@
 
 #include "cmdlinerunner.h"
 
-#include "config.h"
-
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"

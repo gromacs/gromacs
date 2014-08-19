@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <string.h>
 #include <stdio.h>
 #include "gromacs/legacyheaders/typedefs.h"
