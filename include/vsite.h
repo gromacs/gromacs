@@ -131,6 +131,7 @@ gmx_vsite_t *init_vsite(gmx_mtop_t *mtop, t_commrec *cr,
  */
 
 void split_vsites_over_threads(const t_ilist   *ilist,
+                               const t_iparams *ip,
                                const t_mdatoms *mdatoms,
                                gmx_bool         bLimitRange,
                                gmx_vsite_t     *vsite);
