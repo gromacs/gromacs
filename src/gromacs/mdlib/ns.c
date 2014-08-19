@@ -289,11 +289,8 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
         /* Did we get the solvent loops so we can use optimized water kernels? */
         if (nbl->nlist_sr[eNL_VDWQQ_WATER].kernelptr_vf == NULL
             || nbl->nlist_sr[eNL_QQ_WATER].kernelptr_vf == NULL
-#ifndef DISABLE_WATERWATER_NLIST
             || nbl->nlist_sr[eNL_VDWQQ_WATERWATER].kernelptr_vf == NULL
-            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL
-#endif
-            )
+            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL)
         {
             fr->solvent_opt = esolNO;
             if (log != NULL)
@@ -666,13 +663,11 @@ put_in_list_at(gmx_bool              bHaveVdW[],
 
     if (iwater != esolNO)
     {
-        vdwc = &nlist[eNL_VDWQQ_WATER];
-        vdw  = &nlist[eNL_VDW];
-        coul = &nlist[eNL_QQ_WATER];
-#ifndef DISABLE_WATERWATER_NLIST
+        vdwc    = &nlist[eNL_VDWQQ_WATER];
+        vdw     = &nlist[eNL_VDW];
+        coul    = &nlist[eNL_QQ_WATER];
         vdwc_ww = &nlist[eNL_VDWQQ_WATERWATER];
         coul_ww = &nlist[eNL_QQ_WATERWATER];
-#endif
     }
     else
     {
@@ -692,9 +687,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             if (bDoCoul && bDoVdW)
             {
                 new_i_nblist(vdwc, i_atom, shift, gid);
-#ifndef DISABLE_WATERWATER_NLIST
                 new_i_nblist(vdwc_ww, i_atom, shift, gid);
-#endif
             }
             if (bDoVdW)
             {
@@ -703,9 +696,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             if (bDoCoul)
             {
                 new_i_nblist(coul, i_atom, shift, gid);
-#ifndef DISABLE_WATERWATER_NLIST
                 new_i_nblist(coul_ww, i_atom, shift, gid);
-#endif
             }
             /* Loop over the j charge groups */
             for (j = 0; (j < nj); j++)
@@ -730,19 +721,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     }
                     else
                     {
-#ifdef DISABLE_WATERWATER_NLIST
-                        /* Add entries for the three atoms - only do VdW if we need to */
-                        if (!bDoVdW)
-                        {
-                            add_j_to_nblist(coul, jj0, bLR);
-                        }
-                        else
-                        {
-                            add_j_to_nblist(vdwc, jj0, bLR);
-                        }
-                        add_j_to_nblist(coul, jj0+1, bLR);
-                        add_j_to_nblist(coul, jj0+2, bLR);
-#else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
@@ -752,7 +730,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             add_j_to_nblist(vdwc_ww, jj0, bLR);
                         }
-#endif
                     }
                 }
                 else if (iwater == esolTIP4P && jwater == esolTIP4P)
@@ -765,16 +742,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     }
                     else
                     {
-#ifdef DISABLE_WATERWATER_NLIST
-                        /* Add entries for the four atoms - only do VdW if we need to */
-                        if (bDoVdW)
-                        {
-                            add_j_to_nblist(vdw, jj0, bLR);
-                        }
-                        add_j_to_nblist(coul, jj0+1, bLR);
-                        add_j_to_nblist(coul, jj0+2, bLR);
-                        add_j_to_nblist(coul, jj0+3, bLR);
-#else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
@@ -784,7 +751,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             add_j_to_nblist(vdwc_ww, jj0, bLR);
                         }
-#endif
                     }
                 }
                 else
@@ -845,10 +811,8 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             close_i_nblist(vdw);
             close_i_nblist(coul);
             close_i_nblist(vdwc);
-#ifndef DISABLE_WATERWATER_NLIST
             close_i_nblist(coul_ww);
             close_i_nblist(vdwc_ww);
-#endif
         }
         else
         {

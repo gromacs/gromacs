@@ -61,12 +61,6 @@
 /* Binary directory for the build */
 #cmakedefine CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@"
 
-/* Turn off water-water neighborlist optimization only - not used right now */
-#cmakedefine DISABLE_WATERWATER_NLIST
-
-/* Turn off all water neighborlist optimization - not used right now */
-#cmakedefine DISABLE_WATER_NLIST
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
