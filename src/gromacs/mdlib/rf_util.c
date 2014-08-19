@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/names.h"

@@ -34,8 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/pbcutil/ishift.h"
 
 #include "nbnxn_kernel_common.h"

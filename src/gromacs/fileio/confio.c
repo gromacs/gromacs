@@ -38,8 +38,6 @@
 
 #include "confio.h"
 
-#include "config.h"
-
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>

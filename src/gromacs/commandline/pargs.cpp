@@ -34,12 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
 #include "gromacs/commandline/pargs.h"
-
-#include "config.h"
 
 #include <cstdlib>
 #include <cstring>

@@ -38,8 +38,6 @@
 
 #include "pdbio.h"
 
-#include "config.h"
-
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>

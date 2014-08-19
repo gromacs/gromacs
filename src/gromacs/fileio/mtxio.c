@@ -38,8 +38,6 @@
 
 #include "mtxio.h"
 
-#include "config.h"
-
 /* This module provides routines to read/write sparse or full storage
  * matrices from/to files. It is normally used for the Hessian matrix
  * in normal mode analysis.

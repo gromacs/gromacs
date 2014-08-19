@@ -37,8 +37,6 @@
 #ifndef _genborn_sse2_double_h
 #define _genborn_sse2_double_h
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/typedefs.h"
 
 int

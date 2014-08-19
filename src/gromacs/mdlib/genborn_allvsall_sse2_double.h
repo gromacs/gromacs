@@ -37,8 +37,6 @@
 #ifndef _GENBORN_ALLVSALL_SSE2_DOUBLE_H
 #define _GENBORN_ALLVSALL_SSE2_DOUBLE_H
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/typedefs.h"
 

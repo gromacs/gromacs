@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"

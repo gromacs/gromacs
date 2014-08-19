@@ -35,8 +35,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/fatalerror.h"

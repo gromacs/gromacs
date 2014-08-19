@@ -37,8 +37,6 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <string.h>
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"

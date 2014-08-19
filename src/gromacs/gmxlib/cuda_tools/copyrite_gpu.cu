@@ -35,8 +35,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>

@@ -38,8 +38,6 @@
 
 #include "solvate.h"
 
-#include "config.h"
-
 #include <string.h>
 
 #include "gromacs/legacyheaders/typedefs.h"

@@ -37,8 +37,6 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <stdlib.h>
 
 /* #define DEBUG_NNB */

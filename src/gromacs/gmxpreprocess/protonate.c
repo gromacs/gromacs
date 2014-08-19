@@ -38,8 +38,6 @@
 
 #include "protonate.h"
 
-#include "config.h"
-
 #include <math.h>
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/legacyheaders/typedefs.h"

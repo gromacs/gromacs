@@ -34,8 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 /*! \internal \file
  * \brief
  * Separate test of SIMD load/store, before we use them in the SIMD test classes.

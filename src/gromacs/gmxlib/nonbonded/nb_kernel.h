@@ -35,9 +35,6 @@
 #ifndef _nb_kernel_h_
 #define _nb_kernel_h_
 
-#include "config.h"
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
