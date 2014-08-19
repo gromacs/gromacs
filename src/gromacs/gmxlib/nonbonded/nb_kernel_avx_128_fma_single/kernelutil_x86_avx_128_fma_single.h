@@ -35,6 +35,7 @@
 #ifndef _kernelutil_x86_avx_128_fma_single_h_
 #define _kernelutil_x86_avx_128_fma_single_h_
 
+#include "config.h"
 
 #include <math.h>
 #include <immintrin.h>

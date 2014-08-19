@@ -35,6 +35,8 @@
 #ifndef _kernelutil_x86_avx_256_single_h_
 #define _kernelutil_x86_avx_256_single_h_
 
+#include "config.h"
+
 #define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 
 static gmx_inline __m256
