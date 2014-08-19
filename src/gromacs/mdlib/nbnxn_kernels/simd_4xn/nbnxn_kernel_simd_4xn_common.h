@@ -41,6 +41,8 @@
 #include "gromacs/math/utilities.h"
 #endif
 
+#include "config.h"
+
 #ifndef GMX_SIMD_J_UNROLL_SIZE
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
 #endif
