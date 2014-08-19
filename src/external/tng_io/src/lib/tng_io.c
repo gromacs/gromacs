@@ -4762,8 +4762,8 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
     int nalgo;
     int new_len;
     int *alt_algo = 0;
-    char *dest, *temp;
-    int64_t algo_find_n_frames;
+    char *dest, *temp, *temp_data_contents;
+    int64_t algo_find_n_frames, compressed_len;
     unsigned long offset;
     float f_precision;
     double d_precision;
@@ -4791,6 +4791,17 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
     f_precision = 1/(float)tng_data->compression_precision;
     d_precision = 1/tng_data->compression_precision;
 
+    compressed_len = block->block_contents_size - (unsigned long)((char *)start_pos - (char *)block->block_contents);
+    temp_data_contents = malloc(compressed_len);
+    if(!temp_data_contents)
+    {
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
+                compressed_len, __FILE__, __LINE__);
+        return(TNG_CRITICAL);
+    }
+
+    memcpy(temp_data_contents, (char *)start_pos, compressed_len);
+
     if(block->id == TNG_TRAJ_POSITIONS)
     {
         /* If there is only one frame in this frame set and there might be more
@@ -4802,7 +4813,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
             alt_algo=malloc(nalgo * sizeof *tng_data->compress_algo_pos);
             if(type == TNG_FLOAT_DATA)
             {
-                dest = tng_compress_pos_float_find_algo(start_pos, (int)n_particles,
+                dest = tng_compress_pos_float_find_algo((float *)temp_data_contents, (int)n_particles,
                                                         (int)n_frames,
                                                         f_precision,
                                                         0, alt_algo,
@@ -4811,7 +4822,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
             }
             else
             {
-                dest = tng_compress_pos_find_algo(start_pos, (int)n_particles,
+                dest = tng_compress_pos_find_algo((double *)temp_data_contents, (int)n_particles,
                                            (int)n_frames,
                                            d_precision,
                                            0, alt_algo,
@@ -4834,7 +4845,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
                                            sizeof *tng_data->compress_algo_pos);
             if(type == TNG_FLOAT_DATA)
             {
-                dest = tng_compress_pos_float_find_algo(start_pos, (int)n_particles,
+                dest = tng_compress_pos_float_find_algo((float *)temp_data_contents, (int)n_particles,
                                                         (int)algo_find_n_frames,
                                                         f_precision,
                                                         0, tng_data->
@@ -4843,7 +4854,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
 
                 if(algo_find_n_frames < n_frames)
                 {
-                    dest = tng_compress_pos_float(start_pos, (int)n_particles,
+                    dest = tng_compress_pos_float((float *)temp_data_contents, (int)n_particles,
                                                   (int)n_frames,
                                                   f_precision,
                                                   0, tng_data->compress_algo_pos,
@@ -4852,7 +4863,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
             }
             else
             {
-                dest = tng_compress_pos_find_algo(start_pos, (int)n_particles,
+                dest = tng_compress_pos_find_algo((double *)temp_data_contents, (int)n_particles,
                                            (int)algo_find_n_frames,
                                            d_precision,
                                            0, tng_data->
@@ -4861,7 +4872,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
 
                 if(algo_find_n_frames < n_frames)
                 {
-                    dest = tng_compress_pos(start_pos, (int)n_particles,
+                    dest = tng_compress_pos((double *)temp_data_contents, (int)n_particles,
                                             (int)n_frames,
                                             d_precision, 0,
                                             tng_data->compress_algo_pos,
@@ -4873,14 +4884,14 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
         {
             if(type == TNG_FLOAT_DATA)
             {
-                dest = tng_compress_pos_float(start_pos, (int)n_particles,
+                dest = tng_compress_pos_float((float *)temp_data_contents, (int)n_particles,
                                               (int)n_frames,
                                               f_precision, 0,
                                               tng_data->compress_algo_pos, &new_len);
             }
             else
             {
-                dest = tng_compress_pos(start_pos, (int)n_particles,
+                dest = tng_compress_pos((double *)temp_data_contents, (int)n_particles,
                                         (int)n_frames,
                                         d_precision, 0,
                                         tng_data->compress_algo_pos,
@@ -4899,7 +4910,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
             alt_algo=malloc(nalgo * sizeof *tng_data->compress_algo_pos);
             if(type == TNG_FLOAT_DATA)
             {
-                dest = tng_compress_vel_float_find_algo(start_pos, (int)n_particles,
+                dest = tng_compress_vel_float_find_algo((float *)temp_data_contents, (int)n_particles,
                                                         (int)n_frames,
                                                         f_precision,
                                                         0, alt_algo,
@@ -4908,7 +4919,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
             }
             else
             {
-                dest = tng_compress_vel_find_algo(start_pos, (int)n_particles,
+                dest = tng_compress_vel_find_algo((double *)temp_data_contents, (int)n_particles,
                                                   (int)n_frames,
                                                   d_precision,
                                                   0, alt_algo,
@@ -4932,7 +4943,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
 
             if(type == TNG_FLOAT_DATA)
             {
-                dest = tng_compress_vel_float_find_algo(start_pos, (int)n_particles,
+                dest = tng_compress_vel_float_find_algo((float *)temp_data_contents, (int)n_particles,
                                                         (int)algo_find_n_frames,
                                                         f_precision,
                                                         0, tng_data->
@@ -4940,7 +4951,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
                                                         &new_len);
                 if(algo_find_n_frames < n_frames)
                 {
-                    dest = tng_compress_vel_float(start_pos, (int)n_particles,
+                    dest = tng_compress_vel_float((float *)temp_data_contents, (int)n_particles,
                                                   (int)n_frames,
                                                   f_precision,
                                                   0, tng_data->compress_algo_vel,
@@ -4949,7 +4960,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
             }
             else
             {
-                dest = tng_compress_vel_find_algo(start_pos, (int)n_particles,
+                dest = tng_compress_vel_find_algo((double *)temp_data_contents, (int)n_particles,
                                                   (int)algo_find_n_frames,
                                                   d_precision,
                                                   0, tng_data->
@@ -4957,7 +4968,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
                                                   &new_len);
                 if(algo_find_n_frames < n_frames)
                 {
-                    dest = tng_compress_vel(start_pos, (int)n_particles,
+                    dest = tng_compress_vel((double *)temp_data_contents, (int)n_particles,
                                             (int)n_frames,
                                             d_precision,
                                             0, tng_data->compress_algo_vel,
@@ -4969,7 +4980,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
         {
             if(type == TNG_FLOAT_DATA)
             {
-                dest = tng_compress_vel_float(start_pos, (int)n_particles,
+                dest = tng_compress_vel_float((float *)temp_data_contents, (int)n_particles,
                                               (int)n_frames,
                                               f_precision,
                                               0, tng_data->
@@ -4978,7 +4989,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
             }
             else
             {
-                dest = tng_compress_vel(start_pos, (int)n_particles,
+                dest = tng_compress_vel((double *)temp_data_contents, (int)n_particles,
                                         (int)n_frames,
                                         d_precision,
                                         0, tng_data->
@@ -4990,6 +5001,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
     else
     {
         fprintf(stderr, "TNG library: Can only compress positions and velocities using TNG-MF1 algorithms.\n");
+        free(temp_data_contents);
         return(TNG_FAILURE);
     }
 
@@ -5001,6 +5013,8 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
     }
 
     block->block_contents_size = new_len + offset;
+
+    free(temp_data_contents);
 
     temp = realloc(block->block_contents, block->block_contents_size);
     if(!temp)
@@ -5032,7 +5046,7 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
                                           void *start_pos,
                                           const unsigned long uncompressed_len)
 {
-    char *temp;
+    char *temp, *temp_data_contents;
     double *d_dest = 0;
     float *f_dest = 0;
     unsigned long offset;
@@ -5054,6 +5068,16 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
         return(TNG_FAILURE);
     }
 
+    temp_data_contents = malloc(uncompressed_len);
+    if(!temp_data_contents)
+    {
+        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+                uncompressed_len, __FILE__, __LINE__);
+        return(TNG_CRITICAL);
+    }
+
+    memcpy(temp_data_contents, (char *)start_pos, uncompressed_len);
+
     if(type == TNG_FLOAT_DATA)
     {
         f_dest = malloc(uncompressed_len);
@@ -5061,9 +5085,10 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
         {
             fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
                 uncompressed_len, __FILE__, __LINE__);
+            free(temp_data_contents);
             return(TNG_CRITICAL);
         }
-        result = tng_compress_uncompress_float(start_pos, f_dest);
+        result = tng_compress_uncompress_float(temp_data_contents, f_dest);
     }
     else
     {
@@ -5072,14 +5097,16 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
         {
             fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
                 uncompressed_len, __FILE__, __LINE__);
+            free(temp_data_contents);
             return(TNG_CRITICAL);
         }
-        result = tng_compress_uncompress(start_pos, d_dest);
+        result = tng_compress_uncompress(temp_data_contents, d_dest);
     }
 
     if(result == 1)
     {
         fprintf(stderr, "TNG library: Cannot uncompress TNG compressed block.\n");
+        free(temp_data_contents);
         return(TNG_FAILURE);
     }
 
@@ -5102,6 +5129,7 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
         }
         fprintf(stderr, "TNG library: Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
                block->block_contents_size, __FILE__, __LINE__);
+        free(temp_data_contents);
         return(TNG_CRITICAL);
     }
 
@@ -5116,6 +5144,7 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
 
     block->block_contents = temp;
 
+    free(temp_data_contents);
     if(d_dest)
     {
         free(d_dest);
@@ -11668,6 +11697,10 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
     *n = tng_data->n_trajectory_frame_sets = cnt;
 
     *frame_set = orig_frame_set;
+    /* The mapping block in the original frame set has been freed when reading
+     * other frame sets. */
+    frame_set->mappings = 0;
+    frame_set->n_mapping_blocks = 0;
 
     fseek(tng_data->input_file,
           (long)tng_data->first_trajectory_frame_set_input_file_pos,
