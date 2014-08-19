@@ -37,6 +37,8 @@
 
 #include "gromacs/legacyheaders/types/simple.h"
 
+#include "config.h"
+
 /*! \brief Provides hardware-specific utility routines for the SIMD kernels.
  *
  * Defines all functions, typedefs, constants and macros that have
