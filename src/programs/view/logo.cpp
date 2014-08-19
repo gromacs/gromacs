@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <stdlib.h>
 
 #include "gromacs/legacyheaders/macros.h"

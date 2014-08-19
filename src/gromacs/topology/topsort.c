@@ -38,8 +38,6 @@
 
 #include "gromacs/topology/topsort.h"
 
-#include "config.h"
-
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/types/ifunc.h"

@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/viewit.h"

@@ -38,8 +38,6 @@
 
 #include "xdrf.h"
 
-#include "config.h"
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

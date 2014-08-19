@@ -37,9 +37,6 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "config.h"
-
-
 #include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/disre.h"

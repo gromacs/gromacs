@@ -39,8 +39,6 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
-#include "config.h"
-
 #include <string.h>
 
 #include "gromacs/legacyheaders/macros.h"

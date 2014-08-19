@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/units.h"

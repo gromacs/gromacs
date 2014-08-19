@@ -38,8 +38,6 @@
 
 #include "writeps.h"
 
-#include "config.h"
-
 #include <stdio.h>
 
 #include "gromacs/utility/fatalerror.h"

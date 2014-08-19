@@ -38,8 +38,6 @@
 
 #include "x2top.h"
 
-#include "config.h"
-
 #include <assert.h>
 
 #include "gromacs/legacyheaders/copyrite.h"

@@ -34,8 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "simd.h"
 
 /* Some notes on the setup of these tests:
