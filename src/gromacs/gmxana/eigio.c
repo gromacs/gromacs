@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "eigio.h"

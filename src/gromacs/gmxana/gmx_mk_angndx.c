@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"

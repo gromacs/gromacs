@@ -36,9 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
-
 #include "groupcoord.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/pbcutil/pbc.h"

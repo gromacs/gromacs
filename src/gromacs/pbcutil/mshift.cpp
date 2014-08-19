@@ -38,8 +38,6 @@
 
 #include "gromacs/pbcutil/mshift.h"
 
-#include "config.h"
-
 #include <string.h>
 
 #include <algorithm>

@@ -38,8 +38,6 @@
 
 #include "gromacs/fileio/timecontrol.h"
 
-#include "config.h"
-
 #include "thread_mpi/threads.h"
 
 #include "gromacs/utility/basedefinitions.h"

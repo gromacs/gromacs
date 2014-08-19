@@ -38,8 +38,6 @@
 
 #include "filenm.h"
 
-#include "config.h"
-
 #include <stdio.h>
 #include <string.h>
 

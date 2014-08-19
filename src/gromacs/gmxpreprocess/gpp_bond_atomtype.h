@@ -38,8 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_GPP_BONDATOMTYPE_H
 #define GMX_GMXPREPROCESS_GPP_BONDATOMTYPE_H
 
-#include "config.h"
-
 #include <stdio.h>
 #include "gromacs/legacyheaders/typedefs.h"
 

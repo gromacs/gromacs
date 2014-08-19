@@ -38,8 +38,6 @@
 
 #include "grompp.h"
 
-#include "config.h"
-
 #include <sys/types.h>
 #include <math.h>
 #include <string.h>

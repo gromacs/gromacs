@@ -34,8 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <ctype.h>
 #include <float.h>
 #include <math.h>

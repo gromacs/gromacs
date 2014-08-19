@@ -38,8 +38,6 @@
 
 #include "gromacs/pbcutil/rmpbc.h"
 
-#include "config.h"
-
 #include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"

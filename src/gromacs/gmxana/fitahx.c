@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "fitahx.h"
 #include "gromacs/math/vec.h"
 

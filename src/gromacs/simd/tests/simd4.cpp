@@ -34,8 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "simd4.h"
 
 namespace gmx

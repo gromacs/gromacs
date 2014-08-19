@@ -37,8 +37,6 @@
 #ifndef _GENBORN_ALLVSALL_H
 #define _GENBORN_ALLVSALL_H
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/typedefs.h"
 

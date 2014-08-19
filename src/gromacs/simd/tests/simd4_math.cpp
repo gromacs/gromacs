@@ -34,8 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <vector>
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"

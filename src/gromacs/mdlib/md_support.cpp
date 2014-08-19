@@ -39,8 +39,6 @@
 
 #include <algorithm>
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/domdec.h"

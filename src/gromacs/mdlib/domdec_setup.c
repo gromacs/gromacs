@@ -35,8 +35,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <stdio.h>
 #include <assert.h>
 #include "gromacs/legacyheaders/domdec.h"

@@ -38,8 +38,6 @@
 
 #include "gromacs/topology/atomprop.h"
 
-#include "config.h"
-
 #include <ctype.h>
 #include <string.h>
 
