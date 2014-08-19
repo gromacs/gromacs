@@ -64,6 +64,8 @@
 #include "../fileio/filenm.h"
 #include "../timing/wallcycle.h"
 
+#include "config.h"
+
 #ifdef GMX_NATIVE_WINDOWS
 #include <Windows.h>
 #define NOFLAGS 0

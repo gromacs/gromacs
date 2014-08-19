@@ -58,6 +58,8 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "config.h"
+
 namespace gmx
 {
 

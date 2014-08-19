@@ -53,7 +53,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 #ifdef PRINT_ALLOC_KB
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 #endif
 
