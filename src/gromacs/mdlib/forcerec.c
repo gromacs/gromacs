@@ -585,10 +585,6 @@ check_solvent(FILE  *                fp,
         bestsol = esolNO;
     }
 
-#ifdef DISABLE_WATER_NLIST
-    bestsol = esolNO;
-#endif
-
     fr->nWatMol = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
