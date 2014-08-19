@@ -1988,6 +1988,7 @@ static void prepare_vsite_thread(const t_ilist      *ilist,
 }
 
 void split_vsites_over_threads(const t_ilist   *ilist,
+                               const t_iparams *ip,
                                const t_mdatoms *mdatoms,
                                gmx_bool         bLimitRange,
                                gmx_vsite_t     *vsite)
@@ -2026,16 +2027,38 @@ void split_vsites_over_threads(const t_ilist   *ilist,
         vsite_atom_range = -1;
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if ((interaction_function[ftype].flags & IF_VSITE) &&
-                ftype != F_VSITEN)
+            if (interaction_function[ftype].flags & IF_VSITE)
             {
-                nral1 = 1 + NRAL(ftype);
-                iat   = ilist[ftype].iatoms;
-                for (i = 0; i < ilist[ftype].nr; i += nral1)
+                if (ftype != F_VSITEN)
                 {
-                    for (j = i+1; j < i+nral1; j++)
+                    nral1 = 1 + NRAL(ftype);
+                    iat   = ilist[ftype].iatoms;
+                    for (i = 0; i < ilist[ftype].nr; i += nral1)
                     {
-                        vsite_atom_range = max(vsite_atom_range, iat[j]);
+                        for (j = i + 1; j < i + nral1; j++)
+                        {
+                            vsite_atom_range = max(vsite_atom_range, iat[j]);
+                        }
+                    }
+                }
+                else
+                {
+                    int vs_ind_end;
+
+                    iat = ilist[ftype].iatoms;
+
+                    i = 0;
+                    while (i < ilist[ftype].nr)
+                    {
+                        /* The 3 below is from 1+NRAL(ftype)=3 */
+                        vs_ind_end = i + ip[iat[i]].vsiten.n*3;
+
+                        vsite_atom_range = max(vsite_atom_range, iat[i+1]);
+                        while (i < vs_ind_end)
+                        {
+                            vsite_atom_range = max(vsite_atom_range, iat[i+2]);
+                            i += 3;
+                        }
                     }
                 }
             }
@@ -2083,8 +2106,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        if ((interaction_function[ftype].flags & IF_VSITE) &&
-            ftype != F_VSITEN)
+        if (interaction_function[ftype].flags & IF_VSITE)
         {
             nral1 = 1 + NRAL(ftype);
             inc   = nral1;
@@ -2098,7 +2120,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                  */
                 if (ftype != F_VSITEN)
                 {
-                    for (j = i+2; j < i+nral1; j++)
+                    for (j = i + 2; j < i + nral1; j++)
                     {
                         if (th_ind[iat[j]] != th)
                         {
@@ -2111,8 +2133,9 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                 }
                 else
                 {
-                    inc = iat[i];
-                    for (j = i+2; j < i+inc; j += 3)
+                    /* The 3 below is from 1+NRAL(ftype)=3 */
+                    inc = ip[iat[i]].vsiten.n*3;
+                    for (j = i + 2; j < i + inc; j += 3)
                     {
                         if (th_ind[iat[j]] != th)
                         {
@@ -2122,7 +2145,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                 }
                 /* Copy this vsite to the thread data struct of thread th */
                 il_th = &vsite->tdata[th].ilist[ftype];
-                for (j = i; j < i+inc; j++)
+                for (j = i; j < i + inc; j++)
                 {
                     il_th->iatoms[il_th->nr++] = iat[j];
                 }
@@ -2185,6 +2208,7 @@ void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
             gmx_incons("Can not use threads virtual sites combined with charge groups or particle decomposition");
         }
 
-        split_vsites_over_threads(top->idef.il, md, !DOMAINDECOMP(cr), vsite);
+        split_vsites_over_threads(top->idef.il, top->idef.iparams,
+                                  md, !DOMAINDECOMP(cr), vsite);
     }
 }

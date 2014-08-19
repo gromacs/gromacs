@@ -9808,7 +9808,8 @@ void dd_partition_system(FILE                *fplog,
     if (vsite != NULL)
     {
         /* Now we have updated mdatoms, we can do the last vsite bookkeeping */
-        split_vsites_over_threads(top_local->idef.il, mdatoms, FALSE, vsite);
+        split_vsites_over_threads(top_local->idef.il, top_local->idef.iparams,
+                                  mdatoms, FALSE, vsite);
     }
 
     if (shellfc)
