@@ -9,6 +9,8 @@
  * modify it under the terms of the Revised BSD License.
  */
 
+#include "tng/tng_io.h"
+
 #ifdef USE_STD_INTTYPES_H
 #include <inttypes.h>
 #endif
@@ -22,11 +24,14 @@
 #include <zlib.h>
 #endif
 
-#include "tng/tng_io.h"
 #include "tng/md5.h"
 #include "compression/tng_compress.h"
 #include "tng/version.h"
 
+#ifdef _MSC_VER
+#define fseeko _fseeki64
+#define ftello _ftelli64
+#endif
 
 struct tng_bond {
     /** One of the atoms of the bond */
@@ -260,7 +265,7 @@ struct tng_trajectory {
     /** A handle to the input file */
     FILE *input_file;
     /** The length of the input file */
-    long input_file_len;
+    int64_t input_file_len;
     /** The path of the output trajectory file */
     char *output_file_path;
     /** A handle to the output file */
@@ -345,9 +350,9 @@ struct tng_trajectory {
     /** The currently active frame set */
     struct tng_trajectory_frame_set current_trajectory_frame_set;
     /** The pos in the src file of the current frame set */
-    long current_trajectory_frame_set_input_file_pos;
+    int64_t current_trajectory_frame_set_input_file_pos;
     /** The pos in the dest file of the current frame set */
-    long current_trajectory_frame_set_output_file_pos;
+    int64_t current_trajectory_frame_set_output_file_pos;
     /** The number of frame sets in the trajectory N.B. Not saved in file and
      *  cannot be trusted to be up-to-date */
     int64_t n_trajectory_frame_sets;
@@ -801,7 +806,8 @@ static tng_function_status tng_block_destroy(struct tng_gen_block **block_p)
 static tng_function_status tng_block_header_read
                 (tng_trajectory_t tng_data, tng_gen_block_t block)
 {
-    int len, offset = 0;
+    int len;
+    int64_t offset = 0;
 
     TNG_ASSERT(block != 0, "TNG library: Trying to read to uninitialized block (NULL pointer).");
 
@@ -826,7 +832,7 @@ static tng_function_status tng_block_header_read
     }
 
     /* If this was the size of the general info block check the endianness */
-    if(ftell(tng_data->input_file) < 9)
+    if(ftello(tng_data->input_file) < 9)
     {
         /* File is little endian */
         if ( *((const char*)&block->header_contents_size) != 0x00 &&
@@ -893,8 +899,8 @@ static tng_function_status tng_block_header_read
     }
 
     /* Move the reading position to the beginning of the header. */
-    fseek(tng_data->input_file, -(long)sizeof(block->header_contents_size),
-          SEEK_CUR);
+    fseeko(tng_data->input_file, -(int64_t)sizeof(block->header_contents_size),
+           SEEK_CUR);
 
     /* If there is already memory allocated for the contents free it (we do not
      * know if the size is correct). */
@@ -1061,7 +1067,7 @@ static tng_function_status tng_md5_hash_update(tng_trajectory_t tng_data,
         return(TNG_CRITICAL);
     }
 
-    fseek(tng_data->output_file, (long)contents_start_pos, SEEK_SET);
+    fseeko(tng_data->output_file, contents_start_pos, SEEK_SET);
     if(fread(block->block_contents, block->block_contents_size, 1,
             tng_data->output_file) == 0)
     {
@@ -1071,7 +1077,7 @@ static tng_function_status tng_md5_hash_update(tng_trajectory_t tng_data,
 
     tng_block_md5_hash_generate(block);
 
-    fseek(tng_data->output_file, (long)header_start_pos + 3 * sizeof(int64_t),
+    fseeko(tng_data->output_file, header_start_pos + 3 * sizeof(int64_t),
           SEEK_SET);
     fwrite(block->md5_hash, TNG_MD5_HASH_LEN, 1, tng_data->output_file);
 
@@ -1104,8 +1110,8 @@ static tng_function_status tng_header_pointers_update
 
     tng_block_init(&block);
 
-    output_file_pos = ftell(tng_data->output_file);
-    fseek(tng_data->output_file, 0, SEEK_SET);
+    output_file_pos = ftello(tng_data->output_file);
+    fseeko(tng_data->output_file, 0, SEEK_SET);
 
     if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
     {
@@ -1116,9 +1122,9 @@ static tng_function_status tng_header_pointers_update
         return(TNG_CRITICAL);
     }
 
-    contents_start_pos = ftell(tng_data->output_file);
+    contents_start_pos = ftello(tng_data->output_file);
 
-    fseek(tng_data->output_file, (long)block->block_contents_size - 5 *
+    fseeko(tng_data->output_file, block->block_contents_size - 5 *
           sizeof(int64_t), SEEK_CUR);
 
     tng_data->input_file = temp;
@@ -1169,7 +1175,7 @@ static tng_function_status tng_header_pointers_update
 
     tng_block_destroy(&block);
 
-    fseek(tng_data->output_file, (long)output_file_pos, SEEK_SET);
+    fseeko(tng_data->output_file, output_file_pos, SEEK_SET);
 
     return(TNG_SUCCESS);
 }
@@ -1199,7 +1205,7 @@ static tng_function_status tng_frame_set_pointers_update
     }
 
     tng_block_init(&block);
-    output_file_pos = ftell(tng_data->output_file);
+    output_file_pos = ftello(tng_data->output_file);
 
     tng_data->input_file = tng_data->output_file;
 
@@ -1210,7 +1216,7 @@ static tng_function_status tng_frame_set_pointers_update
     /* Update next frame set */
     if(frame_set->next_frame_set_file_pos > 0)
     {
-        fseek(tng_data->output_file, (long)frame_set->next_frame_set_file_pos,
+        fseeko(tng_data->output_file, frame_set->next_frame_set_file_pos,
               SEEK_SET);
 
         if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
@@ -1222,9 +1228,9 @@ static tng_function_status tng_frame_set_pointers_update
             return(TNG_CRITICAL);
         }
 
-        contents_start_pos = ftell(tng_data->output_file);
+        contents_start_pos = ftello(tng_data->output_file);
 
-        fseek(tng_data->output_file, (long)block->block_contents_size - (5 *
+        fseeko(tng_data->output_file, block->block_contents_size - (5 *
             sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
 
         if(tng_data->input_endianness_swap_func_64)
@@ -1250,12 +1256,12 @@ static tng_function_status tng_frame_set_pointers_update
             tng_md5_hash_update(tng_data, block, frame_set->next_frame_set_file_pos,
                                 contents_start_pos);
         }
-        fseek(tng_data->output_file, (long)output_file_pos, SEEK_SET);
+        fseeko(tng_data->output_file, output_file_pos, SEEK_SET);
     }
     /* Update previous frame set */
     if(frame_set->prev_frame_set_file_pos > 0)
     {
-        fseek(tng_data->output_file, (long)frame_set->prev_frame_set_file_pos,
+        fseeko(tng_data->output_file, frame_set->prev_frame_set_file_pos,
               SEEK_SET);
 
         if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
@@ -1267,9 +1273,9 @@ static tng_function_status tng_frame_set_pointers_update
             return(TNG_CRITICAL);
         }
 
-        contents_start_pos = ftell(tng_data->output_file);
+        contents_start_pos = ftello(tng_data->output_file);
 
-        fseek(tng_data->output_file, (long)block->block_contents_size - (6 *
+        fseeko(tng_data->output_file, block->block_contents_size - (6 *
             sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
 
         if(tng_data->input_endianness_swap_func_64)
@@ -1295,15 +1301,15 @@ static tng_function_status tng_frame_set_pointers_update
             tng_md5_hash_update(tng_data, block, frame_set->prev_frame_set_file_pos,
                                 contents_start_pos);
         }
-        fseek(tng_data->output_file, (long)output_file_pos, SEEK_SET);
+        fseeko(tng_data->output_file, output_file_pos, SEEK_SET);
     }
 
     /* Update the frame set one medium stride step after */
     if(frame_set->medium_stride_next_frame_set_file_pos > 0)
     {
-        fseek(tng_data->output_file,
-              (long)frame_set->medium_stride_next_frame_set_file_pos,
-              SEEK_SET);
+        fseeko(tng_data->output_file,
+               frame_set->medium_stride_next_frame_set_file_pos,
+               SEEK_SET);
 
         if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
         {
@@ -1314,9 +1320,9 @@ static tng_function_status tng_frame_set_pointers_update
             return(TNG_CRITICAL);
         }
 
-        contents_start_pos = ftell(tng_data->output_file);
+        contents_start_pos = ftello(tng_data->output_file);
 
-        fseek(tng_data->output_file, (long)block->block_contents_size - (3 *
+        fseeko(tng_data->output_file, block->block_contents_size - (3 *
             sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
 
         if(tng_data->input_endianness_swap_func_64)
@@ -1347,9 +1353,9 @@ static tng_function_status tng_frame_set_pointers_update
     /* Update the frame set one medium stride step before */
     if(frame_set->medium_stride_prev_frame_set_file_pos > 0)
     {
-        fseek(tng_data->output_file,
-              (long)frame_set->medium_stride_prev_frame_set_file_pos,
-              SEEK_SET);
+        fseeko(tng_data->output_file,
+               frame_set->medium_stride_prev_frame_set_file_pos,
+               SEEK_SET);
 
         if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
         {
@@ -1360,9 +1366,9 @@ static tng_function_status tng_frame_set_pointers_update
             return(TNG_CRITICAL);
         }
 
-        contents_start_pos = ftell(tng_data->output_file);
+        contents_start_pos = ftello(tng_data->output_file);
 
-        fseek(tng_data->output_file, (long)block->block_contents_size - (4 *
+        fseeko(tng_data->output_file, block->block_contents_size - (4 *
             sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
 
         if(tng_data->input_endianness_swap_func_64)
@@ -1394,9 +1400,9 @@ static tng_function_status tng_frame_set_pointers_update
     /* Update the frame set one long stride step after */
     if(frame_set->long_stride_next_frame_set_file_pos > 0)
     {
-        fseek(tng_data->output_file,
-              (long)frame_set->long_stride_next_frame_set_file_pos,
-              SEEK_SET);
+        fseeko(tng_data->output_file,
+               frame_set->long_stride_next_frame_set_file_pos,
+               SEEK_SET);
 
         if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
         {
@@ -1407,10 +1413,10 @@ static tng_function_status tng_frame_set_pointers_update
             return(TNG_CRITICAL);
         }
 
-        contents_start_pos = ftell(tng_data->output_file);
+        contents_start_pos = ftello(tng_data->output_file);
 
-        fseek(tng_data->output_file, (long)block->block_contents_size - (1 *
-            sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
+        fseeko(tng_data->output_file, block->block_contents_size - (1 *
+               sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
 
         if(tng_data->input_endianness_swap_func_64)
         {
@@ -1440,9 +1446,9 @@ static tng_function_status tng_frame_set_pointers_update
     /* Update the frame set one long stride step before */
     if(frame_set->long_stride_prev_frame_set_file_pos > 0)
     {
-        fseek(tng_data->output_file,
-              (long)frame_set->long_stride_prev_frame_set_file_pos,
-              SEEK_SET);
+        fseeko(tng_data->output_file,
+               frame_set->long_stride_prev_frame_set_file_pos,
+               SEEK_SET);
 
         if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
         {
@@ -1453,9 +1459,9 @@ static tng_function_status tng_frame_set_pointers_update
             return(TNG_CRITICAL);
         }
 
-        contents_start_pos = ftell(tng_data->output_file);
+        contents_start_pos = ftello(tng_data->output_file);
 
-        fseek(tng_data->output_file, (long)block->block_contents_size - (2 *
+        fseeko(tng_data->output_file, block->block_contents_size - (2 *
             sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
 
         if(tng_data->input_endianness_swap_func_64)
@@ -1484,7 +1490,7 @@ static tng_function_status tng_frame_set_pointers_update
         }
     }
 
-    fseek(tng_data->output_file, (long)output_file_pos, SEEK_SET);
+    fseeko(tng_data->output_file, output_file_pos, SEEK_SET);
 
     tng_data->input_file = temp;
 
@@ -1502,7 +1508,7 @@ static tng_function_status tng_reread_frame_set_at_file_pos
 
     tng_block_init(&block);
 
-    fseek(tng_data->input_file, pos, SEEK_SET);
+    fseeko(tng_data->input_file, pos, SEEK_SET);
     if(pos > 0)
     {
         stat = tng_block_header_read(tng_data, block);
@@ -1537,7 +1543,7 @@ static tng_function_status tng_file_pos_of_subsequent_trajectory_block_get
     tng_trajectory_frame_set_t frame_set =
     &tng_data->current_trajectory_frame_set;
 
-    orig_pos = ftell(tng_data->input_file);
+    orig_pos = ftello(tng_data->input_file);
     curr_frame_set_pos = tng_data->current_trajectory_frame_set_input_file_pos;
 
     *pos = tng_data->first_trajectory_frame_set_input_file_pos;
@@ -1547,7 +1553,7 @@ static tng_function_status tng_file_pos_of_subsequent_trajectory_block_get
         return(TNG_SUCCESS);
     }
 
-    fseek(tng_data->input_file, *pos, SEEK_SET);
+    fseeko(tng_data->input_file, *pos, SEEK_SET);
 
     tng_block_init(&block);
     /* Read block headers first to see that a frame set block is found. */
@@ -1570,7 +1576,7 @@ static tng_function_status tng_file_pos_of_subsequent_trajectory_block_get
     /* Read all frame set blocks (not the blocks between them) */
     while(frame_set->next_frame_set_file_pos > 0)
     {
-        fseek(tng_data->input_file, frame_set->next_frame_set_file_pos, SEEK_SET);
+        fseeko(tng_data->input_file, frame_set->next_frame_set_file_pos, SEEK_SET);
         stat = tng_block_header_read(tng_data, block);
         if(stat == TNG_CRITICAL)
         {
@@ -1601,7 +1607,7 @@ static tng_function_status tng_file_pos_of_subsequent_trajectory_block_get
     /* Re-read the frame set that used to be the current one */
     tng_reread_frame_set_at_file_pos(tng_data, curr_frame_set_pos);
 
-    fseek(tng_data->input_file, orig_pos, SEEK_SET);
+    fseeko(tng_data->input_file, orig_pos, SEEK_SET);
 
     tng_block_destroy(&block);
 
@@ -1624,7 +1630,7 @@ static tng_function_status tng_frame_set_complete_migrate
         return(TNG_CRITICAL);
     }
 
-    fseek(tng_data->input_file, block_start_pos, SEEK_SET);
+    fseeko(tng_data->input_file, block_start_pos, SEEK_SET);
 
     contents = malloc(block_len);
     if(!contents)
@@ -1641,7 +1647,7 @@ static tng_function_status tng_frame_set_complete_migrate
         free(contents);
         return(TNG_CRITICAL);
     }
-    fseek(tng_data->output_file, new_pos, SEEK_SET);
+    fseeko(tng_data->output_file, new_pos, SEEK_SET);
 
     if(fwrite(contents, block_len, 1, tng_data->output_file) != 1)
     {
@@ -1676,7 +1682,7 @@ static tng_function_status tng_frame_set_complete_migrate
     {
         contents[i] = '\0';
     }
-    fseek(tng_data->output_file, block_start_pos, SEEK_SET);
+    fseeko(tng_data->output_file, block_start_pos, SEEK_SET);
 
     /* FIXME: casting block_len to size_t is dangerous */
     fwrite(contents, 1, block_len, tng_data->output_file);
@@ -1694,12 +1700,12 @@ static tng_function_status tng_length_of_current_frame_set_contents_get
     tng_gen_block_t block;
     tng_function_status stat;
 
-    orig_pos = ftell(tng_data->input_file);
+    orig_pos = ftello(tng_data->input_file);
     curr_frame_set_pos = pos = tng_data->current_trajectory_frame_set_input_file_pos;
 
     *len = 0;
 
-    fseek(tng_data->input_file, curr_frame_set_pos, SEEK_SET);
+    fseeko(tng_data->input_file, curr_frame_set_pos, SEEK_SET);
 
     tng_block_init(&block);
     /* Read block headers first to see that a frame set block is found. */
@@ -1715,7 +1721,7 @@ static tng_function_status tng_length_of_current_frame_set_contents_get
     /* Read the headers of all blocks in the frame set (not the actual contents of them) */
     while(stat == TNG_SUCCESS)
     {
-        fseek(tng_data->input_file, block->block_contents_size, SEEK_CUR);
+        fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
         *len += block->header_contents_size + block->block_contents_size;
         pos += block->header_contents_size + block->block_contents_size;
         if(pos >= tng_data->input_file_len)
@@ -1732,7 +1738,7 @@ static tng_function_status tng_length_of_current_frame_set_contents_get
     /* Re-read the frame set that used to be the current one */
     tng_reread_frame_set_at_file_pos(tng_data, curr_frame_set_pos);
 
-    fseek(tng_data->input_file, orig_pos, SEEK_SET);
+    fseeko(tng_data->input_file, orig_pos, SEEK_SET);
 
     tng_block_destroy(&block);
 
@@ -1783,12 +1789,12 @@ static tng_function_status tng_migrate_data_in_file
         return(TNG_SUCCESS);
     }
 
-    orig_file_pos = ftell(tng_data->input_file);
+    orig_file_pos = ftello(tng_data->input_file);
     tng_block_init(&block);
 
     while(empty_space < offset)
     {
-        fseek(tng_data->input_file, traj_start_pos, SEEK_SET);
+        fseeko(tng_data->input_file, traj_start_pos, SEEK_SET);
         stat = tng_block_header_read(tng_data, block);
         if(stat == TNG_CRITICAL)
         {
@@ -1822,7 +1828,7 @@ static tng_function_status tng_migrate_data_in_file
 
         empty_space += frame_set_length;
     }
-    fseek(tng_data->input_file, orig_file_pos, SEEK_SET);
+    fseeko(tng_data->input_file, orig_file_pos, SEEK_SET);
     tng_block_destroy(&block);
 
     return(TNG_SUCCESS);
@@ -2410,7 +2416,7 @@ static tng_function_status tng_general_info_block_read
     if(tng_data->input_endianness_swap_func_64)
     {
         if(tng_data->input_endianness_swap_func_64(tng_data,
-                                                 &tng_data->long_stride_length)
+                                                   &tng_data->long_stride_length)
             != TNG_SUCCESS)
         {
             fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
@@ -2462,7 +2468,7 @@ static tng_function_status tng_general_info_block_write
         return(TNG_CRITICAL);
     }
 
-    fseek(tng_data->output_file, 0, SEEK_SET);
+    fseeko(tng_data->output_file, 0, SEEK_SET);
 
     tng_block_init(&block);
 
@@ -3870,9 +3876,8 @@ static tng_function_status tng_frame_set_block_read
                  tng_gen_block_t block,
                  const char hash_mode)
 {
-    long file_pos;
     int offset = 0;
-    int64_t i, prev_n_particles;
+    int64_t file_pos, i, prev_n_particles;
     tng_bool same_hash;
     tng_trajectory_frame_set_t frame_set =
     &tng_data->current_trajectory_frame_set;
@@ -3907,15 +3912,15 @@ static tng_function_status tng_frame_set_block_read
     /* FIXME: Does not check if the size of the contents matches the expected
      * size or if the contents can be read. */
 
-    file_pos = (int64_t)ftell(tng_data->input_file) -
-               (long)(block->block_contents_size + block->header_contents_size);
+    file_pos = (int64_t)ftello(tng_data->input_file) -
+               (block->block_contents_size + block->header_contents_size);
 
     if(hash_mode == TNG_USE_HASH)
     {
         tng_md5_hash_match_verify(block, &same_hash);
         if(same_hash != TNG_TRUE)
         {
-            fprintf(stderr, "TNG library: Frame set block contents corrupt. File pos %ld Hashes do not match. "
+            fprintf(stderr, "TNG library: Frame set block contents corrupt. File pos %"PRId64" Hashes do not match. "
                 "%s: %d\n",
                 file_pos, __FILE__, __LINE__);
     /*         return(TNG_FAILURE); */
@@ -4763,8 +4768,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
     int new_len;
     int *alt_algo = 0;
     char *dest, *temp, *temp_data_contents;
-    int64_t algo_find_n_frames, compressed_len;
-    unsigned long offset;
+    int64_t algo_find_n_frames, compressed_len, offset;
     float f_precision;
     double d_precision;
 
@@ -5044,12 +5048,12 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
                                           tng_gen_block_t block,
                                           const char type,
                                           void *start_pos,
-                                          const unsigned long uncompressed_len)
+                                          const int64_t uncompressed_len)
 {
     char *temp, *temp_data_contents;
     double *d_dest = 0;
     float *f_dest = 0;
-    unsigned long offset;
+    int64_t offset;
     int result;
     (void)tng_data;
 
@@ -5071,7 +5075,7 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
     temp_data_contents = malloc(uncompressed_len);
     if(!temp_data_contents)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
                 uncompressed_len, __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -5083,7 +5087,7 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
         f_dest = malloc(uncompressed_len);
         if(!f_dest)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
                 uncompressed_len, __FILE__, __LINE__);
             free(temp_data_contents);
             return(TNG_CRITICAL);
@@ -5095,7 +5099,7 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
         d_dest = malloc(uncompressed_len);
         if(!d_dest)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
                 uncompressed_len, __FILE__, __LINE__);
             free(temp_data_contents);
             return(TNG_CRITICAL);
@@ -5662,7 +5666,7 @@ static tng_function_status tng_particle_data_read
 {
     int64_t i, j, k, tot_n_particles, n_frames_div;
     int size, len;
-    unsigned long data_size;
+    int64_t data_size;
     char ***first_dim_values, **second_dim_values;
     tng_particle_data_t data;
     tng_trajectory_frame_set_t frame_set =
@@ -6594,7 +6598,7 @@ static tng_function_status tng_data_read(tng_trajectory_t tng_data,
     int64_t i, j, n_frames_div;
     int size, len;
 #ifdef USE_ZLIB
-    unsigned long data_size;
+    int64_t data_size;
 #endif
     tng_non_particle_data_t data;
     tng_trajectory_frame_set_t frame_set =
@@ -7550,13 +7554,13 @@ static tng_function_status tng_data_block_contents_read
 //     }
 //
 //     tng_block_init(&block);
-// //     output_file_pos = ftell(tng_data->output_file);
+// //     output_file_pos = ftello(tng_data->output_file);
 //
 //     tng_data->input_file = tng_data->output_file;
 //
 //     pos = tng_data->current_trajectory_frame_set_output_file_pos;
 //
-//     fseek(tng_data->output_file, pos, SEEK_SET);
+//     fseeko(tng_data->output_file, pos, SEEK_SET);
 //     if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
 //     {
 //         fprintf(stderr, "TNG library: Cannot read frame set header. %s: %d\n",
@@ -7566,12 +7570,12 @@ static tng_function_status tng_data_block_contents_read
 //         return(TNG_CRITICAL);
 //     }
 //
-//     contents_start_pos = ftell(tng_data->output_file);
+//     contents_start_pos = ftello(tng_data->output_file);
 //
-//     fseek(tng_data->output_file, 0, SEEK_END);
-//     output_file_len = ftell(tng_data->output_file);
+//     fseeko(tng_data->output_file, 0, SEEK_END);
+//     output_file_len = ftello(tng_data->output_file);
 //     pos = contents_start_pos + block->block_contents_size;
-//     fseek(tng_data->output_file, pos,
+//     fseeko(tng_data->output_file, pos,
 //           SEEK_SET);
 //
 //     while(pos < output_file_len)
@@ -7585,7 +7589,7 @@ static tng_function_status tng_data_block_contents_read
 //             return(TNG_CRITICAL);
 //         }
 //         pos += block->header_contents_size + block->block_contents_size;
-//         fseek(tng_data->output_file, pos, SEEK_SET);
+//         fseeko(tng_data->output_file, pos, SEEK_SET);
 //     }
 //
 //     return(TNG_SUCCESS);
@@ -7623,13 +7627,13 @@ static tng_function_status tng_frame_set_finalize
     }
 
     tng_block_init(&block);
-/*     output_file_pos = ftell(tng_data->output_file); */
+/*     output_file_pos = ftello(tng_data->output_file); */
 
     tng_data->input_file = tng_data->output_file;
 
     pos = tng_data->current_trajectory_frame_set_output_file_pos;
 
-    fseek(tng_data->output_file, (long)pos, SEEK_SET);
+    fseeko(tng_data->output_file, pos, SEEK_SET);
 
     if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
     {
@@ -7640,9 +7644,9 @@ static tng_function_status tng_frame_set_finalize
         return(TNG_CRITICAL);
     }
 
-    contents_start_pos = ftell(tng_data->output_file);
+    contents_start_pos = ftello(tng_data->output_file);
 
-    fseek(tng_data->output_file, sizeof(frame_set->first_frame), SEEK_CUR);
+    fseeko(tng_data->output_file, sizeof(frame_set->first_frame), SEEK_CUR);
     if(fwrite(&frame_set->n_written_frames, sizeof(frame_set->n_frames),
               1, tng_data->output_file) != 1)
     {
@@ -7658,10 +7662,10 @@ static tng_function_status tng_frame_set_finalize
                             pos + block->header_contents_size);
     }
 
-    fseek(tng_data->output_file, 0, SEEK_END);
-    output_file_len = ftell(tng_data->output_file);
+    fseeko(tng_data->output_file, 0, SEEK_END);
+    output_file_len = ftello(tng_data->output_file);
     pos = contents_start_pos + block->block_contents_size;
-    fseek(tng_data->output_file, (long)pos, SEEK_SET);
+    fseeko(tng_data->output_file, pos, SEEK_SET);
 
     while(pos < output_file_len)
     {
@@ -7680,7 +7684,7 @@ static tng_function_status tng_frame_set_finalize
                                 pos + block->header_contents_size);
         }
         pos += block->header_contents_size + block->block_contents_size;
-        fseek(tng_data->output_file, (long)pos, SEEK_SET);
+        fseeko(tng_data->output_file, pos, SEEK_SET);
     }
 
     tng_data->input_file = temp;
@@ -10623,7 +10627,7 @@ tng_function_status DECLSPECDLLEXPORT tng_output_file_endianness_set
 
     /* Tne endianness cannot be changed if the data has already been written
      * to the output file. */
-    if(ftell(tng_data->output_file) > 0)
+    if(ftello(tng_data->output_file) > 0)
     {
         return(TNG_FAILURE);
     }
@@ -11247,14 +11251,13 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frames_get
 {
     tng_gen_block_t block;
     tng_function_status stat;
-    long file_pos;
-    int64_t last_file_pos, first_frame, n_frames;
+    int64_t file_pos, last_file_pos, first_frame, n_frames;
 
     TNG_ASSERT(tng_data, "TNG library: Trajectory container not properly setup.");
     TNG_ASSERT(tng_data->input_file, "TNG library: An input file must be open to find the next frame set");
     TNG_ASSERT(n, "TNG library: n must not be a NULL pointer");
 
-    file_pos = ftell(tng_data->input_file);
+    file_pos = ftello(tng_data->input_file);
     last_file_pos = tng_data->last_trajectory_frame_set_input_file_pos;
 
     if(last_file_pos <= 0)
@@ -11263,9 +11266,9 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frames_get
     }
 
     tng_block_init(&block);
-    fseek(tng_data->input_file,
-          (long)last_file_pos,
-          SEEK_SET);
+    fseeko(tng_data->input_file,
+           last_file_pos,
+           SEEK_SET);
     /* Read block headers first to see that a frame set block is found. */
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -11289,7 +11292,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frames_get
                __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
-    fseek(tng_data->input_file, file_pos, SEEK_SET);
+    fseeko(tng_data->input_file, file_pos, SEEK_SET);
 
     *n = first_frame + n_frames;
 
@@ -11552,7 +11555,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
                  int64_t *n)
 {
     int64_t long_stride_length, medium_stride_length;
-    long file_pos, orig_frame_set_file_pos;
+    int64_t file_pos, orig_frame_set_file_pos;
     tng_trajectory_frame_set_t frame_set;
     struct tng_trajectory_frame_set orig_frame_set;
     tng_gen_block_t block;
@@ -11567,7 +11570,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
     frame_set = &tng_data->current_trajectory_frame_set;
 
     orig_frame_set_file_pos = tng_data->current_trajectory_frame_set_input_file_pos;
-    file_pos = (long)tng_data->first_trajectory_frame_set_input_file_pos;
+    file_pos = tng_data->first_trajectory_frame_set_input_file_pos;
 
     if(file_pos < 0)
     {
@@ -11576,7 +11579,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
     }
 
     tng_block_init(&block);
-    fseek(tng_data->input_file,
+    fseeko(tng_data->input_file,
           file_pos,
           SEEK_SET);
     tng_data->current_trajectory_frame_set_input_file_pos = file_pos;
@@ -11584,7 +11587,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
     {
-        fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n", file_pos,
+        fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n", file_pos,
                 __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
@@ -11604,18 +11607,18 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
 
     /* Take long steps forward until a long step forward would be too long or
      * the last frame set is found */
-    file_pos = (long)frame_set->long_stride_next_frame_set_file_pos;
+    file_pos = frame_set->long_stride_next_frame_set_file_pos;
     while(file_pos > 0)
     {
         if(file_pos > 0)
         {
             cnt += long_stride_length;
-            fseek(tng_data->input_file, file_pos, SEEK_SET);
+            fseeko(tng_data->input_file, file_pos, SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
-                fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+                fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                        file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
@@ -11628,25 +11631,25 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
                 return(TNG_CRITICAL);
             }
         }
-        file_pos = (long)frame_set->long_stride_next_frame_set_file_pos;
+        file_pos = frame_set->long_stride_next_frame_set_file_pos;
     }
 
     /* Take medium steps forward until a medium step forward would be too long
      * or the last frame set is found */
-    file_pos = (long)frame_set->medium_stride_next_frame_set_file_pos;
+    file_pos = frame_set->medium_stride_next_frame_set_file_pos;
     while(file_pos > 0)
     {
         if(file_pos > 0)
         {
             cnt += medium_stride_length;
-            fseek(tng_data->input_file,
+            fseeko(tng_data->input_file,
                   file_pos,
                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
-                fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+                fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                        file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
@@ -11659,24 +11662,24 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
                 return(TNG_CRITICAL);
             }
         }
-        file_pos = (long)frame_set->medium_stride_next_frame_set_file_pos;
+        file_pos = frame_set->medium_stride_next_frame_set_file_pos;
     }
 
     /* Take one step forward until the last frame set is found */
-    file_pos = (long)frame_set->next_frame_set_file_pos;
+    file_pos = frame_set->next_frame_set_file_pos;
     while(file_pos > 0)
     {
         if(file_pos > 0)
         {
             ++cnt;
-            fseek(tng_data->input_file,
+            fseeko(tng_data->input_file,
                   file_pos,
                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
-                fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+                fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                        file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
@@ -11689,7 +11692,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
                 return(TNG_CRITICAL);
             }
         }
-        file_pos = (long)frame_set->next_frame_set_file_pos;
+        file_pos = frame_set->next_frame_set_file_pos;
     }
 
     tng_block_destroy(&block);
@@ -11702,9 +11705,9 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
     frame_set->mappings = 0;
     frame_set->n_mapping_blocks = 0;
 
-    fseek(tng_data->input_file,
-          (long)tng_data->first_trajectory_frame_set_input_file_pos,
-          SEEK_SET);
+    fseeko(tng_data->input_file,
+           tng_data->first_trajectory_frame_set_input_file_pos,
+           SEEK_SET);
 
     tng_data->current_trajectory_frame_set_input_file_pos = orig_frame_set_file_pos;
 
@@ -11771,10 +11774,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_nr_find
     }
 
     tng_block_init(&block);
-    fseek(tng_data->input_file,
-          (long)file_pos,
-          SEEK_SET);
-    tng_data->current_trajectory_frame_set_input_file_pos = (long)file_pos;
+    fseeko(tng_data->input_file,
+           file_pos,
+           SEEK_SET);
+    tng_data->current_trajectory_frame_set_input_file_pos = file_pos;
     /* Read block headers first to see what block is found. */
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -11808,7 +11811,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_nr_find
         if(file_pos > 0)
         {
             curr_nr += long_stride_length;
-            fseek(tng_data->input_file, (long)file_pos, SEEK_SET);
+            fseeko(tng_data->input_file, file_pos, SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -11841,9 +11844,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_nr_find
         if(file_pos > 0)
         {
             curr_nr += medium_stride_length;
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -11876,9 +11879,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_nr_find
         if(file_pos > 0)
         {
             ++curr_nr;
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -11911,9 +11914,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_nr_find
         if(file_pos > 0)
         {
             curr_nr -= long_stride_length;
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -11946,9 +11949,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_nr_find
         if(file_pos > 0)
         {
             curr_nr -= medium_stride_length;
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -11980,9 +11983,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_nr_find
         if(file_pos > 0)
         {
             --curr_nr;
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12015,9 +12018,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_nr_find
         if(file_pos > 0)
         {
             ++curr_nr;
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12067,10 +12070,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
     if(tng_data->current_trajectory_frame_set_input_file_pos < 0)
     {
         file_pos = tng_data->first_trajectory_frame_set_input_file_pos;
-        fseek(tng_data->input_file,
-                (long)file_pos,
-                SEEK_SET);
-        tng_data->current_trajectory_frame_set_input_file_pos = (long)file_pos;
+        fseeko(tng_data->input_file,
+               file_pos,
+               SEEK_SET);
+        tng_data->current_trajectory_frame_set_input_file_pos = file_pos;
         /* Read block headers first to see what block is found. */
         stat = tng_block_header_read(tng_data, block);
         if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12150,10 +12153,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
 
         if(file_pos > 0)
         {
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
-            tng_data->current_trajectory_frame_set_input_file_pos = (long)file_pos;
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
+            tng_data->current_trajectory_frame_set_input_file_pos = file_pos;
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12192,7 +12195,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
         file_pos = frame_set->long_stride_next_frame_set_file_pos;
         if(file_pos > 0)
         {
-            fseek(tng_data->input_file, (long)file_pos, SEEK_SET);
+            fseeko(tng_data->input_file, file_pos, SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12227,9 +12230,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
         file_pos = frame_set->medium_stride_next_frame_set_file_pos;
         if(file_pos > 0)
         {
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12262,9 +12265,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
         file_pos = frame_set->next_frame_set_file_pos;
         if(file_pos > 0)
         {
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12299,9 +12302,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
         file_pos = frame_set->long_stride_prev_frame_set_file_pos;
         if(file_pos > 0)
         {
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12336,9 +12339,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
         file_pos = frame_set->medium_stride_prev_frame_set_file_pos;
         if(file_pos > 0)
         {
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12371,9 +12374,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
         file_pos = frame_set->prev_frame_set_file_pos;
         if(file_pos > 0)
         {
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12407,9 +12410,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_of_frame_find
         file_pos = frame_set->next_frame_set_file_pos;
         if(file_pos > 0)
         {
-            fseek(tng_data->input_file,
-                  (long)file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   file_pos,
+                   SEEK_SET);
             /* Read block headers first to see what block is found. */
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
@@ -12576,14 +12579,14 @@ static tng_function_status tng_file_headers_len_get
 
     *len = 0;
 
-    orig_pos = ftell(tng_data->input_file);
+    orig_pos = ftello(tng_data->input_file);
 
     if(!tng_data->input_file_len)
     {
-        fseek(tng_data->input_file, 0, SEEK_END);
-        tng_data->input_file_len = ftell(tng_data->input_file);
+        fseeko(tng_data->input_file, 0, SEEK_END);
+        tng_data->input_file_len = ftello(tng_data->input_file);
     }
-    fseek(tng_data->input_file, 0, SEEK_SET);
+    fseeko(tng_data->input_file, 0, SEEK_SET);
 
     tng_block_init(&block);
     /* Read through the headers of non-trajectory blocks (they come before the
@@ -12594,10 +12597,10 @@ static tng_function_status tng_file_headers_len_get
            block->id != TNG_TRAJECTORY_FRAME_SET)
     {
         *len += block->header_contents_size + block->block_contents_size;
-        fseek(tng_data->input_file, block->block_contents_size, SEEK_CUR);
+        fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
     }
 
-    fseek(tng_data->input_file, orig_pos, SEEK_SET);
+    fseeko(tng_data->input_file, orig_pos, SEEK_SET);
 
     tng_block_destroy(&block);
 
@@ -12622,10 +12625,10 @@ tng_function_status DECLSPECDLLEXPORT tng_file_headers_read
 
     if(!tng_data->input_file_len)
     {
-        fseek(tng_data->input_file, 0, SEEK_END);
-        tng_data->input_file_len = ftell(tng_data->input_file);
+        fseeko(tng_data->input_file, 0, SEEK_END);
+        tng_data->input_file_len = ftello(tng_data->input_file);
     }
-    fseek(tng_data->input_file, 0, SEEK_SET);
+    fseeko(tng_data->input_file, 0, SEEK_SET);
 
     tng_block_init(&block);
     /* Non trajectory blocks (they come before the trajectory
@@ -12636,13 +12639,13 @@ tng_function_status DECLSPECDLLEXPORT tng_file_headers_read
            block->id != TNG_TRAJECTORY_FRAME_SET)
     {
         tng_block_read_next(tng_data, block, hash_mode);
-        prev_pos = ftell(tng_data->input_file);
+        prev_pos = ftello(tng_data->input_file);
     }
 
     /* Go back if a trajectory block was encountered */
     if(block->id == TNG_TRAJECTORY_FRAME_SET)
     {
-        fseek(tng_data->input_file, prev_pos, SEEK_SET);
+        fseeko(tng_data->input_file, prev_pos, SEEK_SET);
     }
 
     tng_block_destroy(&block);
@@ -12796,7 +12799,7 @@ tng_function_status DECLSPECDLLEXPORT tng_block_read_next(tng_trajectory_t tng_d
         else
         {
             /* Skip to the next block */
-            fseek(tng_data->input_file, (long)block->block_contents_size, SEEK_CUR);
+            fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
             return(TNG_FAILURE);
         }
     }
@@ -12806,7 +12809,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read
                 (tng_trajectory_t tng_data,
                  const char hash_mode)
 {
-    long file_pos;
+    int64_t file_pos;
     tng_gen_block_t block;
     tng_function_status stat;
 
@@ -12817,15 +12820,15 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read
         return(TNG_CRITICAL);
     }
 
-    file_pos = ftell(tng_data->input_file);
+    file_pos = ftello(tng_data->input_file);
 
     tng_block_init(&block);
 
     if(!tng_data->input_file_len)
     {
-        fseek(tng_data->input_file, 0, SEEK_END);
-        tng_data->input_file_len = ftell(tng_data->input_file);
-        fseek(tng_data->input_file, file_pos, SEEK_SET);
+        fseeko(tng_data->input_file, 0, SEEK_END);
+        tng_data->input_file_len = ftello(tng_data->input_file);
+        fseeko(tng_data->input_file, file_pos, SEEK_SET);
     }
 
     /* Read block headers first to see what block is found. */
@@ -12833,7 +12836,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET ||
        block->id == -1)
     {
-        fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
@@ -12845,7 +12848,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read
                            hash_mode) == TNG_SUCCESS)
     {
         tng_data->n_trajectory_frame_sets++;
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read all blocks until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -12857,7 +12860,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read
                                        hash_mode);
             if(stat != TNG_CRITICAL)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -12866,7 +12869,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read
         }
         if(stat == TNG_CRITICAL)
         {
-            fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                    file_pos, __FILE__, __LINE__);
             tng_block_destroy(&block);
             return(stat);
@@ -12874,7 +12877,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read
 
         if(block->id == TNG_TRAJECTORY_FRAME_SET)
         {
-            fseek(tng_data->input_file, file_pos, SEEK_SET);
+            fseeko(tng_data->input_file, file_pos, SEEK_SET);
         }
     }
 
@@ -12889,7 +12892,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
                  const char hash_mode,
                  const int64_t block_id)
 {
-    long file_pos;
+    int64_t file_pos;
     tng_gen_block_t block;
     tng_function_status stat;
     int found_flag = 1;
@@ -12901,19 +12904,19 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
         return(TNG_CRITICAL);
     }
 
-    file_pos = (long)tng_data->current_trajectory_frame_set_input_file_pos;
+    file_pos = tng_data->current_trajectory_frame_set_input_file_pos;
 
     if(file_pos < 0)
     {
         /* No current frame set. This means that the first frame set must be
          * read */
         found_flag = 0;
-        file_pos = (long)tng_data->first_trajectory_frame_set_input_file_pos;
+        file_pos = tng_data->first_trajectory_frame_set_input_file_pos;
     }
 
     if(file_pos > 0)
     {
-        fseek(tng_data->input_file,
+        fseeko(tng_data->input_file,
               file_pos,
               SEEK_SET);
     }
@@ -12926,16 +12929,16 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
 
     if(!tng_data->input_file_len)
     {
-        fseek(tng_data->input_file, 0, SEEK_END);
-        tng_data->input_file_len = ftell(tng_data->input_file);
-        fseek(tng_data->input_file, file_pos, SEEK_SET);
+        fseeko(tng_data->input_file, 0, SEEK_END);
+        tng_data->input_file_len = ftello(tng_data->input_file);
+        fseeko(tng_data->input_file, file_pos, SEEK_SET);
     }
 
     /* Read block headers first to see what block is found. */
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
     {
-        fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
@@ -12943,7 +12946,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
     /* If the current frame set had already been read skip its block contents */
     if(found_flag)
     {
-        fseek(tng_data->input_file, (long)block->block_contents_size, SEEK_CUR);
+        fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
     }
     /* Otherwiese read the frame set block */
     else
@@ -12957,7 +12960,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
             return(stat);
         }
     }
-    file_pos = ftell(tng_data->input_file);
+    file_pos = ftello(tng_data->input_file);
 
     found_flag = 0;
 
@@ -12975,7 +12978,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
                                        hash_mode);
             if(stat != TNG_CRITICAL)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 found_flag = 1;
                 if(file_pos < tng_data->input_file_len)
                 {
@@ -12985,8 +12988,8 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
         }
         else
         {
-            file_pos += (long)(block->block_contents_size + block->header_contents_size);
-            fseek(tng_data->input_file, (long)block->block_contents_size, SEEK_CUR);
+            file_pos += (block->block_contents_size + block->header_contents_size);
+            fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
             if(file_pos < tng_data->input_file_len)
             {
                 stat = tng_block_header_read(tng_data, block);
@@ -12995,7 +12998,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
     }
     if(stat == TNG_CRITICAL)
     {
-        fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                 file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(stat);
@@ -13003,7 +13006,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_current_only_data_from_
 
     if(block->id == TNG_TRAJECTORY_FRAME_SET)
     {
-        fseek(tng_data->input_file, file_pos, SEEK_SET);
+        fseeko(tng_data->input_file, file_pos, SEEK_SET);
     }
 
     tng_block_destroy(&block);
@@ -13022,7 +13025,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_next
                 (tng_trajectory_t tng_data,
                  const char hash_mode)
 {
-    long file_pos;
+    int64_t file_pos;
 
     TNG_ASSERT(tng_data, "TNG library: Trajectory container not properly setup.");
 
@@ -13031,16 +13034,16 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_next
         return(TNG_CRITICAL);
     }
 
-    file_pos = (long)tng_data->current_trajectory_frame_set.next_frame_set_file_pos;
+    file_pos = tng_data->current_trajectory_frame_set.next_frame_set_file_pos;
 
     if(file_pos < 0 && tng_data->current_trajectory_frame_set_input_file_pos <= 0)
     {
-        file_pos = (long)tng_data->first_trajectory_frame_set_input_file_pos;
+        file_pos = tng_data->first_trajectory_frame_set_input_file_pos;
     }
 
     if(file_pos > 0)
     {
-        fseek(tng_data->input_file,
+        fseeko(tng_data->input_file,
               file_pos,
               SEEK_SET);
     }
@@ -13057,7 +13060,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_next_only_data_from_blo
                  const char hash_mode,
                  const int64_t block_id)
 {
-    long file_pos;
+    int64_t file_pos;
     tng_gen_block_t block;
     tng_function_status stat;
 
@@ -13068,16 +13071,16 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_next_only_data_from_blo
         return(TNG_CRITICAL);
     }
 
-    file_pos = (long)tng_data->current_trajectory_frame_set.next_frame_set_file_pos;
+    file_pos = tng_data->current_trajectory_frame_set.next_frame_set_file_pos;
 
     if(file_pos < 0 && tng_data->current_trajectory_frame_set_input_file_pos <= 0)
     {
-        file_pos = (long)tng_data->first_trajectory_frame_set_input_file_pos;
+        file_pos = tng_data->first_trajectory_frame_set_input_file_pos;
     }
 
     if(file_pos > 0)
     {
-        fseek(tng_data->input_file,
+        fseeko(tng_data->input_file,
               file_pos,
               SEEK_SET);
     }
@@ -13090,16 +13093,16 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_read_next_only_data_from_blo
 
     if(!tng_data->input_file_len)
     {
-        fseek(tng_data->input_file, 0, SEEK_END);
-        tng_data->input_file_len = ftell(tng_data->input_file);
-        fseek(tng_data->input_file, file_pos, SEEK_SET);
+        fseeko(tng_data->input_file, 0, SEEK_END);
+        tng_data->input_file_len = ftello(tng_data->input_file);
+        fseeko(tng_data->input_file, file_pos, SEEK_SET);
     }
 
     /* Read block headers first to see what block is found. */
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
     {
-        fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
@@ -13136,7 +13139,7 @@ tng_function_status tng_frame_set_write(tng_trajectory_t tng_data,
     }
 
     tng_data->current_trajectory_frame_set_output_file_pos =
-    ftell(tng_data->output_file);
+    ftello(tng_data->output_file);
     tng_data->last_trajectory_frame_set_output_file_pos =
     tng_data->current_trajectory_frame_set_output_file_pos;
 
@@ -13247,7 +13250,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_new
 
     frame_set = &tng_data->current_trajectory_frame_set;
 
-    curr_pos = ftell(tng_data->output_file);
+    curr_pos = ftello(tng_data->output_file);
 
     if(curr_pos <= 10)
     {
@@ -13265,7 +13268,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_new
     }
 
     tng_data->current_trajectory_frame_set_output_file_pos =
-    ftell(tng_data->output_file);
+    ftello(tng_data->output_file);
 
     tng_data->n_trajectory_frame_sets++;
 
@@ -13285,10 +13288,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_new
             tng_block_init(&block);
             tng_data->input_file = tng_data->output_file;
 
-            curr_pos = ftell(tng_data->output_file);
-            fseek(tng_data->output_file,
-                  (long)frame_set->medium_stride_prev_frame_set_file_pos,
-                  SEEK_SET);
+            curr_pos = ftello(tng_data->output_file);
+            fseeko(tng_data->output_file,
+                   frame_set->medium_stride_prev_frame_set_file_pos,
+                   SEEK_SET);
 
             if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
             {
@@ -13301,7 +13304,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_new
 
             /* Read the next frame set from the previous frame set and one
              * medium stride step back */
-            fseek(tng_data->output_file, (long)block->block_contents_size - (6 *
+            fseeko(tng_data->output_file, block->block_contents_size - (6 *
             sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
             if(fread(&frame_set->medium_stride_prev_frame_set_file_pos,
                sizeof(frame_set->medium_stride_prev_frame_set_file_pos),
@@ -13342,9 +13345,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_new
                     tng_block_init(&block);
                     tng_data->input_file = tng_data->output_file;
 
-                    fseek(tng_data->output_file,
-                          (long)frame_set->long_stride_prev_frame_set_file_pos,
-                          SEEK_SET);
+                    fseeko(tng_data->output_file,
+                           frame_set->long_stride_prev_frame_set_file_pos,
+                           SEEK_SET);
 
                     if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
                     {
@@ -13357,7 +13360,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_new
 
                     /* Read the next frame set from the previous frame set and one
                     * long stride step back */
-                    fseek(tng_data->output_file, (long)block->block_contents_size - (6 *
+                    fseeko(tng_data->output_file, block->block_contents_size - (6 *
                           sizeof(int64_t) + 2 * sizeof(double)), SEEK_CUR);
 
                     tng_block_destroy(&block);
@@ -13386,7 +13389,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_new
             }
 
             tng_data->input_file = temp;
-            fseek(tng_data->output_file, (long)curr_pos, SEEK_SET);
+            fseeko(tng_data->output_file, curr_pos, SEEK_SET);
         }
     }
 
@@ -13456,7 +13459,7 @@ tng_function_status DECLSPECDLLEXPORT tng_first_frame_nr_of_next_frame_set_get
                 (const tng_trajectory_t tng_data,
                  int64_t *frame)
 {
-    long file_pos, next_frame_set_file_pos;
+    int64_t file_pos, next_frame_set_file_pos;
     tng_gen_block_t block;
     tng_function_status stat;
 
@@ -13466,16 +13469,16 @@ tng_function_status DECLSPECDLLEXPORT tng_first_frame_nr_of_next_frame_set_get
     TNG_ASSERT(tng_data->input_file, "TNG library: An input file must be open to find the next frame set");
     TNG_ASSERT(frame, "TNG library: frame must not be a NULL pointer");
 
-    file_pos = ftell(tng_data->input_file);
+    file_pos = ftello(tng_data->input_file);
 
     if(tng_data->current_trajectory_frame_set_input_file_pos <= 0)
     {
-        next_frame_set_file_pos = (long)tng_data->first_trajectory_frame_set_input_file_pos;
+        next_frame_set_file_pos = tng_data->first_trajectory_frame_set_input_file_pos;
     }
     else
     {
         frame_set = &tng_data->current_trajectory_frame_set;
-        next_frame_set_file_pos = (long)frame_set->next_frame_set_file_pos;
+        next_frame_set_file_pos = frame_set->next_frame_set_file_pos;
     }
 
     if(next_frame_set_file_pos <= 0)
@@ -13483,13 +13486,13 @@ tng_function_status DECLSPECDLLEXPORT tng_first_frame_nr_of_next_frame_set_get
         return(TNG_FAILURE);
     }
 
-    fseek(tng_data->input_file, (long)next_frame_set_file_pos, SEEK_SET);
+    fseeko(tng_data->input_file, next_frame_set_file_pos, SEEK_SET);
     /* Read block headers first to see that a frame set block is found. */
     tng_block_init(&block);
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
     {
-        fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                file_pos, __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -13505,7 +13508,7 @@ tng_function_status DECLSPECDLLEXPORT tng_first_frame_nr_of_next_frame_set_get
                __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
-    fseek(tng_data->input_file, file_pos, SEEK_SET);
+    fseeko(tng_data->input_file, file_pos, SEEK_SET);
 
     return(TNG_SUCCESS);
 }
@@ -14085,8 +14088,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_data_write
     int64_t header_pos, file_pos;
     int64_t output_file_len, n_values_per_frame, size, contents_size;
     int64_t header_size, temp_first, temp_last;
-    int64_t i, last_frame;
-    long temp_current;
+    int64_t i, last_frame, temp_current;
     tng_gen_block_t block;
     tng_trajectory_frame_set_t frame_set;
     FILE *temp = tng_data->input_file;
@@ -14141,10 +14143,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_data_write
             tng_frame_set_new(tng_data,
                               last_frame+1,
                               tng_data->frame_set_n_frames);
-            file_pos = ftell(tng_data->output_file);
-            fseek(tng_data->output_file, 0, SEEK_END);
-            output_file_len = ftell(tng_data->output_file);
-            fseek(tng_data->output_file, (long)file_pos, SEEK_SET);
+            file_pos = ftello(tng_data->output_file);
+            fseeko(tng_data->output_file, 0, SEEK_END);
+            output_file_len = ftello(tng_data->output_file);
+            fseeko(tng_data->output_file, file_pos, SEEK_SET);
 
             /* Read mapping blocks from the last frame set */
             tng_block_init(&block);
@@ -14162,10 +14164,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_data_write
                 }
                 else
                 {
-                    fseek(tng_data->output_file, (long)block->block_contents_size,
-                        SEEK_CUR);
+                    fseeko(tng_data->output_file, block->block_contents_size,
+                           SEEK_CUR);
                 }
-                file_pos = ftell(tng_data->output_file);
+                file_pos = ftello(tng_data->output_file);
                 if(file_pos < output_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -14194,9 +14196,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_data_write
 
     file_pos = tng_data->current_trajectory_frame_set_output_file_pos;
 
-    fseek(tng_data->output_file, 0, SEEK_END);
-    output_file_len = ftell(tng_data->output_file);
-    fseek(tng_data->output_file, (long)file_pos, SEEK_SET);
+    fseeko(tng_data->output_file, 0, SEEK_END);
+    output_file_len = ftello(tng_data->output_file);
+    fseeko(tng_data->output_file, file_pos, SEEK_SET);
 
     /* Read past the frame set block first */
     stat = tng_block_header_read(tng_data, block);
@@ -14212,8 +14214,8 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_data_write
         tng_data->current_trajectory_frame_set_input_file_pos = temp_current;
         return(stat);
     }
-    fseek(tng_data->output_file, (long)block->block_contents_size,
-            SEEK_CUR);
+    fseeko(tng_data->output_file, block->block_contents_size,
+           SEEK_CUR);
 
     /* Read all block headers until next frame set block or
      * until the wanted block id is found */
@@ -14224,8 +14226,8 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_data_write
             block->id != TNG_TRAJECTORY_FRAME_SET &&
             block->id != -1)
     {
-        fseek(tng_data->output_file, (long)block->block_contents_size, SEEK_CUR);
-        file_pos = ftell(tng_data->output_file);
+        fseeko(tng_data->output_file, block->block_contents_size, SEEK_CUR);
+        file_pos = ftello(tng_data->output_file);
         if(file_pos < output_file_len)
         {
             stat = tng_block_header_read(tng_data, block);
@@ -14246,7 +14248,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_data_write
     contents_size = block->block_contents_size;
     header_size = block->header_contents_size;
 
-    header_pos = ftell(tng_data->output_file) - header_size;
+    header_pos = ftello(tng_data->output_file) - header_size;
     frame_set = &tng_data->current_trajectory_frame_set;
 
     if(fread(&datatype, sizeof(datatype), 1, tng_data->input_file) == 0)
@@ -14428,7 +14430,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_data_write
         return(TNG_FAILURE);
     }
 
-    fseek(tng_data->output_file, (long)file_pos, SEEK_CUR);
+    fseeko(tng_data->output_file, file_pos, SEEK_CUR);
 
     /* If the endianness is not big endian the data needs to be swapped */
     if((data.datatype == TNG_INT_DATA ||
@@ -14511,8 +14513,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
     int64_t output_file_len, n_values_per_frame, size, contents_size;
     int64_t header_size, temp_first, temp_last;
     int64_t mapping_block_end_pos, num_first_particle, block_n_particles;
-    int64_t i, last_frame;
-    long temp_current;
+    int64_t i, last_frame, temp_current;
     tng_gen_block_t block;
     tng_trajectory_frame_set_t frame_set;
     FILE *temp = tng_data->input_file;
@@ -14571,10 +14572,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
                               last_frame+1,
                               tng_data->frame_set_n_frames);
 
-            file_pos = ftell(tng_data->output_file);
-            fseek(tng_data->output_file, 0, SEEK_END);
-            output_file_len = ftell(tng_data->output_file);
-            fseek(tng_data->output_file, (long)file_pos, SEEK_SET);
+            file_pos = ftello(tng_data->output_file);
+            fseeko(tng_data->output_file, 0, SEEK_END);
+            output_file_len = ftello(tng_data->output_file);
+            fseeko(tng_data->output_file, file_pos, SEEK_SET);
 
             /* Read mapping blocks from the last frame set */
             tng_block_init(&block);
@@ -14592,10 +14593,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
                 }
                 else
                 {
-                    fseek(tng_data->output_file, (long)block->block_contents_size,
+                    fseeko(tng_data->output_file, block->block_contents_size,
                         SEEK_CUR);
                 }
-                file_pos = ftell(tng_data->output_file);
+                file_pos = ftello(tng_data->output_file);
                 if(file_pos < output_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -14625,9 +14626,9 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
 
     file_pos = tng_data->current_trajectory_frame_set_output_file_pos;
 
-    fseek(tng_data->output_file, 0, SEEK_END);
-    output_file_len = ftell(tng_data->output_file);
-    fseek(tng_data->output_file, (long)file_pos, SEEK_SET);
+    fseeko(tng_data->output_file, 0, SEEK_END);
+    output_file_len = ftello(tng_data->output_file);
+    fseeko(tng_data->output_file, file_pos, SEEK_SET);
 
     /* Read past the frame set block first */
     stat = tng_block_header_read(tng_data, block);
@@ -14643,7 +14644,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
         tng_data->current_trajectory_frame_set_input_file_pos = temp_current;
         return(stat);
     }
-    fseek(tng_data->output_file, (long)block->block_contents_size,
+    fseeko(tng_data->output_file, block->block_contents_size,
             SEEK_CUR);
 
     if(tng_data->var_num_atoms_flag)
@@ -14671,10 +14672,10 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
             }
             else
             {
-                fseek(tng_data->output_file, (long)block->block_contents_size,
+                fseeko(tng_data->output_file, block->block_contents_size,
                       SEEK_CUR);
             }
-            file_pos = ftell(tng_data->output_file);
+            file_pos = ftello(tng_data->output_file);
             if(block->id == TNG_PARTICLE_MAPPING)
             {
                 mapping = &frame_set->mappings[frame_set->n_mapping_blocks - 1];
@@ -14714,7 +14715,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
             tng_data->current_trajectory_frame_set_input_file_pos = temp_current;
             return(TNG_FAILURE);
         }
-        fseek(tng_data->output_file, (long)mapping_block_end_pos, SEEK_SET);
+        fseeko(tng_data->output_file, mapping_block_end_pos, SEEK_SET);
     }
 
     /* Read all block headers until next frame set block or
@@ -14727,8 +14728,8 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
             block->id != TNG_TRAJECTORY_FRAME_SET &&
             block->id != -1)
     {
-        fseek(tng_data->output_file, (long)block->block_contents_size, SEEK_CUR);
-        file_pos = ftell(tng_data->output_file);
+        fseeko(tng_data->output_file, block->block_contents_size, SEEK_CUR);
+        file_pos = ftello(tng_data->output_file);
         if(file_pos < output_file_len)
         {
             stat = tng_block_header_read(tng_data, block);
@@ -14750,7 +14751,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
     contents_size = block->block_contents_size;
     header_size = block->header_contents_size;
 
-    header_pos = ftell(tng_data->output_file) - header_size;
+    header_pos = ftello(tng_data->output_file) - header_size;
     frame_set = &tng_data->current_trajectory_frame_set;
 
     if(fread(&datatype, sizeof(datatype), 1, tng_data->input_file) == 0)
@@ -14974,7 +14975,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_particle_data_write
         return(TNG_FAILURE);
     }
 
-    fseek(tng_data->output_file, (long)file_pos, SEEK_CUR);
+    fseeko(tng_data->output_file, file_pos, SEEK_CUR);
 
     /* If the endianness is not big endian the data needs to be swapped */
     if((data.datatype == TNG_INT_DATA ||
@@ -15282,7 +15283,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get
     if(tng_data_find(tng_data, block_id, &data) != TNG_SUCCESS)
     {
         tng_block_init(&block);
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read all blocks until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -15295,7 +15296,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get
                                     TNG_USE_HASH);
             if(stat != TNG_CRITICAL)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -15423,7 +15424,7 @@ tng_function_status tng_data_vector_get(tng_trajectory_t tng_data,
     if(tng_data_find(tng_data, block_id, &data) != TNG_SUCCESS)
     {
         tng_block_init(&block);
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read all blocks until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -15436,7 +15437,7 @@ tng_function_status tng_data_vector_get(tng_trajectory_t tng_data,
                                     TNG_USE_HASH);
             if(stat != TNG_CRITICAL)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -15552,7 +15553,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_interval_get
        frame_set->n_data_blocks <= 0)
     {
         tng_block_init(&block);
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read all blocks until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -15564,7 +15565,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_interval_get
                                     hash_mode);
             if(stat != TNG_CRITICAL)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -15759,9 +15760,9 @@ tng_function_status DECLSPECDLLEXPORT tng_data_vector_interval_get
         tng_block_init(&block);
         if(stat != TNG_SUCCESS)
         {
-            fseek(tng_data->input_file,
-                  (long)tng_data->current_trajectory_frame_set_input_file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   tng_data->current_trajectory_frame_set_input_file_pos,
+                   SEEK_SET);
             stat = tng_block_header_read(tng_data, block);
             if(stat != TNG_SUCCESS)
             {
@@ -15770,9 +15771,9 @@ tng_function_status DECLSPECDLLEXPORT tng_data_vector_interval_get
                 return(stat);
             }
 
-            fseek(tng_data->input_file, (long)block->block_contents_size, SEEK_CUR);
+            fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
         }
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -15786,7 +15787,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_vector_interval_get
                                         hash_mode);
                 if(stat != TNG_CRITICAL)
                 {
-                    file_pos = ftell(tng_data->input_file);
+                    file_pos = ftello(tng_data->input_file);
                     if(file_pos < tng_data->input_file_len)
                     {
                         stat = tng_block_header_read(tng_data, block);
@@ -15796,7 +15797,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_vector_interval_get
             else
             {
                 file_pos += block->block_contents_size + block->header_contents_size;
-                fseek(tng_data->input_file, (long)block->block_contents_size, SEEK_CUR);
+                fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -15996,7 +15997,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_get
         }
 
         tng_block_init(&block);
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read all blocks until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -16009,7 +16010,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_get
                                     TNG_USE_HASH);
             if(stat != TNG_CRITICAL)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -16192,7 +16193,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_vector_get
     if(tng_particle_data_find(tng_data, block_id, &data) != TNG_SUCCESS)
     {
         tng_block_init(&block);
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read all blocks until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -16205,7 +16206,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_vector_get
                                     TNG_USE_HASH);
             if(stat != TNG_CRITICAL)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -16363,7 +16364,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_interval_get
        frame_set->n_particle_data_blocks <= 0)
     {
         tng_block_init(&block);
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read all blocks until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -16375,7 +16376,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_interval_get
                                     hash_mode);
             if(stat != TNG_CRITICAL)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -16607,9 +16608,9 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_vector_interval_get
         tng_block_init(&block);
         if(stat != TNG_SUCCESS)
         {
-            fseek(tng_data->input_file,
-                  (long)tng_data->current_trajectory_frame_set_input_file_pos,
-                  SEEK_SET);
+            fseeko(tng_data->input_file,
+                   tng_data->current_trajectory_frame_set_input_file_pos,
+                   SEEK_SET);
             stat = tng_block_header_read(tng_data, block);
             if(stat != TNG_SUCCESS)
             {
@@ -16618,9 +16619,9 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_vector_interval_get
                 return(stat);
             }
 
-            fseek(tng_data->input_file, (long)block->block_contents_size, SEEK_CUR);
+            fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
         }
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         /* Read until next frame set block */
         stat = tng_block_header_read(tng_data, block);
         while(file_pos < tng_data->input_file_len &&
@@ -16634,7 +16635,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_vector_interval_get
                                         hash_mode);
                 if(stat != TNG_CRITICAL)
                 {
-                    file_pos = ftell(tng_data->input_file);
+                    file_pos = ftello(tng_data->input_file);
                     if(file_pos < tng_data->input_file_len)
                     {
                         stat = tng_block_header_read(tng_data, block);
@@ -16644,7 +16645,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_vector_interval_get
             else
             {
                 file_pos += block->block_contents_size + block->header_contents_size;
-                fseek(tng_data->input_file, (long)block->block_contents_size, SEEK_CUR);
+                fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
                 if(file_pos < tng_data->input_file_len)
                 {
                     stat = tng_block_header_read(tng_data, block);
@@ -16811,7 +16812,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length
     tng_function_status stat;
     tng_non_particle_data_t np_data;
     tng_particle_data_t p_data;
-    long orig_file_pos, file_pos;
+    int64_t orig_file_pos, file_pos;
     int is_particle_data;
 
     if(tng_data->current_trajectory_frame_set_input_file_pos <= 0)
@@ -16838,11 +16839,11 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length
             /* If no specific frame was required read until this data block is found */
             if(frame < 0)
             {
-                file_pos = ftell(tng_data->input_file);
+                file_pos = ftello(tng_data->input_file);
                 while(stat != TNG_SUCCESS && file_pos < tng_data->input_file_len)
                 {
                     stat = tng_frame_set_read_next_only_data_from_block_id(tng_data, TNG_USE_HASH, block_id);
-                    file_pos = ftell(tng_data->input_file);
+                    file_pos = ftello(tng_data->input_file);
                 }
             }
             if(stat != TNG_SUCCESS)
@@ -16961,9 +16962,9 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_open
             fclose((*tng_data_p)->output_file);
         }
         (*tng_data_p)->output_file = (*tng_data_p)->input_file;
-        fseek((*tng_data_p)->input_file,
-                (long)(*tng_data_p)->last_trajectory_frame_set_input_file_pos,
-                SEEK_SET);
+        fseeko((*tng_data_p)->input_file,
+               (*tng_data_p)->last_trajectory_frame_set_input_file_pos,
+               SEEK_SET);
 
         stat = tng_frame_set_read(*tng_data_p, TNG_USE_HASH);
         if(stat != TNG_SUCCESS)
@@ -16991,7 +16992,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_open
         }
         tng_output_append_file_set(*tng_data_p, filename);
 
-        fseek((*tng_data_p)->output_file, 0, SEEK_END);
+        fseeko((*tng_data_p)->output_file, 0, SEEK_END);
     }
 
     return(TNG_SUCCESS);
@@ -17339,9 +17340,8 @@ tng_function_status DECLSPECDLLEXPORT tng_util_particle_data_next_frame_read
     tng_particle_data_t data = 0;
     tng_function_status stat;
     int size;
-    int64_t i, data_size, n_particles;
+    int64_t i, data_size, n_particles, file_pos;
     void *temp;
-    long file_pos;
 
     TNG_ASSERT(tng_data, "TNG library: Trajectory container not properly setup.");
     TNG_ASSERT(values, "TNG library: The pointer to the values array must not be a NULL pointer");
@@ -17355,11 +17355,11 @@ tng_function_status DECLSPECDLLEXPORT tng_util_particle_data_next_frame_read
     if(stat != TNG_SUCCESS)
     {
         stat = tng_frame_set_read_current_only_data_from_block_id(tng_data, TNG_USE_HASH, block_id);
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         while(stat != TNG_SUCCESS && file_pos < tng_data->input_file_len)
         {
             stat = tng_frame_set_read_next_only_data_from_block_id(tng_data, TNG_USE_HASH, block_id);
-            file_pos = ftell(tng_data->input_file);
+            file_pos = ftello(tng_data->input_file);
         }
         if(stat != TNG_SUCCESS)
         {
@@ -17373,9 +17373,9 @@ tng_function_status DECLSPECDLLEXPORT tng_util_particle_data_next_frame_read
     }
     if(data->last_retrieved_frame < 0)
     {
-        fseek(tng_data->input_file,
-              (long)tng_data->first_trajectory_frame_set_input_file_pos,
-              SEEK_SET);
+        fseeko(tng_data->input_file,
+               tng_data->first_trajectory_frame_set_input_file_pos,
+               SEEK_SET);
         stat = tng_frame_set_read(tng_data, TNG_USE_HASH);
         if(stat != TNG_SUCCESS)
         {
@@ -17503,9 +17503,8 @@ tng_function_status DECLSPECDLLEXPORT tng_util_non_particle_data_next_frame_read
     tng_non_particle_data_t data = 0;
     tng_function_status stat;
     int size;
-    int64_t i, data_size;
+    int64_t i, data_size, file_pos;
     void *temp;
-    long file_pos;
 
     TNG_ASSERT(tng_data, "TNG library: Trajectory container not properly setup.");
     TNG_ASSERT(values, "TNG library: The pointer to the values array must not be a NULL pointer");
@@ -17519,11 +17518,11 @@ tng_function_status DECLSPECDLLEXPORT tng_util_non_particle_data_next_frame_read
     if(stat != TNG_SUCCESS)
     {
         stat = tng_frame_set_read_current_only_data_from_block_id(tng_data, TNG_USE_HASH, block_id);
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         while(stat != TNG_SUCCESS && file_pos < tng_data->input_file_len)
         {
             stat = tng_frame_set_read_next_only_data_from_block_id(tng_data, TNG_USE_HASH, block_id);
-            file_pos = ftell(tng_data->input_file);
+            file_pos = ftello(tng_data->input_file);
         }
         if(stat != TNG_SUCCESS)
         {
@@ -17537,9 +17536,9 @@ tng_function_status DECLSPECDLLEXPORT tng_util_non_particle_data_next_frame_read
     }
     if(data->last_retrieved_frame < 0)
     {
-        fseek(tng_data->input_file,
-                (long)tng_data->first_trajectory_frame_set_input_file_pos,
-                SEEK_SET);
+        fseeko(tng_data->input_file,
+               tng_data->first_trajectory_frame_set_input_file_pos,
+               SEEK_SET);
         stat = tng_frame_set_read(tng_data, TNG_USE_HASH);
         if(stat != TNG_SUCCESS)
         {
@@ -19110,9 +19109,8 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_next_frame_present_dat
     tng_gen_block_t block;
     int64_t i, j, block_id, *temp;
     int64_t data_frame, frame_diff, min_diff;
-    int64_t size, frame_set_file_pos;
+    int64_t size, frame_set_file_pos, file_pos;
     int found, read_all = 0;
-    long file_pos;
 
     TNG_ASSERT(tng_data, "TNG library: Trajectory container not properly setup.");
     TNG_ASSERT(next_frame, "TNG library: The pointer to the next frame must not be NULL.");
@@ -19163,7 +19161,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_next_frame_present_dat
     /* Check for data blocks only if they have not already been found. */
     if(frame_set->n_particle_data_blocks <= 0 && frame_set->n_data_blocks <= 0)
     {
-        file_pos = ftell(tng_data->input_file);
+        file_pos = ftello(tng_data->input_file);
         if(file_pos < tng_data->input_file_len)
         {
             tng_block_init(&block);
@@ -19177,7 +19175,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_next_frame_present_dat
                                         TNG_USE_HASH);
                 if(stat != TNG_CRITICAL)
                 {
-                    file_pos = ftell(tng_data->input_file);
+                    file_pos = ftello(tng_data->input_file);
                     if(file_pos < tng_data->input_file_len)
                     {
                         stat = tng_block_header_read(tng_data, block);
@@ -19187,7 +19185,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_next_frame_present_dat
             tng_block_destroy(&block);
             if(stat == TNG_CRITICAL)
             {
-                fprintf(stderr, "TNG library: Cannot read block header at pos %ld. %s: %d\n",
+                fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n",
                         file_pos, __FILE__, __LINE__);
                 return(stat);
             }
@@ -19395,7 +19393,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_all_data_block_types_g
                  char **compressions)
 {
     tng_gen_block_t block;
-    long orig_file_pos, file_pos;
+    int64_t orig_file_pos, file_pos;
 
     TNG_ASSERT(tng_data, "TNG library: Trajectory container not properly setup.");
     TNG_ASSERT(n_data_blocks, "TNG library: The pointer to n_data_blocks must not be NULL.");
@@ -19403,15 +19401,15 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_all_data_block_types_g
     TNG_ASSERT(data_block_names, "TNG library: The pointer to the list of data block names must not be NULL.");
     TNG_ASSERT(stride_lengths, "TNG library: The pointer to the list of stride lengths must not be NULL.");
 
-    orig_file_pos = ftell(tng_data->input_file);
+    orig_file_pos = ftello(tng_data->input_file);
 
     if(!tng_data->input_file_len)
     {
-        fseek(tng_data->input_file, 0, SEEK_END);
-        tng_data->input_file_len = ftell(tng_data->input_file);
+        fseeko(tng_data->input_file, 0, SEEK_END);
+        tng_data->input_file_len = ftello(tng_data->input_file);
     }
 
-    fseek(tng_data->input_file, 0, SEEK_SET);
+    fseeko(tng_data->input_file, 0, SEEK_SET);
     file_pos = 0;
 
     *n_data_blocks = 0;
@@ -19425,11 +19423,11 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_all_data_block_types_g
         {
 
         }
-        file_pos += (long)(block->block_contents_size + block->header_contents_size);
-        fseek(tng_data->input_file, (long)block->block_contents_size, SEEK_CUR);
+        file_pos += (block->block_contents_size + block->header_contents_size);
+        fseeko(tng_data->input_file, block->block_contents_size, SEEK_CUR);
     }
 
-    fseek(tng_data->input_file, orig_file_pos, SEEK_SET);
+    fseeko(tng_data->input_file, orig_file_pos, SEEK_SET);
 
     return(TNG_SUCCESS);
 }
