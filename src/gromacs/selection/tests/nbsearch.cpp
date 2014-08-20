@@ -100,10 +100,6 @@ class NeighborhoodSearchTestData
 
         struct TestPosition
         {
-            TestPosition() : refMinDist(0.0), refNearestPoint(-1)
-            {
-                clear_rvec(x);
-            }
             explicit TestPosition(const rvec x)
                 : refMinDist(0.0), refNearestPoint(-1)
             {

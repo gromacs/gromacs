@@ -787,6 +787,11 @@ static void modify_PMEsettings(
     sfree(ir);
 }
 
+static gmx_bool can_scale_rvdw(int vdwtype)
+{
+    return (evdwCUT == vdwtype ||
+            evdwPME == vdwtype);
+}
 
 #define EPME_SWITCHED(e) ((e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
 
@@ -936,7 +941,7 @@ static void make_benchmark_tprs(
     fprintf(fp, " No.   scaling  rcoulomb");
     fprintf(fp, "  nkx  nky  nkz");
     fprintf(fp, "   spacing");
-    if (evdwCUT == ir->vdwtype)
+    if (can_scale_rvdw(ir->vdwtype))
     {
         fprintf(fp, "      rvdw");
     }
@@ -993,11 +998,14 @@ static void make_benchmark_tprs(
                 ir->rlist = ir->rcoulomb + nlist_buffer;
             }
 
-            if (bScaleRvdw && evdwCUT == ir->vdwtype)
+            if (bScaleRvdw && can_scale_rvdw(ir->vdwtype))
             {
-                if (ecutsVERLET == ir->cutoff_scheme)
+                if (ecutsVERLET == ir->cutoff_scheme ||
+                    evdwPME == ir->vdwtype)
                 {
-                    /* With Verlet, the van der Waals radius must always equal the Coulomb radius */
+                    /* With either the Verlet cutoff-scheme or LJ-PME,
+                       the van der Waals radius must always equal the
+                       Coulomb radius */
                     ir->rvdw = ir->rcoulomb;
                 }
                 else
@@ -1045,7 +1053,7 @@ static void make_benchmark_tprs(
         fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);
         fprintf(fp, "%5d%5d%5d", ir->nkx, ir->nky, ir->nkz);
         fprintf(fp, " %9f ", info->fsx[j]);
-        if (evdwCUT == ir->vdwtype)
+        if (can_scale_rvdw(ir->vdwtype))
         {
             fprintf(fp, "%10f", ir->rvdw);
         }

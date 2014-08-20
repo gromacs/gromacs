@@ -55,26 +55,14 @@
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 
 static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
-                             t_mdatoms *md, rvec *x,
+                             rvec *x,
                              rvec x_pbc)
 {
     int a, m;
 
-    if (cr && PAR(cr))
+    if (cr != NULL && DOMAINDECOMP(cr))
     {
-        if (DOMAINDECOMP(cr))
-        {
-            if (!ga2la_get_home(cr->dd->ga2la, pgrp->pbcatom, &a))
-            {
-                a = -1;
-            }
-        }
-        else
-        {
-            a = pgrp->pbcatom;
-        }
-
-        if (a >= 0 && a < md->homenr)
+        if (ga2la_get_home(cr->dd->ga2la, pgrp->pbcatom, &a))
         {
             copy_rvec(x[a], x_pbc);
         }
@@ -90,7 +78,7 @@ static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
 }
 
 static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
-                              t_mdatoms *md, rvec *x,
+                              rvec *x,
                               rvec *x_pbc)
 {
     int g, n, m;
@@ -104,7 +92,7 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
         }
         else
         {
-            pull_set_pbcatom(cr, &pull->group[g], md, x, x_pbc[g]);
+            pull_set_pbcatom(cr, &pull->group[g], x, x_pbc[g]);
             for (m = 0; m < DIM; m++)
             {
                 if (pull->dim[m] == 0)
@@ -314,9 +302,21 @@ void pull_calc_coms(t_commrec *cr,
         snew(pull->dbuf, 3*pull->ngroup);
     }
 
-    if (pull->bRefAt)
+    if (pull->bRefAt && pull->bSetPBCatoms)
     {
-        pull_set_pbcatoms(cr, pull, md, x, pull->rbuf);
+        pull_set_pbcatoms(cr, pull, x, pull->rbuf);
+
+        if (cr != NULL && DOMAINDECOMP(cr))
+        {
+            /* We can keep these PBC reference coordinates fixed for nstlist
+             * steps, since atoms won't jump over PBC.
+             * This avoids a global reduction at the next nstlist-1 steps.
+             * Note that the exact values of the pbc reference coordinates
+             * are irrelevant, as long all atoms in the group are within
+             * half a box distance of the reference coordinate.
+             */
+            pull->bSetPBCatoms = FALSE;
+        }
     }
 
     if (pull->cosdim >= 0)

@@ -193,6 +193,9 @@ typedef uint64_t gmx_uint64_t;
 #elif (defined(__INTEL_COMPILER) || defined(__ECC)) && !defined(_MSC_VER)
 /* ICC on *nix */
 #  define gmx_unused __attribute__ ((unused))
+#elif defined(__PGI)
+/* Portland group compilers */
+#  define gmx_unused __attribute__ ((unused))
 #elif defined _MSC_VER
 /* MSVC */
 #  define gmx_unused /*@unused@*/

@@ -147,9 +147,9 @@ static void pick_module_nthreads(FILE *fplog, int m,
          * OMP_NUM_THREADS also has to be set */
         if (bFullOmpSupport && getenv("OMP_NUM_THREADS") == NULL)
         {
-            gmx_fatal(FARGS, "%s=%d is set, the default number of threads also "
-                      "needs to be set with OMP_NUM_THREADS!",
-                      modth_env_var[m], nth);
+            gmx_warning("%s=%d is set, the default number of threads also "
+                        "needs to be set with OMP_NUM_THREADS!",
+                        modth_env_var[m], nth);
         }
 
         /* with the group scheme warn if any env var except PME is set */

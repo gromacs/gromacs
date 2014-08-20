@@ -390,7 +390,8 @@ static void pull_potential_wrapper(t_commrec *cr,
                                    t_mdatoms *mdatoms,
                                    gmx_enerdata_t *enerd,
                                    real *lambda,
-                                   double t)
+                                   double t,
+                                   gmx_wallcycle_t wcycle)
 {
     t_pbc  pbc;
     real   dvdl;
@@ -400,12 +401,14 @@ static void pull_potential_wrapper(t_commrec *cr,
      * The virial contribution is calculated directly,
      * which is why we call pull_potential after calc_virial.
      */
+    wallcycle_start(wcycle, ewcPULLPOT);
     set_pbc(&pbc, ir->ePBC, box);
     dvdl                     = 0;
     enerd->term[F_COM_PULL] +=
         pull_potential(ir->ePull, ir->pull, mdatoms, &pbc,
                        cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
+    wallcycle_stop(wcycle, ewcPULLPOT);
 }
 
 static void pme_receive_force_ener(t_commrec      *cr,
@@ -1513,8 +1516,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
     {
+        /* Since the COM pulling is always done mass-weighted, no forces are
+         * applied to vsites and this call can be done after vsite spreading.
+         */
         pull_potential_wrapper(cr, inputrec, box, x,
-                               f, vir_force, mdatoms, enerd, lambda, t);
+                               f, vir_force, mdatoms, enerd, lambda, t,
+                               wcycle);
     }
 
     /* Add the forces from enforced rotation potentials (if any) */
@@ -1986,7 +1993,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
     {
         pull_potential_wrapper(cr, inputrec, box, x,
-                               f, vir_force, mdatoms, enerd, lambda, t);
+                               f, vir_force, mdatoms, enerd, lambda, t,
+                               wcycle);
     }
 
     /* Add the forces from enforced rotation potentials (if any) */

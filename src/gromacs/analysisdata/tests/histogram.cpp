@@ -490,7 +490,6 @@ class AverageInputData
 class MockAverageHistogram : public gmx::AbstractAverageHistogram
 {
     public:
-        MockAverageHistogram() {}
         //! Creates a histogram module with defined bin parameters.
         explicit MockAverageHistogram(const gmx::AnalysisHistogramSettings &settings)
             : AbstractAverageHistogram(settings)

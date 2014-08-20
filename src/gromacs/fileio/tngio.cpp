@@ -61,21 +61,24 @@
 
 static const char *modeToVerb(char mode)
 {
+    const char *p;
     switch (mode)
     {
         case 'r':
-            return "reading";
+            p = "reading";
             break;
         case 'w':
-            return "writing";
+            p = "writing";
             break;
         case 'a':
-            return "appending";
+            p = "appending";
             break;
         default:
             gmx_fatal(FARGS, "Invalid file opening mode %c", mode);
-            return "";
+            p = "";
+            break;
     }
+    return p;
 }
 
 void gmx_tng_open(const char       *filename,

@@ -68,19 +68,22 @@
 const char *
 _gmx_selelem_type_str(const gmx::SelectionTreeElement &sel)
 {
+    const char *p = NULL;
     switch (sel.type)
     {
-        case SEL_CONST:      return "CONST";
-        case SEL_EXPRESSION: return "EXPR";
-        case SEL_BOOLEAN:    return "BOOL";
-        case SEL_ARITHMETIC: return "ARITH";
-        case SEL_ROOT:       return "ROOT";
-        case SEL_SUBEXPR:    return "SUBEXPR";
-        case SEL_SUBEXPRREF: return "REF";
-        case SEL_GROUPREF:   return "GROUPREF";
-        case SEL_MODIFIER:   return "MODIFIER";
+        case SEL_CONST:      p = "CONST";    break;
+        case SEL_EXPRESSION: p = "EXPR";     break;
+        case SEL_BOOLEAN:    p = "BOOL";     break;
+        case SEL_ARITHMETIC: p = "ARITH";    break;
+        case SEL_ROOT:       p = "ROOT";     break;
+        case SEL_SUBEXPR:    p = "SUBEXPR";  break;
+        case SEL_SUBEXPRREF: p = "REF";      break;
+        case SEL_GROUPREF:   p = "GROUPREF"; break;
+        case SEL_MODIFIER:   p = "MODIFIER"; break;
+            // No default clause so we intentionally get compiler errors
+            // if new selection choices are added later.
     }
-    return NULL;
+    return p;
 }
 
 /*!
@@ -93,30 +96,36 @@ _gmx_selelem_type_str(const gmx::SelectionTreeElement &sel)
 const char *
 _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val)
 {
+    const char *p = NULL;
     switch (val->type)
     {
-        case NO_VALUE:       return "NONE";
-        case INT_VALUE:      return "INT";
-        case REAL_VALUE:     return "REAL";
-        case STR_VALUE:      return "STR";
-        case POS_VALUE:      return "VEC";
-        case GROUP_VALUE:    return "GROUP";
+        case NO_VALUE:       p = "NONE";  break;
+        case INT_VALUE:      p = "INT";   break;
+        case REAL_VALUE:     p = "REAL";  break;
+        case STR_VALUE:      p = "STR";   break;
+        case POS_VALUE:      p = "VEC";   break;
+        case GROUP_VALUE:    p = "GROUP"; break;
+            // No default clause so we intentionally get compiler errors
+            // if new selection choices are added later.
     }
-    return NULL;
+    return p;
 }
 
 /*! \copydoc _gmx_selelem_type_str() */
 const char *
 _gmx_selelem_boolean_type_str(const gmx::SelectionTreeElement &sel)
 {
+    const char *p = NULL;
     switch (sel.u.boolt)
     {
-        case BOOL_NOT:  return "NOT"; break;
-        case BOOL_AND:  return "AND"; break;
-        case BOOL_OR:   return "OR";  break;
-        case BOOL_XOR:  return "XOR"; break;
+        case BOOL_NOT:  p = "NOT"; break;
+        case BOOL_AND:  p = "AND"; break;
+        case BOOL_OR:   p = "OR";  break;
+        case BOOL_XOR:  p = "XOR"; break;
+            // No default clause so we intentionally get compiler errors
+            // if new selection choices are added later.
     }
-    return NULL;
+    return p;
 }
 
 

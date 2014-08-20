@@ -255,6 +255,10 @@ option(GMX_BUILD_FOR_COVERAGE
        OFF)
 mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
+option(GMX_DEVELOPER_BUILD
+    "Enable Developer convenience features: always build unit-tests"
+    OFF)
+mark_as_advanced(GMX_DEVELOPER_BUILD)
 
 ######################################################################
 # Detect OpenMP support
@@ -272,7 +276,7 @@ include(gmxManageOpenMP)
 # The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
 # are used with permission from CMake v3.0.0 so that GROMACS can detect
 # invalid options with the Intel Compilers, and we have added a line
-# to detect warnings with the Fujitsu compilers on K computer.
+# to detect warnings with the Fujitsu compilers on K computer and ICC.
 # CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
 # a semicolon. Since this is also used as a separator in lists inside CMake,
 # that string ends up being split into two separate patterns, and the last
@@ -639,10 +643,7 @@ if(GMX_LOAD_PLUGINS)
   # so, should we use plug-ins?
   if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
     if(NOT VMD_QUIETLY)
-      MESSAGE(STATUS
-          "Found the ability to use plug-ins when building shared libaries, "
-          "so will compile to use plug-ins (e.g. to read VMD-supported file "
-          "formats).")
+      MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
     endif()
     if(NOT GMX_VMD_PLUGIN_PATH)
       find_package(VMD)

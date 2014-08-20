@@ -225,13 +225,15 @@ typedef struct {
     t_pull_coord  *coord;      /* the pull coordinates */
 
     /* Variables not present in mdp, but used at run time */
-    t_pull_group  *dyna;       /* dynamic groups for use with local constraints */
-    rvec          *rbuf;       /* COM calculation buffer */
-    dvec          *dbuf;       /* COM calculation buffer */
-    double        *dbuf_cyl;   /* cylinder ref. groups COM calculation buffer */
+    t_pull_group  *dyna;         /* dynamic groups for use with local constraints */
+    gmx_bool       bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
-    FILE          *out_x;      /* output file for pull data */
-    FILE          *out_f;      /* output file for pull data */
+    rvec          *rbuf;         /* COM calculation buffer */
+    dvec          *dbuf;         /* COM calculation buffer */
+    double        *dbuf_cyl;     /* cylinder ref. groups COM calculation buffer */
+
+    FILE          *out_x;        /* output file for pull data */
+    FILE          *out_f;        /* output file for pull data */
 } t_pull;
 
 
