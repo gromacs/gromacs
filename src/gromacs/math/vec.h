@@ -110,7 +110,7 @@
    HAVE_*SQRT*. This is no problem with public headers because
    it is OK if user code uses a different rsqrt implementation */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <math.h>

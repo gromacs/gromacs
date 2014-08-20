@@ -59,7 +59,18 @@ from gmxtree import GromacsTree, DocType
 from reporter import Reporter
 
 def check_file(fileobj, reporter):
-    """Check file-level documentation."""
+    """Check file-level issues."""
+    if fileobj.is_source_file() and not fileobj.is_external() and \
+            fileobj.get_relpath().startswith('src/'):
+        includes = fileobj.get_includes()
+        if includes:
+            firstinclude = includes[0].get_file()
+            if not firstinclude or firstinclude.get_name() != "gmxpre.h":
+                reporter.code_issue(includes[0],
+                                    "does not include \"gmxpre.h\" first")
+        else:
+            reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
+
     if not fileobj.is_documented():
         # TODO: Add rules for required documentation
         return
@@ -110,39 +121,41 @@ def check_file(fileobj, reporter):
 
 def check_include(fileobj, includedfile, reporter):
     """Check an #include directive."""
+    otherfile = includedfile.get_file()
     if includedfile.is_system():
-        if includedfile.get_file():
-            reporter.code_issue(includedfile,
-                    "includes local file as {0}".format(includedfile))
-    else:
-        otherfile = includedfile.get_file()
-        if not otherfile:
-            reporter.code_issue(includedfile,
-                    "includes non-local file as {0}".format(includedfile))
-        elif fileobj.is_installed() and not includedfile.is_relative():
-            reporter.code_issue(includedfile,
-                    "installed header includes {0} using non-relative path"
-                    .format(includedfile))
         if not otherfile:
             return
-        if fileobj.is_installed() and not otherfile.is_installed():
+        reporter.code_issue(includedfile,
+                "includes local file as {0}".format(includedfile))
+    if not otherfile:
+        reporter.code_issue(includedfile,
+                "includes non-local file as {0}".format(includedfile))
+    # TODO: Reinstantiate a check once there is clarity on what we want
+    # to enforce.
+    #elif fileobj.is_installed() and not includedfile.is_relative():
+    #    reporter.code_issue(includedfile,
+    #            "installed header includes {0} using non-relative path"
+    #            .format(includedfile))
+    if not otherfile:
+        return
+    if fileobj.is_installed() and not otherfile.is_installed():
+        reporter.code_issue(includedfile,
+                "installed header includes non-installed {0}"
+                .format(includedfile))
+    filemodule = fileobj.get_module()
+    othermodule = otherfile.get_module()
+    if fileobj.is_documented() and otherfile.is_documented():
+        filetype = fileobj.get_doc_type()
+        othertype = otherfile.get_doc_type()
+        if filetype > othertype:
             reporter.code_issue(includedfile,
-                    "installed header includes non-installed {0}"
-                    .format(includedfile))
-        filemodule = fileobj.get_module()
-        othermodule = otherfile.get_module()
-        if fileobj.is_documented() and otherfile.is_documented():
-            filetype = fileobj.get_doc_type()
-            othertype = otherfile.get_doc_type()
-            if filetype > othertype:
-                reporter.code_issue(includedfile,
-                        "{0} file includes {1} file {2}"
-                        .format(filetype, othertype, includedfile))
-        check_api = (otherfile.api_type_is_reliable() and filemodule != othermodule)
-        if check_api and otherfile.get_api_type() < DocType.library:
-            reporter.code_issue(includedfile,
-                    "included file {0} is not documented as exposed outside its module"
-                    .format(includedfile))
+                    "{0} file includes {1} file {2}"
+                    .format(filetype, othertype, includedfile))
+    check_api = (otherfile.api_type_is_reliable() and filemodule != othermodule)
+    if check_api and otherfile.get_api_type() < DocType.library:
+        reporter.code_issue(includedfile,
+                "included file {0} is not documented as exposed outside its module"
+                .format(includedfile))
 
 def check_entity(entity, reporter):
     """Check documentation for a code construct."""

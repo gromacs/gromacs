@@ -47,6 +47,10 @@
  * \ingroup module_selection
  */
 %top{
+#if !_gmx_sel_yyIN_HEADER
+#include "gmxpre.h"
+#endif
+
 // Required before flex definitions, since it includes <stdint.h>.
 // Otherwise, compilers not strictly C99 get macro redefinition errors,
 // since flex defines INT32_MAX etc. in such cases.
