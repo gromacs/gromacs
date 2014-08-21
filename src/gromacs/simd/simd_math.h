@@ -124,7 +124,7 @@ static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_xor_sign_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
 #ifdef GMX_SIMD_HAVE_LOGICAL
-    return gmx_simd_xor_f(a, gmx_simd_and_f(gmx_simd_set1_f(-0.0), b));
+    return gmx_simd_xor_f(a, gmx_simd_and_f(gmx_simd_set1_f(GMX_FLOAT_NEGZERO), b));
 #else
     return gmx_simd_blendv_f(a, gmx_simd_fneg_f(a), gmx_simd_cmplt_f(b, gmx_simd_setzero_f()));
 #endif
@@ -729,8 +729,8 @@ gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t
     y       = gmx_simd_round_f(z);
 
     mask    = gmx_simd_cvt_fib2fb(gmx_simd_cmpeq_fi(gmx_simd_and_fi(iy, ione), gmx_simd_setzero_fi()));
-    ssign   = gmx_simd_blendzero_f(gmx_simd_set1_f(-0.0f), gmx_simd_cvt_fib2fb(gmx_simd_cmpeq_fi(gmx_simd_and_fi(iy, itwo), itwo)));
-    csign   = gmx_simd_blendzero_f(gmx_simd_set1_f(-0.0f), gmx_simd_cvt_fib2fb(gmx_simd_cmpeq_fi(gmx_simd_and_fi(gmx_simd_add_fi(iy, ione), itwo), itwo)));
+    ssign   = gmx_simd_blendzero_f(gmx_simd_set1_f(GMX_FLOAT_NEGZERO), gmx_simd_cvt_fib2fb(gmx_simd_cmpeq_fi(gmx_simd_and_fi(iy, itwo), itwo)));
+    csign   = gmx_simd_blendzero_f(gmx_simd_set1_f(GMX_FLOAT_NEGZERO), gmx_simd_cvt_fib2fb(gmx_simd_cmpeq_fi(gmx_simd_and_fi(gmx_simd_add_fi(iy, ione), itwo), itwo)));
 #else
     const gmx_simd_float_t  quarter         = gmx_simd_set1_f(0.25f);
     const gmx_simd_float_t  minusquarter    = gmx_simd_set1_f(-0.25f);
@@ -766,8 +766,8 @@ gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t
      * active or inactive - you will get errors if only one is used.
      */
 #    ifdef GMX_SIMD_HAVE_LOGICAL
-    ssign   = gmx_simd_and_f(ssign, gmx_simd_set1_f(-0.0f));
-    csign   = gmx_simd_andnot_f(q, gmx_simd_set1_f(-0.0f));
+    ssign   = gmx_simd_and_f(ssign, gmx_simd_set1_f(GMX_FLOAT_NEGZERO));
+    csign   = gmx_simd_andnot_f(q, gmx_simd_set1_f(GMX_FLOAT_NEGZERO));
     ssign   = gmx_simd_xor_f(ssign, csign);
 #    else
     csign   = gmx_simd_xor_sign_f(gmx_simd_set1_f(-1.0f), q);
@@ -884,7 +884,7 @@ gmx_simd_tan_f(gmx_simd_float_t x)
     x       = gmx_simd_fnmadd_f(y, argred1, x);
     x       = gmx_simd_fnmadd_f(y, argred2, x);
     x       = gmx_simd_fnmadd_f(y, argred3, x);
-    x       = gmx_simd_xor_f(gmx_simd_blendzero_f(gmx_simd_set1_f(-0.0f), mask), x);
+    x       = gmx_simd_xor_f(gmx_simd_blendzero_f(gmx_simd_set1_f(GMX_FLOAT_NEGZERO), mask), x);
 #else
     const gmx_simd_float_t  quarter         = gmx_simd_set1_f(0.25f);
     const gmx_simd_float_t  half            = gmx_simd_set1_f(0.5f);
@@ -1338,7 +1338,7 @@ static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_xor_sign_d(gmx_simd_double_t a, gmx_simd_double_t b)
 {
 #ifdef GMX_SIMD_HAVE_LOGICAL
-    return gmx_simd_xor_d(a, gmx_simd_and_d(gmx_simd_set1_d(-0.0), b));
+    return gmx_simd_xor_d(a, gmx_simd_and_d(gmx_simd_set1_d(GMX_DOUBLE_NEGZERO), b));
 #else
     return gmx_simd_blendv_d(a, gmx_simd_fneg_d(a), gmx_simd_cmplt_d(b, gmx_simd_setzero_d()));
 #endif
@@ -2025,8 +2025,8 @@ gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_doubl
     y       = gmx_simd_round_d(z);
 
     mask    = gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(iy, ione), gmx_simd_setzero_di()));
-    ssign   = gmx_simd_blendzero_d(gmx_simd_set1_d(-0.0), gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(iy, itwo), itwo)));
-    csign   = gmx_simd_blendzero_d(gmx_simd_set1_d(-0.0), gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(gmx_simd_add_di(iy, ione), itwo), itwo)));
+    ssign   = gmx_simd_blendzero_d(gmx_simd_set1_d(GMX_DOUBLE_NEGZERO), gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(iy, itwo), itwo)));
+    csign   = gmx_simd_blendzero_d(gmx_simd_set1_d(GMX_DOUBLE_NEGZERO), gmx_simd_cvt_dib2db(gmx_simd_cmpeq_di(gmx_simd_and_di(gmx_simd_add_di(iy, ione), itwo), itwo)));
 #else
     const gmx_simd_double_t  quarter         = gmx_simd_set1_d(0.25);
     const gmx_simd_double_t  minusquarter    = gmx_simd_set1_d(-0.25);
@@ -2062,8 +2062,8 @@ gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_doubl
      * active or inactive - you will get errors if only one is used.
      */
 #    ifdef GMX_SIMD_HAVE_LOGICAL
-    ssign   = gmx_simd_and_d(ssign, gmx_simd_set1_d(-0.0));
-    csign   = gmx_simd_andnot_d(q, gmx_simd_set1_d(-0.0));
+    ssign   = gmx_simd_and_d(ssign, gmx_simd_set1_d(GMX_DOUBLE_NEGZERO));
+    csign   = gmx_simd_andnot_d(q, gmx_simd_set1_d(GMX_DOUBLE_NEGZERO));
     ssign   = gmx_simd_xor_d(ssign, csign);
 #    else
     csign   = gmx_simd_xor_sign_d(gmx_simd_set1_d(-1.0), q);
@@ -2179,7 +2179,7 @@ gmx_simd_tan_d(gmx_simd_double_t x)
     x       = gmx_simd_fnmadd_d(y, argred1, x);
     x       = gmx_simd_fnmadd_d(y, argred2, x);
     x       = gmx_simd_fnmadd_d(y, argred3, x);
-    x       = gmx_simd_xor_d(gmx_simd_blendzero_d(gmx_simd_set1_d(-0.0), mask), x);
+    x       = gmx_simd_xor_d(gmx_simd_blendzero_d(gmx_simd_set1_d(GMX_DOUBLE_NEGZERO), mask), x);
 #else
     const gmx_simd_double_t  quarter         = gmx_simd_set1_d(0.25);
     const gmx_simd_double_t  half            = gmx_simd_set1_d(0.5);
