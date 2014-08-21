@@ -430,7 +430,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     if ((c6[i] > 0) && (c12[i] > 0))
                     {
                         /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
-                        sigma6[i]       = 0.5*c12[i]/c6[i];
+                        sigma6[i]       = 0.5f*c12[i]/c6[i];
                         sigma2[i]       = pow(sigma6[i], 1.0/3.0);
                         /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                            what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
