@@ -105,8 +105,8 @@
 #define gmx_simd_xor_f             _mm256_xor_ps
 #define gmx_simd_rsqrt_f           _mm256_rsqrt_ps
 #define gmx_simd_rcp_f             _mm256_rcp_ps
-#define gmx_simd_fabs_f(x)         _mm256_andnot_ps(_mm256_set1_ps(-0.0), x)
-#define gmx_simd_fneg_f(x)         _mm256_xor_ps(x, _mm256_set1_ps(-0.0))
+#define gmx_simd_fabs_f(x)         _mm256_andnot_ps(_mm256_set1_ps(GMX_FLOAT_NEGZERO), x)
+#define gmx_simd_fneg_f(x)         _mm256_xor_ps(x, _mm256_set1_ps(GMX_FLOAT_NEGZERO))
 #define gmx_simd_max_f             _mm256_max_ps
 #define gmx_simd_min_f             _mm256_min_ps
 #define gmx_simd_round_f(x)        _mm256_round_ps(x, _MM_FROUND_NINT)

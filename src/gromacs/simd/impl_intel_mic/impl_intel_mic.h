@@ -98,7 +98,7 @@
 #define gmx_simd_xor_f(a, b)        _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a), _mm512_castps_si512(b)))
 #define gmx_simd_rsqrt_f           _mm512_rsqrt23_ps
 #define gmx_simd_rcp_f             _mm512_rcp23_ps
-#define gmx_simd_fabs_f(x)         gmx_simd_andnot_f(_mm512_set1_ps(-0.0), x)
+#define gmx_simd_fabs_f(x)         gmx_simd_andnot_f(_mm512_set1_ps(GMX_FLOAT_NEGZERO), x)
 #define gmx_simd_fneg_f(x)         _mm512_addn_ps(x, _mm512_setzero_ps())
 #define gmx_simd_max_f             _mm512_gmax_ps
 #define gmx_simd_min_f             _mm512_gmin_ps
@@ -189,7 +189,7 @@
 #define gmx_simd_xor_d(a, b)       _mm512_castsi512_pd(_mm512_xor_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
 #define gmx_simd_rsqrt_d(x)        _mm512_cvtpslo_pd(_mm512_rsqrt23_ps(_mm512_cvtpd_pslo(x)))
 #define gmx_simd_rcp_d(x)          _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(x)))
-#define gmx_simd_fabs_d(x)         gmx_simd_andnot_d(_mm512_set1_pd(-0.0), x)
+#define gmx_simd_fabs_d(x)         gmx_simd_andnot_d(_mm512_set1_pd(GMX_DOUBLE_NEGZERO), x)
 #define gmx_simd_fneg_d(x)         _mm512_addn_pd(x, _mm512_setzero_pd())
 #define gmx_simd_max_d             _mm512_gmax_pd
 #define gmx_simd_min_d             _mm512_gmin_pd
@@ -282,7 +282,7 @@
 #define gmx_simd4_or_f(a, b)        _mm512_castsi512_ps(_mm512_mask_or_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
 #define gmx_simd4_xor_f(a, b)       _mm512_castsi512_ps(_mm512_mask_xor_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
 #define gmx_simd4_rsqrt_f(a)        _mm512_mask_rsqrt23_ps(_mm512_undefined_ps(), gmx_simd4_mask, a)
-#define gmx_simd4_fabs_f(x)         gmx_simd4_andnot_f(_mm512_set1_ps(-0.0), x)
+#define gmx_simd4_fabs_f(x)         gmx_simd4_andnot_f(_mm512_set1_ps(GMX_FLOAT_NEGZERO), x)
 #define gmx_simd4_fneg_f(x)         _mm512_mask_addn_ps(_mm512_undefined_ps(), gmx_simd4_mask, x, _mm512_setzero_ps())
 #define gmx_simd4_max_f(a, b)       _mm512_mask_gmax_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
 #define gmx_simd4_min_f(a, b)       _mm512_mask_gmin_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
@@ -325,7 +325,7 @@
 #define gmx_simd4_or_d(a, b)        _mm512_castsi512_pd(_mm512_mask_or_epi32(_mm512_undefined_epi32(), mask_loh, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
 #define gmx_simd4_xor_d(a, b)       _mm512_castsi512_pd(_mm512_mask_xor_epi32(_mm512_undefined_epi32(), mask_loh, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
 #define gmx_simd4_rsqrt_d(a)        _mm512_mask_cvtpslo_pd(_mm512_undefined_pd(), gmx_simd4_mask, _mm512_mask_rsqrt23_ps(_mm512_undefined_ps(), gmx_simd4_mask, _mm512_mask_cvtpd_pslo(_mm512_undefined_ps(), gmx_simd4_mask, x)))
-#define gmx_simd4_fabs_d(x)         gmx_simd4_andnot_d(_mm512_set1_pd(-0.0), x)
+#define gmx_simd4_fabs_d(x)         gmx_simd4_andnot_d(_mm512_set1_pd(GMX_DOUBLE_NEGZERO), x)
 #define gmx_simd4_fneg_d(x)         _mm512_mask_addn_pd(_mm512_undefined_pd(), gmx_simd4_mask, x, _mm512_setzero_pd())
 #define gmx_simd4_max_d(a, b)       _mm512_mask_gmax_pd(_mm512_undefined_pd(), gmx_simd4_mask, a, b)
 #define gmx_simd4_min_d(a, b)       _mm512_mask_gmin_pd(_mm512_undefined_pd(), gmx_simd4_mask, a, b)
