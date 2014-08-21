@@ -99,8 +99,8 @@
 #define gmx_simd_xor_f            _mm_xor_ps
 #define gmx_simd_rsqrt_f          _mm_rsqrt_ps
 #define gmx_simd_rcp_f            _mm_rcp_ps
-#define gmx_simd_fabs_f(x)        _mm_andnot_ps(_mm_set1_ps(-0.0), x)
-#define gmx_simd_fneg_f(x)        _mm_xor_ps(x, _mm_set1_ps(-0.0))
+#define gmx_simd_fabs_f(x)        _mm_andnot_ps(_mm_set1_ps(GMX_FLOAT_NEGZERO), x)
+#define gmx_simd_fneg_f(x)        _mm_xor_ps(x, _mm_set1_ps(GMX_FLOAT_NEGZERO))
 #define gmx_simd_max_f            _mm_max_ps
 #define gmx_simd_min_f            _mm_min_ps
 #define gmx_simd_round_f(x)       _mm_cvtepi32_ps(_mm_cvtps_epi32(x))
@@ -183,8 +183,8 @@
 #define gmx_simd_rsqrt_d(x)        _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x)))
 /* Don't use FMA for sqrt N-R iterations - this saves 1 instruction without FMA hardware */
 #define gmx_simd_rcp_d(x)          _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x)))
-#define gmx_simd_fabs_d(x)         _mm_andnot_pd(_mm_set1_pd(-0.0), x)
-#define gmx_simd_fneg_d(x)         _mm_xor_pd(x, _mm_set1_pd(-0.0))
+#define gmx_simd_fabs_d(x)         _mm_andnot_pd(_mm_set1_pd(GMX_DOUBLE_NEGZERO), x)
+#define gmx_simd_fneg_d(x)         _mm_xor_pd(x, _mm_set1_pd(GMX_DOUBLE_NEGZERO))
 #define gmx_simd_max_d             _mm_max_pd
 #define gmx_simd_min_d             _mm_min_pd
 #define gmx_simd_round_d(x)        _mm_cvtepi32_pd(_mm_cvtpd_epi32(x))

@@ -109,6 +109,22 @@ typedef int         atom_id;      /* To indicate an atoms id         */
 /*! \brief Minimum single precision value */
 #define GMX_FLOAT_MIN    1.175494351E-38F
 
+#ifdef __PGI
+/* The portland group x86 C/C++ compilers do not treat negative zero initializers
+ * correctly, but "optimizes" them to positive zero, so we implement it explicitly.
+ * These constructs are optimized to simple loads at compile time. If you want to
+ * use them on other compilers those have to support gcc preprocessor extensions.
+ */
+#    define GMX_DOUBLE_NEGZERO  ({ const union { int  di[2]; double d; } __gmx_dzero = {0, -2147483648}; __gmx_dzero.d; })
+#    define GMX_FLOAT_NEGZERO   ({ const union { int  fi; float f; } __gmx_fzero = {-2147483648}; __gmx_fzero.f; })
+#else
+/*! \brief Negative zero in double */
+#    define GMX_DOUBLE_NEGZERO  (-0.0)
+
+/*! \brief Negative zero in float */
+#    define GMX_FLOAT_NEGZERO   (-0.0f)
+#endif
+
 
 /* Check whether we already have a real type! */
 #ifdef GMX_DOUBLE
@@ -118,10 +134,11 @@ typedef double      real;
 #define HAVE_REAL
 #endif
 
-#define GMX_MPI_REAL    MPI_DOUBLE
-#define GMX_REAL_EPS    GMX_DOUBLE_EPS
-#define GMX_REAL_MIN    GMX_DOUBLE_MIN
-#define GMX_REAL_MAX    GMX_DOUBLE_MAX
+#define GMX_MPI_REAL      MPI_DOUBLE
+#define GMX_REAL_EPS      GMX_DOUBLE_EPS
+#define GMX_REAL_MIN      GMX_DOUBLE_MIN
+#define GMX_REAL_MAX      GMX_DOUBLE_MAX
+#define GMX_REAL_NEGZERO  GMX_DOUBLE_NEGZERO
 #define gmx_real_fullprecision_pfmt "%21.14e"
 #else
 
@@ -130,10 +147,11 @@ typedef float           real;
 #define HAVE_REAL
 #endif
 
-#define GMX_MPI_REAL    MPI_FLOAT
-#define GMX_REAL_EPS    GMX_FLOAT_EPS
-#define GMX_REAL_MIN    GMX_FLOAT_MIN
-#define GMX_REAL_MAX    GMX_FLOAT_MAX
+#define GMX_MPI_REAL      MPI_FLOAT
+#define GMX_REAL_EPS      GMX_FLOAT_EPS
+#define GMX_REAL_MIN      GMX_FLOAT_MIN
+#define GMX_REAL_MAX      GMX_FLOAT_MAX
+#define GMX_REAL_NEGZERO  GMX_FLOAT_NEGZERO
 #define gmx_real_fullprecision_pfmt "%14.7e"
 #endif
 
