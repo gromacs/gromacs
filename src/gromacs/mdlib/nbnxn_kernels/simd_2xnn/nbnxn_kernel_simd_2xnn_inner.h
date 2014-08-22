@@ -84,6 +84,7 @@
 
 {
     int        cj, aj, ajx, ajy, ajz;
+    int        cj_n, aj_n, ajx_n, ajy_n, ajz_n;
 
 #ifdef ENERGY_GROUPS
     /* Energy group indices for two atoms packed into one int */
@@ -200,9 +201,10 @@
     gmx_simd_real_t  c6s_j_S, c12s_j_S;
 #endif
 
-#if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
+#ifdef CALC_LJ
     /* Index for loading LJ parameters, complicated when interleaving */
     int         aj2;
+    int         aj2_n;
 #endif
 
 #ifndef FIX_LJ_C
@@ -246,12 +248,35 @@
 
     /* Atom indices (of the first atom in the cluster) */
     aj            = cj*UNROLLJ;
-#if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM)
+#if defined CALC_LJ
     aj2           = aj*2;
 #endif
     ajx           = aj*DIM;
     ajy           = ajx + STRIDE;
     ajz           = ajy + STRIDE;
+
+    //TODO: don't just copy-paste
+    /* j-cluster index */
+    cj_n          = l_cj[cjind+1].cj;
+    _mm_prefetch((const char*)(&(l_cj[cjind+2])), _MM_HINT_NTA);
+
+
+    /* Atom indices (of the first atom in the cluster) */
+    aj_n            = cj_n*UNROLLJ;
+#if defined CALC_LJ
+#if UNROLLJ == STRIDE
+    aj2_n         = aj_n*2;
+#else
+    aj2_n         = (cj_n>>1)*2*STRIDE + (cj_n & 1)*UNROLLJ;
+#endif
+#endif
+#if UNROLLJ == STRIDE
+    ajx_n         = aj_n*DIM;
+#else
+    ajx_n         = (cj_n>>1)*DIM*STRIDE + (cj_n & 1)*UNROLLJ;
+#endif
+    ajy_n         = ajx_n + STRIDE;
+    ajz_n         = ajy_n + STRIDE;
 
 #ifdef CHECK_EXCLS
     gmx_load_simd_2xnn_interactions(l_cj[cjind].excl,
@@ -259,10 +284,16 @@
                                     &interact_S0, &interact_S2);
 #endif /* CHECK_EXCLS */
 
+    /* prefetch forces */
+    _mm_prefetch((const char*)(f+ajx), _MM_HINT_NTA);
+    _mm_prefetch((const char*)(f+ajz), _MM_HINT_NTA);
+
     /* load j atom coordinates */
     gmx_loaddh_pr(&jx_S, x+ajx);
     gmx_loaddh_pr(&jy_S, x+ajy);
     gmx_loaddh_pr(&jz_S, x+ajz);
+    _mm_prefetch((const char*)(x+ajx_n), _MM_HINT_NTA);
+    _mm_prefetch((const char*)(x+ajz_n), _MM_HINT_NTA);
 
     /* Calculate distance */
     dx_S0       = gmx_simd_sub_r(ix_S0, jx_S);
@@ -345,6 +376,7 @@
 #ifdef CALC_COULOMB
     /* Load parameters for j atom */
     gmx_loaddh_pr(&jq_S, q+aj);
+    _mm_prefetch((const char*)(q+aj_n), _MM_HINT_NTA);
     qq_S0       = gmx_simd_mul_r(iq_S0, jq_S);
     qq_S2       = gmx_simd_mul_r(iq_S2, jq_S);
 #endif
@@ -356,11 +388,15 @@
 #ifndef HALF_LJ
     load_lj_pair_params2(nbfp2, nbfp3, type, aj, &c6_S2, &c12_S2);
 #endif
+    _mm_prefetch((const char*)(type+aj_n), _MM_HINT_NTA);
+    _mm_prefetch((const char*)(type+aj_n+16), _MM_HINT_NTA);
 #endif /* not defined any LJ rule */
 
 #ifdef LJ_COMB_GEOM
     gmx_loaddh_pr(&c6s_j_S,  ljc+aj2+0);
     gmx_loaddh_pr(&c12s_j_S, ljc+aj2+STRIDE);
+    _mm_prefetch((const char*)(ljc+aj2_n+0), _MM_HINT_NTA);
+    _mm_prefetch((const char*)(ljc+aj2_n+STRIDE), _MM_HINT_NTA);
     c6_S0       = gmx_simd_mul_r(c6s_S0, c6s_j_S );
 #ifndef HALF_LJ
     c6_S2       = gmx_simd_mul_r(c6s_S2, c6s_j_S );

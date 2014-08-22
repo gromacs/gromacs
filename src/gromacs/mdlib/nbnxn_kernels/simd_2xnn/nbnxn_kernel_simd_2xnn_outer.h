@@ -601,12 +601,14 @@
 #define CALC_COULOMB
 #define HALF_LJ
 #define CHECK_EXCLS
+#pragma noprefetch
             while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
+#pragma noprefetch
             for (; (cjind < cjind1); cjind++)
             {
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
@@ -619,12 +621,14 @@
             /* Coulomb: all i-atoms, LJ: all i-atoms */
 #define CALC_COULOMB
 #define CHECK_EXCLS
+#pragma noprefetch
             while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
+#pragma noprefetch
             for (; (cjind < cjind1); cjind++)
             {
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
@@ -635,12 +639,14 @@
         {
             /* Coulomb: none, LJ: all i-atoms */
 #define CHECK_EXCLS
+#pragma noprefetch
             while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
             }
 #undef CHECK_EXCLS
+#pragma noprefetch
             for (; (cjind < cjind1); cjind++)
             {
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h"
