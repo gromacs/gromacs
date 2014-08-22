@@ -47,12 +47,6 @@
 #include <algorithm>
 #include <list>
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#include "thread_mpi/threads.h"
-
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
@@ -486,7 +480,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     try
     {
-        int                        nicelevel = 0;
         double                     tbegin    = 0.0, tend = 0.0, tdelta = 0.0;
         bool                       bView     = false;
         int                        xvgFormat = 0;
@@ -499,11 +492,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                 FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
         options.setDescription(gmx::constArrayRefFromArray<const char *>(desc, ndesc));
-
-        options.addOption(
-                gmx::IntegerOption("nice").store(&nicelevel)
-                    .defaultValue(FF(PCA_BE_NICE) ? 19 : 0)
-                    .description("Set the nicelevel"));
 
         if (FF(PCA_CAN_SET_DEFFNM))
         {
@@ -588,28 +576,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         output_env_init(oenv, gmx::getProgramContext(),
                         (time_unit_t)(timeUnitManager.timeUnit() + 1), bView,
                         (xvg_format_t)(xvgFormat + 1), 0);
-
-        /* Set the nice level */
-#ifdef HAVE_UNISTD_H
-#ifndef GMX_NO_NICE
-        /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
-        if (nicelevel != 0)
-        {
-            static gmx_bool            nice_set   = FALSE; /* only set it once */
-            static tMPI_Thread_mutex_t init_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-            tMPI_Thread_mutex_lock(&init_mutex);
-            if (!nice_set)
-            {
-                if (nice(nicelevel) == -1)
-                {
-                    /* Do nothing, but use the return value to avoid warnings. */
-                }
-                nice_set = TRUE;
-            }
-            tMPI_Thread_mutex_unlock(&init_mutex);
-        }
-#endif
-#endif
 
         timeUnitManager.scaleTimeOptions(&options);
 

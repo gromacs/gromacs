@@ -1128,7 +1128,7 @@ int gmx_msd(int argc, char *argv[])
     output_env_t    oenv;
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

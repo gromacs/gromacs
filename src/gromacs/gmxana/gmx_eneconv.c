@@ -573,7 +573,7 @@ int gmx_eneconv(int argc, char *argv[])
           "Stop on errors in the file" }
     };
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa),
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa),
                            pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;

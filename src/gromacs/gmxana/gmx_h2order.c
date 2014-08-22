@@ -313,7 +313,7 @@ int gmx_h2order(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE, NFILE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME, NFILE,
                            fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;

@@ -165,7 +165,7 @@ int gmx_helixorient(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

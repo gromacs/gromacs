@@ -129,7 +129,8 @@ int gmx_dyecoupl(int argc, char *argv[])
                 rrange, krange, rincr, kincr, Rfrac;
     int         rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }

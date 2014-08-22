@@ -990,7 +990,7 @@ int gmx_sham(int argc, char *argv[])
     int     npargs;
 
     npargs = asize(pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

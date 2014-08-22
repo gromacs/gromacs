@@ -505,7 +505,7 @@ int gmx_trjcat(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_TIME_UNIT, NFILE, fnm,
+    if (!parse_common_args(&argc, argv, PCA_TIME_UNIT, NFILE, fnm,
                            asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

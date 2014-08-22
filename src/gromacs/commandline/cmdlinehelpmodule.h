@@ -128,6 +128,10 @@ class CommandLineHelpModule : public CommandLineModuleInterface
             return "Print help information";
         }
 
+        virtual void init(CommandLineModuleSettings *settings)
+        {
+            settings->setDefaultNiceLevel(0);
+        }
         virtual int run(int argc, char *argv[]);
         virtual void writeHelp(const CommandLineHelpContext &context) const;
 
