@@ -115,7 +115,7 @@ int gmx_rotacf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

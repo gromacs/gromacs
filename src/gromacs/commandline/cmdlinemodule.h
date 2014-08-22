@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::CommandLineModuleInterface.
+ * Declares gmx::CommandLineModuleInterface and supporting classes.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -43,10 +43,43 @@
 #ifndef GMX_COMMANDLINE_CMDLINEMODULE_H
 #define GMX_COMMANDLINE_CMDLINEMODULE_H
 
+#include "gromacs/utility/common.h"
+
 namespace gmx
 {
 
 class CommandLineHelpContext;
+
+/*! \brief
+ * Settings to pass information between a module and the general runner.
+ *
+ * Methods in this class do not throw, except that construction may throw
+ * std::bad_alloc.
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
+class CommandLineModuleSettings
+{
+    public:
+        CommandLineModuleSettings();
+        ~CommandLineModuleSettings();
+
+        //! Returns the default nice level for this module.
+        int defaultNiceLevel() const;
+
+        /*! \brief
+         * Sets the default nice level for this module.
+         *
+         * If not called, the module will be niced.
+         */
+        void setDefaultNiceLevel(int niceLevel);
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
 
 /*! \brief
  * Module that can be run from command line using CommandLineModuleManager.
@@ -66,6 +99,13 @@ class CommandLineModuleInterface
         //! Returns a one-line description of the module.
         virtual const char *shortDescription() const = 0;
 
+        /*! \brief
+         * Initializes the module and provides settings for the runner.
+         *
+         * This will be called before run(), and can be used to adjust
+         * initialization that the runner does.
+         */
+        virtual void init(CommandLineModuleSettings *settings) = 0;
         /*! \brief
          * Runs the module with the given arguments.
          *
@@ -91,6 +131,22 @@ class CommandLineModuleInterface
          */
         virtual void writeHelp(const CommandLineHelpContext &context) const = 0;
 };
+
+//! \cond libapi
+/*! \libinternal \brief
+ * Helper to implement CommandLineModuleInterface::writeHelp() with a C-like
+ * main() function that calls parse_common_args().
+ *
+ * \param[in] context      Context object for writing the help.
+ * \param[in] name         Name of the module.
+ * \param[in] mainFunction C-like main() function that calls parse_common_args().
+ *
+ * \ingroup module_commandline
+ */
+void writeCommandLineHelpCMain(
+        const CommandLineHelpContext &context, const char *name,
+        int (*mainFunction)(int argc, char *argv[]));
+//! \endcond
 
 } // namespace gmx
 

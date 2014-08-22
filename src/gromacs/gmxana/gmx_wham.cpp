@@ -3381,7 +3381,7 @@ int gmx_wham(int argc, char *argv[])
     opt.stepchange            = 100;
     opt.stepUpdateContrib     = 100;
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, 0,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &opt.oenv))
     {
         return 0;

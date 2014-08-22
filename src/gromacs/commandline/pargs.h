@@ -230,8 +230,6 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 #define PCA_CAN_SET_DEFFNM (1<<10)
 /** Do not raise a fatal error when invalid options are encountered. */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
-/** Default to low priority. */
-#define PCA_BE_NICE        (1<<13)
 /** Is this node not reading: for parallel all nodes but the master */
 #define PCA_NOT_READ_NODE  (1<<16)
 /** Don't do any special processing for ffREAD files */

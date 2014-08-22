@@ -904,7 +904,7 @@ int gmx_rdf(int argc, char *argv[])
         { efXVG, "-hq", "hq",     ffOPTWR },
     };
 #define NFILE asize(fnm)
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

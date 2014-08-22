@@ -307,6 +307,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
         virtual const char *name() const { return name_; }
         virtual const char *shortDescription() const { return description_; };
 
+        virtual void init(CommandLineModuleSettings *settings);
         virtual int run(int argc, char *argv[]);
         virtual void writeHelp(const CommandLineHelpContext &context) const;
 
@@ -317,6 +318,11 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RunnerCommandLineModule);
 };
+
+void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::init(
+        CommandLineModuleSettings * /*settings*/)
+{
+}
 
 int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
         int argc, char *argv[])

@@ -3709,7 +3709,7 @@ int gmx_hbond(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, npargs,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, npargs,
                            ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;

@@ -722,7 +722,7 @@ int gmx_solvate(int argc, char *argv[])
           "Keep velocities from input solute and solvent" },
     };
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;

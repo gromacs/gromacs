@@ -247,7 +247,7 @@ int gmx_wheel(int argc, char *argv[])
     int    i, nres;
     char **resnm;
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
