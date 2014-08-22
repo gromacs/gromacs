@@ -203,6 +203,18 @@ int n_flexible_constraints(struct gmx_constr *constr)
     return nflexcon;
 }
 
+static void clear_constraint_quantity_nonlocal(gmx_domdec_t *dd, rvec *q)
+{
+    int nonlocal_at_start, nonlocal_at_end, at;
+
+    dd_get_constraint_range(dd, &nonlocal_at_start, &nonlocal_at_end);
+
+    for (at = nonlocal_at_start; at < nonlocal_at_end; at++)
+    {
+        clear_rvec(q[at]);
+    }
+}
+
 void too_many_constraint_warnings(int eConstrAlg, int warncount)
 {
     const char *abort = "- aborting to avoid logfile runaway.\n"
@@ -431,6 +443,15 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     if (cr->dd)
     {
         dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
+
+        if (v != NULL)
+        {
+            /* We need to initialize the non-local components of v.
+             * We never actually use these values, but we do increment them,
+             * so we should avoid uninitialized variables and overflows.
+             */
+            clear_constraint_quantity_nonlocal(cr->dd, v);
+        }
     }
 
     if (constr->lincsd != NULL)
