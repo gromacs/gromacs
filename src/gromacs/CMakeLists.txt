@@ -71,6 +71,7 @@ if(GMX_USE_TNG)
 
         if (HAVE_ZLIB)
             list(APPEND GMX_EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
+            include_directories(${ZLIB_INCLUDE_DIRS})
         endif()
     endif()
 else()
