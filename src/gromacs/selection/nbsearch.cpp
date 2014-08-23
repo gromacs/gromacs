@@ -40,9 +40,6 @@
  * The grid implementation could still be optimized in several different ways:
  *   - Triclinic grid cells are not the most efficient shape, but make PBC
  *     handling easier.
- *   - Precalculating the required PBC shift for a pair of cells outside the
- *     inner loop. After this is done, it should be quite straightforward to
- *     move to rectangular cells.
  *   - Pruning grid cells from the search list if they are completely outside
  *     the sphere that is being considered.
  *   - A better heuristic could be added for falling back to simple loops for a
@@ -159,6 +156,16 @@ class AnalysisNeighborhoodSearchImpl
          * \param[in]     i    Index to add.
          */
         void addToGridCell(const ivec cell, int i);
+        /*! \brief
+         * Calculates the index of a neighboring grid cell.
+         *
+         * \param[in]  sourceCell Location of the source cell.
+         * \param[in]  index      Index of the neighbor to calculate.
+         * \param[out] shift      Shift to apply to get the periodic distance
+         *     for distances between the cells.
+         * \returns    Grid cell index of the neighboring cell.
+         */
+        int getNeighboringCell(const ivec sourceCell, int index, rvec shift) const;
 
         //! Whether to try grid searching.
         bool                    bTryGrid_;
@@ -507,6 +514,33 @@ void AnalysisNeighborhoodSearchImpl::addToGridCell(const ivec cell, int i)
     cells_[ci].push_back(i);
 }
 
+int AnalysisNeighborhoodSearchImpl::getNeighboringCell(
+        const ivec sourceCell, int index, rvec shift) const
+{
+    ivec cell;
+    ivec_add(sourceCell, gnboffs_[index], cell);
+
+    // TODO: Consider unifying with the similar shifting code in
+    // mapPointToGridCell().
+    clear_rvec(shift);
+    for (int d = 0; d < DIM; ++d)
+    {
+        const int cellCount = ncelldim_[d];
+        if (cell[d] < 0)
+        {
+            cell[d] += cellCount;
+            rvec_add(shift, pbc_.box[d], shift);
+        }
+        else if (cell[d] >= cellCount)
+        {
+            cell[d] -= cellCount;
+            rvec_sub(shift, pbc_.box[d], shift);
+        }
+    }
+
+    return getGridCellIndex(cell);
+}
+
 void AnalysisNeighborhoodSearchImpl::init(
         AnalysisNeighborhood::SearchMode     mode,
         bool                                 bXY,
@@ -688,16 +722,9 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
 
             for (; nbi < search_.ngridnb_; ++nbi)
             {
-                ivec cell;
-
-                ivec_add(testcell_, search_.gnboffs_[nbi], cell);
-                cell[XX] = (cell[XX] + search_.ncelldim_[XX]) % search_.ncelldim_[XX];
-                cell[YY] = (cell[YY] + search_.ncelldim_[YY]) % search_.ncelldim_[YY];
-                cell[ZZ] = (cell[ZZ] + search_.ncelldim_[ZZ]) % search_.ncelldim_[ZZ];
-
-                const int ci       = search_.getGridCellIndex(cell);
+                rvec      shift;
+                const int ci       = search_.getNeighboringCell(testcell_, nbi, shift);
                 const int cellSize = static_cast<int>(search_.cells_[ci].size());
-                /* TODO: Calculate the required PBC shift outside the inner loop */
                 for (; cai < cellSize; ++cai)
                 {
                     const int i = search_.cells_[ci][cai];
@@ -706,7 +733,8 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                         continue;
                     }
                     rvec       dx;
-                    pbc_dx_aiuc(&search_.pbc_, xtest_, search_.xref_[i], dx);
+                    rvec_sub(xtest_, search_.xref_[i], dx);
+                    rvec_add(dx, shift, dx);
                     const real r2 = norm2(dx);
                     if (r2 <= search_.cutoff2_)
                     {
