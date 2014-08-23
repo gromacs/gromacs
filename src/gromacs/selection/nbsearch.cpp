@@ -131,10 +131,10 @@ class AnalysisNeighborhoodSearchImpl
          *
          * \param[in]  x    Point to map.
          * \param[out] cell Indices of the grid cell in which \p x lies.
-         *
-         * \p x should be within the triclinic unit cell.
+         * \param[out] xout Coordinates to use
+         *     (will be within the triclinic unit cell).
          */
-        void mapPointToGridCell(const rvec x, ivec cell) const;
+        void mapPointToGridCell(const rvec x, ivec cell, rvec xout) const;
         /*! \brief
          * Calculates linear index of a grid cell.
          *
@@ -423,25 +423,52 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc *pbc)
 }
 
 void AnalysisNeighborhoodSearchImpl::mapPointToGridCell(const rvec x,
-                                                        ivec       cell) const
+                                                        ivec       cell,
+                                                        rvec       xout) const
 {
+    rvec xtmp;
+    copy_rvec(x, xtmp);
     if (bTric_)
     {
         rvec tx;
-
-        tmvmul_ur0(recipcell_, x, tx);
+        tmvmul_ur0(recipcell_, xtmp, tx);
         for (int dd = 0; dd < DIM; ++dd)
         {
-            cell[dd] = static_cast<int>(tx[dd]);
+            const int cellCount = ncelldim_[dd];
+            int       cellIndex = static_cast<int>(floor(tx[dd]));
+            while (cellIndex < 0)
+            {
+                cellIndex += cellCount;
+                rvec_add(xtmp, pbc_->box[dd], xtmp);
+            }
+            while (cellIndex >= cellCount)
+            {
+                cellIndex -= cellCount;
+                rvec_sub(xtmp, pbc_->box[dd], xtmp);
+            }
+            cell[dd] = cellIndex;
         }
     }
     else
     {
         for (int dd = 0; dd < DIM; ++dd)
         {
-            cell[dd] = static_cast<int>(x[dd] * recipcell_[dd][dd]);
+            const int cellCount = ncelldim_[dd];
+            int       cellIndex = static_cast<int>(floor(xtmp[dd] * recipcell_[dd][dd]));
+            while (cellIndex < 0)
+            {
+                cellIndex += cellCount;
+                xtmp[dd]  += pbc_->box[dd][dd];
+            }
+            while (cellIndex >= cellCount)
+            {
+                cellIndex -= cellCount;
+                xtmp[dd]  -= pbc_->box[dd][dd];
+            }
+            cell[dd] = cellIndex;
         }
     }
+    copy_rvec(xtmp, xout);
 }
 
 int AnalysisNeighborhoodSearchImpl::getGridCellIndex(const ivec cell) const
@@ -494,15 +521,8 @@ void AnalysisNeighborhoodSearchImpl::init(
 
         for (int i = 0; i < nref_; ++i)
         {
-            copy_rvec(positions.x_[i], xref_alloc_[i]);
-        }
-        put_atoms_in_triclinic_unitcell(ecenterTRIC, pbc_->box,
-                                        nref_, xref_alloc_);
-        for (int i = 0; i < nref_; ++i)
-        {
             ivec refcell;
-
-            mapPointToGridCell(xref_[i], refcell);
+            mapPointToGridCell(positions.x_[i], refcell, xref_alloc_[i]);
             addToGridCell(refcell, i);
         }
     }
@@ -543,12 +563,13 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
     testIndex_ = testIndex;
     if (testIndex_ >= 0 && testIndex_ < static_cast<int>(testPositions_.size()))
     {
-        copy_rvec(testPositions_[testIndex_], xtest_);
         if (search_.bGrid_)
         {
-            put_atoms_in_triclinic_unitcell(ecenterTRIC, search_.pbc_->box,
-                                            1, &xtest_);
-            search_.mapPointToGridCell(xtest_, testcell_);
+            search_.mapPointToGridCell(testPositions_[testIndex], testcell_, xtest_);
+        }
+        else
+        {
+            copy_rvec(testPositions_[testIndex_], xtest_);
         }
     }
     previ_     = -1;
