@@ -567,6 +567,7 @@ void NeighborhoodSearchTest::testPairSearchFull(
             << "Expected: Pair (ref: " << pair.refIndex() << ", test: "
             << pair.testIndex() << ") is returned only once.\n"
             << "  Actual: It is returned multiple times.";
+            return;
         }
         else
         {
@@ -613,6 +614,26 @@ class TrivialTestData
             data_.generateRandomTestPositions(5);
             set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
             data_.computeReferences(&data_.pbc_);
+        }
+
+    private:
+        NeighborhoodSearchTestData data_;
+};
+
+class TrivialNoPBCTestData
+{
+    public:
+        static const NeighborhoodSearchTestData &get()
+        {
+            static TrivialNoPBCTestData singleton;
+            return singleton.data_;
+        }
+
+        TrivialNoPBCTestData() : data_(12345, 1.0)
+        {
+            data_.generateRandomRefPositions(10);
+            data_.generateRandomTestPositions(5);
+            data_.computeReferences(NULL);
         }
 
     private:
@@ -726,6 +747,32 @@ class RandomBox2DPBCData
         NeighborhoodSearchTestData data_;
 };
 
+class RandomBoxNoPBCData
+{
+    public:
+        static const NeighborhoodSearchTestData &get()
+        {
+            static RandomBoxNoPBCData singleton;
+            return singleton.data_;
+        }
+
+        RandomBoxNoPBCData() : data_(12345, 1.0)
+        {
+            data_.box_[XX][XX] = 10.0;
+            data_.box_[YY][YY] = 5.0;
+            data_.box_[ZZ][ZZ] = 7.0;
+            // TODO: Consider whether manually picking some positions would give better
+            // test coverage.
+            data_.generateRandomRefPositions(1000);
+            data_.generateRandomTestPositions(100);
+            set_pbc(&data_.pbc_, epbcNONE, data_.box_);
+            data_.computeReferences(NULL);
+        }
+
+    private:
+        NeighborhoodSearchTestData data_;
+};
+
 /********************************************************************
  * Actual tests
  */
@@ -736,6 +783,23 @@ TEST_F(NeighborhoodSearchTest, SimpleSearch)
 
     nb_.setCutoff(data.cutoff_);
     nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Simple);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(&data.pbc_, data.refPositions());
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
+
+    testIsWithin(&search, data);
+    testMinimumDistance(&search, data);
+    testNearestPoint(&search, data);
+    testPairSearch(&search, data);
+}
+
+TEST_F(NeighborhoodSearchTest, SimpleSearchXY)
+{
+    const NeighborhoodSearchTestData &data = RandomBoxXYFullPBCData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Simple);
+    nb_.setXYMode(true);
     gmx::AnalysisNeighborhoodSearch search =
         nb_.initSearch(&data.pbc_, data.refPositions());
     ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
@@ -783,12 +847,24 @@ TEST_F(NeighborhoodSearchTest, GridSearch2DPBC)
     nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Grid);
     gmx::AnalysisNeighborhoodSearch search =
         nb_.initSearch(&data.pbc_, data.refPositions());
-    // Currently, grid searching not supported with 2D PBC.
-    //ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
 
     testIsWithin(&search, data);
     testMinimumDistance(&search, data);
     testNearestPoint(&search, data);
+    testPairSearch(&search, data);
+}
+
+TEST_F(NeighborhoodSearchTest, GridSearchNoPBC)
+{
+    const NeighborhoodSearchTestData &data = RandomBoxNoPBCData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Grid);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(&data.pbc_, data.refPositions());
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
+
     testPairSearch(&search, data);
 }
 
@@ -801,8 +877,7 @@ TEST_F(NeighborhoodSearchTest, GridSearchXYBox)
     nb_.setXYMode(true);
     gmx::AnalysisNeighborhoodSearch search =
         nb_.initSearch(&data.pbc_, data.refPositions());
-    // Currently, grid searching not supported with XY.
-    //ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
 
     testIsWithin(&search, data);
     testMinimumDistance(&search, data);
@@ -843,6 +918,36 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
         NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), sqrt(pair.distance2()));
         EXPECT_TRUE(data.containsPair(1, searchPair));
     }
+}
+
+TEST_F(NeighborhoodSearchTest, HandlesNoPBC)
+{
+    const NeighborhoodSearchTestData &data = TrivialNoPBCTestData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(&data.pbc_, data.refPositions());
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
+
+    testIsWithin(&search, data);
+    testMinimumDistance(&search, data);
+    testNearestPoint(&search, data);
+    testPairSearch(&search, data);
+}
+
+TEST_F(NeighborhoodSearchTest, HandlesNullPBC)
+{
+    const NeighborhoodSearchTestData &data = TrivialNoPBCTestData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(NULL, data.refPositions());
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
+
+    testIsWithin(&search, data);
+    testMinimumDistance(&search, data);
+    testNearestPoint(&search, data);
+    testPairSearch(&search, data);
 }
 
 TEST_F(NeighborhoodSearchTest, HandlesSkippingPairs)
