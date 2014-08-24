@@ -35,6 +35,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
+#define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
+
+#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/genborn.h"
 #include "gromacs/legacyheaders/types/qmmmrec.h"
@@ -495,4 +499,5 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
 #endif
