@@ -38,7 +38,10 @@
 #ifndef _xmb_h
 #define _xmb_h
 
-#include "x11.h"
+#include "programs/view/manager.h"
+#include "programs/view/x11.h"
+#include "programs/view/xdlg.h"
+#include "programs/view/xmb.h"
 
 #define MB_OK              1
 #define MB_CANCEL          (1<<1)
