@@ -38,16 +38,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/warninp.h"
-#include "gromacs/utility/fatalerror.h"
 
 t_inpfile *read_inpfile(const char *fn, int *ninp,
                         warninp_t wi)

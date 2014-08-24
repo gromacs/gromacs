@@ -39,8 +39,7 @@
 #define _molps_h
 
 #include "gromacs/fileio/writeps.h"
-
-#include "manager.h"
+#include "programs/view/manager.h"
 
 extern void ps_draw_mol(t_psdata ps, t_manager *man);
 /* Draw molecules to a postscript file */

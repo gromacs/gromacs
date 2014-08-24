@@ -38,19 +38,18 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
+#include "tpxio.h"
+
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
-#include "tpxio.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "confio.h"
-#include "gromacs/legacyheaders/copyrite.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
@@ -59,6 +58,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define TPX_TAG_RELEASE  "release"

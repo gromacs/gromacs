@@ -39,20 +39,20 @@
 #include "protonate.h"
 
 #include <math.h>
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/smalloc.h"
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "genhydro.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/gmxpreprocess/genhydro.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "hackblock.h"
-
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_protonate(int argc, char *argv[])
 {

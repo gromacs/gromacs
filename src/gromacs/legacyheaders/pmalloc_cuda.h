@@ -36,10 +36,11 @@
 #ifndef PMALLOC_CUDA_H
 #define PMALLOC_CUDA_H
 
-#include "config.h"
-
 #include <stdlib.h>
+
 #include "gromacs/legacyheaders/types/simple.h"
+
+#include "config.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;

@@ -36,19 +36,20 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
 #include <math.h>
-#include "gromacs/math/utilities.h"
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/coulomb.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/smalloc.h"
 
 real calc_ewaldcoeff_q(real rc, real dtol)
 {

@@ -42,7 +42,7 @@
 // For GMX_BINARY_SUFFIX
 #include "gmxpre.h"
 
-#include "config.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 
 #include <vector>
 
@@ -50,7 +50,6 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
-#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/file.h"
 
@@ -58,6 +57,8 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+#include "config.h"
 
 namespace
 {

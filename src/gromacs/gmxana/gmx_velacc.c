@@ -40,24 +40,24 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "gromacs/fileio/confio.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gstat.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/math/units.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fft/fft.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/viewit.h"
-#include "gmx_ana.h"
-#include "gromacs/fft/fft.h"
-#include "gromacs/fileio/trxio.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void index_atom2mol(int *n, atom_id *index, t_block *mols)
 {

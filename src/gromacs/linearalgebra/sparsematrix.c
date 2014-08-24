@@ -39,8 +39,8 @@
 #include "sparsematrix.h"
 
 #include <assert.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "gromacs/utility/smalloc.h"
 

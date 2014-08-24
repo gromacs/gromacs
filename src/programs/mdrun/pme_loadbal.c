@@ -34,24 +34,24 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "pme_loadbal.h"
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/calcgrid.h"
-#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
-#include "pme_loadbal.h"
-
-#include "gromacs/math/vec.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 /* Parameters and setting for one PP-PME setup */
 typedef struct {

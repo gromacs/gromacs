@@ -36,17 +36,16 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "nb_kernel_allvsall.h"
 
 #include <math.h>
 
+#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "nb_kernel_allvsall.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "config.h"
 
 typedef struct
 {

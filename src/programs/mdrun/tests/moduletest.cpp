@@ -43,20 +43,19 @@
 
 #include "moduletest.h"
 
-#include "config.h"
-
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/file.h"
-
 #include "programs/mdrun/mdrun_main.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/integrationtests.h"
 #include "testutils/testoptions.h"
-#include "testutils/cmdlinetest.h"
+
+#include "config.h"
 
 namespace gmx
 {

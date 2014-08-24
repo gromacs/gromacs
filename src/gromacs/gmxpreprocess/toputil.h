@@ -38,8 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_TOPUTIL_H
 #define GMX_GMXPREPROCESS_TOPUTIL_H
 
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
 #ifdef __cplusplus
 extern "C" {

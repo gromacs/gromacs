@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_TOPSHAKE_H
 #define GMX_GMXPREPROCESS_TOPSHAKE_H
 
-#include "topio.h"
+#include "gromacs/gmxpreprocess/topio.h"
 
 #ifdef __cplusplus
 extern "C" {

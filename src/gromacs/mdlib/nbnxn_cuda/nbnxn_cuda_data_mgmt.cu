@@ -34,35 +34,34 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "nbnxn_cuda_data_mgmt.h"
 
 #include <assert.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <cuda.h>
 
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/legacyheaders/gmx_detect_hardware.h"
+#include "gromacs/legacyheaders/gpu_utils.h"
+#include "gromacs/legacyheaders/pmalloc_cuda.h"
 #include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/enums.h"
-#include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
-#include "../nbnxn_consts.h"
-#include "gromacs/legacyheaders/gmx_detect_hardware.h"
-
-#include "nbnxn_cuda_types.h"
-#include "../../gmxlib/cuda_tools/cudautils.cuh"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
-#include "gromacs/legacyheaders/pmalloc_cuda.h"
-#include "gromacs/legacyheaders/gpu_utils.h"
-
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_types.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
 

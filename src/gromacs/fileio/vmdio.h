@@ -35,9 +35,9 @@
 #ifndef GMX_FILEIO_VMDIO_H
 #define GMX_FILEIO_VMDIO_H
 
-#include "external/vmd_molfile/molfile_plugin.h"
-
 #include "gromacs/utility/basedefinitions.h"
+
+#include "external/vmd_molfile/molfile_plugin.h"
 
 #ifdef __cplusplus
 extern "C" {

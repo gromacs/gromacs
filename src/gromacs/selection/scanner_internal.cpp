@@ -53,6 +53,8 @@
  */
 #include "gmxpre.h"
 
+#include "scanner_internal.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -65,15 +67,13 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "parser.h"
 #include "parsetree.h"
+#include "scanner.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
-
-#include "parser.h"
-#include "scanner.h"
-#include "scanner_internal.h"
 
 /*! \brief
  * Step in which the allocated memory for pretty-printed input is incremented.

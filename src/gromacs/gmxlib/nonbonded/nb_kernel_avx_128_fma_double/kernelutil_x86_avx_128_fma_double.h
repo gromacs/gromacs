@@ -36,6 +36,7 @@
 #define _kernelutil_x86_avx_128_fma_double_h_
 
 #include <math.h>
+
 #include <immintrin.h>
 #ifdef _MSC_VER
 #    include <intrin.h>

@@ -37,21 +37,21 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nsgrid.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/nsgrid.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include <stdio.h>
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
+#include "gromacs/utility/smalloc.h"
 
 /***********************************
  *         Grid Routines

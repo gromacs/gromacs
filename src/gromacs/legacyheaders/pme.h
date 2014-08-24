@@ -39,11 +39,12 @@
 #define _pme_h
 
 #include <stdio.h>
+
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "../math/gmxcomplex.h"
-#include "../timing/wallcycle.h"
-#include "../timing/walltime_accounting.h"
-#include "../legacyheaders/network.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #ifdef __cplusplus
 extern "C" {

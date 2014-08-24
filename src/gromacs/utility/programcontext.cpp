@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/programcontext.h"
+#include "programcontext.h"
 
 #include <cstddef>
 

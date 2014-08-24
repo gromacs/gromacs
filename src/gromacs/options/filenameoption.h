@@ -46,8 +46,8 @@
 #include <string>
 #include <vector>
 
-#include "abstractoption.h"
-#include "optionfiletype.h"
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/optionfiletype.h"
 
 namespace gmx
 {

@@ -36,11 +36,12 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gstat.h"
 
 real LegendreP(real x, unsigned long m)
 

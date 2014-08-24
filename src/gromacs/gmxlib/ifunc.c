@@ -37,11 +37,11 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \

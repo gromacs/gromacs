@@ -43,10 +43,10 @@
 
 #include "selection.h"
 
+#include "gromacs/selection/nbsearch.h"
+#include "gromacs/selection/position.h"
 #include "gromacs/topology/topology.h"
 
-#include "nbsearch.h"
-#include "position.h"
 #include "selelem.h"
 #include "selvalue.h"
 
