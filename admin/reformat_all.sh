@@ -100,11 +100,14 @@ if [[ "$filter" == "default" ]] ; then
 fi
 
 case "$filter" in
+    includesort)
+        filter_re="(uncrustify|includesort)"
+        ;;
     uncrustify)
         filter_re="(uncrustify|uncrustify_only)"
         ;;
     copyright)
-        filter_re="(uncrustify|copyright)"
+        filter_re="(uncrustify|copyright|includesort)"
         ;;
     *)
         echo "Unknown filter mode: $filter"
