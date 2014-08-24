@@ -51,6 +51,8 @@
 #ifndef _restcbt_h
 #define _restcbt_h
 
+#include "gromacs/topology/idef.h"
+
 
 #ifdef __cplusplus
 extern "C" {
