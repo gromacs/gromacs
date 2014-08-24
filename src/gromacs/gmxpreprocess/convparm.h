@@ -38,6 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_CONVPARM_H
 #define GMX_GMXPREPROCESS_CONVPARM_H
 
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus

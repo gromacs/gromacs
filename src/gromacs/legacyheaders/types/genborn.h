@@ -35,6 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifndef GMX_LEGACYHEADERS_TYPES_GENBORN_H
+#define GMX_LEGACYHEADERS_TYPES_GENBORN_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -112,4 +114,5 @@ gmx_genborn_t;
 
 #ifdef __cplusplus
 }
+#endif
 #endif
