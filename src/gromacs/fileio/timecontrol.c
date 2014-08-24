@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fileio/timecontrol.h"
+#include "timecontrol.h"
 
 #include "thread_mpi/threads.h"
 

@@ -44,16 +44,16 @@
  */
 #include "gmxpre.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/options.h"
-#include "gromacs/options/optionstoragetemplate.h"
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/options/optionstoragetemplate.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/testasserts.h"

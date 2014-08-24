@@ -42,7 +42,7 @@
  */
 #include "gmxpre.h"
 
-#include "moduletest.h"
+#include "programs/mdrun/tests/moduletest.h"
 
 namespace gmx
 {

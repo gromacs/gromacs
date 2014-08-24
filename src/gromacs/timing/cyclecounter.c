@@ -35,11 +35,11 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/timing/cyclecounter.h"
-
-#include "config.h"
+#include "cyclecounter.h"
 
 #include <time.h>
+
+#include "config.h"
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif

@@ -36,14 +36,16 @@
  */
 #include "gmxpre.h"
 
-#include <string.h>
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/futil.h"
 #include "trnio.h"
-#include "gmxfio.h"
+
+#include <string.h>
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define BUFSIZE     128
 #define GROMACS_MAGIC   1993

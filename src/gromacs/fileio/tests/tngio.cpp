@@ -41,10 +41,12 @@
  */
 #include "gmxpre.h"
 
-#include <gtest/gtest.h>
+#include "gromacs/fileio/tngio.h"
+
 #include <string>
 
-#include "gromacs/fileio/tngio.h"
+#include <gtest/gtest.h>
+
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/utility/path.h"
 

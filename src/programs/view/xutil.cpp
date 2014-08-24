@@ -36,14 +36,16 @@
  */
 #include "gmxpre.h"
 
+#include "xutil.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "xutil.h"
-#include "Xstuff.h"
+#include "programs/view/Xstuff.h"
 
 int CheckWin(Window win, const char *file, int line)
 {

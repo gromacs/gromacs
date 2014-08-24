@@ -37,6 +37,7 @@
 #define GMX_SIMD_IMPL_X86_SSE2_H
 
 #include <math.h>
+
 #include <emmintrin.h>
 
 /* Set capabilities that can be inherited */

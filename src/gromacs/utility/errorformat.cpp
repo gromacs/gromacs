@@ -41,8 +41,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "errorformat.h"
 
 #include <cctype>
@@ -52,6 +50,8 @@
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "config.h"
 
 namespace gmx
 {

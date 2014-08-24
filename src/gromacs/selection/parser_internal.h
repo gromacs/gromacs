@@ -53,9 +53,8 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "parsetree.h"
-#include "selelem.h"
-
 #include "scanner.h"
+#include "selelem.h"
 
 #include "config.h"
 

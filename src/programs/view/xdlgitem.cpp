@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "xdlgitem.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,12 +46,10 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/macros.h"
-#include "Xstuff.h"
-#include "xdlgitem.h"
-
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "programs/view/Xstuff.h"
 
 #define BUFSIZE 16
 

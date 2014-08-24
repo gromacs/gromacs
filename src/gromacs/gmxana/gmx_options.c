@@ -36,9 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 /*
  * This program is needed to create the files:

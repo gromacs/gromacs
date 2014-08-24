@@ -35,13 +35,12 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fft/fft.h"
-
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/fft/fft.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 

@@ -42,9 +42,10 @@
 #include "gmxpre.h"
 
 #include "gromacs/gmxana/gmx_ana.h"
-#include "testutils/integrationtests.h"
-#include "testutils/cmdlinetest.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/integrationtests.h"
 
 #include "config.h"
 

@@ -41,10 +41,10 @@
 #ifndef GMX_MDRUN_TESTS_MODULETEST_H
 #define GMX_MDRUN_TESTS_MODULETEST_H
 
-#include "testutils/integrationtests.h"
-
 #include <gtest/gtest.h>
+
 #include "testutils/cmdlinetest.h"
+#include "testutils/integrationtests.h"
 
 namespace gmx
 {

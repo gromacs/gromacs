@@ -36,14 +36,14 @@
  */
 #include "gmxpre.h"
 
+#include "toputil.h"
+
 #include <math.h>
 #include <string.h>
 
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "topdirs.h"
-#include "toputil.h"
-#include "gpp_atomtype.h"
-
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"

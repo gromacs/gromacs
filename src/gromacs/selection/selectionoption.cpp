@@ -42,18 +42,19 @@
 #include "gmxpre.h"
 
 #include "selectionoption.h"
-#include "selectionfileoption.h"
-#include "selectionoptionstorage.h"
-#include "selectionfileoptionstorage.h"
 
 #include <string>
 
 #include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+
+#include "selectionfileoptionstorage.h"
+#include "selectionoptionstorage.h"
 
 namespace gmx
 {

@@ -36,8 +36,9 @@
  */
 #include "gmxpre.h"
 
+#include "block.h"
+
 #include <algorithm>
-#include "gromacs/topology/block.h"
 
 #include "gromacs/utility/smalloc.h"
 

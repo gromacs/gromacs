@@ -34,11 +34,13 @@
  */
 #include "gmxpre.h"
 
-#include <vector>
-#include "gromacs/math/utilities.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
+
+#include <vector>
+
+#include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/simd/simd.h"
 
 #include "simd.h"
 

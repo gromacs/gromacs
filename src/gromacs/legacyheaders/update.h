@@ -38,11 +38,10 @@
 #ifndef _update_h
 #define _update_h
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/network.h"
-
-#include "../timing/wallcycle.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {

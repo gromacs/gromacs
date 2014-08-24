@@ -39,6 +39,7 @@
 #define GMX_GMXPREPROCESS_TOMORSE_H
 
 #include <stdio.h>
+
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/legacyheaders/typedefs.h"

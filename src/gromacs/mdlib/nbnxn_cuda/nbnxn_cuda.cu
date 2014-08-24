@@ -34,10 +34,10 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
+
+#include "config.h"
 
 #if defined(_MSVC)
 #include <limits>
@@ -45,21 +45,21 @@
 
 #include <cuda.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/mdlib/nbnxn_pairlist.h"
-#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
-#include "../nbnxn_consts.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
 
 #ifdef TMPI_ATOMICS
 #include "thread_mpi/atomic.h"
 #endif
 
-#include "nbnxn_cuda_types.h"
-#include "../../gmxlib/cuda_tools/cudautils.cuh"
 #include "nbnxn_cuda.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_types.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/cstringutil.h"
 
@@ -81,7 +81,7 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
 /***** The kernels come here *****/
-#include "nbnxn_cuda_kernel_utils.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
 
 /* Top-level kernel generation: will generate through multiple inclusion the
  * following flavors for all kernels:
@@ -91,19 +91,19 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
  * - force and energy output with pair list pruning.
  */
 /** Force only **/
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 
 /*** Pair-list pruning kernels ***/
 /** Force only **/
 #define PRUNE_NBL
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
 

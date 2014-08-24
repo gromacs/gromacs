@@ -37,18 +37,19 @@
 #include "gmxpre.h"
 
 #include <stdio.h>
-#include "gromacs/legacyheaders/typedefs.h"
+
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/mvdata.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/mvdata.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define BUFSIZE 256
 

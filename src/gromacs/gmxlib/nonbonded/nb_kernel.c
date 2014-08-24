@@ -34,13 +34,14 @@
  */
 #include "gmxpre.h"
 
+#include "nb_kernel.h"
+
 #include <stdio.h>
 #include <string.h>
 
-#include "nb_kernel.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 
 /* Static data structures to find kernels */

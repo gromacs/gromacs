@@ -45,9 +45,9 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <sstream>
 
 #include <new>
+#include <sstream>
 #include <vector>
 
 #include "gromacs/commandline/cmdlineprogramcontext.h"

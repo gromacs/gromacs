@@ -38,10 +38,10 @@
 #ifndef _GPU_UTILS_H_
 #define _GPU_UTILS_H_
 
-#include "config.h"
-
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/simple.h"
+
+#include "config.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM_INT ;

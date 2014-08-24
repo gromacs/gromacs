@@ -36,25 +36,23 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/network.h"
-
-#include "config.h"
-
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
-
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */

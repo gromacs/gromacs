@@ -46,10 +46,9 @@
 #include "tng/tng_io.h"
 #endif
 
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
-
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/topology.h"

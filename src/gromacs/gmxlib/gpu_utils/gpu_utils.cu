@@ -35,15 +35,13 @@
 
 #include "gmxpre.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
-#include "gromacs/legacyheaders/types/hw_info.h"
-
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/legacyheaders/gpu_utils.h"
-#include "../cuda_tools/cudautils.cuh"
-
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 

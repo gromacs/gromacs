@@ -36,8 +36,8 @@
 #ifndef _powerspect_h
 #define _powerspect_h
 
+#include "gromacs/gmxana/interf.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "interf.h"
 
 #ifdef __cplusplus
 extern "C"

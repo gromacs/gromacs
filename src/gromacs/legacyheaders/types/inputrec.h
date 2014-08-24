@@ -39,9 +39,9 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/enums.h"
-#include "../../swap/enums.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {

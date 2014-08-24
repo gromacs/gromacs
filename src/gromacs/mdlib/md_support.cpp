@@ -39,20 +39,19 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/vcm.h"
-#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/md_support.h"
+#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
-
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
