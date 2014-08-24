@@ -35,6 +35,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifndef GMX_LEGACYHEADERS_TYPES_NS_H
+#define GMX_LEGACYHEADERS_TYPES_NS_H
+
 #include "gromacs/legacyheaders/types/nsgrid.h"
 #include "gromacs/legacyheaders/types/nblist.h"
 
@@ -81,4 +84,5 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
 #endif

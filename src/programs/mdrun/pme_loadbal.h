@@ -40,6 +40,12 @@
 extern "C" {
 #endif
 
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/state.h"
+
 typedef struct pme_load_balancing *pme_load_balancing_t;
 
 /* Initialze the PP-PME load balacing data and infrastructure */

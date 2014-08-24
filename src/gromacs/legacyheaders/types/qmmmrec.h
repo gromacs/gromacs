@@ -35,6 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifndef GMX_LEGACYHEADERS_TYPES_QMMMREC_H
+#define GMX_LEGACYHEADERS_TYPES_QMMMREC_H
 
 #include "gromacs/legacyheaders/types/simple.h"
 
@@ -108,4 +110,5 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
 #endif
