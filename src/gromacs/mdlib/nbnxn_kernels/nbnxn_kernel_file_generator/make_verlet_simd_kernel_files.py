@@ -1,3 +1,4 @@
+
 #!/usr/bin/python
 #
 # This file is part of the GROMACS molecular simulation package.
@@ -163,6 +164,7 @@ for type in VerletKernelTypeDict:
     KernelNamePrefix = 'nbnxn_kernel'
     KernelsName = "{0}_simd_{1}".format(KernelNamePrefix,type)
     KernelsHeaderFileName = "{0}.h".format(KernelsName,type)
+    KernelsHeaderPathName = "gromacs/mdlib/nbnxn_kernels/simd_{0}/{1}".format(type,KernelsHeaderFileName)
     KernelFunctionLookupTable = {}
     KernelDeclarations = ''
     KernelTemplate = read_kernel_template("{0}_kernel.c.pre".format(KernelsName))
@@ -189,7 +191,7 @@ for type in VerletKernelTypeDict:
                                            ElectrostaticsDict[elec]['define'],
                                            VdwTreatmentDict[ljtreat]['define'],
                                            EnergiesComputationDict[ener]['define'],
-                                           KernelsHeaderFileName,
+                                           KernelsHeaderPathName,
                                            KernelName,
                                            " " * (len(KernelName) + 1),
                                            VerletKernelTypeDict[type]['UnrollSize'],
