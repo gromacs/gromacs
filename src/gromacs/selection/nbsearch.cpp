@@ -117,22 +117,31 @@ class AnalysisNeighborhoodSearchImpl
         bool usesGridSearch() const { return bGrid_; }
 
     private:
-        //! Calculates offsets to neighboring grid cells that should be considered.
-        void initGridCellNeighborList();
+        /*! \brief
+         * Calculates offsets to neighboring grid cells that should be considered.
+         *
+         * \param[in] bForce  If `true`, grid search will be forced if possible.
+         * \returns   `false` if grid search is not suitable.
+         */
+        bool initGridCellNeighborList(bool bForce);
         /*! \brief
          * Determines a suitable grid size and sets up the cells.
          *
-         * \param[in]     pbc  Information about the box.
-         * \returns  false if grid search is not suitable.
+         * \param[in] box          Box vectors (should not have zero vectors).
+         * \param[in] bSingleCell  If `true`, the corresponding dimension will
+         *     be forced to use a single cell.
+         * \returns   `false` if grid search is not suitable.
          */
-        bool initGridCells(const t_pbc &pbc);
+        bool initGridCells(const matrix box, bool bSingleCell[DIM]);
         /*! \brief
          * Sets ua a search grid for a given box.
          *
-         * \param[in]     pbc  Information about the box.
-         * \returns  false if grid search is not suitable.
+         * \param[in] pbc    Information about the box.
+         * \param[in] bForce If `true`, grid searching will be used if at all
+         *     possible, even if a simple search might give better performance.
+         * \returns   `false` if grid search is not suitable.
          */
-        bool initGrid(const t_pbc &pbc);
+        bool initGrid(const t_pbc &pbc, bool bForce);
         /*! \brief
          * Maps a point into a grid cell.
          *
@@ -163,7 +172,8 @@ class AnalysisNeighborhoodSearchImpl
          * \param[in]  index      Index of the neighbor to calculate.
          * \param[out] shift      Shift to apply to get the periodic distance
          *     for distances between the cells.
-         * \returns    Grid cell index of the neighboring cell.
+         * \returns    Grid cell index of the neighboring cell, or -1 if this
+         *     neighbor should be skipped.
          */
         int getNeighboringCell(const ivec sourceCell, int index, rvec shift) const;
 
@@ -189,12 +199,14 @@ class AnalysisNeighborhoodSearchImpl
 
         //! Whether grid searching is actually used for the current positions.
         bool                    bGrid_;
+        //! false if the box is rectangular.
+        bool                    bTric_;
+        //! Whether the grid is periodic in a dimension.
+        bool                    bGridPBC_[DIM];
         //! Array allocated for storing in-unit-cell reference positions.
         rvec                   *xref_alloc_;
         //! Allocation count for xref_alloc.
         int                     xref_nalloc_;
-        //! false if the box is rectangular.
-        bool                    bTric_;
         //! Box vectors of a single grid cell.
         matrix                  cellbox_;
         //! The reciprocal cell vectors as columns; the inverse of \p cellbox.
@@ -300,10 +312,13 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     std::memset(&pbc_, 0, sizeof(pbc_));
 
     bGrid_          = false;
+    bTric_          = false;
+    bGridPBC_[XX]   = true;
+    bGridPBC_[YY]   = true;
+    bGridPBC_[ZZ]   = true;
 
     xref_alloc_     = NULL;
     xref_nalloc_    = 0;
-    bTric_          = false;
     clear_mat(cellbox_);
     clear_mat(recipcell_);
     clear_ivec(ncelldim_);
@@ -344,21 +359,69 @@ AnalysisNeighborhoodSearchImpl::getPairSearch()
     return pairSearch;
 }
 
-void AnalysisNeighborhoodSearchImpl::initGridCellNeighborList()
+bool AnalysisNeighborhoodSearchImpl::initGridCellNeighborList(bool bForce)
 {
-    int   maxx, maxy, maxz;
+    ivec  range;
     real  rvnorm;
 
-    /* Find the extent of the sphere in triclinic coordinates */
-    maxz   = static_cast<int>(cutoff_ * recipcell_[ZZ][ZZ]) + 1;
-    rvnorm = sqrt(sqr(recipcell_[YY][YY]) + sqr(recipcell_[ZZ][YY]));
-    maxy   = static_cast<int>(cutoff_ * rvnorm) + 1;
-    rvnorm = sqrt(sqr(recipcell_[XX][XX]) + sqr(recipcell_[YY][XX])
-                  + sqr(recipcell_[ZZ][XX]));
-    maxx   = static_cast<int>(cutoff_ * rvnorm) + 1;
+    // Find the extent of the sphere in triclinic coordinates.
+    range[ZZ] = static_cast<int>(cutoff_ * recipcell_[ZZ][ZZ]) + 1;
+    rvnorm    = sqrt(sqr(recipcell_[YY][YY]) + sqr(recipcell_[ZZ][YY]));
+    range[YY] = static_cast<int>(cutoff_ * rvnorm) + 1;
+    rvnorm    = sqrt(sqr(recipcell_[XX][XX]) + sqr(recipcell_[YY][XX])
+                     + sqr(recipcell_[ZZ][XX]));
+    range[XX] = static_cast<int>(cutoff_ * rvnorm) + 1;
 
-    /* Calculate the number of cells and reallocate if necessary */
-    ngridnb_ = (2 * maxx + 1) * (2 * maxy + 1) * (2 * maxz + 1);
+    // Calculate the fraction of cell pairs that need to be searched,
+    // and check that the cutoff is not too large for periodic dimensions.
+    real coveredCells = 1.0;
+    for (int dd = 0; dd < DIM; ++dd)
+    {
+        const int cellCount    = ncelldim_[dd];
+        const int coveredCount = 2 * range[dd] + 1;
+        if (bGridPBC_[dd])
+        {
+            if (coveredCount > cellCount)
+            {
+                // Cutoff is too close to half the box size for grid searching
+                // (it is not possible to find a single shift for every pair of
+                // grid cells).
+                return false;
+            }
+            coveredCells *= coveredCount;
+        }
+        else
+        {
+            if (range[dd] >= cellCount - 1)
+            {
+                range[dd]     = cellCount - 1;
+                coveredCells *= cellCount;
+            }
+            else if (coveredCount > cellCount)
+            {
+                // The sum of range+1, range+2, ..., range+N/2, ... range+1.
+                coveredCells *= range[dd] +
+                    static_cast<real>((cellCount + 1)/2 * (cellCount/2 + 1)) / cellCount;
+            }
+            else
+            {
+                // The sum of range+1, ..., 2*range+1, ..., 2*range+1, ... range+1.
+                coveredCells *= coveredCount -
+                    static_cast<real>(range[dd] * (range[dd] + 1)) / cellCount;
+            }
+        }
+    }
+    // Magic constant that would need tuning for optimal performance:
+    // Don't do grid searching if nearly all cell pairs would anyways need to
+    // be looped through.
+    const int totalCellCount = ncelldim_[XX] * ncelldim_[YY] * ncelldim_[ZZ];
+    if (!bForce && coveredCells >= 0.5 * totalCellCount)
+    {
+        return false;
+    }
+
+    // Calculate the number of cells and reallocate if necessary.
+    ngridnb_ = (2*range[XX] + 1) * (2*range[YY] + 1) * (2*range[ZZ] + 1);
     if (gnboffs_nalloc_ < ngridnb_)
     {
         gnboffs_nalloc_ = ngridnb_;
@@ -368,11 +431,11 @@ void AnalysisNeighborhoodSearchImpl::initGridCellNeighborList()
     /* Store the whole cube */
     /* TODO: Prune off corners that are not needed */
     int i = 0;
-    for (int x = -maxx; x <= maxx; ++x)
+    for (int x = -range[XX]; x <= range[XX]; ++x)
     {
-        for (int y = -maxy; y <= maxy; ++y)
+        for (int y = -range[YY]; y <= range[YY]; ++y)
         {
-            for (int z = -maxz; z <= maxz; ++z)
+            for (int z = -range[ZZ]; z <= range[ZZ]; ++z)
             {
                 gnboffs_[i][XX] = x;
                 gnboffs_[i][YY] = y;
@@ -381,47 +444,93 @@ void AnalysisNeighborhoodSearchImpl::initGridCellNeighborList()
             }
         }
     }
+    return true;
 }
 
-bool AnalysisNeighborhoodSearchImpl::initGridCells(const t_pbc &pbc)
+bool AnalysisNeighborhoodSearchImpl::initGridCells(
+        const matrix box, bool bSingleCell[DIM])
 {
     const real targetsize =
-        pow(pbc.box[XX][XX] * pbc.box[YY][YY] * pbc.box[ZZ][ZZ]
-            * 10 / nref_, static_cast<real>(1./3.));
+        pow(box[XX][XX] * box[YY][YY] * box[ZZ][ZZ] * 10 / nref_,
+            static_cast<real>(1./3.));
 
-    int cellCount = 1;
+    int totalCellCount = 1;
     for (int dd = 0; dd < DIM; ++dd)
     {
-        ncelldim_[dd] = static_cast<int>(pbc.box[dd][dd] / targetsize);
-        cellCount    *= ncelldim_[dd];
-        if (ncelldim_[dd] < 3)
+        int cellCount;
+        if (bSingleCell[dd])
         {
-            return false;
+            cellCount = 1;
         }
+        else
+        {
+            cellCount = std::max(1, static_cast<int>(box[dd][dd] / targetsize));
+            if (bGridPBC_[dd] && cellCount < 3)
+            {
+                return false;
+            }
+        }
+        totalCellCount *= cellCount;
+        ncelldim_[dd]   = cellCount;
+    }
+    if (totalCellCount <= 3)
+    {
+        return false;
     }
     // Never decrease the size of the cell vector to avoid reallocating
     // memory for the nested vectors.  The actual size of the vector is not
     // used outside this function.
-    if (cells_.size() < static_cast<size_t>(cellCount))
+    if (cells_.size() < static_cast<size_t>(totalCellCount))
     {
-        cells_.resize(cellCount);
+        cells_.resize(totalCellCount);
     }
-    for (int ci = 0; ci < cellCount; ++ci)
+    for (int ci = 0; ci < totalCellCount; ++ci)
     {
         cells_[ci].clear();
     }
     return true;
 }
 
-bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc &pbc)
+bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc &pbc, bool bForce)
 {
-    /* TODO: This check could be improved. */
-    if (0.5*pbc.max_cutoff2 < cutoff2_)
+    switch (pbc.ePBC)
     {
-        return false;
+        case epbcNONE:
+            bGridPBC_[XX] = false;
+            bGridPBC_[YY] = false;
+            bGridPBC_[ZZ] = false;
+            break;
+        case epbcXY:
+            bGridPBC_[XX] = true;
+            bGridPBC_[YY] = true;
+            bGridPBC_[ZZ] = false;
+            break;
+        case epbcXYZ:
+            bGridPBC_[XX] = true;
+            bGridPBC_[YY] = true;
+            bGridPBC_[ZZ] = true;
+            break;
+        default:
+            // Grid searching not supported for now with screw.
+            return false;
     }
 
-    if (!initGridCells(pbc))
+    bool   bSingleCell[DIM] = {false, false, bXY_};
+    // TODO: Compute bounding boxes for non-periodic grids.
+    matrix box;
+    copy_mat(pbc.box, box);
+    for (int dd = 0; dd < DIM; ++dd)
+    {
+        if (box[dd][dd] <= 0.0)
+        {
+            GMX_ASSERT(!bGridPBC_[dd], "Periodic box vector is zero");
+            bSingleCell[dd] = true;
+            clear_rvec(box[dd]);
+            box[dd][dd] = 1.0;
+        }
+    }
+
+    if (!initGridCells(box, bSingleCell))
     {
         return false;
     }
@@ -431,7 +540,7 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc &pbc)
     {
         for (int dd = 0; dd < DIM; ++dd)
         {
-            svmul(1.0 / ncelldim_[dd], pbc.box[dd], cellbox_[dd]);
+            svmul(1.0 / ncelldim_[dd], box[dd], cellbox_[dd]);
         }
         m_inv_ur0(cellbox_, recipcell_);
     }
@@ -439,12 +548,11 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc &pbc)
     {
         for (int dd = 0; dd < DIM; ++dd)
         {
-            cellbox_[dd][dd]   = pbc.box[dd][dd] / ncelldim_[dd];
+            cellbox_[dd][dd]   = box[dd][dd] / ncelldim_[dd];
             recipcell_[dd][dd] = 1.0 / cellbox_[dd][dd];
         }
     }
-    initGridCellNeighborList();
-    return true;
+    return initGridCellNeighborList(bForce);
 }
 
 void AnalysisNeighborhoodSearchImpl::mapPointToGridCell(const rvec x,
@@ -459,8 +567,22 @@ void AnalysisNeighborhoodSearchImpl::mapPointToGridCell(const rvec x,
         tmvmul_ur0(recipcell_, xtmp, tx);
         for (int dd = 0; dd < DIM; ++dd)
         {
-            const int cellCount = ncelldim_[dd];
-            int       cellIndex = static_cast<int>(floor(tx[dd]));
+            cell[dd] = static_cast<int>(floor(tx[dd]));
+        }
+    }
+    else
+    {
+        for (int dd = 0; dd < DIM; ++dd)
+        {
+            cell[dd] = static_cast<int>(floor(xtmp[dd] * recipcell_[dd][dd]));
+        }
+    }
+    for (int dd = 0; dd < DIM; ++dd)
+    {
+        const int cellCount = ncelldim_[dd];
+        int       cellIndex = cell[dd];
+        if (bGridPBC_[dd])
+        {
             while (cellIndex < 0)
             {
                 cellIndex += cellCount;
@@ -471,27 +593,19 @@ void AnalysisNeighborhoodSearchImpl::mapPointToGridCell(const rvec x,
                 cellIndex -= cellCount;
                 rvec_sub(xtmp, pbc_.box[dd], xtmp);
             }
-            cell[dd] = cellIndex;
         }
-    }
-    else
-    {
-        for (int dd = 0; dd < DIM; ++dd)
+        else
         {
-            const int cellCount = ncelldim_[dd];
-            int       cellIndex = static_cast<int>(floor(xtmp[dd] * recipcell_[dd][dd]));
-            while (cellIndex < 0)
+            if (cellIndex < 0)
             {
-                cellIndex += cellCount;
-                xtmp[dd]  += pbc_.box[dd][dd];
+                cellIndex = 0;
             }
-            while (cellIndex >= cellCount)
+            else if (cellIndex >= cellCount)
             {
-                cellIndex -= cellCount;
-                xtmp[dd]  -= pbc_.box[dd][dd];
+                cellIndex = cellCount - 1;
             }
-            cell[dd] = cellIndex;
         }
+        cell[dd] = cellIndex;
     }
     copy_rvec(xtmp, xout);
 }
@@ -520,21 +634,29 @@ int AnalysisNeighborhoodSearchImpl::getNeighboringCell(
     ivec cell;
     ivec_add(sourceCell, gnboffs_[index], cell);
 
-    // TODO: Consider unifying with the similar shifting code in
-    // mapPointToGridCell().
     clear_rvec(shift);
     for (int d = 0; d < DIM; ++d)
     {
         const int cellCount = ncelldim_[d];
-        if (cell[d] < 0)
+        if (bGridPBC_[d])
         {
-            cell[d] += cellCount;
-            rvec_add(shift, pbc_.box[d], shift);
+            if (cell[d] < 0)
+            {
+                cell[d] += cellCount;
+                rvec_add(shift, pbc_.box[d], shift);
+            }
+            else if (cell[d] >= cellCount)
+            {
+                cell[d] -= cellCount;
+                rvec_sub(shift, pbc_.box[d], shift);
+            }
         }
-        else if (cell[d] >= cellCount)
+        else
         {
-            cell[d] -= cellCount;
-            rvec_sub(shift, pbc_.box[d], shift);
+            if (cell[d] < 0 || cell[d] >= cellCount)
+            {
+                return -1;
+            }
         }
     }
 
@@ -551,7 +673,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     GMX_RELEASE_ASSERT(positions.index_ == -1,
                        "Individual indexed positions not supported as reference");
     bXY_ = bXY;
-    if (bXY_ && pbc->ePBC != epbcNONE)
+    if (bXY_ && pbc != NULL && pbc->ePBC != epbcNONE)
     {
         if (pbc->ePBC != epbcXY && pbc->ePBC != epbcXYZ)
         {
@@ -560,33 +682,35 @@ void AnalysisNeighborhoodSearchImpl::init(
                              EPBC(pbc->ePBC));
             GMX_THROW(NotImplementedError(message));
         }
-        if (std::fabs(pbc->box[ZZ][XX]) > GMX_REAL_EPS*pbc->box[ZZ][ZZ] ||
-            std::fabs(pbc->box[ZZ][YY]) > GMX_REAL_EPS*pbc->box[ZZ][ZZ])
+        if (pbc->ePBC == epbcXYZ &&
+            (std::fabs(pbc->box[ZZ][XX]) > GMX_REAL_EPS*pbc->box[ZZ][ZZ] ||
+             std::fabs(pbc->box[ZZ][YY]) > GMX_REAL_EPS*pbc->box[ZZ][ZZ]))
         {
             GMX_THROW(NotImplementedError("Computations in the XY plane are not supported when the last box vector is not parallel to the Z axis"));
         }
-        set_pbc(&pbc_, epbcXY, const_cast<rvec *>(pbc->box));
+        // Use a single grid cell in Z direction.
+        matrix box;
+        copy_mat(pbc->box, box);
+        clear_rvec(box[ZZ]);
+        set_pbc(&pbc_, epbcXY, box);
     }
     else if (pbc != NULL)
     {
-        pbc_  = *pbc;
+        pbc_ = *pbc;
     }
     else
     {
         pbc_.ePBC = epbcNONE;
+        clear_mat(pbc_.box);
     }
     nref_ = positions.count_;
-    // TODO: Consider whether it would be possible to support grid searching in
-    // more cases.
-    if (mode == AnalysisNeighborhood::eSearchMode_Simple
-        || pbc_.ePBC != epbcXYZ)
+    if (mode == AnalysisNeighborhood::eSearchMode_Simple)
     {
         bGrid_ = false;
     }
     else if (bTryGrid_)
     {
-        // TODO: Actually implement forcing eSearchMode_Grid
-        bGrid_ = initGrid(pbc_);
+        bGrid_ = initGrid(pbc_, mode == AnalysisNeighborhood::eSearchMode_Grid);
     }
     if (bGrid_)
     {
@@ -715,15 +839,17 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
     {
         if (search_.bGrid_)
         {
-            GMX_RELEASE_ASSERT(!search_.bXY_, "Grid-based XY searches not implemented");
-
             int nbi = prevnbi_;
             int cai = prevcai_ + 1;
 
             for (; nbi < search_.ngridnb_; ++nbi)
             {
                 rvec      shift;
-                const int ci       = search_.getNeighboringCell(testcell_, nbi, shift);
+                const int ci = search_.getNeighboringCell(testcell_, nbi, shift);
+                if (ci < 0)
+                {
+                    continue;
+                }
                 const int cellSize = static_cast<int>(search_.cells_[ci].size());
                 for (; cai < cellSize; ++cai)
                 {
@@ -735,7 +861,10 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                     rvec       dx;
                     rvec_sub(xtest_, search_.xref_[i], dx);
                     rvec_add(dx, shift, dx);
-                    const real r2 = norm2(dx);
+                    const real r2
+                        = search_.bXY_
+                            ? dx[XX]*dx[XX] + dx[YY]*dx[YY]
+                            : norm2(dx);
                     if (r2 <= search_.cutoff2_)
                     {
                         if (action(i, r2))
