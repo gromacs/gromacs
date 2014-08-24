@@ -57,7 +57,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/selection/nbsearch.h"
+#include "nbsearch.h"
 
 #include <cmath>
 #include <cstring>
@@ -68,7 +68,6 @@
 #include "thread_mpi/mutex.h"
 
 #include "gromacs/legacyheaders/names.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"

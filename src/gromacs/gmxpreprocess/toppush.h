@@ -38,10 +38,10 @@
 #ifndef GMX_GMXPREPROCESS_TOPPUSH_H
 #define GMX_GMXPREPROCESS_TOPPUSH_H
 
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "toputil.h"
-#include "gpp_atomtype.h"
-#include "gpp_bond_atomtype.h"
 #include "gromacs/legacyheaders/warninp.h"
 
 #ifdef __cplusplus

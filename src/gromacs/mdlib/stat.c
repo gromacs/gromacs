@@ -36,32 +36,32 @@
  */
 #include "gmxpre.h"
 
-#include <string.h>
 #include <stdio.h>
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/vcm.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/rbin.h"
-#include "gromacs/legacyheaders/tgroup.h"
-#include "gromacs/fileio/xtcio.h"
+#include <string.h>
+
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/fileio/xtcio.h"
 #include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/md_support.h"
 #include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/rbin.h"
 #include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_global_stat
 {

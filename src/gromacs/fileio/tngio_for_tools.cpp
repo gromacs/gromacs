@@ -36,12 +36,12 @@
 
 #include "tngio_for_tools.h"
 
-#include "config.h"
-
 #include <math.h>
 
-#include "tngio.h"
-#include "trx.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/trx.h"
+
+#include "config.h"
 
 #ifdef GMX_USE_TNG
 #include "tng/tng_io.h"

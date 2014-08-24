@@ -36,16 +36,17 @@
 
 #include "mpi-printer.h"
 
-#include "config.h"
 #include "gromacs/utility/gmxmpi.h"
+
+#include "config.h"
 
 #ifdef GMX_LIB_MPI
 
-#include <sstream>
 #include <vector>
 
 #include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
+#include <sstream>
 
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/gmxassert.h"

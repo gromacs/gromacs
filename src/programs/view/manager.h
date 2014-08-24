@@ -40,15 +40,14 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/pbcutil/rmpbc.h"
-
-#include "3dview.h"
-#include "buttons.h"
-#include "nleg.h"
-#include "x11.h"
-#include "xutil.h"
+#include "programs/view/3dview.h"
+#include "programs/view/buttons.h"
+#include "programs/view/nleg.h"
+#include "programs/view/x11.h"
+#include "programs/view/xutil.h"
 
 /* Some window sizes */
 #define EWIDTH      200

@@ -37,10 +37,9 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/topology/invblock.h"
+#include "invblock.h"
 
 #include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

@@ -36,16 +36,16 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
-#include "gromacs/legacyheaders/types/simple.h"
+#include "genborn_allvsall.h"
 
+#include <math.h>
+
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/genborn.h"
-#include "genborn_allvsall.h"
 
 
 typedef struct

@@ -41,9 +41,10 @@
  */
 #include "gmxpre.h"
 
+#include "selvalue.h"
+
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selvalue.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 

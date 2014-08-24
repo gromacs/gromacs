@@ -35,10 +35,11 @@
 #ifndef _kernelutil_x86_avx_128_fma_single_h_
 #define _kernelutil_x86_avx_128_fma_single_h_
 
-#include "config.h"
-
 #include <math.h>
+
 #include <immintrin.h>
+
+#include "config.h"
 #ifdef _MSC_VER
 #    include <intrin.h>
 #else

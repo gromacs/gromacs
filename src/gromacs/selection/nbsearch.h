@@ -51,11 +51,11 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../math/vectypes.h"
-#include "../utility/arrayref.h"
-#include "../utility/common.h"
-#include "../utility/gmxassert.h"
-#include "../utility/real.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 struct t_blocka;
 struct t_pbc;

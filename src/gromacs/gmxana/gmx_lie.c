@@ -42,18 +42,18 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/fileio/enxio.h"
-#include "gstat.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/viewit.h"
-#include "gmx_ana.h"
-#include "gromacs/fileio/trxio.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int  nlj, nqq;

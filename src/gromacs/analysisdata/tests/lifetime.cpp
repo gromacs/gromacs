@@ -47,10 +47,11 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/analysisdata/modules/lifetime.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/lifetime.h"
 
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/testasserts.h"

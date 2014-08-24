@@ -43,7 +43,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/commandline/shellcompletions.h"
+#include "shellcompletions.h"
 
 #include <cstdio>
 
@@ -53,10 +53,10 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/optionsvisitor.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"

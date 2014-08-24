@@ -48,10 +48,10 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <errno.h>
 #include <string.h>
+
+#include "config.h"
 
 #ifdef GMX_NATIVE_WINDOWS
 #include <windows.h>
@@ -60,20 +60,20 @@
 #endif
 
 #include "imd.h"
-#include "imdsocket.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/sighandler.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/timing/wallcycle.h"
 
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/imd/imdsocket.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/sighandler.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

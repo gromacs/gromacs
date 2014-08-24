@@ -36,14 +36,13 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/pbcutil/mshift.h"
+#include "mshift.h"
 
 #include <string.h>
 
 #include <algorithm>
 
 #include "gromacs/legacyheaders/types/ifunc.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"

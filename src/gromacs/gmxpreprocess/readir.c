@@ -36,30 +36,30 @@
  */
 #include "gmxpre.h"
 
+#include "readir.h"
+
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/warninp.h"
-#include "readir.h"
-#include "toputil.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/mtop_util.h"
+#include "gromacs/gmxpreprocess/calc_verletbuf.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/inputrec.h"
-#include "calc_verletbuf.h"
-
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

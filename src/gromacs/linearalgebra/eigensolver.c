@@ -38,13 +38,12 @@
 
 #include "eigensolver.h"
 
+#include "gromacs/linearalgebra/gmx_arpack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "gmx_lapack.h"
-#include "gmx_arpack.h"
 
 void
 eigensolver(real *   a,

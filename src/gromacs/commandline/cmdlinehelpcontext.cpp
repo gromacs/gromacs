@@ -43,8 +43,9 @@
 
 #include "cmdlinehelpcontext.h"
 
-#include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "shellcompletions.h"
 
 namespace gmx
 {

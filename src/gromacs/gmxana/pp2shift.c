@@ -36,17 +36,18 @@
  */
 #include "gmxpre.h"
 
-#include <stdlib.h>
 #include <math.h>
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/units.h"
-#include "gromacs/utility/smalloc.h"
-#include "gstat.h"
+#include <stdlib.h>
+
 #include "gromacs/fileio/matio.h"
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int    nx, ny;

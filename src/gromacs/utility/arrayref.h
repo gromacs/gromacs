@@ -50,7 +50,7 @@
 #include <utility>
 #include <vector>
 
-#include "gmxassert.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

@@ -42,8 +42,6 @@
  */
 #include "gmxpre.h"
 
-#include "moduletest.h"
-
 #include <math.h>
 
 #include <algorithm>
@@ -54,9 +52,9 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "programs/mdrun/mdrun_main.h"
 
+#include "programs/mdrun/tests/moduletest.h"
 #include "testutils/cmdlinetest.h"
 
 #include "config.h"

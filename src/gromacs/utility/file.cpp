@@ -51,9 +51,9 @@
 #include <string>
 #include <vector>
 
-#include "config.h"
-
 #include <sys/stat.h>
+
+#include "config.h"
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

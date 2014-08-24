@@ -39,8 +39,8 @@
 #define _nmol_h
 
 #include "programs/view/manager.h"
-#include "x11.h"
-#include "xutil.h"
+#include "programs/view/x11.h"
+#include "programs/view/xutil.h"
 
 extern t_molwin *init_mw(t_x11 *x11, Window Parent,
                          int x, int y, int width, int height,

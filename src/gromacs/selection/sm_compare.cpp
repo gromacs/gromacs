@@ -44,12 +44,12 @@
 #include <cmath>
 
 #include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/math/utilities.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "selmethod.h"
 
 /** Defines the comparison operator for comparison expressions. */
 typedef enum

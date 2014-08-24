@@ -38,8 +38,6 @@
 
 #include "basenetwork.h"
 
-#include "config.h"
-
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -47,6 +45,8 @@
 
 #include <algorithm>
 #include <exception>
+
+#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

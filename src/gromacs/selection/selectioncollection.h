@@ -48,10 +48,9 @@
 #include <string>
 #include <vector>
 
-#include "../legacyheaders/types/oenv.h"
-
-#include "../utility/common.h"
-#include "selection.h" // For gmx::SelectionList
+#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/selection/selection.h" // For gmx::SelectionList
+#include "gromacs/utility/common.h"
 
 struct gmx_ana_indexgrps_t;
 struct t_pbc;

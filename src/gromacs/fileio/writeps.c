@@ -40,11 +40,10 @@
 
 #include <stdio.h>
 
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
-
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 const char *fontnm[efontNR] = {
     "Times-Roman", "Times-Italic",     "Times-Bold",    "Times-BoldItalic",

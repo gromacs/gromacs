@@ -276,17 +276,16 @@
 #ifndef GMX_TRAJECTORYANALYSIS_H
 #define GMX_TRAJECTORYANALYSIS_H
 
-#include "analysisdata.h"
-#include "options.h"
-#include "selection.h"
-
-#include "fileio/trx.h"
-#include "selection/nbsearch.h"
-#include "topology/topology.h"
-#include "trajectoryanalysis/analysismodule.h"
-#include "trajectoryanalysis/analysissettings.h"
-#include "trajectoryanalysis/cmdlinerunner.h"
-#include "utility/arrayref.h"
-#include "utility/exceptions.h"
+#include "gromacs/analysisdata.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/options.h"
+#include "gromacs/selection.h"
+#include "gromacs/selection/nbsearch.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 
 #endif

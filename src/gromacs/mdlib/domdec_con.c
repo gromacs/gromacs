@@ -37,18 +37,17 @@
 
 #include <assert.h>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/domdec_network.h"
-#include "gromacs/topology/mtop_util.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/gmx_hash.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
-
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

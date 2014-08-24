@@ -36,9 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/inputrec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
 
 

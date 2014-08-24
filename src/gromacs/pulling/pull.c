@@ -36,28 +36,28 @@
  */
 #include "gmxpre.h"
 
+#include "pull.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/network.h"
-#include "pull.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 static void pull_print_group_x(FILE *out, ivec dim, const t_pull_group *pgrp)

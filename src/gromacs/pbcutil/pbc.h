@@ -39,11 +39,11 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/commrec_fwd.h"
-#include "../legacyheaders/types/inputrec.h"
-#include "../math/vectypes.h"
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

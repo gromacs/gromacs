@@ -38,12 +38,11 @@
 #ifndef _md_support_h
 #define _md_support_h
 
+#include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/globsig.h"
-#include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/vcm.h"
-
-#include "../timing/wallcycle.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -49,14 +49,13 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/copyrite.h"
-
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/trx.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"

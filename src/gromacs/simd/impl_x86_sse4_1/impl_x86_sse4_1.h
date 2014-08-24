@@ -37,6 +37,7 @@
 #define GMX_SIMD_IMPL_X86_SSE4_1_H
 
 #include <math.h>
+
 #include <smmintrin.h>
 
 
