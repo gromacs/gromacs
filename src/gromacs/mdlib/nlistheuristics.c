@@ -38,7 +38,6 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/nlistheuristics.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

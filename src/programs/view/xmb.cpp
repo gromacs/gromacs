@@ -36,22 +36,23 @@
  */
 #include "gmxpre.h"
 
+#include "xmb.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "Xstuff.h"
-#include "x11.h"
-#include "xutil.h"
-#include "xdlg.h"
-#include "xmb.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs.bm"
-#include "stop.bm"
-#include "info.bm"
-#include "alert.bm"
+#include "programs/view/Xstuff.h"
+#include "programs/view/alert.bm"
+#include "programs/view/gromacs.bm"
+#include "programs/view/info.bm"
+#include "programs/view/stop.bm"
+#include "programs/view/x11.h"
+#include "programs/view/xdlg.h"
+#include "programs/view/xutil.h"
 
 #define ID_BOX     -3
 #define ID_ICON    -2

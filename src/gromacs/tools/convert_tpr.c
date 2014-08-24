@@ -38,25 +38,24 @@
 
 #include <math.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/enxio.h"
-#include "gromacs/utility/futil.h"
-
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))

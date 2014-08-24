@@ -35,12 +35,13 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/utility/smalloc.h"
+#include "powerspect.h"
+
 #include "gromacs/fft/fft.h"
+#include "gromacs/gmxana/interf.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "interf.h"
-#include "powerspect.h"
+#include "gromacs/utility/smalloc.h"
 
 void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
 {

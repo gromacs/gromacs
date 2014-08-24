@@ -36,10 +36,10 @@
 #ifndef NBNXN_CUDA_H
 #define NBNXN_CUDA_H
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/legacyheaders/types/simple.h"
+
+#include "config.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;

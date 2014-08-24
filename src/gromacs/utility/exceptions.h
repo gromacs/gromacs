@@ -50,11 +50,11 @@
 #include <string>
 #include <vector>
 
-#include <boost/exception_ptr.hpp>
 #include <boost/exception/errinfo_api_function.hpp>
 #include <boost/exception/errinfo_errno.hpp>
 #include <boost/exception/exception.hpp>
 #include <boost/exception/info.hpp>
+#include <boost/exception_ptr.hpp>
 #include <boost/throw_exception.hpp>
 
 namespace gmx

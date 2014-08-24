@@ -45,10 +45,11 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <sstream>
+
+#include <vector>
 
 #include <new>
-#include <vector>
+#include <sstream>
 
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"

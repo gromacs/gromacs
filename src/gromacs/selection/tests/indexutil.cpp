@@ -44,9 +44,10 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/selection/indexutil.h"
+
 #include <gtest/gtest.h>
 
-#include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/block.h"
 
 #include "testutils/refdata.h"

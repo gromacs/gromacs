@@ -41,20 +41,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nsgrid.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/chargegroup.h"
-
+#include "gromacs/legacyheaders/nsgrid.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 

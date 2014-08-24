@@ -49,8 +49,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../selection/selection.h" // For gmx::SelectionList
-#include "../utility/common.h"
+#include "gromacs/selection/selection.h" // For gmx::SelectionList
+#include "gromacs/utility/common.h"
 
 struct t_pbc;
 struct t_trxframe;

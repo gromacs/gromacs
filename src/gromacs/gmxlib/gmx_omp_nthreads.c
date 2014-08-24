@@ -35,24 +35,23 @@
 
 #include "gmxpre.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
-#include "config.h"
-
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
-
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+
+#include "config.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
  *  algorithmic module in mdrun. */

@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "testutils/testasserts.h"
+#include "testasserts.h"
 
 #include <cmath>
 

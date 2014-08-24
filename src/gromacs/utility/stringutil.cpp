@@ -44,8 +44,8 @@
 #include "stringutil.h"
 
 #include <cctype>
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 
 #include <algorithm>

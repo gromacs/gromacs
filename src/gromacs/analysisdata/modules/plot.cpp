@@ -41,21 +41,20 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/analysisdata/modules/plot.h"
-
-#include <string>
-#include <vector>
+#include "plot.h"
 
 #include <cstdio>
 #include <cstring>
 
-#include <boost/shared_ptr.hpp>
+#include <string>
+#include <vector>
 
-#include "gromacs/legacyheaders/oenv.h"
+#include <boost/shared_ptr.hpp>
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"

@@ -45,9 +45,9 @@
 
 #include <gtest/gtest.h>
 
-#include "external/Random123-1.08/include/Random123/threefry.h"
-
 #include "testutils/refdata.h"
+
+#include "external/Random123-1.08/include/Random123/threefry.h"
 
 namespace
 {

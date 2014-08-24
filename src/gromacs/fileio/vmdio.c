@@ -86,10 +86,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
@@ -99,8 +99,8 @@
 #ifndef GMX_NATIVE_WINDOWS
 #include <glob.h>
 #else
-#include <windows.h>
 #include <shlobj.h>
+#include <windows.h>
 #endif
 
 #include "gromacs/fileio/gmxfio.h"

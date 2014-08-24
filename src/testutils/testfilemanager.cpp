@@ -51,8 +51,8 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/options/options.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 

@@ -37,11 +37,12 @@
 #include "gmxpre.h"
 
 #include "groupcoord.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
+
 #include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 

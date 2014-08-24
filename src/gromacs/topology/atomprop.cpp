@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/topology/atomprop.h"
+#include "atomprop.h"
 
 #include <ctype.h>
 #include <string.h>

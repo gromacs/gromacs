@@ -36,24 +36,24 @@
  */
 #include "gmxpre.h"
 
+#include "genhydro.h"
+
 #include <string.h>
 #include <time.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "calch.h"
-#include "genhydro.h"
-#include "h_db.h"
-#include "ter_db.h"
-#include "resall.h"
-#include "pgutil.h"
+#include "gromacs/gmxpreprocess/calch.h"
+#include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/ter_db.h"
 #include "gromacs/legacyheaders/network.h"
-
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)

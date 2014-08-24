@@ -42,11 +42,11 @@
 #ifndef GMX_COMMANDLINE_CMDLINEHELPMODULE_H
 #define GMX_COMMANDLINE_CMDLINEHELPMODULE_H
 
-#include "cmdlinemodule.h"
-#include "cmdlinemodulemanager-impl.h"
-
+#include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/onlinehelp/helptopicinterface.h"
 #include "gromacs/utility/common.h"
+
+#include "cmdlinemodulemanager-impl.h"
 
 namespace gmx
 {

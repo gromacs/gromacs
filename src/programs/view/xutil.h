@@ -42,9 +42,8 @@
 /* TODO: This include is needed here, because this header reuses eXPos and
  * eYPos.  It has nothing to do with PostScript output. */
 #include "gromacs/fileio/writeps.h"
-
-#include "Xstuff.h"
-#include "x11.h"
+#include "programs/view/Xstuff.h"
+#include "programs/view/x11.h"
 
 #define OFFS_X          4
 #define OFFS_Y          4

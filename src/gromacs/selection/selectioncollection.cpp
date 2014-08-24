@@ -51,14 +51,14 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/legacyheaders/oenv.h"
-
 #include "gromacs/fileio/trx.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selhelp.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
@@ -72,10 +72,8 @@
 #include "parser.h"
 #include "poscalc.h"
 #include "scanner.h"
-#include "selection.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
-#include "selhelp.h"
 #include "selmethod.h"
 #include "symrec.h"
 

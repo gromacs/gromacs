@@ -36,38 +36,37 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xtcio.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/viewit.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

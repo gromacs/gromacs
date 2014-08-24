@@ -34,13 +34,13 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
-#include <algorithm>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <algorithm>
+
+#include "config.h"
 
 #ifdef NOGMX
 #define GMX_PARALLEL_ENV_INITIALIZED 1
@@ -62,9 +62,11 @@
 #endif
 
 #include "fft5d.h"
+
+#include <assert.h>
 #include <float.h>
 #include <math.h>
-#include <assert.h>
+
 #include "gromacs/utility/smalloc.h"
 
 #ifndef __FLT_EPSILON__
@@ -81,6 +83,7 @@ FILE* debug = 0;
 
 #ifdef GMX_FFT_FFTW3
 #include "thread_mpi/mutex.h"
+
 #include "gromacs/utility/exceptions.h"
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */

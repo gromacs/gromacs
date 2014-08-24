@@ -36,8 +36,6 @@
 
 #include "nsfactor.h"
 
-#include "config.h"
-
 #include <string.h>
 
 #include "gromacs/fileio/strdb.h"
@@ -49,6 +47,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 void check_binwidth(real binwidth)
 {

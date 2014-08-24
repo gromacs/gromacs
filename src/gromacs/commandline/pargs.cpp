@@ -37,15 +37,15 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/commandline/pargs.h"
-
-#include "config.h"
+#include "pargs.h"
 
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
 #include <list>
+
+#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

@@ -35,13 +35,13 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <string.h>
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/domdec_network.h"
 
+#include "gromacs/legacyheaders/domdec_network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/gmxmpi.h"
+
+#include "config.h"
 
 
 #define DDMASTERRANK(dd)   (dd->masterrank)

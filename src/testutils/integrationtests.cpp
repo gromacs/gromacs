@@ -43,14 +43,16 @@
 
 #include "integrationtests.h"
 
-#include "testutils/testoptions.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/utility/file.h"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/testoptions.h"
 
 #include "config.h"
 

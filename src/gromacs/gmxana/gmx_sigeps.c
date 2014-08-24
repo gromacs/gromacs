@@ -39,19 +39,19 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/units.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 real pot(real x, real qq, real c6, real cn, int npow)
 {
