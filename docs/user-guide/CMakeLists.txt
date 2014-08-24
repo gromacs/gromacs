@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,29 +32,19 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-#TODO: add check that source doesn't contain any untracked files
-if(NOT CPACK_INSTALL_CMAKE_PROJECTS) #building source package
-    get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
-    if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/man1/gmx-view.1" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/install-guide/final/INSTALL" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/online.html" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/programs/gmx-view.html")
-        message(FATAL_ERROR
-            "To create a complete source package, bash completions, "
-            "man and HTML pages, and INSTALL need to be generated. "
-            "Run 'make completion man html install-guide' to build "
-            "these parts. You can also configure with "
-            "GMX_BUILD_HELP=ON to automatically build the HTML parts.")
-    endif()
-else()
-    if (NOT CPACK_GMX_BUILD_HELP)
-        message(WARNING
-            "To create a complete binary package, bash completions, and "
-            "man and HTML pages need to be generated. "
-            "You need to configure with GMX_BUILD_HELP=ON to include all "
-            "in the binary package.")
-        # Building the man, html, ... targets is not sufficient because than the
-        # install is still not done.
-    endif()
+# Note that the user-guide target, etc. can still be built
+# independent of the webpage target.
+if(MARKDOWN_CONFIGURE_IS_POSSIBLE AND PANDOC_EXECUTABLE)
+    set(name "user-guide")
+    configure_markdown(main.md)
+    make_markdown_html(${name} ${CMAKE_CURRENT_BINARY_DIR}/main.md)
+    make_markdown_pdf(${name} ${CMAKE_CURRENT_BINARY_DIR}/main.md)
+
+    # Add a top-level target for the webpage build to hook onto
+    add_custom_target(${name}
+        DEPENDS
+            ${HTML_OUTPUT_DIR}/${name}.html
+            ${HTML_OUTPUT_DIR}/${name}.pdf
+        VERBATIM
+        )
 endif()
