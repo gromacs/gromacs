@@ -43,9 +43,9 @@
 #ifndef GMX_ANALYSISDATA_MODULES_LIFETIME_H
 #define GMX_ANALYSISDATA_MODULES_LIFETIME_H
 
-#include "../arraydata.h"
-#include "../datamodule.h"
-#include "../../utility/common.h"
+#include "gromacs/analysisdata/arraydata.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/utility/common.h"
 
 namespace gmx
 {

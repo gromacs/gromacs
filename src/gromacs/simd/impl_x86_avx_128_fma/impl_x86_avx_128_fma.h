@@ -37,6 +37,7 @@
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 
 #include <math.h>
+
 #include <immintrin.h>
 #include <x86intrin.h>
 

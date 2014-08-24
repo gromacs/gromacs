@@ -37,12 +37,13 @@
 #include "gmxpre.h"
 
 #include <math.h>
+
+#include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/chargegroup.h"
+#include "gromacs/utility/smalloc.h"
 
 
 void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,

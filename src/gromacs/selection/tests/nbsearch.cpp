@@ -48,14 +48,14 @@
 
 #include "gromacs/selection/nbsearch.h"
 
-#include <gtest/gtest.h>
-
 #include <cmath>
 
 #include <algorithm>
 #include <limits>
 #include <numeric>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"

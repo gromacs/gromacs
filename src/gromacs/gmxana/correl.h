@@ -39,8 +39,8 @@
 #ifndef _correl_h
 #define _correl_h
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fft/fft.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 typedef struct {
     int        n;

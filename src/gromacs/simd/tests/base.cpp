@@ -34,13 +34,14 @@
  */
 #include "gmxpre.h"
 
+#include "base.h"
+
 #include <math.h>
 
-#include "testutils/testoptions.h"
-#include "gromacs/options/options.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 
-#include "base.h"
+#include "testutils/testoptions.h"
 
 namespace gmx
 {

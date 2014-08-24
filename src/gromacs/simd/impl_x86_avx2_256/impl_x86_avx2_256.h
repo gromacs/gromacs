@@ -37,6 +37,7 @@
 #define GMX_SIMD_IMPL_X86_AVX2_256_H
 
 #include <math.h>
+
 #include <immintrin.h>
 
 /* x86 256-bit AVX2 SIMD instruction wrappers

@@ -34,16 +34,16 @@
  */
 #include "gmxpre.h"
 
+#include "geminate.h"
+
 #include <math.h>
 #include <stdlib.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "geminate.h"
-
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 static void missing_code_message()
 {

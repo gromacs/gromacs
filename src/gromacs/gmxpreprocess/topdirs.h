@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_TOPDIRS_H
 #define GMX_GMXPREPROCESS_TOPDIRS_H
 
-#include "grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
 #ifdef __cplusplus
 extern "C" {

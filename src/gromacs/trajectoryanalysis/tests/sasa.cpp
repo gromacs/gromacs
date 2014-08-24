@@ -54,9 +54,9 @@
  */
 #include "gmxpre.h"
 
-#include <gtest/gtest.h>
-
 #include "gromacs/trajectoryanalysis/modules/sasa.h"
+
+#include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"

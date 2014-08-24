@@ -37,6 +37,7 @@
 #define GMX_SIMD_IMPL_X86_AVX_256_H
 
 #include <math.h>
+
 #include <immintrin.h>
 
 /* It is cleaner to start the AVX implementation from scratch rather than

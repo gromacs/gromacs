@@ -42,8 +42,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "xdrf.h"
-#include "xdr_datatype.h"
+#include "gromacs/fileio/xdr_datatype.h"
+#include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/futil.h"
 
 /* This is just for clarity - it can never be anything but 4! */

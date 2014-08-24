@@ -39,7 +39,7 @@
 
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "../../swap/enums.h"
+#include "gromacs/swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {

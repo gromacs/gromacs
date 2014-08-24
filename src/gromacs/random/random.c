@@ -36,25 +36,25 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "random.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "config.h"
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <time.h>
 #include <math.h>
+#include <time.h>
 #ifdef GMX_NATIVE_WINDOWS
 #include <process.h>
 #endif
 
-#include "external/Random123-1.08/include/Random123/threefry.h"
-
 #include "gromacs/math/utilities.h"
-#include "random_gausstable.h"
+#include "gromacs/random/random_gausstable.h"
+
+#include "external/Random123-1.08/include/Random123/threefry.h"
 
 #define RNG_N 624
 #define RNG_M 397

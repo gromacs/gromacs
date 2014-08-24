@@ -38,12 +38,12 @@
 
 #include <math.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_shakedata
 {

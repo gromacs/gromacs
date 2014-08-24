@@ -70,11 +70,11 @@
  * \ingroup module_simd
  */
 
-#include "config.h"
-
 #include <stddef.h>
 
 #include "gromacs/utility/basedefinitions.h"
+
+#include "config.h"
 
 /* Forward declarations so memory allocation can be used in implementations */
 static gmx_inline float *  gmx_simd_align_f(float *p);

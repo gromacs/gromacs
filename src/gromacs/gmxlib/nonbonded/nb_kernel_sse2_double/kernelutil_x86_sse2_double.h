@@ -36,8 +36,6 @@
 #define _kernelutil_x86_sse2_double_h_
 
 #include <math.h>
-
-
 #include <stdio.h>
 
 

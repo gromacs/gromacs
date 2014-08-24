@@ -40,27 +40,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gmx_ana.h"
-
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1

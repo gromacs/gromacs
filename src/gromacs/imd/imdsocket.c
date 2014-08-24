@@ -48,15 +48,16 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
+#include "imdsocket.h"
 
 #include <errno.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/imd/imd.h"
 #include "gromacs/utility/fatalerror.h"
-#include "imdsocket.h"
-#include "imd.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 #ifdef GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK

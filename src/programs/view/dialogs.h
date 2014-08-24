@@ -38,10 +38,10 @@
 #ifndef _dialogs_h
 #define _dialogs_h
 
-#include "xdlg.h"
-#include "pulldown.h"
-#include "manager.h"
-#include "logo.h"
+#include "programs/view/logo.h"
+#include "programs/view/manager.h"
+#include "programs/view/pulldown.h"
+#include "programs/view/xdlg.h"
 
 typedef struct {
     bool      bMapped;

@@ -39,7 +39,6 @@
 
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"

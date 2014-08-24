@@ -46,9 +46,9 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
-#include "gmx_header_config.h"
+#include "gromacs/utility/gmx_header_config.h"
 
 #ifdef __cplusplus
 extern "C" {

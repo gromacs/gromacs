@@ -36,10 +36,10 @@
 #ifndef NBNXN_CUDA_DATA_MGMT_H
 #define NBNXN_CUDA_DATA_MGMT_H
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #include "config.h"
 

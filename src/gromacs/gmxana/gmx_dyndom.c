@@ -36,17 +36,16 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/topology/index.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/math/units.h"
-#include "gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/fileio/trxio.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/3dtransforms.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

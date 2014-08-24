@@ -43,12 +43,13 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/options/timeunitmanager.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
-#include "gromacs/options/timeunitmanager.h"
 
 #include "testutils/testasserts.h"
 

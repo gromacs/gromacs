@@ -41,9 +41,11 @@
  */
 #include "gmxpre.h"
 
+#include "selhelp.h"
+
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -53,7 +55,6 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "selhelp.h"
 #include "selmethod.h"
 #include "symrec.h"
 

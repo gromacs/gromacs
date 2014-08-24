@@ -35,8 +35,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <errno.h>
 #include <stdlib.h>
 
@@ -45,6 +43,8 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/fatalerror.h"
 
+#include "config.h"
+
 #ifdef GMX_DOUBLE
 #define FFTWPREFIX(name) fftw_ ## name
 #else
@@ -52,6 +52,7 @@
 #endif
 
 #include "thread_mpi/mutex.h"
+
 #include "gromacs/utility/exceptions.h"
 
 /* none of the fftw3 calls, except execute(), are thread-safe, so

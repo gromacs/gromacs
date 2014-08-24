@@ -40,17 +40,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/fileio/writeps.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "3dview.h"
-#include "buttons.h"
-#include "manager.h"
-#include "nleg.h"
-#include "nmol.h"
-#include "xutil.h"
+#include "programs/view/3dview.h"
+#include "programs/view/buttons.h"
+#include "programs/view/manager.h"
+#include "programs/view/nleg.h"
+#include "programs/view/nmol.h"
+#include "programs/view/xutil.h"
 
 #define MSIZE 4
 

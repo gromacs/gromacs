@@ -36,37 +36,36 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include <string.h>
 #include <time.h>
+
+#include "config.h"
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/fileio/matio.h"
-#include "eigio.h"
-#include "gmx_ana.h"
-#include "gromacs/utility/cstringutil.h"
+#include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_covar(int argc, char *argv[])
 {

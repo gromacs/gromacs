@@ -38,14 +38,13 @@
 
 #include "matrix.h"
 
-#include "config.h"
-
 #include <stdio.h>
 
+#include "gromacs/linearalgebra/gmx_lapack.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "gmx_lapack.h"
+#include "config.h"
 
 double **alloc_matrix(int n, int m)
 {

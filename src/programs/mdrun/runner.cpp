@@ -37,62 +37,61 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
-#include <algorithm>
-
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <algorithm>
+
+#include "config.h"
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/md_logging.h"
-#include "gromacs/legacyheaders/md_support.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/pme.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "repl_ex.h"
-#include "deform.h"
-#include "gromacs/legacyheaders/qmmm.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/coulomb.h"
-#include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/mvdata.h"
+#include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxpreprocess/calc_verletbuf.h"
 #include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/sighandler.h"
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/gmxpreprocess/calc_verletbuf.h"
-#include "membed.h"
 #include "gromacs/legacyheaders/gmx_thread_affinity.h"
 #include "gromacs/legacyheaders/inputrec.h"
 #include "gromacs/legacyheaders/main.h"
-
-#include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/fileio/tpxio.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/md_support.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/mvdata.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/qmmm.h"
+#include "gromacs/legacyheaders/sighandler.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+#include "programs/mdrun/deform.h"
+#include "programs/mdrun/membed.h"
+#include "programs/mdrun/repl_ex.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

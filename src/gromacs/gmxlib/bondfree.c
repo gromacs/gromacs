@@ -36,25 +36,22 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <math.h>
 
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/gmxlib/restcbt.h"
 #include "gromacs/legacyheaders/bondf.h"
-#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/nonbonded.h"
-#include "restcbt.h"
-
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -63,6 +60,8 @@
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {

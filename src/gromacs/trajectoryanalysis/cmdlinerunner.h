@@ -43,8 +43,8 @@
 #ifndef GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 
-#include "analysismodule.h"
-#include "../utility/common.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gromacs/utility/common.h"
 
 namespace gmx
 {
