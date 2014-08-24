@@ -32,41 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(INSTALL_GUIDE_BUILD_IS_POSSIBLE OFF)
-if(NOT ${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-    # We can only build the install guide outside of the source dir
-    find_package(Pandoc)
-    if(PANDOC_EXECUTABLE)
-        set(INSTALL_GUIDE_BUILD_IS_POSSIBLE ON)
-    endif()
-endif()
-
-if(INSTALL_GUIDE_BUILD_IS_POSSIBLE)
-    # Do replacement of CMake variables for version strings, etc.
-    configure_file(configure-install-guide.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/configure-install-guide.cmake
-        @ONLY)
-
-    # This defers until build time the configuration of
-    # install-guide.md, which could be faster
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/install-guide.md
-        COMMAND ${CMAKE_COMMAND}
-            -P ${CMAKE_CURRENT_BINARY_DIR}/configure-install-guide.cmake
-        DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/configure-install-guide.cmake
-            ${CMAKE_CURRENT_SOURCE_DIR}/install-guide.md
-        COMMENT "Configuring install guide"
-        VERBATIM
-        )
-
-    # Make the HTML install guide
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/install-guide.html
-        COMMAND pandoc -t html -o ${CMAKE_CURRENT_BINARY_DIR}/install-guide.html install-guide.md -s --toc
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install-guide.md
-        VERBATIM
-        )
+# Note that the install-guide target, etc. can still be built
+# independent of the webpage target.
+if(MARKDOWN_CONFIGURE_IS_POSSIBLE AND PANDOC_EXECUTABLE)
+    set(name "install-guide")
+    configure_markdown(${name}.md)
+    make_markdown_html(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.md)
+    make_markdown_pdf(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.md)
 
     # Make the INSTALL file for CPack for the tarball. This gets put
     # into the tarball via the CPack rules in the top-level
@@ -74,16 +46,18 @@ if(INSTALL_GUIDE_BUILD_IS_POSSIBLE)
     add_custom_command(
         OUTPUT final/INSTALL
         COMMAND ${CMAKE_COMMAND} -E make_directory final
-        COMMAND pandoc -t plain -o final/INSTALL install-guide.md
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install-guide.md
+        COMMAND ${PANDOC_EXECUTABLE} -t plain -o final/INSTALL ${name}.md
+        DEPENDS
+            ${CMAKE_CURRENT_BINARY_DIR}/${name}.md
         VERBATIM
         )
 
-    # Add a top-level target for the others to hook onto
-    add_custom_target(install-guide
+    # Add a top-level target for the webpage build to hook onto
+    add_custom_target(${name}
         DEPENDS
-           ${CMAKE_CURRENT_BINARY_DIR}/install-guide.html
-           final/INSTALL
+            final/INSTALL
+            ${HTML_OUTPUT_DIR}/${name}.html
+            ${HTML_OUTPUT_DIR}/${name}.pdf
         VERBATIM
         )
 endif()

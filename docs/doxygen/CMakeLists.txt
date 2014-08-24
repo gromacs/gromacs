@@ -93,7 +93,6 @@ if (DOXYGEN_FOUND)
              "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact\n")
     endif()
 
-    FILE(COPY index.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     configure_file(RunDoxygen.cmake.cmakein RunDoxygen.cmake @ONLY)
     gmx_configure_version_file(Doxyfile-version.cmakein Doxyfile-version
                                TARGET doxygen-version)
