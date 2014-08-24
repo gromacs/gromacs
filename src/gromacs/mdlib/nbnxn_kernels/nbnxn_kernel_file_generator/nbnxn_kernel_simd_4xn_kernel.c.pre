@@ -48,7 +48,7 @@
 {3}
 
 #ifdef {0}
-#include "nbnxn_kernel_simd_4xn_common.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h"
 #endif /* {0} */
 
 #ifdef CALC_ENERGIES
@@ -71,7 +71,7 @@ void
 {6}real                      gmx_unused *fshift)
 #endif /* CALC_ENERGIES */
 #ifdef {0}
-#include "nbnxn_kernel_simd_4xn_outer.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h"
 #else /* {0} */
 {{
 /* No need to call gmx_incons() here, because the only function
