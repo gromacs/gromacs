@@ -49,7 +49,7 @@
 #define UNROLLJ    (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
 
 /* The stride of all the atom data arrays is equal to half the SIMD width */
-#define STRIDE     (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
+#define STRIDE     UNROLLJ
 
 #include "../nbnxn_kernel_simd_utils.h"
 

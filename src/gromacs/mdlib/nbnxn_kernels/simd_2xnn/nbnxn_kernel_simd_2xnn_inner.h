@@ -247,17 +247,9 @@
     /* Atom indices (of the first atom in the cluster) */
     aj            = cj*UNROLLJ;
 #if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM)
-#if UNROLLJ == STRIDE
     aj2           = aj*2;
-#else
-    aj2           = (cj>>1)*2*STRIDE + (cj & 1)*UNROLLJ;
 #endif
-#endif
-#if UNROLLJ == STRIDE
     ajx           = aj*DIM;
-#else
-    ajx           = (cj>>1)*DIM*STRIDE + (cj & 1)*UNROLLJ;
-#endif
     ajy           = ajx + STRIDE;
     ajz           = ajy + STRIDE;
 
