@@ -120,11 +120,13 @@ typedef struct
      * \name Using umbrella pull code since gromacs 4.x
      */
     /*!\{*/
-    int      npullcrds;     //!< nr of pull coordinates in tpr file
+    int      npullcrds_tot; //!< nr of pull coordinates in tpr file
+    int      npullcrds;     //!< nr of umbrella pull coordinates for reading
     int      pull_geometry; //!< such as distance, direction
     ivec     pull_dim;      //!< pull dimension with geometry distance
     int      pull_ndim;     //!< nr of pull_dim != 0
     gmx_bool bPrintRef;     //!< Coordinates of reference groups written to pullx.xvg ?
+    gmx_bool bPrintComp;    //!< Components of pull distance written to pullx.xvg ?
     real    *k;             //!< force constants in tpr file
     real    *init_dist;     //!< reference displacements
     real    *umbInitDist;   //!< reference displacement in umbrella direction
@@ -2002,24 +2004,62 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     /* printf("Reading %s \n",fn); */
     read_tpx_state(fn, &ir, &state, NULL, NULL);
 
-    if (ir.ePull != epullUMBRELLA)
+    if (!ir.bPull)
     {
-        gmx_fatal(FARGS, "This is not a tpr of an umbrella simulation. Found pull type \"%s\" "
-                  " (ir.ePull = %d)\n", epull_names[ir.ePull], ir.ePull);
+        gmx_fatal(FARGS, "This is not a tpr with COM pulling");
     }
 
     /* nr of pull groups */
-    ncrd = ir.pull->ncoord;
-    if (ncrd < 1)
+    ncrd = 0;
+    for (i = 0; i < ir.pull->ncoord; i++)
     {
-        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d pull coordinates\n", ncrd);
+        if (ir.pull->coord[i].eType == epullUMBRELLA)
+        {
+            int m;
+
+            if (ncrd == 0)
+            {
+                header->pull_geometry = ir.pull->coord[i].eGeom;
+                copy_ivec(ir.pull->coord[i].dim, header->pull_dim);
+            }
+
+            if (ncrd != i)
+            {
+                /* TODO: remove this restriction */
+                gmx_fatal(FARGS, "Currently tpr files where a non-umbrella pull coordinate is followed by an umbrella pull coordinate are not supported");
+            }
+
+            for (m = 0; m < DIM; m++)
+            {
+                if (ir.pull->coord[i].eGeom != header->pull_geometry)
+                {
+                    /* TODO: remove the restriction */
+                    gmx_fatal(FARGS, "Currently all umbrella pull coordinates should use the same geometry");
+                }
+
+                if (ir.pull->coord[i].dim[m] != header->pull_dim[m])
+                {
+                    /* TODO: remove the restriction */
+                    gmx_fatal(FARGS, "Currently all umbrella pull coordinates should operate on the same dimensions");
+                }
+            }
+
+            ncrd++;
+        }
     }
 
-    header->npullcrds     = ir.pull->ncoord;
-    header->pull_geometry = ir.pull->eGeom;
+    if (ncrd < 1)
+    {
+        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d umbrella pull coordinates\n", ncrd);
+    }
+
+    header->npullcrds_tot = ir.pull->ncoord;
+    header->npullcrds     = ncrd;
     header->bPrintRef     = ir.pull->bPrintRef;
-    copy_ivec(ir.pull->dim, header->pull_dim);
-    header->pull_ndim = header->pull_dim[0]+header->pull_dim[1]+header->pull_dim[2];
+    header->bPrintComp    = ir.pull->bPrintComp;
+    header->pull_ndim     = header->pull_dim[0]+header->pull_dim[1]+header->pull_dim[2];
+    /* We should add a struct for each pull coord with all pull coord data
+       instead of allocating many arrays for each property */
     snew(header->k, ncrd);
     snew(header->init_dist, ncrd);
     snew(header->umbInitDist, ncrd);
@@ -2120,7 +2160,11 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
      *    bPrintRef == FALSE: for each pull coordinate: no   reference columns, but ndim dx columns
      */
 
-    nColPerCrd = opt->bPullx ? header->pull_ndim : 1;
+    nColPerCrd = 1;
+    if (opt->bPullx && header->bPrintComp)
+    {
+        nColPerCrd += header->pull_ndim;
+    }
     quantity   = opt->bPullx ? "position" : "force";
 
     if (opt->bPullx && header->bPrintRef)
@@ -2160,17 +2204,28 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         printf("Reading pull %s file with pull geometry %s and %d pull dimensions\n",
                bHaveForce ? "force" : "position", epullg_names[header->pull_geometry],
                header->pull_ndim);
+        /* Since this tool code has not updated yet to allow difference pull
+         * dimensions per pull coordinate, we can't easily check the exact
+         * number of expected columns, so we only check what we expect for
+         * the pull coordinates selected for the WHAM analysis.
+         */
         printf("Expecting these columns in pull file:\n"
                "\t%d reference columns for each individual pull coordinate\n"
                "\t%d data columns for each pull coordinate\n", nColRefEachCrd, nColPerCrd);
-        printf("With %d pull groups, expect %d columns (including the time column)\n", header->npullcrds, nColExpect);
+        printf("With %d pull groups, expect %s%d columns (including the time column)\n",
+               header->npullcrds,
+               header->npullcrds < header->npullcrds_tot ? "at least " : "",
+               nColExpect);
         bFirst = FALSE;
     }
-    if (ny != nColExpect)
+    if (ny < nColExpect ||
+        (header->npullcrds == header->npullcrds_tot && ny > nColExpect))
     {
-        gmx_fatal(FARGS, "Found %d pull coodinates in %s,\n but %d data columns in %s (expected %d)\n"
+        gmx_fatal(FARGS, "Using %d pull coodinates from %s,\n but found %d data columns in %s (expected %s%d)\n"
                   "\nMaybe you confused options -ix and -if ?\n",
-                  header->npullcrds, fntpr, ny-1, fn, nColExpect-1);
+                  header->npullcrds, fntpr, ny-1, fn,
+                  header->npullcrds < header->npullcrds_tot ? "at least " : "",
+                  nColExpect-1);
     }
 
     if (opt->verbose)
@@ -2324,20 +2379,10 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                 else
                 {
                     /* pick the right column from:
-                     * time ref1[ndim] coord1[ndim] ref2[ndim] coord2[ndim] ...
+                     * time ref1[ndim] coord1[1(ndim)] ref2[ndim] coord2[1(ndim)] ...
                      */
                     column = 1 +  nColRefEachCrd + g*(nColRefEachCrd+nColPerCrd);
-                    switch (header->pull_geometry)
-                    {
-                        case epullgDIST:
-                            pos = dist_ndim(y + column, header->pull_ndim, i);
-                            break;
-                        case epullgCYL:
-                            pos = y[column][i];
-                            break;
-                        default:
-                            gmx_fatal(FARGS, "Bad error, this error should have been catched before. Ups.\n");
-                    }
+                    pos = y[column][i];
                 }
 
                 /* printf("crd %d dpos %f poseq %f pos %f \n",g,dpos,poseq,pos); */
@@ -3130,6 +3175,10 @@ int gmx_wham(int argc, char *argv[])
         "Histogram Analysis Method (WHAM). It is intended to analyze",
         "output files generated by umbrella sampling simulations to ",
         "compute a potential of mean force (PMF). [PAR] ",
+        "[THISMODULE] is currently not fully up to date. It only pull setups",
+        "where the first pull coordinate(s) is/are umbrella pull coordinates",
+        "and, if multiple coordinates need to be analyzed, all used the same",
+        "geometry and dimensions. In most cases this is not an issue.[PAR]",
         "At present, three input modes are supported.[BR]",
         "[TT]*[tt] With option [TT]-it[tt], the user provides a file which contains the",
         " file names of the umbrella simulation run-input files ([TT].tpr[tt] files),",

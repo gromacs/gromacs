@@ -682,7 +682,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (econq == econqCoord)
     {
-        if (ir->ePull == epullCONSTRAINT)
+        if (ir->bPull && ir->pull->bConstraint)
         {
             if (EI_DYNAMICS(ir->eI))
             {
@@ -1239,7 +1239,9 @@ gmx_constr_t init_constraints(FILE *fplog,
         gmx_mtop_ftype_count(mtop, F_CONSTRNC);
     nset = gmx_mtop_ftype_count(mtop, F_SETTLE);
 
-    if (ncon+nset == 0 && ir->ePull != epullCONSTRAINT && ed == NULL)
+    if (ncon+nset == 0 &&
+        !(ir->bPull && ir->pull->bConstraint) &&
+        ed == NULL)
     {
         return NULL;
     }

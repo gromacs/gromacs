@@ -1299,74 +1299,31 @@ interaction between periodic images.</dd>
 <dd>No center of mass pulling.
 All the following pull options will be ignored
 (and if present in the <tt>.mdp</tt> file, they unfortunately generate warnings)</dd>
-<dt><b>umbrella</b></dt>
-<dd>Center of mass pulling using an umbrella potential
-between the reference group and one or more groups.</dd>
-<dt><b>constraint</b></dt>
-<dd>Center of mass pulling using a constraint
-between the reference group and one or more groups.
-The setup is identical to the option <b>umbrella</b>, except for the fact
-that a rigid constraint is applied instead of a harmonic potential.</dd>
-<dt><b>constant-force</b></dt>
-<dd>Center of mass pulling using a linear potential and therefore
-a constant force. For this option there is no reference position
-and therefore the parameters <b>pull-init</b> and <b>pull-rate</b>
-are not used.</dd>
+<dt><b>yes</b></dt>
+<dd>Center of mass pulling will be applied on 1 or more groups using 1 or more pull coordinates.</dd>
 </dl></dd>
-<dt><b>pull-geometry:</b></dt>
-<dd><dl compact>
-<dt><b>distance</b></dt>
-<dd>Pull along the vector connecting the two groups.
-Components can be selected with <b>pull-dim</b>.</dd>
-<dt><b>direction</b></dt>
-<dd>Pull in the direction of <b>pull-vec</b>.</dd>
-<dt><b>direction-periodic</b></dt>
-<dd>As <b>direction</b>, but allows the distance to be larger than
-half the box size. With this geometry the box should not be dynamic
-(e.g. no pressure scaling) in the pull dimensions and the pull force
-is not added to virial.</dd>
-<dt><b>cylinder</b></dt>
-<dd>Designed for pulling with respect to a layer where the reference COM
-is given by a local cylindrical part of the reference group.
-The pulling is in the direction of <b>pull-vec</b>.
-From the reference group a cylinder is selected around the axis going
-through the pull group with direction <b>pull-vec</b> using two radii.
-The radius <b>pull-r1</b> gives the radius within which all
-the relative weights are one, between <b>pull-r1</b> and
-<b>pull-r0</b> the weights are switched to zero. Mass weighting is also used.
-Note that the radii should be smaller than half the box size.
-For tilted cylinders they should be even smaller than half the box size
-since the distance of an atom in the reference group
-from the COM of the pull group has both a radial and an axial component.</dd>
-</dl></dd>
-<dt><b>pull-dim: (Y Y Y)</b></dt>
-<dd>the distance components to be used with geometry <b>distance</b>,
-and also sets which components are printed
-to the output files</dd>
-<dt><b>pull-r1: (1) [nm]</b></dt>
-<dd>the inner radius of the cylinder for geometry <b>cylinder</b></dd>
-<dt><b>pull-r0: (1) [nm]</b></dt>
+<dt><b>pull-cylinder-r: (1.5) [nm]</b></dt>
 <dd>the outer radius of the cylinder for geometry <b>cylinder</b></dd>
 <dt><b>pull-constr-tol: (1e-6)</b></dt>
 <dd>the relative constraint tolerance for constraint pulling</dd>
-<dt><b>pull-start:</b></dt>
-<dd><dl compact>
-<dt><b>no</b></dt>
-<dd>do not modify <b>pull-init</b>
-<dt><b>yes</b></dt>
-<dd>add the COM distance of the starting conformation to <b>pull-init</b></dd>
-</dl>
-<dt><b>pull-print-reference: (10)</b></dt>
+<dt><b>pull-print-reference:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>do not print the COM of the first group in each pull coordinate</dd>
 <dt><b>yes</b></dt>
 <dd>print the COM of the first group in each pull coordinate</dd>
 </dl>
-<dt><b>pull-nstxout: (10)</b></dt>
-<dd>frequency for writing out the COMs of all the pull group</dd>
-<dt><b>pull-nstfout: (1)</b></dt>
-<dd>frequency for writing out the force of all the pulled group</dd>
+<dt><b>pull-print-component:</b></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>only print the distance for each pull coordinate</dd>
+<dt><b>yes</b></dt>
+<dd>print the distance and Cartesian components selected in <b>pull-coord?-dim</b></dd>
+</dl>
+<dt><b>pull-nstxout: (50)</b></dt>
+<dd>frequency for writing out the COMs of all the pull group (0 is never)</dd>
+<dt><b>pull-nstfout: (50)</b></dt>
+<dd>frequency for writing out the force of all the pulled group (0 is never)</dd>
 <dt><b>pull-ngroups: (1)</b></dt>
 <dd>The number of pull groups, not including the absolute reference group,
 when used. Pull groups can be reused in multiple pull coordinates.
@@ -1404,10 +1361,66 @@ will operate. The first index can be 0, in which case an absolute reference
 of <b>pull-coord1-origin</b> is used. With an absolute reference the system
 is no longer translation invariant and one should think about what to do with
 the <A HREF="#run">center of mass motion</A>.</dd>
+<dt><b>type:</b></dt>
+<dd><dl compact>
+<dt><b>umbrella</b></dt>
+<dd>An harmonic potential is applied between the two groups.</dd>
+<dt><b>constraint</b></dt>
+<dd>A constraint is applied between the two groups.
+The setup is identical to the option <b>umbrella</b>, except for the fact
+that a rigid constraint is applied instead of a harmonic potential.</dd>
+<dt><b>constant-force</b></dt>
+<dd>A linear potential and therefore a constant force is applied between
+ the two groups. For this option there is no reference position
+and therefore the parameters <b>pull-coord1-init</b> and <b>pull-coord1-rate</b>
+are not used.</dd>
+<dt><b>flat-bottom</b></dt>
+<dd>At distances beyond <b>pull-coord1-init</b> a harmonic potential is applied, otherwise no potential is applied.</dd>
+</dl></dd>
+<dt><b>pull-coord1-geometry:</b></dt>
+<dd><dl compact>
+<dt><b>distance</b></dt>
+<dd>Pull along the vector connecting the two groups.
+Components can be selected with <b>pull-coord1-dim</b>.</dd>
+<dt><b>direction</b></dt>
+<dd>Pull in the direction of <b>pull-coord1-vec</b>.</dd>
+<dt><b>direction-periodic</b></dt>
+<dd>As <b>direction</b>, but allows the distance to be larger than
+half the box size. With this geometry the box should not be dynamic
+(e.g. no pressure scaling) in the pull dimensions and the pull force
+is not added to virial.</dd>
+<dt><b>cylinder</b></dt>
+<dd>Designed for pulling with respect to a layer where the reference COM
+is given by a local cylindrical part of the reference group.
+The pulling is in the direction of <b>pull-coord1-vec</b>.
+From the first of the two groups in <b>pull-coord1-groups</b>
+a cylinder is selected around the axis going
+through the second group with direction <b>pull-coord1-vec</b>
+with radius <b>pull-cylinder-r</b>. Weights of the atoms decrease continously
+to zero as the radial distance goes from 0 to <b>pull-cylinder-r</b>
+(mass weighting is also used).
+The radial dependence gives rise to radial forces on both pull groups.
+Note that the radius should be smaller than half the box size.
+For tilted cylinders they should be even smaller than half the box size
+since the distance of an atom in the reference group
+from the COM of the pull group has both a radial and an axial component.
+This geometry is not supported with constraint pulling.</dd>
+</dl></dd>
+<dt><b>pull-coord1-dim: (Y Y Y)</b></dt>
+<dd>the distance components to be used with geometry <b>distance</b>,
+and also sets which components are printed
+to the output files</dd>
 <dt><b>pull-coord1-origin: (0.0 0.0 0.0)</b></dt>
 <dd>The pull reference position for use with an absolute reference.</dd>
 <dt><b>pull-coord1-vec: (0.0 0.0 0.0)</b></dt>
 <dd>The pull direction. <tt>grompp</tt> normalizes the vector.</dd>
+<dt><b>pull-coord1-start:</b></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>do not modify <b>pull-coord1-init</b>
+<dt><b>yes</b></dt>
+<dd>add the COM distance of the starting conformation to <b>pull-coord1-init</b></dd>
+</dl>
 <dt><b>pull-coord1-init: (0.0) [nm]</b></dt>
 <dd>The reference distance at t=0.</dd>
 <dt><b>pull-coord1-rate: (0) [nm/ps]</b></dt>
