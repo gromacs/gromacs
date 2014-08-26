@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -614,7 +614,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (econq == econqCoord)
     {
-        if (ir->ePull == epullCONSTRAINT)
+        if (ir->bPull && ir->pull->bConstraint)
         {
             if (EI_DYNAMICS(ir->eI))
             {
@@ -1171,7 +1171,9 @@ gmx_constr_t init_constraints(FILE *fplog,
         gmx_mtop_ftype_count(mtop, F_CONSTRNC);
     nset = gmx_mtop_ftype_count(mtop, F_SETTLE);
 
-    if (ncon+nset == 0 && ir->ePull != epullCONSTRAINT && ed == NULL)
+    if (ncon+nset == 0 &&
+        !(ir->bPull && ir->pull->bConstraint) &&
+        ed == NULL)
     {
         return NULL;
     }
