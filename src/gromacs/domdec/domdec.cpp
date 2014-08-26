@@ -9833,7 +9833,7 @@ void dd_partition_system(FILE                *fplog,
         set_constraints(constr, top_local, ir, mdatoms, cr);
     }
 
-    if (ir->ePull != epullNO)
+    if (ir->bPull)
     {
         /* Update the local pull groups */
         dd_make_local_pull_groups(dd, ir->pull, mdatoms);
