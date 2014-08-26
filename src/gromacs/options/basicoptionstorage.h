@@ -206,6 +206,8 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         virtual void convertValue(const std::string &value);
         virtual void refreshValues();
 
+        void refreshEnumIndexStore();
+
         StringOptionInfo        info_;
         ValueList               allowed_;
         int                    *enumIndexStore_;

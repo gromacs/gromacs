@@ -364,7 +364,10 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * The index (zero-based) of the selected value in the array \p values
          * provided to enumValues() is written into \p *store after the
          * option gets its value.  If the option has not been provided,
-         * and there is no default value, -1 is stored.
+         * and there is no default value, -1 is stored.  If store(),
+         * storeVector() or defaultEnumIndex() is not present, the value in
+         * \p *store is kept as a default value, otherwise it is always
+         * overwritten.
          *
          * Cannot be specified without enumValue().
          *
