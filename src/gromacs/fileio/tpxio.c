@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,8 @@ enum tpxv {
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
-    tpxv_RemoveObsoleteParameters1                           /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_PullCoordTypeGeom                                   /**< add pull type and geometry per group and flat-bottom */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -104,7 +105,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_RemoveObsoleteParameters1;
+static const int tpx_version = tpxv_PullCoordTypeGeom;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -287,14 +288,36 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
     gmx_fio_do_int(fio, pgrp->pbcatom);
 }
 
-static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd)
+static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
+                          int ePullOld, int eGeomOld, ivec dimOld)
 {
     int      i;
 
     gmx_fio_do_int(fio, pcrd->group[0]);
     gmx_fio_do_int(fio, pcrd->group[1]);
+    if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        gmx_fio_do_int(fio,  pcrd->eType);
+        gmx_fio_do_int(fio,  pcrd->eGeom);
+        gmx_fio_do_ivec(fio, pcrd->dim);
+    }
+    else
+    {
+        pcrd->eType = ePullOld;
+        pcrd->eGeom = eGeomOld;
+        copy_ivec(dimOld, pcrd->dim);
+    }
     gmx_fio_do_rvec(fio, pcrd->origin);
     gmx_fio_do_rvec(fio, pcrd->vec);
+    if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        gmx_fio_do_gmx_bool(fio, pcrd->bStart);
+    }
+    else
+    {
+        /* This parameter is only printed, but not actually used by mdrun */
+        pcrd->bStart = FALSE;
+    }
     gmx_fio_do_real(fio, pcrd->init);
     gmx_fio_do_real(fio, pcrd->rate);
     gmx_fio_do_real(fio, pcrd->k);
@@ -603,9 +626,12 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
 }
 
-static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_version)
+static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead,
+                    int file_version, int ePullOld)
 {
-    int g;
+    int  eGeomOld;
+    ivec dimOld;
+    int  g;
 
     if (file_version >= 95)
     {
@@ -616,14 +642,33 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
     {
         pull->ngroup = pull->ncoord + 1;
     }
-    gmx_fio_do_int(fio, pull->eGeom);
-    gmx_fio_do_ivec(fio, pull->dim);
-    gmx_fio_do_real(fio, pull->cyl_r1);
-    gmx_fio_do_real(fio, pull->cyl_r0);
+    if (file_version < tpxv_PullCoordTypeGeom)
+    {
+        real dum;
+
+        gmx_fio_do_int(fio, eGeomOld);
+        gmx_fio_do_ivec(fio, dimOld);
+        /* The inner cylinder radius, now removed */
+        gmx_fio_do_real(fio, dum);
+    }
+    gmx_fio_do_real(fio, pull->cylinder_r);
     gmx_fio_do_real(fio, pull->constr_tol);
     if (file_version >= 95)
     {
-        gmx_fio_do_int(fio, pull->bPrintRef);
+        gmx_fio_do_int(fio, pull->bPrintCOM1);
+        /* With file_version < 95 this value is set below */
+    }
+    if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        gmx_fio_do_int(fio, pull->bPrintCOM2);
+        gmx_fio_do_int(fio, pull->bPrintRefValue);
+        gmx_fio_do_int(fio, pull->bPrintComp);
+    }
+    else
+    {
+        pull->bPrintCOM2     = FALSE;
+        pull->bPrintRefValue = FALSE;
+        pull->bPrintComp     = TRUE;
     }
     gmx_fio_do_int(fio, pull->nstxout);
     gmx_fio_do_int(fio, pull->nstfout);
@@ -635,13 +680,13 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
     if (file_version < 95)
     {
         /* epullgPOS for position pulling, before epullgDIRPBC was removed */
-        if (pull->eGeom == epullgDIRPBC)
+        if (eGeomOld == epullgDIRPBC)
         {
             gmx_fatal(FARGS, "pull-geometry=position is no longer supported");
         }
-        if (pull->eGeom > epullgDIRPBC)
+        if (eGeomOld > epullgDIRPBC)
         {
-            pull->eGeom -= 1;
+            eGeomOld -= 1;
         }
 
         for (g = 0; g < pull->ngroup; g++)
@@ -656,7 +701,7 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
             }
         }
 
-        pull->bPrintRef = (pull->group[0].nat > 0);
+        pull->bPrintCOM1 = (pull->group[0].nat > 0);
     }
     else
     {
@@ -666,7 +711,8 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
         }
         for (g = 0; g < pull->ncoord; g++)
         {
-            do_pull_coord(fio, &pull->coord[g]);
+            do_pull_coord(fio, &pull->coord[g],
+                          file_version, ePullOld, eGeomOld, dimOld);
         }
     }
 }
@@ -1495,19 +1541,31 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     /* pull stuff */
     if (file_version >= 48)
     {
-        gmx_fio_do_int(fio, ir->ePull);
-        if (ir->ePull != epullNO)
+        int ePullOld = 0;
+
+        if (file_version >= tpxv_PullCoordTypeGeom)
+        {
+            gmx_fio_do_gmx_bool(fio, ir->bPull);
+        }
+        else
+        {
+            gmx_fio_do_int(fio, ePullOld);
+            ir->bPull = (ePullOld > 0);
+            /* We removed the first ePull=ePullNo for the enum */
+            ePullOld -= 1;
+        }
+        if (ir->bPull)
         {
             if (bRead)
             {
                 snew(ir->pull, 1);
             }
-            do_pull(fio, ir->pull, bRead, file_version);
+            do_pull(fio, ir->pull, bRead, file_version, ePullOld);
         }
     }
     else
     {
-        ir->ePull = epullNO;
+        ir->bPull = FALSE;
     }
 
     /* Enforced rotation */

@@ -1625,7 +1625,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                            step, t,
                            eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
             }
-            if (ir->ePull != epullNO)
+            if (ir->bPull)
             {
                 pull_print_output(ir->pull, step, t);
             }
