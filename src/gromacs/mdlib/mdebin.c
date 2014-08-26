@@ -291,7 +291,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
         else if (i == F_COM_PULL)
         {
-            md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F || ir->bRot);
+            md->bEner[i] = (ir->bPull && ir->pull->bPotential);
         }
         else if (i == F_ECONSERVED)
         {
