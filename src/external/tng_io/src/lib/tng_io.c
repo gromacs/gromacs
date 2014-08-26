@@ -4917,7 +4917,7 @@ static tng_function_status tng_compress(tng_trajectory_t tng_data,
         if(n_frames == 1 && tng_data->frame_set_n_frames > 1)
         {
             nalgo = tng_compress_nalgo();
-            alt_algo=malloc(nalgo * sizeof *tng_data->compress_algo_pos);
+            alt_algo=malloc(nalgo * sizeof *tng_data->compress_algo_vel);
             if(type == TNG_FLOAT_DATA)
             {
                 dest = tng_compress_vel_float_find_algo((float *)temp_data_contents, (int)n_particles,
@@ -5682,6 +5682,16 @@ static tng_function_status tng_particle_data_read
     char block_type_flag;
 
     TNG_ASSERT(offset != 0, "TNG library: offset must not be a NULL pointer.");
+
+    /* This must be caught early to avoid creating a data block if not necessary. */
+#ifndef USE_ZLIB
+    if(codec_id == TNG_GZIP_COMPRESSION)
+    {
+        fprintf(stderr, "TNG library: Cannot uncompress data block. %s: %d\n", __FILE__,
+                __LINE__);
+        return(TNG_FAILURE);
+    }
+#endif
 
     switch(datatype)
     {
@@ -6616,6 +6626,16 @@ static tng_function_status tng_data_read(tng_trajectory_t tng_data,
     TNG_ASSERT(offset != 0, "TNG library: offset must not be a NULL pointer.");
 
 /*     fprintf(stderr, "TNG library: %s\n", block->name);*/
+
+    /* This must be caught early to avoid creating a data block if not necessary. */
+#ifndef USE_ZLIB
+    if(codec_id == TNG_GZIP_COMPRESSION)
+    {
+        fprintf(stderr, "TNG library: Cannot uncompress data block. %s: %d\n", __FILE__,
+                __LINE__);
+        return(TNG_FAILURE);
+    }
+#endif
 
     switch(datatype)
     {
