@@ -404,7 +404,7 @@ static void pull_potential_wrapper(t_commrec *cr,
     set_pbc(&pbc, ir->ePBC, box);
     dvdl                     = 0;
     enerd->term[F_COM_PULL] +=
-        pull_potential(ir->ePull, ir->pull, mdatoms, &pbc,
+        pull_potential(ir->pull, mdatoms, &pbc,
                        cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
@@ -1230,7 +1230,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         clear_rvec(fr->vir_diag_posres);
     }
 
-    if (inputrec->ePull == epullCONSTRAINT)
+    if (inputrec->bPull && inputrec->pull->bConstraint)
     {
         clear_pull_forces(inputrec->pull);
     }
@@ -1513,7 +1513,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
+    if (inputrec->bPull && inputrec->pull->bPotential)
     {
         /* Since the COM pulling is always done mass-weighted, no forces are
          * applied to vsites and this call can be done after vsite spreading.
@@ -1857,7 +1857,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
         clear_rvec(fr->vir_diag_posres);
     }
-    if (inputrec->ePull == epullCONSTRAINT)
+    if (inputrec->bPull && inputrec->pull->bConstraint)
     {
         clear_pull_forces(inputrec->pull);
     }
@@ -1989,7 +1989,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
+    if (inputrec->bPull && inputrec->pull->bPotential)
     {
         pull_potential_wrapper(cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t,

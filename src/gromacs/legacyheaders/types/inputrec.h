@@ -115,16 +115,24 @@ typedef struct {
     atom_id     pbcatom;    /* The reference atom for pbc (global number) */
 
     /* Variables not present in mdp, but used at run time */
+    gmx_bool    bCalcCOM;   /* Calculate COM? Not if only used as cylinder group */
+    real        mwscale;    /* mass*weight scaling factor 1/sum w m */
     real        wscale;     /* scaling factor for the weights: sum w m/sum w w m */
     real        invtm;      /* inverse total mass of the group: 1/wscale sum w m */
+    dvec       *mdw;        /* mass*gradient(weight) for atoms */
+    double     *dv;         /* distance to the other group along vec */
     dvec        x;          /* center of mass before update */
     dvec        xp;         /* center of mass after update before constraining */
 } t_pull_group;
 
 typedef struct {
     int         group[2];   /* The pull groups, index in group in t_pull */
+    int         eType;      /* The pull type: umbrella, constraint, ... */
+    int         eGeom;      /* The pull geometry */
+    ivec        dim;        /* Used to select components for constraint */
     rvec        origin;     /* The origin for the absolute reference */
     rvec        vec;        /* The pull vector, direction or position */
+    gmx_bool    bStart;     /* Set init based on the initial structure */
     real        init;       /* Initial reference displacement */
     real        rate;       /* Rate of motion (nm/ps) */
     real        k;          /* force constant */
@@ -132,6 +140,8 @@ typedef struct {
 
     /* Variables not present in mdp, but used at run time */
     dvec        dr;         /* The distance from the reference group */
+    dvec        ffrad;      /* conversion factor from vec to radial force */
+    double      cyl_dev;    /* The deviation from the reference position */
     double      f_scal;     /* Scalar force for directional pulling */
     dvec        f;          /* force due to the pulling/constraining */
 } t_pull_coord;
@@ -208,10 +218,7 @@ typedef struct {
 typedef struct {
     int            ngroup;     /* number of pull groups */
     int            ncoord;     /* number of pull coordinates */
-    int            eGeom;      /* pull geometry */
-    ivec           dim;        /* used to select components for constraint */
-    real           cyl_r1;     /* radius of cylinder for dynamic COM */
-    real           cyl_r0;     /* radius of cylinder including switch length */
+    real           cylinder_r; /* radius of cylinder for dynamic COM */
     real           constr_tol; /* absolute tolerance for constraints in (nm) */
     gmx_bool       bPrintRef;  /* Print coordinates of the first group in each coord */
     int            nstxout;    /* Output frequency for pull x */
@@ -220,11 +227,13 @@ typedef struct {
     int            npbcdim;    /* do pbc in dims 0 <= dim < npbcdim */
     gmx_bool       bRefAt;     /* do we need reference atoms for a group COM ? */
     int            cosdim;     /* dimension for cosine weighting, -1 if none */
-    gmx_bool       bVirial;    /* do we need to add the pull virial? */
     t_pull_group  *group;      /* groups to pull/restrain/etc/ */
     t_pull_coord  *coord;      /* the pull coordinates */
 
     /* Variables not present in mdp, but used at run time */
+    gmx_bool       bPotential;   /* Are there coordinates with potential? */
+    gmx_bool       bConstraint;  /* Are there constrained coordinates? */
+    gmx_bool       bCylinder;    /* Is group 0 a cylinder group? */
     t_pull_group  *dyna;         /* dynamic groups for use with local constraints */
     gmx_bool       bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
@@ -444,7 +453,7 @@ typedef struct {
     int             wall_atomtype[2];        /* The atom type for walls                      */
     real            wall_density[2];         /* Number density for walls                     */
     real            wall_ewald_zfac;         /* Scaling factor for the box for Ewald         */
-    int             ePull;                   /* Type of pulling: no, umbrella or constraint  */
+    gmx_bool        bPull;                   /* Do we do COM pulling?                        */
     t_pull         *pull;                    /* The data for center of mass pulling          */
     gmx_bool        bRot;                    /* Calculate enforced rotation potential(s)?    */
     t_rot          *rot;                     /* The data for enforced rotation potentials    */

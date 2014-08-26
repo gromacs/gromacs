@@ -214,6 +214,10 @@ exact if only two groups are constrained.
 A constant force is applied between the centers of mass of two groups.
 Thus, the potential is linear.
 In this case there is no reference distance of pull rate.
+\item{\textbf{Flat bottom pulling}}
+Like umbrella pulling, but the potential and force are zero for
+negative deviations. This is useful for restraining the distance
+between e.g. two molecules to a certain maximum distance.
 \end{enumerate}
 
 \subsubsection{Definition of the center of mass}
@@ -234,16 +238,25 @@ to calculate the PMF of a lipid as function of its distance
 from the whole bilayer. The whole bilayer can be taken as reference
 group in that case, but it might also be of interest to define the
 reaction coordinate for the PMF more locally. The {\tt .mdp} option
-{\tt pull_geometry = cylinder} does not
+{\tt pull-coord?-geometry = cylinder} does not
 use all the atoms of the reference group, but instead dynamically only those
-within a cylinder with radius {\tt r_1} around the pull vector going
+within a cylinder with radius {\tt pull-cylinder-r} around the pull vector going
 through the pull group. This only
 works for distances defined in one dimension, and the cylinder is
-oriented with its long axis along this one dimension. A second cylinder
-can be defined with {\tt r_0}, with a linear switch function that weighs
-the contribution of atoms between {\tt r_0} and {\tt r_1} with
-distance. This smooths the effects of atoms moving in and out of the
-cylinder (which causes jumps in the pull forces).
+oriented with its long axis along this one dimension. To avoid jumps in
+the pull force, contributions of atoms are weighted as a function of distance
+(in addition to the mass weighting):
+\bea
+w(r < r_\mathrm{cyl}) & = &
+1-2 \left(\frac{r}{r_\mathrm{cyl}}\right)^2 + \left(\frac{r}{r_\mathrm{cyl}}\right)^4 \\
+w(r \geq r_\mathrm{cyl}) & = & 0
+\eea
+Note that the radial dependence on the weight causes a radial force on
+both cylinder group and the other pull group. This is an undesirable,
+but unavoidable effect. To minimize this effect, the cylinder radius should
+be chosen sufficiently large. The effective mass is 0.47 times that of
+a cylinder with uniform weights and equal to the mass of uniform cylinder
+of 0.79 times the radius.
 
 \begin{figure}
 \centerline{\includegraphics[width=6cm]{plots/pullref}}

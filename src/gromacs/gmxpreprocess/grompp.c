@@ -2024,9 +2024,9 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
-    if (ir->ePull != epullNO)
+    if (ir->bPull)
     {
-        set_pull_init(ir, sys, state.x, state.box, state.lambda[efptMASS], oenv, opts->pull_start);
+        set_pull_init(ir, sys, state.x, state.box, state.lambda[efptMASS], oenv);
     }
 
     if (ir->bRot)
