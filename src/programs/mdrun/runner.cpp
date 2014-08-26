@@ -1669,7 +1669,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Assumes uniform use of the number of OpenMP threads */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntDefault));
 
-        if (inputrec->ePull != epullNO)
+        if (inputrec->bPull)
         {
             /* Initialize pull code */
             init_pull(fplog, inputrec, nfile, fnm, mtop, cr, oenv, inputrec->fepvals->init_lambda,
@@ -1719,7 +1719,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       Flags,
                                       walltime_accounting);
 
-        if (inputrec->ePull != epullNO)
+        if (inputrec->bPull)
         {
             finish_pull(inputrec->pull);
         }

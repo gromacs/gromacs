@@ -59,6 +59,9 @@ extern "C" {
 
 struct t_pbc;
 
+/*! The index of the reference pull group with cylinder pulling is always 1 */
+static const int pull_group_cylinder = 1;
+
 /*! \brief Get the distance to the reference and deviation for pull coord coord_ind.
  *
  * \param[in]  pull         The pull group.
@@ -83,7 +86,6 @@ void clear_pull_forces(t_pull *pull);
 
 /*! \brief Determine the COM pull forces and add them to f, return the potential
  *
- * \param[in] ePull      Enum defining the type of pulling: umbrella, const force, ...
  * \param[in] pull       The pull group.
  * \param[in] md         All atoms.
  * \param[in] pbc        Information struct about periodicity.
@@ -97,7 +99,7 @@ void clear_pull_forces(t_pull *pull);
  *
  * \returns The pull potential energy.
  */
-real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
+real pull_potential(t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
                     rvec *x, rvec *f, tensor vir, real *dvdlambda);
 
