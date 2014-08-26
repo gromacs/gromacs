@@ -86,20 +86,14 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
     n = 0;
     for (g = 0; g < pull->ngroup; g++)
     {
-        if ((g == 0 && PULL_CYL(pull)) || pull->group[g].pbcatom == -1)
+        if (pull->group[g].pbcatom == -1 ||
+            (pull->bCylinder && g == pull_group_cylinder))
         {
             clear_rvec(x_pbc[g]);
         }
         else
         {
             pull_set_pbcatom(cr, &pull->group[g], x, x_pbc[g]);
-            for (m = 0; m < DIM; m++)
-            {
-                if (pull->dim[m] == 0)
-                {
-                    x_pbc[g][m] = 0.0;
-                }
-            }
             n++;
         }
     }
@@ -345,7 +339,7 @@ void pull_calc_coms(t_commrec *cr,
         ccm    = 0;
         csm    = 0;
         ssm    = 0;
-        if (!(g == 0 && PULL_CYL(pull)))
+        if (!(g == 0 && pull->bCylinder))
         {
             if (pgrp->epgrppbc == epgrppbcREFAT)
             {
@@ -458,7 +452,7 @@ void pull_calc_coms(t_commrec *cr,
     for (g = 0; g < pull->ngroup; g++)
     {
         pgrp = &pull->group[g];
-        if (pgrp->nat > 0 && !(g == 0 && PULL_CYL(pull)))
+        if (pgrp->nat > 0 && !(g == 0 && pull->bCylinder))
         {
             if (pgrp->epgrppbc != epgrppbcCOS)
             {
@@ -527,7 +521,7 @@ void pull_calc_coms(t_commrec *cr,
         }
     }
 
-    if (PULL_CYL(pull))
+    if (pull->bCylinder)
     {
         /* Calculate the COMs for the cyclinder reference groups */
         make_cyl_refgrps(cr, pull, md, pbc, t, x, xp);
