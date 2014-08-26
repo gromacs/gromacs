@@ -687,7 +687,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     {
         bc_simtempvals(cr, inputrec->simtempvals, inputrec->fepvals->n_lambda);
     }
-    if (inputrec->ePull != epullNO)
+    if (inputrec->bPull)
     {
         snew_bc(cr, inputrec->pull, 1);
         bc_pull(cr, inputrec->pull);
