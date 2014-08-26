@@ -223,6 +223,28 @@ class AnalysisNeighborhood
          */
         void setCutoff(real cutoff);
         /*! \brief
+         * Sets the search to prefer a grid that covers the bounding box of
+         * reference positions.
+         *
+         * By default, non-periodic dimensions will ignore the size of the box
+         * passed to initSearch() and construct a grid based on the bounding
+         * box of the reference positions.
+         *
+         * If you call this method with `false`, the size of the box will be
+         * used instead to set the grid.  If one of the box vectors is zero,
+         * then grid searching will not be used for that dimension.  This
+         * allows you to control the size of the used grid in case the default
+         * is not suitable.  However, in this case the grid will currently
+         * always start at the origin.
+         *
+         * Currently, this only influences cases where the grid is not
+         * periodic in some dimensions, i.e., `pbc` passed to initSearch() is
+         * NULL, `epbcNONE`, or `epbcXY`.
+         *
+         * Does not throw.
+         */
+        void setUseBoundingBox(bool bUseBoundingBox);
+        /*! \brief
          * Sets the search to only happen in the XY plane.
          *
          * Z component of the coordinates is not used in the searching,
