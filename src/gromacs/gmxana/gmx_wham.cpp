@@ -121,7 +121,7 @@ typedef struct
      * \name Using umbrella pull code since gromacs 4.x
      */
     /*!\{*/
-    int      npullcrds;     //!< nr of pull coordinates in tpr file
+    int      npullcrds;     //!< nr of umbrella pull coordinates in tpr file
     int      pull_geometry; //!< such as distance, direction
     ivec     pull_dim;      //!< pull dimension with geometry distance
     int      pull_ndim;     //!< nr of pull_dim != 0
@@ -2003,24 +2003,60 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     /* printf("Reading %s \n",fn); */
     read_tpx_state(fn, &ir, &state, NULL, NULL);
 
-    if (ir.ePull != epullUMBRELLA)
+    if (!ir.bPull)
     {
-        gmx_fatal(FARGS, "This is not a tpr of an umbrella simulation. Found pull type \"%s\" "
-                  " (ir.ePull = %d)\n", epull_names[ir.ePull], ir.ePull);
+        gmx_fatal(FARGS, "This is not a tpr with COM pulling");
     }
 
     /* nr of pull groups */
-    ncrd = ir.pull->ncoord;
-    if (ncrd < 1)
+    ncrd = 0;
+    for (i = 0; i < ir.pull->ncoord; i++)
     {
-        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d pull coordinates\n", ncrd);
+        if (ir.pull->coord[i].eType == epullUMBRELLA)
+        {
+            int m;
+
+            if (ncrd == 0)
+            {
+                header->pull_geometry = ir.pull->coord[i].eGeom;
+                copy_ivec(ir.pull->coord[i].dim, header->pull_dim);
+            }
+
+            if (ncrd != i)
+            {
+                /* TODO: remove this restriction */
+                gmx_fatal(FARGS, "Currently tpr files where a non-umbrella pull coordinate is followed by an umbrella pull coordinate are not supported");
+            }
+
+            for (m = 0; m < DIM; m++)
+            {
+                if (ir.pull->coord[i].eGeom != header->pull_geometry)
+                {
+                    /* TODO: remove the restriction */
+                    gmx_fatal(FARGS, "Currently all umbrella pull coordinates should use the same geometry");
+                }
+
+                if (ir.pull->coord[i].dim[m] != header->pull_dim[m])
+                {
+                    /* TODO: remove the restriction */
+                    gmx_fatal(FARGS, "Currently all umbrella pull coordinates should operate on the same dimensions");
+                }
+            }
+
+            ncrd++;
+        }
     }
 
-    header->npullcrds     = ir.pull->ncoord;
-    header->pull_geometry = ir.pull->eGeom;
-    header->bPrintRef     = ir.pull->bPrintRef;
-    copy_ivec(ir.pull->dim, header->pull_dim);
+    if (ncrd < 1)
+    {
+        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d umbrella pull coordinates\n", ncrd);
+    }
+
+    header->npullcrds = ncrd;
+    header->bPrintRef = ir.pull->bPrintRef;
     header->pull_ndim = header->pull_dim[0]+header->pull_dim[1]+header->pull_dim[2];
+    /* We should add a struct for each pull coord with all pull coord data
+       instead of allocating many arrays for each property */
     snew(header->k, ncrd);
     snew(header->init_dist, ncrd);
     snew(header->umbInitDist, ncrd);
