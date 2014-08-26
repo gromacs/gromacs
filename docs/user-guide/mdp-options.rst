@@ -1583,94 +1583,23 @@ applicable pulling coordinate.
       be ignored (and if present in the :ref:`mdp` file, they unfortunately
       generate warnings)
 
-   .. mdp-value:: umbrella
+   .. mdp-value:: yes
 
-      Center of mass pulling using an umbrella potential between the
-      reference group and one or more groups.
+       Center of mass pulling will be applied on 1 or more groups using
+       1 or more pull coordinates.
 
-   .. mdp-value:: constraint
+.. mdp:: pull-cylinder-r
 
-      Center of mass pulling using a constraint between the reference
-      group and one or more groups. The setup is identical to the
-      option umbrella, except for the fact that a rigid constraint is
-      applied instead of a harmonic potential.
-
-   .. mdp-value:: constant-force
-
-      Center of mass pulling using a linear potential and therefore a
-      constant force. For this option there is no reference position
-      and therefore the parameters :mdp:`pull-coord1-init` and
-      :mdp:`pull-coord1-rate` are not used.
-
-.. mdp:: pull-geometry
-
-   .. mdp-value:: distance
-
-      Pull along the vector connecting the two groups. Components can
-      be selected with :mdp:`pull-dim`.
-
-   .. mdp-value:: direction
-
-      Pull in the direction of :mdp:`pull-coord1-vec`.
-
-   .. mdp-value:: direction-periodic
-
-      As :mdp-value:`pull-geometry=direction`, but allows the distance
-      to be larger than half the box size. With this geometry the box
-      should not be dynamic (*e.g.* no pressure scaling) in the pull
-      dimensions and the pull force is not added to virial.
-
-   .. mdp-value:: cylinder
-
-      Designed for pulling with respect to a layer where the reference
-      COM is given by a local cylindrical part of the reference
-      group. The pulling is in the direction of
-      :mdp:`pull-coord1-vec`. From the reference group a cylinder is
-      selected around the axis going through the pull group with
-      direction :mdp:`pull-coord1-vec` using two radii. The radius
-      :mdp:`pull-r1` gives the radius within which all the relative
-      weights are one, between :mdp:`pull-r1` and :mdp:`pull-r0` the
-      weights are switched to zero. Mass weighting is also used. Note
-      that the radii should be smaller than half the box size. For
-      tilted cylinders they should be even smaller than half the box
-      size since the distance of an atom in the reference group from
-      the COM of the pull group has both a radial and an axial
-      component.
-
-.. mdp:: pull-dim
-
-   (Y Y Y)
-   the distance components to be used with :mdp:`pull-geometry`
-   distance, and also sets which components are printed to the output
-   files
-
-.. mdp:: pull-r1
-
-   (1) \[nm\]
-   the inner radius of the cylinder for :mdp:`pull-geometry` cylinder
-
-.. mdp:: pull-r0
-
-   (1) \[nm\]
-   the outer radius of the cylinder for :mdp:`pull-geometry` cylinder
+   (1.5) \[nm\]
+   the radius radius of the cylinder for
+   :mdp:`pull-coord1-geometry` = :mdp-value:`cylinder`
 
 .. mdp:: pull-constr-tol
 
    (1e-6)
    the relative constraint tolerance for constraint pulling
 
-.. mdp:: pull-start
-
-   .. mdp-value:: no
-
-      do not modify :mdp:`pull-coord1-init`
-
-   .. mdp-value:: yes
-
-      add the COM distance of the starting conformation to
-      :mdp:`pull-coord1-init`
-
-.. mdp:: pull-print-reference
+.. mdp:: pull-print-com1
 
    .. mdp-value:: no
 
@@ -1680,15 +1609,49 @@ applicable pulling coordinate.
 
       print the COM of the first group in each pull coordinate
 
+.. mdp:: pull-print-com2
+
+   .. mdp-value:: no
+
+      do not print the COM of the second group in each pull coordinate
+
+   .. mdp-value:: yes
+
+      print the COM of the second group in each pull coordinate
+
+.. mdp:: pull-print-ref-value
+
+   .. mdp-value:: no
+
+      do not print the reference value for each pull coordinate
+
+   .. mdp-value:: yes
+
+      print the reference value for each pull coordinate
+
+.. mdp:: pull-print-components
+
+   .. mdp-value:: no
+
+      only print the distance for each pull coordinate
+   
+   .. mdp-value:: yes
+
+      print the distance and Cartesian components selected in
+      :mdp:`pull-coord1-dim`
+
 .. mdp:: pull-nstxout
 
-   (10)
-   frequency for writing out the COMs of all the pull group
+   (50)
+   frequency for writing out the COMs of all the pull group (0 is
+   never)
 
 .. mdp:: pull-nstfout
 
-   (1)
+   (50)
    frequency for writing out the force of all the pulled group
+   (0 is never)
+
 
 .. mdp:: pull-ngroups
 
@@ -1741,6 +1704,79 @@ applicable pulling coordinate.
    and one should think about what to do with the center of mass
    motion.
 
+.. mdp:: pull-coord1-type:
+
+   .. mdp-value:: umbrella
+
+      Center of mass pulling using an umbrella potential between the
+      reference group and one or more groups.
+
+   .. mdp-value:: constraint
+
+      Center of mass pulling using a constraint between the reference
+      group and one or more groups. The setup is identical to the
+      option umbrella, except for the fact that a rigid constraint is
+      applied instead of a harmonic potential.
+
+   .. mdp-value:: constant-force
+
+      Center of mass pulling using a linear potential and therefore a
+      constant force. For this option there is no reference position
+      and therefore the parameters :mdp:`pull-coord1-init` and
+      :mdp:`pull-coord1-rate` are not used.
+
+   .. mdp-value:: flat-bottom
+
+      At distances beyond :mdp:`pull-coord1-init` a harmonic potential
+      is applied, otherwise no potential is applied.
+
+.. mdp:: pull-coord1-geometry
+
+   .. mdp-value:: distance
+
+      Pull along the vector connecting the two groups. Components can
+      be selected with :mdp:`pull-coord1-dim`.
+
+   .. mdp-value:: direction
+
+      Pull in the direction of :mdp:`pull-coord1-vec`.
+
+   .. mdp-value:: direction-periodic
+
+      As :mdp-value:`direction`, but allows the distance to be larger
+      than half the box size. With this geometry the box should not be
+      dynamic (*e.g.* no pressure scaling) in the pull dimensions and
+      the pull force is not added to virial.
+
+   .. mdp-value:: cylinder
+
+      Designed for pulling with respect to a layer where the reference
+      COM is given by a local cylindrical part of the reference group.
+      The pulling is in the direction of :mdp:`pull-coord1-vec`. From
+      the first of the two groups in :mdp:`pull-coord1-groups` a
+      cylinder is selected around the axis going through the COM of
+      the second group with direction :mdp:`pull-coord1-vec` with
+      radius :mdp:`pull-cylinder-r`. Weights of the atoms decrease
+      continously to zero as the radial distance goes from 0 to
+      :mdp:`pull-cylinder-r` (mass weighting is also used). The radial
+      dependence gives rise to radial forces on both pull groups.
+      Note that the radius should be smaller than half the box size.
+      For tilted cylinders they should be even smaller than half the
+      box size since the distance of an atom in the reference group
+      from the COM of the pull group has both a radial and an axial
+      component. This geometry is not supported with constraint
+      pulling.
+
+.. mdp:: pull-coord1-dim
+
+   (Y Y Y)
+   With :mdp-value:`pull-coord1-geometry=distance`, only Cartesian
+   components set to Y contribute to the distance. Thus setting this
+   to Y Y N results in a distance in the x/y plane. With
+   :mdp-value:`pull-print-components=yes`, this option also sets which
+   Cartesian components of the distance are printed to the output
+   files for all geometies.
+
 .. mdp:: pull-coord1-origin
 
    (0.0 0.0 0.0)
@@ -1750,6 +1786,17 @@ applicable pulling coordinate.
 
    (0.0 0.0 0.0)
    The pull direction. :ref:`gmx grompp` normalizes the vector.
+
+.. mdp:: pull-coord1-start
+
+   .. mdp-value:: no
+
+      do not modify :mdp:`pull-coord1-init`
+
+   .. mdp-value:: yes
+
+      add the COM distance of the starting conformation to
+      :mdp:`pull-coord1-init`
 
 .. mdp:: pull-coord1-init
 

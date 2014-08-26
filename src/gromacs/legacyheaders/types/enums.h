@@ -291,14 +291,12 @@ enum {
 
 /* Pull stuff */
 enum {
-    epullNO, epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullNR
+    epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullFLATBOTTOM, epullNR
 };
 
 enum {
     epullgDIST, epullgDIR, epullgCYL, epullgDIRPBC, epullgNR
 };
-
-#define PULL_CYL(pull) ((pull)->eGeom == epullgCYL)
 
 /* Enforced rotation groups */
 enum {
