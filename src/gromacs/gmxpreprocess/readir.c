@@ -2082,12 +2082,11 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* COM pulling */
     CCTYPE("COM PULLING");
-    CTYPE("Pull type: no, umbrella, constraint or constant-force");
-    EETYPE("pull",          ir->ePull, epull_names);
-    if (ir->ePull != epullNO)
+    EETYPE("pull",          ir->bPull, yesno_names);
+    if (ir->bPull)
     {
         snew(ir->pull, 1);
-        is->pull_grp = read_pullparams(&ninp, &inp, ir->pull, &opts->pull_start, wi);
+        is->pull_grp = read_pullparams(&ninp, &inp, ir->pull, wi);
     }
 
     /* Enforced rotation */
@@ -2840,7 +2839,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         }
     }
 
-    if (ir->ePull == epullCONSTRAINT)
+    if (ir->bPull)
     {
         /* Correct nrdf for the COM constraints.
          * We correct using the TC and VCM group of the first atom
@@ -2852,6 +2851,11 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 
         for (i = 0; i < pull->ncoord; i++)
         {
+            if (pull->coord[i].eType != epullCONSTRAINT)
+            {
+                continue;
+            }
+
             imin = 1;
 
             for (j = 0; j < 2; j++)
@@ -3477,7 +3481,7 @@ void do_index(const char* mdparin, const char *ndx,
         }
     }
 
-    if (ir->ePull != epullNO)
+    if (ir->bPull)
     {
         make_pull_groups(ir->pull, is->pull_grp, grps, gnames);
 
@@ -4235,45 +4239,42 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         gmx_fatal(FARGS, "Soft-core interactions are only supported with VdW repulsion power 12");
     }
 
-    if (ir->ePull != epullNO)
+    if (ir->bPull)
     {
-        gmx_bool bPullAbsoluteRef;
+        gmx_bool bWarned;
 
-        bPullAbsoluteRef = FALSE;
-        for (i = 0; i < ir->pull->ncoord; i++)
+        bWarned = FALSE;
+        for (i = 0; i < ir->pull->ncoord && !bWarned; i++)
         {
-            bPullAbsoluteRef = bPullAbsoluteRef ||
-                ir->pull->coord[i].group[0] == 0 ||
-                ir->pull->coord[i].group[1] == 0;
-        }
-        if (bPullAbsoluteRef)
-        {
-            absolute_reference(ir, sys, FALSE, AbsRef);
-            for (m = 0; m < DIM; m++)
+            if (ir->pull->coord[i].group[0] == 0 ||
+                ir->pull->coord[i].group[1] == 0)
             {
-                if (ir->pull->dim[m] && !AbsRef[m])
+                absolute_reference(ir, sys, FALSE, AbsRef);
+                for (m = 0; m < DIM; m++)
                 {
-                    warning(wi, "You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
-                    break;
+                    if (ir->pull->coord[i].dim[m] && !AbsRef[m])
+                    {
+                        warning(wi, "You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
+                        bWarned = TRUE;
+                        break;
+                    }
                 }
             }
         }
 
-        if (ir->pull->eGeom == epullgDIRPBC)
+        for (i = 0; i < 3; i++)
         {
-            for (i = 0; i < 3; i++)
+            for (m = 0; m <= i; m++)
             {
-                for (m = 0; m <= i; m++)
+                if ((ir->epc != epcNO && ir->compress[i][m] != 0) ||
+                    ir->deform[i][m] != 0)
                 {
-                    if ((ir->epc != epcNO && ir->compress[i][m] != 0) ||
-                        ir->deform[i][m] != 0)
+                    for (c = 0; c < ir->pull->ncoord; c++)
                     {
-                        for (c = 0; c < ir->pull->ncoord; c++)
+                        if (ir->pull->coord[c].eGeom == epullgDIRPBC &&
+                            ir->pull->coord[c].vec[m] != 0)
                         {
-                            if (ir->pull->coord[c].vec[m] != 0)
-                            {
-                                gmx_fatal(FARGS, "Can not have dynamic box while using pull geometry '%s' (dim %c)", EPULLGEOM(ir->pull->eGeom), 'x'+m);
-                            }
+                            gmx_fatal(FARGS, "Can not have dynamic box while using pull geometry '%s' (dim %c)", EPULLGEOM(ir->pull->coord[c].eGeom), 'x'+m);
                         }
                     }
                 }
