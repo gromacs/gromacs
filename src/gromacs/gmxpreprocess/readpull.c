@@ -54,8 +54,6 @@
 #include "gromacs/utility/smalloc.h"
 
 
-static char pulldim[STRLEN];
-
 static void string2dvec(const char buf[], dvec nums)
 {
     double dum;
@@ -84,7 +82,46 @@ static void init_pull_group(t_pull_group *pg,
     }
 }
 
-static void init_pull_coord(t_pull_coord *pcrd, int eGeom,
+static void process_pull_dim(char *dim_buf, ivec dim)
+{
+    int           ndim, d, nchar, c;
+    char         *ptr, pulldim1[STRLEN];
+    t_pull_coord *pcrd;
+
+    ptr  = dim_buf;
+    ndim = 0;
+    for (d = 0; d < DIM; d++)
+    {
+        if (sscanf(ptr, "%s%n", pulldim1, &nchar) != 1)
+        {
+            gmx_fatal(FARGS, "Less than 3 pull dimensions given in pull_dim: '%s'",
+                      dim_buf);
+        }
+
+        if (gmx_strncasecmp(pulldim1, "N", 1) == 0)
+        {
+            dim[d] = 0;
+        }
+        else if (gmx_strncasecmp(pulldim1, "Y", 1) == 0)
+        {
+            dim[d] = 1;
+            ndim++;
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Please use Y(ES) or N(O) for pull_dim only (not %s)",
+                      pulldim1);
+        }
+        ptr += nchar;
+    }
+    if (ndim == 0)
+    {
+        gmx_fatal(FARGS, "All entries in pull dim are N");
+    }
+}
+
+static void init_pull_coord(t_pull_coord *pcrd,
+                            char *dim_buf,
                             const char *origin_buf, const char *vec_buf,
                             warninp_t wi)
 {
@@ -92,18 +129,28 @@ static void init_pull_coord(t_pull_coord *pcrd, int eGeom,
     dvec   origin, vec;
     char   buf[STRLEN];
 
+    if (pcrd->eType == epullCONSTRAINT && pcrd->eGeom == epullgCYL)
+    {
+        gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
+                  epull_names[pcrd->eType],
+                  epullg_names[pcrd->eGeom],
+                  epull_names[epullUMBRELLA]);
+    }
+
+    process_pull_dim(dim_buf, pcrd->dim);
+
     string2dvec(origin_buf, origin);
     if (pcrd->group[0] != 0 && dnorm(origin) > 0)
     {
         gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
 
-    if (eGeom == epullgDIST)
+    if (pcrd->eGeom == epullgDIST)
     {
         if (pcrd->init < 0)
         {
             sprintf(buf, "The initial pull distance is negative with geometry %s, while a distance can not be negative. Use geometry %s instead.",
-                    EPULLGEOM(eGeom), EPULLGEOM(epullgDIR));
+                    EPULLGEOM(pcrd->eGeom), EPULLGEOM(epullgDIR));
             warning_error(wi, buf);
         }
         /* TODO: With a positive init but a negative rate things could still
@@ -119,7 +166,12 @@ static void init_pull_coord(t_pull_coord *pcrd, int eGeom,
     else
     {
         string2dvec(vec_buf, vec);
-        if (eGeom == epullgDIR || eGeom == epullgCYL)
+        if (dnorm2(vec) == 0)
+        {
+            gmx_fatal(FARGS, "With pull geometry %s the pull vector can not be 0,0,0",
+                      epullg_names[pcrd->eGeom]);
+        }
+        if (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL)
         {
             /* Normalize the direction vector */
             dsvmul(1/dnorm(vec), vec, vec);
@@ -133,14 +185,15 @@ static void init_pull_coord(t_pull_coord *pcrd, int eGeom,
 }
 
 char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
-                       t_pull *pull, gmx_bool *bStart,
+                       t_pull *pull,
                        warninp_t wi)
 {
     int           ninp, nerror = 0, i, nchar, nscan, m, idum;
     t_inpfile    *inp;
     const char   *tmp;
     char        **grpbuf;
-    char          dummy[STRLEN], buf[STRLEN], groups[STRLEN], init[STRLEN];
+    char          dummy[STRLEN], buf[STRLEN], groups[STRLEN], dim_buf[STRLEN];
+    char          init[STRLEN];
     const char   *init_def1 = "0.0", *init_def3 = "0.0 0.0 0.0";
     char          wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
 
@@ -151,28 +204,19 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     inp    = *inp_p;
 
     /* read pull parameters */
-    CTYPE("Pull geometry: distance, direction, direction-periodic or cylinder");
-    EETYPE("pull-geometry",   pull->eGeom, epullg_names);
-    CTYPE("Select components for the pull vector. default: Y Y Y");
-    STYPE("pull-dim",         pulldim, "Y Y Y");
     CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
-    RTYPE("pull-r1",          pull->cyl_r1, 1.0);
-    CTYPE("Switch from r1 to r0 in case of dynamic reaction force");
-    RTYPE("pull-r0",          pull->cyl_r0, 1.5);
+    RTYPE("pull-cylinder-r",  pull->cylinder_r, 1.5);
     RTYPE("pull-constr-tol",  pull->constr_tol, 1E-6);
-    EETYPE("pull-start",      *bStart, yesno_names);
-    EETYPE("pull-print-reference", pull->bPrintRef, yesno_names);
-    ITYPE("pull-nstxout",     pull->nstxout, 10);
-    ITYPE("pull-nstfout",     pull->nstfout,  1);
+    EETYPE("pull-print-com1", pull->bPrintCOM1, yesno_names);
+    EETYPE("pull-print-com2", pull->bPrintCOM2, yesno_names);
+    EETYPE("pull-print-ref-value", pull->bPrintRefValue, yesno_names);
+    EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
+    ITYPE("pull-nstxout",     pull->nstxout, 50);
+    ITYPE("pull-nstfout",     pull->nstfout, 50);
     CTYPE("Number of pull groups");
     ITYPE("pull-ngroups",     pull->ngroup, 1);
     CTYPE("Number of pull coordinates");
     ITYPE("pull-ncoords",     pull->ncoord, 1);
-
-    if (pull->cyl_r1 > pull->cyl_r0)
-    {
-        warning_error(wi, "pull-r1 > pull_r0");
-    }
 
     if (pull->ngroup < 1)
     {
@@ -224,21 +268,29 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
                     buf, 2);
             nerror++;
         }
+        sprintf(buf, "pull-coord%d-type", i);
+        EETYPE(buf,             pcrd->eType, epull_names);
+        sprintf(buf, "pull-coord%d-geometry", i);
+        EETYPE(buf,             pcrd->eGeom, epullg_names);
+        sprintf(buf, "pull-coord%d-dim", i);
+        STYPE(buf,              dim_buf,     "Y Y Y");
         sprintf(buf, "pull-coord%d-origin", i);
-        STYPE(buf,              origin_buf, "0.0 0.0 0.0");
+        STYPE(buf,              origin_buf,  "0.0 0.0 0.0");
         sprintf(buf, "pull-coord%d-vec", i);
-        STYPE(buf,              vec_buf,    "0.0 0.0 0.0");
+        STYPE(buf,              vec_buf,     "0.0 0.0 0.0");
+        sprintf(buf, "pull-coord%d-start", i);
+        EETYPE(buf,             pcrd->bStart, yesno_names);
         sprintf(buf, "pull-coord%d-init", i);
-        RTYPE(buf,              pcrd->init, 0.0);
+        RTYPE(buf,              pcrd->init,  0.0);
         sprintf(buf, "pull-coord%d-rate", i);
-        RTYPE(buf,              pcrd->rate, 0.0);
+        RTYPE(buf,              pcrd->rate,  0.0);
         sprintf(buf, "pull-coord%d-k", i);
-        RTYPE(buf,              pcrd->k, 0.0);
+        RTYPE(buf,              pcrd->k,     0.0);
         sprintf(buf, "pull-coord%d-kB", i);
-        RTYPE(buf,              pcrd->kB, pcrd->k);
+        RTYPE(buf,              pcrd->kB,    pcrd->k);
 
         /* Initialize the pull coordinate */
-        init_pull_coord(pcrd, pull->eGeom, origin_buf, vec_buf, wi);
+        init_pull_coord(pcrd, dim_buf, origin_buf, vec_buf, wi);
     }
 
     *ninp_p   = ninp;
@@ -285,10 +337,6 @@ void make_pull_groups(t_pull *pull,
             pgrp->ind[i] = grps->a[grps->index[ig]+i];
         }
 
-        if (pull->eGeom == epullgCYL && g == 1 && pgrp->nweight > 0)
-        {
-            gmx_fatal(FARGS, "Weights are not supported for the reference group with cylinder pulling");
-        }
         if (pgrp->nweight > 0 && pgrp->nweight != pgrp->nat)
         {
             gmx_fatal(FARGS, "Number of weights (%d) for pull group %d '%s' does not match the number of atoms (%d)",
@@ -321,40 +369,8 @@ void make_pull_groups(t_pull *pull,
 
 void make_pull_coords(t_pull *pull)
 {
-    int           ndim, d, nchar, c;
-    char         *ptr, pulldim1[STRLEN];
+    int           c, d;
     t_pull_coord *pcrd;
-
-    ptr  = pulldim;
-    ndim = 0;
-    for (d = 0; d < DIM; d++)
-    {
-        if (sscanf(ptr, "%s%n", pulldim1, &nchar) != 1)
-        {
-            gmx_fatal(FARGS, "Less than 3 pull dimensions given in pull_dim: '%s'",
-                      pulldim);
-        }
-
-        if (gmx_strncasecmp(pulldim1, "N", 1) == 0)
-        {
-            pull->dim[d] = 0;
-        }
-        else if (gmx_strncasecmp(pulldim1, "Y", 1) == 0)
-        {
-            pull->dim[d] = 1;
-            ndim++;
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Please use Y(ES) or N(O) for pull_dim only (not %s)",
-                      pulldim1);
-        }
-        ptr += nchar;
-    }
-    if (ndim == 0)
-    {
-        gmx_fatal(FARGS, "All entries in pull_dim are N");
-    }
 
     for (c = 0; c < pull->ncoord; c++)
     {
@@ -371,33 +387,36 @@ void make_pull_coords(t_pull *pull)
             gmx_fatal(FARGS, "Identical pull group indices in pull-coord%d-groups", c+1);
         }
 
-        if (pull->eGeom == epullgCYL && pcrd->group[0] != 1)
+        if (pcrd->eGeom == epullgCYL)
         {
-            gmx_fatal(FARGS, "With pull geometry %s, the first pull group should always be 1", EPULLGEOM(pull->eGeom));
+            if (pull->group[pcrd->group[0]].nweight > 0)
+            {
+                gmx_fatal(FARGS, "Weights are not supported for the reference group with cylinder pulling");
+            }
         }
 
-        if (pull->eGeom != epullgDIST)
+        if (pcrd->eGeom != epullgDIST)
         {
             for (d = 0; d < DIM; d++)
             {
-                if (pcrd->vec[d] != 0 && pull->dim[d] == 0)
+                if (pcrd->vec[d] != 0 && pcrd->dim[d] == 0)
                 {
                     gmx_fatal(FARGS, "ERROR: pull-group%d-vec has non-zero %c-component while pull_dim for the %c-dimension is N\n", c+1, 'x'+d, 'x'+d);
                 }
             }
         }
 
-        if ((pull->eGeom == epullgDIR || pull->eGeom == epullgCYL) &&
+        if ((pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL) &&
             norm2(pcrd->vec) == 0)
         {
             gmx_fatal(FARGS, "pull-group%d-vec can not be zero with geometry %s",
-                      c+1, EPULLGEOM(pull->eGeom));
+                      c+1, EPULLGEOM(pcrd->eGeom));
         }
     }
 }
 
 void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
-                   const output_env_t oenv, gmx_bool bStart)
+                   const output_env_t oenv)
 {
     t_mdatoms    *md;
     t_pull       *pull;
@@ -437,7 +456,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         fprintf(stderr, "%8d  %8d  %8d ",
                 pcrd->group[1], pgrp1->nat, pgrp1->pbcatom+1);
 
-        if (bStart)
+        if (pcrd->bStart)
         {
             init       = pcrd->init;
             pcrd->init = 0;
@@ -448,7 +467,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         value = pcrd->init + t_start*pcrd->rate + dev;
         fprintf(stderr, " %10.3f nm", value);
 
-        if (bStart)
+        if (pcrd->bStart)
         {
             pcrd->init = value + init;
         }

@@ -634,8 +634,12 @@ static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
     fprintf(fp, "pull-coord %d:\n", c);
     PI("group[0]", pcrd->group[0]);
     PI("group[1]", pcrd->group[1]);
+    PS("type", EPULLTYPE(pcrd->eType));
+    PS("geometry", EPULLGEOM(pcrd->eGeom));
+    pr_ivec(fp, indent, "dim", pcrd->dim, DIM, TRUE);
     pr_rvec(fp, indent, "origin", pcrd->origin, DIM, TRUE);
     pr_rvec(fp, indent, "vec", pcrd->vec, DIM, TRUE);
+    PS("start", EBOOL(pcrd->bStart));
     PR("init", pcrd->init);
     PR("rate", pcrd->rate);
     PR("k", pcrd->k);
@@ -755,12 +759,12 @@ static void pr_pull(FILE *fp, int indent, t_pull *pull)
 {
     int g;
 
-    PS("pull-geometry", EPULLGEOM(pull->eGeom));
-    pr_ivec(fp, indent, "pull-dim", pull->dim, DIM, TRUE);
-    PR("pull-r1", pull->cyl_r1);
-    PR("pull-r0", pull->cyl_r0);
+    PR("pull-cylinder-r", pull->cylinder_r);
     PR("pull-constr-tol", pull->constr_tol);
-    PS("pull-print-reference", EBOOL(pull->bPrintRef));
+    PS("pull-print-COM1", EBOOL(pull->bPrintCOM1));
+    PS("pull-print-COM2", EBOOL(pull->bPrintCOM2));
+    PS("pull-print-ref-value", EBOOL(pull->bPrintRefValue));
+    PS("pull-print-components", EBOOL(pull->bPrintComp));
     PI("pull-nstxout", pull->nstxout);
     PI("pull-nstfout", pull->nstfout);
     PI("pull-ngroups", pull->ngroup);
@@ -1024,8 +1028,8 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PR("wall-ewald-zfac", ir->wall_ewald_zfac);
 
         /* COM PULLING */
-        PS("pull", EPULLTYPE(ir->ePull));
-        if (ir->ePull != epullNO)
+        PS("pull", EBOOL(ir->bPull));
+        if (ir->bPull)
         {
             pr_pull(fp, indent, ir->pull);
         }
