@@ -52,6 +52,7 @@
 #include "gromacs/legacyheaders/gmx_fatal.h"
 
 #ifdef PRINT_ALLOC_KB
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/utility/gmxmpi.h"
 #endif
 
@@ -149,12 +150,9 @@ void *save_calloc(const char *name, const char *file, int line,
     else
     {
 #ifdef PRINT_ALLOC_KB
-        int rank = 0;
         if (nelem*elsize >= PRINT_ALLOC_KB*1024)
         {
-#ifdef GMX_MPI
-            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+            int rank = gmx_node_rank();
             printf("Allocating %.1f MB for %s (called from file %s, line %d on %d)\n",
                    nelem*elsize/1048576.0, name, file, line, rank);
         }
@@ -203,12 +201,9 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
     else
     {
 #ifdef PRINT_ALLOC_KB
-        int rank = 0;
         if (size >= PRINT_ALLOC_KB*1024)
         {
-#ifdef GMX_MPI
-            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+            int rank = gmx_node_rank();
             printf("Reallocating %.1f MB for %s (called from file %s, line %d on %d)\n",
                    size/1048576.0, name, file, line, rank);
         }
@@ -286,8 +281,9 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
 #ifdef PRINT_ALLOC_KB
         if (nelem*elsize >= PRINT_ALLOC_KB*1024)
         {
-            printf("Allocating %.1f MB for %s\n",
-                   nelem*elsize/(PRINT_ALLOC_KB*1024.0), name);
+            int rank = gmx_node_rank();
+            printf("Allocating %.1f MB for %s (called from file %s, line %d on %d)\n",
+                   nelem*elsize/1048576.0, name, file, line, rank);
         }
 #endif
 
