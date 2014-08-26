@@ -78,6 +78,18 @@ void gmx_prepare_tng_writing(const char              *filename,
         "FORCES", "LAMBDAS"
     };
 
+    typedef tng_function_status (*set_writing_interval_func_pointer)(tng_trajectory_t,
+                                                                     const gmx_int64_t,
+                                                                     const gmx_int64_t,
+                                                                     const gmx_int64_t,
+                                                                     const char*,
+                                                                     const char,
+                                                                     const char);
+#ifdef GMX_DOUBLE
+    set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_double_set;
+#else
+    set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_set;
+#endif
 
     gmx_tng_open(filename, mode, output);
 
@@ -115,24 +127,24 @@ void gmx_prepare_tng_writing(const char              *filename,
                 {
                     case TNG_TRAJ_POSITIONS:
                     case TNG_TRAJ_VELOCITIES:
-                        tng_util_generic_write_interval_set(*output, interval, 3, fallbackIds[i],
-                                                            fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
-                                                            compression_type);
+                        set_writing_interval(*output, interval, 3, fallbackIds[i],
+                                             fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
+                                             compression_type);
                         break;
                     case TNG_TRAJ_FORCES:
-                        tng_util_generic_write_interval_set(*output, interval, 3, fallbackIds[i],
-                                                            fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
-                                                            TNG_GZIP_COMPRESSION);
+                        set_writing_interval(*output, interval, 3, fallbackIds[i],
+                                             fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
+                                             TNG_GZIP_COMPRESSION);
                         break;
                     case TNG_TRAJ_BOX_SHAPE:
-                        tng_util_generic_write_interval_set(*output, interval, 9, fallbackIds[i],
-                                                            fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
-                                                            TNG_GZIP_COMPRESSION);
+                        set_writing_interval(*output, interval, 9, fallbackIds[i],
+                                             fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
+                                             TNG_GZIP_COMPRESSION);
                         break;
                     case TNG_GMX_LAMBDA:
-                        tng_util_generic_write_interval_set(*output, interval, 1, fallbackIds[i],
-                                                            fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
-                                                            TNG_GZIP_COMPRESSION);
+                        set_writing_interval(*output, interval, 1, fallbackIds[i],
+                                             fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
+                                             TNG_GZIP_COMPRESSION);
                     default:
                         continue;
                 }
