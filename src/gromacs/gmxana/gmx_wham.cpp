@@ -1991,30 +1991,42 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions *opt)
 {
     t_inputrec  ir;
-    int         i, ncrd;
+    int         i, ncrd, ncrd_umbrella;
     t_state     state;
     static int  first = 1;
 
     /* printf("Reading %s \n",fn); */
     read_tpx_state(fn, &ir, &state, NULL, NULL);
 
-    if (ir.ePull != epullUMBRELLA)
+    if (!ir.bPull)
     {
-        gmx_fatal(FARGS, "This is not a tpr of an umbrella simulation. Found pull type \"%s\" "
-                  " (ir.ePull = %d)\n", epull_names[ir.ePull], ir.ePull);
+        gmx_fatal(FARGS, "This is a tpr with COM pulling");
     }
 
     /* nr of pull groups */
-    ncrd = ir.pull->ncoord;
-    if (ncrd < 1)
+    ncrd          = ir.pull->ncoord;
+    ncrd_umbrella = 0;
+    for (i = 0; i < ir.pull->ncoord; i++)
     {
-        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d pull coordinates\n", ncrd);
+        if (ir.pull->coord[i].eType == epullUMBRELLA)
+        {
+            ncrd_umbrella++;
+        }
+    }
+
+    if (ncrd_umbrella < 1)
+    {
+        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d umbrella pull coordinates\n", ncrd_umbrella);
     }
 
     header->npullcrds     = ir.pull->ncoord;
-    header->pull_geometry = ir.pull->eGeom;
+#warning "gmx_wham.cpp needs to be updated for the now per pull group settings"
+    gmx_fatal(FARGS, "g_wham is currently out of date");
+    /* We should add a struct for each pull coord with all pull coord data
+       instead of allocating many arrays for each property */
+    //header->pull_geometry = ir.pull->eGeom;
     header->bPrintRef     = ir.pull->bPrintRef;
-    copy_ivec(ir.pull->dim, header->pull_dim);
+    //copy_ivec(ir.pull->dim, header->pull_dim);
     header->pull_ndim = header->pull_dim[0]+header->pull_dim[1]+header->pull_dim[2];
     snew(header->k, ncrd);
     snew(header->init_dist, ncrd);
