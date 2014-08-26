@@ -185,7 +185,8 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *b, const char *a1, cons
     b->bond[i].histo[index]++;
     if (NULL != fplog)
     {
-        fprintf(fplog, "%s bond-%s-%s-%d %g\n", molname, a1, a2, order, blen);
+        fprintf(fplog, "%s bond-%s-%s-%d %g\n", molname,
+                b->bond[i].a1, b->bond[i].a2, order, blen);
     }
 }
 
@@ -227,7 +228,8 @@ void add_angle(FILE *fplog, const char *molname, t_bonds *b,
     b->angle[i].histo[index]++;
     if (NULL != fplog)
     {
-        fprintf(fplog, "%s angle-%s-%s-%s %g\n", molname, a1, a2, a3, angle);
+        fprintf(fplog, "%s angle-%s-%s-%s %g\n", molname,
+                b->angle[i].a1, b->angle[i].a2, b->angle[i].a3, angle);
     }
 }
 
@@ -298,7 +300,7 @@ void add_dih(FILE *fplog, const char *molname, t_bonds *b,
     if (NULL != fplog)
     {
         fprintf(fplog, "%s %s-%s-%s-%s-%s %g\n", molname, (egd == egdPDIHS) ? "dih" : "imp",
-                a1, a2, a3, a4, angle);
+                (*ddd)[i].a1, (*ddd)[i].a2, (*ddd)[i].a3, (*ddd)[i].a4, angle);
     }
 }
 
