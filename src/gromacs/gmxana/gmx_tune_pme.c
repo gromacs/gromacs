@@ -2043,7 +2043,6 @@ static void setopt(const char *opt, int nfile, t_filenm fnm[])
  * 3. returns rcoulomb from the tpr */
 static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
 {
-    gmx_bool     bPull;     /* Is pulling requested in .tpr file?             */
     gmx_bool     bTpi;      /* Is test particle insertion requested?          */
     gmx_bool     bFree;     /* Is a free energy simulation requested?         */
     gmx_bool     bNM;       /* Is a normal mode analysis requested?           */
@@ -2055,14 +2054,13 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
 
     /* Check tpr file for options that trigger extra output files */
     read_tpx_state(opt2fn("-s", nfile, fnm), &ir, &state, NULL, &mtop);
-    bPull = (epullNO != ir.ePull);
     bFree = (efepNO  != ir.efep );
     bNM   = (eiNM    == ir.eI   );
     bSwap = (eswapNO != ir.eSwapCoords);
     bTpi  = EI_TPI(ir.eI);
 
     /* Set these output files on the tuning command-line */
-    if (bPull)
+    if (ir.bPull)
     {
         setopt("-pf", nfile, fnm);
         setopt("-px", nfile, fnm);
