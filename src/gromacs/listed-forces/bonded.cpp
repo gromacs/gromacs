@@ -55,7 +55,6 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/nonbonded/pairs.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -75,6 +74,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "listed-internal.h"
+#include "pairs.h"
 #include "restcbt.h"
 
 /*! \brief Mysterious CMAP coefficient matrix */
@@ -97,25 +98,6 @@ const int cmap_coeff_matrix[] = {
     0, 0,  0,  0, 0, 0, -1,  1,  0,  0,  2, -2,  0,  0, -1,  1
 };
 
-
-/* TODO This function should go and live in nonbonded.c where it is
-   really needed. Here, it only supports giving a fatal error message
-   with FENE_bonds */
-int glatnr(int *global_atom_index, int i)
-{
-    int atnr;
-
-    if (global_atom_index == NULL)
-    {
-        atnr = i + 1;
-    }
-    else
-    {
-        atnr = global_atom_index[i] + 1;
-    }
-
-    return atnr;
-}
 
 /*! \brief Compute dx = xi - xj, modulo PBC if non-NULL
  *
@@ -4163,6 +4145,15 @@ real tab_dihs(int nbonds,
 
 //! \endcond
 
+/*! \brief Return true if ftype is an explicit pair-listed LJ or
+ * COULOMB interaction type: bonded LJ (usually 1-4), or special
+ * listed non-bonded for FEP. */
+static bool
+isPairInteraction(int ftype)
+{
+    return ((ftype) >= F_LJ14 && (ftype) <= F_LJC_PAIRS_NB);
+}
+
 gmx_bool
 ftype_is_bonded_potential(int ftype)
 {
@@ -4367,7 +4358,7 @@ static real calc_one_bond(int thread,
     nb0 = idef->il_thread_division[ftype*(idef->nthreads+1)+thread];
     nbn = idef->il_thread_division[ftype*(idef->nthreads+1)+thread+1] - nb0;
 
-    if (!IS_LISTED_LJ_C(ftype))
+    if (!isPairInteraction(ftype))
     {
         if (ftype == F_CMAP)
         {
@@ -4417,8 +4408,8 @@ static real calc_one_bond(int thread,
     }
     else
     {
-        v = do_nonbonded_listed(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
-                                pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
+        v = do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
+                     pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
     }
 
     if (thread == 0)

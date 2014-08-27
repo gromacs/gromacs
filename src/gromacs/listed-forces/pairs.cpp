@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,14 +32,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file defines functions for "pair" interactions
+ * (i.e. listed non-bonded interactions, e.g. 1-4 interactions)
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *
+ * \ingroup module_listed-forces
+ */
 #include "gmxpre.h"
 
 #include "pairs.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/legacyheaders/types/group.h"
-#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -49,8 +55,14 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 
-static void
-nb_listed_warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, real rlimit)
+#include "listed-internal.h"
+
+namespace
+{
+
+/*! \brief Issue a warning if a listed interaction is beyond a table limit */
+void
+warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, real rlimit)
 {
     gmx_warning("Listed nonbonded interaction between particles %d and %d\n"
                 "at distance %.3f which is larger than the table limit %.3f nm.\n\n"
@@ -73,15 +85,10 @@ nb_listed_warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index,
     }
 }
 
-
-
-/* This might logically belong better in the nb_generic.c module, but it is only
- * used in do_nonbonded_listed(), and we want it to be inlined there to avoid an
- * extra functional call for every single pair listed in the topology.
- */
-static real
-nb_evaluate_single(real r2, real tabscale, real *vftab,
-                   real qq, real c6, real c12, real *velec, real *vvdw)
+/*! \brief Compute the energy and force for a single pair interaction */
+real
+evaluate_single(real r2, real tabscale, real *vftab,
+                real qq, real c6, real c12, real *velec, real *vvdw)
 {
     real       rinv, r, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VVe, FFe, VVd, FFd, VVr, FFr, fscal;
     int        ntab;
@@ -90,7 +97,7 @@ nb_evaluate_single(real r2, real tabscale, real *vftab,
     rinv             = gmx_invsqrt(r2);
     r                = r2*rinv;
     rtab             = r*tabscale;
-    ntab             = rtab;
+    ntab             = static_cast<int>(rtab);
     eps              = rtab-ntab;
     eps2             = eps*eps;
     ntab             = 12*ntab;
@@ -127,22 +134,26 @@ nb_evaluate_single(real r2, real tabscale, real *vftab,
     return fscal;
 }
 
-static real
-nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real alpha_vdw,
-                               real tabscale, real *vftab,
-                               real qqA, real c6A, real c12A, real qqB, real c6B, real c12B,
-                               real LFC[2], real LFV[2], real DLF[2],
-                               real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2], real dlfac_vdw[2],
-                               real sigma6_def, real sigma6_min, real sigma2_def, real sigma2_min,
-                               real *velectot, real *vvdwtot, real *dvdl)
+/*! \brief Compute the energy and force for a single pair interaction under FEP */
+real
+free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
+                            real alpha_vdw, real tabscale, real *vftab,
+                            real qqA, real c6A, real c12A, real qqB,
+                            real c6B, real c12B, real LFC[2], real LFV[2], real DLF[2],
+                            real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2],
+                            real dlfac_vdw[2], real sigma6_def, real sigma6_min,
+                            real sigma2_def, real sigma2_min,
+                            real *velectot, real *vvdwtot, real *dvdl)
 {
-    real       r, rp, rpm2, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VV, FF, fscal;
-    real       qq[2], c6[2], c12[2], sigma6[2], sigma2[2], sigma_pow[2], sigma_powm2[2];
+    real       rp, rpm2, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VV, FF, fscal;
+    real       qq[2], c6[2], c12[2], sigma6[2], sigma2[2], sigma_pow[2];
     real       alpha_coul_eff, alpha_vdw_eff, dvdl_coul, dvdl_vdw;
     real       rpinv, r_coul, r_vdw, velecsum, vvdwsum;
     real       fscal_vdw[2], fscal_elec[2];
     real       velec[2], vvdw[2];
     int        i, ntab;
+    const real half     = 0.5;
+    const real minusOne = -1.0;
 
     qq[0]    = qqA;
     qq[1]    = qqB;
@@ -166,7 +177,7 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
     }
     else
     {
-        rp             = pow(r2, 0.5*sc_r_power);  /* not currently supported as input, but can handle it */
+        rp             = std::pow(r2, half * sc_r_power);  /* not currently supported as input, but can handle it */
         rpm2           = rp/r2;
     }
 
@@ -179,7 +190,7 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
              * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
              */
             sigma6[i]       = 0.5*c12[i]/c6[i];
-            sigma2[i]       = pow(0.5*c12[i]/c6[i], 1.0/3.0);
+            sigma2[i]       = std::pow(0.5*c12[i]/c6[i], 1.0/3.0);
             /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                what data to store externally.  Can't be fixed without larger scale changes, so not 5.0 */
             if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
@@ -196,19 +207,16 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
         if (sc_r_power == 6.0)
         {
             sigma_pow[i]    = sigma6[i];
-            sigma_powm2[i]  = sigma6[i]/sigma2[i];
         }
         else if (sc_r_power == 48.0)
         {
             sigma_pow[i]    = sigma6[i]*sigma6[i];       /* sigma^12 */
             sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
             sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^48 */
-            sigma_powm2[i]  = sigma_pow[i]/sigma2[i];
         }
         else
-        {    /* not really supported as input, but in here for testing the general case*/
-            sigma_pow[i]    = pow(sigma2[i], sc_r_power/2);
-            sigma_powm2[i]  = sigma_pow[i]/(sigma2[i]);
+        {       /* not really supported as input, but in here for testing the general case*/
+            sigma_pow[i]    = std::pow(sigma2[i], sc_r_power/2);
         }
     }
 
@@ -237,11 +245,11 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
         {
             /* Coulomb */
             rpinv            = 1.0/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
-            r_coul           = pow(rpinv, -1.0/sc_r_power);
+            r_coul           = std::pow(rpinv, minusOne / sc_r_power);
 
             /* Electrostatics table lookup data */
             rtab             = r_coul*tabscale;
-            ntab             = rtab;
+            ntab             = static_cast<int>(rtab);
             eps              = rtab-ntab;
             eps2             = eps*eps;
             ntab             = 12*ntab;
@@ -258,10 +266,10 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
 
             /* Vdw */
             rpinv            = 1.0/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
-            r_vdw            = pow(rpinv, -1.0/sc_r_power);
+            r_vdw            = std::pow(rpinv, minusOne / sc_r_power);
             /* Vdw table lookup data */
             rtab             = r_vdw*tabscale;
-            ntab             = rtab;
+            ntab             = static_cast<int>(rtab);
             eps              = rtab-ntab;
             eps2             = eps*eps;
             ntab             = 12*ntab;
@@ -316,23 +324,24 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
     return fscal;
 }
 
+} // namespace
+
 real
-do_nonbonded_listed(int ftype, int nbonds,
-                    const t_iatom iatoms[], const t_iparams iparams[],
-                    const rvec x[], rvec f[], rvec fshift[],
-                    const t_pbc *pbc, const t_graph *g,
-                    real *lambda, real *dvdl,
-                    const t_mdatoms *md,
-                    const t_forcerec *fr, gmx_grppairener_t *grppener,
-                    int *global_atom_index)
+do_pairs(int ftype, int nbonds,
+         const t_iatom iatoms[], const t_iparams iparams[],
+         const rvec x[], rvec f[], rvec fshift[],
+         const struct t_pbc *pbc, const struct t_graph *g,
+         real *lambda, real *dvdl,
+         const t_mdatoms *md,
+         const t_forcerec *fr, gmx_grppairener_t *grppener,
+         int *global_atom_index)
 {
-    int              ielec, ivdw;
     real             qq, c6, c12;
     rvec             dx;
     ivec             dt;
-    int              i, j, itype, ai, aj, gid;
+    int              i, itype, ai, aj, gid;
     int              fshift_index;
-    real             r2, rinv;
+    real             r2;
     real             fscal, velec, vvdw;
     real *           energygrp_elec;
     real *           energygrp_vdw;
@@ -341,7 +350,7 @@ do_nonbonded_listed(int ftype, int nbonds,
     gmx_bool         bFreeEnergy;
     real             LFC[2], LFV[2], DLF[2], lfac_coul[2], lfac_vdw[2], dlfac_coul[2], dlfac_vdw[2];
     real             qqB, c6B, c12B, sigma2_def, sigma2_min;
-
+    const real       oneThird = 1.0 / 3.0;
 
     switch (ftype)
     {
@@ -374,8 +383,8 @@ do_nonbonded_listed(int ftype, int nbonds,
         DLF[1] = 1;
 
         /* precalculate */
-        sigma2_def = pow(fr->sc_sigma6_def, 1.0/3.0);
-        sigma2_min = pow(fr->sc_sigma6_min, 1.0/3.0);
+        sigma2_def = pow(fr->sc_sigma6_def, oneThird);
+        sigma2_min = pow(fr->sc_sigma6_min, oneThird);
 
         for (i = 0; i < 2; i++)
         {
@@ -453,7 +462,7 @@ do_nonbonded_listed(int ftype, int nbonds,
              * disadvantage is that the warning is printed twice */
             if (warned_rlimit == FALSE)
             {
-                nb_listed_warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->tab14.r);
+                warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->tab14.r);
                 warned_rlimit = TRUE;
             }
             continue;
@@ -466,15 +475,15 @@ do_nonbonded_listed(int ftype, int nbonds,
             c6B              = iparams[itype].lj14.c6B*6.0;
             c12B             = iparams[itype].lj14.c12B*12.0;
 
-            fscal            = nb_free_energy_evaluate_single(r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw,
-                                                              fr->tab14.scale, fr->tab14.data, qq, c6, c12, qqB, c6B, c12B,
-                                                              LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw,
-                                                              fr->sc_sigma6_def, fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
+            fscal            = free_energy_evaluate_single(r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw,
+                                                           fr->tab14.scale, fr->tab14.data, qq, c6, c12, qqB, c6B, c12B,
+                                                           LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw,
+                                                           fr->sc_sigma6_def, fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
         }
         else
         {
             /* Evaluate tabulated interaction without free energy */
-            fscal            = nb_evaluate_single(r2, fr->tab14.scale, fr->tab14.data, qq, c6, c12, &velec, &vvdw);
+            fscal            = evaluate_single(r2, fr->tab14.scale, fr->tab14.data, qq, c6, c12, &velec, &vvdw);
         }
 
         energygrp_elec[gid]  += velec;

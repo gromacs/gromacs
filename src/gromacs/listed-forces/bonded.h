@@ -72,13 +72,6 @@ extern "C" {
 struct t_graph;
 struct t_pbc;
 
-/*! \brief Returns the global topology atom number belonging to local atom index i.
- * This function is intended for writing ascii output
- * and returns atom numbers starting at 1.
- * When global_atom_index=NULL returns i+1.
- */
-int glatnr(int *global_atom_index, int i);
-
 /*! \brief Return whether this is an interaction that actually
  * calculates a potential and works on multiple atoms (not e.g. a
  * connection or a position restraint).

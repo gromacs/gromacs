@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,9 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _pairs_h
-#define _pairs_h
+/*! \internal \file
+ *
+ * \brief This file declares functions for for "pair" interactions
+ * (i.e. listed non-bonded interactions, e.g. 1-4 interactions)
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *
+ * \ingroup module_listed-forces
+ */
+#ifndef GMX_LISTED_FORCES_PAIRS_H
+#define GMX_LISTED_FORCES_PAIRS_H
 
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
@@ -44,28 +50,19 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-} /* fixes auto-indentation problems */
-#endif
-
 struct t_graph;
 struct t_pbc;
 
-/* Calculate VdW/charge listed pair interactions (usually 1-4 interactions).
+/*! \brief Calculate VdW/charge listed pair interactions (usually 1-4
+ * interactions).
+ *
  * global_atom_index is only passed for printing error messages.
  */
 real
-do_nonbonded_listed(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
-                    const rvec x[], rvec f[], rvec fshift[],
-                    const struct t_pbc *pbc, const struct t_graph *g,
-                    real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
-                    gmx_grppairener_t *grppener, int *global_atom_index);
-
-#ifdef __cplusplus
-}
-#endif
+do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
+         const rvec x[], rvec f[], rvec fshift[],
+         const struct t_pbc *pbc, const struct t_graph *g,
+         real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
+         gmx_grppairener_t *grppener, int *global_atom_index);
 
 #endif
