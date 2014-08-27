@@ -38,8 +38,6 @@
 #ifndef GMX_BONDED_BONDED_H
 #define GMX_BONDED_BONDED_H
 
-#include <stdio.h>
-
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/genborn.h"
@@ -50,13 +48,6 @@ extern "C" {
 
 struct t_graph;
 struct t_pbc;
-
-int glatnr(int *global_atom_index, int i);
-/* Returns the global topology atom number belonging to local atom index i.
- * This function is intended for writing ascii output
- * and returns atom numbers starting at 1.
- * When global_atom_index=NULL returns i+1.
- */
 
 /*! \brief Return whether this is a potential calculated in
  * bonded.cpp, i.e. an interaction that actually calculates a
@@ -158,7 +149,6 @@ t_ifunc pdihs, idihs, rbdihs;
 t_ifunc restrdihs, cbtdihs;
 t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
-
 
 #ifdef __cplusplus
 }

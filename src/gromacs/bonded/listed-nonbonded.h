@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,47 +32,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _nonbonded_h
-#define _nonbonded_h
-
-#include "gromacs/legacyheaders/typedefs.h"
+#ifndef GMX_BONDED_LISTED_NONBONDED_H
+#define GMX_BONDED_LISTED_NONBONDED_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if 0
-} /* fixes auto-indentation problems */
-#endif
 
-void
-gmx_nonbonded_setup(t_forcerec *   fr,
-                    gmx_bool       bGenericKernelOnly);
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/real.h"
 
+struct t_pbc;
 
-
-
-
-void
-gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
-                                  t_nblist *   nl,
-                                  gmx_bool     bElecAndVdwSwitchDiffers);
-
-
-
-#define GMX_NONBONDED_DO_LR             (1<<0)
-#define GMX_NONBONDED_DO_FORCE          (1<<1)
-#define GMX_NONBONDED_DO_SHIFTFORCE     (1<<2)
-#define GMX_NONBONDED_DO_FOREIGNLAMBDA  (1<<3)
-#define GMX_NONBONDED_DO_POTENTIAL      (1<<4)
-#define GMX_NONBONDED_DO_SR             (1<<5)
-
-void
-do_nonbonded(t_forcerec *fr,
-             rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *md, t_blocka *excl,
-             gmx_grppairener_t *grppener,
-             t_nrnb *nrnb, real *lambda, real dvdlambda[],
-             int nls, int eNL, int flags);
+/* Calculate VdW/charge listed pair interactions (usually 1-4 interactions).
+ * global_atom_index is only passed for printing error messages.
+ */
+real
+do_nonbonded_listed(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
+                    const rvec x[], rvec f[], rvec fshift[],
+                    const struct t_pbc *pbc, const struct t_graph *g,
+                    real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
+                    gmx_grppairener_t *grppener, int *global_atom_index);
 
 #ifdef __cplusplus
 }
