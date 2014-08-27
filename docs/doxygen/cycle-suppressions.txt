@@ -10,4 +10,3 @@ topology -> fileio
 topology -> legacyheaders
 pbcutil -> fileio
 pbcutil -> legacyheaders
-listed-forces -> gmxlib
