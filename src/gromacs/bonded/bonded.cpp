@@ -37,6 +37,7 @@
 #include "gmxpre.h"
 
 #include "bonded.h"
+#include "bonded-impl.h"
 
 #include "config.h"
 
@@ -56,7 +57,6 @@
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/nonbonded.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -67,6 +67,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "listed-nonbonded.h"
 #include "restcbt.h"
 
 /* Find a better place for this? */
@@ -89,25 +90,6 @@ const int cmap_coeff_matrix[] = {
     0, 0,  0,  0, 0, 0, -1,  1,  0,  0,  2, -2,  0,  0, -1,  1
 };
 
-
-/* TODO This function should go and live in nonbonded.c where it is
-   really needed. Here, it only supports giving a fatal error message
-   with FENE_bonds */
-int glatnr(int *global_atom_index, int i)
-{
-    int atnr;
-
-    if (global_atom_index == NULL)
-    {
-        atnr = i + 1;
-    }
-    else
-    {
-        atnr = global_atom_index[i] + 1;
-    }
-
-    return atnr;
-}
 
 /* TODO This kind of code appears in many places. Consolidate it */
 static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
