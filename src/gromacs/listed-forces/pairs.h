@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,21 +32,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file declares functions for for "pair" interactions
+ * (i.e. listed non-bonded interactions, e.g. 1-4 interactions)
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *
+ * \ingroup module_listed-forces
+ */
+#ifndef GMX_LISTED_FORCES_PAIRS_H
+#define GMX_LISTED_FORCES_PAIRS_H
 
-#ifndef _nb_free_energy_h_
-#define _nb_free_energy_h_
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/typedefs.h"
+struct t_pbc;
+struct t_graph;
 
-void
-gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
-                          rvec * gmx_restrict              xx,
-                          rvec * gmx_restrict              ff,
-                          t_forcerec * gmx_restrict        fr,
-                          const t_mdatoms * gmx_restrict   mdatoms,
-                          nb_kernel_data_t * gmx_restrict  kernel_data,
-                          t_nrnb * gmx_restrict            nrnb);
-
+/*! \brief Calculate VdW/charge listed pair interactions (usually 1-4
+ * interactions).
+ *
+ * global_atom_index is only passed for printing error messages.
+ */
+real
+do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
+         const rvec x[], rvec f[], rvec fshift[],
+         const struct t_pbc *pbc, const struct t_graph *g,
+         real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
+         gmx_grppairener_t *grppener, int *global_atom_index);
 
 #endif

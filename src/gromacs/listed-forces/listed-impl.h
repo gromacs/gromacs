@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,21 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains declarations for functions needed
+ * internally by the module.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_listed-forces
+ */
+#ifndef GMX_LISTED_FORCES_LISTED_IMPL_H
+#define GMX_LISTED_FORCES_LISTED_IMPL_H
 
-#ifndef _nb_free_energy_h_
-#define _nb_free_energy_h_
-
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/typedefs.h"
-
-void
-gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
-                          rvec * gmx_restrict              xx,
-                          rvec * gmx_restrict              ff,
-                          t_forcerec * gmx_restrict        fr,
-                          const t_mdatoms * gmx_restrict   mdatoms,
-                          nb_kernel_data_t * gmx_restrict  kernel_data,
-                          t_nrnb * gmx_restrict            nrnb);
-
+/*! \brief Returns the global topology atom number belonging to local
+ * atom index i.
+ *
+ * This function is intended for writing ascii output and returns atom
+ * numbers starting at 1.  When global_atom_index=NULL returns i+1.
+ */
+int
+glatnr(int *global_atom_index, int i);
 
 #endif
