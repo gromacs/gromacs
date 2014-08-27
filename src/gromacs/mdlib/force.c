@@ -169,7 +169,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     t_pbc       pbc;
     char        buf[22];
     double      clam_i, vlam_i;
-    real        dvdl_dum[efptNR], dvdl_nb[efptNR], lam_i[efptNR];
+    real        dvdl_dum[efptNR], dvdl_nb[efptNR];
     real        dvdl_q, dvdl_lj;
 
 #ifdef GMX_MPI
@@ -276,6 +276,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         {
             for (i = 0; i < enerd->n_lambda; i++)
             {
+                real lam_i[efptNR];
+
                 for (j = 0; j < efptNR; j++)
                 {
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
@@ -373,41 +375,11 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     }
     debug_gmx();
 
-    if (flags & GMX_FORCE_BONDED)
-    {
-        wallcycle_sub_start(wcycle, ewcsBONDED);
-        calc_bonds(cr->ms,
-                   idef, (const rvec *) x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
+    do_force_bonds(wcycle, box, ir->fepvals, cr->ms,
+                   idef, (const rvec *) x, hist, f, fr,
+                   &pbc, graph, enerd, nrnb, lambda, md, fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
                    flags);
-
-        /* Check if we have to determine energy differences
-         * at foreign lambda's.
-         */
-        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) &&
-            idef->ilsort != ilsortNO_FE)
-        {
-            if (idef->ilsort != ilsortFE_SORTED)
-            {
-                gmx_incons("The bonded interactions are not sorted for free energy");
-            }
-            for (i = 0; i < enerd->n_lambda; i++)
-            {
-                reset_foreign_enerdata(enerd);
-                for (j = 0; j < efptNR; j++)
-                {
-                    lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
-                }
-                calc_bonds_lambda(idef, (const rvec *) x, fr, &pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
-                                  fcd, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
-                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-            }
-        }
-        debug_gmx();
-
-        wallcycle_sub_stop(wcycle, ewcsBONDED);
-    }
 
     where();
 

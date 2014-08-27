@@ -46,6 +46,7 @@
 extern "C" {
 #endif
 
+struct gmx_wallcycle;
 struct t_graph;
 struct t_pbc;
 
@@ -59,7 +60,8 @@ void calc_bonds(const gmx_multisim_t *ms,
                 const t_idef *idef,
                 const rvec x[], history_t *hist,
                 rvec f[], t_forcerec *fr,
-                const struct t_pbc *pbc, const struct t_graph *g,
+                const struct t_pbc *pbc, const struct t_pbc *pbc_full,
+                const struct t_graph *g,
                 gmx_enerdata_t *enerd, t_nrnb *nrnb, real *lambda,
                 const t_mdatoms *md,
                 t_fcdata *fcd, int *ddgatindex,
@@ -98,6 +100,27 @@ void calc_bonds_lambda(const t_idef *idef,
  * for the perturbed interactions.
  * The shift forces in fr are not affected.
  */
+
+/*! /brief Do all aspects of energy and force calculations on bond-type interactions */
+void
+do_force_bonds(struct gmx_wallcycle     *wcycle,
+               matrix                    box,
+               const t_lambda           *fepvals,
+               const gmx_multisim_t     *ms,
+               const t_idef             *idef,
+               const rvec                x[],
+               history_t                *hist,
+               rvec                      f[],
+               t_forcerec               *fr,
+               const struct t_pbc       *pbc,
+               const struct t_graph     *graph,
+               gmx_enerdata_t           *enerd,
+               t_nrnb                   *nrnb,
+               real                     *lambda,
+               const t_mdatoms          *md,
+               t_fcdata                 *fcd,
+               int                      *global_atom_index,
+               int                       flags);
 
 real posres(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],

@@ -2170,7 +2170,7 @@ real idihs(int nbonds,
 static void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
                       const rvec comA_sc, const rvec comB_sc,
                       real lambda,
-                      t_pbc *pbc, int refcoord_scaling, int npbcdim,
+                      const t_pbc *pbc, int refcoord_scaling, int npbcdim,
                       rvec dx, rvec rdist, rvec dpdl)
 {
     int  m, d;
@@ -2243,7 +2243,7 @@ static void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
 real fbposres(int nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
               const rvec x[], rvec f[], rvec vir_diag,
-              t_pbc *pbc,
+              const t_pbc *pbc,
               int refcoord_scaling, int ePBC, rvec com)
 /* compute flat-bottomed positions restraints */
 {
@@ -2362,7 +2362,7 @@ real fbposres(int nbonds,
 real posres(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
             const rvec x[], rvec f[], rvec vir_diag,
-            t_pbc *pbc,
+            const t_pbc *pbc,
             real lambda, real *dvdlambda,
             int refcoord_scaling, int ePBC, rvec comA, rvec comB)
 {
@@ -4348,11 +4348,82 @@ static real calc_one_bond(int thread,
     return v;
 }
 
+static void
+posres_wrapper(t_nrnb         *nrnb,
+               const t_idef   *idef,
+               const t_pbc    *pbc,
+               const rvec      x[],
+               gmx_enerdata_t *enerd,
+               real           *lambda,
+               t_forcerec     *fr)
+{
+    real  v, dvdl;
+
+    dvdl = 0;
+    v    = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
+                  idef->iparams_posres,
+                  x, fr->f_novirsum, fr->vir_diag_posres,
+                  fr->ePBC == epbcNONE ? NULL : pbc,
+                  lambda[efptRESTRAINT], &dvdl,
+                  fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
+    enerd->term[F_POSRES] += v;
+    /* If just the force constant changes, the FEP term is linear,
+     * but if k changes, it is not.
+     */
+    enerd->dvdl_nonlin[efptRESTRAINT] += dvdl;
+    inc_nrnb(nrnb, eNR_POSRES, idef->il[F_POSRES].nr/2);
+}
+
+static void
+posres_wrapper_lambda(const t_lambda *fepvals,
+                      const t_idef   *idef,
+                      const t_pbc    *pbc,
+                      const rvec      x[],
+                      gmx_enerdata_t *enerd,
+                      real           *lambda,
+                      t_forcerec     *fr)
+{
+    real  v;
+    int   i;
+
+    for (i = 0; i < enerd->n_lambda; i++)
+    {
+        real dvdl_dum, lambda_dum;
+
+        lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i-1]);
+        v          = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
+                            idef->iparams_posres,
+                            x, NULL, NULL,
+                            fr->ePBC == epbcNONE ? NULL : pbc, lambda_dum, &dvdl_dum,
+                            fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
+        enerd->enerpart_lambda[i] += v;
+    }
+}
+
+static void fbposres_wrapper(t_nrnb         *nrnb,
+                             const t_idef   *idef,
+                             const t_pbc    *pbc,
+                             const rvec      x[],
+                             gmx_enerdata_t *enerd,
+                             t_forcerec     *fr)
+{
+    real  v;
+
+    v = fbposres(idef->il[F_FBPOSRES].nr, idef->il[F_FBPOSRES].iatoms,
+                 idef->iparams_fbposres,
+                 x, fr->f_novirsum, fr->vir_diag_posres,
+                 fr->ePBC == epbcNONE ? NULL : pbc,
+                 fr->rc_scaling, fr->ePBC, fr->posres_com);
+    enerd->term[F_FBPOSRES] += v;
+    inc_nrnb(nrnb, eNR_FBPOSRES, idef->il[F_FBPOSRES].nr/2);
+}
+
 void calc_bonds(const gmx_multisim_t *ms,
                 const t_idef *idef,
                 const rvec x[], history_t *hist,
                 rvec f[], t_forcerec *fr,
-                const t_pbc *pbc, const t_graph *g,
+                const t_pbc *pbc, const t_pbc *pbc_full,
+                const t_graph *g,
                 gmx_enerdata_t *enerd, t_nrnb *nrnb,
                 real *lambda,
                 const t_mdatoms *md,
@@ -4389,6 +4460,16 @@ void calc_bonds(const gmx_multisim_t *ms,
         p_graph(debug, "Bondage is fun", g);
     }
 #endif
+
+    if (idef->il[F_POSRES].nr > 0)
+    {
+        posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr);
+    }
+
+    if (idef->il[F_FBPOSRES].nr > 0)
+    {
+        fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr);
+    }
 
     /* Do pre force calculation stuff which might require communication */
     if (idef->il[F_ORIRES].nr)
@@ -4546,4 +4627,70 @@ void calc_bonds_lambda(const t_idef *idef,
     sfree(f);
 
     sfree(idef_fe.il_thread_division);
+}
+
+void
+do_force_bonds(gmx_wallcycle        *wcycle,
+               matrix                box,
+               const t_lambda       *fepvals,
+               const gmx_multisim_t *ms,
+               const t_idef         *idef,
+               const rvec            x[],
+               history_t            *hist,
+               rvec                  f[],
+               t_forcerec           *fr,
+               const t_pbc          *pbc,
+               const t_graph        *graph,
+               gmx_enerdata_t       *enerd,
+               t_nrnb               *nrnb,
+               real                 *lambda,
+               const t_mdatoms      *md,
+               t_fcdata             *fcd,
+               int                  *global_atom_index,
+               int                   flags)
+{
+    if (flags & GMX_FORCE_BONDED)
+    {
+        t_pbc pbc_full; /* Full PBC is needed for position restraints */
+
+        wallcycle_sub_start(wcycle, ewcsBONDED);
+
+        set_pbc(&pbc_full, fr->ePBC, box);
+        calc_bonds(ms, idef, x, hist, f, fr, pbc, &pbc_full,
+                   graph, enerd, nrnb, lambda, md, fcd,
+                   global_atom_index, flags);
+
+        /* Check if we have to determine energy differences
+         * at foreign lambda's.
+         */
+        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL))
+        {
+            posres_wrapper_lambda(fepvals, idef, &pbc_full, x, enerd, lambda, fr);
+
+            if (idef->ilsort != ilsortNO_FE)
+            {
+                if (idef->ilsort != ilsortFE_SORTED)
+                {
+                    gmx_incons("The bonded interactions are not sorted for free energy");
+                }
+                for (int i = 0; i < enerd->n_lambda; i++)
+                {
+                    real lam_i[efptNR];
+
+                    reset_foreign_enerdata(enerd);
+                    for (int j = 0; j < efptNR; j++)
+                    {
+                        lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
+                    }
+                    calc_bonds_lambda(idef, x, fr, pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
+                                      fcd, global_atom_index);
+                    sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
+                    enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
+                }
+            }
+        }
+        debug_gmx();
+
+        wallcycle_sub_stop(wcycle, ewcsBONDED);
+    }
 }
