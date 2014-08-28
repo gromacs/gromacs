@@ -44,6 +44,8 @@
 #include "testutils/cmdlinetest.h"
 #include "gromacs/utility/arrayref.h"
 
+#include "config.h"
+
 namespace
 {
 
