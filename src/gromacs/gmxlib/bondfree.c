@@ -475,13 +475,6 @@ real bonds(int nbonds,
 
         vtot  += vbond;            /* 1*/
         fbond *= gmx_invsqrt(dr2); /*   6		*/
-#ifdef DEBUG
-        if (debug)
-        {
-            fprintf(debug, "BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
-                    dr, vbond, fbond);
-        }
-#endif
         if (g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
@@ -576,13 +569,6 @@ real restraint_bonds(int nbonds,
 
         vtot  += vbond;            /* 1*/
         fbond *= gmx_invsqrt(dr2); /*   6		*/
-#ifdef DEBUG
-        if (debug)
-        {
-            fprintf(debug, "BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
-                    dr, vbond, fbond);
-        }
-#endif
         if (g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
@@ -737,9 +723,6 @@ real water_pol(int nbonds,
     int  i, m, aO, aH1, aH2, aD, aS, type, type0, ki;
     ivec dt;
     rvec dOH1, dOH2, dHH, dOD, dDS, nW, kk, dx, kdx, proj;
-#ifdef DEBUG
-    rvec df;
-#endif
     real vtot, fij, r_HH, r_OD, r_nW, tx, ty, tz, qS;
 
     vtot = 0.0;
@@ -815,23 +798,6 @@ real water_pol(int nbonds,
                 proj[m] -= dx[XX]*nW[m];
             }
             dx[YY] = iprod(proj, dHH);
-            /*#define DEBUG*/
-#ifdef DEBUG
-            if (debug)
-            {
-                fprintf(debug, "WPOL: dx2=%10g  dy2=%10g  dz2=%10g  sum=%10g  dDS^2=%10g\n",
-                        sqr(dx[XX]), sqr(dx[YY]), sqr(dx[ZZ]), iprod(dx, dx), iprod(dDS, dDS));
-                fprintf(debug, "WPOL: dHH=(%10g,%10g,%10g)\n", dHH[XX], dHH[YY], dHH[ZZ]);
-                fprintf(debug, "WPOL: dOD=(%10g,%10g,%10g), 1/r_OD = %10g\n",
-                        dOD[XX], dOD[YY], dOD[ZZ], 1/r_OD);
-                fprintf(debug, "WPOL: nW =(%10g,%10g,%10g), 1/r_nW = %10g\n",
-                        nW[XX], nW[YY], nW[ZZ], 1/r_nW);
-                fprintf(debug, "WPOL: dx  =%10g, dy  =%10g, dz  =%10g\n",
-                        dx[XX], dx[YY], dx[ZZ]);
-                fprintf(debug, "WPOL: dDSx=%10g, dDSy=%10g, dDSz=%10g\n",
-                        dDS[XX], dDS[YY], dDS[ZZ]);
-            }
-#endif
             /* Now compute the forces and energy */
             kdx[XX] = kk[XX]*dx[XX];
             kdx[YY] = kk[YY]*dx[YY];
@@ -851,21 +817,11 @@ real water_pol(int nbonds,
                 ty        = dHH[m]*kdx[YY];
                 tz        = dOD[m]*kdx[ZZ];
                 fij       = -tx-ty-tz;
-#ifdef DEBUG
-                df[m] = fij;
-#endif
                 f[aS][m]           += fij;
                 f[aD][m]           -= fij;
                 fshift[ki][m]      += fij;
                 fshift[CENTRAL][m] -= fij;
             }
-#ifdef DEBUG
-            if (debug)
-            {
-                fprintf(debug, "WPOL: vwpol=%g\n", 0.5*iprod(dx, kdx));
-                fprintf(debug, "WPOL: df = (%10g, %10g, %10g)\n", df[XX], df[YY], df[ZZ]);
-            }
-#endif
         }
     }
     return 0.5*vtot;
@@ -1002,13 +958,6 @@ real angles(int nbonds,
 
             st  = dVdt*gmx_invsqrt(1 - cos_theta2); /*  12		*/
             sth = st*cos_theta;                     /*   1		*/
-#ifdef DEBUG
-            if (debug)
-            {
-                fprintf(debug, "ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
-                        theta*RAD2DEG, va, dVdt);
-            }
-#endif
             nrij2 = iprod(r_ij, r_ij);      /*   5		*/
             nrkj2 = iprod(r_kj, r_kj);      /*   5		*/
 
@@ -1336,13 +1285,6 @@ real urey_bradley(int nbonds,
 
             st  = dVdt*gmx_invsqrt(1 - cos_theta2); /*  12		*/
             sth = st*cos_theta;                     /*   1		*/
-#ifdef DEBUG
-            if (debug)
-            {
-                fprintf(debug, "ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
-                        theta*RAD2DEG, va, dVdt);
-            }
-#endif
             nrkj2 = iprod(r_kj, r_kj);  /*   5		*/
             nrij2 = iprod(r_ij, r_ij);
 
@@ -1449,13 +1391,6 @@ real quartic_angles(int nbonds,
 
             st  = dVdt*gmx_invsqrt(1 - cos_theta2); /*  12		*/
             sth = st*cos_theta;                     /*   1		*/
-#ifdef DEBUG
-            if (debug)
-            {
-                fprintf(debug, "ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
-                        theta*RAD2DEG, va, dVdt);
-            }
-#endif
             nrkj2 = iprod(r_kj, r_kj);  /*   5		*/
             nrij2 = iprod(r_ij, r_ij);
 
@@ -1898,10 +1833,6 @@ real pdihs(int nbonds,
         do_dih_fup(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
                    f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
 
-#ifdef DEBUG
-        fprintf(debug, "pdih: (%d,%d,%d,%d) phi=%g\n",
-                ai, aj, ak, al, phi);
-#endif
     } /* 223 TOTAL  */
 
     return vtot;
@@ -2166,13 +2097,6 @@ real idihs(int nbonds,
         do_dih_fup(ai, aj, ak, al, (real)(-ddphi), r_ij, r_kj, r_kl, m, n,
                    f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
         /* 218 TOTAL	*/
-#ifdef DEBUG
-        if (debug)
-        {
-            fprintf(debug, "idih: (%d,%d,%d,%d) phi=%g\n",
-                    ai, aj, ak, al, phi);
-        }
-#endif
     }
 
     *dvdlambda += dvdl_term;
@@ -3609,13 +3533,6 @@ real g96bonds(int nbonds,
                                   dr2, lambda, &vbond, &fbond);
 
         vtot  += 0.5*vbond;                         /* 1*/
-#ifdef DEBUG
-        if (debug)
-        {
-            fprintf(debug, "G96-BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
-                    sqrt(dr2), vbond, fbond);
-        }
-#endif
 
         if (g)
         {
@@ -3687,13 +3604,6 @@ real g96angles(int nbonds,
         rkj_2    = rkj_1*rkj_1;
         rijrkj_1 = rij_1*rkj_1;                 /* 23 */
 
-#ifdef DEBUG
-        if (debug)
-        {
-            fprintf(debug, "G96ANGLES: costheta = %10g  vth = %10g  dV/dct = %10g\n",
-                    cos_theta, va, dVdt);
-        }
-#endif
         for (m = 0; (m < DIM); m++)     /*  42	*/
         {
             f_i[m]    = dVdt*(r_kj[m]*rijrkj_1 - r_ij[m]*rij_2*cos_theta);
@@ -3959,13 +3869,6 @@ real tab_bonds(int nbonds,
 
         vtot  += vbond;            /* 1*/
         fbond *= gmx_invsqrt(dr2); /*   6		*/
-#ifdef DEBUG
-        if (debug)
-        {
-            fprintf(debug, "TABBONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
-                    dr, vbond, fbond);
-        }
-#endif
         if (g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
@@ -4027,13 +3930,6 @@ real tab_angles(int nbonds,
 
             st  = dVdt*gmx_invsqrt(1 - cos_theta2); /*  12		*/
             sth = st*cos_theta;                     /*   1		*/
-#ifdef DEBUG
-            if (debug)
-            {
-                fprintf(debug, "ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
-                        theta*RAD2DEG, va, dVdt);
-            }
-#endif
             nrkj2 = iprod(r_kj, r_kj);  /*   5		*/
             nrij2 = iprod(r_ij, r_ij);
 
@@ -4105,10 +4001,6 @@ real tab_dihs(int nbonds,
         do_dih_fup(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n,
                    f, fshift, pbc, g, x, t1, t2, t3); /* 112	*/
 
-#ifdef DEBUG
-        fprintf(debug, "pdih: (%d,%d,%d,%d) phi=%g\n",
-                ai, aj, ak, al, phi);
-#endif
     } /* 227 TOTAL  */
 
     return vtot;
@@ -4581,13 +4473,6 @@ void calc_bonds(const gmx_multisim_t *ms,
     {
         pbc_null = NULL;
     }
-
-#ifdef DEBUG
-    if (g && debug)
-    {
-        p_graph(debug, "Bondage is fun", g);
-    }
-#endif
 
     /* Do pre force calculation stuff which might require communication */
     if (idef->il[F_ORIRES].nr)

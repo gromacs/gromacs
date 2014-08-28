@@ -192,8 +192,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         box_size[i] = box[i][i];
     }
 
-    debug_gmx();
-
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
@@ -238,7 +236,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
 
-    where();
     /* We only do non-bonded calculation with group scheme here, the verlet
      * calls are done from do_force_cutsVERLET(). */
     if (fr->cutoff_scheme == ecutsGROUP && (flags & GMX_FORCE_NONBONDED))
@@ -291,7 +288,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             }
         }
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-        where();
     }
 
     /* If we are doing GB, calculate bonded forces and apply corrections
@@ -304,14 +300,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        ir->gb_algorithm, ir->sa_algorithm, nrnb, &pbc, graph, enerd);
         wallcycle_sub_stop(wcycle, ewcsBONDED);
     }
-
-#ifdef GMX_MPI
-    if (TAKETIME)
-    {
-        t1          = MPI_Wtime();
-        fr->t_fnbf += t1-t0;
-    }
-#endif
 
     if (fepvals->sc_alpha != 0)
     {
@@ -333,9 +321,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     {
         enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
     }
-
-    debug_gmx();
-
 
     if (debug)
     {
@@ -372,7 +357,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
          */
         set_pbc_dd(&pbc, fr->ePBC, cr->dd, TRUE, box);
     }
-    debug_gmx();
 
     if (flags & GMX_FORCE_BONDED)
     {
@@ -405,12 +389,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             }
         }
-        debug_gmx();
 
         wallcycle_sub_stop(wcycle, ewcsBONDED);
     }
-
-    where();
 
     *cycles_pme = 0;
     clear_mat(fr->vir_el_recip);
@@ -657,35 +638,10 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             }
         }
     }
-    where();
-    debug_gmx();
 
     if (debug)
     {
         print_nrnb(debug, nrnb);
-    }
-    debug_gmx();
-
-#ifdef GMX_MPI
-    if (TAKETIME)
-    {
-        t2 = MPI_Wtime();
-        MPI_Barrier(cr->mpi_comm_mygroup);
-        t3          = MPI_Wtime();
-        fr->t_wait += t3-t2;
-        if (fr->timesteps == 11)
-        {
-            fprintf(stderr, "* PP load balancing info: rank %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
-                    cr->nodeid, gmx_step_str(fr->timesteps, buf),
-                    100*fr->t_wait/(fr->t_wait+fr->t_fnbf),
-                    (fr->t_fnbf+fr->t_wait)/fr->t_fnbf);
-        }
-        fr->timesteps++;
-    }
-#endif
-
-    if (debug)
-    {
         pr_rvecs(debug, 0, "fshift after bondeds", fr->fshift, SHIFTS);
     }
 

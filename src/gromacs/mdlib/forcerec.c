@@ -91,31 +91,6 @@ t_forcerec *mk_forcerec(void)
     return fr;
 }
 
-#ifdef DEBUG
-static void pr_nbfp(FILE *fp, real *nbfp, gmx_bool bBHAM, int atnr)
-{
-    int i, j;
-
-    for (i = 0; (i < atnr); i++)
-    {
-        for (j = 0; (j < atnr); j++)
-        {
-            fprintf(fp, "%2d - %2d", i, j);
-            if (bBHAM)
-            {
-                fprintf(fp, "  a=%10g, b=%10g, c=%10g\n", BHAMA(nbfp, atnr, i, j),
-                        BHAMB(nbfp, atnr, i, j), BHAMC(nbfp, atnr, i, j)/6.0);
-            }
-            else
-            {
-                fprintf(fp, "  c6=%10g, c12=%10g\n", C6(nbfp, atnr, i, j)/6.0,
-                        C12(nbfp, atnr, i, j)/12.0);
-            }
-        }
-    }
-}
-#endif
-
 static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
 {
     real *nbfp;

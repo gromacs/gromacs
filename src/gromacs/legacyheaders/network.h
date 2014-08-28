@@ -133,14 +133,6 @@ gmx_fatal_collective(int f_errno, const char *file, int line,
  * for all processes.
  */
 
-/* This doesn't currently work if enabled (needs some header cleanup). */
-#ifdef DEBUG_GMX
-#define debug_gmx() do { FILE *fp = debug ? debug : stderr; \
-                         if (bDebugMode()) { fprintf(fp, "rank=%d, %s  %d\n", gmx_mpi_initialized() ? gmx_node_rank() : -1, __FILE__, __LINE__); } fflush(fp); } while (0)
-#else
-#define debug_gmx()
-#endif
-
 #ifdef __cplusplus
 }
 #endif

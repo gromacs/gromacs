@@ -194,7 +194,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     if (bConstrVir)
     {
         isv = add_binr(rb, DIM*DIM, svir[0]);
-        where();
     }
 
 /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
@@ -218,14 +217,10 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
                 }
             }
             /* these probably need to be put into one of these categories */
-            where();
             idedl = add_binr(rb, 1, &(ekind->dekindl));
-            where();
             ica   = add_binr(rb, 1, &(ekind->cosacc.mvcos));
-            where();
         }
     }
-    where();
 
     if ((bPres || !bVV) && bFirstIterate)
     {
@@ -235,12 +230,10 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
 
     if (bEner)
     {
-        where();
         if (bFirstIterate)
         {
             ie  = add_binr(rb, nener, copyenerd);
         }
-        where();
         if (constr)
         {
             rmsd_data = constr_rmsd_data(constr);
@@ -252,7 +245,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
         if (!NEED_MUTOT(*inputrec))
         {
             imu = add_binr(rb, DIM, mu_tot);
-            where();
         }
 
         if (bFirstIterate)
@@ -261,7 +253,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             {
                 inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.ener[j]);
             }
-            where();
             if (inputrec->efep != efepNO)
             {
                 idvdll  = add_bind(rb, efptNR, enerd->dvdl_lin);
@@ -277,17 +268,12 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     if (vcm)
     {
         icm   = add_binr(rb, DIM*vcm->nr, vcm->group_p[0]);
-        where();
         imass = add_binr(rb, vcm->nr, vcm->group_mass);
-        where();
         if (vcm->mode == ecmANGULAR)
         {
             icj   = add_binr(rb, DIM*vcm->nr, vcm->group_j[0]);
-            where();
             icx   = add_binr(rb, DIM*vcm->nr, vcm->group_x[0]);
-            where();
             ici   = add_binr(rb, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
-            where();
         }
     }
 
@@ -296,7 +282,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
         nb  = cr->dd->nbonded_local;
         inb = add_bind(rb, 1, &nb);
     }
-    where();
     if (nsig > 0)
     {
         isig = add_binr(rb, nsig, sig);
@@ -308,7 +293,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
         fprintf(debug, "Summing %d energies\n", rb->maxreal);
     }
     sum_bin(rb, cr);
-    where();
 
     /* Extract all the data locally */
 
@@ -339,7 +323,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             }
             extract_binr(rb, idedl, 1, &(ekind->dekindl));
             extract_binr(rb, ica, 1, &(ekind->cosacc.mvcos));
-            where();
         }
     }
     if ((bPres || !bVV) && bFirstIterate)
@@ -382,7 +365,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
                     dd_print_missing_interactions(fplog, cr, (int)(nb + 0.5), top_global, state_local);
                 }
             }
-            where();
 
             filter_enerdterm(copyenerd, FALSE, enerd->term, bTemp, bPres, bEner);
         }
@@ -391,17 +373,12 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     if (vcm)
     {
         extract_binr(rb, icm, DIM*vcm->nr, vcm->group_p[0]);
-        where();
         extract_binr(rb, imass, vcm->nr, vcm->group_mass);
-        where();
         if (vcm->mode == ecmANGULAR)
         {
             extract_binr(rb, icj, DIM*vcm->nr, vcm->group_j[0]);
-            where();
             extract_binr(rb, icx, DIM*vcm->nr, vcm->group_x[0]);
-            where();
             extract_binr(rb, ici, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
-            where();
         }
     }
 
@@ -409,7 +386,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     {
         extract_binr(rb, isig, nsig, sig);
     }
-    where();
 }
 
 int do_per_step(gmx_int64_t step, gmx_int64_t nstep)

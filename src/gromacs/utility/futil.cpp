@@ -420,7 +420,6 @@ FILE *gmx_ffopen(const char *file, const char *mode)
     {
         make_backup(file);
     }
-    where();
 
     bRead = (mode[0] == 'r' && mode[1] != '+');
     strcpy(buf, file);
@@ -430,7 +429,6 @@ FILE *gmx_ffopen(const char *file, const char *mode)
         {
             gmx_file(buf);
         }
-        where();
         /* Check whether we should be using buffering (default) or not
          * (for debugging)
          */
@@ -458,7 +456,6 @@ FILE *gmx_ffopen(const char *file, const char *mode)
                 }
             }
         }
-        where();
     }
     else
     {

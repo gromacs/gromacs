@@ -3926,10 +3926,6 @@ extern void do_rotation(
                                    only, does not count communication. This
                                    counter is used for load-balancing         */
 
-#ifdef TAKETIME
-    double t0;
-#endif
-
     rot = ir->rot;
     er  = rot->enfrot;
 
@@ -4003,10 +3999,6 @@ extern void do_rotation(
     cycles_comp = gmx_cycles_read();
 
 
-#ifdef TAKETIME
-    t0 = MPI_Wtime();
-#endif
-
     for (g = 0; g < rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
@@ -4078,13 +4070,6 @@ extern void do_rotation(
                 break;
         }
     }
-
-#ifdef TAKETIME
-    if (MASTER(cr))
-    {
-        fprintf(stderr, "%s calculation (step %d) took %g seconds.\n", RotStr, step, MPI_Wtime()-t0);
-    }
-#endif
 
     /* Stop the enforced rotation cycle counter and add the computation-only
      * cycles to the force cycles for load balancing */

@@ -458,9 +458,6 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
 
 #ifdef DEBUG
     print_stat(x_solvt, atoms_solvt->nr, box_solvt);
-#endif
-
-#ifdef DEBUG
     print_stat(x_solvt, atoms_solvt->nr, box_solvt);
 #endif
     /* Sort the solvent mixture, not the protein... */

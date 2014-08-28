@@ -769,9 +769,6 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC, matrix box, rvec x[])
     /* We even have a loop invariant:
      * nW+nG+nB == g->nbound
      */
-#ifdef DEBUG2
-    fprintf(log, "Starting W loop\n");
-#endif
     while (nW > 0)
     {
         /* Find the first white, this will allways be a larger
@@ -790,10 +787,6 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC, matrix box, rvec x[])
 
         /* Initial value for the first grey */
         fG = fW;
-#ifdef DEBUG2
-        fprintf(log, "Starting G loop (nW=%d, nG=%d, nB=%d, total %d)\n",
-                nW, nG, nB, nW+nG+nB);
-#endif
         while (nG > 0)
         {
             if ((fG = first_colour(fG, egcolGrey, g, g->egc)) == -1)
@@ -932,9 +925,6 @@ void shift_self(t_graph *g, matrix box, rvec x[])
     g1 = g->at_end;
     is = g->ishift;
 
-#ifdef DEBUG
-    fprintf(stderr, "Shifting atoms %d to %d\n", g0, g0+gn);
-#endif
     if (TRICLINIC(box))
     {
         for (j = g0; (j < g1); j++)

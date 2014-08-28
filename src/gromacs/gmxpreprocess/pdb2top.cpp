@@ -1609,7 +1609,6 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     snew(excls, atoms->nr);
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
-    print_nnb(&nnb, "NNB");
     gen_pad(&nnb, atoms, restp, plist, excls, hb, bAllowMissing);
     done_nnb(&nnb);
 

@@ -223,7 +223,7 @@ static void regression_analysis(int n, gmx_bool bXYdy,
             }
         }
         snew(a, nset-1);
-        chi2 = multi_regression(NULL, n, y, nset-1, xx, a);
+        chi2 = multi_regression(n, y, nset-1, xx, a);
         printf("Fitting %d data points in %d sets\n", n, nset-1);
         printf("chi2 = %g\n", chi2);
         printf("A =");

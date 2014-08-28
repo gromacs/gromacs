@@ -229,8 +229,6 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
     char   timebuf[STRLEN];
     FILE  *fp = *fplog;
 
-    debug_gmx();
-
     if (!bAppendFiles)
     {
         fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+" );
@@ -281,7 +279,6 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
     fprintf(fp, "\n\n");
 
     fflush(fp);
-    debug_gmx();
 
     *fplog = fp;
 }

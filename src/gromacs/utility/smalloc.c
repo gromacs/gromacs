@@ -59,58 +59,6 @@
 static gmx_bool            g_bOverAllocDD     = FALSE;
 static tMPI_Thread_mutex_t g_over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-#ifdef DEBUG
-static void log_action(int bMal, const char *what, const char *file, int line,
-                       int nelem, int size, void *ptr)
-{
-    static int btot = 0;
-    char      *NN   = "NULL";
-    int        bytes;
-
-    bytes = size*nelem;
-    if (!bMal)
-    {
-        bytes = -bytes;
-    }
-
-    tMPI_Thread_mutex_lock(&gmx_logfile_mtx);
-
-    /* This total memory count is not correct, since with realloc
-     * it adds the whole size again, not just the increment.
-     */
-    /* This static variable is protected by the mutex too... */
-    btot += bytes;
-
-    bytes /= 1024;
-    if (debug && (bytes != 0))
-    {
-        fprintf(debug, "%s:%d kB (%7d kB) [%s, line %d, nelem %d, size %d]\n",
-                what ? what : NN, bytes, btot/1024,
-                file ? file : NN, line, nelem, size);
-    }
-    /* Print to stderr for things larger than 1 MB */
-    if (bytes >= 1024 || bytes <= -1024)
-    {
-        char *fname = NULL;
-        if (file)
-        {
-            fname = strrchr(file, DIR_SEPARATOR);
-            if (fname)
-            {
-                fname++;
-            }
-            else
-            {
-                fname = file;
-            }
-        }
-        printf("%s: %.1f MB [%s, line %d, nelem %d, size %d]\n",
-               what ? what  : NN, bytes/1024.0,
-               file ? fname : NN, line, nelem, size);
-    }
-    tMPI_Thread_mutex_unlock(&gmx_logfile_mtx);
-}
-#endif
 
 void *save_malloc(const char *name, const char *file, int line, size_t size)
 {
@@ -132,9 +80,6 @@ void *save_malloc(const char *name, const char *file, int line, size_t size)
         }
         (void) memset(p, 0, size);
     }
-#ifdef DEBUG
-    log_action(1, name, file, line, 1, size, p);
-#endif
     return p;
 }
 
@@ -185,9 +130,6 @@ void *save_calloc(const char *name, const char *file, int line,
         }
 #endif
     }
-#ifdef DEBUG
-    log_action(1, name, file, line, nelem, elsize, p);
-#endif
     return p;
 }
 
@@ -230,18 +172,12 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
                       "(called from file %s, line %d)",
                       (gmx_int64_t)size, name, name, ptr, file, line);
         }
-#ifdef DEBUG
-        log_action(1, name, file, line, 1, size, p);
-#endif
     }
     return p;
 }
 
 void save_free(const char gmx_unused *name, const char gmx_unused *file, int gmx_unused line, void *ptr)
 {
-#ifdef DEBUG
-    log_action(0, name, file, line, 0, 0, ptr);
-#endif
     if (ptr != NULL)
     {
         free(ptr);

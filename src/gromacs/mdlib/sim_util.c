@@ -2883,6 +2883,4 @@ void init_md(FILE *fplog,
     clear_mat(force_vir);
     clear_mat(shake_vir);
     clear_rvec(mu_tot);
-
-    debug_gmx();
 }

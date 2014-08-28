@@ -389,10 +389,6 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     int      i, n0, ncons, blen, type;
     int      tnit = 0, trij = 0;
 
-#ifdef DEBUG
-    fprintf(log, "nblocks=%d, sblock[0]=%d\n", nblocks, sblock[0]);
-#endif
-
     ncons = idef->il[F_CONSTR].nr/3;
 
     for (i = 0; i < ncons; i++)
@@ -410,10 +406,6 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
                            ir->efep != efepNO, lambda, lam, invdt, v, bCalcVir, vir_r_m_dr,
                            econq, vetavar);
-
-#ifdef DEBUGSHAKE
-        check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
-#endif
 
         if (n0 == 0)
         {
@@ -462,9 +454,6 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
             *dvdlambda += dvdl;
         }
     }
-#ifdef DEBUG
-    fprintf(log, "tnit: %5d  omega: %10.5f\n", tnit, omega);
-#endif
     if (ir->bShakeSOR)
     {
         if (tnit > shaked->gamma)

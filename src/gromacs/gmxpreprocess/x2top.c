@@ -583,7 +583,6 @@ int gmx_x2top(int argc, char *argv[])
     printf("Generating angles and dihedrals from bonds...\n");
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
-    print_nnb(&nnb, "NNB");
     gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, NULL, TRUE);
     done_nnb(&nnb);
 

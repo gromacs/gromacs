@@ -149,7 +149,6 @@ do_md_trajectory_writing(FILE           *fplog,
         {
             (*nchkpt)++;
         }
-        debug_gmx();
         if (bLastStep && step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
@@ -168,7 +167,6 @@ do_md_trajectory_writing(FILE           *fplog,
                                 *top_global->name, top_global,
                                 state_global->x, state_global->v,
                                 ir->ePBC, state->box);
-            debug_gmx();
         }
         wallcycle_stop(wcycle, ewcTRAJ);
     }

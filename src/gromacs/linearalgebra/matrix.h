@@ -37,8 +37,6 @@
 #ifndef GMX_LINEARALGEBRA_MATRIX_H
 #define GMX_LINEARALGEBRA_MATRIX_H
 
-#include <stdio.h>
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -48,12 +46,12 @@ double **alloc_matrix(int n, int m);
 
 void free_matrix(double **a);
 
-void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z);
+void matrix_multiply(int n, int m, double **x, double **y, double **z);
 
 /* Return 0 if OK or row number where inversion failed otherwise. */
-int matrix_invert(FILE *fp, int n, double **a);
+int matrix_invert(int n, double **a);
 
-double multi_regression(FILE *fp, int ny, double *y,
+double multi_regression(int ny, double *y,
                         int nx, double **xx, double *a0);
 /* Perform a regression analysis to fit
  * y' = a0[0] xx[0] + a0[1] xx[1] ... + a0[nx-1] xx[nx-1]

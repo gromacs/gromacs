@@ -129,9 +129,6 @@ const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 };
 
 #define DFT_TOL 1e-7
 /* #define PRT_FORCE */
-/* conditions for on the fly time-measurement */
-/* #define TAKETIME (step > 1 && timesteps < 10) */
-#define TAKETIME FALSE
 
 /* #define PME_TIME_THREADS */
 
@@ -4662,7 +4659,6 @@ do_redist_pos_coeffs(gmx_pme_t pme, t_commrec *cr, int start, int homenr,
             srenew(atc->pd, atc->pd_nalloc);
         }
         pme_calc_pidx_wrapper(n_d, pme->recipbox, x_d, atc);
-        where();
         /* Redistribute x (only once) and qA/c6A or qB/c6B */
         if (DOMAINDECOMP(cr))
         {
@@ -4804,7 +4800,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 gmx_fatal(FARGS, "No grid!");
             }
         }
-        where();
 
         if (pme->nnodes == 1)
         {
@@ -4814,7 +4809,6 @@ int gmx_pme_do(gmx_pme_t pme,
         {
             wallcycle_start(wcycle, ewcPME_REDISTXF);
             do_redist_pos_coeffs(pme, cr, start, homenr, bFirst, x, coefficient);
-            where();
 
             wallcycle_stop(wcycle, ewcPME_REDISTXF);
         }
@@ -4848,7 +4842,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 if (pme->nnodes > 1)
                 {
                     gmx_sum_qgrid_dd(pme, grid, GMX_SUM_GRID_FORWARD);
-                    where();
                 }
 #endif
 
@@ -4882,7 +4875,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 {
                     wallcycle_stop(wcycle, ewcPME_FFT);
                 }
-                where();
 
                 /* solve in k-space for our local cells */
                 if (thread == 0)
@@ -4909,7 +4901,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle, (grid_index < DO_Q ? ewcPME_SOLVE : ewcLJPME));
-                    where();
                     inc_nrnb(nrnb, eNR_SOLVEPME, loop_count);
                 }
             }
@@ -4919,7 +4910,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 /* do 3d-invfft */
                 if (thread == 0)
                 {
-                    where();
                     wallcycle_start(wcycle, ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
@@ -4927,8 +4917,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle, ewcPME_FFT);
-
-                    where();
 
                     if (pme->nodeid == 0)
                     {
@@ -4959,13 +4947,9 @@ int gmx_pme_do(gmx_pme_t pme,
                 gmx_sum_qgrid_dd(pme, grid, GMX_SUM_GRID_BACKWARD);
             }
 #endif
-            where();
-
             unwrap_periodic_pmegrid(pme, grid);
 
             /* interpolate forces for our local atoms */
-
-            where();
 
             /* If we are running without parallelization,
              * atc->f is the actual force array, not a buffer,
@@ -4980,8 +4964,6 @@ int gmx_pme_do(gmx_pme_t pme,
                                   &atc->spline[thread],
                                   pme->bFEP ? (grid_index % 2 == 0 ? 1.0-lambda : lambda) : 1.0);
             }
-
-            where();
 
             inc_nrnb(nrnb, eNR_GATHERFBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
@@ -5068,7 +5050,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 {
                     local_c6[i] = atc->coefficient[i];
                 }
-                where();
 
                 do_redist_pos_coeffs(pme, cr, start, homenr, FALSE, x, RedistSigma);
                 local_sigma = pme->lb_buf2;
@@ -5076,7 +5057,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 {
                     local_sigma[i] = atc->coefficient[i];
                 }
-                where();
 
                 wallcycle_stop(wcycle, ewcPME_REDISTXF);
             }
@@ -5092,7 +5072,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 pfft_setup = pme->pfft_setup[grid_index];
                 calc_next_lb_coeffs(pme, local_sigma);
                 grid = pmegrid->grid.grid;
-                where();
 
                 if (flags & GMX_PME_SPREAD)
                 {
@@ -5115,7 +5094,6 @@ int gmx_pme_do(gmx_pme_t pme,
                         if (pme->nnodes > 1)
                         {
                             gmx_sum_qgrid_dd(pme, grid, GMX_SUM_GRID_FORWARD);
-                            where();
                         }
 #endif
                         copy_pmegrid_to_fftgrid(pme, grid, fftgrid, grid_index);
@@ -5140,7 +5118,6 @@ int gmx_pme_do(gmx_pme_t pme,
                         {
                             wallcycle_stop(wcycle, ewcPME_FFT);
                         }
-                        where();
                     }
                 }
                 bFirst = FALSE;
@@ -5165,7 +5142,6 @@ int gmx_pme_do(gmx_pme_t pme,
                     if (thread == 0)
                     {
                         wallcycle_stop(wcycle, ewcLJPME);
-                        where();
                         inc_nrnb(nrnb, eNR_SOLVEPME, loop_count);
                     }
                 }
@@ -5192,14 +5168,12 @@ int gmx_pme_do(gmx_pme_t pme,
                     pfft_setup = pme->pfft_setup[grid_index];
                     grid       = pmegrid->grid.grid;
                     calc_next_lb_coeffs(pme, local_sigma);
-                    where();
 #pragma omp parallel num_threads(pme->nthread) private(thread)
                     {
                         thread = gmx_omp_get_thread_num();
                         /* do 3d-invfft */
                         if (thread == 0)
                         {
-                            where();
                             wallcycle_start(wcycle, ewcPME_FFT);
                         }
 
@@ -5208,8 +5182,6 @@ int gmx_pme_do(gmx_pme_t pme,
                         if (thread == 0)
                         {
                             wallcycle_stop(wcycle, ewcPME_FFT);
-
-                            where();
 
                             if (pme->nodeid == 0)
                             {
@@ -5231,12 +5203,10 @@ int gmx_pme_do(gmx_pme_t pme,
                         gmx_sum_qgrid_dd(pme, grid, GMX_SUM_GRID_BACKWARD);
                     }
 #endif
-                    where();
 
                     unwrap_periodic_pmegrid(pme, grid);
 
                     /* interpolate forces for our local atoms */
-                    where();
                     bClearF = (bFirst && PAR(cr));
                     scale   = pme->bFEP ? (fep_state < 1 ? 1.0-lambda_lj : lambda_lj) : 1.0;
                     scale  *= lb_scale_factor[grid_index-2];
@@ -5247,7 +5217,6 @@ int gmx_pme_do(gmx_pme_t pme,
                                           &pme->atc[0].spline[thread],
                                           scale);
                     }
-                    where();
 
                     inc_nrnb(nrnb, eNR_GATHERFBSP,
                              pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
@@ -5284,7 +5253,6 @@ int gmx_pme_do(gmx_pme_t pme,
 
         wallcycle_stop(wcycle, ewcPME_REDISTXF);
     }
-    where();
 
     if (bCalcEnerVir)
     {

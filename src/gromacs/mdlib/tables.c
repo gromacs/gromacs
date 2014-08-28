@@ -818,9 +818,6 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
      * we always use double precision to calculate them here, in order
      * to avoid unnecessary loss of precision.
      */
-#ifdef DEBUG_SWITCH
-    FILE    *fp;
-#endif
     int      i;
     double   reppow, p;
     double   r1, rc, r12, r13;
@@ -908,10 +905,6 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
     {
         fprintf(debug, "Setting up tables\n"); fflush(debug);
     }
-
-#ifdef DEBUG_SWITCH
-    fp = xvgropen("switch.xvg", "switch", "r", "s");
-#endif
 
     if (bPotentialShift)
     {
@@ -1010,10 +1003,6 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
             swi  = 1.0;
             swi1 = 0.0;
         }
-#ifdef DEBUG_SWITCH
-        fprintf(fp, "%10g  %10g  %10g  %10g\n", r, swi, swi1, swi2);
-#endif
-
         rc6 = rc*rc*rc;
         rc6 = 1.0/(rc6*rc6);
 
@@ -1199,10 +1188,6 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         td->v[i] = td->v[i+1] + td->f[i+1]*(td->x[i+1] - td->x[i]);
         td->f[i] = td->f[i+1];
     }
-
-#ifdef DEBUG_SWITCH
-    gmx_fio_fclose(fp);
-#endif
 }
 
 static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)

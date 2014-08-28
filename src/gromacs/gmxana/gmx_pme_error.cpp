@@ -62,8 +62,6 @@
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 #define nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
 #define   snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
-/* #define TAKETIME */
-/* #define DEBUG  */
 enum {
     ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
@@ -132,9 +130,6 @@ static void calc_q2all(
     gmx_moltype_t  *molecule;
     gmx_molblock_t *molblock;
 
-#ifdef DEBUG
-    fprintf(stderr, "\nCharge density:\n");
-#endif
     q2_all  = 0.0;                                 /* total q squared */
     nrq_all = 0;                                   /* total number of charges in the system */
     for (imol = 0; imol < mtop->nmolblock; imol++) /* Loop over molecule types */
@@ -156,10 +151,6 @@ static void calc_q2all(
         /* Multiply with the number of molecules present of this type and add */
         q2_all  += q2_mol*molblock->nmol;
         nrq_all += nrq_mol*molblock->nmol;
-#ifdef DEBUG
-        fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n",
-                imol, molblock->natoms_mol, q2_mol, nrq_mol, molblock->nmol, q2_all, nrq_all);
-#endif
     }
 
     *q2all   = q2_all;
@@ -466,11 +457,6 @@ static real estimate_reciprocal(
     int x_per_core;
     int xtot;
 
-#ifdef TAKETIME
-    double t0 = 0.0;
-    double t1 = 0.0;
-#endif
-
     rng = gmx_rng_init(seed);
 
     clear_rvec(gridpx);
@@ -504,20 +490,6 @@ static real estimate_reciprocal(
         stoplocal  = stopglobal;
         x_per_core = xtot;
     }
-/*
-   #ifdef GMX_LIB_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-   #endif
- */
-
-#ifdef GMX_LIB_MPI
-#ifdef TAKETIME
-    if (MASTER(cr))
-    {
-        t0 = MPI_Wtime();
-    }
-#endif
-#endif
 
     if (MASTER(cr))
     {
@@ -751,24 +723,6 @@ static real estimate_reciprocal(
     {
         fprintf(stderr, "\n");
     }
-
-#ifdef GMX_LIB_MPI
-#ifdef TAKETIME
-    if (MASTER(cr))
-    {
-        t1 = MPI_Wtime() - t0;
-        fprintf(fp_out, "Recip. err. est. took   : %lf s\n", t1);
-    }
-#endif
-#endif
-
-#ifdef DEBUG
-    if (PAR(cr))
-    {
-        fprintf(stderr, "Rank %3d: nx=[%3d...%3d]  e_rec3=%e\n",
-                cr->nodeid, startlocal, stoplocal, e_rec3);
-    }
-#endif
 
     if (PAR(cr))
     {

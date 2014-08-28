@@ -1024,7 +1024,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
-    where();
 
     if (MASTER(cr))
     {
@@ -1037,7 +1036,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
                    TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
-    where();
 
     /* Estimate/guess the initial stepsize */
     stepsize = inputrec->em_stepsize/s_min->fnorm;
@@ -1732,7 +1730,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
-    where();
 
     if (MASTER(cr))
     {
@@ -1745,7 +1742,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
                    TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
-    where();
 
     /* This is the starting energy */
     Epot = enerd->term[F_EPOT];
@@ -2729,8 +2725,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
     lambda       = lam0;
 
     init_nrnb(nrnb);
-
-    where();
 
     /* Write start time and temperature */
     print_em_start(fplog, cr, walltime_accounting, wcycle, NM);

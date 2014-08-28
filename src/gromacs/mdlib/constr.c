@@ -397,8 +397,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         clear_mat(vir_r_m_dr);
     }
 
-    where();
-
     settle  = &idef->il[F_SETTLE];
     nsettle = settle->nr/(1+NRAL(F_SETTLE));
 
@@ -770,9 +768,6 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
      * sort the constraints in order of the sblock number
      * and the atom numbers, really sorting a segment of the array!
      */
-#ifdef DEBUGIDEF
-    pr_idef(fplog, 0, "Before Sort", idef);
-#endif
     iatom = idef->il[F_CONSTR].iatoms;
     snew(sb, ncons);
     for (i = 0; (i < ncons); i++, iatom += 3)
@@ -806,9 +801,6 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
             iatom[m] = sb[i].iatom[m];
         }
     }
-#ifdef DEBUGIDEF
-    pr_idef(fplog, 0, "After Sort", idef);
-#endif
 
     j = 0;
     snew(constr->sblock, constr->nblocks+1);

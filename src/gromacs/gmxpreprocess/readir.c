@@ -3162,7 +3162,6 @@ void do_index(const char* mdparin, const char *ndx,
     {
         fprintf(stderr, "processing index file...\n");
     }
-    debug_gmx();
     if (ndx == NULL)
     {
         snew(grps, 1);

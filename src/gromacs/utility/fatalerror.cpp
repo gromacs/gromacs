@@ -59,7 +59,6 @@
 #include "gromacs/utility/smalloc.h"
 
 static bool                bDebug         = false;
-static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
 
 FILE                      *debug          = NULL;
 gmx_bool                   gmx_debug_at   = FALSE;
@@ -86,48 +85,6 @@ void gmx_init_debug(const int dbglevel, const char *dbgfile)
 gmx_bool bDebugMode(void)
 {
     return bDebug;
-}
-
-void _where(const char *file, int line)
-{
-    static gmx_bool bFirst = TRUE;
-    static int      nskip  = -1;
-    static int      nwhere =  0;
-    FILE           *fp;
-    char           *temp;
-
-    if (bFirst)
-    {
-        tMPI_Thread_mutex_lock(&where_mutex);
-        if (bFirst) /* we repeat the check in the locked section because things
-                       might have changed */
-        {
-            if ((temp = getenv("GMX_PRINT_DEBUG_LINES")) != NULL)
-            {
-                nskip = strtol(temp, NULL, 10);
-            }
-            bFirst = FALSE;
-        }
-        tMPI_Thread_mutex_unlock(&where_mutex);
-    }
-
-    if (nskip >= 0)
-    {
-        /* Skip the first n occasions, this allows to see where it goes wrong */
-        if (nwhere >= nskip)
-        {
-            if (log_file)
-            {
-                fp = log_file;
-            }
-            else
-            {
-                fp = stderr;
-            }
-            fprintf(fp, "WHERE %d, file %s - line %d\n", nwhere, file, line);
-        }
-        nwhere++;
-    }
 }
 
 void gmx_fatal_set_log_file(FILE *fp)

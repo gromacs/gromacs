@@ -683,7 +683,6 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
         fprintf(debug, "Filling grid from %d to %d\n", cg0, cg1);
     }
 
-    debug_gmx();
     if (dd_zones == NULL)
     {
         for (cg = cg0; cg < cg1; cg++)
@@ -809,8 +808,6 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
             }
         }
     }
-    debug_gmx();
-
 }
 
 void check_grid(t_grid *grid)

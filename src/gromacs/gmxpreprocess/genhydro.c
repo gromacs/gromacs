@@ -598,7 +598,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                     srenew(newpdba->atom, natoms+nadd);
                     srenew(newpdba->atomname, natoms+nadd);
                 }
-                debug_gmx();
             }
             if (debug)
             {
@@ -629,7 +628,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                             srenew(newpdba->atom, natoms+nadd);
                             srenew(newpdba->atomname, natoms+nadd);
                         }
-                        debug_gmx();
                     }
                     if (bUpdate_pdba)
                     {

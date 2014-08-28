@@ -154,9 +154,6 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                 int numhydrogens;
 
                                 ang = &(pr->param[i]);
-#ifdef DEBUG
-                                printf("Angle: %d-%d-%d\n", ang->AI, ang->AJ, ang->AK);
-#endif
                                 numhydrogens = count_hydrogens(info, 3, ang->a);
                                 if ((nshake == eshALLANGLES) ||
                                     (numhydrogens > 1) ||
@@ -197,9 +194,6 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                         p.C0 = sqrt( b_ij*b_ij + b_jk*b_jk -
                                                      2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0) );
                                         p.C1 = p.C0;
-#ifdef DEBUG
-                                        printf("p: %d, q: %d, dist: %12.5e\n", p.AI, p.AJ, p.C0);
-#endif
                                         add_param_to_list (&(plist[F_CONSTR]), &p);
                                         /* move the last bond to this position */
                                         copy_bond (pr, i, pr->nr-1);

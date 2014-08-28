@@ -152,24 +152,6 @@ gmx_settledata_t settle_init(real mO, real mH, real invmO, real invmH,
     return settled;
 }
 
-#ifdef DEBUG
-static void check_cons(FILE *fp, char *title, real x[], int OW1, int HW2, int HW3)
-{
-    rvec dOH1, dOH2, dHH;
-    int  m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        dOH1[m] = x[OW1+m]-x[HW2+m];
-        dOH2[m] = x[OW1+m]-x[HW3+m];
-        dHH[m]  = x[HW2+m]-x[HW3+m];
-    }
-    fprintf(fp, "%10s, OW1=%3d, HW2=%3d, HW3=%3d,  dOH1: %8.3f, dOH2: %8.3f, dHH: %8.3f\n",
-            title, OW1/DIM, HW2/DIM, HW3/DIM, norm(dOH1), norm(dOH2), norm(dHH));
-}
-#endif
-
-
 void settle_proj(gmx_settledata_t settled, int econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,
@@ -637,11 +619,5 @@ void csettle(gmx_settledata_t settled,
         {
             *error = i;
         }
-#ifdef DEBUG
-        if (debug)
-        {
-            check_cons(debug, "settle", after, ow1, hw2, hw3);
-        }
-#endif
     }
 }

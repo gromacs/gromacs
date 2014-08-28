@@ -41,7 +41,6 @@
 
 #include <stdlib.h>
 
-/* #define DEBUG_NNB */
 #include "gpp_nextnb.h"
 #include "toputil.h"
 
@@ -75,29 +74,6 @@ compare_int (const void * a, const void * b)
 {
     return ( *(int*)a - *(int*)b );
 }
-
-
-#ifdef DEBUG
-#define prints(str, n, s) __prints(str, n, s)
-static void __prints(char *str, int n, sortable *s)
-{
-    int i;
-
-    if (debug)
-    {
-        fprintf(debug, "%s\n", str);
-        fprintf(debug, "Sortables \n");
-        for (i = 0; (i < n); i++)
-        {
-            fprintf(debug, "%d\t%d\n", s[i].ai, s[i].aj);
-        }
-
-        fflush(debug);
-    }
-}
-#else
-#define prints(str, n, s)
-#endif
 
 void init_nnb(t_nextnb *nnb, int nr, int nrex)
 {
@@ -145,32 +121,6 @@ void done_nnb (t_nextnb *nnb)
     nnb->nrex = 0;
 }
 
-#ifdef DEBUG_NNB
-void __print_nnb(t_nextnb *nnb, char *s)
-{
-    int i, j, k;
-
-    if (debug)
-    {
-        fprintf(debug, "%s\n", s);
-        fprintf(debug, "nnb->nr: %d\n", nnb->nr);
-        fprintf(debug, "nnb->nrex: %d\n", nnb->nrex);
-        for (i = 0; (i < nnb->nr); i++)
-        {
-            for (j = 0; (j <= nnb->nrex); j++)
-            {
-                fprintf(debug, "nrexcl[%d][%d]: %d, excl: ", i, j, nnb->nrexcl[i][j]);
-                for (k = 0; (k < nnb->nrexcl[i][j]); k++)
-                {
-                    fprintf(debug, "%d, ", nnb->a[i][j][k]);
-                }
-                fprintf(debug, "\n");
-            }
-        }
-    }
-}
-#endif
-
 static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
 {
     int       i, j, j_index;
@@ -210,11 +160,9 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
         {
             gmx_incons("Generating exclusions");
         }
-        prints("nnb2excl before qsort", nr_of_sortables, s);
         if (nr_of_sortables > 1)
         {
             qsort ((void *)s, nr_of_sortables, (size_t)sizeof(s[0]), bond_sort);
-            prints("nnb2excl after qsort", nr_of_sortables, s);
         }
 
         /* remove duplicate entries from the list */
@@ -231,7 +179,6 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
             s[j_index++] = s[j-1];
         }
         nr_of_sortables = j_index;
-        prints("after rm-double", j_index, s);
 
         /* make space for arrays */
         srenew(excl->a, excl->nra+nr_of_sortables);
@@ -265,7 +212,6 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
     {
         add_nnb(nnb, 0, i, i);
     }
-    print_nnb(nnb, "After exclude self");
 
     /* exclude all the bonded atoms */
     if (nnb->nrex > 0)
@@ -275,7 +221,6 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
             add_nnb(nnb, 1, s[i].ai, s[i].aj);
         }
     }
-    print_nnb(nnb, "After exclude bonds");
 
     /* for the nr of exclusions per atom */
     for (n = 1; (n < nnb->nrex); n++)
@@ -301,8 +246,6 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
             }
         }
     }
-    print_nnb(nnb, "After exclude rest");
-
 }
 
 static void add_b(t_params *bonds, int *nrf, sortable *s)
@@ -354,11 +297,9 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
     }
 
     /* now sort the bonds */
-    prints("gen_excl before qsort", nrbonds, s);
     if (nrbonds > 1)
     {
         qsort((void *) s, nrbonds, (size_t)sizeof(sortable), bond_sort);
-        prints("gen_excl after qsort", nrbonds, s);
     }
 
     do_gen(nrbonds, s, nnb);

@@ -142,9 +142,6 @@ int get_strings(const char *db, char ***strings)
         {
             gmx_fatal(FARGS, "Cannot read string from buffer");
         }
-#ifdef DEBUG
-        fprintf(stderr, "Have read: %s\n", buf);
-#endif
         ptr[i] = gmx_strdup(buf);
     }
     gmx_ffclose(in);

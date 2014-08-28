@@ -60,14 +60,6 @@ void init_nnb(t_nextnb *nnb, int nr, int nrex);
 void done_nnb(t_nextnb *nnb);
 /* Cleanup the nnb struct */
 
-#ifdef DEBUG_NNB
-#define print_nnb(nnb, s) __print_nnb(nnb, s)
-void print_nnb(t_nextnb *nnb, char *s);
-/* Print the nnb struct */
-#else
-#define print_nnb(nnb, s)
-#endif
-
 void gen_nnb(t_nextnb *nnb, t_params plist[]);
 /* Generate a t_nextnb structure from bond information.
  * With the structure you can either generate exclusions

@@ -302,13 +302,10 @@ void print_nrnb(FILE *out, t_nrnb *nrnb)
     }
 }
 
-void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char gmx_unused *file, int gmx_unused line)
+void inc_nrnb(t_nrnb *nrnb, int enr, int inc)
 {
+#pragma omp atomic
     nrnb->n[enr] += inc;
-#ifdef DEBUG_NRNB
-    printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n",
-           nbdata[enr].name, enr, inc, file, line);
-#endif
 }
 
 /* Returns in enr is the index of a full nbnxn VdW kernel */

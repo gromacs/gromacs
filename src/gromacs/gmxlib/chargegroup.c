@@ -153,10 +153,6 @@ void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, t_block *cgs,
     real     nrcg, inv_ncg;
     atom_id *cgindex;
 
-#ifdef DEBUG
-    fprintf(fplog, "Calculating centre of geometry for charge groups %d to %d\n",
-            cg0, cg1);
-#endif
     cgindex = cgs->index;
 
     /* Compute the center of geometry for all charge groups */
@@ -205,9 +201,6 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
         gmx_incons("Calling put_charge_groups_in_box for a system without PBC");
     }
 
-#ifdef DEBUG
-    fprintf(fplog, "Putting cgs %d to %d in box\n", cg0, cg1);
-#endif
     cgindex = cgs->index;
 
     if (ePBC == epbcXY)
@@ -303,6 +296,7 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
 #ifdef DEBUG_PBC
         for (d = 0; (d < npbcdim); d++)
         {
+            /* TODO Turn this into an assertion? */
             if ((cg_cm[icg][d] < 0) || (cg_cm[icg][d] >= box[d][d]))
             {
                 gmx_fatal(FARGS, "cg_cm[%d] = %15f  %15f  %15f\n"

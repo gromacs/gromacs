@@ -147,15 +147,6 @@ static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
         acm[m] -= a0[m]/tm;
     }
 
-#define PVEC(str, v) fprintf(log, \
-                             "%s[X]: %10.5e  %s[Y]: %10.5e  %s[Z]: %10.5e\n", \
-                             str, v[0], str, v[1], str, v[2])
-#ifdef DEBUG
-    PVEC("xcm", xcm);
-    PVEC("acm", acm);
-    PVEC("vcm", vcm);
-#endif
-
     clear_mat(L);
     for (i = 0; (i < natoms); i++)
     {
@@ -171,11 +162,6 @@ static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
         L[YY][ZZ] += dx[YY]*dx[ZZ]*m0;
         L[ZZ][ZZ] += dx[ZZ]*dx[ZZ]*m0;
     }
-#ifdef DEBUG
-    PVEC("L-x", L[XX]);
-    PVEC("L-y", L[YY]);
-    PVEC("L-z", L[ZZ]);
-#endif
 
     return tm;
 }
@@ -186,9 +172,6 @@ void stop_cm(FILE gmx_unused *log, int natoms, real mass[], rvec x[], rvec v[])
     tensor L;
     int    i, m;
 
-#ifdef DEBUG
-    fprintf(log, "stopping center of mass motion...\n");
-#endif
     (void)calc_cm(natoms, mass, x, v, xcm, vcm, acm, L);
 
     /* Subtract center of mass velocity */
@@ -199,8 +182,4 @@ void stop_cm(FILE gmx_unused *log, int natoms, real mass[], rvec x[], rvec v[])
             v[i][m] -= vcm[m];
         }
     }
-
-#ifdef DEBUG
-    (void)calc_cm(log, natoms, mass, x, v, xcm, vcm, acm, L);
-#endif
 }

@@ -71,29 +71,10 @@ void free_matrix(double **a)
     sfree(a);
 }
 
-#define DEBUG_MATRIX
-void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z)
+void matrix_multiply(int n, int m, double **x, double **y, double **z)
 {
     int i, j, k;
 
-#ifdef DEBUG_MATRIX
-    if (fp)
-    {
-        fprintf(fp, "Multiplying %d x %d matrix with a %d x %d matrix\n",
-                n, m, m, n);
-    }
-    if (fp)
-    {
-        for (i = 0; (i < n); i++)
-        {
-            for (j = 0; (j < m); j++)
-            {
-                fprintf(fp, " %7g", x[i][j]);
-            }
-            fprintf(fp, "\n");
-        }
-    }
-#endif
     for (i = 0; (i < m); i++)
     {
         for (j = 0; (j < m); j++)
@@ -125,71 +106,34 @@ static void dump_matrix(FILE *fp, const char *title, int n, double **a)
     fprintf(fp, "Prod a[i][i] = %g\n", d);
 }
 
-int matrix_invert(FILE *fp, int n, double **a)
+int matrix_invert(int n, double **a)
 {
     int      i, j, m, lda, *ipiv, lwork, info;
     double **test = NULL, **id, *work;
 
-#ifdef DEBUG_MATRIX
-    if (fp)
-    {
-        fprintf(fp, "Inverting %d square matrix\n", n);
-        test = alloc_matrix(n, n);
-        for (i = 0; (i < n); i++)
-        {
-            for (j = 0; (j < n); j++)
-            {
-                test[i][j] = a[i][j];
-            }
-        }
-        dump_matrix(fp, "before inversion", n, a);
-    }
-#endif
     snew(ipiv, n);
     lwork = n*n;
     snew(work, lwork);
     m     = lda   = n;
     info  = 0;
     F77_FUNC(dgetrf, DGETRF) (&n, &m, a[0], &lda, ipiv, &info);
-#ifdef DEBUG_MATRIX
-    if (fp)
-    {
-        dump_matrix(fp, "after dgetrf", n, a);
-    }
-#endif
     if (info != 0)
     {
         return info;
     }
     F77_FUNC(dgetri, DGETRI) (&n, a[0], &lda, ipiv, work, &lwork, &info);
-#ifdef DEBUG_MATRIX
-    if (fp)
-    {
-        dump_matrix(fp, "after dgetri", n, a);
-    }
-#endif
     if (info != 0)
     {
         return info;
     }
 
-#ifdef DEBUG_MATRIX
-    if (fp)
-    {
-        id = alloc_matrix(n, n);
-        matrix_multiply(fp, n, n, test, a, id);
-        dump_matrix(fp, "And here is the product of A and Ainv", n, id);
-        free_matrix(id);
-        free_matrix(test);
-    }
-#endif
     sfree(ipiv);
     sfree(work);
 
     return 0;
 }
 
-double multi_regression(FILE *fp, int nrow, double *y, int ncol,
+double multi_regression(int nrow, double *y, int ncol,
                         double **xx, double *a0)
 {
     int    row, niter, i, j;
@@ -205,8 +149,8 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
             at[j][i] = a[i][j] = xx[j][i];
         }
     }
-    matrix_multiply(fp, nrow, ncol, a, at, ata);
-    if ((row = matrix_invert(fp, ncol, ata)) != 0)
+    matrix_multiply(nrow, ncol, a, at, ata);
+    if ((row = matrix_invert(ncol, ata)) != 0)
     {
         gmx_fatal(FARGS, "Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
                   row);

@@ -84,8 +84,7 @@ void update_pcouple(FILE             *fplog,
                     matrix            M,
                     gmx_bool          bInitStep);
 
-void update_coords(FILE             *fplog,
-                   gmx_int64_t       step,
+void update_coords(gmx_int64_t       step,
                    t_inputrec       *inputrec, /* input record and box stuff	*/
                    t_mdatoms        *md,
                    t_state          *state,
@@ -109,8 +108,7 @@ void update_coords(FILE             *fplog,
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr_t constr);
 
-void update_constraints(FILE             *fplog,
-                        gmx_int64_t       step,
+void update_constraints(gmx_int64_t       step,
                         real             *dvdlambda, /* FEP stuff */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
                         gmx_ekindata_t   *ekind,
@@ -132,12 +130,10 @@ void update_constraints(FILE             *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void update_box(FILE             *fplog,
-                gmx_int64_t       step,
+void update_box(gmx_int64_t       step,
                 t_inputrec       *inputrec, /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
-                rvec              force[], /* forces on home particles */
                 matrix           *scale_tot,
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,

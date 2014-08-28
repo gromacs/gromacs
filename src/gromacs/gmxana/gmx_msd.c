@@ -254,9 +254,6 @@ static void calc_corr(t_corr *curr, int nr, int nx, atom_id index[], rvec xc[],
             clear_rvec(dcom);
         }
         g = calc1(curr, nx, index, nx0, xc, dcom, bTen, mat);
-#ifdef DEBUG2
-        printf("g[%d]=%g\n", nx0, g);
-#endif
         curr->data[nr][in_data(curr, nx0)] += g;
         if (bTen)
         {
@@ -661,9 +658,6 @@ int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
     gmx_rmpbc_t      gpbc = NULL;
 
     natoms = read_first_x(oenv, &status, fn, &curr->t0, &(x[cur]), box);
-#ifdef DEBUG
-    fprintf(stderr, "Read %d atoms for first frame\n", natoms);
-#endif
     if ((gnx_com != NULL) && natoms < top->atoms.nr)
     {
         fprintf(stderr, "WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n", natoms, top->atoms.nr);

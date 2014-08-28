@@ -318,7 +318,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     ekind->cosacc.cos_accel = ir->cos_accel;
 
     gstat = global_stat_init(ir);
-    debug_gmx();
 
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fplog,
@@ -525,8 +524,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
     }
 
-    debug_gmx();
-
     /* set free energy calculation frequency as the minimum
        greatest common denominator of nstdhdl, nstexpanded, and repl_ex_nst*/
     nstfep = ir->fepvals->nstdhdl;
@@ -658,7 +655,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 #endif
 
-    debug_gmx();
     /***********************************************************
      *
      *             Loop over MD steps
@@ -1106,7 +1102,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              */
             bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
-            update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
+            update_coords(step, ir, mdatoms, state, fr->bMolPBC,
                           f, bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                           ekind, M, upd, bInitStep, etrtVELOCITY1,
                           cr, nrnb, constr, &top->idef);
@@ -1152,7 +1148,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
                 {
                     wallcycle_stop(wcycle, ewcUPDATE);
-                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
+                    update_constraints(step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, shake_vir,
                                        cr, nrnb, wcycle, upd, constr,
@@ -1428,7 +1424,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
                 if (constr && bIfRandomize)
                 {
-                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
+                    update_constraints(step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, constr,
@@ -1505,7 +1501,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
                     /* velocity half-step update */
-                    update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
+                    update_coords(step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                                   ekind, M, upd, FALSE, etrtVELOCITY2,
                                   cr, nrnb, constr, &top->idef);
@@ -1522,12 +1518,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
-                update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
+                update_coords(step, ir, mdatoms, state, fr->bMolPBC, f,
                               bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                               ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
-                update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
+                update_constraints(step, &dvdl_constr, ir, ekind, mdatoms, state,
                                    fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
@@ -1556,7 +1552,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
-                    update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
+                    update_coords(step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                                   ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                     wallcycle_stop(wcycle, ewcUPDATE);
@@ -1566,7 +1562,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      * to numerical errors, or are they important
                      * physically? I'm thinking they are just errors, but not completely sure.
                      * For now, will call without actually constraining, constr=NULL*/
-                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
+                    update_constraints(step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, NULL,
@@ -1677,7 +1673,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* sum up the foreign energy and dhdl terms for md and sd. currently done every step so that dhdl is correct in the .edr */
             sum_dhdl(enerd, state->lambda, ir->fepvals);
         }
-        update_box(fplog, step, ir, mdatoms, state, f,
+        update_box(step, ir, mdatoms, state,
                    ir->nstlist == -1 ? &nlh.scale_tot : NULL, pcoupl_mu, nrnb, upd);
 
         /* ################# END UPDATE STEP 2 ################# */
@@ -1939,7 +1935,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     }
     /* End of main MD loop */
-    debug_gmx();
 
     /* Stop measuring walltime */
     walltime_accounting_end(walltime_accounting);
@@ -1965,7 +1960,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 
     done_mdoutf(outf);
-    debug_gmx();
 
     if (ir->nstlist == -1 && nlh.nns > 0 && fplog)
     {

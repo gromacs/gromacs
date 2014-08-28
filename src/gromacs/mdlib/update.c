@@ -952,22 +952,6 @@ static void do_update_bd(int start, int nrend, double dt,
     }
 }
 
-static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
-                        int gmx_unused natoms, rvec gmx_unused x[], rvec gmx_unused xp[],
-                        rvec gmx_unused v[], rvec gmx_unused f[])
-{
-#ifdef DEBUG
-    if (fp)
-    {
-        fprintf(fp, "%s\n", title);
-        pr_rvecs(fp, 0, "x", x, natoms);
-        pr_rvecs(fp, 0, "xp", xp, natoms);
-        pr_rvecs(fp, 0, "v", v, natoms);
-        pr_rvecs(fp, 0, "f", f, natoms);
-    }
-#endif
-}
-
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
                                 gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel,
                                 gmx_bool bSaveEkinOld)
@@ -1533,8 +1517,7 @@ static void combine_forces(gmx_update_t upd,
     }
 }
 
-void update_constraints(FILE             *fplog,
-                        gmx_int64_t       step,
+void update_constraints(gmx_int64_t       step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
                         gmx_ekindata_t   *ekind,
@@ -1626,11 +1609,6 @@ void update_constraints(FILE             *fplog,
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
-        where();
-
-        dump_it_all(fplog, "After Shake",
-                    state->natoms, state->x, xprime, state->v, force);
-
         if (bCalcVir)
         {
             if (inputrec->eI == eiSD2)
@@ -1657,8 +1635,6 @@ void update_constraints(FILE             *fplog,
             }
         }
     }
-
-    where();
 
     if (inputrec->eI == eiSD1 && bDoConstr && !bFirstHalf)
     {
@@ -1776,19 +1752,14 @@ void update_constraints(FILE             *fplog,
                 copy_rvec(upd->xp[i], state->x[i]);
             }
         }
-
-        dump_it_all(fplog, "After unshift",
-                    state->natoms, state->x, upd->xp, state->v, force);
     }
 /* ############# END the update of velocities and positions ######### */
 }
 
-void update_box(FILE             *fplog,
-                gmx_int64_t       step,
+void update_box(gmx_int64_t       step,
                 t_inputrec       *inputrec,  /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
-                rvec              force[],   /* forces on home particles */
                 matrix           *scale_tot,
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
@@ -1810,8 +1781,6 @@ void update_box(FILE             *fplog,
         (inputrec->epc == epcMTTK);
 
     dt = inputrec->delta_t;
-
-    where();
 
     /* now update boxes */
     switch (inputrec->epc)
@@ -1883,13 +1852,9 @@ void update_box(FILE             *fplog,
     {
         deform(upd, start, homenr, state->x, state->box, scale_tot, inputrec, step);
     }
-    where();
-    dump_it_all(fplog, "After update",
-                state->natoms, state->x, upd->xp, state->v, force);
 }
 
-void update_coords(FILE             *fplog,
-                   gmx_int64_t       step,
+void update_coords(gmx_int64_t       step,
                    t_inputrec       *inputrec,  /* input record and box stuff	*/
                    t_mdatoms        *md,
                    t_state          *state,
@@ -1972,10 +1937,6 @@ void update_coords(FILE             *fplog,
     }
 
     /* ############# START The update of velocities and positions ######### */
-    where();
-    dump_it_all(fplog, "Before update",
-                state->natoms, state->x, xprime, state->v, force);
-
     if (inputrec->eI == eiSD2)
     {
         check_sd2_work_data_allocation(upd->sd, nrend);

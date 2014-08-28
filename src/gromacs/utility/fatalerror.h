@@ -104,12 +104,6 @@ void gmx_init_debug(const int dbglevel, const char *dbgfile);
 /** Returns TRUE when the program was started in debug mode */
 gmx_bool bDebugMode(void);
 
-/** Implementation for where(). */
-void
-_where(const char *file, int line);
-/** Prints filename and line to stdlog. */
-#define where() _where(__FILE__, __LINE__)
-
 /** Sets the log file for printing error messages. */
 void
 gmx_fatal_set_log_file(FILE *fp);

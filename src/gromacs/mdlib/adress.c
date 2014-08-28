@@ -157,10 +157,6 @@ update_adress_weights_com(FILE gmx_unused    * fplog,
      * construction, but it's the only way to assure that the explicit
      * atoms have the same wf as their vsite. */
 
-#ifdef DEBUG
-    fprintf(fplog, "Calculating center of mass for charge groups %d to %d\n",
-            cg0, cg1);
-#endif
     cgindex = cgs->index;
 
     /* Compute the center of mass for all charge groups */

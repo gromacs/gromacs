@@ -96,10 +96,6 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
 {
     int i;
     int nthread, thread;
-#ifdef DEBUG
-    fprintf(log, "ngtc: %d, ngacc: %d, ngener: %d\n", opts->ngtc, opts->ngacc,
-            opts->ngener);
-#endif
 
     /* bNEMD tells if we should remove remove the COM velocity
      * from the velocities during velocity scaling in T-coupling.
