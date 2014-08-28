@@ -520,6 +520,13 @@ if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
         "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
 endif()
 
+if(GMX_USE_TNG AND NOT GMX_EXTERNAL_TNG)
+    # TNG wants zlib if it is available
+    find_package(ZLIB QUIET)
+    include(gmxTestZLib)
+    gmx_test_zlib(HAVE_ZLIB)
+endif()
+
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
