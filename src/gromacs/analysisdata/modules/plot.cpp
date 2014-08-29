@@ -97,9 +97,8 @@ AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection *sele
 void
 AnalysisDataPlotSettings::addOptions(Options *options)
 {
-    options->addOption(StringOption("xvg").enumValue(g_plotFormats)
-                           .defaultValue("xmgrace")
-                           .storeEnumIndex(&plotFormat_)
+    options->addOption(EnumOption<int>("xvg").enumValue(g_plotFormats)
+                           .store(&plotFormat_)
                            .description("Plot formatting"));
 }
 

@@ -404,8 +404,8 @@ void OptionsAdapter::pargsToOptions(Options *options, t_pargs *pa)
         {
             const int defaultIndex = (pa->u.c[0] != NULL ? nenum(pa->u.c) - 1 : 0);
             data.optionInfo = options->addOption(
-                        StringOption(name).storeEnumIndex(&data.enumIndex)
-                            .defaultEnumIndex(defaultIndex)
+                        EnumOption<int>(name).store(&data.enumIndex)
+                            .defaultValue(defaultIndex)
                             .enumValueFromNullTerminatedArray(pa->u.c + 1)
                             .description(desc).hidden(bHidden));
             return;
@@ -541,8 +541,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         if (bXvgr)
         {
             options.addOption(
-                    gmx::StringOption("xvg").enumValue(xvg_formats)
-                        .storeEnumIndex(&xvgFormat)
+                    gmx::EnumOption<int>("xvg").enumValue(xvg_formats)
+                        .store(&xvgFormat)
                         .description("xvg plot formatting"));
         }
 

@@ -47,6 +47,7 @@
 #define GMX_OPTIONS_BASICOPTIONS_H
 
 #include <string>
+#include <vector>
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -67,10 +68,11 @@ class FloatOptionInfo;
 class FloatOptionStorage;
 class StringOptionInfo;
 class StringOptionStorage;
+class EnumOptionInfo;
+class EnumOptionStorage;
 
-/*! \addtogroup module_options
- * \{
- */
+//! \addtogroup module_options
+//! \{
 
 /*! \brief
  * Specifies an option that provides boolean values.
@@ -279,9 +281,7 @@ class FloatOption : public OptionTemplate<float, FloatOption>
    // Option that only accepts predefined values
    const char * const  allowed[] = { "atom", "residue", "molecule" };
    std::string  str;
-   int          type;
-   options.addOption(StringOption("type").enumValue(allowed).store(&str)
-                        .storeEnumIndex(&type));
+   options.addOption(StringOption("type").enumValue(allowed).store(&str));
  * \endcode
  *
  * Public methods in this class do not throw.
@@ -297,7 +297,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
             : MyBase(name), enumValues_(NULL), enumValuesCount_(0),
-              defaultEnumIndex_(-1), enumIndexStore_(NULL)
+              defaultEnumIndex_(-1)
         {
         }
 
@@ -309,10 +309,6 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * Also accepts prefixes of the strings; if a prefix matches more than
          * one of the possible strings, the shortest one is used (in a tie, the
          * first one is).
-         *
-         * It is not possible to provide multiple values for an option with
-         * this property set, i.e., valueCount() and similar attributes cannot
-         * be set.
          *
          * The strings are copied once the option is created.
          */
@@ -356,26 +352,6 @@ class StringOption : public OptionTemplate<std::string, StringOption>
             defaultEnumIndex_ = index;
             return me();
         }
-        /*! \brief
-         * Stores the index of the selected value into the provided memory
-         * location.
-         *
-         * The index (zero-based) of the selected value in the array \p values
-         * provided to enumValues() is written into \p *store after the
-         * option gets its value.  If the option has not been provided,
-         * and there is no default value, -1 is stored.  If store(),
-         * storeVector() or defaultEnumIndex() is not present, the value in
-         * \p *store is kept as a default value, otherwise it is always
-         * overwritten.
-         *
-         * Cannot be specified without enumValue().
-         *
-         * \todo
-         * Implement this such that it is also possible to store the value
-         * directly into a real enum type.
-         */
-        MyClass &storeEnumIndex(int *store)
-        { enumIndexStore_ = store; return me(); }
 
     private:
         //! Creates a StringOptionStorage object.
@@ -385,13 +361,256 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         const char *const      *enumValues_;
         int                     enumValuesCount_;
         int                     defaultEnumIndex_;
-        int                    *enumIndexStore_;
 
         /*! \brief
          * Needed to initialize StringOptionStorage from this class without
          * otherwise unnecessary accessors.
          */
         friend class StringOptionStorage;
+};
+
+//! \}
+
+namespace internal
+{
+
+/*! \internal
+ * \brief
+ * Interface for handling storage of the enum indexes.
+ *
+ * This interface acts as a proxy between the EnumOptionStorage class (that
+ * operates on `int` values), and the actual enum variable that receives the
+ * values.  The implementation of this interface takes care of conversion of
+ * the values and writing them out into the actual enum variables.
+ *
+ * \ingroup module_options
+ */
+class EnumIndexStoreInterface
+{
+    public:
+        virtual ~EnumIndexStoreInterface();
+
+        //! Returns initial values from the actual enum variables.
+        virtual std::vector<int> initialValues() const = 0;
+        //! Reserves space for storage in the actual enum variables.
+        virtual void reserveSpace(size_t count) = 0;
+        //! Updates values in the actual enum variables based on option values.
+        virtual void refreshValues(const std::vector<int> &values) = 0;
+};
+
+/*! \internal
+ * \brief
+ * Type-specific implementation for EnumIndexStoreInterface.
+ *
+ * This class is instantiated for each enum type for which EnumOption is used,
+ * and takes care of managing the `int`-to-`enum` conversions as described in
+ * EnumIndexStoreInterface.  Having this as a template in the header allows the
+ * actual storage implementation to not be in the header, which would require
+ * exposing all the internals through this one header...
+ *
+ * \ingroup module_options
+ */
+template <typename EnumType>
+class EnumIndexStore : public EnumIndexStoreInterface
+{
+    public:
+        //! Initializes the storage for the given actual enum variables.
+        EnumIndexStore(EnumType *store, std::vector<EnumType> *storeVector)
+            : store_(store), storeVector_(storeVector)
+        {
+        }
+
+        virtual std::vector<int> initialValues() const
+        {
+            std::vector<int> result;
+            if (storeVector_ != NULL)
+            {
+                typename std::vector<EnumType>::const_iterator i;
+                for (i = storeVector_->begin(); i != storeVector_->end(); ++i)
+                {
+                    result.push_back(*i);
+                }
+            }
+            else if (store_ != NULL)
+            {
+                // TODO: Copy more than one value if that would make sense.
+                result.push_back(store_[0]);
+            }
+            return result;
+        }
+        virtual void reserveSpace(size_t count)
+        {
+            if (storeVector_ != NULL)
+            {
+                storeVector_->reserve(count);
+            }
+        }
+        virtual void refreshValues(const std::vector<int> &values)
+        {
+            if (store_ != NULL)
+            {
+                for (size_t i = 0; i < values.size(); ++i)
+                {
+                    store_[i] = static_cast<EnumType>(values[i]);
+                }
+            }
+            if (storeVector_ != NULL)
+            {
+                GMX_ASSERT(storeVector_->capacity() >= values.size(),
+                           "reserveSpace() should have been called earlier");
+                storeVector_->resize(values.size());
+                for (size_t i = 0; i < values.size(); ++i)
+                {
+                    (*storeVector_)[i] = static_cast<EnumType>(values[i]);
+                }
+            }
+        }
+
+    private:
+        EnumType              *store_;
+        std::vector<EnumType> *storeVector_;
+};
+
+//! \cond internal
+/*! \internal
+ * \brief
+ * Helper to create EnumOptionStorage instances.
+ *
+ * This function works as a proxy between EnumOption::createStorage() and the
+ * EnumOptionStorage constructor, such that the latter does not need to be
+ * exposed in the header.
+ *
+ * \ingroup module_options
+ */
+AbstractOptionStorage *
+createEnumOptionStorage(const AbstractOption &option,
+                        const char *const *enumValues, int count,
+                        int defaultValue, int defaultValueIfSet,
+                        EnumIndexStoreInterface *store);
+//! \endcond
+
+}   // namespace internal
+
+//! \addtogroup module_options
+//! \{
+
+/*! \brief
+ * Specifies an option that accepts enumerated string values and writes the
+ * selected index into an `enum` variable.
+ *
+ * \tparam EnumType  Type of the variable that receives the values
+ *     (can also be `int`).
+ *
+ * Examples:
+ * \code
+   enum MyEnum { eAtom, eRes, eMol };
+   using gmx::EnumOption;
+   const char * const  allowed[] = { "atom", "residue", "molecule" };
+   MyEnum       value = eAtom; // default value
+   options.addOption(EnumOption<MyEnum>("type").enumValue(allowed).store(&value));
+ * \endcode
+ *
+ * storeCount() is not currently implemented for this option type, and
+ * providing multiple default values through an array passed to store() does
+ * not work consistently in all cases.
+ * In the current implementation, the values of the enum type should correspond
+ * to indices in the array passed to enumValue(), i.e., be consencutive
+ * starting from zero.  Only values corresponding to valid indices are accepted
+ * as parameters to, e.g., defaultValue().  However, other values can be used
+ * as the initial value of the variable (`value` in the above example), and
+ * those will be preserved if the option is not set.
+ *
+ * Public methods in this class do not throw.
+ *
+ * \inpublicapi
+ */
+template <typename EnumType>
+class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
+{
+    public:
+        //! OptionInfo subclass corresponding to this option type.
+        typedef EnumOptionInfo InfoType;
+
+        // This needs to be duplicated from OptionTemplate because this class
+        // is a template.
+        //! Short-hand for the base class.
+        typedef OptionTemplate<EnumType, EnumOption<EnumType> > MyBase;
+
+        //! Initializes an option with the given name.
+        explicit EnumOption(const char *name)
+            : MyBase(name), enumValues_(NULL), enumValuesCount_(0)
+        {
+        }
+
+        /*! \brief
+         * Sets the option to only accept one of a fixed set of strings.
+         *
+         * \param[in] values  Array of strings to accept.
+         *
+         * Also accepts prefixes of the strings; if a prefix matches more than
+         * one of the possible strings, the shortest one is used (in a tie, the
+         * first one is).
+         *
+         * The strings are copied once the option is created.
+         */
+        template <size_t count>
+        EnumOption &enumValue(const char *const (&values)[count])
+        {
+            GMX_ASSERT(enumValues_ == NULL,
+                       "Multiple sets of enumerated values specified");
+            enumValues_      = values;
+            enumValuesCount_ = count;
+            return MyBase::me();
+        }
+        /*! \brief
+         * Sets the option to only accept one of a fixed set of strings.
+         *
+         * \param[in] values  Array of strings to accept, with a NULL pointer
+         *      following the last string.
+         *
+         * Works otherwise as the array version, but accepts a pointer to
+         * an array of undetermined length.  The end of the array is indicated
+         * by a NULL pointer in the array.
+         *
+         * \see enumValue()
+         */
+        EnumOption &enumValueFromNullTerminatedArray(const char *const *values)
+        {
+            GMX_ASSERT(enumValues_ == NULL,
+                       "Multiple sets of enumerated values specified");
+            enumValues_      = values;
+            enumValuesCount_ = -1;
+            return MyBase::me();
+        }
+
+    private:
+        //! Helper function to convert default values for storate initialization.
+        static int convertToInt(const EnumType *defaultValue)
+        {
+            return defaultValue != NULL ? static_cast<int>(*defaultValue) : -1;
+        }
+
+        //! Creates a EnumOptionStorage object.
+        virtual AbstractOptionStorage *createStorage(
+            const OptionManagerContainer & /*managers*/) const
+        {
+            // TODO: Implement storeCount() if necessary.
+            return internal::createEnumOptionStorage(
+                    *this, enumValues_, enumValuesCount_,
+                    convertToInt(MyBase::defaultValue()),
+                    convertToInt(MyBase::defaultValueIfSet()),
+                    new internal::EnumIndexStore<EnumType>(
+                            MyBase::store(), MyBase::storeVector()));
+        }
+
+        const char *const      *enumValues_;
+        int                     enumValuesCount_;
+
+        /*! \brief
+         * Needed to initialize EnumOptionStorage from this class without
+         * otherwise unnecessary accessors.
+         */
+        friend class EnumOptionStorage;
 };
 
 /*! \brief
@@ -513,8 +732,27 @@ class StringOptionInfo : public OptionInfo
         const std::vector<std::string> &allowedValues() const;
 
     private:
-        StringOptionStorage &option();
         const StringOptionStorage &option() const;
+};
+
+/*! \brief
+ * Wrapper class for accessing enum option information.
+ *
+ * \inpublicapi
+ */
+class EnumOptionInfo : public OptionInfo
+{
+    public:
+        //! Creates an option info object for the given option.
+        explicit EnumOptionInfo(EnumOptionStorage *option);
+
+        /*! \brief
+         * Returns the set of allowed values for this option.
+         */
+        const std::vector<std::string> &allowedValues() const;
+
+    private:
+        const EnumOptionStorage &option() const;
 };
 
 /*! \typedef RealOption
@@ -539,7 +777,7 @@ typedef FloatOption      RealOption;
 typedef FloatOptionInfo  RealOptionInfo;
 #endif
 
-/*!\}*/
+//! \}
 
 } // namespace gmx
 

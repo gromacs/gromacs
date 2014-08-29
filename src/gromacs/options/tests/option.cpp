@@ -68,16 +68,4 @@ TEST(OptionsTest, FailsOnNonsafeStorage)
                      gmx::APIError);
 }
 
-TEST(OptionsTest, FailsOnIncorrectEnumDefaultValue)
-{
-    gmx::Options                options(NULL, NULL);
-    std::string                 value;
-    const char * const          allowed[] = { "none", "test", "value" };
-    using gmx::StringOption;
-    ASSERT_THROW_GMX(options.addOption(StringOption("name").store(&value)
-                                           .enumValue(allowed)
-                                           .defaultValue("unknown")),
-                     gmx::APIError);
-}
-
 } // namespace

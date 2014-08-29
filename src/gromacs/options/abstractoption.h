@@ -353,6 +353,14 @@ class OptionTemplate : public AbstractOption
          * is none.
          */
         const T *defaultValueIfSet() const { return defaultValueIfSet_; }
+        /*! \brief
+         * Returns a pointer to the storage location, or NULL if none specified.
+         */
+        T *store() const { return store_; }
+        /*! \brief
+         * Returns a pointer to the storage vector, or NULL if none specified.
+         */
+        std::vector<T> *storeVector() const { return storeVector_; }
         //! Returns \p *this casted into MyClass to reduce typing.
         MyClass &me() { return static_cast<MyClass &>(*this); }
         //! \endcond
