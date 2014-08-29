@@ -7,7 +7,7 @@ SYNOPSIS
 gmx [-f [<.xtc/.trr/...>]] [-mult [<.xtc/.trr/...> [...]]] [-lib [<.dat>]]
     [-io [<.dat>]] [-o <.xvg>] [-[no]bool] [-[no]hidden] [-int <int>]
     [-ivec <vector>] [-double <real>] [-dvec <vector>] [-time <time>]
-    [-string <string>] [-enum <enum>]
+    [-string <string>] [-enum <enum>] [-ienum <enum>]
 
 OPTIONS
 
@@ -32,6 +32,7 @@ Other options:
  -time  <time>   (10)       Time option (ps)
  -string <string> (test)    String option
  -enum  <enum>   (no)       Enum option: no, opt1, opt2
+ -ienum <enum>   (opt1)     Enum option: no, opt1, opt2
 
 ]]></String>
 </ReferenceData>

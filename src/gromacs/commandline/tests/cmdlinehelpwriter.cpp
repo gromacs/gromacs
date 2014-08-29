@@ -121,6 +121,8 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     const char * const enumValues[] = { "no", "opt1", "opt2" };
     options.addOption(StringOption("enum").description("Enum option")
                           .enumValue(enumValues).defaultEnumIndex(0));
+    options.addOption(EnumOption<int>("ienum").description("Enum option")
+                          .enumValue(enumValues).defaultValue(1));
 
     std::string filename;
     options.addOption(FileNameOption("f")
@@ -146,6 +148,45 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
 
     CommandLineHelpWriter writer(options);
     bHidden_ = true;
+    checkHelp(&writer);
+}
+
+/*
+ * Tests that default values taken from variables are properly visible in the
+ * help output.
+ */
+TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
+{
+    using namespace gmx;
+
+    Options options("test", "Short Description");
+
+    bool    bValue = true;
+    options.addOption(BooleanOption("bool").description("Boolean option")
+                          .store(&bValue));
+
+    int ivalue = 3;
+    options.addOption(IntegerOption("int").description("Integer option")
+                          .store(&ivalue));
+
+    int iavalue[] = {2, 3};
+    options.addOption(IntegerOption("int2").description("Integer 2-value option")
+                          .store(iavalue).valueCount(2));
+
+    std::vector<std::string> svalues;
+    svalues.push_back("foo");
+    options.addOption(StringOption("str").description("String option")
+                          .storeVector(&svalues).multiValue());
+
+    enum TestEnum {
+        eFoo, eBar
+    };
+    TestEnum          evalue    = eBar;
+    const char *const allowed[] = { "foo", "bar" };
+    options.addOption(EnumOption<TestEnum>("enum").description("Enum option")
+                          .enumValue(allowed).store(&evalue));
+
+    CommandLineHelpWriter writer(options);
     checkHelp(&writer);
 }
 

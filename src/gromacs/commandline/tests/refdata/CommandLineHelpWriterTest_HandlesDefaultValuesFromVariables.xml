@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-[no]bool] [-int <int>] [-int2 <int>] [-str <string>] [-enum <enum>]
+
+OPTIONS
+
+Other options:
+
+ -[no]bool       (yes)      Boolean option
+ -int   <int>    (3)        Integer option
+ -int2  <int>    (2 3)      Integer 2-value option
+ -str   <string> (foo)      String option
+ -enum  <enum>   (bar)      Enum option: foo, bar
+
+]]></String>
+</ReferenceData>
