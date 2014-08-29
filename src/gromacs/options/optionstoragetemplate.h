@@ -120,7 +120,16 @@ class OptionStorageTemplate : public AbstractOptionStorage
         template <class U>
         explicit OptionStorageTemplate(const OptionTemplate<T, U> &settings,
                                        OptionFlags staticFlags = OptionFlags());
-
+        /*! \brief
+         * Initializes the storage from base option settings.
+         *
+         * \param[in] settings  Option settings.
+         * \throws  APIError if invalid settings have been provided.
+         *
+         * This constructor works for cases where there is no matching
+         * OptionTemplate (e.g., EnumOption).
+         */
+        explicit OptionStorageTemplate(const AbstractOption &settings);
 
         virtual void clearSet();
         /*! \copydoc gmx::AbstractOptionStorage::convertValue()
@@ -209,7 +218,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * If this function succeeds, values added with addValue() since the
          * previous clearSet() are added to the storage for the option.
          * Only throws in out-of-memory conditions, and provides the strong
-         * exception safety guarantee.
+         * exception safety guarantee as long as the copy constructor of `T`
+         * does not throw.
          *
          * See addValue() for cases where this method should be used in derived
          * classes.
@@ -348,6 +358,16 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
 
 
 template <typename T>
+OptionStorageTemplate<T>::OptionStorageTemplate(const AbstractOption &settings)
+    : AbstractOptionStorage(settings, OptionFlags()),
+      store_(NULL), countptr_(NULL),
+      ownedValues_(new std::vector<T>())
+{
+    values_ = ownedValues_.get();
+}
+
+
+template <typename T>
 OptionStorageTemplate<T>::~OptionStorageTemplate()
 {
 }
@@ -420,6 +440,7 @@ void OptionStorageTemplate<T>::commitValues()
     }
     else
     {
+        values_->reserve(values_->size() + setValues_.size());
         values_->insert(values_->end(), setValues_.begin(), setValues_.end());
     }
     clearSet();

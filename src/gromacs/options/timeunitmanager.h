@@ -104,7 +104,7 @@ class TimeUnitManager
         {
             GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= eTimeUnit_s,
                        "Time unit index has become out-of-range");
-            return static_cast<TimeUnit>(timeUnit_);
+            return timeUnit_;
         }
         //! Set a new time unit for the manager.
         void setTimeUnit(TimeUnit unit);
@@ -145,14 +145,8 @@ class TimeUnitManager
         void scaleTimeOptions(Options *options) const;
 
     private:
-        /*! \brief
-         * Currently set time unit for this manager.
-         *
-         * Type is int to make it possible to use it with
-         * StringOption::storeEnumIndex(), but it should always one of the
-         * allowed values for TimeUnit.
-         */
-        int                     timeUnit_;
+        //! Currently set time unit for this manager.
+        TimeUnit                timeUnit_;
 };
 
 } // namespace gmx
