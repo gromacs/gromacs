@@ -56,12 +56,12 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.6.7-dev")
+set(PROJECT_VERSION "4.6.8-dev")
 # The version number of the regressiontest tarball against which this
 # git branch can be tested. Normally, this will be the version of the
 # last patch release. Comment the next line out for branches leading
 # to a major/minor release.
-set(REGRESSIONTEST_VERSION "4.6.6")
+set(REGRESSIONTEST_VERSION "4.6.7")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
