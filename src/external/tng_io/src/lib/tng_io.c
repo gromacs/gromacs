@@ -5047,6 +5047,7 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
                                           const unsigned long uncompressed_len)
 {
     char *temp, *temp_data_contents;
+    int64_t compressed_len;
     double *d_dest = 0;
     float *f_dest = 0;
     unsigned long offset;
@@ -5068,7 +5069,8 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
         return(TNG_FAILURE);
     }
 
-    temp_data_contents = malloc(uncompressed_len);
+    compressed_len = block->block_contents_size - (int64_t)((char *)start_pos - (char *)block->block_contents);
+    temp_data_contents = malloc(compressed_len);
     if(!temp_data_contents)
     {
         fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
@@ -5076,7 +5078,7 @@ static tng_function_status tng_uncompress(tng_trajectory_t tng_data,
         return(TNG_CRITICAL);
     }
 
-    memcpy(temp_data_contents, (char *)start_pos, uncompressed_len);
+    memcpy(temp_data_contents, (char *)start_pos, compressed_len);
 
     if(type == TNG_FLOAT_DATA)
     {
@@ -8375,21 +8377,24 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_system_copy(tng_trajectory_t 
             }
         }
         molecule_temp->n_bonds = molecule->n_bonds;
-        bond_temp = realloc(molecule_temp->bonds, sizeof(struct tng_bond) *
-                            molecule->n_bonds);
-        if(!bond_temp)
+        if(molecule->n_bonds > 0)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
-                   sizeof(struct tng_bond) * molecule->n_bonds,
-                   __FILE__, __LINE__);
-            free(molecule_temp->bonds);
-            molecule_temp->n_bonds = 0;
-            return(TNG_CRITICAL);
-        }
-        molecule_temp->bonds = bond_temp;
-        for(j = 0; j < molecule->n_bonds; j++)
-        {
-            molecule_temp->bonds[j] = molecule->bonds[j];
+            bond_temp = realloc(molecule_temp->bonds, sizeof(struct tng_bond) *
+                                molecule->n_bonds);
+            if(!bond_temp)
+            {
+                fprintf(stderr, "TNG library: Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
+                       sizeof(struct tng_bond) * molecule->n_bonds,
+                       __FILE__, __LINE__);
+                free(molecule_temp->bonds);
+                molecule_temp->n_bonds = 0;
+                return(TNG_CRITICAL);
+            }
+            molecule_temp->bonds = bond_temp;
+            for(j = 0; j < molecule->n_bonds; j++)
+            {
+                molecule_temp->bonds[j] = molecule->bonds[j];
+            }
         }
         stat = tng_molecule_cnt_set(tng_data_dest, molecule_temp,
                                     tng_data_src->molecule_cnt_list[i]);
