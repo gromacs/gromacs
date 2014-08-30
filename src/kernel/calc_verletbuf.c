@@ -268,6 +268,8 @@ static void get_vsite_masses(const gmx_moltype_t *moltype,
                             inv_mass += coeff*coeff/m_aj;
                         }
                         vsite_m[a1] = 1/inv_mass;
+                        /* Correct for loop increment of i */
+                        i += j - 1 - NRAL(ft);
                         break;
                     default:
                         /* Use the mass of the lightest constructing atom.
