@@ -69,6 +69,18 @@ using ::gmx::test::FloatingPointDifference;
 TEST(FloatingPointDifferenceTest, HandlesEqualValues)
 {
     FloatingPointDifference diff(1.2, 1.2);
+    EXPECT_TRUE(diff.isDouble());
+    EXPECT_FALSE(diff.isNaN());
+    EXPECT_EQ(0.0, diff.asAbsolute());
+    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_FALSE(diff.signsDiffer());
+}
+
+// TODO: Use typed tests to run all the tests for single and double.
+TEST(FloatingPointDifferenceTest, HandlesFloatValues)
+{
+    FloatingPointDifference diff(1.2f, 1.2f);
+    EXPECT_FALSE(diff.isDouble());
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
     EXPECT_EQ(0U,  diff.asUlps());
@@ -137,6 +149,88 @@ TEST(FloatingPointDifferenceTest, HandlesNaN)
     const double            second = 2.0;
     FloatingPointDifference diff(first, second);
     EXPECT_TRUE(diff.isNaN());
+}
+
+TEST(FloatingPointToleranceTest, UlpTolerance)
+{
+    using gmx::test::ulpTolerance;
+
+    FloatingPointDifference fequal(1.0, 1.0);
+    FloatingPointDifference fulp2(1.0f, addUlps(1.0f, 2));
+    EXPECT_TRUE(ulpTolerance(0).isWithin(fequal));
+    EXPECT_FALSE(ulpTolerance(1).isWithin(fulp2));
+    EXPECT_TRUE(ulpTolerance(2).isWithin(fulp2));
+
+    FloatingPointDifference dequal(1.0, 1.0);
+    FloatingPointDifference dulp2(1.0,  addUlps(1.0, 2));
+    FloatingPointDifference dulp2f(1.0,  static_cast<double>(addUlps(1.0f, 2)));
+    EXPECT_TRUE(ulpTolerance(0).isWithin(dequal));
+    EXPECT_TRUE(ulpTolerance(2).isWithin(dulp2));
+    EXPECT_FALSE(ulpTolerance(2).isWithin(dulp2f));
+}
+
+TEST(FloatingPointToleranceTest, RelativeToleranceAsFloatingPoint)
+{
+    using gmx::test::relativeToleranceAsFloatingPoint;
+
+    FloatingPointDifference fequal(1.0f, 1.0f);
+    FloatingPointDifference fulp2(1.0f, addUlps(1.0f, 2));
+    FloatingPointDifference fdiff(1.0f, 1.011f);
+    FloatingPointDifference fsmall(0.1f, 0.111f);
+    FloatingPointDifference fsmall2(0.1f, 0.121f);
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-2).isWithin(fequal));
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-9).isWithin(fequal));
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-2).isWithin(fulp2));
+    EXPECT_FALSE(relativeToleranceAsFloatingPoint(1.0, 1e-9).isWithin(fulp2));
+    EXPECT_FALSE(relativeToleranceAsFloatingPoint(1.0, 1e-2).isWithin(fdiff));
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 2e-2).isWithin(fdiff));
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 2e-2).isWithin(fsmall));
+    EXPECT_FALSE(relativeToleranceAsFloatingPoint(0.1, 2e-2).isWithin(fsmall));
+    EXPECT_FALSE(relativeToleranceAsFloatingPoint(1.0, 2e-2).isWithin(fsmall2));
+
+    FloatingPointDifference dequal(1.0, 1.0);
+    FloatingPointDifference dulp2f(1.0, static_cast<double>(addUlps(1.0f, 2)));
+    FloatingPointDifference ddiff(1.0, 1.011);
+    FloatingPointDifference dsmall(0.1, 0.111);
+    FloatingPointDifference dsmall2(0.1, 0.121);
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-2).isWithin(dequal));
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-9).isWithin(dequal));
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-2).isWithin(dulp2f));
+    EXPECT_FALSE(relativeToleranceAsFloatingPoint(1.0, 1e-9).isWithin(dulp2f));
+    EXPECT_FALSE(relativeToleranceAsFloatingPoint(1.0, 1e-2).isWithin(ddiff));
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 2e-2).isWithin(ddiff));
+    EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 2e-2).isWithin(dsmall));
+    EXPECT_FALSE(relativeToleranceAsFloatingPoint(0.1, 2e-2).isWithin(dsmall));
+    EXPECT_FALSE(relativeToleranceAsFloatingPoint(1.0, 2e-2).isWithin(dsmall2));
+}
+
+TEST(FloatingPointToleranceTest, RelativeToleranceAsUlp)
+{
+    using gmx::test::relativeToleranceAsUlp;
+
+    FloatingPointDifference fequal(1.0f, 1.0f);
+    FloatingPointDifference fulp4(1.0f, addUlps(1.0f, 4));
+    FloatingPointDifference fsmall(0.1f, addUlps(1.0f, 2) - 0.9f);
+    FloatingPointDifference fsmall2(0.1f, addUlps(1.0f, 6) - 0.9f);
+    EXPECT_TRUE(relativeToleranceAsUlp(1.0, 2).isWithin(fequal));
+    EXPECT_FALSE(relativeToleranceAsUlp(1.0, 2).isWithin(fulp4));
+    EXPECT_TRUE(relativeToleranceAsUlp(1.0, 4).isWithin(fulp4));
+    EXPECT_TRUE(relativeToleranceAsUlp(1.0, 4).isWithin(fsmall));
+    EXPECT_FALSE(relativeToleranceAsUlp(0.1, 4).isWithin(fsmall));
+    EXPECT_FALSE(relativeToleranceAsUlp(1.0, 4).isWithin(fsmall2));
+
+    FloatingPointDifference dequal(1.0, 1.0);
+    FloatingPointDifference dulp4(1.0, addUlps(1.0, 4));
+    FloatingPointDifference dulp4f(1.0,  static_cast<double>(addUlps(1.0f, 4)));
+    FloatingPointDifference dsmall(0.1, addUlps(1.0, 2) - 0.9);
+    FloatingPointDifference dsmall2(0.1, addUlps(1.0, 6) - 0.9);
+    EXPECT_TRUE(relativeToleranceAsUlp(1.0, 2).isWithin(dequal));
+    EXPECT_FALSE(relativeToleranceAsUlp(1.0, 2).isWithin(dulp4));
+    EXPECT_TRUE(relativeToleranceAsUlp(1.0, 4).isWithin(dulp4));
+    EXPECT_FALSE(relativeToleranceAsUlp(1.0, 4).isWithin(dulp4f));
+    EXPECT_TRUE(relativeToleranceAsUlp(1.0, 4).isWithin(dsmall));
+    EXPECT_FALSE(relativeToleranceAsUlp(0.1, 4).isWithin(dsmall));
+    EXPECT_FALSE(relativeToleranceAsUlp(1.0, 4).isWithin(dsmall2));
 }
 
 } // namespace

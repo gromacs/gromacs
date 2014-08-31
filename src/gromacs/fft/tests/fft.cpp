@@ -92,11 +92,8 @@ class BaseFFTTest : public ::testing::Test
             // TODO: These tolerances are just something that has been observed
             // to be sufficient to pass the tests.  It would be nicer to
             // actually argue about why they are sufficient (or what is).
-#ifdef GMX_DOUBLE
-            checker_.setDefaultTolerance(gmx::test::relativeRealTolerance(10.0, 512));
-#else
-            checker_.setDefaultTolerance(gmx::test::relativeRealTolerance(10.0, 64));
-#endif
+            checker_.setDefaultTolerance(
+                    gmx::test::relativeToleranceAsPrecisionDependentUlp(10.0, 64, 512));
         }
         ~BaseFFTTest()
         {
