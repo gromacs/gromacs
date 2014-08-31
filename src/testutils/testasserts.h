@@ -40,6 +40,7 @@
  * assertions for:
  *  - exceptions
  *  - floating-point comparison
+ *  - comparison against NULL
  *
  * \if internal
  * \todo
@@ -221,7 +222,11 @@ class FloatingPointDifference
          * 0.0 and -0.0 are treated as positive and negative, respectively.
          */
         bool signsDiffer() const { return bSignDifference_; }
-
+        /*! \brief
+         * Whether the difference is between single- or double-precision
+         * numbers.
+         */
+        bool isDouble() const { return bDouble_; }
         //! Formats the difference as a string for assertion failure messages.
         std::string toString() const;
 
@@ -242,6 +247,10 @@ class FloatingPointDifference
  * Specifies a floating-point comparison tolerance and checks whether a
  * difference is within the tolerance.
  *
+ * The related functions section lists methods that can be construct methods
+ * using less parameters than the full constructor, and with more obvious
+ * semantics.  These should be preferred over using the constructor directly.
+ *
  * Several types of tolerances are possible:
  *  - _absolute tolerance_: difference between the values must be smaller than
  *    the given tolerance for the check to pass.
@@ -250,7 +259,7 @@ class FloatingPointDifference
  *  - _ULP tolerance_: ULP (units of least precision) difference between the
  *    values must be smaller than the given tolerance for the check to pass.
  *    Setting the ULP tolerance to zero requires exact match.
- *    Setting the ULP tolerance to negative disables the ULP check.
+ *    Setting the ULP tolerance to GMX_UINT64_MAX disables the ULP check.
  *    `0.0` and `-0.0` are treated as equal for the ULP check.
  *  - _sign check_: if set, any values that are of different signs fail the
  *    check (note that this also applies to `0.0` and `-0.0`: a value with a
@@ -264,17 +273,18 @@ class FloatingPointDifference
  * check.  In this case, the sign check must succeed for the check to pass,
  * even if other tolerances are satisfied.
  *
- * Currently, the ULP tolerance is not in any particular precision, but the
- * interpretation depends on the compared numbers: if floats are compared, then
- * the ULP tolerance specifies single-precision ULPs, and if doubles are
- * compared, then the same number is interpreted as double-precision ULPs.
- *
- * The related functions section lists methods that can be construct methods
- * using less parameters than the full constructor, and with more obvious
- * semantics.
+ * The tolerances can be specified separately for single and double precision
+ * comparison.  Different initialization functions have different semantics on
+ * how the provided tolerance values are interpreted; check their
+ * documentation.
  *
  * Methods in this class do not throw, except for toString(), which may throw
  * std::bad_alloc.
+ *
+ * \todo
+ * The factory methods that take ULP difference could be better formulated as
+ * methods that take the acceptable number of incorrect bits and/or the number
+ * of accurate bits.
  *
  * \see FloatingPointDifference
  */
@@ -284,13 +294,26 @@ class FloatingPointTolerance
         /*! \brief
          * Creates a tolerance with the specified values.
          *
-         * \param[in] absolute       Allowed absolute difference.
-         * \param[in] ulp            Allowed ULP difference.
-         * \param[in] bSignMustMatch Whether sign mismatch fails the comparison.
+         * \param[in]  singleAbsoluteTolerance
+         *     Allowed absolute difference in a single-precision number.
+         * \param[in]  doubleAbsoluteTolerance
+         *     Allowed absolute difference in a double-precision number.
+         * \param[in]  singleUlpTolerance
+         *     Allowed ULP difference in a single-precision number.
+         * \param[in]  doubleUlpTolerance
+         *     Allowed ULP difference in a double-precision number.
+         * \param[in]  bSignMustMatch
+         *     Whether sign mismatch fails the comparison.
          */
-        FloatingPointTolerance(double absolute, int ulp,
-                               bool bSignMustMatch)
-            : absoluteTolerance_(absolute), ulpTolerance_(ulp),
+        FloatingPointTolerance(float        singleAbsoluteTolerance,
+                               double       doubleAbsoluteTolerance,
+                               gmx_uint64_t singleUlpTolerance,
+                               gmx_uint64_t doubleUlpTolerance,
+                               bool         bSignMustMatch)
+            : singleAbsoluteTolerance_(singleAbsoluteTolerance),
+              doubleAbsoluteTolerance_(doubleAbsoluteTolerance),
+              singleUlpTolerance_(singleUlpTolerance),
+              doubleUlpTolerance_(doubleUlpTolerance),
               bSignMustMatch_(bSignMustMatch)
         {
         }
@@ -303,23 +326,79 @@ class FloatingPointTolerance
         bool isWithin(const FloatingPointDifference &difference) const;
 
         //! Formats the tolerance as a string for assertion failure messages.
-        std::string toString() const;
+        std::string toString(const FloatingPointDifference &difference) const;
 
     private:
-        double       absoluteTolerance_;
-        int          ulpTolerance_;
+        float        singleAbsoluteTolerance_;
+        double       doubleAbsoluteTolerance_;
+        gmx_uint64_t singleUlpTolerance_;
+        gmx_uint64_t doubleUlpTolerance_;
         bool         bSignMustMatch_;
 };
 
 /*! \brief
  * Creates a tolerance that only allows a specified ULP difference.
  *
+ * The tolerance uses the given ULP value for both precisions, i.e., double
+ * precision will have much stricter tolerance.
+ *
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
-ulpTolerance(gmx_int64_t ulpDiff)
+ulpTolerance(gmx_uint64_t ulpDiff)
 {
-    return FloatingPointTolerance(0.0, ulpDiff, false);
+    return FloatingPointTolerance(0.0, 0.0, ulpDiff, ulpDiff, false);
+}
+
+/*! \brief
+ * Creates a tolerance that allows a difference in two compared values that is
+ * relative to the given magnitude.
+ *
+ * \param[in] magnitude  Magnitude of the numbers the computation operates in.
+ * \param[in] tolerance  Relative tolerance permitted (e.g. 1e-4).
+ *
+ * In addition to setting an ULP tolerance equivalent to \p tolerance for both
+ * precisions, this sets the absolute tolerance such that values close to zero
+ * (in general, smaller than \p magnitude) do not fail the check if they
+ * differ by less than \p tolerance evaluated at \p magnitude.  This accounts
+ * for potential loss of precision for small values, and should be used when
+ * accuracy of values much less than \p magnitude do not matter for
+ * correctness.
+ *
+ * The ULP tolerance for different precisions will be different to make them
+ * both match \p tolerance.
+ *
+ * \related FloatingPointTolerance
+ */
+FloatingPointTolerance
+relativeToleranceAsFloatingPoint(double magnitude, double tolerance);
+
+/*! \brief
+ * Creates a tolerance that allows a precision-dependent relative difference in
+ * a complex computation.
+ *
+ * \param[in] magnitude      Magnitude of the numbers the computation operates in.
+ * \param[in] singleUlpDiff  Expected accuracy of single-precision
+ *     computation (in ULPs).
+ * \param[in] doubleUlpDiff  Expected accuracy of double-precision
+ *     computation (in ULPs).
+ *
+ * This works as relativeToleranceAsUlp(), but allows setting the ULP
+ * difference separately for the different precisions.  This supports
+ * cases where the double-precision calculation can acceptably has a higher ULP
+ * difference, but relaxing the single-precision tolerance would lead to an
+ * unnecessarily loose test.
+ *
+ * \related FloatingPointTolerance
+ */
+static inline FloatingPointTolerance
+relativeToleranceAsPrecisionDependentUlp(double       magnitude,
+                                         gmx_uint64_t singleUlpDiff,
+                                         gmx_uint64_t doubleUlpDiff)
+{
+    return FloatingPointTolerance(magnitude*singleUlpDiff*GMX_FLOAT_EPS,
+                                  magnitude*doubleUlpDiff*GMX_DOUBLE_EPS,
+                                  singleUlpDiff, doubleUlpDiff, false);
 }
 
 /*! \brief
@@ -329,19 +408,19 @@ ulpTolerance(gmx_int64_t ulpDiff)
  * \param[in] magnitude  Magnitude of the numbers the computation operates in.
  * \param[in] ulpDiff    Expected accuracy of the computation (in ULPs).
  *
- * In addition to setting the ULP tolerance, this sets the absolute tolerance
- * such that values close to zero (in general, smaller than \p magnitude) do
- * not fail the check if they differ by less than \p ulpDiff evaluated at
- * \p magniture.  This accounts for potential loss of precision for small
- * values, and should be used when accuracy of values much less than
- * \p magniture do not matter for correctness.
+ * In addition to setting the ULP tolerance as ulpTolerance(), this sets the
+ * absolute tolerance such that values close to zero (in general, smaller than
+ * \p magnitude) do not fail the check if they differ by less than \p ulpDiff
+ * evaluated at \p magnitude.  This accounts for potential loss of precision
+ * for small values, and should be used when accuracy of values much less than
+ * \p magnitude do not matter for correctness.
  *
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
-relativeRealTolerance(double magnitude, gmx_int64_t ulpDiff)
+relativeToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
 {
-    return FloatingPointTolerance(magnitude*ulpDiff*GMX_REAL_EPS, ulpDiff, false);
+    return relativeToleranceAsPrecisionDependentUlp(magnitude, ulpDiff, ulpDiff);
 }
 
 /*! \brief
@@ -351,7 +430,7 @@ relativeRealTolerance(double magnitude, gmx_int64_t ulpDiff)
  */
 static inline FloatingPointTolerance defaultRealTolerance()
 {
-    return relativeRealTolerance(1.0, 4);
+    return relativeToleranceAsUlp(1.0, 4);
 }
 
 /*! \name Assertions for floating-point comparison
@@ -387,7 +466,7 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
            << "  Expected: " << expr1 << std::endl
            << "  Which is: " << value1 << std::endl
            << "Difference: " << diff.toString() << std::endl
-           << " Tolerance: " << tolerance.toString();
+           << " Tolerance: " << tolerance.toString(diff);
 }
 //! \endcond
 

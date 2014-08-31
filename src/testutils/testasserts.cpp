@@ -98,8 +98,8 @@ floatingPointToBiasedInteger(const FloatingPoint<FloatType> &value)
 }
 
 /*! \brief
- * Computes difference in ULPs between two numbers, treating also values of
- * different sign.
+ * Computes the magnitude of the difference in ULPs between two numbers,
+ * treating also values of different sign.
  */
 template <typename FloatType>
 gmx_uint64_t calculateUlpDifference(const FloatingPoint<FloatType> &value1,
@@ -134,6 +134,17 @@ void initDifference(FloatType raw1, FloatType raw2, double *absoluteDifference,
     *ulpDifference      = calculateUlpDifference(value1, value2);
 }
 
+/*! \brief
+ * Converts a relative tolerance into an ULP difference.
+ */
+template <typename FloatType>
+gmx_uint64_t relativeToleranceToUlp(FloatType tolerance)
+{
+    FloatingPoint<FloatType> m(1.0);
+    FloatingPoint<FloatType> t(1.0 + tolerance);
+    return calculateUlpDifference<FloatType>(m, t);
+}
+
 //! \}
 //! \}
 
@@ -164,9 +175,11 @@ bool FloatingPointDifference::isNaN() const
 
 std::string FloatingPointDifference::toString() const
 {
-    return formatString("%g (%" GMX_PRIu64 " %s-prec. ULPs)%s",
+    const double eps = isDouble() ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS;
+    return formatString("%g (%" GMX_PRIu64 " %s-prec. ULPs, rel. %.3g)%s",
                         absoluteDifference_, ulpDifference_,
-                        bDouble_ ? "double" : "single",
+                        isDouble() ? "double" : "single",
+                        ulpDifference_ * eps,
                         bSignDifference_ ? ", signs differ" : "");
 }
 
@@ -187,33 +200,43 @@ bool FloatingPointTolerance::isWithin(
         return false;
     }
 
-    if (difference.asAbsolute() < absoluteTolerance_)
+    const double absoluteTolerance
+        = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
+    if (difference.asAbsolute() < absoluteTolerance)
     {
         return true;
     }
 
-    if (ulpTolerance_ >= 0
-        && difference.asUlps() <= static_cast<gmx_uint64_t>(ulpTolerance_))
+    const gmx_uint64_t ulpTolerance
+        = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
+    if (ulpTolerance < GMX_UINT64_MAX && difference.asUlps() <= ulpTolerance)
     {
         return true;
     }
     return false;
 }
 
-std::string FloatingPointTolerance::toString() const
+std::string FloatingPointTolerance::toString(const FloatingPointDifference &difference) const
 {
-    std::string result;
-    if (absoluteTolerance_ > 0.0)
+    std::string        result;
+    const double       absoluteTolerance
+        = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
+    const gmx_uint64_t ulpTolerance
+        = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
+    const double       eps
+        = difference.isDouble() ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS;
+
+    if (absoluteTolerance > 0.0)
     {
-        result.append(formatString("abs. %g", absoluteTolerance_));
+        result.append(formatString("abs. %g", absoluteTolerance));
     }
-    if (ulpTolerance_ >= 0)
+    if (ulpTolerance < GMX_UINT64_MAX)
     {
         if (!result.empty())
         {
             result.append(", ");
         }
-        result.append(formatString("%d ULPs", ulpTolerance_));
+        result.append(formatString("%" GMX_PRIu64 " ULPs (rel. %.3g)", ulpTolerance, ulpTolerance * eps));
     }
     if (bSignMustMatch_)
     {
@@ -224,6 +247,17 @@ std::string FloatingPointTolerance::toString() const
         result.append("sign must match");
     }
     return result;
+}
+
+/*! \brief This is documented in testasserts.h, but Doxygen doesn't believe us */
+FloatingPointTolerance
+relativeToleranceAsFloatingPoint(double magnitude, double tolerance)
+{
+    const double absoluteTolerance = magnitude * tolerance;
+    return FloatingPointTolerance(absoluteTolerance, absoluteTolerance,
+                                  relativeToleranceToUlp<float>(tolerance),
+                                  relativeToleranceToUlp<double>(tolerance),
+                                  false);
 }
 
 } // namespace test
