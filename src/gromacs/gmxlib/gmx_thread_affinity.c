@@ -35,7 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#if defined(HAVE_SCHED_H)
+#if defined(HAVE_SCHED_H) && !defined(__MINGW32__)
 #  ifndef _GNU_SOURCE
 #    define _GNU_SOURCE 1
 #  endif

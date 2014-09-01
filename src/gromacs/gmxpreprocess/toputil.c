@@ -88,8 +88,8 @@ void pr_alloc (int extra, t_params *pr)
     }
     if ((pr->nr == 0) && (pr->param != NULL))
     {
-        fprintf(stderr, "Warning: dangling pointer at %lx\n",
-                (unsigned long)pr->param);
+        fprintf(stderr, "Warning: dangling pointer at %" PRIu64 "\n",
+                (gmx_uint64_t)(size_t)pr->param);
         pr->param = NULL;
     }
     if (pr->nr+extra > pr->maxnr)

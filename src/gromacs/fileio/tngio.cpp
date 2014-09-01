@@ -147,7 +147,7 @@ void gmx_tng_open(const char       *filename,
 //             tng_last_program_name_set(*tng, programInfo);
 //         }
 
-#ifdef HAVE_UNISTD_H
+#if defined(HAVE_UNISTD_H) && !defined(__MINGW32__)
         char username[256];
         getlogin_r(username, 256);
         if (mode == 'w')

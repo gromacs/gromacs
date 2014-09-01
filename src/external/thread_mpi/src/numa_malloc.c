@@ -22,8 +22,8 @@
 #include <dmalloc.h>
 #endif
 
-
-#if !(defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) || defined (__CYGWIN__) || defined (__CYGWIN32__)
+/* For mingw-w64 we could use this */
+#if !(defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) || defined (__CYGWIN__) || defined (__CYGWIN32__) || defined __MINGW32__
 
 
 /* We don't have specific NUMA aware allocators: */
