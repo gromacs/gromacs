@@ -817,7 +817,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     /* Set the nice level */
-#ifdef HAVE_UNISTD_H
+#if defined(HAVE_UNISTD_H) && !defined(__MINGW32__)
 #ifndef GMX_NO_NICE
     /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
     if (nicelevel != 0 && !bExit)
