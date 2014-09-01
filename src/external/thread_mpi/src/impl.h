@@ -48,6 +48,10 @@
 #include <unistd.h>
 #endif
 
+#if defined( _WIN32 ) || defined( _WIN64 )
+#include <windows.h>
+#endif
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif

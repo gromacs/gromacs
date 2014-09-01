@@ -46,6 +46,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#ifdef __MINGW32__
+#undef HAVE_DIRENT_H /* Doesn't have all functions we need */
+#endif
 #ifdef HAVE_DIRENT_H
 /* POSIX */
 #include <dirent.h>
@@ -56,6 +59,7 @@
 #endif
 
 #ifdef GMX_NATIVE_WINDOWS
+#include <windows.h>
 #include <direct.h>
 #include <io.h>
 #endif
@@ -240,7 +244,11 @@ gmx_off_t gmx_ftell(FILE *stream)
     return ftello(stream);
 #else
 #ifdef HAVE__FSEEKI64
-    return _ftelli64(stream);
+#ifndef __MINGW32__
+	return _ftelli64(stream);
+#else
+    return ftello64(stream);
+#endif
 #else
     return ftell(stream);
 #endif
@@ -705,7 +713,11 @@ gmx_directory_nextfile(gmx_directory_t gmxdir, char *name, int maxlength_name)
             }
         }
     }
-
+    else
+    {
+        name[0] = '\0';
+        rc      = EINVAL;
+    }
 #else
     gmx_fatal(FARGS,
               "Source compiled without POSIX dirent or windows support - cannot scan directories.\n");
@@ -867,7 +879,7 @@ void gmx_tmpnam(char *buf)
 
 int gmx_truncatefile(char *path, gmx_off_t length)
 {
-#ifdef _MSC_VER
+#ifdef GMX_NATIVE_WINDOWS
     /* Microsoft visual studio does not have "truncate" */
     HANDLE        fh;
     LARGE_INTEGER win_length;
