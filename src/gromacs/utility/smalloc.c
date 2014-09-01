@@ -48,6 +48,9 @@
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
+#ifdef HAVE__ALIGNED_MALLOC
+#include <malloc.h>
+#endif
 
 #include "gromacs/legacyheaders/gmx_fatal.h"
 
@@ -340,7 +343,7 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
 }
 
 /* This routine can NOT be called with any pointer */
-void save_free_aligned(const char *name, const char *file, int line, void *ptr)
+void save_free_aligned(const char gmx_unused *name, const char gmx_unused *file, int gmx_unused line, void *ptr)
 {
     int   i, j;
     void *free = ptr;
