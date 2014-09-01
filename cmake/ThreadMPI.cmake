@@ -64,6 +64,7 @@ ENDMACRO(TMPI_TEST_ATOMICS VARIABLE)
 
 
 include(FindThreads)
+#We check first for pthread and thus use it if both are avaiable (Mingw). winthreads works with mingw-w64 but not with mingw32
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
     set(THREAD_PTHREADS 1)

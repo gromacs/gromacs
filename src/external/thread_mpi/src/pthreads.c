@@ -196,6 +196,9 @@ struct tMPI_Thread_starter
 };
 
 /* the thread_starter function that sets the thread id */
+#ifdef __MINGW32__
+__attribute__((force_align_arg_pointer))
+#endif
 static void *tMPI_Thread_starter(void *arg)
 {
     struct tMPI_Thread_starter *starter = (struct tMPI_Thread_starter *)arg;
