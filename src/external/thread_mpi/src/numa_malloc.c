@@ -9,6 +9,11 @@
 #include "config.h"
 #endif
 
+#ifdef THREAD_WINDOWS
+    #ifdef __MINGW32__
+       #define _WIN32_WINNT 0x0601 /* Windows 7*/
+    #endif
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -22,9 +27,7 @@
 #include <dmalloc.h>
 #endif
 
-
-#if !(defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) || defined (__CYGWIN__) || defined (__CYGWIN32__)
-
+#ifndef THREAD_WINDOWS
 
 /* We don't have specific NUMA aware allocators: */
 
@@ -81,10 +84,7 @@ int tMPI_Free_numa(void *ptr)
     Scott Field (sfield@microsoft.com)      Jan-2011
  */
 
-//#define _WIN32_WINNT 0x0601
 #include <windows.h>
-
-
 
 /*
     __declspec(align()) may not be supported by all compilers, so define the
@@ -218,11 +218,19 @@ InitNumaHeapSupport(
             return;
         }
 
+#if defined(WIN64) || defined( _WIN64 )
+        hPriorValue = (HANDLE *)InterlockedCompareExchange64(
+                    (LONGLONG volatile *)&g_hHeap,
+                    (LONGLONG) hHeapNew,
+                    0
+                    );
+#else
         hPriorValue = (HANDLE *)InterlockedCompareExchange(
                     (LONG volatile *)&g_hHeap,
                     (LONG) hHeapNew,
                     0
                     );
+#endif
 
         if (hPriorValue != NULL)
         {
