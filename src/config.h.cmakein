@@ -41,6 +41,8 @@
  *
  * \inlibraryapi
  */
+#ifndef GMX_CONFIG_H
+#define GMX_CONFIG_H
 #include "gromacs/utility/gmx_header_config.h"
 
 /* TODO: For now, disable Doxygen warnings from here */
@@ -354,5 +356,7 @@
 
 /* Define if we have zlib */
 #cmakedefine HAVE_ZLIB
+
+#endif
 
 /*! \endcond */

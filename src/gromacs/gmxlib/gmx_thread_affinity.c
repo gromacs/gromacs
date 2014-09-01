@@ -35,7 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#if defined(HAVE_SCHED_H)
+#ifdef HAVE_SCHED_AFFINITY
 #  ifndef _GNU_SOURCE
 #    define _GNU_SOURCE 1
 #  endif

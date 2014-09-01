@@ -132,6 +132,7 @@ set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT
 
 enable_language(C)
 enable_language(CXX)
+set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 
 set(CPACK_PACKAGE_NAME "gromacs")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
@@ -378,15 +379,8 @@ if(GMX_SOFTWARE_INVSQRT)
 endif()
 
 if(WIN32 AND NOT CYGWIN)
-    set(GMX_WSOCKLIB_PATH CACHE PATH "Path to winsock (wsock32.lib) library.")
-    mark_as_advanced(GMX_WSOCKLIB_PATH)
-    find_library(WSOCK32_LIBRARY NAMES wsock32 PATHS ${GMX_WSOCKLIB_PATH})
-    if(WSOCK32_LIBRARY)
-        list(APPEND GMX_EXTRA_LIBRARIES ${WSOCK32_LIBRARY})
-        add_definitions(-DGMX_HAVE_WINSOCK)
-    else()
-        message(STATUS "No winsock found. Cannot use interactive molecular dynamics (IMD).")
-    endif(WSOCK32_LIBRARY)
+    list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
+    add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
 
 

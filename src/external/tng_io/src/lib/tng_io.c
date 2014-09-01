@@ -34,9 +34,17 @@
 #include "compression/tng_compress.h"
 #include "tng/version.h"
 
-#ifdef _MSC_VER
-#define fseeko _fseeki64
-#define ftello _ftelli64
+#if defined( _WIN32 ) || defined( _WIN64 )
+    #ifndef fseeko
+        #define fseeko _fseeki64
+    #endif
+    #ifndef ftello
+        #ifdef __MINGW32__
+            #define ftello ftello64
+        #else
+            #define ftello _ftelli64
+        #endif
+    #endif
 #endif
 
 struct tng_bond {
@@ -743,7 +751,7 @@ static tng_function_status tng_block_init(struct tng_gen_block **block_p)
     *block_p = malloc(sizeof(struct tng_gen_block));
     if(!*block_p)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n",
                sizeof(struct tng_gen_block), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -4731,7 +4739,7 @@ static tng_function_status tng_particle_data_block_create
                     frame_set->n_particle_data_blocks);
         if(!data)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n",
                 sizeof(struct tng_particle_data) *
                 frame_set->n_particle_data_blocks,
                 __FILE__, __LINE__);
@@ -4749,7 +4757,7 @@ static tng_function_status tng_particle_data_block_create
                         tng_data->n_particle_data_blocks);
         if(!data)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n",
                     sizeof(struct tng_particle_data) *
                     tng_data->n_particle_data_blocks,
                     __FILE__, __LINE__);
@@ -5995,7 +6003,7 @@ static tng_function_status tng_particle_data_block_write
         temp_name = realloc(block->name, len);
         if(!temp_name)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lud bytes). %s: %d\n", len,
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n", len,
                    __FILE__, __LINE__);
             free(block->name);
             block->name = 0;
@@ -6449,7 +6457,7 @@ static tng_function_status tng_data_block_create
                        frame_set->n_data_blocks);
         if(!data)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n",
                 sizeof(struct tng_non_particle_data) * frame_set->n_data_blocks,
                 __FILE__, __LINE__);
             free(frame_set->tr_data);
@@ -6465,7 +6473,7 @@ static tng_function_status tng_data_block_create
                         tng_data->n_data_blocks);
         if(!data)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n",
                 sizeof(struct tng_non_particle_data) * tng_data->n_data_blocks,
                 __FILE__, __LINE__);
             free(tng_data->non_tr_data);
@@ -9103,7 +9111,7 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_alloc(const tng_trajectory_t 
     *molecule_p = malloc(sizeof(struct tng_molecule));
     if(!*molecule_p)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n",
                sizeof(struct tng_molecule), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -9790,7 +9798,7 @@ tng_function_status DECLSPECDLLEXPORT tng_trajectory_init(tng_trajectory_t *tng_
     *tng_data_p = malloc(sizeof(struct tng_trajectory));
     if(!*tng_data_p)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n",
                sizeof(struct tng_trajectory), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -10311,7 +10319,7 @@ tng_function_status DECLSPECDLLEXPORT tng_trajectory_init_from_src(tng_trajector
     *dest_p = malloc(sizeof(struct tng_trajectory));
     if(!*dest_p)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"TNG_PRIsize" bytes). %s: %d\n",
                sizeof(struct tng_trajectory), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
