@@ -1005,7 +1005,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "tau-p must be > 0 instead of %g\n", ir->tau_p);
         CHECK(ir->tau_p <= 0);
 
-        if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc))
+        if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc) - 10*GMX_REAL_EPS)
         {
             sprintf(warn_buf, "For proper integration of the %s barostat, tau-p (%g) should be at least %d times larger than nstpcouple*dt (%g)",
                     EPCOUPLTYPE(ir->epc), ir->tau_p, pcouple_min_integration_steps(ir->epc), dt_pcoupl);
@@ -3280,7 +3280,7 @@ void do_index(const char* mdparin, const char *ndx,
         nstcmin = tcouple_min_integration_steps(ir->etc);
         if (nstcmin > 1)
         {
-            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
+            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin - 10*GMX_REAL_EPS)
             {
                 sprintf(warn_buf, "For proper integration of the %s thermostat, tau-t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
                         ETCOUPLTYPE(ir->etc),
