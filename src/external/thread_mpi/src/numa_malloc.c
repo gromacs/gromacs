@@ -22,8 +22,10 @@
 #include <dmalloc.h>
 #endif
 
-
-#if !(defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) || defined (__CYGWIN__) || defined (__CYGWIN32__)
+/* Disabled for MingW because some distributions (MingW32) don't have support for all types used here.
+ * If we wanted to could make a cmake check for the types (e.g. PPROCESSOR_NUMBER) and enable it if
+ * possible */
+#if !(defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) || defined (__CYGWIN__) || defined (__CYGWIN32__) || defined __MINGW32__
 
 
 /* We don't have specific NUMA aware allocators: */
