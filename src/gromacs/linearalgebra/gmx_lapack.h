@@ -72,6 +72,16 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+/*! \brief
+ * This macro is used to call the LAPACK and BLAS functions required for
+ * the preset GROMACS precision (i.e. real or single precision)
+ */
+#ifdef GMX_DOUBLE
+#define GMX_LAPACK(A, B)  F77_FUNC(d ## A, D ## B)
+#else
+#define GMX_LAPACK(A, B)  F77_FUNC(s ## A, S ## B)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -467,13 +477,23 @@ void
 void
     F77_FUNC(dlagtf, DLAGTF) (int *n, double *a, double *lambda, double *b, double *c,
                               double *tol, double *d, int *in, int *info);
-
 void
     F77_FUNC(dgeqrf, DGEQRF) (int *m, int *n, double *a, int *lda, double *tau,
                               double *work, int *lwork, int *info);
+void
+    F77_FUNC(dlabad, DLABAD) (double *small, double *large);
 
-
-
+void
+    F77_FUNC(slabad, SLABAD) (float *small, float *large);
+void
+    F77_FUNC(dgels, DGELS) (char *trans, int *m, int *n, int *nrhs, double *a, int *lda, double *b,
+                            int *ldb,   double *work, int *lwork, int *info);
+double
+    F77_FUNC(dlamch, DLAMCH) (char *cmach);
+int
+    F77_FUNC(dtrtrs, DTRTRS) (char *uplo, char *trans, char *diag, int *n,
+                              int *nrhs, double *a, int *lda, double *b, int *
+                              ldb, int *info);
 /* Single precision */
 
 void
@@ -841,21 +861,35 @@ void
                               float *alpha, float *beta, float *dsigma, int *idx, int *idxp,
                               int *idxq, int *perm, int *givptr, int *givcol, int *ldgcol,
                               float *givnum, int *ldgnum, float *c, float *s, int *info);
-
 void
     F77_FUNC(slas2, SLAS2) (float *f, float *g, float *h, float *ssmin, float *ssmax);
-
 void
     F77_FUNC(slarfg, SLARFG) (int *n, float *alpha, float *x, int *incx, float *tau);
-
 void
     F77_FUNC(slagtf, SLAGTF) (int *n, float *a, float *lambda, float *b, float *c,
                               float *tol, float *d, int *in, int *info);
-
 void
     F77_FUNC(sgeqrf, SGEQRF) (int *m, int *n, float *a, int *lda, float *tau,
                               float *work, int *lwork, int *info);
+void
+    F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *lda, float *b,
+                            int *ldb, float *work, int *lwork, int *info);
+float
+    F77_FUNC(slamch, SLAMCH) (char *cmach);
 
+int
+    F77_FUNC(strtrs, STRTRS) (char *uplo, char *trans, char *diag, int *n,
+                              int *nrhs, float *a, int *lda, float *b, int *
+                              ldb, int *info);
+
+int
+    F77_FUNC(ilaenv, ILAENV) (int *ispec, char *name__, char *opts, int *n1,
+                              int *n2, int *n3, int *n4);
+int
+    F77_FUNC(iparmq, IPARMQ) (int *ispec, char *name__, char *opts, int *n, int
+                              *ilo, int *ihi, int *lwork);
+void
+    F77_FUNC(xerbla, XERBLA) (char *srname, int *info);
 
 #ifdef __cplusplus
 }
