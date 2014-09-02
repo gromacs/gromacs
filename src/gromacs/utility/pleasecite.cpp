@@ -383,6 +383,16 @@ void please_cite(FILE *fp, const char *key)
           "Accelerated weight histogram method for exploring free energy landscapes",
           "J. Chem. Phys.",
           141, 2014, "044110" },
+        { "HubdeGroot2009",
+          "J. S. Hub and B. L. de Groot",
+          "Detection of Functional Modes in Protein Dynamics",
+          "PLoS Comput. Biol.",
+          5, 2009, "e1000480"},
+        { "KrivobokovaEtAl2012",
+          "T. Krivobokova, R. Briones, J. S. Hub, A. Munk and B. L. de Groot",
+          "Partial Least-Squares Functional Mode Analysis: Application to the Membrane Proteins AQP1, Aqy1, and CLC-ec1",
+          "Biophys. J.",
+          103, 2012, "786-796"}
     };
 #define NSTR static_cast<int>(asize(citedb))
 

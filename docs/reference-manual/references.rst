@@ -2554,5 +2554,90 @@ molecular dynamics simulations*, (2002).
 
 .. raw:: html
 
+   <a href="http://dx.doi.org/10.1371/journal.pcbi.1000480">
+
+.. raw:: html
+
+   <div id="ref-HubdeGroot2009FMA">
+
+.. _refHubdeGroot2009FMA:
+
+:sup:`181` J. S. Hub, and B. L. de Groot, "Detection of functional modes
+protein dynamics", *PLoS Comput. Biol.*, **5** e1000480 (2009).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   </a>
+
+.. raw:: html
+
+   <a href="http://dx.doi.org/10.1016/j.bpj.2012.07.022">
+
+.. raw:: html
+
+   <div id="ref-Krivobokova2012PLSFMA">
+
+.. _refKrivobokova2012PLSFMA:
+
+:sup:`182` T. Krivobokova, R. Briones, J. S. Hub, A. Munk, and B. L. de Groot,
+"Partial least-squares functional mode analysis", *Biophys. J.*, **103**
+786–796 (2012).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   </a>
+
+.. raw:: html
+
+   <a href="http://dx.doi.org/doi:10.1007/BF00142661">
+
+.. raw:: html
+
+   <div id="ref-Denham1995PLS">
+
+.. _refDenham1995PLS:
+
+:sup:`183` M. C. Denham, "Implementing partial least-squares", *Stat. Comput.*,
+**5** 191–202 (1995).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   </a>
+
+.. raw:: html
+
+   <a href="http://users.cecs.anu.edu.au/~kee/pls.pdf">
+
+.. raw:: html
+
+   <div id="ref-Ng2013PLS">
+
+.. _refNg2013PLS:
+
+:sup:`184` Kee Siong Ng, "A simple explanation of partial least-squares",
+*Technical Report, Australian National University* (2013).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   </a>
+
+.. raw:: html
+
    </div>
 

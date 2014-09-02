@@ -30,6 +30,7 @@ different analysis tools are presented.
    analysis/rmsd
    analysis/covariance-analysis
    analysis/dihedral-pca
+   analysis/functional-mode-analysis
    analysis/hydrogen-bonds
    analysis/protein-related
    analysis/interface-related
