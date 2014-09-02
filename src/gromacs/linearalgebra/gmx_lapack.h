@@ -76,7 +76,7 @@
  * This macro is used to call the LAPACK and BLAS functions required for
  * the preset GROMACS precision (i.e. real or single precision)
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define GMX_LAPACK(A, B)  F77_FUNC(d ## A, D ## B)
 #else
 #define GMX_LAPACK(A, B)  F77_FUNC(s ## A, S ## B)

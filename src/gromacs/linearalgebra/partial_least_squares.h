@@ -44,7 +44,7 @@
 
 #include <vector>
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief
  * Implementation of a n*m matrix based on the vector class whose
