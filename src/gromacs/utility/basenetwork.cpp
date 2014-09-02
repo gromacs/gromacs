@@ -157,6 +157,15 @@ static int mpi_hostname_hash(void)
 }
 
 #if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
+#ifdef __clang__
+/* IBM's declaration of this function in
+ * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/process.h
+ * erroneously fails to specify __INLINE__, despite
+ * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/cnk/process_impl.h
+ * specifiying __INLINE__, so bgclang thinks they are different enough
+ * to complain about. */
+static uint64_t Kernel_GetJobID();
+#endif
 #include <spi/include/kernel/location.h>
 
 static int bgq_nodenum(void)

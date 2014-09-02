@@ -152,10 +152,12 @@ void gmx_tng_open(const char       *filename,
 
 #ifdef HAVE_UNISTD_H
         char username[256];
-        getlogin_r(username, 256);
-        if (mode == 'w')
+        if (!getlogin_r(username, 256))
         {
-            tng_first_user_name_set(*tng, username);
+            if (mode == 'w')
+            {
+                tng_first_user_name_set(*tng, username);
+            }
         }
 /* TODO: This should be implemented when the above fixme is done (adding data to
  * the header). */

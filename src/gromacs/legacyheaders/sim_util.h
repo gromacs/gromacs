@@ -136,7 +136,8 @@ void init_md(FILE *fplog,
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags);
+             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags,
+             gmx_wallcycle_t wcycle);
 /* Routine in sim_util.c */
 
 gmx_bool use_GPU(const struct nonbonded_verlet_t *nbv);
