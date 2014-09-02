@@ -1,12 +1,12 @@
+#include "gmxpre.h"
+
 #include <ctype.h>
 #include <math.h>
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"
 
-#include "../../legacyheaders/types/simple.h"
-
-#define min(a,b) ((a) <= (b) ? (a) : (b))
-#define max(a,b) ((a) >= (b) ? (a) : (b))
+#define min_def(a,b) ((a) <= (b) ? (a) : (b))
+#define max_def(a,b) ((a) >= (b) ? (a) : (b))
 
 
 /* Table of constant values */
@@ -15,12 +15,9 @@ static int c__1 = 1;
 static int c_n1 = -1;
 static float c_b33 = 0.f;
 static int c__0 = 0;
-static char U = 'U';
-static char N = 'N';
-static char T = 'T';
 
 void
-F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *lda, float *b,
+F77_FUNC(sgels, SGELS) (const char *trans, int *m, int *n, int *nrhs, float *a, int *lda, float *b,
                         int *ldb,	float *work, int *lwork, int *info)
 {
     /* System generated locals */
@@ -102,7 +99,7 @@ F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *l
 /*                       factorization as returned by SGELQF. */
 
 /*  LDA     (input) int */
-/*          The leading dimension of the array A.  LDA >= max(1,M). */
+/*          The leading dimension of the array A.  LDA >= max_def(1,M). */
 
 /*  B       (input/output) float array, dimension (LDB,NRHS) */
 /*          On entry, the matrix B of right hand side vectors, stored */
@@ -131,10 +128,10 @@ F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *l
 
 /*  LWORK   (input) int */
 /*          The dimension of the array WORK. */
-/*          LWORK >= max( 1, MN + max( MN, NRHS ) ). */
+/*          LWORK >= max_def( 1, MN + max_def( MN, NRHS ) ). */
 /*          For optimal performance, */
-/*          LWORK >= max( 1, MN + max( MN, NRHS )*NB ). */
-/*          where MN = min(M,N) and NB is the optimum block size. */
+/*          LWORK >= max_def( 1, MN + max_def( MN, NRHS )*NB ). */
+/*          where MN = min_def(M,N) and NB is the optimum block size. */
 
 /*          If LWORK = -1, then a workspace query is assumed; the routine */
 /*          only calculates the optimal size of the WORK array, returns */
@@ -180,7 +177,7 @@ F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *l
 
     /* Function Body */
     *info = 0;
-    mn = min(*m,*n);
+    mn = min_def(*m,*n);
     lquery = *lwork == -1;
     if (! ((ch == 'N') || (ch == 'T'))) {
 	*info = -1;
@@ -190,17 +187,17 @@ F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *l
 	*info = -3;
     } else if (*nrhs < 0) {
 	*info = -4;
-    } else if (*lda < max(1,*m)) {
+    } else if (*lda < max_def(1,*m)) {
 	*info = -6;
     } else /* if(complicated condition) */ {
 /* Computing MAX */
-	i__1 = max(1,*m);
-	if (*ldb < max(i__1,*n)) {
+        i__1 = max_def(1,*m);
+        if (*ldb < max_def(i__1,*n)) {
 	    *info = -8;
 	} else /* if(complicated condition) */ {
 /* Computing MAX */
-	    i__1 = 1, i__2 = mn + max(mn,*nrhs);
-	    if (*lwork < max(i__1,i__2) && ! lquery) {
+            i__1 = 1, i__2 = mn + max_def(mn,*nrhs);
+            if (*lwork < max_def(i__1,i__2) && ! lquery) {
 		*info = -10;
 	    }
 	}
@@ -221,12 +218,12 @@ F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *l
 /* Computing MAX */
 		i__1 = nb, i__2 = F77_FUNC(ilaenv,ILAENV)(&c__1, "SORMQR", "LN", m, nrhs, n, &
 			c_n1);
-		nb = max(i__1,i__2);
+                nb = max_def(i__1,i__2);
 	    } else {
 /* Computing MAX */
 		i__1 = nb, i__2 = F77_FUNC(ilaenv,ILAENV)(&c__1, "SORMQR", "LT", m, nrhs, n, &
 			c_n1);
-		nb = max(i__1,i__2);
+                nb = max_def(i__1,i__2);
 	    }
 	} else {
 	    nb = F77_FUNC(ilaenv,ILAENV)(&c__1, "SGELQF", " ", m, n, &c_n1, &c_n1);
@@ -234,18 +231,18 @@ F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *l
 /* Computing MAX */
 		i__1 = nb, i__2 = F77_FUNC(ilaenv,ILAENV)(&c__1, "SORMLQ", "LT", n, nrhs, m, &
 			c_n1);
-		nb = max(i__1,i__2);
+                nb = max_def(i__1,i__2);
 	    } else {
 /* Computing MAX */
 		i__1 = nb, i__2 = F77_FUNC(ilaenv,ILAENV)(&c__1, "SORMLQ", "LN", n, nrhs, m, &
 			c_n1);
-		nb = max(i__1,i__2);
+                nb = max_def(i__1,i__2);
 	    }
 	}
 
 /* Computing MAX */
-	i__1 = 1, i__2 = mn + max(mn,*nrhs) * nb;
-	wsize = max(i__1,i__2);
+        i__1 = 1, i__2 = mn + max_def(mn,*nrhs) * nb;
+        wsize = max_def(i__1,i__2);
 	work[1] = (float) wsize;
 
     }
@@ -261,9 +258,9 @@ F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *l
 /*     Quick return if possible */
 
 /* Computing MIN */
-    i__1 = min(*m,*n);
-    if (min(i__1,*nrhs) == 0) {
-	i__1 = max(*m,*n);
+    i__1 = min_def(*m,*n);
+    if (min_def(i__1,*nrhs) == 0) {
+        i__1 = max_def(*m,*n);
 	F77_FUNC(slaset, SLASET) ("Full", &i__1, nrhs, &c_b33, &c_b33, &b[b_offset], ldb);
 	//return;
     }
@@ -296,7 +293,7 @@ F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *l
 
 /*        Matrix all zero. Return zero solution. */
 
-	i__1 = max(*m,*n);
+        i__1 = max_def(*m,*n);
 	F77_FUNC(slaset, SLASET)("F", &i__1, nrhs, &c_b33, &c_b33, &b[b_offset], ldb);
 	goto L50;
     }

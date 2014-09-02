@@ -10,10 +10,12 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
+#include "gmxpre.h"
+
 #include "../gmx_lapack.h"
 
-#define min(a,b) ((a) <= (b) ? (a) : (b))
-#define max(a,b) ((a) >= (b) ? (a) : (b))
+#define min_def(a,b) ((a) <= (b) ? (a) : (b))
+#define max_def(a,b) ((a) >= (b) ? (a) : (b))
 
 
 #ifdef KR_headers
@@ -21,37 +23,34 @@ double floor();
 integer i_nint(x) real *x;
 #else
 #undef abs
-#include "math.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <math.h>
 int i_nint(float *x)
 #endif
 {
 return (int)(*x >= 0 ? floor(*x + .5) : -floor(.5 - *x));
 }
-#ifdef __cplusplus
-}
-#endif
 
 
-int F77_FUNC(iparmq, IPARMQ) (int *ispec, char *name__, char *opts, int *n, int
-	*ilo, int *ihi, int *lwork)
+int F77_FUNC(iparmq, IPARMQ) (int *ispec, const char *name__, const char *opts, int *n, int
+    *ilo, int *ihi, int *lwork)
 {
     /* this is a bit stupid, but I need to "touch" some unused parameters to
      * satisfy Jenkins - as this is a standardized library, I can't just
      * ommit them...
      */
-    char *dummy_name__ = name__;
-    char *dummy_opts = opts;
-    int *dummy_n = n;
-    int *dummy_lwork = lwork;
+    (void)name__;
+    (void)opts;
+    (void)n;
+    (void)lwork;
+    /* not used const char *dummy_name__ = name__; */
+    /* not used const char *dummy_opts = opts; */
+    /* not used int *dummy_n = n; */
+    /* not used int *dummy_lwork = lwork; */
     /* System generated locals */
     int ret_val, i__1, i__2;
     float r__1;
 
     /* Builtin functions */
-    double log(double);
     int i_nint(float *);
 
     /* Local variables */
@@ -234,7 +233,7 @@ int F77_FUNC(iparmq, IPARMQ) (int *ispec, char *name__, char *opts, int *n, int
 /* Computing MAX */
 	    r__1 = log((float) nh) / log(2.f);
 	    i__1 = 10, i__2 = nh / i_nint(&r__1);
-	    ns = max(i__1,i__2);
+            ns = max_def(i__1,i__2);
 	}
 	if (nh >= 590) {
 	    ns = 64;
@@ -247,7 +246,7 @@ int F77_FUNC(iparmq, IPARMQ) (int *ispec, char *name__, char *opts, int *n, int
 	}
 /* Computing MAX */
 	i__1 = 2, i__2 = ns - ns % 2;
-	ns = max(i__1,i__2);
+        ns = max_def(i__1,i__2);
     }
 
     if (*ispec == 12) {
