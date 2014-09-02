@@ -16,8 +16,6 @@
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
 
-#include "../../legacyheaders/types/simple.h"
-
 #define log10e 0.43429448190325182765
 
 #ifdef KR_headers
