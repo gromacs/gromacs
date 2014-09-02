@@ -44,7 +44,7 @@
        - matrix determinant based on LU decomposition
 
    \author R. Thomas Ullmann <tullman@gwdg.de>
-   \libinternal
+   \inlibraryapi
    \ingroup module_math
  */
 #ifndef GMX_MATH_IRREG_ARRAY_MATH_H
