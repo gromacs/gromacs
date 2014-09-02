@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,29 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB LINEARALGEBRA_SOURCES *.c *.cpp)
-
-if (NOT GMX_EXTERNAL_BLAS)
-    file(GLOB BLAS_SOURCES gmx_blas/*.c)
-endif()
-
-if (NOT GMX_EXTERNAL_LAPACK)
-    file(GLOB LAPACK_SOURCES gmx_lapack/*.c)
-endif()
-
-set(LINEARALGEBRA_SOURCES
-    ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
-
-set(LIBGROMACS_SOURCES
-    ${LIBGROMACS_SOURCES} ${LINEARALGEBRA_SOURCES} PARENT_SCOPE)
-
-gmx_install_headers(
-    eigensolver.h
-    matrix.h
-    sparsematrix.h
-    partial_least_squares.h
-    )
-    
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+gmx_add_unit_test(LinearAlgebraUnitTests linearalgebra-test
+                  partial_least_squares.cpp
+                  )
