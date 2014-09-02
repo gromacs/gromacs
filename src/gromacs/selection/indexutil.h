@@ -324,6 +324,32 @@ gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize);
 void
 gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                       t_topology *top, e_index_t type);
+/*! \brief
+ * Initializes `orgid` entries based on topology grouping.
+ *
+ * \param[in,out] m     Mapping structure to use.
+ * \param[in]     top   Topology structure
+ *     (can be NULL if not required for \p type).
+ * \param[in]     type  Type of groups to use.
+ * \returns  The number of groups that were present in \p m.
+ * \throws   InconsistentInputError if the blocks in \p m do not have a unique
+ *     group (e.g., contain atoms from multiple residues with `type == INDEX_RES`).
+ *
+ * By default, the gmx_ana_indexmap_t::orgid fields are initialized to
+ * atom/residue/molecule indices from the topology.
+ * This function can be used to set the field to a zero-based group index
+ * instead.  The first block will always get `orgid[0] = 0`, and all following
+ * blocks that belong to the same residue/molecule (\p type) will get the same
+ * index.  Each time a block does not belong to the same group, it will get the
+ * next available number.
+ * If `type == INDEX_ATOM`, the `orgid` field is initialized as 0, 1, ...,
+ * independent of whether the blocks are single atoms or not.
+ *
+ * Strong exception safety guarantee.
+ */
+int
+gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, t_topology *top,
+                                  e_index_t type);
 /** Sets an index group mapping to be static. */
 void
 gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b);
