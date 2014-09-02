@@ -1,4 +1,4 @@
-/* dlabad.f -- translated by f2c (version 20061008).
+/* slabad.f -- translated by f2c (version 20061008).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;
 	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
@@ -10,38 +10,29 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
-#include <ctype.h>
-#include <math.h>
-#include "../gmx_blas.h"
-#include "../gmx_lapack.h"
-#include "lapack_limits.h"
+#include "gmxpre.h"
 
-#include "../../legacyheaders/types/simple.h"
+#include "../gmx_lapack.h"
 
 #define log10e 0.43429448190325182765
 
 #ifdef KR_headers
-double log();
-double d_lg10(x) doublereal *x;
+float log();
+float r_lg10(x) float *x;
 #else
 #undef abs
-#include "math.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
-double d_lg10(double *x)
+#include <math.h>
+float r_lg10(float *x)
 #endif
 {
 return( log10e * log(*x) );
 }
-#ifdef __cplusplus
-}
-#endif
 
-
-/* Subroutine */ void F77_FUNC(dlabad,DLABAD) (double *small, double *large)
+void
+	F77_FUNC(slabad, SLABAD)(float *small, float *large)
 {
     /* Builtin functions */
+    float r_lg10(float *);
 
 
 /*  -- LAPACK auxiliary routine (version 3.2) -- */
@@ -54,25 +45,25 @@ return( log10e * log(*x) );
 /*  Purpose */
 /*  ======= */
 
-/*  DLABAD takes as input the values computed by DLAMCH for underflow and */
+/*  SLABAD takes as input the values computed by SLAMCH for underflow and */
 /*  overflow, and returns the square root of each of these values if the */
 /*  log of LARGE is sufficiently large.  This subroutine is intended to */
 /*  identify machines with a large exponent range, such as the Crays, and */
 /*  redefine the underflow and overflow limits to be the square roots of */
-/*  the values computed by DLAMCH.  This subroutine is needed because */
-/*  DLAMCH does not compensate for poor arithmetic in the upper half of */
+/*  the values computed by SLAMCH.  This subroutine is needed because */
+/*  SLAMCH does not compensate for poor arithmetic in the upper half of */
 /*  the exponent range, as is found on a Cray. */
 
 /*  Arguments */
 /*  ========= */
 
-/*  SMALL   (input/output) DOUBLE PRECISION */
-/*          On entry, the underflow threshold as computed by DLAMCH. */
+/*  SMALL   (input/output) REAL */
+/*          On entry, the underflow threshold as computed by SLAMCH. */
 /*          On exit, if LOG10(LARGE) is sufficiently large, the square */
 /*          root of SMALL, otherwise unchanged. */
 
-/*  LARGE   (input/output) DOUBLE PRECISION */
-/*          On entry, the overflow threshold as computed by DLAMCH. */
+/*  LARGE   (input/output) REAL */
+/*          On entry, the overflow threshold as computed by SLAMCH. */
 /*          On exit, if LOG10(LARGE) is sufficiently large, the square */
 /*          root of LARGE, otherwise unchanged. */
 
@@ -85,12 +76,11 @@ return( log10e * log(*x) );
 /*     If it looks like we're on a Cray, take the square root of */
 /*     SMALL and LARGE to avoid overflow and underflow problems. */
 
-    if (d_lg10(large) > 2e3) {
+    if (r_lg10(large) > 2e3f) {
 	*small = sqrt(*small);
 	*large = sqrt(*large);
     }
 
+/*     End of SLABAD */
 
-/*     End of DLABAD */
-
-} /* dlabad_ */
+} /* slabad_ */

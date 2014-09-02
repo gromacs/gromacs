@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
  * \author Jan Henning Peters <JanHPeters@gmx.net>
  */
 
+#include "gmxpre.h"
+
 #include <vector>
 
 #include "partial_least_squares.h"
@@ -49,17 +51,17 @@ int
 pls_denham(FMatrix *x, FVector *y, int n, int a, FMatrix *w, FVector *q)
 {
 
-    int k = x->NCols();
+    int k  = x->NCols();
     int ln = x->NRows();
 
 
-    FMatrix t(n,a);
-    FMatrix qrt(n,a);
+    FMatrix t(n, a);
+    FMatrix qrt(n, a);
     FVector b(k);
     FVector dum(n);
     FVector rsd(n);
 
-    int i;
+    int     i;
     /* As FORTRAN functions in C require call by reference, all constants have
        to be defined explicitly*/
     char T         = 'T';
@@ -86,7 +88,7 @@ pls_denham(FMatrix *x, FVector *y, int n, int a, FMatrix *w, FVector *q)
     GMX_LAPACK(copy, COPY) (&n, y->toF(), &c_ione, rsd.toF(), &c_ione);
 
     /* perform regression
-       min(rsd) abs(y - qrt * rsd) */
+       min_def(rsd) abs(y - qrt * rsd) */
     GMX_LAPACK(gels, GELS) (    &N,      &n, &c_ione, &c_ione, qrt.toF(),  &n,  rsd.toF(),  &n,  dum.toF(), &lwork, &info );
 
     (*q)[0] = rsd[0];
@@ -126,4 +128,3 @@ pls_denham(FMatrix *x, FVector *y, int n, int a, FMatrix *w, FVector *q)
     GMX_LAPACK(gemv, GEMV) (  &N, &k, &a, &c_done, w->toF(), &k, q->toF(), &c_ione, &c_dzero, b.toF(), &c_ione);
     return 0;
 }
-

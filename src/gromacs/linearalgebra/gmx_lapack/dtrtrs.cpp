@@ -10,18 +10,20 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
+#include "gmxpre.h"
+
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"
 #include <string.h>
 
-#define min(a,b) ((a) <= (b) ? (a) : (b))
-#define max(a,b) ((a) >= (b) ? (a) : (b))
+#define min_def(a,b) ((a) <= (b) ? (a) : (b))
+#define max_def(a,b) ((a) >= (b) ? (a) : (b))
 
 /* Table of constant values */
 
 static double c_b12 = 1.;
 
-int F77_FUNC(dtrtrs,DTRTRS) (char *uplo, char *trans, char *diag, int *n,
+int F77_FUNC(dtrtrs,DTRTRS) (const char *uplo, const char *trans, const char *diag, int *n,
 		int *nrhs, double *a, int *lda, double *b, int *
 		ldb, int *info)
 {
@@ -86,14 +88,14 @@ int F77_FUNC(dtrtrs,DTRTRS) (char *uplo, char *trans, char *diag, int *n,
 /*          also not referenced and are assumed to be 1. */
 
 /*  LDA     (input) INTEGER */
-/*          The leading dimension of the array A.  LDA >= max(1,N). */
+/*          The leading dimension of the array A.  LDA >= max_def(1,N). */
 
 /*  B       (input/output) DOUBLE PRECISION array, dimension (LDB,NRHS) */
 /*          On entry, the right hand side matrix B. */
 /*          On exit, if INFO = 0, the solution matrix X. */
 
 /*  LDB     (input) INTEGER */
-/*          The leading dimension of the array B.  LDB >= max(1,N). */
+/*          The leading dimension of the array B.  LDB >= max_def(1,N). */
 
 /*  INFO    (output) INTEGER */
 /*          = 0:  successful exit */
@@ -139,9 +141,9 @@ int F77_FUNC(dtrtrs,DTRTRS) (char *uplo, char *trans, char *diag, int *n,
 	*info = -4;
     } else if (*nrhs < 0) {
 	*info = -5;
-    } else if (*lda < max(1,*n)) {
+    } else if (*lda < max_def(1,*n)) {
 	*info = -7;
-    } else if (*ldb < max(1,*n)) {
+    } else if (*ldb < max_def(1,*n)) {
 	*info = -9;
     }
     if (*info != 0) {

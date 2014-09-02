@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,224 +44,224 @@
 
 #include <vector>
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/real.h"
 
-/*! \brief
+/*! \internal \brief
  * Implementation of a n*m matrix based on the vector class whose
  * internal format is consistent with FORTRAN ordering
  */
 class FMatrix
 {
-  std::vector<real> data;
-  int m;
-  int n;
+    std::vector<real> data;
+    int               m;
+    int               n;
 
-public:
-  /*! \brief
-   * initialization of a 0*0 matrix
-   */
-  FMatrix() : data(), m(0), n(0)
-  {
-  }
-  /*! \brief
-   * initialization of an n*m matrix (all fields are set to zero)
-   *
-   * \param m_ number of rows of the matrix
-   * \param n_ number of columns of the matrix
-   */
-  FMatrix(int m_, int n_) : data(m_*n_), m(m_), n(n_)
-  {
-  }
-  /*! \brief
-   * initialization of an n*m matrix with a standard vaule
-   *
-   * \param m_ number of rows of the matrix
-   * \param n_ number of columns of the matrix
-   * \param val initial value of the matrix fields
-   */
-  FMatrix(int m_, int n_, real val) : data(m_*n_, val), m(m_), n(n_)
-  {
-  }
-  /*! \brief
-   * resizing the matrix
-   *
-   * \param m_ new number of rows
-   * \param n_ new number of columns
-   */
-  void resize(int m_, int n_)
-  {
-      m = m_;
-      n = n_;
-      data.resize(m_*n_);
-   }
-  /*! \brief
-   * Requests that the matrix capacity is at least enough to contain
-   * m_ rows and n_ columns
-   *
-   * \param m_ requested number of rows
-   * \param n_ requested number of columns
-   */
-  void reserve(int m_, int n_)
-  {
-      data.reserve(m_*n_);
-   }
-  /*! \brief
-   * Removes all elements from the matrix and sets the size to 0x0
-   */
-  void clear()
-    {
-      m = n = 0;
-      data.clear();
-    }
+    public:
+        /*! \brief
+         * initialization of a 0*0 matrix
+         */
+        FMatrix() : data(), m(0), n(0)
+        {
+        }
+        /*! \brief
+         * initialization of an n*m matrix (all fields are set to zero)
+         *
+         * \param m_ number of rows of the matrix
+         * \param n_ number of columns of the matrix
+         */
+        FMatrix(int m_, int n_) : data(m_*n_), m(m_), n(n_)
+        {
+        }
+        /*! \brief
+         * initialization of an n*m matrix with a standard vaule
+         *
+         * \param m_ number of rows of the matrix
+         * \param n_ number of columns of the matrix
+         * \param val initial value of the matrix fields
+         */
+        FMatrix(int m_, int n_, real val) : data(m_*n_, val), m(m_), n(n_)
+        {
+        }
+        /*! \brief
+         * resizing the matrix
+         *
+         * \param m_ new number of rows
+         * \param n_ new number of columns
+         */
+        void resize(int m_, int n_)
+        {
+            m = m_;
+            n = n_;
+            data.resize(m_*n_);
+        }
+        /*! \brief
+         * Requests that the matrix capacity is at least enough to contain
+         * m_ rows and n_ columns
+         *
+         * \param m_ requested number of rows
+         * \param n_ requested number of columns
+         */
+        void reserve(int m_, int n_)
+        {
+            data.reserve(m_*n_);
+        }
+        /*! \brief
+         * Removes all elements from the matrix and sets the size to 0x0
+         */
+        void clear()
+        {
+            m = n = 0;
+            data.clear();
+        }
 
-  /*! \brief
-   * retrieve the number of rows of the matrix
-   *
-   * \return number of rows
-   */
-  int NRows() const
-  {
-      return m;
-  }
-  /*! \brief
-   * retrieve the number of columns of the matrix
-   *
-   * \return number of columns
-   */
-  int NCols() const
-  {
-   return n;
-  }
-  /*! \brief
-   * operator to access an element of the matrix
-   *
-   * \param i row of the element to retrieve
-   * \param j column of the element to retrieve
-   *
-   * \return element (i,j)
-   */
-  real& operator()(int i, int j)
-  {
+        /*! \brief
+         * retrieve the number of rows of the matrix
+         *
+         * \return number of rows
+         */
+        int NRows() const
+        {
+            return m;
+        }
+        /*! \brief
+         * retrieve the number of columns of the matrix
+         *
+         * \return number of columns
+         */
+        int NCols() const
+        {
+            return n;
+        }
+        /*! \brief
+         * operator to access an element of the matrix
+         *
+         * \param i row of the element to retrieve
+         * \param j column of the element to retrieve
+         *
+         * \return element (i,j)
+         */
+        real &operator()(int i, int j)
+        {
 
-      return data[i + j*m];
-  }
-  /*! \brief
-   * operator to access an element of the matrix
-   *
-   * \param i row of the element to retrieve
-   * \param j column of the element to retrieve
-   *
-   * \return element (i,j)
-   */
-  const real& operator()(int i, int j) const
-  {
-    return data[i + j*m];
-  }
-  /*! \brief
-   * return a pointer to the "FORTRAN-style" matrix representation
-   */
-  real * toF()
-  {
-      return &(data.front());
-  }
-  /*! \brief
-   * Exchange the contents of the matrix with another
-   *
-   * \param y Matrix to swap values with
-   */
-  void swap(FMatrix &y)
-  {
-    data.swap(y.data);
-    std::swap(n, y.n);
-    std::swap(m, y.m);
-   }
+            return data[i + j*m];
+        }
+        /*! \brief
+         * operator to access an element of the matrix
+         *
+         * \param i row of the element to retrieve
+         * \param j column of the element to retrieve
+         *
+         * \return element (i,j)
+         */
+        const real &operator()(int i, int j) const
+        {
+            return data[i + j*m];
+        }
+        /*! \brief
+         * return a pointer to the "FORTRAN-style" matrix representation
+         */
+        real * toF()
+        {
+            return &(data.front());
+        }
+        /*! \brief
+         * Exchange the contents of the matrix with another
+         *
+         * \param y Matrix to swap values with
+         */
+        void swap(FMatrix &y)
+        {
+            data.swap(y.data);
+            std::swap(n, y.n);
+            std::swap(m, y.m);
+        }
 };
 
 
-/*! \brief
+/*! \internal \brief
  * vector of real values to supply to a FORTRAN function
  */
-class FVector: private FMatrix
+class FVector : private FMatrix
 {
-public:
-  /*! \brief
-   * initialization of an empty vector
-   */
-  FVector() : FMatrix()
-  {
-  }
-  /*! \brief
-   * initialization of an n-vector (all fields are set to zero)
-   *
-   * \param n_ number of elements of the vector
-   */
-  FVector(int n_) : FMatrix(1,n_)
-  {
-  }
-  /*! \brief
-   * initialization of an n-vector with a standard vaule
-   *
-   * \param n_ number of elements of the vector
-   * \param val initial value of the vector fields
-   */
-  FVector(int n_, real val) : FMatrix(1,n_,val)
-  {
-  }
-  /*! \brief
-   * resizing the vector
-   *
-   * \param n_ new number of elements
-   */
-  void resize(int n_)
-  {
-    FMatrix::resize(1,n_);
-  }
-  /*! \brief
-   * Requests that the vector capacity is at least enough to contain
-   * n_ elements
-   *
-   * \param n_ requested number of elements
-   */
-  void reserve(int n_)
-  {
-    FMatrix::reserve(1,n_);
-  }
+    public:
+        /*! \brief
+         * initialization of an empty vector
+         */
+        FVector() : FMatrix()
+        {
+        }
+        /*! \brief
+         * initialization of an n-vector (all fields are set to zero)
+         *
+         * \param n_ number of elements of the vector
+         */
+        FVector(int n_) : FMatrix(1, n_)
+        {
+        }
+        /*! \brief
+         * initialization of an n-vector with a standard vaule
+         *
+         * \param n_ number of elements of the vector
+         * \param val initial value of the vector fields
+         */
+        FVector(int n_, real val) : FMatrix(1, n_, val)
+        {
+        }
+        /*! \brief
+         * resizing the vector
+         *
+         * \param n_ new number of elements
+         */
+        void resize(int n_)
+        {
+            FMatrix::resize(1, n_);
+        }
+        /*! \brief
+         * Requests that the vector capacity is at least enough to contain
+         * n_ elements
+         *
+         * \param n_ requested number of elements
+         */
+        void reserve(int n_)
+        {
+            FMatrix::reserve(1, n_);
+        }
 
-  /*! \brief
-   * retrieve the number of elements of the vector
-   *
-   * \return number of elements
-   */
-  int Length() const
-  {
-    return FMatrix::NCols();
-  }
-  /*! \brief
-   * operator to access an element of the vector
-   *
-   * \param i element to retrieve
-   *
-   * \return element i
-   */
-  real& operator[](int i)
-  {
-    return FMatrix::operator()(0,i);
-  }
-  /*! \brief
-   * operator to access an element of the vector
-   *
-   * \param i row of the element to retrieve
-   *
-   * \return element i
-   */
-  const real& operator[](int i) const
-  {
-    return FMatrix::operator()(0,i);
-  }
+        /*! \brief
+         * retrieve the number of elements of the vector
+         *
+         * \return number of elements
+         */
+        int Length() const
+        {
+            return FMatrix::NCols();
+        }
+        /*! \brief
+         * operator to access an element of the vector
+         *
+         * \param i element to retrieve
+         *
+         * \return element i
+         */
+        real &operator[](int i)
+        {
+            return FMatrix::operator()(0, i);
+        }
+        /*! \brief
+         * operator to access an element of the vector
+         *
+         * \param i row of the element to retrieve
+         *
+         * \return element i
+         */
+        const real &operator[](int i) const
+        {
+            return FMatrix::operator()(0, i);
+        }
 
-  using FMatrix::clear;
-  using FMatrix::toF;
-  using FMatrix::swap;
+        using FMatrix::clear;
+        using FMatrix::toF;
+        using FMatrix::swap;
 };
 
 /*! \brief Partial least squares (PLS) regression
