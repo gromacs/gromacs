@@ -625,7 +625,6 @@ gmx_mm_update_iforce_4atom_swizzle_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
     _mm_store_ss(fshiftptr+2, t5);
     _mm_storeh_pi((__m64 *)(fshiftptr), t5);
 }
-#endif
 
 
 static gmx_inline void gmx_simdcall
