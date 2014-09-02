@@ -10,6 +10,8 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
+#include "gmxpre.h"
+
 #include "../gmx_lapack.h"
 
 #define log10e 0.43429448190325182765
@@ -19,18 +21,12 @@ float log();
 float r_lg10(x) float *x;
 #else
 #undef abs
-#include "math.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <math.h>
 float r_lg10(float *x)
 #endif
 {
 return( log10e * log(*x) );
 }
-#ifdef __cplusplus
-}
-#endif
 
 void
 	F77_FUNC(slabad, SLABAD)(float *small, float *large)

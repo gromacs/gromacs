@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,15 +76,13 @@
  * This macro is used to call the LAPACK and BLAS functions required for
  * the preset GROMACS precision (i.e. real or single precision)
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define GMX_LAPACK(A, B)  F77_FUNC(d ## A, D ## B)
 #else
 #define GMX_LAPACK(A, B)  F77_FUNC(s ## A, S ## B)
 #endif
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 #if 0
 }
 #endif
@@ -486,12 +484,12 @@ void
 void
     F77_FUNC(slabad, SLABAD) (float *small, float *large);
 void
-    F77_FUNC(dgels, DGELS) (char *trans, int *m, int *n, int *nrhs, double *a, int *lda, double *b,
+    F77_FUNC(dgels, DGELS) (const char *trans, int *m, int *n, int *nrhs, double *a, int *lda, double *b,
                             int *ldb,   double *work, int *lwork, int *info);
 double
-    F77_FUNC(dlamch, DLAMCH) (char *cmach);
+    F77_FUNC(dlamch, DLAMCH) (const char *cmach);
 int
-    F77_FUNC(dtrtrs, DTRTRS) (char *uplo, char *trans, char *diag, int *n,
+    F77_FUNC(dtrtrs, DTRTRS) (const char *uplo, const char *trans, const char *diag, int *n,
                               int *nrhs, double *a, int *lda, double *b, int *
                               ldb, int *info);
 /* Single precision */
@@ -872,28 +870,26 @@ void
     F77_FUNC(sgeqrf, SGEQRF) (int *m, int *n, float *a, int *lda, float *tau,
                               float *work, int *lwork, int *info);
 void
-    F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *lda, float *b,
+    F77_FUNC(sgels, SGELS) (const char *trans, int *m, int *n, int *nrhs, float *a, int *lda, float *b,
                             int *ldb, float *work, int *lwork, int *info);
 float
-    F77_FUNC(slamch, SLAMCH) (char *cmach);
+    F77_FUNC(slamch, SLAMCH) (const char *cmach);
 
 int
-    F77_FUNC(strtrs, STRTRS) (char *uplo, char *trans, char *diag, int *n,
+    F77_FUNC(strtrs, STRTRS) (const char *uplo, const char *trans, const char *diag, int *n,
                               int *nrhs, float *a, int *lda, float *b, int *
                               ldb, int *info);
 
 int
-    F77_FUNC(ilaenv, ILAENV) (int *ispec, char *name__, char *opts, int *n1,
+    F77_FUNC(ilaenv, ILAENV) (int *ispec, const char *name__, const char *opts, int *n1,
                               int *n2, int *n3, int *n4);
 int
-    F77_FUNC(iparmq, IPARMQ) (int *ispec, char *name__, char *opts, int *n, int
+    F77_FUNC(iparmq, IPARMQ) (int *ispec, const char *name__, const char *opts, int *n, int
                               *ilo, int *ihi, int *lwork);
 void
-    F77_FUNC(xerbla, XERBLA) (char *srname, int *info);
+    F77_FUNC(xerbla, XERBLA) (const char *srname, int *info);
 
-#ifdef __cplusplus
 }
-#endif
 
 /*! \endcond */
 

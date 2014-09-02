@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -192,7 +192,9 @@ function(gmxManageLinearAlgebraLibraries)
 
     manage_linear_algebra_library(BLAS dgemm_)
     set(BLAS_FIND_QUIETLY ON)
-    manage_linear_algebra_library(LAPACK cheev_)
+    # manage_linear_algebra_library(LAPACK cheev_)
+
+    message(STATUS "GMX_EXTERNAL_LAPACK = ${GMX_EXTERNAL_LAPACK}")
 
     # Propagate the new local value to the parent scope
     set(LINEAR_ALGEBRA_LIBRARIES "${LINEAR_ALGEBRA_LIBRARIES}" PARENT_SCOPE)
