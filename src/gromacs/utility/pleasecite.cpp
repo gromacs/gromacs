@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -376,6 +376,16 @@ void please_cite(FILE *fp, const char *key)
           "Quantifying Artifacts in Ewald Simulations of Inhomogeneous Systems with a Net Charge",
           "J. Chem. Theory Comput.",
           10, 2014, "381-393" },
+        { "HubdeGroot2009",
+          "J. S. Hub and B. L. de Groot",
+          "Detection of Functional Modes in Protein Dynamics",
+          "PLoS Comput. Biol.",
+          5, 2009, "e1000480"},
+        { "KrivobokovaEtAl2012",
+          "T. Krivobokova, R. Briones, J. S. Hub, A. Munk and B. L. de Groot",
+          "Partial Least-Squares Functional Mode Analysis: Application to the Membrane Proteins AQP1, Aqy1, and CLC-ec1",
+          "Biophys. J.",
+          103, 2012, "786-796"}
     };
 #define NSTR (int)asize(citedb)
 
