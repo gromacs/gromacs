@@ -8,6 +8,7 @@ domdec -> pulling
 fileio -> gmxlib
 gmxlib -> listed_forces
 math -> simd
+math -> linearalgebra
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
