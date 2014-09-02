@@ -291,7 +291,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
-            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags);
+            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags, wcycle);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -1308,7 +1308,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
                                  outf, mdebin, ekind, f, f_global,
-                                 wcycle, &nchkpt,
+                                 &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
@@ -1940,6 +1940,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
+
+    /* Closing TNG files can include compressing data. Therefore it is good to do that
+     * before stopping the time measurements. */
+    mdoutf_tng_close(outf);
 
     /* Stop measuring walltime */
     walltime_accounting_end(walltime_accounting);

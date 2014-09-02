@@ -136,6 +136,17 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 #endif
 }
 
+
+#ifdef __clang__
+/* IBM's declaration of this function in
+ * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/process.h
+ * erroneously fails to specify __INLINE__, despite
+ * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/cnk/process_impl.h
+ * specifiying __INLINE__, so bgclang thinks they are different enough
+ * to complain about. */
+static uint64_t Kernel_GetJobID();
+#endif
+
 void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 {
     gmx_nodecomm_t *nc;

@@ -81,6 +81,9 @@
 /*! \def GMX_REAL_MAX
  * \brief Largest finite value for `real`.
  */
+/*! \def GMX_REAL_NEGZERO
+ * \brief Negative zero for `real`.
+ */
 /*! \def gmx_real_fullprecision_pfmt
  * \brief Format string for full `real` precision.
  */
@@ -91,10 +94,11 @@ typedef double      real;
 #define HAVE_REAL
 #endif
 
-#define GMX_MPI_REAL    MPI_DOUBLE
-#define GMX_REAL_EPS    GMX_DOUBLE_EPS
-#define GMX_REAL_MIN    GMX_DOUBLE_MIN
-#define GMX_REAL_MAX    GMX_DOUBLE_MAX
+#define GMX_MPI_REAL      MPI_DOUBLE
+#define GMX_REAL_EPS      GMX_DOUBLE_EPS
+#define GMX_REAL_MIN      GMX_DOUBLE_MIN
+#define GMX_REAL_MAX      GMX_DOUBLE_MAX
+#define GMX_REAL_NEGZERO  GMX_DOUBLE_NEGZERO
 #define gmx_real_fullprecision_pfmt "%21.14e"
 
 #else /* GMX_DOUBLE */
@@ -104,10 +108,11 @@ typedef float           real;
 #define HAVE_REAL
 #endif
 
-#define GMX_MPI_REAL    MPI_FLOAT
-#define GMX_REAL_EPS    GMX_FLOAT_EPS
-#define GMX_REAL_MIN    GMX_FLOAT_MIN
-#define GMX_REAL_MAX    GMX_FLOAT_MAX
+#define GMX_MPI_REAL      MPI_FLOAT
+#define GMX_REAL_EPS      GMX_FLOAT_EPS
+#define GMX_REAL_MIN      GMX_FLOAT_MIN
+#define GMX_REAL_MAX      GMX_FLOAT_MAX
+#define GMX_REAL_NEGZERO  GMX_FLOAT_NEGZERO
 #define gmx_real_fullprecision_pfmt "%14.7e"
 
 #endif /* GMX_DOUBLE */

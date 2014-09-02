@@ -44,4 +44,23 @@
 typedef int         atom_id;      /* To indicate an atoms id         */
 #define NO_ATID     (atom_id)(~0) /* Use this to indicate invalid atid */
 
+#ifdef __PGI
+/* The portland group x86 C/C++ compilers do not treat negative zero initializers
+ * correctly, but "optimizes" them to positive zero, so we implement it explicitly.
+ * These constructs are optimized to simple loads at compile time. If you want to
+ * use them on other compilers those have to support gcc preprocessor extensions.
+ * Note: These initializers might be sensitive to the endianness (which can
+ * be different for byte and word order), so check that it works for your platform
+ * and add a separate section if necessary before adding to the ifdef above.
+ */
+#    define GMX_DOUBLE_NEGZERO  ({ const union { int  di[2]; double d; } _gmx_dzero = {0, -2147483648}; _gmx_dzero.d; })
+#    define GMX_FLOAT_NEGZERO   ({ const union { int  fi; float f; } _gmx_fzero = {-2147483648}; _gmx_fzero.f; })
+#else
+/*! \brief Negative zero in double */
+#    define GMX_DOUBLE_NEGZERO  (-0.0)
+
+/*! \brief Negative zero in float */
+#    define GMX_FLOAT_NEGZERO   (-0.0f)
+#endif
+
 #endif
