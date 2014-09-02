@@ -65,8 +65,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 #define  NSTATES  2
     int           i, j, n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid;
     real          shX, shY, shZ;
-    real          Fscal, FscalC[NSTATES], FscalV[NSTATES], tx, ty, tz;
-    real          Vcoul[NSTATES], Vvdw[NSTATES];
+    real          tx, ty, tz, Fscal;
+    double        FscalC[NSTATES], FscalV[NSTATES];  /* Needs double for sc_power==48 */
+    double        Vcoul[NSTATES], Vvdw[NSTATES];     /* Needs double for sc_power==48 */
     real          rinv6, r, rt, rtC, rtV;
     real          iqA, iqB;
     real          qq[NSTATES], vctot, krsq;
@@ -79,7 +80,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     double        dvdl_coul, dvdl_vdw;
     real          lfac_coul[NSTATES], dlfac_coul[NSTATES], lfac_vdw[NSTATES], dlfac_vdw[NSTATES];
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
-    real          rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV;
+    double        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
     real          sigma2[NSTATES], sigma_pow[NSTATES], sigma_powm2[NSTATES], rs, rs2;
     int           do_tab, tab_elemsize;
     int           n0, n1C, n1V, nnn;
