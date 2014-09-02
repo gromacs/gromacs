@@ -40,7 +40,7 @@
     storage of non-arithmetic data types in IrregArray2D, too.
 
    \author R. Thomas Ullmann <tullman@gwdg.de>
-   \libinternal
+   \inlibraryapi
    \ingroup module_math
  */
 #ifndef GMX_MATH_IRREG_ARRAY_MATH_IRREG_ARRAY_2D_LU_DECOMPOSITION_H

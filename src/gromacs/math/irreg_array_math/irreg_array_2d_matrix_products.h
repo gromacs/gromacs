@@ -52,7 +52,7 @@
        - input matrices stored as \f$ \mathbf{A}^{\mathrm{T}},\mathbf{B}^{\mathrm{T}} \f$: \ref matrixProductMatrixTMatrixT()
 
    \author R. Thomas Ullmann <tullman@gwdg.de>
-   \libinternal
+   \inlibraryapi
    \ingroup module_math
  */
 #ifndef GMX_MATH_IRREG_ARRAY_MATH_IRREG_ARRAY_2D_MATRIX_PRODUCTS_H
