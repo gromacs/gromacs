@@ -6,11 +6,34 @@ The CMakelist.txt can be used together with cmake to
 build the template program:
 $ source /path/to/GMXRC
 $ cmake /path/to/template
+Alternatively, setting CMAKE_PREFIX_PATH will direct cmake
+to find a particular GROMACS installation.
 
-The Makefile.pkg can be used if cmake is unavailble. It
+The Makefile.pkg can be used if cmake is unavailable. It
 makes use of pkg-config only to build the template program:
 $ source /path/to/GMXRC
 $ make -f Makefile.pkg
+
+You will need to make sure that you use a sufficiently similar C++
+compiler and C++ Standard Library as the one that was used for
+compiling GROMACS, preferably the same one. If you used any system
+libraries (e.g. Boost, FFTW, BLAS, LAPACK) when installing GROMACS,
+then you will need make them available to the template build system
+also. The easiest way to do this is to have pkg-config installed on
+your system, and to source GMXRC from the GROMACS installation before
+you attempt to configure the template. A subset of Boost is supposed
+to be installed with GROMACS, but currently the automatic machinery
+does not detect that installation, so you may need to install Boost
+(headers only) in order to use the GROMACS template program.
+
+If the compiler used for GROMACS was capable of some C++11 features
+then, by default, those will be required for compiling the
+template. To make that work, you can either configure GROMACS with
+$ cmake -DGMX_CXX11=off
+or configure the template with the appropriate
+$ cmake -DCMAKE_CXX_FLAGS="-flag-for-your-compiler"
+You can find out the necessary flags from your compiler's documentation,
+or by inspecting the src/buildinfo.h file in the GROMACS build tree.
 
 ----------------------------------------------------------
 
