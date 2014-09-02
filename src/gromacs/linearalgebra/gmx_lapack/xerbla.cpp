@@ -10,15 +10,17 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
-#include "stdio.h"
+#include "gmxpre.h"
+
+#include <stdio.h>
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"
 
 /* Table of constant values */
 
-static int c__1 = 1;
+/* not used static int c__1 = 1;*/
 
-/* Subroutine */ void F77_FUNC(xerbla, XERBLA) (char *srname, int *info)
+/* Subroutine */ void F77_FUNC(xerbla, XERBLA) (const char *srname, int *info)
 {
     
 

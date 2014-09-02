@@ -10,21 +10,24 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
+#include "gmxpre.h"
+
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"
-#include "string.h"
+#include <string.h>
 
-#define min(a,b) ((a) <= (b) ? (a) : (b))
-#define max(a,b) ((a) >= (b) ? (a) : (b))
+#define min_def(a,b) ((a) <= (b) ? (a) : (b))
+#define max_def(a,b) ((a) >= (b) ? (a) : (b))
 
 
 #ifdef KR_headers
 VOID s_copy(a, b, la, lb) register char *a, *b; int la, lb;
 #else
-void s_copy(register char *a, register char *b, int la, int lb)
+void s_copy(char *a, const char *b, int la, int lb)
 #endif
 {
-	register char *aend, *bend;
+        register char *aend;
+        const char *bend;
 
 	aend = a + la;
 
@@ -59,20 +62,13 @@ void s_copy(register char *a, register char *b, int la, int lb)
 			*a++ = ' ';
 		}
 	}
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* compare two strings */
 
 #ifdef KR_headers
-int s_cmp(a0, b0, la, lb) char *a0, *b0; int la, lb;
+int s_cmp(a0, b0, la, lb) const char *a0, *b0; int la, lb;
 #else
-int s_cmp(char *a0, char *b0, int la, int lb)
+int s_cmp(const char *a0, const char *b0, int la, int lb)
 #endif
 {
 register unsigned char *a, *aend, *b, *bend;
@@ -109,9 +105,6 @@ else
 	}
 return(0);
 }
-#ifdef __cplusplus
-}
-#endif
 
 int ieeeck_(int *ispec, float *zero, float *one)
 {
@@ -274,7 +267,7 @@ static float c_b163 = 0.f;
 static float c_b164 = 1.f;
 static int c__0 = 0;
 
-int F77_FUNC(ilaenv,ILAENV) (int *ispec, char *name__, char *opts, int *n1,
+int F77_FUNC(ilaenv,ILAENV) (int *ispec, const char *name__, const char *opts, int *n1,
 	int *n2, int *n3, int *n4)
 {
     /* System generated locals */
@@ -282,7 +275,7 @@ int F77_FUNC(ilaenv,ILAENV) (int *ispec, char *name__, char *opts, int *n1,
 
     /* Builtin functions */
     /* Subroutine */ 
-    int s_cmp(char *, char *, int, int);
+    int s_cmp(const char *, const char *, int, int);
 
     /* Local variables */
     int i__;
@@ -293,13 +286,11 @@ int F77_FUNC(ilaenv,ILAENV) (int *ispec, char *name__, char *opts, int *n1,
     int sname;
     extern int ieeeck_(int *, float *, float *);
     char subnam[1];
-    extern int iparmq_(int *, char *, char *, int *, int *, 
-	    int *, int *);
 
-    int name_len, opts_len;
+    int name_len/* not used, opts_len*/;
 
     name_len = strlen (name__);
-    opts_len = strlen (opts);
+    /* not used opts_len = strlen (opts);*/
 
 /*  -- LAPACK auxiliary routine (version 3.2) -- */
 /*     Univ. of Tennessee, Univ. of California Berkeley and NAG Ltd.. */
@@ -347,7 +338,7 @@ int F77_FUNC(ilaenv,ILAENV) (int *ispec, char *name__, char *opts, int *n1,
 /*               rectangular blocks must have dimension at least k by m, */
 /*               where k is given by ILAENV(2,...) and m by ILAENV(5,...) */
 /*          = 6: the crossover point for the SVD (when reducing an m by n */
-/*               matrix to bidiagonal form, if max(m,n)/min(m,n) exceeds */
+/*               matrix to bidiagonal form, if max_def(m,n)/min_def(m,n) exceeds */
 /*               this value, a QR factorization is used first to reduce */
 /*               the matrix to a triangular form.) */
 /*          = 7: the number of processors */
@@ -845,7 +836,7 @@ L100:
 
 /*     ISPEC = 6:  crossover point for SVD (used by xGELSS and xGESVD) */
 
-    ret_val = (int) ((float) min(*n1,*n2) * 1.6f);
+    ret_val = (int) ((float) min_def(*n1,*n2) * 1.6f);
     return ret_val;
 
 L110:

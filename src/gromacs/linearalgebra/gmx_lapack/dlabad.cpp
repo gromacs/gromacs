@@ -10,13 +10,13 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
+#include "gmxpre.h"
+
 #include <ctype.h>
 #include <math.h>
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
-
-#include "../../legacyheaders/types/simple.h"
 
 #define log10e 0.43429448190325182765
 
@@ -25,18 +25,12 @@ double log();
 double d_lg10(x) doublereal *x;
 #else
 #undef abs
-#include "math.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <math.h>
 double d_lg10(double *x)
 #endif
 {
 return( log10e * log(*x) );
 }
-#ifdef __cplusplus
-}
-#endif
 
 
 /* Subroutine */ void F77_FUNC(dlabad,DLABAD) (double *small, double *large)

@@ -376,6 +376,16 @@ void please_cite(FILE *fp, const char *key)
           "Quantifying Artifacts in Ewald Simulations of Inhomogeneous Systems with a Net Charge",
           "J. Chem. Theory Comput.",
           10, 2014, "381-393" },
+        { "HubdeGroot2009",
+          "J. S. Hub and B. L. de Groot",
+          "Detection of Functional Modes in Protein Dynamics",
+          "PLoS Comput. Biol.",
+          5, 2009, "e1000480"},
+        { "KrivobokovaEtAl2012",
+          "T. Krivobokova, R. Briones, J. S. Hub, A. Munk and B. L. de Groot",
+          "Partial Least-Squares Functional Mode Analysis: Application to the Membrane Proteins AQP1, Aqy1, and CLC-ec1",
+          "Biophys. J.",
+          103, 2012, "786-796"}
     };
 #define NSTR (int)asize(citedb)
 
