@@ -3,8 +3,6 @@
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"
 
-#include "../../legacyheaders/types/simple.h"
-
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #define max(a,b) ((a) >= (b) ? (a) : (b))
 
@@ -15,9 +13,6 @@ static int c__1 = 1;
 static int c_n1 = -1;
 static float c_b33 = 0.f;
 static int c__0 = 0;
-static char U = 'U';
-static char N = 'N';
-static char T = 'T';
 
 void
 F77_FUNC(sgels, SGELS) (char *trans, int *m, int *n, int *nrhs, float *a, int *lda, float *b,

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,15 +76,13 @@
  * This macro is used to call the LAPACK and BLAS functions required for
  * the preset GROMACS precision (i.e. real or single precision)
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define GMX_LAPACK(A, B)  F77_FUNC(d ## A, D ## B)
 #else
 #define GMX_LAPACK(A, B)  F77_FUNC(s ## A, S ## B)
 #endif
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 #if 0
 }
 #endif
@@ -891,9 +889,7 @@ int
 void
     F77_FUNC(xerbla, XERBLA) (char *srname, int *info);
 
-#ifdef __cplusplus
 }
-#endif
 
 /*! \endcond */
 

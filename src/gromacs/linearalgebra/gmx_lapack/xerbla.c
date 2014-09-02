@@ -10,7 +10,7 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
-#include "stdio.h"
+#include <stdio.h>
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"
 

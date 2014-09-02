@@ -19,7 +19,7 @@ float log();
 float r_lg10(x) float *x;
 #else
 #undef abs
-#include "math.h"
+#include <math.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -16,8 +16,6 @@
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
 
-#include "../../legacyheaders/types/simple.h"
-
 #define log10e 0.43429448190325182765
 
 #ifdef KR_headers
@@ -25,7 +23,7 @@ double log();
 double d_lg10(x) doublereal *x;
 #else
 #undef abs
-#include "math.h"
+#include <math.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
