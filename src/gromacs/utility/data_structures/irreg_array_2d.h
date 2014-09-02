@@ -870,6 +870,81 @@ class IrregArray2D
             result.initArray(*this);
             return result;
         }
+
+
+
+        /*! \brief  Append a vector (increase the Length1 by one) and copy the given values
+
+            \tparam      inValues   the values to copy
+            \tparam      inNbValues the number of values to copy (must match the current size getLength2(inPosition1))
+         */
+        void appendVector(const value_type inValues[], const index_type inNbValues)
+        {
+            {
+                value_type** newArr = nullptr;
+                try
+                {
+                    newArr  = p_allocator_.allocate(getLength1()+1);
+                    newArr -= first1_;
+                }
+                catch (std::bad_alloc)
+                {
+                    std::fprintf(stderr, "Error in %s::appendVector(): could not allocate memory for the data array.", typeid(*this).name());
+                    throw;
+                }
+
+                for (index_type i = first1_; i <= last1_; ++i)
+                {
+                    newArr[i] = arr_[i];
+                }
+                p_allocator_.deallocate(arr_, getLength1());
+                arr_ = newArr;
+            }
+            // increase the size of the interval to append the new vector
+            last1_ += 1;
+            try
+            {
+                arr_[last1_]  = allocator_.allocate(inNbValues);
+                arr_[last1_] -= first2_;
+            }
+            catch (std::bad_alloc)
+            {
+                std::fprintf(stderr, "Error in %s::appendVector(): could not allocate memory for the data array.", typeid(*this).name());
+                throw;
+            }
+
+            for (index_type idxVal = 0; idxVal < inNbValues; ++idxVal)
+            {
+                arr_[last1_][idxVal] = inValues[idxVal];
+            }
+
+            // Update the size in the second dimension
+            if (is_irreg_ && inNbValues == (last2_ + 1))
+            {
+                // nothing change
+            }
+            else if (is_irreg_)  // inNbValues != (last2_ + 1)
+            {
+                is_irreg_ = false;
+                irreg_.initArray(first2_, last2_);
+                for (index_type i = first2_; i < last2_; i++)
+                {
+                    irreg_[i] = (last2_ + 1);
+                }
+                irreg_[last2_] = inNbValues;
+            }
+            else
+            {
+                IrregArray1D<size_type> newIrreg(first2_, last2_);
+                for (index_type i = first2_; i < last2_; i++)
+                {
+                    irreg_[i] = newIrreg[i];
+                }
+                newIrreg[last2_] = inNbValues;
+                irreg_           = std::move(newIrreg);
+            }
+        }
+
     private:
         //! allocate memory for the array given the array geometry preset by the public allocate functions that accept arguments
         void allocateArray()
