@@ -53,6 +53,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -741,6 +742,52 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
  * gmx_ana_indexmap_t and related things
  ********************************************************************/
 
+/*! \brief
+ * Helper for splitting a sequence of atom indices into groups.
+ *
+ * \param[in]     atomIndex  Index of the next atom in the sequence.
+ * \param[in]     top        Topology structure.
+ * \param[in]     type       Type of group to split into.
+ * \param[in,out] id         Variable to receive the next group id.
+ * \returns  `true` if \p atomIndex starts a new group in the sequence, i.e.,
+ *     if \p *id was changed.
+ *
+ * \p *id should be initialized to `-1` before first call of this function, and
+ * then each atom index in the sequence passed to the function in turn.
+ *
+ * \ingroup module_selection
+ */
+static bool
+next_group_index(int atomIndex, t_topology *top, e_index_t type, int *id)
+{
+    int prev = *id;
+    switch (type)
+    {
+        case INDEX_ATOM:
+            *id = atomIndex;
+            break;
+        case INDEX_RES:
+            *id = top->atoms.atom[atomIndex].resind;
+            break;
+        case INDEX_MOL:
+            if (*id >= 0 && top->mols.index[*id] > atomIndex)
+            {
+                *id = 0;
+            }
+            while (*id < top->mols.nr && atomIndex >= top->mols.index[*id+1])
+            {
+                ++*id;
+            }
+            GMX_ASSERT(*id < top->mols.nr, "Molecules do not span all the atoms");
+            break;
+        case INDEX_UNKNOWN:
+        case INDEX_ALL:
+            *id = 0;
+            break;
+    }
+    return prev != *id;
+}
+
 /*!
  * \param[in,out] t    Output block.
  * \param[in]  top  Topology structure
@@ -762,9 +809,6 @@ void
 gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
                          e_index_t type, bool bComplete)
 {
-    int      i, j, ai;
-    int      id, cur;
-
     if (type == INDEX_UNKNOWN)
     {
         t->nr           = 1;
@@ -777,6 +821,13 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
         t->nalloc_a     = 0;
         return;
     }
+
+    // TODO: Check callers and either check these there as well, or turn these
+    // into exceptions.
+    GMX_RELEASE_ASSERT(top != NULL || (type != INDEX_RES && type != INDEX_MOL),
+                       "Topology must be provided for residue or molecule blocks");
+    GMX_RELEASE_ASSERT(!(type == INDEX_MOL && top->mols.nr == 0),
+                       "Molecule information must be present for molecule blocks");
 
     /* bComplete only does something for INDEX_RES or INDEX_MOL, so turn it
      * off otherwise. */
@@ -817,36 +868,16 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
         t->nalloc_index = g->isize + 1;
     }
     /* Clear counters */
-    t->nr = 0;
-    j     = 0; /* j is used by residue completion for the first atom not stored */
-    id    = cur = -1;
-    for (i = 0; i < g->isize; ++i)
+    t->nr  = 0;
+    int j  = 0; /* j is used by residue completion for the first atom not stored */
+    int id = -1;
+    for (int i = 0; i < g->isize; ++i)
     {
-        ai = g->index[i];
         /* Find the ID number of the atom/residue/molecule corresponding to
-         * atom ai. */
-        switch (type)
+         * the atom. */
+        if (next_group_index(g->index[i], top, type, &id))
         {
-            case INDEX_ATOM:
-                id = ai;
-                break;
-            case INDEX_RES:
-                id = top->atoms.atom[ai].resind;
-                break;
-            case INDEX_MOL:
-                while (ai >= top->mols.index[id+1])
-                {
-                    id++;
-                }
-                break;
-            case INDEX_UNKNOWN: /* Should not occur */
-            case INDEX_ALL:
-                id = 0;
-                break;
-        }
-        /* If this is the first atom in a new block, initialize the block. */
-        if (id != cur)
-        {
+            /* If this is the first atom in a new block, initialize the block. */
             if (bComplete)
             {
                 /* For completion, we first set the start of the block. */
@@ -883,7 +914,6 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
                 /* If not using completion, simply store the start of the block. */
                 t->index[t->nr++] = i;
             }
-            cur = id;
         }
     }
     /* Set the end of the last block */
@@ -1115,45 +1145,74 @@ void
 gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                       t_topology *top, e_index_t type)
 {
-    int      i, ii, mi;
-
     m->type   = type;
     gmx_ana_index_make_block(&m->b, top, g, type, false);
     gmx_ana_indexmap_reserve(m, m->b.nr, m->b.nra);
-    for (i = mi = 0; i < m->b.nr; ++i)
+    int id = -1;
+    for (int i = 0; i < m->b.nr; ++i)
     {
-        ii = (type == INDEX_UNKNOWN ? 0 : m->b.a[m->b.index[i]]);
-        switch (type)
-        {
-            case INDEX_ATOM:
-                m->orgid[i] = ii;
-                break;
-            case INDEX_RES:
-                m->orgid[i] = top->atoms.atom[ii].resind;
-                break;
-            case INDEX_MOL:
-                while (top->mols.index[mi+1] <= ii)
-                {
-                    ++mi;
-                }
-                m->orgid[i] = mi;
-                break;
-            case INDEX_ALL:
-            case INDEX_UNKNOWN:
-                m->orgid[i] = 0;
-                break;
-        }
-    }
-    for (i = 0; i < m->b.nr; ++i)
-    {
+        const int ii = (type == INDEX_UNKNOWN ? 0 : m->b.a[m->b.index[i]]);
+        next_group_index(ii, top, type, &id);
         m->refid[i] = i;
-        m->mapid[i] = m->orgid[i];
+        m->mapid[i] = id;
+        m->orgid[i] = id;
     }
     m->mapb.nr  = m->b.nr;
     m->mapb.nra = m->b.nra;
     m->mapb.a   = m->b.a;
     std::memcpy(m->mapb.index, m->b.index, (m->b.nr+1)*sizeof(*(m->mapb.index)));
     m->bStatic  = true;
+}
+
+int
+gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, t_topology *top,
+                                  e_index_t type)
+{
+    GMX_RELEASE_ASSERT(m->bStatic,
+                       "Changing original IDs is not supported after starting "
+                       "to use the mapping");
+    GMX_RELEASE_ASSERT(top != NULL || (type != INDEX_RES && type != INDEX_MOL),
+                       "Topology must be provided for residue or molecule blocks");
+    GMX_RELEASE_ASSERT(!(type == INDEX_MOL && top->mols.nr == 0),
+                       "Molecule information must be present for molecule blocks");
+    // Check that all atoms in each block belong to the same group.
+    // This is a separate loop for better error handling (no state is modified
+    // if there is an error.
+    if (type == INDEX_RES || type == INDEX_MOL)
+    {
+        int id = -1;
+        for (int i = 0; i < m->b.nr; ++i)
+        {
+            const int ii = m->b.a[m->b.index[i]];
+            if (next_group_index(ii, top, type, &id))
+            {
+                for (int j = m->b.index[i] + 1; j < m->b.index[i+1]; ++j)
+                {
+                    if (next_group_index(m->b.a[j], top, type, &id))
+                    {
+                        std::string message("Grouping into residues/molecules is ambiguous");
+                        GMX_THROW(gmx::InconsistentInputError(message));
+                    }
+                }
+            }
+        }
+    }
+    // Do a second loop, where things are actually set.
+    int id    = -1;
+    int group = -1;
+    for (int i = 0; i < m->b.nr; ++i)
+    {
+        const int ii = (type == INDEX_UNKNOWN ? 0 : m->b.a[m->b.index[i]]);
+        if (next_group_index(ii, top, type, &id))
+        {
+            ++group;
+        }
+        m->mapid[i] = group;
+        m->orgid[i] = group;
+    }
+    // Count also the last group.
+    ++group;
+    return group;
 }
 
 /*!

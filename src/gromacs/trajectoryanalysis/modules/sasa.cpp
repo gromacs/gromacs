@@ -553,24 +553,18 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         dgsFactor_.reserve(surfaceSel_.posCount());
     }
 
+    const int resCount = surfaceSel_.initOriginalIdsToGroup(top_, INDEX_RES);
+
     // TODO: Not exception-safe, but nice solution would be to have a C++
     // atom properties class...
     gmx_atomprop_t     aps = gmx_atomprop_init();
 
     ConstArrayRef<int> atomIndices = surfaceSel_.atomIndices();
-    int                prevResind  = atoms.atom[atomIndices[0]].resind;
-    int                resCount    = 0;
     int                ndefault    = 0;
     for (int i = 0; i < surfaceSel_.posCount(); i++)
     {
         const int ii     = atomIndices[i];
         const int resind = atoms.atom[ii].resind;
-        if (resind != prevResind)
-        {
-            ++resCount;
-            prevResind = resind;
-        }
-        surfaceSel_.setOriginalId(i, resCount);
         real      radius;
         if (!gmx_atomprop_query(aps, epropVDW,
                                 *(atoms.resinfo[resind].name),
@@ -596,9 +590,6 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         fprintf(stderr, "WARNING: could not find a Van der Waals radius for %d atoms\n", ndefault);
     }
     gmx_atomprop_destroy(aps);
-
-    // The loop above doesn't count the last residue.
-    ++resCount;
 
     // Pre-compute mapping from the output groups to the calculation group,
     // and store it in the selection ID map for easy lookup.

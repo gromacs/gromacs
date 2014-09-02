@@ -43,7 +43,12 @@
 
 #include "selection.h"
 
+#include <string>
+
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "nbsearch.h"
 #include "position.h"
@@ -256,6 +261,34 @@ Selection::operator AnalysisNeighborhoodPositions() const
         pos.exclusionIds(atomIndices());
     }
     return pos;
+}
+
+
+void
+Selection::setOriginalId(int i, int id)
+{
+    data().rawPositions_.m.mapid[i] = id;
+    data().rawPositions_.m.orgid[i] = id;
+}
+
+
+int
+Selection::initOriginalIdsToGroup(t_topology *top, e_index_t type)
+{
+    try
+    {
+        return gmx_ana_indexmap_init_orgid_group(&data().rawPositions_.m, top, type);
+    }
+    catch (const InconsistentInputError &)
+    {
+        GMX_ASSERT(type == INDEX_RES || type == INDEX_MOL,
+                   "Expected that only grouping by residue/molecule would fail");
+        std::string message =
+            formatString("Cannot group selection '%s' into %s, because some "
+                         "positions have atoms from more than one such group.",
+                         name(), type == INDEX_MOL ? "molecules" : "residues");
+        GMX_THROW(InconsistentInputError(message));
+    }
 }
 
 

@@ -493,7 +493,43 @@ class Selection
          *
          * \see SelectionPosition::mappedId()
          */
-        void setOriginalId(int i, int id) { data().rawPositions_.m.orgid[i] = id; }
+        void setOriginalId(int i, int id);
+        /*! \brief
+         * Inits the IDs for use with SelectionPosition::mappedId() for
+         * grouping.
+         *
+         * \param[in] top   Topology information
+         *     (can be NULL if not required for \p type).
+         * \param[in] type  Type of groups to generate.
+         * \returns   Number of groups that were present in the selection.
+         * \throws    InconsistentInputError if the selection positions cannot
+         *     be assigned to groups of the given type.
+         *
+         * If `type == INDEX_ATOM`, the IDs are initialized to 0, 1, 2, ...,
+         * and the return value is the number of positions.
+         * If `type == INDEX_ALL`, all the IDs are initialized to 0, and the
+         * return value is one.
+         * If `type == INDEX_RES` or `type == INDEX_MOL`, the first position
+         * will get ID 0, and all following positions that belong to the same
+         * residue/molecule will get the same ID.  The first position that
+         * belongs to a different residue/molecule will get ID 1, and so on.
+         * If some position contains atoms from multiple residues/molecules,
+         * i.e., the mapping is ambiguous, an exception is thrown.
+         * The return value is the number of residues/molecules that are
+         * present in the selection positions.
+         *
+         * This method is useful if the calling code needs to group the
+         * selection, e.g., for computing aggregate properties for each residue
+         * or molecule.  It can then use this method to initialize the
+         * appropriate grouping, use the return value to allocate a
+         * sufficiently sized buffer to store the aggregated values, and then
+         * use SelectionPosition::mappedId() to identify the location where to
+         * aggregate to.
+         *
+         * \see setOriginalId()
+         * \see SelectionPosition::mappedId()
+         */
+        int initOriginalIdsToGroup(t_topology *top, e_index_t type);
 
         /*! \brief
          * Prints out one-line description of the selection.
@@ -708,10 +744,10 @@ class SelectionPosition
          * Selection::setOriginalId() has not been called, the default values
          * are dependent on type():
          *  - ::INDEX_ATOM: atom indices
-         *  - ::INDEX_RES:  residue numbers
-         *  - ::INDEX_MOL:  molecule numbers
+         *  - ::INDEX_RES:  residue indices
+         *  - ::INDEX_MOL:  molecule indices
          *  .
-         * All the default values are zero-based
+         * All the default values are zero-based.
          */
         int mappedId() const
         {
