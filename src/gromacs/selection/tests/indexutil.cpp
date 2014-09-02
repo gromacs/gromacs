@@ -352,6 +352,7 @@ class IndexMapTest : public ::testing::Test
         void testInit(int atomCount, const int atoms[], e_index_t type);
         void testUpdate(int atomCount, const int atoms[], bool bMaskOnly,
                         const char *name);
+        void testOrgIdGroup(e_index_t type, const char *name);
         template <int count>
         void testInit(const int (&atoms)[count], e_index_t type)
         {
@@ -417,6 +418,20 @@ void IndexMapTest::testUpdate(int atomCount, const int atoms[], bool bMaskOnly,
     }
 }
 
+void IndexMapTest::testOrgIdGroup(e_index_t type, const char *name)
+{
+    gmx::test::TestReferenceChecker compound(
+            checker_.checkCompound("OrgIdGroups", name));
+    const int count
+        = gmx_ana_indexmap_init_orgid_group(&map_, topManager_.topology(), type);
+    compound.checkInteger(count, "GroupCount");
+    compound.checkSequenceArray(map_.mapb.nr, map_.orgid, "OrgId");
+    for (int i = 0; i < map_.mapb.nr; ++i)
+    {
+        EXPECT_EQ(map_.orgid[i], map_.mapid[i]);
+    }
+}
+
 void IndexMapTest::checkMapping(int atomCount, const int atoms[],
                                 const char *name)
 {
@@ -446,6 +461,48 @@ TEST_F(IndexMapTest, InitializesAtomBlock)
 {
     const int maxGroup[] = { 1, 2, 4, 5 };
     testInit(maxGroup, INDEX_ATOM);
+}
+
+TEST_F(IndexMapTest, InitializesOrgIdGroupAtom)
+{
+    const int maxGroup[] = { 2, 5, 7 };
+    testInit(maxGroup, INDEX_ATOM);
+    testOrgIdGroup(INDEX_ATOM, "Atoms");
+}
+
+TEST_F(IndexMapTest, InitializesOrgIdGroupSingle)
+{
+    const int maxGroup[] = { 3, 4, 7, 8, 13 };
+    topManager_.initAtoms(18);
+    topManager_.initUniformResidues(3);
+    testInit(maxGroup, INDEX_RES);
+    testOrgIdGroup(INDEX_ATOM, "Single");
+}
+
+TEST_F(IndexMapTest, InitializesOrgIdGroupResidue)
+{
+    const int maxGroup[] = { 3, 4, 7, 8, 13 };
+    topManager_.initAtoms(18);
+    topManager_.initUniformResidues(3);
+    testInit(maxGroup, INDEX_ATOM);
+    testOrgIdGroup(INDEX_RES, "Residues");
+}
+
+TEST_F(IndexMapTest, InitializesOrgIdGroupMolecule)
+{
+    const int maxGroup[] = { 1, 2, 3, 4, 7, 8, 13 };
+    topManager_.initAtoms(18);
+    topManager_.initUniformResidues(3);
+    topManager_.initUniformMolecules(6);
+    testInit(maxGroup, INDEX_RES);
+    testOrgIdGroup(INDEX_MOL, "Molecules");
+}
+
+TEST_F(IndexMapTest, InitializesOrgIdGroupAll)
+{
+    const int maxGroup[] = { 3, 4, 7, 8, 13 };
+    testInit(maxGroup, INDEX_ATOM);
+    testOrgIdGroup(INDEX_ALL, "All");
 }
 
 TEST_F(IndexMapTest, InitializesMoleculeBlock)
