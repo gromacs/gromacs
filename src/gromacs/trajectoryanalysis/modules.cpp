@@ -51,6 +51,7 @@
 #include "modules/freevolume.h"
 #include "modules/sasa.h"
 #include "modules/select.h"
+#include "modules/fma.h"
 
 namespace gmx
 {
@@ -92,6 +93,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<FreeVolumeInfo>(manager, group);
     registerModule<SasaInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
+    registerModule<FMAInfo>(manager, group);
 }
 //! \endcond
 
