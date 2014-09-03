@@ -58,7 +58,7 @@ static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
                              rvec *x,
                              rvec x_pbc)
 {
-    int a, m;
+    int a;
 
     if (cr != NULL && DOMAINDECOMP(cr))
     {
@@ -290,7 +290,7 @@ void pull_calc_coms(t_commrec *cr,
     double        wmass, wwmass, invwmass;
     dvec          com, comp;
     double        cm, sm, cmp, smp, ccm, csm, ssm, csw, snw;
-    rvec         *xx[2], x_pbc = {0, 0, 0}, dx;
+    rvec          x_pbc = {0, 0, 0}, dx;
     t_pull_group *pgrp;
 
     if (pull->rbuf == NULL)

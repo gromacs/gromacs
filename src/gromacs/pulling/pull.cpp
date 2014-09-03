@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include <algorithm>
+
 #include "gmxpre.h"
 
 #include "config.h"
@@ -117,7 +119,7 @@ static void pull_print_x(FILE *out, t_pull *pull, double t)
 
 static void pull_print_f(FILE *out, t_pull *pull, double t)
 {
-    int c, d;
+    int c;
 
     fprintf(out, "%.4f", t);
 
@@ -278,7 +280,7 @@ static double max_pull_distance2(const t_pull *pull, const t_pbc *pbc)
         {
             if (pull->dim[m] != 0)
             {
-                max_d2 = min(max_d2, norm2(pbc->box[m]));
+                max_d2 = std::min(max_d2, static_cast<double>(norm2(pbc->box[m])));
             }
         }
     }
@@ -448,14 +450,13 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
     double       *dr_tot; /* the total update of the coords */
     double        ref;
     dvec          vec;
-    double        d0, inpr;
-    double        lambda, rm, mass, invdt = 0;
+    double        inpr;
+    double        lambda, rm, invdt = 0;
     gmx_bool      bConverged_all, bConverged = FALSE;
     int           niter = 0, g, c, ii, j, m, max_iter = 100;
     double        a;
-    dvec          f;       /* the pull force */
     dvec          tmp, tmp3;
-    t_pull_group *pdyna, *pgrp0, *pgrp1;
+    t_pull_group *pgrp0, *pgrp1;
     t_pull_coord *pcrd;
 
     snew(r_ij,   pull->ncoord);
@@ -1123,7 +1124,7 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
 {
     t_pull       *pull;
     t_pull_group *pgrp;
-    int           c, g, start = 0, end = 0, m;
+    int           c, g, m;
 
     pull = ir->pull;
 
