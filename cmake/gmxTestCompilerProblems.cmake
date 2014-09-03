@@ -80,6 +80,19 @@ macro(gmx_test_compiler_problems)
         message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to  compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
     endif()
 
+    if(CMAKE_COMPILER_IS_GNUCC AND WIN32 AND (GMX_SIMD STREQUAL "AVX_256" OR GMX_SIMD STREQUAL "AVX2_256"))
+        message(WARNING "GCC on Windows with AVX crashes. Choose SSE4_1 or a different compiler.") # GCC bug 49001.
+    endif()
+
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND WIN32 AND NOT CYGWIN)
+        if(CMAKE_VERSION VERSION_LESS 3.0.0)
+            message(WARNING "Clang on Windows requires cmake 3.0.0")
+        endif()
+        if(CMAKE_C_COMPILER_VERSION VERSION_LESS 3.5.0)
+            message(WARNING "Clang on Windows requires clang 3.5.0")
+        endif()
+    endif()
+
     if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "12.0.0")
         message(WARNING "Intel compilers before 12.0.0 are not routinely tested, so there may be problems. Version 11.1 with SSE4.1 is known to produce incorrect results. It is highly recommended to use a more up-to-date compiler. If you choose to use this version, make sure you run the regressiontests.")
     endif()
