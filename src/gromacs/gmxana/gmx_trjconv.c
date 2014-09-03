@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -697,8 +697,8 @@ int gmx_trjconv(int argc, char *argv[])
         "Use option [TT]-pbc mol[tt] in addition to [TT]-center[tt] when you",
         "want all molecules in the box after the centering.[PAR]",
 
-        "Option [TT]-box[tt] sets the size of the new box. If you want to"
-        "modify only some of the dimensions, e.g. when reading from a trajectory,"
+        "Option [TT]-box[tt] sets the size of the new box. If you want to",
+        "modify only some of the dimensions, e.g. when reading from a trajectory,",
         "you can use -1 for those dimensions that should stay the same"
 
         "It is not always possible to use combinations of [TT]-pbc[tt],",
@@ -778,6 +778,7 @@ int gmx_trjconv(int argc, char *argv[])
     static char     *exec_command  = NULL;
     static real      dropunder     = 0, dropover = 0;
     static gmx_bool  bRound        = FALSE;
+    static matrix    oldbox;
 
     t_pargs
         pa[] =
@@ -1422,12 +1423,25 @@ int gmx_trjconv(int argc, char *argv[])
                 if (bSetBox)
                 {
                     /* generate new box */
+                    /* read_*_frame does not clear fr.box (clear_trxframe clears the metadata and not the data),
+                     * nor always fill it (e.g. TNG or PDB can lack a box). Thus we can't always copy it into oldbox,
+                     * because the user could be using gmx trjconv -box 2 3 3 to add such a box to a trajectory with no box. */
+                    if (fr.bBox == TRUE &&
+                        ((newbox[XX] == -1) || (newbox[YY] == -1) || (newbox[ZZ] == -1)))
+                    {
+                        /* we only need to preserve the old box when the user specifically requests it */
+                        copy_mat(fr.box, oldbox);
+                    }
                     clear_mat(fr.box);
                     for (m = 0; m < DIM; m++)
                     {
                         if (newbox[m] >= 0)
                         {
                             fr.box[m][m] = newbox[m];
+                        }
+                        else
+                        {
+                            fr.box[m][m] = oldbox[m][m];
                         }
                     }
                 }
