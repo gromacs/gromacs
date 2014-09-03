@@ -1,6 +1,10 @@
 Once installed, this directory contains CMakelist.txt,
 Makefile.pkg and a small program that you could use as
 a template when writing your own analysis software.
+Further explanation for the template code can be found
+in the Doxygen documentation (link to the latest development
+version):
+  <http://jenkins.gromacs.org/job/Documentation_Gerrit_Nightly/javadoc/doxygen/html-user/page_analysistemplate.xhtml>
 
 The CMakelist.txt can be used together with cmake to
 build the template program:
@@ -10,30 +14,19 @@ Alternatively, setting CMAKE_PREFIX_PATH will direct cmake
 to find a particular GROMACS installation.
 
 The Makefile.pkg can be used if cmake is unavailable. It
-makes use of pkg-config only to build the template program:
+makes use of pkg-config to build the template program:
 $ source /path/to/GMXRC
 $ make -f Makefile.pkg
 
 You will need to make sure that you use a sufficiently similar C++
 compiler and C++ Standard Library as the one that was used for
-compiling GROMACS, preferably the same one. If you used any system
-libraries (e.g. Boost, FFTW, BLAS, LAPACK) when installing GROMACS,
-then you will need make them available to the template build system
-also. The easiest way to do this is to have pkg-config installed on
-your system, and to source GMXRC from the GROMACS installation before
-you attempt to configure the template. A subset of Boost is supposed
-to be installed with GROMACS, but currently the automatic machinery
-does not detect that installation, so you may need to install Boost
-(headers only) in order to use the GROMACS template program.
-
-If the compiler used for GROMACS was capable of some C++11 features
-then, by default, those will be required for compiling the
-template. To make that work, you can either configure GROMACS with
-$ cmake -DGMX_CXX11=off
-or configure the template with the appropriate
-$ cmake -DCMAKE_CXX_FLAGS="-flag-for-your-compiler"
-You can find out the necessary flags from your compiler's documentation,
-or by inspecting the src/buildinfo.h file in the GROMACS build tree.
+compiling GROMACS, preferably the same one.  Boost headers used to
+compile GROMACS are also required, and are automatically added to
+the include path by both of the above build systems.
+See the Doxygen documentation for using GROMACS as a library for
+more details about the build system used to build the template, as
+well as its limitations (link to the latest development version):
+  <http://jenkins.gromacs.org/job/Documentation_Gerrit_Nightly/javadoc/doxygen/html-user/page_usinglibrary.xhtml>
 
 ----------------------------------------------------------
 
