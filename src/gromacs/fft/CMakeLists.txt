@@ -34,10 +34,10 @@
 
 # GLOB is used to get full paths
 file(GLOB FFT_SOURCES
-     fft.c fft5d.cpp parallel_3dfft.c)
+     fft.cpp fft5d.cpp parallel_3dfft.cpp)
 
 if (GMX_FFT_FFTPACK)
-    file(GLOB FFT_SPECIFIC_SOURCES fft_fftpack.c)
+    file(GLOB FFT_SPECIFIC_SOURCES fft_fftpack.cpp)
     list(APPEND FFT_SPECIFIC_SOURCES
          ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.c)
 endif()
@@ -45,7 +45,7 @@ if (GMX_FFT_FFTW3)
     file(GLOB FFT_SPECIFIC_SOURCES fft_fftw3.cpp)
 endif()
 if (GMX_FFT_MKL)
-    file(GLOB FFT_SPECIFIC_SOURCES fft_mkl.c)
+    file(GLOB FFT_SPECIFIC_SOURCES fft_mkl.cpp)
 endif()
 
 set(LIBGROMACS_SOURCES
