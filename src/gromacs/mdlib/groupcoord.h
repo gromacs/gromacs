@@ -53,6 +53,9 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! \brief Select local atoms of a group.
  *
@@ -202,3 +205,7 @@ extern void translate_x(rvec x[], const int nr, const rvec transvec);
  *
  */
 extern void rotate_x(rvec x[], const int nr, matrix rmat);
+
+#ifdef __cplusplus
+}
+#endif
