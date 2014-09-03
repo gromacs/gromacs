@@ -51,6 +51,9 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! \brief Select local atoms of a group.
  *
