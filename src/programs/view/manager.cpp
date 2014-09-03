@@ -349,9 +349,7 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
 static bool step_man(t_manager *man, int *nat)
 {
     static int      ncount = 0;
-    static bool     bWarn  = false;
     bool            bEof;
-    const char     *warn;
 
     if (!man->natom)
     {
@@ -368,13 +366,8 @@ static bool step_man(t_manager *man, int *nat)
                 put_atoms_in_triclinic_unitcell(ecenterDEF, man->box, man->natom, man->x);
                 break;
             case esbTrunc:
-                warn = put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box,
-                                                     man->natom, man->x);
-                if (warn && !bWarn)
-                {
-                    fprintf(stderr, "\n%s\n", warn);
-                    bWarn = true;
-                }
+                put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box,
+                                              man->natom, man->x);
                 break;
             case esbRect:
             case esbNone:
