@@ -34,12 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Implements routines in pbc.h.
+ *
+ * Utility functions for handling periodic boundary conditions.
+ * Mainly used in analysis tools.
+ */
 #include "gmxpre.h"
 
 #include "pbc.h"
 
-#include <assert.h>
-#include <math.h>
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -52,6 +60,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
@@ -63,8 +72,9 @@ enum {
     epbcdxNOPBC,         epbcdxUNSUPPORTED
 };
 
-/* Margin factor for error message and correction if the box is too skewed */
+//! Margin factor for error message
 #define BOX_MARGIN         1.0010
+//! Margin correction if the box is too skewed
 #define BOX_MARGIN_CORRECT 1.0005
 
 int ePBC2npbcdim(int ePBC)
@@ -107,8 +117,6 @@ void dump_pbc(FILE *fp, t_pbc *pbc)
     rvec_add(pbc->hbox_diag, pbc->mhbox_diag, sum_box);
     pr_rvecs(fp, 0, "sum of the above two", &sum_box, 1);
     fprintf(fp, "max_cutoff2 = %g\n", pbc->max_cutoff2);
-    fprintf(fp, "bLimitDistance = %s\n", EBOOL(pbc->bLimitDistance));
-    fprintf(fp, "limit_distance2 = %g\n", pbc->limit_distance2);
     fprintf(fp, "ntric_vec = %d\n", pbc->ntric_vec);
     if (pbc->ntric_vec > 0)
     {
@@ -139,10 +147,10 @@ const char *check_box(int ePBC, matrix box)
     {
         ptr = "The unit cell can not have off-diagonal x-components with screw pbc";
     }
-    else if (fabs(box[YY][XX]) > BOX_MARGIN*0.5*box[XX][XX] ||
+    else if (std::fabs(box[YY][XX]) > BOX_MARGIN*0.5*box[XX][XX] ||
              (ePBC != epbcXY &&
-              (fabs(box[ZZ][XX]) > BOX_MARGIN*0.5*box[XX][XX] ||
-               fabs(box[ZZ][YY]) > BOX_MARGIN*0.5*box[YY][YY])))
+              (std::fabs(box[ZZ][XX]) > BOX_MARGIN*0.5*box[XX][XX] ||
+               std::fabs(box[ZZ][YY]) > BOX_MARGIN*0.5*box[YY][YY])))
     {
         ptr = "Triclinic box is too skewed.";
     }
@@ -156,15 +164,16 @@ const char *check_box(int ePBC, matrix box)
 
 real max_cutoff2(int ePBC, matrix box)
 {
-    real min_hv2, min_ss;
+    real       min_hv2, min_ss;
+    const real oneFourth = 0.25;
 
     /* Physical limitation of the cut-off
      * by half the length of the shortest box vector.
      */
-    min_hv2 = min(0.25*norm2(box[XX]), 0.25*norm2(box[YY]));
+    min_hv2 = oneFourth * std::min(norm2(box[XX]), norm2(box[YY]));
     if (ePBC != epbcXY)
     {
-        min_hv2 = min(min_hv2, 0.25*norm2(box[ZZ]));
+        min_hv2 = std::min(min_hv2, oneFourth * norm2(box[ZZ]));
     }
 
     /* Limitation to the smallest diagonal element due to optimizations:
@@ -174,17 +183,17 @@ real max_cutoff2(int ePBC, matrix box)
      */
     if (ePBC == epbcXY)
     {
-        min_ss = min(box[XX][XX], box[YY][YY]);
+        min_ss = std::min(box[XX][XX], box[YY][YY]);
     }
     else
     {
-        min_ss = min(box[XX][XX], min(box[YY][YY]-fabs(box[ZZ][YY]), box[ZZ][ZZ]));
+        min_ss = std::min(box[XX][XX], std::min(box[YY][YY] - std::fabs(box[ZZ][YY]), box[ZZ][ZZ]));
     }
 
-    return min(min_hv2, min_ss*min_ss);
+    return std::min(min_hv2, min_ss*min_ss);
 }
 
-/* this one is mostly harmless... */
+//! Set to true if warning has been printed
 static gmx_bool bWarnedGuess = FALSE;
 
 int guess_ePBC(matrix box)
@@ -223,6 +232,7 @@ int guess_ePBC(matrix box)
     return ePBC;
 }
 
+//! Check if the box still obeys the restrictions, if not, correct it
 static int correct_box_elem(FILE *fplog, int step, tensor box, int v, int d)
 {
     int shift, maxshift = 10;
@@ -279,7 +289,6 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, t_graph *graph)
     int      zy, zx, yx, i;
     gmx_bool bCorrected;
 
-    /* check if the box still obeys the restrictions, if not, correct it */
     zy = correct_box_elem(fplog, step, box, ZZ, YY);
     zx = correct_box_elem(fplog, step, box, ZZ, XX);
     yx = correct_box_elem(fplog, step, box, YY, XX);
@@ -323,6 +332,7 @@ int ndof_com(t_inputrec *ir)
     return n;
 }
 
+//! Do the real arithmetic for filling the pbc struct
 static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
 {
     int         order[5] = {0, -1, 1, -2, 2};
@@ -330,14 +340,13 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     ivec        bPBC;
     real        d2old, d2new, d2new_c;
     rvec        trial, pos;
-    gmx_bool    bXY, bUse;
+    gmx_bool    bUse;
     const char *ptr;
 
     pbc->ePBC      = ePBC;
     pbc->ndim_ePBC = ePBC2npbcdim(ePBC);
 
     copy_mat(box, pbc->box);
-    pbc->bLimitDistance = FALSE;
     pbc->max_cutoff2    = 0;
     pbc->dim            = -1;
     pbc->ntric_vec      = 0;
@@ -358,14 +367,12 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     {
         fprintf(stderr,   "Warning: %s\n", ptr);
         pr_rvecs(stderr, 0, "         Box", box, DIM);
-        fprintf(stderr,   "         Can not fix pbc.\n");
-        pbc->ePBCDX          = epbcdxUNSUPPORTED;
-        pbc->bLimitDistance  = TRUE;
-        pbc->limit_distance2 = 0;
+        fprintf(stderr,   "         Can not fix pbc.\n\n");
+        pbc->ePBCDX = epbcdxUNSUPPORTED;
     }
     else
     {
-        if (ePBC == epbcSCREW && dd_nc)
+        if (ePBC == epbcSCREW && NULL != dd_nc)
         {
             /* This combinated should never appear here */
             gmx_incons("low_set_pbc called with screw pbc and dd_nc != NULL");
@@ -398,7 +405,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                         pbc->dim = i;
                     }
                 }
-                assert(pbc->dim < DIM);
+                GMX_ASSERT(pbc->dim < DIM, "Dimension for PBC incorrect");
                 for (i = 0; i < pbc->dim; i++)
                 {
                     if (pbc->box[pbc->dim][i] != 0)
@@ -514,11 +521,11 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                 {
                                     if (trial[d] < 0)
                                     {
-                                        pos[d] = min( pbc->hbox_diag[d], -trial[d]);
+                                        pos[d] = std::min( pbc->hbox_diag[d], -trial[d]);
                                     }
                                     else
                                     {
-                                        pos[d] = max(-pbc->hbox_diag[d], -trial[d]);
+                                        pos[d] = std::max(-pbc->hbox_diag[d], -trial[d]);
                                     }
                                 }
                                 d2old += sqr(pos[d]);
@@ -530,6 +537,12 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                 {
                                     /* Check if there is a single shift vector
                                      * that decreases this distance even more.
+                                     * This code can probably be removed, as
+                                     * our unit-cell restrictions checked
+                                     * before in check_box should avoid this.
+                                     * But because we have historically had
+                                     * some issues with triclinic boxes, we'll
+                                     * keep this check for now.
                                      */
                                     jc = 0;
                                     kc = 0;
@@ -547,17 +560,12 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                         d2new_c += sqr(pos[d] + trial[d]
                                                        - jc*box[YY][d] - kc*box[ZZ][d]);
                                     }
-                                    if (d2new_c > BOX_MARGIN*d2new)
-                                    {
-                                        /* Reject this shift vector, as there is no a priori limit
-                                         * to the number of shifts that decrease distances.
-                                         */
-                                        if (!pbc->bLimitDistance || d2new <  pbc->limit_distance2)
-                                        {
-                                            pbc->limit_distance2 = d2new;
-                                        }
-                                        pbc->bLimitDistance = TRUE;
-                                    }
+                                    /* This should never happen, but if it does
+                                     * there might be no limit on the number
+                                     * of triclinic shift vectors.
+                                     */
+                                    GMX_RELEASE_ASSERT(d2new_c <= BOX_MARGIN*d2new, "Invalid triclinic box, but passed check_box()");
+                                    gmx_incons("ai");
                                 }
                                 else
                                 {
@@ -595,16 +603,17 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                             pbc->tric_shift[pbc->ntric_vec][YY] = j;
                                             pbc->tric_shift[pbc->ntric_vec][ZZ] = k;
                                             pbc->ntric_vec++;
+
+                                            if (debug)
+                                            {
+                                                fprintf(debug, "  tricvec %2d = %2d %2d %2d  %5.2f %5.2f  %5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
+                                                        pbc->ntric_vec, i, j, k,
+                                                        sqrt(d2old), sqrt(d2new),
+                                                        trial[XX], trial[YY], trial[ZZ],
+                                                        pos[XX], pos[YY], pos[ZZ]);
+                                            }
                                         }
                                     }
-                                }
-                                if (debug)
-                                {
-                                    fprintf(debug, "  tricvec %2d = %2d %2d %2d  %5.2f %5.2f  %5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
-                                            pbc->ntric_vec, i, j, k,
-                                            sqrt(d2old), sqrt(d2new),
-                                            trial[XX], trial[YY], trial[ZZ],
-                                            pos[XX], pos[YY], pos[ZZ]);
                                 }
                             }
                         }
@@ -1114,6 +1123,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
     return is;
 }
 
+//! Compute distance vector in double precision
 void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
 {
     int      i, j;
@@ -1237,6 +1247,7 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
     }
 }
 
+//! Compute the box image corresponding to input vectors
 gmx_bool image_rect(ivec xi, ivec xj, ivec box_size, real rlong2, int *shift, real *r2)
 {
     int     m, t;
@@ -1415,8 +1426,9 @@ void calc_triclinic_images(matrix box, rvec img[])
 
 void calc_compact_unitcell_vertices(int ecenter, matrix box, rvec vert[])
 {
-    rvec img[NTRICIMG], box_center;
-    int  n, i, j, tmp[4], d;
+    rvec       img[NTRICIMG], box_center;
+    int        n, i, j, tmp[4], d;
+    const real oneFourth = 0.25;
 
     calc_triclinic_images(box, img);
 
@@ -1500,7 +1512,7 @@ void calc_compact_unitcell_vertices(int ecenter, matrix box, rvec vert[])
     {
         for (d = 0; d < DIM; d++)
         {
-            vert[i][d] = vert[i][d]*0.25+box_center[d];
+            vert[i][d] = vert[i][d]*oneFourth+box_center[d];
         }
     }
 }
@@ -1516,27 +1528,21 @@ int *compact_unitcell_edges()
         8, 20, 10, 18, 12, 16, 14, 22
     };
     int              e, i, j;
-    gmx_bool         bFirst = TRUE;
 
     snew(edge, NCUCEDGE*2);
 
-    if (bFirst)
+    e = 0;
+    for (i = 0; i < 6; i++)
     {
-        e = 0;
-        for (i = 0; i < 6; i++)
+        for (j = 0; j < 4; j++)
         {
-            for (j = 0; j < 4; j++)
-            {
-                edge[e++] = 4*i + j;
-                edge[e++] = 4*i + (j+1) % 4;
-            }
+            edge[e++] = 4*i + j;
+            edge[e++] = 4*i + (j+1) % 4;
         }
-        for (i = 0; i < 12*2; i++)
-        {
-            edge[e++] = hexcon[i];
-        }
-
-        bFirst = FALSE;
+    }
+    for (i = 0; i < 12*2; i++)
+    {
+        edge[e++] = hexcon[i];
     }
 
     return edge;
@@ -1676,23 +1682,24 @@ void put_atoms_in_triclinic_unitcell(int ecenter, matrix box,
     }
 }
 
-const char *
-put_atoms_in_compact_unitcell(int ePBC, int ecenter, matrix box,
-                              int natoms, rvec x[])
+void put_atoms_in_compact_unitcell(int ePBC, int ecenter, matrix box,
+                                   int natoms, rvec x[])
 {
     t_pbc pbc;
     rvec  box_center, dx;
     int   i;
 
     set_pbc(&pbc, ePBC, box);
+
+    if (pbc.ePBCDX == epbcdxUNSUPPORTED)
+    {
+        gmx_fatal(FARGS, "Can not put atoms in compact unitcell with unsupported PBC");
+    }
+
     calc_box_center(ecenter, box, box_center);
     for (i = 0; i < natoms; i++)
     {
         pbc_dx(&pbc, x[i], box_center, dx);
         rvec_add(box_center, dx, x[i]);
     }
-
-    return pbc.bLimitDistance ?
-           "WARNING: Could not put all atoms in the compact unitcell\n"
-           : NULL;
 }

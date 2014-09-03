@@ -905,8 +905,6 @@ int gmx_trjconv(int argc, char *argv[])
     char             *outf_base = NULL;
     const char       *outf_ext  = NULL;
     char              top_title[256], title[256], filemode[5];
-    gmx_bool          bWarnCompact = FALSE;
-    const char       *warn;
     output_env_t      oenv;
 
     t_filenm          fnm[] = {
@@ -1669,13 +1667,8 @@ int gmx_trjconv(int argc, char *argv[])
                                     put_atoms_in_triclinic_unitcell(ecenter, fr.box, natoms, fr.x);
                                     break;
                                 case euCompact:
-                                    warn = put_atoms_in_compact_unitcell(ePBC, ecenter, fr.box,
-                                                                         natoms, fr.x);
-                                    if (warn && !bWarnCompact)
-                                    {
-                                        fprintf(stderr, "\n%s\n", warn);
-                                        bWarnCompact = TRUE;
-                                    }
+                                    put_atoms_in_compact_unitcell(ePBC, ecenter, fr.box,
+                                                                  natoms, fr.x);
                                     break;
                             }
                         }
