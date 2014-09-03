@@ -79,7 +79,7 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
                               rvec *x,
                               rvec *x_pbc)
 {
-    int g, n, m;
+    int g, n;
 
     n = 0;
     for (g = 0; g < pull->ngroup; g++)
@@ -250,7 +250,7 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
 
     for (c = 0; c < pull->ncoord; c++)
     {
-        double wmass, wwmass, inp, dist;
+        double wmass, wwmass, dist;
 
         pcrd  = &pull->coord[c];
 
