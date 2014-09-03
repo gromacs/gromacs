@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "config.h"
 
 #include <stdio.h>
@@ -68,7 +70,7 @@
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/math/utilities.h"
 
-static char *RotStr = {"Enforced rotation:"};
+static char const *RotStr = {"Enforced rotation:"};
 
 /* Set the minimum weight for the determination of the slab centers */
 #define WEIGHT_MIN (10*GMX_FLOAT_MIN)
@@ -755,14 +757,14 @@ static gmx_inline real torque(
 
 
 /* Right-aligned output of value with standard width */
-static void print_aligned(FILE *fp, char *str)
+static void print_aligned(FILE *fp, char const *str)
 {
     fprintf(fp, "%12s", str);
 }
 
 
 /* Right-aligned output of value with standard short width */
-static void print_aligned_short(FILE *fp, char *str)
+static void print_aligned_short(FILE *fp, char const *str)
 {
     fprintf(fp, "%6s", str);
 }
@@ -3757,7 +3759,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
             snew(rotg->enfrotgrp, 1);
             erg  = rotg->enfrotgrp;
 
-            nat_max = max(nat_max, rotg->nat);
+            nat_max = std::max(nat_max, rotg->nat);
 
             if (PAR(cr))
             {

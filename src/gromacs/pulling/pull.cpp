@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "config.h"
 
 #include <math.h>
@@ -321,7 +323,7 @@ static double max_pull_distance2(const t_pull_coord *pcrd, const t_pbc *pbc)
     {
         if (pcrd->dim[m] != 0)
         {
-            max_d2 = min(max_d2, norm2(pbc->box[m]));
+            max_d2 = std::min(max_d2, static_cast<double>(norm2(pbc->box[m])));
         }
     }
 
@@ -495,7 +497,6 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
     gmx_bool      bConverged_all, bConverged = FALSE;
     int           niter = 0, g, c, ii, j, m, max_iter = 100;
     double        a;
-    dvec          f;       /* the pull force */
     dvec          tmp, tmp3;
     t_pull_group *pgrp0, *pgrp1;
     t_pull_coord *pcrd;
