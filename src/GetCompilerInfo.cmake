@@ -43,6 +43,6 @@
 #
 macro(get_compiler_info LANGUAGE BUILD_COMPILER BUILD_FLAGS)
     set(${BUILD_COMPILER} "${CMAKE_${LANGUAGE}_COMPILER} ${CMAKE_${LANGUAGE}_COMPILER_ID} ${CMAKE_${LANGUAGE}_COMPILER_VERSION}")
-    string(TOUPPER ${CMAKE_BUILD_TYPE} _build_type)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
     set(${BUILD_FLAGS} "${CMAKE_${LANGUAGE}_FLAGS} ${CMAKE_${LANGUAGE}_FLAGS_${_build_type}}")
 endmacro()
