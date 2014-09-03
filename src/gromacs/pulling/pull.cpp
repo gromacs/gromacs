@@ -36,7 +36,10 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "pull.h"
+#include "config.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -399,7 +402,7 @@ static double max_pull_distance2(const t_pull_coord *pcrd, const t_pbc *pbc)
     {
         if (pcrd->dim[m] != 0)
         {
-            max_d2 = min(max_d2, norm2(pbc->box[m]));
+            max_d2 = std::min(max_d2, static_cast<double>(norm2(pbc->box[m])));
         }
     }
 
@@ -412,13 +415,12 @@ static void low_get_pull_coord_dr(const t_pull *pull,
                                   dvec xg, dvec xref, double max_dist2,
                                   dvec dr)
 {
-    const t_pull_group *pgrp0, *pgrp1;
+    const t_pull_group *pgrp0;
     int                 m;
     dvec                xrefr, dref = {0, 0, 0};
     double              dr2;
 
     pgrp0 = &pull->group[pcrd->group[0]];
-    pgrp1 = &pull->group[pcrd->group[1]];
 
     /* Only the first group can be an absolute reference, in that case nat=0 */
     if (pgrp0->nat == 0)
@@ -527,7 +529,11 @@ void get_pull_coord_distance(const t_pull *pull,
             }
             break;
         case epullgDIR:
+            *dev = 0;
+            break;
         case epullgDIRPBC:
+            *dev = 0;
+            break;
         case epullgCYL:
             /* Pull along vec */
             inpr = 0;
@@ -573,7 +579,6 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
     gmx_bool      bConverged_all, bConverged = FALSE;
     int           niter = 0, g, c, ii, j, m, max_iter = 100;
     double        a;
-    dvec          f;       /* the pull force */
     dvec          tmp, tmp3;
     t_pull_group *pgrp0, *pgrp1;
     t_pull_coord *pcrd;
