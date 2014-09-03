@@ -104,8 +104,8 @@
 #define gmx_simd4_or_d                   _mm256_or_pd
 #define gmx_simd4_xor_d                  _mm256_xor_pd
 #define gmx_simd4_rsqrt_d(x)             _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)))
-#define gmx_simd4_fabs_d(x)              _mm256_andnot_pd(_mm256_set1_pd(-0.0), x)
-#define gmx_simd4_fneg_d(x)              _mm256_xor_pd(x, _mm256_set1_pd(-0.0))
+#define gmx_simd4_fabs_d(x)              _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x)
+#define gmx_simd4_fneg_d(x)              _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
 #define gmx_simd4_max_d                  _mm256_max_pd
 #define gmx_simd4_min_d                  _mm256_min_pd
 #define gmx_simd4_round_d(x)             _mm256_round_pd(x, _MM_FROUND_NINT)

@@ -71,6 +71,11 @@
 #define WHAM_MAXFILELEN 2048
 
 /*! \brief
+ * x-axis legend for output files
+ */
+static const char *xlabel = "\\xx\\f{} (nm)";
+
+/*! \brief
  * enum for energy units
  */
 enum {
@@ -1209,7 +1214,7 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
         snew(fn, strlen(fnhist)+10);
         snew(buf, strlen(fnhist)+10);
         sprintf(fn, "%s_cumul.xvg", strncpy(buf, fnhist, strlen(fnhist)-4));
-        fp = xvgropen(fn, "CDFs of umbrella windows", "z", "CDF", opt->oenv);
+        fp = xvgropen(fn, "CDFs of umbrella windows", xlabel, "CDF", opt->oenv);
     }
 
     nbin = opt->bins;
@@ -1459,7 +1464,7 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
         strcpy(title, "Umbrella histograms");
     }
 
-    fp   = xvgropen(fn, title, "z", "count", opt->oenv);
+    fp   = xvgropen(fn, title, xlabel, "count", opt->oenv);
     bins = opt->bins;
 
     /* Write histograms */
@@ -1632,7 +1637,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
     }
 
     /* do bootstrapping */
-    fp = xvgropen(fnprof, "Boot strap profiles", "z", ylabel, opt->oenv);
+    fp = xvgropen(fnprof, "Boot strap profiles", xlabel, ylabel, opt->oenv);
     for (ib = 0; ib < opt->nBootStrap; ib++)
     {
         printf("  *******************************************\n"
@@ -1723,7 +1728,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
     gmx_ffclose(fp);
 
     /* write average and stddev */
-    fp = xvgropen(fnres, "Average and stddev from bootstrapping", "z", ylabel, opt->oenv);
+    fp = xvgropen(fnres, "Average and stddev from bootstrapping", xlabel, ylabel, opt->oenv);
     if (output_env_get_print_xvgr_codes(opt->oenv))
     {
         fprintf(fp, "@TYPE xydy\n");
@@ -2715,7 +2720,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
     }
 
     /* plot IACT along reaction coordinate */
-    fp = xvgropen(fn, "Integrated autocorrelation times", "z", "IACT [ps]", opt->oenv);
+    fp = xvgropen(fn, "Integrated autocorrelation times", xlabel, "IACT [ps]", opt->oenv);
     if (output_env_get_print_xvgr_codes(opt->oenv))
     {
         fprintf(fp, "@    s0 symbol 1\n@    s0 symbol size 0.5\n@    s0 line linestyle 0\n");
@@ -2955,7 +2960,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
                     nHist++;
                     fAv += window[i].forceAv[ig];
                 }
-                /* at the same time, rememer closest histogram */
+                /* at the same time, remember closest histogram */
                 if (dist < distmin)
                 {
                     winmin   = i;
@@ -2991,7 +2996,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
     }
     if (opt->verbose)
     {
-        fp = xvgropen("pmfintegrated.xvg", "PMF from force integration", "z", "PMF [kJ/mol]", opt->oenv);
+        fp = xvgropen("pmfintegrated.xvg", "PMF from force integration", xlabel, "PMF (kJ/mol)", opt->oenv);
         for (j = 0; j < opt->bins; ++j)
         {
             fprintf(fp, "%g  %g\n", (j+0.5)*dz+opt->min, pot[j]);
@@ -3502,7 +3507,7 @@ int gmx_wham(int argc, char *argv[])
 
     /* write histograms */
     histout = xvgropen(opt2fn("-hist", NFILE, fnm), "Umbrella histograms",
-                       "z", "count", opt.oenv);
+                       xlabel, "count", opt.oenv);
     for (l = 0; l < opt.bins; ++l)
     {
         fprintf(histout, "%e\t", (double)(l+0.5)/opt.bins*(opt.max-opt.min)+opt.min);
@@ -3611,7 +3616,7 @@ int gmx_wham(int argc, char *argv[])
     }
 
     /* write profile or density of states */
-    profout = xvgropen(opt2fn("-o", NFILE, fnm), title, "z", ylabel, opt.oenv);
+    profout = xvgropen(opt2fn("-o", NFILE, fnm), title, xlabel, ylabel, opt.oenv);
     for (i = 0; i < opt.bins; ++i)
     {
         fprintf(profout, "%e\t%e\n", (double)(i+0.5)/opt.bins*(opt.max-opt.min)+opt.min, profile[i]);
