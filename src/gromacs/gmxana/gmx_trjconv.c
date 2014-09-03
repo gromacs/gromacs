@@ -778,6 +778,7 @@ int gmx_trjconv(int argc, char *argv[])
     static char     *exec_command  = NULL;
     static real      dropunder     = 0, dropover = 0;
     static gmx_bool  bRound        = FALSE;
+    static matrix    oldbox;
 
     t_pargs
         pa[] =
@@ -1422,12 +1423,18 @@ int gmx_trjconv(int argc, char *argv[])
                 if (bSetBox)
                 {
                     /* generate new box */
+                    clear_mat(oldbox);
+                    copy_mat(fr.box, oldbox);
                     clear_mat(fr.box);
                     for (m = 0; m < DIM; m++)
                     {
                         if (newbox[m] >= 0)
                         {
                             fr.box[m][m] = newbox[m];
+                        }
+                        else
+                        {
+                            fr.box[m][m] = oldbox[m][m];
                         }
                     }
                 }
