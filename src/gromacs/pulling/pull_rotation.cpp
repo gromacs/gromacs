@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "pull_rotation.h"
 
 #include "config.h"
@@ -67,7 +69,7 @@
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"
 
-static char *RotStr = {"Enforced rotation:"};
+static char const *RotStr = {"Enforced rotation:"};
 
 /* Set the minimum weight for the determination of the slab centers */
 #define WEIGHT_MIN (10*GMX_FLOAT_MIN)
@@ -594,15 +596,10 @@ static real get_slab_weight(int j, t_rotgrp *rotg, rvec xc[], real mc[], rvec *x
     real            gaussian;         /* A single gaussian weight                     */
     real            wgauss;           /* gaussian times current mass                  */
     real            slabweight = 0.0; /* The sum of weights in the slab               */
-    int             i, islab;
-    gmx_enfrotgrp_t erg;              /* Pointer to enforced rotation group data      */
+    int             i;
 
 
-    erg = rotg->enfrotgrp;
     clear_rvec(*x_weighted_sum);
-
-    /* Slab index */
-    islab = j - erg->slab_first;
 
     /* Loop over all atoms in the rotation group */
     for (i = 0; i < rotg->nat; i++)
@@ -633,6 +630,7 @@ static void get_slab_centers(
                                   init_rot_group we need to store
                                   the reference slab centers                   */
 {
+    /* Slab index */
     int             j, islab;
     gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
 
@@ -754,14 +752,14 @@ static gmx_inline real torque(
 
 
 /* Right-aligned output of value with standard width */
-static void print_aligned(FILE *fp, char *str)
+static void print_aligned(FILE *fp, char const *str)
 {
     fprintf(fp, "%12s", str);
 }
 
 
 /* Right-aligned output of value with standard short width */
-static void print_aligned_short(FILE *fp, char *str)
+static void print_aligned_short(FILE *fp, char const *str)
 {
     fprintf(fp, "%6s", str);
 }
@@ -937,7 +935,6 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
 
         for (g = 0; g < rot->ngrp; g++)
         {
-            rotg = &rot->grp[g];
             sprintf(buf, "theta_ref%d", g);
             add_to_string_aligned(&LegendStr, buf);
 
@@ -2469,7 +2466,7 @@ static gmx_inline int get_first_slab(
         rvec      firstatom) /* First atom after sorting along the rotation vector v */
 {
     /* Find the first slab for the first atom */
-    return ceil((iprod(firstatom, rotg->vec) - max_beta)/rotg->slab_dist);
+    return ceil(static_cast<real>((iprod(firstatom, rotg->vec) - max_beta)/rotg->slab_dist));
 }
 
 
@@ -2479,7 +2476,7 @@ static gmx_inline int get_last_slab(
         rvec      lastatom) /* Last atom along v */
 {
     /* Find the last slab for the last atom */
-    return floor((iprod(lastatom, rotg->vec) + max_beta)/rotg->slab_dist);
+    return floor(static_cast<real>((iprod(lastatom, rotg->vec) + max_beta)/rotg->slab_dist));
 }
 
 
@@ -3009,7 +3006,7 @@ static void radial_motion2_precalc_inner_sum(t_rotgrp  *rotg, rvec innersumvec)
     gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
     rvec            xi_xc;     /* xj - xc */
     rvec            tmpvec, tmpvec2;
-    real            fac, fac2;
+    real            fac;
     rvec            ri, si;
     real            siri;
     rvec            v_xi_xc;   /* v x (xj - u) */
@@ -3047,10 +3044,7 @@ static void radial_motion2_precalc_inner_sum(t_rotgrp  *rotg, rvec innersumvec)
 
         svmul(psii, v_xi_xc, si);         /*  si = psii * (v x (xi-xc) )     */
 
-        fac  = iprod(v_xi_xc, ri);        /* fac = (v x (xi-xc)).ri */
-        fac2 = fac*fac;
-
-        siri = iprod(si, ri);                       /* siri = si.ri           */
+        siri = iprod(si, ri);             /* siri = si.ri           */
 
         svmul(psiistar/psii, ri, tmpvec);
         svmul(psiistar*psiistar/(psii*psii*psii) * siri, si, tmpvec2);
@@ -3232,15 +3226,12 @@ static void get_firstlast_atom_ref(
         int       *firstindex,
         int       *lastindex)
 {
-    gmx_enfrotgrp_t erg;              /* Pointer to enforced rotation group data */
     int             i;
     real            xcproj;           /* The projection of a reference position on the
                                          rotation vector */
     real            minproj, maxproj; /* Smallest and largest projection on v */
 
 
-
-    erg = rotg->enfrotgrp;
 
     /* Start with some value */
     minproj = iprod(rotg->x_ref[0], rotg->vec);
@@ -3756,7 +3747,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
             snew(rotg->enfrotgrp, 1);
             erg  = rotg->enfrotgrp;
 
-            nat_max = max(nat_max, rotg->nat);
+            nat_max = std::max(nat_max, rotg->nat);
 
             if (PAR(cr))
             {
@@ -3913,7 +3904,7 @@ extern void do_rotation(
     t_rot          *rot;
     t_rotgrp       *rotg;
     gmx_bool        outstep_slab, outstep_rot;
-    gmx_bool        bFlex, bColl;
+    gmx_bool        bColl;
     gmx_enfrot_t    er;         /* Pointer to the enforced rotation buffer variables */
     gmx_enfrotgrp_t erg;        /* Pointer to enforced rotation group data           */
     rvec            transvec;
@@ -3950,8 +3941,6 @@ extern void do_rotation(
         rotg = &rot->grp[g];
         erg  = rotg->enfrotgrp;
 
-        /* Do we have a flexible axis? */
-        bFlex = ISFLEX(rotg);
         /* Do we use a collective (global) set of coordinates? */
         bColl = ISCOLL(rotg);
 
@@ -4010,9 +3999,6 @@ extern void do_rotation(
     {
         rotg = &rot->grp[g];
         erg  = rotg->enfrotgrp;
-
-        bFlex = ISFLEX(rotg);
-        bColl = ISCOLL(rotg);
 
         if (outstep_rot && MASTER(cr))
         {
