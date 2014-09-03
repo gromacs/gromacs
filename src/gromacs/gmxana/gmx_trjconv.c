@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -697,9 +697,10 @@ int gmx_trjconv(int argc, char *argv[])
         "Use option [TT]-pbc mol[tt] in addition to [TT]-center[tt] when you",
         "want all molecules in the box after the centering.[PAR]",
 
-        "Option [TT]-box[tt] sets the size of the new box. If you want to"
-        "modify only some of the dimensions, e.g. when reading from a trajectory,"
-        "you can use -1 for those dimensions that should stay the same"
+        "Option [TT]-box[tt] sets the size of the new box. This option only works",
+        "for leading dimensions and is thus generally only useful for rectangular boxes.",
+        "If you want to modify only some of the dimensions, e.g. when reading from",
+        "a trajectory, you can use -1 for those dimensions that should stay the same",
 
         "It is not always possible to use combinations of [TT]-pbc[tt],",
         "[TT]-fit[tt], [TT]-ur[tt] and [TT]-center[tt] to do exactly what",
@@ -1422,12 +1423,22 @@ int gmx_trjconv(int argc, char *argv[])
                 if (bSetBox)
                 {
                     /* generate new box */
-                    clear_mat(fr.box);
+                    if (fr.bBox == FALSE)
+                    {
+                        clear_mat(fr.box);
+                    }
                     for (m = 0; m < DIM; m++)
                     {
                         if (newbox[m] >= 0)
                         {
                             fr.box[m][m] = newbox[m];
+                        }
+                        else
+                        {
+                            if (fr.bBox == FALSE)
+                            {
+                                gmx_fatal(FARGS, "Cannot preserve a box that does not exist.\n");
+                            }
                         }
                     }
                 }
