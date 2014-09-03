@@ -55,60 +55,63 @@ typedef enum {
 } egCol;
 
 typedef struct t_graph {
-    int          at0;       /* The first atom the graph was constructed for */
-    int          at1;       /* The last atom the graph was constructed for  */
-    int          nnodes;    /* The number of nodes, nnodes=at_end-at_start  */
-    int          nbound;    /* The number of nodes with edges               */
-    int          at_start;  /* The first connected atom in this graph       */
-    int          at_end;    /* The last+1 connected atom in this graph      */
-    int         *nedge;     /* For each node the number of edges            */
-    atom_id    **edge;      /* For each node, the actual edges (bidirect.)  */
-    gmx_bool     bScrewPBC; /* Screw boundary conditions                    */
-    ivec        *ishift;    /* Shift for each particle                      */
+    int          at0;       /*!< The first atom the graph was constructed for */
+    int          at1;       /*!< The last atom the graph was constructed for  */
+    int          nnodes;    /*!< The number of nodes, nnodes=at_end-at_start  */
+    int          nbound;    /*!< The number of nodes with edges               */
+    int          at_start;  /*!< The first connected atom in this graph       */
+    int          at_end;    /*!< The last+1 connected atom in this graph      */
+    int         *nedge;     /*!< For each node the number of edges            */
+    atom_id    **edge;      /*!< For each node, the actual edges (bidirect.)  */
+    gmx_bool     bScrewPBC; /*!< Screw boundary conditions                    */
+    ivec        *ishift;    /*!< Shift for each particle                      */
     int          negc;
-    egCol       *egc;       /* color of each node */
+    egCol       *egc;       /*!< color of each node */
 } t_graph;
 
 #define SHIFT_IVEC(g, i) ((g)->ishift[i])
 
+/*! \brief Build a graph from an idef description.
+ *
+ * The graph can be used to generate mol-shift indices.
+ * at_start and at_end should coincide will molecule boundaries
+ * ( e.g. for the whole system this is simply 0 and natoms).
+ *
+ * If bShakeOnly is set then only the connections in the shake list are used.
+ *
+ * If both bSettle and bShakeOnly are set, then the settles are used too.
+ */
 t_graph *mk_graph(FILE *fplog,
                   struct t_idef *idef, int at_start, int at_end,
                   gmx_bool bShakeOnly, gmx_bool bSettle);
-/* Build a graph from an idef description. The graph can be used
- * to generate mol-shift indices.
- * at_start and at_end should coincide will molecule boundaries,
- * for the whole system this is simply 0 and natoms.
- * If bShakeOnly, only the connections in the shake list are used.
- * If bSettle && bShakeOnly the settles are used too.
- */
 
+/*! \brief Similar to mk_graph, but takes t_ilist iso t_idef and does not allocate g */
 void mk_graph_ilist(FILE *fplog,
                     struct t_ilist *ilist, int at_start, int at_end,
                     gmx_bool bShakeOnly, gmx_bool bSettle,
                     t_graph *g);
-/* As mk_graph, but takes t_ilist iso t_idef and does not allocate g */
 
 
+/*! \brief Free the memory in g. */
 void done_graph(t_graph *g);
-/* Free the memory in g */
 
+/*! \brief Print a graph to log. */
 void p_graph(FILE *log, const char *title, t_graph *g);
-/* Print a graph to log */
 
+/*! \brief Calculate the mshift codes based on the connection graph in g. */
 void mk_mshift(FILE *log, t_graph *g, int ePBC, matrix box, rvec x[]);
-/* Calculate the mshift codes, based on the connection graph in g. */
 
+/*! \brief Add the shift vector to x, and store in x_s (may be the same array as x) */
 void shift_x(t_graph *g, matrix box, rvec x[], rvec x_s[]);
-/* Add the shift vector to x, and store in x_s (may be same array as x) */
 
+/*! \brief Add the shift vector but in place */
 void shift_self(t_graph *g, matrix box, rvec x[]);
-/* Id. but in place */
 
+/*! \brief Subtract the shift vector from x_s, and store in x (may be the same array) */
 void unshift_x(t_graph *g, matrix box, rvec x[], rvec x_s[]);
-/* Subtract the shift vector from x_s, and store in x (may be same array) */
 
+/*! \brief Substract the shift vector, but in place */
 void unshift_self(t_graph *g, matrix box, rvec x[]);
-/* Id, but in place */
 
 #ifdef __cplusplus
 }
