@@ -34,12 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 #include "gmxpre.h"
+
+#include <algorithm>
 
 #include "pbc.h"
 
 #include <assert.h>
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -156,15 +159,16 @@ const char *check_box(int ePBC, matrix box)
 
 real max_cutoff2(int ePBC, matrix box)
 {
-    real min_hv2, min_ss;
+    real       min_hv2, min_ss;
+    const real one_forth = 0.25;
 
     /* Physical limitation of the cut-off
      * by half the length of the shortest box vector.
      */
-    min_hv2 = min(0.25*norm2(box[XX]), 0.25*norm2(box[YY]));
+    min_hv2 = std::min(one_forth*norm2(box[XX]), one_forth*norm2(box[YY]));
     if (ePBC != epbcXY)
     {
-        min_hv2 = min(min_hv2, 0.25*norm2(box[ZZ]));
+        min_hv2 = std::min(min_hv2, one_forth*norm2(box[ZZ]));
     }
 
     /* Limitation to the smallest diagonal element due to optimizations:
@@ -174,14 +178,14 @@ real max_cutoff2(int ePBC, matrix box)
      */
     if (ePBC == epbcXY)
     {
-        min_ss = min(box[XX][XX], box[YY][YY]);
+        min_ss = std::min(box[XX][XX], box[YY][YY]);
     }
     else
     {
-        min_ss = min(box[XX][XX], min(box[YY][YY]-fabs(box[ZZ][YY]), box[ZZ][ZZ]));
+        min_ss = std::min(box[XX][XX], std::min(box[YY][YY] - std::fabs(box[ZZ][YY]), box[ZZ][ZZ]));
     }
 
-    return min(min_hv2, min_ss*min_ss);
+    return std::min(min_hv2, min_ss*min_ss);
 }
 
 /* this one is mostly harmless... */
@@ -330,7 +334,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     ivec        bPBC;
     real        d2old, d2new, d2new_c;
     rvec        trial, pos;
-    gmx_bool    bXY, bUse;
+    gmx_bool    bUse;
     const char *ptr;
 
     pbc->ePBC      = ePBC;
@@ -514,11 +518,11 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                 {
                                     if (trial[d] < 0)
                                     {
-                                        pos[d] = min( pbc->hbox_diag[d], -trial[d]);
+                                        pos[d] = std::min( pbc->hbox_diag[d], -trial[d]);
                                     }
                                     else
                                     {
-                                        pos[d] = max(-pbc->hbox_diag[d], -trial[d]);
+                                        pos[d] = std::max(-pbc->hbox_diag[d], -trial[d]);
                                     }
                                 }
                                 d2old += sqr(pos[d]);
