@@ -59,11 +59,6 @@ if(GMX_USE_TNG)
         include_directories(${TNG_IO_INCLUDE_DIRS})
     endif()
     if(NOT GMX_EXTERNAL_TNG)
-        # TNG wants zlib if it is available
-        find_package(ZLIB QUIET)
-        include(gmxTestZLib)
-        gmx_test_zlib(HAVE_ZLIB)
-
         include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
         tng_get_source_list(TNG_SOURCES TNG_IO_DEFINITIONS)
         list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
