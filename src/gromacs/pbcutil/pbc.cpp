@@ -34,12 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Implements routines in pbc.h.
+ *
+ * Utility functions for handling periodic boundary conditions.
+ * Mainly used in analysis tools.
+ */
 #include "gmxpre.h"
 
 #include "pbc.h"
 
-#include <assert.h>
-#include <math.h>
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -49,10 +57,12 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "ishift.h"
+#include "mshift.h"
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum {
@@ -63,8 +73,9 @@ enum {
     epbcdxNOPBC,         epbcdxUNSUPPORTED
 };
 
-/* Margin factor for error message and correction if the box is too skewed */
+//! Margin factor for error message
 #define BOX_MARGIN         1.0010
+//! Margin correction if the box is too skewed
 #define BOX_MARGIN_CORRECT 1.0005
 
 int ePBC2npbcdim(int ePBC)
@@ -156,15 +167,16 @@ const char *check_box(int ePBC, matrix box)
 
 real max_cutoff2(int ePBC, matrix box)
 {
-    real min_hv2, min_ss;
+    real       min_hv2, min_ss;
+    const real oneFourth = 0.25;
 
     /* Physical limitation of the cut-off
      * by half the length of the shortest box vector.
      */
-    min_hv2 = min(0.25*norm2(box[XX]), 0.25*norm2(box[YY]));
+    min_hv2 = oneFourth * std::min(norm2(box[XX]), norm2(box[YY]));
     if (ePBC != epbcXY)
     {
-        min_hv2 = min(min_hv2, 0.25*norm2(box[ZZ]));
+        min_hv2 = std::min(min_hv2, oneFourth * norm2(box[ZZ]));
     }
 
     /* Limitation to the smallest diagonal element due to optimizations:
@@ -174,17 +186,17 @@ real max_cutoff2(int ePBC, matrix box)
      */
     if (ePBC == epbcXY)
     {
-        min_ss = min(box[XX][XX], box[YY][YY]);
+        min_ss = std::min(box[XX][XX], box[YY][YY]);
     }
     else
     {
-        min_ss = min(box[XX][XX], min(box[YY][YY]-fabs(box[ZZ][YY]), box[ZZ][ZZ]));
+        min_ss = std::min(box[XX][XX], std::min(box[YY][YY] - std::fabs(box[ZZ][YY]), box[ZZ][ZZ]));
     }
 
-    return min(min_hv2, min_ss*min_ss);
+    return std::min(min_hv2, min_ss*min_ss);
 }
 
-/* this one is mostly harmless... */
+//! Set to true if warning has been printed
 static gmx_bool bWarnedGuess = FALSE;
 
 int guess_ePBC(matrix box)
@@ -223,6 +235,7 @@ int guess_ePBC(matrix box)
     return ePBC;
 }
 
+//! Check if the box still obeys the restrictions, if not, correct it
 static int correct_box_elem(FILE *fplog, int step, tensor box, int v, int d)
 {
     int shift, maxshift = 10;
@@ -279,7 +292,6 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, t_graph *graph)
     int      zy, zx, yx, i;
     gmx_bool bCorrected;
 
-    /* check if the box still obeys the restrictions, if not, correct it */
     zy = correct_box_elem(fplog, step, box, ZZ, YY);
     zx = correct_box_elem(fplog, step, box, ZZ, XX);
     yx = correct_box_elem(fplog, step, box, YY, XX);
@@ -323,6 +335,7 @@ int ndof_com(t_inputrec *ir)
     return n;
 }
 
+//! Do the real arithmetic for filling the pbc struct
 static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
 {
     int         order[5] = {0, -1, 1, -2, 2};
@@ -330,7 +343,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     ivec        bPBC;
     real        d2old, d2new, d2new_c;
     rvec        trial, pos;
-    gmx_bool    bXY, bUse;
+    gmx_bool    bUse;
     const char *ptr;
 
     pbc->ePBC      = ePBC;
@@ -365,7 +378,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     }
     else
     {
-        if (ePBC == epbcSCREW && dd_nc)
+        if (ePBC == epbcSCREW && NULL != dd_nc)
         {
             /* This combinated should never appear here */
             gmx_incons("low_set_pbc called with screw pbc and dd_nc != NULL");
@@ -398,7 +411,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                         pbc->dim = i;
                     }
                 }
-                assert(pbc->dim < DIM);
+                GMX_ASSERT(pbc->dim < DIM, "Dimension for PBC incorrect");
                 for (i = 0; i < pbc->dim; i++)
                 {
                     if (pbc->box[pbc->dim][i] != 0)
@@ -514,11 +527,11 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                 {
                                     if (trial[d] < 0)
                                     {
-                                        pos[d] = min( pbc->hbox_diag[d], -trial[d]);
+                                        pos[d] = std::min( pbc->hbox_diag[d], -trial[d]);
                                     }
                                     else
                                     {
-                                        pos[d] = max(-pbc->hbox_diag[d], -trial[d]);
+                                        pos[d] = std::max(-pbc->hbox_diag[d], -trial[d]);
                                     }
                                 }
                                 d2old += sqr(pos[d]);
@@ -1114,6 +1127,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
     return is;
 }
 
+//! Compute distance vector in double precision
 void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
 {
     int      i, j;
@@ -1237,6 +1251,7 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
     }
 }
 
+//! Compute the box image corresponding to input vectors
 gmx_bool image_rect(ivec xi, ivec xj, ivec box_size, real rlong2, int *shift, real *r2)
 {
     int     m, t;
@@ -1415,8 +1430,9 @@ void calc_triclinic_images(matrix box, rvec img[])
 
 void calc_compact_unitcell_vertices(int ecenter, matrix box, rvec vert[])
 {
-    rvec img[NTRICIMG], box_center;
-    int  n, i, j, tmp[4], d;
+    rvec       img[NTRICIMG], box_center;
+    int        n, i, j, tmp[4], d;
+    const real oneFourth = 0.25;
 
     calc_triclinic_images(box, img);
 
@@ -1500,7 +1516,7 @@ void calc_compact_unitcell_vertices(int ecenter, matrix box, rvec vert[])
     {
         for (d = 0; d < DIM; d++)
         {
-            vert[i][d] = vert[i][d]*0.25+box_center[d];
+            vert[i][d] = vert[i][d]*oneFourth+box_center[d];
         }
     }
 }
