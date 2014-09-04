@@ -10,6 +10,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 option(GMX_DOUBLE "Use double precision" OFF)
+option(GMX_MPI "Link with MPI-enabled GROMACS" OFF)
 
 ########################################################################
 # Fix stupid flags on MSVC
@@ -25,11 +26,13 @@ ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
 
+set(LIBGROMACS "libgromacs")
+if (GMX_MPI)
+  set(LIBGROMACS "${LIBGROMACS}_mpi")
+endif()
 if (GMX_DOUBLE)
-  set(LIBGROMACS "libgromacs_d")
-else(GMX_DOUBLE)
-  set(LIBGROMACS "libgromacs")
-endif(GMX_DOUBLE)
+  set(LIBGROMACS "${LIBGROMACS}_d")
+endif()
 
 FIND_PACKAGE(GROMACS COMPONENTS ${LIBGROMACS} REQUIRED)
 message("GROMACS version ${GROMACS_VERSION_STRING} found")
