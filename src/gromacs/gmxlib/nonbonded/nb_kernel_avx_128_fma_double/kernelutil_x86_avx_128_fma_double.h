@@ -43,6 +43,8 @@
 #    include <x86intrin.h>
 #endif
 
+#include "config.h"
+
 #define gmx_mm_castsi128_pd   _mm_castsi128_pd
 #define gmx_mm_extract_epi32  _mm_extract_epi32
 

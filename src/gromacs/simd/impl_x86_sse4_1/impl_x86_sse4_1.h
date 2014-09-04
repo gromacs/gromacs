@@ -39,6 +39,7 @@
 #include <math.h>
 #include <smmintrin.h>
 
+#include "config.h"
 
 /* x86 SSE4.1 SIMD instruction wrappers
  *

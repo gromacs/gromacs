@@ -48,6 +48,8 @@
 
 #include "gromacs/simd/simd.h"
 
+#include "config.h"
+
 /*! \cond libapi */
 /*! \addtogroup module_simd */
 /*! \{ */

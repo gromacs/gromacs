@@ -35,6 +35,8 @@
 #ifndef _nbnxn_kernel_simd_utils_x86_256s_h_
 #define _nbnxn_kernel_simd_utils_x86_256s_h_
 
+#include "config.h"
+
 /* This files contains all functions/macros for the SIMD kernels
  * which have explicit dependencies on the j-cluster size and/or SIMD-width.
  * The functionality which depends on the j-cluster size is:
