@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
 #include <stdlib.h>
 #include <string.h>
 
@@ -127,7 +128,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                            real mass[], gmx_mtop_t *mtop, gmx_bool bInit)
 {
     int                   i, m, s1, n1, n2, n3;
-    real                  dt_1, dt_2, dt_3, fudge, tm, m1, m2, m3;
+    real                  dt_1, fudge, tm, m1, m2, m3;
     rvec                 *ptr;
     gmx_mtop_atomlookup_t alook = NULL;
     t_atom               *atom;
@@ -240,7 +241,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
     int                      *shell_index = NULL, *at2cg;
     t_atom                   *atom;
     int                       n[eptNR], ns, nshell, nsi;
-    int                       i, j, nmol, type, mb, mt, a_offset, cg, mol, ftype, nra;
+    int                       i, j, nmol, type, mb, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
@@ -663,10 +664,11 @@ static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
                step_scale_increment = 0.2,
                step_scale_max       = 1.2,
                step_scale_multiple  = (step_scale_max - step_scale_min) / step_scale_increment;
-    int  i, shell, d;
-    real dx, df, k_est;
+    int        i, shell, d;
+    real       dx, df, k_est;
+    const real zero = 0;
 #ifdef PRINT_STEP
-    real step_min, step_max;
+    real       step_min, step_max;
 
     step_min = 1e30;
     step_max = 0;
@@ -680,8 +682,8 @@ static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
             {
                 s[i].step[d] = s[i].k_1;
 #ifdef PRINT_STEP
-                step_min = min(step_min, s[i].step[d]);
-                step_max = max(step_max, s[i].step[d]);
+                step_min = std::min(step_min, s[i].step[d]);
+                step_max = std::max(step_max, s[i].step[d]);
 #endif
             }
         }
@@ -703,7 +705,7 @@ static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
                      * step_scale_multiple * s[i].step[d] */
                     s[i].step[d] =
                         step_scale_min * s[i].step[d] +
-                        step_scale_increment * min(step_scale_multiple * s[i].step[d], max(k_est, 0));
+                        step_scale_increment * std::min(step_scale_multiple * s[i].step[d], std::max(k_est, zero));
                 }
                 else
                 {
@@ -719,8 +721,8 @@ static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
                     }
                 }
 #ifdef PRINT_STEP
-                step_min = min(step_min, s[i].step[d]);
-                step_max = max(step_max, s[i].step[d]);
+                step_min = std::min(step_min, s[i].step[d]);
+                step_max = std::max(step_max, s[i].step[d]);
 #endif
             }
         }
@@ -846,11 +848,9 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
 {
     rvec           *xnold, *xnew;
     double          w_dt;
-    int             gf, ga, gt;
-    real            dt, scale;
+    real            dt;
     int             n, d;
     unsigned short *ptype;
-    rvec            p, dx;
 
     if (DOMAINDECOMP(cr))
     {
@@ -944,14 +944,13 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     t_idef    *idef;
     rvec      *pos[2], *force[2], *acc_dir = NULL, *x_old = NULL;
     real       Epot[2], df[2];
-    rvec       dx;
     real       sf_dir, invdt;
-    real       ftol, xiH, xiS, dum = 0;
+    real       ftol, dum = 0;
     char       sbuf[22];
     gmx_bool   bCont, bInit;
     int        nat, dd_ac0, dd_ac1 = 0, i;
     int        start = 0, homenr = md->homenr, end = start+homenr, cg0, cg1;
-    int        nflexcon, g, number_steps, d, Min = 0, count = 0;
+    int        nflexcon, number_steps, d, Min = 0, count = 0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
     bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
@@ -970,7 +969,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         if (nflexcon > 0)
         {
             dd_get_constraint_range(cr->dd, &dd_ac0, &dd_ac1);
-            nat = max(nat, dd_ac1);
+            nat = std::max(nat, dd_ac1);
         }
     }
     else

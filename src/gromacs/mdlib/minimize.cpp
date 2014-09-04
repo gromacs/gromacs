@@ -38,6 +38,7 @@
 
 #include "config.h"
 
+#include <algorithm>
 #include <math.h>
 #include <string.h>
 #include <time.h>
@@ -205,7 +206,7 @@ static void get_f_norm_max(t_commrec *cr,
                            real *fnorm, real *fmax, int *a_fmax)
 {
     double fnorm2, *sum;
-    real   fmax2, fmax2_0, fam;
+    real   fmax2, fam;
     int    la_max, a_max, start, end, i, m, gf;
 
     /* This routine finds the largest force and returns it.
@@ -971,8 +972,8 @@ double do_cg(FILE *fplog, t_commrec *cr,
     rvec             *f;
     gmx_global_stat_t gstat;
     t_graph          *graph;
-    rvec             *f_global, *p, *sf, *sfm;
-    double            gpa, gpb, gpc, tmp, sum[2], minstep;
+    rvec             *f_global, *p, *sf;
+    double            gpa, gpb, gpc, tmp, minstep;
     real              fnormn;
     real              stepsize;
     real              a, b, c, beta = 0.0;
@@ -986,7 +987,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
     int               number_steps, neval = 0, nstcg = inputrec->nstcgsteep;
     gmx_mdoutf_t      outf;
     int               i, m, gf, step, nminstep;
-    real              terminate = 0;
 
     step = 0;
 
@@ -1607,7 +1607,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     real               diag, Epot0, Epot, EpotA, EpotB, EpotC;
     real               dgdx, dgdg, sq, yr, beta;
     t_mdebin          *mdebin;
-    gmx_bool           converged, first;
+    gmx_bool           converged;
     rvec               mu_tot;
     real               fnorm, fmax;
     gmx_bool           do_log, do_ene, do_x, do_f, foundlower, *frozen;
@@ -1616,8 +1616,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     gmx_mdoutf_t       outf;
     int                i, k, m, n, nfmax, gf, step;
     int                mdof_flags;
-    /* not used */
-    real               terminate;
 
     if (PAR(cr))
     {
@@ -1863,8 +1861,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             lastf[i] = ff[i];
         }
         Epot0 = Epot;
-
-        first = TRUE;
 
         for (i = 0; i < n; i++)
         {
@@ -2395,7 +2391,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     rvec             *f;
     gmx_global_stat_t gstat;
     t_graph          *graph;
-    real              stepsize, constepsize;
+    real              stepsize;
     real              ustep, fnormn;
     gmx_mdoutf_t      outf;
     t_mdebin         *mdebin;
@@ -2405,8 +2401,6 @@ double do_steep(FILE *fplog, t_commrec *cr,
     int               nsteps;
     int               count          = 0;
     int               steps_accepted = 0;
-    /* not used */
-    real              terminate = 0;
 
     s_min = init_em_state();
     s_try = init_em_state();
@@ -2638,8 +2632,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
     rvec                *f;
     gmx_global_stat_t    gstat;
     t_graph             *graph;
-    real                 t, t0, lambda, lam0;
-    gmx_bool             bNS;
     tensor               vir, pres;
     rvec                 mu_tot;
     rvec                *fneg, *dfdx;
@@ -2653,7 +2645,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
     int        i, j, k, row, col;
     real       der_range = 10.0*sqrt(GMX_REAL_EPS);
     real       x_min;
-    real       fnorm, fmax;
 
     if (constr != NULL)
     {
@@ -2722,12 +2713,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
             snew(full_matrix, sz*sz);
         }
     }
-
-    /* Initial values */
-    t0           = inputrec->init_t;
-    lam0         = inputrec->fepvals->init_lambda;
-    t            = t0;
-    lambda       = lam0;
 
     init_nrnb(nrnb);
 
@@ -2882,7 +2867,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
         if (MASTER(cr) && bVerbose)
         {
             fprintf(stderr, "\rFinished step %d out of %d",
-                    min(atom+nnodes, natoms), natoms);
+                    std::min(atom+nnodes, natoms), natoms);
             fflush(stderr);
         }
     }
