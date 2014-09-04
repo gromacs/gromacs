@@ -51,7 +51,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "BlueGene.*static")
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Static BlueGene build toolchain selected, so shared libraries are disabled" FORCE)
 endif()
 
-set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene" FORCE)
+set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene")
 set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
 set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on BlueGene" FORCE)
 

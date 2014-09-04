@@ -197,11 +197,15 @@ xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
 
 const char *output_env_get_program_display_name(const output_env_t oenv)
 {
+    const char *displayName = NULL;
+
     try
     {
-        return oenv->programContext.displayName();
+        displayName = oenv->programContext.displayName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return displayName;
 }
 
 const gmx::ProgramContextInterface &

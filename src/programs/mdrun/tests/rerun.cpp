@@ -47,6 +47,8 @@
 #include "gromacs/options/filenameoption.h"
 #include "testutils/cmdlinetest.h"
 
+#include "config.h"
+
 namespace
 {
 
@@ -77,7 +79,7 @@ TEST_P(MdrunRerun, WithDifferentInputFormats)
  * version. */
 const char *trajectoryFileNames[] = {
     "../../../gromacs/gmxana/legacytests/spc2-traj.trr",
-#ifdef GMX_USE_TNG
+#if defined GMX_USE_TNG && defined HAVE_ZLIB
     "../../../gromacs/gmxana/legacytests/spc2-traj.tng",
 #endif
     "../../../gromacs/gmxana/legacytests/spc2-traj.xtc",

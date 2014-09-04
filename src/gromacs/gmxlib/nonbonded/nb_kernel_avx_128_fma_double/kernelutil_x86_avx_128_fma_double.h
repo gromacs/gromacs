@@ -634,7 +634,6 @@ gmx_mm_decrement_4rvec_2ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_
     _mm_storeu_pd(ptrB+8, t11);
     _mm_storeu_pd(ptrB+10, t12);
 }
-#endif
 
 
 static gmx_inline void gmx_simdcall
@@ -724,7 +723,6 @@ gmx_mm_update_iforce_4atom_swizzle_pd(__m128d fix1, __m128d fiy1, __m128d fiz1,
     _mm_storeu_pd( fshiftptr, _mm_add_pd( _mm_loadu_pd(fshiftptr), fix1 ));
     _mm_store_sd( fshiftptr+2, _mm_add_sd( _mm_load_sd(fshiftptr+2), fiz1 ));
 }
-#endif
 
 
 static gmx_inline void gmx_simdcall
