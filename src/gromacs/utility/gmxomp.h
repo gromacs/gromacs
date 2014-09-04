@@ -143,14 +143,14 @@ gmx_bool gmx_omp_check_thread_affinity(char **message);
  */
 static gmx_inline void gmx_pause()
 {
-#ifndef GMX_NATIVE_WINDOWS
+#ifndef _MSC_VER
     /* Ugly hack because the openmp implementation below hacks into the SIMD
      * settings to decide when to use _mm_pause(). This should eventually be
      * changed into proper detection of the intrinsics uses, not SIMD.
      */
-#if (defined GMX_SIMD_X86_SSE2) || (defined GMX_SIMD_X86_SSE4_1) || \
+#if ((defined GMX_SIMD_X86_SSE2) || (defined GMX_SIMD_X86_SSE4_1) || \
     (defined GMX_SIMD_X86_AVX_128_FMA) || (defined GMX_SIMD_X86_AVX_256) || \
-    (defined GMX_SIMD_X86_AVX2_256)
+    (defined GMX_SIMD_X86_AVX2_256)) && !defined(__MINGW32__)
     /* Replace with tbb::internal::atomic_backoff when/if we use TBB */
     _mm_pause();
 #elif defined __MIC__

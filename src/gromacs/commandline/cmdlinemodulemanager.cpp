@@ -578,7 +578,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         fprintf(stderr, "Will write debug log file: %s\n", filename.c_str());
         gmx_init_debug(optionsHolder.debugLevel(), filename.c_str());
     }
-#if defined(HAVE_UNISTD_H) && !defined(GMX_NO_NICE)
+#if defined(HAVE_UNISTD_H) && !defined(GMX_NO_NICE) && !defined(__MINGW32__)
     // Set the nice level unless disabled in the configuration.
     if (optionsHolder.niceLevel() != 0)
     {

@@ -810,7 +810,7 @@ int tMPI_Get_processor_name(char *name, int *resultlen)
             digits = 1;
         }
     }
-#if !(defined( _WIN32 ) || defined( _WIN64 ) )
+#ifndef _MSC_VER
     strcpy(name, "thread #");
 #else
     strncpy_s(name, TMPI_MAX_PROCESSOR_NAME, "thread #", TMPI_MAX_PROCESSOR_NAME);

@@ -177,7 +177,11 @@ gmx_wintruncate(const char *filename, __int64 size)
         return -1;
     }
 
+#ifdef _MSC_VER
     return _chsize_s( fileno(fp), size);
+#else
+    return _chsize( fileno(fp), size);
+#endif
 #endif
 }
 #endif

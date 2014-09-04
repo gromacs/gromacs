@@ -83,6 +83,7 @@ if(CMAKE_CONFIGURATION_TYPES)
 endif()
 set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
 
+set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 set(CPACK_PACKAGE_NAME "gromacs")
 set(CPACK_PACKAGE_VERSION_MAJOR ${GMX_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${GMX_VERSION_MINOR})
@@ -139,13 +140,32 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
+# Detect architecture before setting options so we can alter defaults
+########################################################################
+# Detect the architecture the compiler is targetting, detect
+# SIMD instructions possibilities on that hardware, suggest SIMD instruction set
+# to use if none is specified, and populate the cache option for CPU
+# SIMD.
+include(gmxDetectTargetArchitecture)
+gmx_detect_target_architecture()
+
+########################################################################
 # User input options                                                   #
 ########################################################################
 include(gmxOptionUtilities)
 
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
+if(GMX_TARGET_FUJITSU_SPARC64)
+    # Fujitsu only has SIMD in double precision, so this will be faster
+    set(GMX_DOUBLE_DEFAULT ON)
+else()
+    set(GMX_DOUBLE_DEFAULT OFF)
+endif()
+option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
+option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
+mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
+
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
 gmx_dependent_option(
@@ -172,13 +192,6 @@ else()
 endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 include(gmxManageGPU)
-
-# Detect the architecture the compiler is targetting, detect
-# SIMD instructions possibilities on that hardware, suggest SIMD instruction set
-# to use if none is specified, and populate the cache option for CPU
-# SIMD.
-include(gmxDetectTargetArchitecture)
-gmx_detect_target_architecture()
 
 if(GMX_CPU_ACCELERATION)
     # Stay compatible with old Jenkins command line options for specific SIMD acceleration
@@ -315,21 +328,17 @@ endif()
 if(GMX_DOUBLE)
     add_definitions(-DGMX_DOUBLE)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE")
+    if(GMX_RELAXED_DOUBLE_PRECISION)
+        add_definitions(-DGMX_RELAXED_DOUBLE_PRECISION)
+    endif()
 endif()
 if(GMX_SOFTWARE_INVSQRT)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
 endif()
 
 if(WIN32 AND NOT CYGWIN)
-    set(GMX_WSOCKLIB_PATH CACHE PATH "Path to winsock (wsock32.lib) library.")
-    mark_as_advanced(GMX_WSOCKLIB_PATH)
-    find_library(WSOCK32_LIBRARY NAMES wsock32 PATHS ${GMX_WSOCKLIB_PATH})
-    if(WSOCK32_LIBRARY)
-        list(APPEND GMX_EXTRA_LIBRARIES ${WSOCK32_LIBRARY})
-        add_definitions(-DGMX_HAVE_WINSOCK)
-    else()
-        message(STATUS "No winsock found. Cannot use interactive molecular dynamics (IMD).")
-    endif(WSOCK32_LIBRARY)
+    list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
+    add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
 
 
@@ -386,6 +395,10 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 # things can be sorted out now, before the detection takes place.
 if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
     include(gmxManageBlueGene)
+endif()
+
+if(GMX_TARGET_FUJITSU_SPARC64)
+    include(gmxManageFujitsuSparc64)
 endif()
 
 ########################################################################

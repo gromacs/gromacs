@@ -47,7 +47,6 @@
  * \ingroup module_utility
  */
 
-/* We currently don't support MingW. And ICC also defines it */
-#ifdef _MSC_VER
+#if defined( _WIN32 ) || defined( _WIN64 )
 #define GMX_NATIVE_WINDOWS
 #endif
