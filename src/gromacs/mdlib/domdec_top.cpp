@@ -148,7 +148,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                                           t_idef *idef)
 {
     int      nril_mol, *assigned, *gatindex;
-    int      ftype, ftype_j, nral, i, j_mol, j, k, a0, a0_mol, mol, a, a_gl;
+    int      ftype, ftype_j, nral, i, j_mol, j, a0, a0_mol, mol, a;
     int      nprint;
     t_ilist *il;
     t_iatom *ia;
@@ -350,7 +350,6 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
                 || (dd->reverse_top->bConstr && ftype == F_CONSTR)
                 || (dd->reverse_top->bSettle && ftype == F_SETTLE))
             {
-                nral = NRAL(ftype);
                 n    = gmx_mtop_ftype_count(err_top_global, ftype);
                 if (ftype == F_CONSTR)
                 {
@@ -399,9 +398,6 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
 static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt, int i_gl,
                                          int *mb, int *mt, int *mol, int *i_mol)
 {
-    int molb;
-
-
     gmx_molblock_ind_t *mbi   = rt->mbi;
     int                 start = 0;
     int                 end   =  rt->nmolblock; /* exclusive */
@@ -435,7 +431,7 @@ static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt, int i_gl,
 
 static int count_excls(t_block *cgs, t_blocka *excls, int *n_intercg_excl)
 {
-    int n, n_inter, cg, at0, at1, at, excl, atj;
+    int n, cg, at0, at1, at, excl, atj;
 
     n               = 0;
     *n_intercg_excl = 0;
@@ -707,7 +703,7 @@ void dd_make_reverse_top(FILE *fplog,
                          gmx_vsite_t *vsite,
                          t_inputrec *ir, gmx_bool bBCheck)
 {
-    int             mb, n_recursive_vsite, nexcl, nexcl_icg, a;
+    int             mb, nexcl, nexcl_icg;
     gmx_molblock_t *molb;
     gmx_moltype_t  *molt;
 
@@ -893,7 +889,7 @@ static void add_vsite(gmx_ga2la_t ga2la, int *index, int *rtil,
                       t_idef *idef, int **vsite_pbc, int *vsite_pbc_nalloc)
 {
     int     k, ak_gl, vsi, pbc_a_mol;
-    t_iatom tiatoms[1+MAXATOMLIST], *iatoms_r;
+    t_iatom tiatoms[1+MAXATOMLIST];
     int     j, ftype_r, nral_r;
 
     /* Copy the type */
@@ -1418,11 +1414,10 @@ static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                 int iz,
                                 int cg_start, int cg_end)
 {
-    int             nizone, n, count, jla0, jla1, jla;
+    int             n, count, jla0, jla1, jla;
     int             cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
     const t_blocka *excls;
     gmx_ga2la_t     ga2la;
-    int             a_loc;
     int             cell;
 
     ga2la = dd->ga2la;
@@ -1673,7 +1668,6 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
         {
             int       cg0t, cg1t;
             t_idef   *idef_t;
-            int       ftype;
             int     **vsite_pbc;
             int      *vsite_pbc_nalloc;
             t_blocka *excl_t;
@@ -1800,7 +1794,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        gmx_vsite_t *vsite,
                        gmx_mtop_t *mtop, gmx_localtop_t *ltop)
 {
-    gmx_bool bUniqueExcl, bRCheckMB, bRCheck2B, bRCheckExcl;
+    gmx_bool bRCheckMB, bRCheck2B;
     real     rc = -1;
     ivec     rcheck;
     int      d, nexcl;
@@ -1815,7 +1809,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
     bRCheckMB   = FALSE;
     bRCheck2B   = FALSE;
-    bRCheckExcl = FALSE;
 
     if (dd->reverse_top->bMultiCGmols)
     {
@@ -1853,17 +1846,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                         "dim %d cellmin %f bonded rcheck[%d] = %d, bRCheck2B = %d\n",
                         d, cellsize_min[d], d, rcheck[d], bRCheck2B);
             }
-        }
-        if (dd->reverse_top->bExclRequired)
-        {
-            bRCheckExcl = bRCheck2B;
-        }
-        else
-        {
-            /* If we don't have forces on exclusions,
-             * we don't care about exclusions being assigned mulitple times.
-             */
-            bRCheckExcl = FALSE;
         }
         if (bRCheckMB || bRCheck2B)
         {
@@ -1965,7 +1947,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
 
 static void check_link(t_blocka *link, int cg_gl, int cg_gl_j)
 {
-    int      k, aj;
+    int      k;
     gmx_bool bFound;
 
     bFound = FALSE;
@@ -2287,7 +2269,7 @@ void dd_bonded_cg_distance(FILE *fplog,
                            real *r_2b, real *r_mb)
 {
     gmx_bool        bExclRequired;
-    int             mb, cg_offset, at_offset, *at2cg, mol;
+    int             mb, at_offset, *at2cg, mol;
     t_graph         graph;
     gmx_vsite_t    *vsite;
     gmx_molblock_t *molb;
@@ -2303,7 +2285,6 @@ void dd_bonded_cg_distance(FILE *fplog,
 
     *r_2b     = 0;
     *r_mb     = 0;
-    cg_offset = 0;
     at_offset = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
@@ -2311,7 +2292,6 @@ void dd_bonded_cg_distance(FILE *fplog,
         molt = &mtop->moltype[molb->type];
         if (molt->cgs.nr == 1 || molb->nmol == 0)
         {
-            cg_offset += molb->nmol*molt->cgs.nr;
             at_offset += molb->nmol*molt->atoms.nr;
         }
         else
@@ -2349,7 +2329,6 @@ void dd_bonded_cg_distance(FILE *fplog,
                     a_mb_2 = at_offset + amol_mb_2;
                 }
 
-                cg_offset += molt->cgs.nr;
                 at_offset += molt->atoms.nr;
             }
             sfree(cg_cm);

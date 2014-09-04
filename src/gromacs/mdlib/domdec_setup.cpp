@@ -155,8 +155,7 @@ static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                       int nnodes)
 {
     float      ratio;
-    int        npme, nkx, nky;
-    t_inputrec ir_try;
+    int        npme;
 
     ratio = pme_load_estimate(mtop, ir, box);
 
@@ -246,7 +245,7 @@ static int div_up(int n, int f)
 
 real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox)
 {
-    int  i, j, k, npp;
+    int  i, j, k;
     rvec bt, nw;
     real comm_vol;
 
@@ -256,13 +255,11 @@ real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox)
         nw[i] = dd_nc[i]*cutoff/bt[i];
     }
 
-    npp      = 1;
     comm_vol = 0;
     for (i = 0; i < DIM; i++)
     {
         if (dd_nc[i] > 1)
         {
-            npp      *= dd_nc[i];
             comm_vol += nw[i];
             for (j = i+1; j < DIM; j++)
             {
@@ -310,7 +307,7 @@ static float comm_cost_est(real limit, real cutoff,
                            int npme_tot, ivec nc)
 {
     ivec  npme = {1, 1, 1};
-    int   i, j, k, nk, overlap;
+    int   i, j, nk, overlap;
     rvec  bt;
     float comm_vol, comm_vol_xf, comm_pme, cost_pbcdx;
     /* This is the cost of a pbc_dx call relative to the cost
@@ -505,7 +502,7 @@ static void assign_factors(gmx_domdec_t *dd,
                            float pbcdxr, int npme,
                            int ndiv, int *div, int *mdiv, ivec ir_try, ivec opt)
 {
-    int   x, y, z, i;
+    int   x, y, i;
     float ce;
 
     if (ndiv == 0)
