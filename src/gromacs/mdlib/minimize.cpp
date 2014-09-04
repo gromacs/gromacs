@@ -42,6 +42,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <algorithm>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/fileio/trajectory_writing.h"
@@ -203,7 +205,7 @@ static void get_f_norm_max(t_commrec *cr,
                            real *fnorm, real *fmax, int *a_fmax)
 {
     double fnorm2, *sum;
-    real   fmax2, fmax2_0, fam;
+    real   fmax2, fam;
     int    la_max, a_max, start, end, i, m, gf;
 
     /* This routine finds the largest force and returns it.
@@ -212,7 +214,6 @@ static void get_f_norm_max(t_commrec *cr,
     fnorm2 = 0;
     fmax2  = 0;
     la_max = -1;
-    gf     = 0;
     start  = 0;
     end    = mdatoms->homenr;
     if (mdatoms->cFREEZE)
@@ -426,6 +427,10 @@ void init_em(FILE *fplog, const char *title,
     if (PAR(cr))
     {
         *gstat = global_stat_init(ir);
+    }
+    else
+    {
+        *gstat = NULL;
     }
 
     *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, ir, top_global, NULL, wcycle);
@@ -969,8 +974,8 @@ double do_cg(FILE *fplog, t_commrec *cr,
     rvec             *f;
     gmx_global_stat_t gstat;
     t_graph          *graph;
-    rvec             *f_global, *p, *sf, *sfm;
-    double            gpa, gpb, gpc, tmp, sum[2], minstep;
+    rvec             *f_global, *p, *sf;
+    double            gpa, gpb, gpc, tmp, minstep;
     real              fnormn;
     real              stepsize;
     real              a, b, c, beta = 0.0;
@@ -984,7 +989,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
     int               number_steps, neval = 0, nstcg = inputrec->nstcgsteep;
     gmx_mdoutf_t      outf;
     int               i, m, gf, step, nminstep;
-    real              terminate = 0;
 
     step = 0;
 
@@ -1020,7 +1024,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
      */
     evaluate_energy(fplog, cr,
                     top_global, s_min, top,
-                    inputrec, nrnb, wcycle, gstat,
+                    inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     where();
@@ -1043,16 +1047,17 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
     if (MASTER(cr))
     {
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
         fprintf(stderr, "   F-max             = %12.5e on atom %d\n",
                 s_min->fmax, s_min->a_fmax+1);
         fprintf(stderr, "   F-Norm            = %12.5e\n",
-                s_min->fnorm/sqrt(state_global->natoms));
+                s_min->fnorm/sqrtNumAtoms);
         fprintf(stderr, "\n");
         /* and copy to the log file too... */
         fprintf(fplog, "   F-max             = %12.5e on atom %d\n",
                 s_min->fmax, s_min->a_fmax+1);
         fprintf(fplog, "   F-Norm            = %12.5e\n",
-                s_min->fnorm/sqrt(state_global->natoms));
+                s_min->fnorm/sqrtNumAtoms);
         fprintf(fplog, "\n");
     }
     /* Start the loop over CG steps.
@@ -1197,7 +1202,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
         /* Calculate energy for the trial step */
         evaluate_energy(fplog, cr,
                         top_global, s_c, top,
-                        inputrec, nrnb, wcycle, gstat,
+                        inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, -1, FALSE);
 
@@ -1305,7 +1310,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                 /* Calculate energy for the trial step */
                 evaluate_energy(fplog, cr,
                                 top_global, s_b, top,
-                                inputrec, nrnb, wcycle, gstat,
+                                inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                                 vsite, constr, fcd, graph, mdatoms, fr,
                                 mu_tot, enerd, vir, pres, -1, FALSE);
 
@@ -1393,7 +1398,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
                 }
                 swap_em_state(s_b, s_c);
                 gpb = gpc;
-                b   = c;
             }
             else
             {
@@ -1404,7 +1408,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
                 }
                 swap_em_state(s_b, s_a);
                 gpb = gpa;
-                b   = a;
             }
 
         }
@@ -1417,7 +1420,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
             }
             swap_em_state(s_b, s_c);
             gpb = gpc;
-            b   = c;
         }
 
         /* new search direction */
@@ -1453,8 +1455,9 @@ double do_cg(FILE *fplog, t_commrec *cr,
         {
             if (bVerbose)
             {
+                double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
                 fprintf(stderr, "\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
-                        step, s_min->epot, s_min->fnorm/sqrt(state_global->natoms),
+                        step, s_min->epot, s_min->fnorm/sqrtNumAtoms,
                         s_min->fmax, s_min->a_fmax+1);
             }
             /* Store the new (lower) energies */
@@ -1547,10 +1550,11 @@ double do_cg(FILE *fplog, t_commrec *cr,
                   top_global, inputrec, step,
                   s_min, state_global, f_global);
 
-    fnormn = s_min->fnorm/sqrt(state_global->natoms);
 
     if (MASTER(cr))
     {
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+        fnormn = s_min->fnorm/sqrtNumAtoms;
         print_converged(stderr, CG, inputrec->em_tol, step, converged, number_steps,
                         s_min->epot, s_min->fmax, s_min->a_fmax, fnormn);
         print_converged(fplog, CG, inputrec->em_tol, step, converged, number_steps,
@@ -1598,14 +1602,14 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     t_graph           *graph;
     rvec              *f_global;
     int                ncorr, nmaxcorr, point, cp, neval, nminstep;
-    double             stepsize, gpa, gpb, gpc, tmp, minstep;
+    double             stepsize, step_taken, gpa, gpb, gpc, tmp, minstep;
     real              *rho, *alpha, *ff, *xx, *p, *s, *lastx, *lastf, **dx, **dg;
     real              *xa, *xb, *xc, *fa, *fb, *fc, *xtmp, *ftmp;
     real               a, b, c, maxdelta, delta;
     real               diag, Epot0, Epot, EpotA, EpotB, EpotC;
     real               dgdx, dgdg, sq, yr, beta;
     t_mdebin          *mdebin;
-    gmx_bool           converged, first;
+    gmx_bool           converged;
     rvec               mu_tot;
     real               fnorm, fmax;
     gmx_bool           do_log, do_ene, do_x, do_f, foundlower, *frozen;
@@ -1614,8 +1618,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     gmx_mdoutf_t       outf;
     int                i, k, m, n, nfmax, gf, step;
     int                mdof_flags;
-    /* not used */
-    real               terminate;
 
     if (PAR(cr))
     {
@@ -1728,7 +1730,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     ems.f   = f;
     evaluate_energy(fplog, cr,
                     top_global, &ems, top,
-                    inputrec, nrnb, wcycle, gstat,
+                    inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     where();
@@ -1761,18 +1763,22 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     if (MASTER(cr))
     {
+        double sqrtNumAtoms = sqrt(static_cast<double>(state->natoms));
         fprintf(stderr, "Using %d BFGS correction steps.\n\n", nmaxcorr);
         fprintf(stderr, "   F-max             = %12.5e on atom %d\n", fmax, nfmax+1);
-        fprintf(stderr, "   F-Norm            = %12.5e\n", fnorm/sqrt(state->natoms));
+        fprintf(stderr, "   F-Norm            = %12.5e\n", fnorm/sqrtNumAtoms);
         fprintf(stderr, "\n");
         /* and copy to the log file too... */
         fprintf(fplog, "Using %d BFGS correction steps.\n\n", nmaxcorr);
         fprintf(fplog, "   F-max             = %12.5e on atom %d\n", fmax, nfmax+1);
-        fprintf(fplog, "   F-Norm            = %12.5e\n", fnorm/sqrt(state->natoms));
+        fprintf(fplog, "   F-Norm            = %12.5e\n", fnorm/sqrtNumAtoms);
         fprintf(fplog, "\n");
     }
 
+    // Point is an index to the memory of search directions, where 0 is the first one.
     point = 0;
+
+    // Set initial search direction to the force (-gradient), or 0 for frozen particles.
     for (i = 0; i < n; i++)
     {
         if (!frozen[i])
@@ -1785,6 +1791,10 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         }
     }
 
+    // Stepsize will be modified during the search, and actually it is not critical
+    // (the main efficiency in the algorithm comes from changing directions), but
+    // we still need an initial value, so estimate it as the inverse of the norm
+    // so we take small steps where the potential fluctuates a lot.
     stepsize  = 1.0/fnorm;
 
     /* Start the loop over BFGS steps.
@@ -1824,16 +1834,16 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
-        /* pointer to current direction - point=0 first time here */
+        /* make s a pointer to current search direction - point=0 first time we get here */
         s = dx[point];
 
-        /* calculate line gradient */
+        // calculate line gradient in position A
         for (gpa = 0, i = 0; i < n; i++)
         {
             gpa -= s[i]*ff[i];
         }
 
-        /* Calculate minimum allowed stepsize, before the average (norm)
+        /* Calculate minimum allowed stepsize along the line, before the average (norm)
          * relative change in coordinate is smaller than precision
          */
         for (minstep = 0, i = 0; i < n; i++)
@@ -1854,7 +1864,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             break;
         }
 
-        /* Store old forces and coordinates */
+        // Before taking any steps along the line, store the old position
         for (i = 0; i < n; i++)
         {
             lastx[i] = xx[i];
@@ -1862,15 +1872,14 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         }
         Epot0 = Epot;
 
-        first = TRUE;
-
         for (i = 0; i < n; i++)
         {
             xa[i] = xx[i];
         }
 
         /* Take a step downhill.
-         * In theory, we should minimize the function along this direction.
+         * In theory, we should find the actual minimum of the function in this
+         * direction, somewhere along the line.
          * That is quite possible, but it turns out to take 5-10 function evaluations
          * for each line. However, we dont really need to find the exact minimum -
          * it is much better to start a new BFGS step in a modified direction as soon
@@ -1878,25 +1887,36 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
          *
          * In practice, we just try to take a single step.
          * If it worked (i.e. lowered the energy), we increase the stepsize but
-         * the continue straight to the next BFGS step without trying to find any minimum.
+         * continue straight to the next BFGS step without trying to find any minimum,
+         * i.e. we change the search direction too. If the line was smooth, it is
+         * likely we are in a smooth region, and then it makes sense to take longer
+         * steps in the modified search direction too.
+         *
          * If it didn't work (higher energy), there must be a minimum somewhere between
-         * the old position and the new one.
+         * the old position and the new one. Then we need to start by finding a lower
+         * value before we change search direction. Since the energy was apparently
+         * quite rough, we need to decrease the step size.
          *
          * Due to the finite numerical accuracy, it turns out that it is a good idea
-         * to even accept a SMALL increase in energy, if the derivative is still downhill.
+         * to accept a SMALL increase in energy, if the derivative is still downhill.
          * This leads to lower final energies in the tests I've done. / Erik
          */
-        foundlower = FALSE;
+
+        // State "A" is the first position along the line.
+        // reference position along line is initially zero
         EpotA      = Epot0;
         a          = 0.0;
-        c          = a + stepsize; /* reference position along line is zero */
 
-        /* Check stepsize first. We do not allow displacements
-         * larger than emstep.
-         */
+        // Check stepsize first. We do not allow displacements
+        // larger than emstep.
+        //
         do
         {
+            // Pick a new position C by adding stepsize to A.
             c        = a + stepsize;
+
+            // Calculate what the largest change in any individual coordinate
+            // would be (translation along line * gradient along line)
             maxdelta = 0;
             for (i = 0; i < n; i++)
             {
@@ -1906,6 +1926,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                     maxdelta = delta;
                 }
             }
+            // If any displacement is larger than the stepsize limit, reduce the step
             if (maxdelta > inputrec->em_stepsize)
             {
                 stepsize *= 0.1;
@@ -1913,24 +1934,24 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         }
         while (maxdelta > inputrec->em_stepsize);
 
-        /* Take a trial step */
+        // Take a trial step and move the coordinate array xc[] to position C
         for (i = 0; i < n; i++)
         {
             xc[i] = lastx[i] + c*s[i];
         }
 
         neval++;
-        /* Calculate energy for the trial step */
+        // Calculate energy for the trial step in position C
         ems.s.x = (rvec *)xc;
         ems.f   = (rvec *)fc;
         evaluate_energy(fplog, cr,
                         top_global, &ems, top,
-                        inputrec, nrnb, wcycle, gstat,
+                        inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, step, FALSE);
         EpotC = ems.epot;
 
-        /* Calc derivative along line */
+        // Calc line gradient in position C
         for (gpc = 0, i = 0; i < n; i++)
         {
             gpc -= s[i]*fc[i]; /* f is negative gradient, thus the sign */
@@ -1941,59 +1962,53 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             gmx_sumd(1, &gpc, cr);
         }
 
-        /* This is the max amount of increase in energy we tolerate */
+        // This is the max amount of increase in energy we tolerate.
+        // By allowing VERY small changes (close to numerical precision) we
+        // frequently find even better (lower) final energies.
         tmp = sqrt(GMX_REAL_EPS)*fabs(EpotA);
 
-        /* Accept the step if the energy is lower, or if it is not significantly higher
-         * and the line derivative is still negative.
-         */
+        // Accept the step if the energy is lower in the new position C (compared to A),
+        // or if it is not significantly higher and the line derivative is still negative.
         if (EpotC < EpotA || (gpc < 0 && EpotC < (EpotA+tmp)))
         {
+            // Great, we found a better energy. We no longer try to alter the
+            // stepsize, but simply accept this new better position. The we select a new
+            // search direction instead, which will be much more efficient than continuing
+            // to take smaller steps along a line. Set fnorm based on the new C position,
+            // which will be used to update the stepsize to 1/fnorm further down.
             foundlower = TRUE;
-            /* Great, we found a better energy. Increase step for next iteration
-             * if we are still going down, decrease it otherwise
-             */
-            if (gpc < 0)
-            {
-                stepsize *= 1.618034; /* The golden section */
-            }
-            else
-            {
-                stepsize *= 0.618034; /* 1/golden section */
-            }
+            fnorm      = ems.fnorm;
         }
         else
         {
-            /* New energy is the same or higher. We will have to do some work
-             * to find a smaller value in the interval. Take smaller step next time!
-             */
+            // If we got here, the energy is NOT lower in point C, i.e. it will be the same
+            // or higher than in point A. In this case it is pointless to move to point C,
+            // so we will have to do more iterations along the same line to find a smaller
+            // value in the interval [A=0.0,C].
+            // Here, A is still 0.0, but that will change when we do a search in the interval
+            // [0.0,C] below. That search we will do by interpolation or bisection rather
+            // than with the stepsize, so no need to modify it. For the next search direction
+            // it will be reset to 1/fnorm anyway.
             foundlower = FALSE;
-            stepsize  *= 0.618034;
         }
-
-        /* OK, if we didn't find a lower value we will have to locate one now - there must
-         * be one in the interval [a=0,c].
-         * The same thing is valid here, though: Don't spend dozens of iterations to find
-         * the line minimum. We try to interpolate based on the derivative at the endpoints,
-         * and only continue until we find a lower value. In most cases this means 1-2 iterations.
-         *
-         * I also have a safeguard for potentially really patological functions so we never
-         * take more than 20 steps before we give up ...
-         *
-         * If we already found a lower value we just skip this step and continue to the update.
-         */
 
         if (!foundlower)
         {
-
+            // OK, if we didn't find a lower value we will have to locate one now - there must
+            // be one in the interval [a,c].
+            // The same thing is valid here, though: Don't spend dozens of iterations to find
+            // the line minimum. We try to interpolate based on the derivative at the endpoints,
+            // and only continue until we find a lower value. In most cases this means 1-2 iterations.
+            // I also have a safeguard for potentially really patological functions so we never
+            // take more than 20 steps before we give up.
+            // If we already found a lower value we just skip this step and continue to the update.
             nminstep = 0;
             do
             {
-                /* Select a new trial point.
-                 * If the derivatives at points a & c have different sign we interpolate to zero,
-                 * otherwise just do a bisection.
-                 */
-
+                // Select a new trial point B in the interval [A,C].
+                // If the derivatives at points a & c have different sign we interpolate to zero,
+                // otherwise just do a bisection since there might be multiple minima/maxima
+                // inside the interval.
                 if (gpa < 0 && gpc > 0)
                 {
                     b = a + gpa*(a-c)/(gpc-gpa);
@@ -2011,25 +2026,25 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                     b = 0.5*(a+c);
                 }
 
-                /* Take a trial step */
+                // Take a trial step to point B
                 for (i = 0; i < n; i++)
                 {
                     xb[i] = lastx[i] + b*s[i];
                 }
 
                 neval++;
-                /* Calculate energy for the trial step */
+                // Calculate energy for the trial step in point B
                 ems.s.x = (rvec *)xb;
                 ems.f   = (rvec *)fb;
                 evaluate_energy(fplog, cr,
                                 top_global, &ems, top,
-                                inputrec, nrnb, wcycle, gstat,
+                                inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                                 vsite, constr, fcd, graph, mdatoms, fr,
                                 mu_tot, enerd, vir, pres, step, FALSE);
                 EpotB = ems.epot;
-
                 fnorm = ems.fnorm;
 
+                // Calculate gradient in point B
                 for (gpb = 0, i = 0; i < n; i++)
                 {
                     gpb -= s[i]*fb[i]; /* f is negative gradient, thus the sign */
@@ -2041,7 +2056,8 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                     gmx_sumd(1, &gpb, cr);
                 }
 
-                /* Keep one of the intervals based on the value of the derivative at the new point */
+                // Keep one of the intervals [A,B] or [B,C] based on the value of the derivative
+                // at the new point B, and rename the endpoints of this new interval A and C.
                 if (gpb > 0)
                 {
                     /* Replace c endpoint with b */
@@ -2118,7 +2134,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                     xx[i] = xc[i];
                     ff[i] = fc[i];
                 }
-                stepsize = c;
+                step_taken = c;
             }
             else
             {
@@ -2129,7 +2145,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                     xx[i] = xa[i];
                     ff[i] = fa[i];
                 }
-                stepsize = a;
+                step_taken = a;
             }
 
         }
@@ -2143,7 +2159,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 xx[i] = xc[i];
                 ff[i] = fc[i];
             }
-            stepsize = c;
+            step_taken = c;
         }
 
         /* Update the memory information, and calculate a new
@@ -2159,7 +2175,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         for (i = 0; i < n; i++)
         {
             dg[point][i]  = lastf[i]-ff[i];
-            dx[point][i] *= stepsize;
+            dx[point][i] *= step_taken;
         }
 
         dgdg = 0;
@@ -2252,8 +2268,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             }
         }
 
-        stepsize = 1.0;
-
         /* Test whether the convergence criterion is met */
         get_f_norm_max(cr, &(inputrec->opts), mdatoms, f, &fnorm, &fmax, &nfmax);
 
@@ -2262,8 +2276,9 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         {
             if (bVerbose)
             {
+                double sqrtNumAtoms = sqrt(static_cast<double>(state->natoms));
                 fprintf(stderr, "\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
-                        step, Epot, fnorm/sqrt(state->natoms), fmax, nfmax+1);
+                        step, Epot, fnorm/sqrtNumAtoms, fmax, nfmax+1);
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
@@ -2286,10 +2301,12 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             IMD_send_positions(inputrec->imd);
         }
 
+        // Reset stepsize in we are doing more iterations
+        stepsize = 1.0/fnorm;
+
         /* Stop when the maximum force lies below tolerance.
          * If we have reached machine precision, converged is already set to true.
          */
-
         converged = converged || (fmax < inputrec->em_tol);
 
     } /* End of the loop */
@@ -2347,10 +2364,11 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     if (MASTER(cr))
     {
+        double sqrtNumAtoms = sqrt(static_cast<double>(state->natoms));
         print_converged(stderr, LBFGS, inputrec->em_tol, step, converged,
-                        number_steps, Epot, fmax, nfmax, fnorm/sqrt(state->natoms));
+                        number_steps, Epot, fmax, nfmax, fnorm/sqrtNumAtoms);
         print_converged(fplog, LBFGS, inputrec->em_tol, step, converged,
-                        number_steps, Epot, fmax, nfmax, fnorm/sqrt(state->natoms));
+                        number_steps, Epot, fmax, nfmax, fnorm/sqrtNumAtoms);
 
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
@@ -2393,7 +2411,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     rvec             *f;
     gmx_global_stat_t gstat;
     t_graph          *graph;
-    real              stepsize, constepsize;
+    real              stepsize;
     real              ustep, fnormn;
     gmx_mdoutf_t      outf;
     t_mdebin         *mdebin;
@@ -2403,8 +2421,6 @@ double do_steep(FILE *fplog, t_commrec *cr,
     int               nsteps;
     int               count          = 0;
     int               steps_accepted = 0;
-    /* not used */
-    real              terminate = 0;
 
     s_min = init_em_state();
     s_try = init_em_state();
@@ -2460,7 +2476,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
 
         evaluate_energy(fplog, cr,
                         top_global, s_try, top,
-                        inputrec, nrnb, wcycle, gstat,
+                        inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, count, count == 0);
 
@@ -2584,10 +2600,11 @@ double do_steep(FILE *fplog, t_commrec *cr,
                   top_global, inputrec, count,
                   s_min, state_global, f_global);
 
-    fnormn = s_min->fnorm/sqrt(state_global->natoms);
-
     if (MASTER(cr))
     {
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+        fnormn = s_min->fnorm/sqrtNumAtoms;
+
         print_converged(stderr, SD, inputrec->em_tol, count, bDone, nsteps,
                         s_min->epot, s_min->fmax, s_min->a_fmax, fnormn);
         print_converged(fplog, SD, inputrec->em_tol, count, bDone, nsteps,
@@ -2636,8 +2653,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
     rvec                *f;
     gmx_global_stat_t    gstat;
     t_graph             *graph;
-    real                 t, t0, lambda, lam0;
-    gmx_bool             bNS;
     tensor               vir, pres;
     rvec                 mu_tot;
     rvec                *fneg, *dfdx;
@@ -2651,7 +2666,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     int        i, j, k, row, col;
     real       der_range = 10.0*sqrt(GMX_REAL_EPS);
     real       x_min;
-    real       fnorm, fmax;
+    bool       bIsMaster = MASTER(cr);
 
     if (constr != NULL)
     {
@@ -2672,7 +2687,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     snew(dfdx, natoms);
 
 #ifndef GMX_DOUBLE
-    if (MASTER(cr))
+    if (bIsMaster)
     {
         fprintf(stderr,
                 "NOTE: This version of Gromacs has been compiled in single precision,\n"
@@ -2704,7 +2719,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
         bSparse = TRUE;
     }
 
-    if (MASTER(cr))
+    if (bIsMaster)
     {
         sz = DIM*top_global->natoms;
 
@@ -2721,12 +2736,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
         }
     }
 
-    /* Initial values */
-    t0           = inputrec->init_t;
-    lam0         = inputrec->fepvals->init_lambda;
-    t            = t0;
-    lambda       = lam0;
-
     init_nrnb(nrnb);
 
     where();
@@ -2737,7 +2746,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     /* fudge nr of steps to nr of atoms */
     inputrec->nsteps = natoms*2;
 
-    if (MASTER(cr))
+    if (bIsMaster)
     {
         fprintf(stderr, "starting normal mode calculation '%s'\n%d steps.\n\n",
                 *(top_global->name), (int)inputrec->nsteps);
@@ -2749,7 +2758,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     cr->nnodes = 1;
     evaluate_energy(fplog, cr,
                     top_global, state_work, top,
-                    inputrec, nrnb, wcycle, gstat,
+                    inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     cr->nnodes = nnodes;
@@ -2790,7 +2799,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
             cr->nnodes = 1;
             evaluate_energy(fplog, cr,
                             top_global, state_work, top,
-                            inputrec, nrnb, wcycle, gstat,
+                            inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                             vsite, constr, fcd, graph, mdatoms, fr,
                             mu_tot, enerd, vir, pres, atom*2, FALSE);
 
@@ -2803,7 +2812,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
             evaluate_energy(fplog, cr,
                             top_global, state_work, top,
-                            inputrec, nrnb, wcycle, gstat,
+                            inputrec, nrnb, wcycle, gstat ? gstat : NULL,
                             vsite, constr, fcd, graph, mdatoms, fr,
                             mu_tot, enerd, vir, pres, atom*2+1, FALSE);
             cr->nnodes = nnodes;
@@ -2820,7 +2829,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
                 }
             }
 
-            if (!MASTER(cr))
+            if (!bIsMaster)
             {
 #ifdef GMX_MPI
 #ifdef GMX_DOUBLE
@@ -2877,15 +2886,15 @@ double do_nm(FILE *fplog, t_commrec *cr,
             }
         }
         /* write progress */
-        if (MASTER(cr) && bVerbose)
+        if (bIsMaster && bVerbose)
         {
             fprintf(stderr, "\rFinished step %d out of %d",
-                    min(atom+nnodes, natoms), natoms);
+                    std::min(atom+nnodes, natoms), natoms);
             fflush(stderr);
         }
     }
 
-    if (MASTER(cr))
+    if (bIsMaster)
     {
         fprintf(stderr, "\n\nWriting Hessian...\n");
         gmx_mtxio_write(ftp2fn(efMTX, nfile, fnm), sz, sz, full_matrix, sparse_matrix);
