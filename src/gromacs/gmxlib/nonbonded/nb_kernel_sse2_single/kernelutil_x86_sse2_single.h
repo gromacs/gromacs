@@ -39,6 +39,8 @@
 
 #include <math.h>
 
+#include "config.h"
+
 #define gmx_mm_castsi128_ps   _mm_castsi128_ps
 
 #define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))

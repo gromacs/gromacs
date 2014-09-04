@@ -39,6 +39,8 @@
 #include <math.h>
 #include <immintrin.h>
 
+#include "config.h"
+
 /* It is cleaner to start the AVX implementation from scratch rather than
  * first inheriting from SSE4.1, which in turn inherits from SSE2. However,
  * the capabilities still form a superset.

@@ -39,6 +39,8 @@
 #include <math.h>
 #include <immintrin.h>
 
+#include "config.h"
+
 /* Intel Xeon Phi, or
  * the-artist-formerly-known-as-Knight's-corner, or
  * the-artist-formerly-formerly-known-as-MIC, or

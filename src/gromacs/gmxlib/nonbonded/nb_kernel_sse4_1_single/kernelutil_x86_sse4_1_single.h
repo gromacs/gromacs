@@ -37,6 +37,8 @@
 
 #include <math.h>
 
+#include "config.h"
+
 #undef gmx_restrict
 #define gmx_restrict
 
