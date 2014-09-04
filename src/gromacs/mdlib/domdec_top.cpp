@@ -56,6 +56,7 @@
 #include "gromacs/topology/topsort.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* for dd_init_local_state */
@@ -148,7 +149,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                                           t_idef *idef)
 {
     int      nril_mol, *assigned, *gatindex;
-    int      ftype, ftype_j, nral, i, j_mol, j, k, a0, a0_mol, mol, a, a_gl;
+    int      ftype, ftype_j, nral, i, j_mol, j, a0, a0_mol, mol, a;
     int      nprint;
     t_ilist *il;
     t_iatom *ia;
@@ -334,7 +335,10 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
 
     if (DDMASTER(dd))
     {
-        fprintf(fplog, "\nA list of missing interactions:\n");
+        if (fplog)
+        {
+            fprintf(fplog, "\nA list of missing interactions:\n");
+        }
         fprintf(stderr, "\nA list of missing interactions:\n");
         rest_global = dd->nbonded_global;
         rest_local  = local_count;
@@ -350,7 +354,6 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
                 || (dd->reverse_top->bConstr && ftype == F_CONSTR)
                 || (dd->reverse_top->bSettle && ftype == F_SETTLE))
             {
-                nral = NRAL(ftype);
                 n    = gmx_mtop_ftype_count(err_top_global, ftype);
                 if (ftype == F_CONSTR)
                 {
@@ -361,7 +364,10 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
                 {
                     sprintf(buf, "%20s of %6d missing %6d",
                             interaction_function[ftype].longname, n, -ndiff);
-                    fprintf(fplog, "%s\n", buf);
+                    if (fplog)
+                    {
+                        fprintf(fplog, "%s\n", buf);
+                    }
                     fprintf(stderr, "%s\n", buf);
                 }
                 rest_global -= n;
@@ -374,7 +380,10 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
         {
             sprintf(buf, "%20s of %6d missing %6d", "exclusions",
                     rest_global, -ndiff);
-            fprintf(fplog, "%s\n", buf);
+            if (fplog)
+            {
+                fprintf(fplog, "%s\n", buf);
+            }
             fprintf(stderr, "%s\n", buf);
         }
     }
@@ -399,9 +408,6 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
 static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt, int i_gl,
                                          int *mb, int *mt, int *mol, int *i_mol)
 {
-    int molb;
-
-
     gmx_molblock_ind_t *mbi   = rt->mbi;
     int                 start = 0;
     int                 end   =  rt->nmolblock; /* exclusive */
@@ -435,7 +441,7 @@ static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt, int i_gl,
 
 static int count_excls(t_block *cgs, t_blocka *excls, int *n_intercg_excl)
 {
-    int n, n_inter, cg, at0, at1, at, excl, atj;
+    int n, cg, at0, at1, at, excl, atj;
 
     n               = 0;
     *n_intercg_excl = 0;
@@ -489,7 +495,6 @@ static int low_make_reverse_ilist(t_ilist *il_mt, t_atom *atom,
             bVSite = (interaction_function[ftype].flags & IF_VSITE);
             nral   = NRAL(ftype);
             il     = &il_mt[ftype];
-            ia     = il->iatoms;
             for (i = 0; i < il->nr; i += 1+nral)
             {
                 ia = il->iatoms + i;
@@ -707,7 +712,7 @@ void dd_make_reverse_top(FILE *fplog,
                          gmx_vsite_t *vsite,
                          t_inputrec *ir, gmx_bool bBCheck)
 {
-    int             mb, n_recursive_vsite, nexcl, nexcl_icg, a;
+    int             mb, nexcl, nexcl_icg;
     gmx_molblock_t *molb;
     gmx_moltype_t  *molt;
 
@@ -783,6 +788,60 @@ void dd_make_reverse_top(FILE *fplog,
     if (fplog)
     {
         fprintf(fplog, "\n");
+    }
+}
+
+/* This routine is very similar to add_ifunc, but vsites interactions
+ * have more work to do than other kinds of interactions, and the
+ * complex way nral (and thus vector contents) depends on ftype
+ * confuses static analysis tools unless we fuse the vsite
+ * atom-indexing organization code with the ifunc-adding code, so that
+ * they can see that nral is the same value. */
+static gmx_inline void
+add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t ga2la,
+                     int nral, gmx_bool bHomeA,
+                     int a, int a_gl, int a_mol,
+                     const t_iatom *iatoms,
+                     t_ilist *il)
+{
+    t_iatom *liatoms;
+
+    if (il->nr+1+nral > il->nalloc)
+    {
+        il->nalloc = over_alloc_large(il->nr+1+nral);
+        srenew(il->iatoms, il->nalloc);
+    }
+    liatoms = il->iatoms + il->nr;
+    il->nr += 1 + nral;
+
+    /* Copy the type */
+    tiatoms[0] = iatoms[0];
+
+    if (bHomeA)
+    {
+        /* We know the local index of the first atom */
+        tiatoms[1] = a;
+    }
+    else
+    {
+        /* Convert later in make_local_vsites */
+        tiatoms[1] = -a_gl - 1;
+    }
+
+    for (int k = 2; k < 1+nral; k++)
+    {
+        int ak_gl = a_gl + iatoms[k] - a_mol;
+        if (!ga2la_get_home(ga2la, ak_gl, &tiatoms[k]))
+        {
+            /* Copy the global index, convert later in make_local_vsites */
+            tiatoms[k] = -(ak_gl + 1);
+        }
+        // Note that ga2la_get_home always sets the third parameter if
+        // it returns TRUE
+    }
+    for (int k = 0; k < 1+nral; k++)
+    {
+        liatoms[k] = tiatoms[k];
     }
 }
 
@@ -892,36 +951,13 @@ static void add_vsite(gmx_ga2la_t ga2la, int *index, int *rtil,
                       t_iatom *iatoms,
                       t_idef *idef, int **vsite_pbc, int *vsite_pbc_nalloc)
 {
-    int     k, ak_gl, vsi, pbc_a_mol;
-    t_iatom tiatoms[1+MAXATOMLIST], *iatoms_r;
+    int     k, vsi, pbc_a_mol;
+    t_iatom tiatoms[1+MAXATOMLIST];
     int     j, ftype_r, nral_r;
 
-    /* Copy the type */
-    tiatoms[0] = iatoms[0];
-
-    if (bHomeA)
-    {
-        /* We know the local index of the first atom */
-        tiatoms[1] = a;
-    }
-    else
-    {
-        /* Convert later in make_local_vsites */
-        tiatoms[1] = -a_gl - 1;
-    }
-
-    for (k = 2; k < 1+nral; k++)
-    {
-        ak_gl = a_gl + iatoms[k] - a_mol;
-        if (!ga2la_get_home(ga2la, ak_gl, &tiatoms[k]))
-        {
-            /* Copy the global index, convert later in make_local_vsites */
-            tiatoms[k] = -(ak_gl + 1);
-        }
-    }
-
     /* Add this interaction to the local topology */
-    add_ifunc(nral, tiatoms, &idef->il[ftype]);
+    add_ifunc_for_vsites(tiatoms, ga2la, nral, bHomeA, a, a_gl, a_mol, iatoms, &idef->il[ftype]);
+
     if (vsite_pbc)
     {
         vsi = idef->il[ftype].nr/(1+nral) - 1;
@@ -1418,11 +1454,10 @@ static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                 int iz,
                                 int cg_start, int cg_end)
 {
-    int             nizone, n, count, jla0, jla1, jla;
+    int             n, count, jla0, jla1, jla;
     int             cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
     const t_blocka *excls;
     gmx_ga2la_t     ga2la;
-    int             a_loc;
     int             cell;
 
     ga2la = dd->ga2la;
@@ -1673,7 +1708,6 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
         {
             int       cg0t, cg1t;
             t_idef   *idef_t;
-            int       ftype;
             int     **vsite_pbc;
             int      *vsite_pbc_nalloc;
             t_blocka *excl_t;
@@ -1800,7 +1834,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        gmx_vsite_t *vsite,
                        gmx_mtop_t *mtop, gmx_localtop_t *ltop)
 {
-    gmx_bool bUniqueExcl, bRCheckMB, bRCheck2B, bRCheckExcl;
+    gmx_bool bRCheckMB, bRCheck2B;
     real     rc = -1;
     ivec     rcheck;
     int      d, nexcl;
@@ -1815,7 +1849,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
     bRCheckMB   = FALSE;
     bRCheck2B   = FALSE;
-    bRCheckExcl = FALSE;
 
     if (dd->reverse_top->bMultiCGmols)
     {
@@ -1853,17 +1886,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                         "dim %d cellmin %f bonded rcheck[%d] = %d, bRCheck2B = %d\n",
                         d, cellsize_min[d], d, rcheck[d], bRCheck2B);
             }
-        }
-        if (dd->reverse_top->bExclRequired)
-        {
-            bRCheckExcl = bRCheck2B;
-        }
-        else
-        {
-            /* If we don't have forces on exclusions,
-             * we don't care about exclusions being assigned mulitple times.
-             */
-            bRCheckExcl = FALSE;
         }
         if (bRCheckMB || bRCheck2B)
         {
@@ -1965,8 +1987,9 @@ void dd_init_local_state(gmx_domdec_t *dd,
 
 static void check_link(t_blocka *link, int cg_gl, int cg_gl_j)
 {
-    int      k, aj;
+    int      k;
     gmx_bool bFound;
+    GMX_RELEASE_ASSERT(link->a, "Inconsistent NULL pointer while making charge-group links");
 
     bFound = FALSE;
     for (k = link->index[cg_gl]; k < link->index[cg_gl+1]; k++)
@@ -2287,7 +2310,7 @@ void dd_bonded_cg_distance(FILE *fplog,
                            real *r_2b, real *r_mb)
 {
     gmx_bool        bExclRequired;
-    int             mb, cg_offset, at_offset, *at2cg, mol;
+    int             mb, at_offset, *at2cg, mol;
     t_graph         graph;
     gmx_vsite_t    *vsite;
     gmx_molblock_t *molb;
@@ -2303,7 +2326,6 @@ void dd_bonded_cg_distance(FILE *fplog,
 
     *r_2b     = 0;
     *r_mb     = 0;
-    cg_offset = 0;
     at_offset = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
@@ -2311,7 +2333,6 @@ void dd_bonded_cg_distance(FILE *fplog,
         molt = &mtop->moltype[molb->type];
         if (molt->cgs.nr == 1 || molb->nmol == 0)
         {
-            cg_offset += molb->nmol*molt->cgs.nr;
             at_offset += molb->nmol*molt->atoms.nr;
         }
         else
@@ -2349,7 +2370,6 @@ void dd_bonded_cg_distance(FILE *fplog,
                     a_mb_2 = at_offset + amol_mb_2;
                 }
 
-                cg_offset += molt->cgs.nr;
                 at_offset += molt->atoms.nr;
             }
             sfree(cg_cm);
