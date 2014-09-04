@@ -35,6 +35,7 @@
 
 #include "gmxpre.h"
 
+#include <algorithm>
 #include <assert.h>
 
 #include "gromacs/legacyheaders/constr.h"
@@ -49,6 +50,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
@@ -467,8 +469,6 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 
 void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 {
-    int i;
-
     if (dd->vsite_comm)
     {
         gmx_hash_clear_and_optimize(dd->ga2la_vsite);
@@ -487,7 +487,7 @@ static int setup_specat_communication(gmx_domdec_t             *dd,
     int               nsend[2], nlast, nsend_zero[2] = {0, 0}, *nsend_ptr;
     int               d, dim, ndir, dir, nr, ns, i, nrecv_local, n0, start, indr, ind, buf[2];
     int               nat_tot_specat, nat_tot_prev, nalloc_old;
-    gmx_bool          bPBC, bFirst;
+    gmx_bool          bPBC;
     gmx_specatsend_t *spas;
 
     if (debug)
@@ -556,7 +556,6 @@ static int setup_specat_communication(gmx_domdec_t             *dd,
     nrecv_local    = 0;
     for (d = 0; d < dd->ndim; d++)
     {
-        bFirst = (d == 0);
         /* Pulse the grid forward and backward */
         if (dd->dim[d] >= dd->npbcdim || dd->nc[dd->dim[d]] > 2)
         {
@@ -1073,6 +1072,18 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     int at_end, i, j;
     t_iatom                  *iap;
 
+    // This code should not be called unless this condition is true,
+    // because that's the only time init_domdec_constraints is
+    // called...
+    GMX_RELEASE_ASSERT(dd->bInterCGcons || dd->bInterCGsettles, "dd_make_local_constraints called when there are no local constraints");
+    // ... and init_domdec_constraints always sets
+    // dd->constraint_comm...
+    GMX_RELEASE_ASSERT(dd->constraint_comm, "Invalid use of dd_make_local_constraints before construction of constraint_comm");
+    // ... which static analysis needs to be reassured about, because
+    // otherwise, when dd->bInterCGsettles is
+    // true. dd->constraint_comm is unilaterally dereferenced before
+    // the call to atoms_to_settles.
+
     dc = dd->constraints;
 
     ilc_local = &il_local[F_CONSTR];
@@ -1088,6 +1099,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     }
     else
     {
+        // Currently unreachable
         at2con_mt = NULL;
         ireq      = NULL;
     }
@@ -1243,6 +1255,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     }
     else
     {
+        // Currently unreachable
         at_end = at_start;
     }
 
@@ -1254,7 +1267,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
     gmx_domdec_specat_comm_t *spac;
     ind_req_t                *ireq;
     gmx_hash_t                ga2la_specat;
-    int  ftype, nral, i, j, gat, a;
+    int  ftype, nral, i, j, a;
     t_ilist                  *lilf;
     t_iatom                  *iatoms;
     int  at_end;
@@ -1347,7 +1360,7 @@ void init_domdec_constraints(gmx_domdec_t *dd,
 {
     gmx_domdec_constraints_t *dc;
     gmx_molblock_t           *molb;
-    int mb, ncon, c, a;
+    int mb, ncon, c;
 
     if (debug)
     {
@@ -1383,8 +1396,8 @@ void init_domdec_constraints(gmx_domdec_t *dd,
     /* Use a hash table for the global to local index.
      * The number of keys is a rough estimate, it will be optimized later.
      */
-    dc->ga2la = gmx_hash_init(min(mtop->natoms/20,
-                                  mtop->natoms/(2*dd->nnodes)));
+    dc->ga2la = gmx_hash_init(std::min(mtop->natoms/20,
+                                       mtop->natoms/(2*dd->nnodes)));
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
     snew(dc->ils, dc->nthread);
@@ -1394,9 +1407,6 @@ void init_domdec_constraints(gmx_domdec_t *dd,
 
 void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite)
 {
-    int i;
-    gmx_domdec_constraints_t *dc;
-
     if (debug)
     {
         fprintf(debug, "Begin init_domdec_vsites\n");
@@ -1405,8 +1415,8 @@ void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite)
     /* Use a hash table for the global to local index.
      * The number of keys is a rough estimate, it will be optimized later.
      */
-    dd->ga2la_vsite = gmx_hash_init(min(n_intercg_vsite/20,
-                                        n_intercg_vsite/(2*dd->nnodes)));
+    dd->ga2la_vsite = gmx_hash_init(std::min(n_intercg_vsite/20,
+                                             n_intercg_vsite/(2*dd->nnodes)));
 
     dd->vsite_comm = specat_comm_init(1);
 }
