@@ -41,6 +41,8 @@
 #include <qpxmath.h>
 #endif
 
+#include "config.h"
+
 /* IBM QPX SIMD instruction wrappers
  *
  * Please see documentation in gromacs/simd/simd.h for the available

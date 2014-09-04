@@ -40,6 +40,8 @@
 #include <immintrin.h>
 #include <x86intrin.h>
 
+#include "config.h"
+
 /* x86 128-bit AVX with FMA SIMD instruction wrappers
  *
  * Please see documentation in gromacs/simd/simd.h for details

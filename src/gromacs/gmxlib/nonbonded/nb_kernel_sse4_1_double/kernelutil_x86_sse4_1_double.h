@@ -36,8 +36,9 @@
 #define _kernelutil_x86_sse4_1_double_h_
 
 #include <math.h>
-
 #include <stdio.h>
+
+#include "config.h"
 
 #define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32((x), (imm))
 #define gmx_mm_castsi128_pd(a) _mm_castsi128_pd(a)

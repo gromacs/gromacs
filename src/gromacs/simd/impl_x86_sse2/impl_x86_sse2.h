@@ -39,6 +39,8 @@
 #include <math.h>
 #include <emmintrin.h>
 
+#include "config.h"
+
 /* Set capabilities that can be inherited */
 #define GMX_SIMD_X86_SSE2_OR_HIGHER
 
