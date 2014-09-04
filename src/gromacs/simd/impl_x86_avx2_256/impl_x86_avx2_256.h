@@ -39,6 +39,8 @@
 #include <math.h>
 #include <immintrin.h>
 
+#include "config.h"
+
 /* x86 256-bit AVX2 SIMD instruction wrappers
  *
  * Please see documentation in gromacs/simd/simd.h for details
