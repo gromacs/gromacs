@@ -41,6 +41,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <algorithm>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
@@ -83,7 +85,7 @@ static void global_max(t_commrec *cr, int *n)
     gmx_sumi(cr->nnodes, sum, cr);
     for (i = 0; i < cr->nnodes; i++)
     {
-        *n = max(*n, sum[i]);
+        *n = std::max(*n, sum[i]);
     }
 
     sfree(sum);
@@ -125,7 +127,6 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               unsigned long gmx_unused Flags,
               gmx_walltime_accounting_t walltime_accounting)
 {
-    const char     *TPI = "Test Particle Insertion";
     gmx_localtop_t *top;
     gmx_groups_t   *groups;
     gmx_enerdata_t *enerd;
@@ -145,7 +146,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     gmx_int64_t     rnd_count_stride, rnd_count;
     gmx_int64_t     seed;
     double          rnd[4];
-    int             i, start, end;
+    int             i;
     FILE           *fp_tpi = NULL;
     char           *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
     double          dbl, dump_ener;
@@ -154,7 +155,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     real           *mass_cavity = NULL, mass_tot;
     int             nbin;
     double          invbinw, *bin, refvolshift, logV, bUlogV;
-    real            dvdl, prescorr, enercorr, dvdlcorr;
+    real            prescorr, enercorr, dvdlcorr;
     gmx_bool        bEnergyOutOfBounds;
     const char     *tpid_leg[2] = {"direct", "reweighted"};
 
@@ -189,7 +190,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
              * The center of mass of the last atoms is then used for TPIC.
              */
             nat_cavity = 0;
-            while (sscanf(ptr, "%lf%n", &dbl, &i) > 0)
+            while (sscanf(ptr, "%20lf%n", &dbl, &i) > 0)
             {
                 srenew(mass_cavity, nat_cavity+1);
                 mass_cavity[nat_cavity] = dbl;
@@ -244,7 +245,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     dump_ener = 0;
     if (dump_pdb)
     {
-        sscanf(dump_pdb, "%lf", &dump_ener);
+        sscanf(dump_pdb, "%20lf", &dump_ener);
     }
 
     atoms2md(top_global, inputrec, 0, NULL, top_global->natoms, mdatoms);
