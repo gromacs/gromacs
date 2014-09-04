@@ -60,6 +60,13 @@ include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
 include_directories(BEFORE ${GTEST_DIR})
 include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
 include_directories(BEFORE ${GMOCK_DIR})
+
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wno-unused-variable HAS_NO_UNUSED_VARIABLE)
+if (HAS_NO_UNUSED_VARIABLE)
+    set_source_files_properties(${GTEST_SOURCES} PROPERTIES COMPILE_FLAGS "-Wno-unused-variable")
+endif()
+
 add_library(gmock STATIC ${UNITTEST_TARGET_OPTIONS} ${GMOCK_SOURCES} ${GTEST_SOURCES})
 set_property(TARGET gmock APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
 

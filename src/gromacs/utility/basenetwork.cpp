@@ -63,7 +63,7 @@ int gmx_gethostname(char *name, size_t len)
     {
         gmx_incons("gmx_gethostname called with len<8");
     }
-#if defined(HAVE_UNISTD_H) && !defined(__native_client__)
+#if defined(HAVE_UNISTD_H) && !defined(__native_client__) && !defined(__MINGW32__)
     if (gethostname(name, len-1) != 0)
     {
         std::strncpy(name, "unknown", 8);

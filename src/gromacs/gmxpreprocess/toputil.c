@@ -38,6 +38,7 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
 
@@ -87,12 +88,7 @@ void pr_alloc (int extra, t_params *pr)
     {
         return;
     }
-    if ((pr->nr == 0) && (pr->param != NULL))
-    {
-        fprintf(stderr, "Warning: dangling pointer at %lx\n",
-                (unsigned long)pr->param);
-        pr->param = NULL;
-    }
+    assert(!((pr->nr == 0) && (pr->param != NULL)));
     if (pr->nr+extra > pr->maxnr)
     {
         pr->maxnr = max(1.2*pr->maxnr, pr->maxnr + extra);

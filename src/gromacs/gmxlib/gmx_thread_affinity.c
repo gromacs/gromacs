@@ -35,7 +35,7 @@
 #include "gmxpre.h"
 
 #include "config.h"
-#if defined(HAVE_SCHED_H)
+#ifdef HAVE_SCHED_AFFINITY
 #  ifndef _GNU_SOURCE
 #    define _GNU_SOURCE 1
 #  endif
