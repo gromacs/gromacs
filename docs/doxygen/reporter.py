@@ -165,6 +165,7 @@ class Reporter(object):
         self._messages = []
         self._filters = []
         self._quiet = quiet
+        self._had_warnings = False
 
     def _write(self, message):
         """Implement actual message writing."""
@@ -178,6 +179,7 @@ class Reporter(object):
         sys.stderr.write(wholemsg)
         if self._logfp:
             self._logfp.write(wholemsg)
+        self._had_warnings = True
 
     def _report(self, message):
         """Handle a single reporter message."""
@@ -214,6 +216,10 @@ class Reporter(object):
                 # TODO: Consider adding the input filter file as location
                 text = 'warning: unused filter: ' + filterobj.get_text()
                 self._write(Message(text))
+
+    def had_warnings(self):
+        """Return true if any warnings have been reported."""
+        return self._had_warnings
 
     def close_log(self):
         """Close the log file if one exists."""

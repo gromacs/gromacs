@@ -354,6 +354,8 @@ def main():
                       help='Issue notes for comments ignored by Doxygen')
     parser.add_option('-q', '--quiet', action='store_true',
                       help='Do not write status messages')
+    parser.add_option('--exitcode', action='store_true',
+                      help='Return non-zero exit code if there are warnings')
     options, args = parser.parse_args()
 
     installedlist = []
@@ -400,5 +402,8 @@ def main():
     reporter.write_pending()
     reporter.report_unused_filters()
     reporter.close_log()
+
+    if options.exitcode and reporter.had_warnings():
+        sys.exit(1)
 
 main()
