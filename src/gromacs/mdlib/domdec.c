@@ -269,6 +269,8 @@ typedef struct gmx_domdec_comm
 
     /* The DLB option */
     int      eDLB;
+    /* Is eDLB=edlbAUTO locked such that we currently can't turn it on? */
+    gmx_bool bDLB_locked;
     /* Are we actually using DLB? */
     gmx_bool bDynLoadBal;
 
@@ -385,9 +387,9 @@ typedef struct gmx_domdec_comm
     int    eFlop;
     double flop;
     int    flop_n;
-    /* Have often have did we have load measurements */
+    /* How many times have did we have load measurements */
     int    n_load_have;
-    /* Have often have we collected the load measurements */
+    /* How many times have we collected the load measurements */
     int    n_load_collect;
 
     /* Statistics */
@@ -3462,7 +3464,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             cell_size[i] = 1.0/ncd;
         }
     }
-    else if (dd_load_count(comm))
+    else if (dd_load_count(comm) > 0)
     {
         load_aver  = comm->load[d].sum_m/ncd;
         change_max = 0;
@@ -6679,7 +6681,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->eDLB = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
+    comm->eDLB        = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
+    comm->bDLB_locked = FALSE;
 
     comm->bDynLoadBal = (comm->eDLB == edlbYES);
     if (fplog)
@@ -7570,6 +7573,20 @@ void change_dd_dlb_cutoff_limit(t_commrec *cr)
 
     /* Change the cut-off limit */
     comm->PMELoadBal_max_cutoff = comm->cutoff;
+}
+
+gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd)
+{
+    return dd->comm->bDLB_locked;
+}
+
+void dd_dlb_set_lock(gmx_domdec_t *dd, gmx_bool bValue)
+{
+    /* We can only lock the DLB when it is set to auto, otherwise don't lock */
+    if (dd->comm->eDLB == edlbAUTO)
+    {
+        dd->comm->bDLB_locked = bValue;
+    }
 }
 
 static void merge_cg_buffers(int ncell,
@@ -9336,17 +9353,18 @@ void dd_partition_system(FILE                *fplog,
     }
 
     /* Check if we have recorded loads on the nodes */
-    if (comm->bRecordLoad && dd_load_count(comm))
+    if (comm->bRecordLoad && dd_load_count(comm) > 0)
     {
-        if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal)
+        if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal && !dd_dlb_is_locked(dd))
         {
             /* Check if we should use DLB at the second partitioning
              * and every 100 partitionings,
              * so the extra communication cost is negligible.
              */
-            n         = max(100, nstglobalcomm);
+            const int nddp_chk_dlb = 100;
+
             bCheckDLB = (comm->n_load_collect == 0 ||
-                         comm->n_load_have % n == n-1);
+                         comm->n_load_have % nddp_chk_dlb == nddp_chk_dlb - 1);
         }
         else
         {
@@ -9384,8 +9402,26 @@ void dd_partition_system(FILE                *fplog,
                 /* Since the timings are node dependent, the master decides */
                 if (DDMASTER(dd))
                 {
-                    bTurnOnDLB =
-                        (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS_DLB_ON);
+                    /* Here we check if the max PME rank load is more than 0.98
+                     * the max PP force load. If so, PP DLB will not help,
+                     * since we are (almost) limited by PME. Furthermore,
+                     * DLB will cause a significant extra x/f redistribution
+                     * cost on the PME ranks, which will then surely result
+                     * in lower total performance.
+                     * This check might be fragile, since one measurement
+                     * below 0.98 (although only done once every 100 DD part.)
+                     * could turn on DLB for the rest of the run.
+                     */
+                    if (cr->npmenodes > 0 &&
+                        dd_pme_f_ratio(dd) > 1 - DD_PERF_LOSS_DLB_ON)
+                    {
+                        bTurnOnDLB = FALSE;
+                    }
+                    else
+                    {
+                        bTurnOnDLB =
+                            (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS_DLB_ON);
+                    }
                     if (debug)
                     {
                         fprintf(debug, "step %s, imb loss %f\n",
