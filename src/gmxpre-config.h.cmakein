@@ -54,3 +54,14 @@
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE
 
+/* This is here for simplicity, since the layout for some thread-MPI structs
+ * declared in headers depend on this being consistently defined.
+ * But thread-MPI itself does not include gmxpre.h, so the same define is also
+ * set in config.h (which gets included by thread-MPI, but only in the source
+ * files). There are some other config.h defines that appear in thread-MPI
+ * headers, but currently Gromacs does not use any code that would depend on
+ * those, and for thread-MPI, config.h provides the definitions wherever
+ * required. */
+/* Define for busy wait option  */
+#cmakedefine TMPI_WAIT_FOR_NO_ONE
+

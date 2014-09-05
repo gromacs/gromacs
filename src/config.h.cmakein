@@ -43,6 +43,7 @@
  */
 #ifndef GMX_CONFIG_H
 #define GMX_CONFIG_H
+
 #include "gromacs/utility/gmx_header_config.h"
 
 /* TODO: For now, disable Doxygen warnings from here */
@@ -199,7 +200,10 @@
 #cmakedefine TMPI_ATOMICS
 
 /* Define for busy wait option  */
+/* See gmxpre-config.h.cmakein for explanation for the #ifdef */
+#ifndef TMPI_WAIT_FOR_NO_ONE
 #cmakedefine TMPI_WAIT_FOR_NO_ONE
+#endif
 
 /* Define for copy buffer option */
 #cmakedefine TMPI_COPY_BUFFER
@@ -339,6 +343,6 @@
 /* Define if we have zlib */
 #cmakedefine HAVE_ZLIB
 
-#endif
-
 /*! \endcond */
+
+#endif
