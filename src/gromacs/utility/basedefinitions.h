@@ -207,4 +207,25 @@ typedef uint64_t gmx_uint64_t;
 #endif
 #endif
 
+#ifndef __has_feature
+/** For compatibility with non-clang compilers. */
+#define __has_feature(x) 0
+#endif
+
+/*! \def gmx_noreturn
+ * \brief
+ * Indicate that a function is not expected to return.
+ *
+ */
+#ifndef gmx_noreturn
+#if defined(__GNUC__) || __has_feature(attribute_analyzer_noreturn)
+#define gmx_noreturn __attribute__((noreturn))
+#elif defined (_MSC_VER)
+#define gmx_noreturn __declspec(noreturn)
+#else
+#define gmx_noreturn
+#endif
+#endif
+
+
 #endif

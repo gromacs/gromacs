@@ -53,28 +53,6 @@
 extern "C" {
 #endif
 
-#ifndef __has_feature
-/** For compatibility with non-clang compilers. */
-#define __has_feature(x) 0
-#endif
-
-/*! \def GMX_ATTRIBUTE_NORETURN
- * \brief
- * Indicate that a function is not expected to return.
- *
- * \todo
- * There are functions outside this header that need the same attribute.
- * This could be moved to a generic header and made it affect also compiler
- * code generation.
- */
-#ifndef GMX_ATTRIBUTE_NORETURN
-#if defined(__GNUC__) || __has_feature(attribute_analyzer_noreturn)
-#define GMX_ATTRIBUTE_NORETURN __attribute__((noreturn))
-#else
-#define GMX_ATTRIBUTE_NORETURN
-#endif
-#endif
-
 /*! \brief
  * Debug log file.
  *
@@ -140,9 +118,9 @@ set_gmx_error_handler(void (*func)(const char *msg));
  * This is used to implement gmx_fatal_collective() (which cannot be declared
  * here, since it would bring with it mdrun-specific dependencies).
  */
-void
+gmx_noreturn void
 gmx_fatal_mpi_va(int fatal_errno, const char *file, int line, gmx_bool bMaster,
-                 gmx_bool bFinalize, const char *fmt, va_list ap) GMX_ATTRIBUTE_NORETURN;
+                 gmx_bool bFinalize, const char *fmt, va_list ap);
 
 /*! \brief
  * Fatal error reporting routine for \Gromacs.
@@ -165,8 +143,8 @@ gmx_fatal_mpi_va(int fatal_errno, const char *file, int line, gmx_bool bMaster,
    gmx_fatal(FARGS, fmt, ...);
    \endcode
  */
-void
-gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...) GMX_ATTRIBUTE_NORETURN;
+gmx_noreturn void
+gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...);
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
 
@@ -179,7 +157,7 @@ gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...) GMX
 char *gmx_strerror(const char *key);
 
 /** Implementation for gmx_error(). */
-void _gmx_error(const char *key, const char *msg, const char *file, int line) GMX_ATTRIBUTE_NORETURN;
+gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file, int line);
 /*! \brief
  * Alternative fatal error routine with canned messages.
  *
