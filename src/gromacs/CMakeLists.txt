@@ -199,7 +199,11 @@ set_target_properties(libgromacs PROPERTIES
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
-    install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+    install(TARGETS libgromacs
+        LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+        RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+        ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+        COMPONENT libraries)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
