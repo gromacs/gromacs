@@ -44,7 +44,6 @@
 #define GMX_UTILITY_GMXASSERT_H
 
 #include <boost/current_function.hpp>
-#include <boost/exception/detail/attribute_noreturn.hpp>
 
 //! \addtogroup module_utility
 //! \{
@@ -100,7 +99,11 @@ namespace internal
  *
  * \ingroup module_utility
  */
-BOOST_ATTRIBUTE_NORETURN
+#if defined(_MSC_VER)
+__declspec(noreturn)
+#elif defined(__GNUC__)
+__attribute__((__noreturn__))
+#endif
 void assertHandler(const char *condition, const char *msg,
                    const char *func, const char *file, int line);
 
