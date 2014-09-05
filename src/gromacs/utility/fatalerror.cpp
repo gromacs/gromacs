@@ -206,7 +206,7 @@ static void call_error_handler(const char *key, const char *file, int line, cons
     gmx_error_handler(buf);
 }
 
-GMX_ATTRIBUTE_NORETURN static void do_exit(bool bMaster, bool bFinalize)
+gmx_noreturn static void do_exit(bool bMaster, bool bFinalize)
 {
     if (debug)
     {
