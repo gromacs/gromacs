@@ -99,6 +99,9 @@
 #ifndef GMX_NATIVE_WINDOWS
 #include <glob.h>
 #else
+#ifndef _WIN32_IE
+#define _WIN32_IE 0x0500 /* SHGetFolderPath is available since WinXP/IE5 */
+#endif
 #include <windows.h>
 #include <shlobj.h>
 #endif

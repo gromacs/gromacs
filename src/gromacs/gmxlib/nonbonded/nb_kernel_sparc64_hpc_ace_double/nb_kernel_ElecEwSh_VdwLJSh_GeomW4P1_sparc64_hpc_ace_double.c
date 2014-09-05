@@ -497,7 +497,8 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_sparc64_hpc_ace_double
             {
 
             /* Compute parameters for interactions between i and j atoms */
-            gmx_fjsp_load_1pair_swizzle_v2r8(vdwparam+vdwioffset0+vdwjidx0A,&c6_00,&c12_00);
+            gmx_fjsp_load_2pair_swizzle_v2r8(vdwparam+vdwioffset0+vdwjidx0A,
+                                         vdwparam+vdwioffset0+vdwjidx0B,&c6_00,&c12_00);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
 
@@ -1132,7 +1133,8 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_sparc64_hpc_ace_double
             {
 
             /* Compute parameters for interactions between i and j atoms */
-            gmx_fjsp_load_1pair_swizzle_v2r8(vdwparam+vdwioffset0+vdwjidx0A,&c6_00,&c12_00);
+            gmx_fjsp_load_2pair_swizzle_v2r8(vdwparam+vdwioffset0+vdwjidx0A,
+                                         vdwparam+vdwioffset0+vdwjidx0B,&c6_00,&c12_00);
 
             /* LENNARD-JONES DISPERSION/REPULSION */
 

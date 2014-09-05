@@ -931,7 +931,7 @@ The recommended configuration is to use
 
     cmake .. -DCMAKE_C_COMPILER=mpicc \
              -DCMAKE_CXX_COMPILER=mpicxx \
-             -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-CXX \
+             -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-CXX.cmake \
              -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
              -DGMX_MPI=ON \
              -DGMX_BUILD_MDRUN_ONLY=ON
@@ -964,8 +964,25 @@ add it. The default plain C kernels will work.
 
 This is the architecture of the K computer, which uses Fujitsu
 `Sparc64VIIIfx` chips. On this platform, GROMACS @PROJECT_VERSION@ has
-accelerated group kernels, no accelerated Verlet kernels, and a custom
-build toolchain.
+accelerated group kernels using the HPC-ACE instructions, no
+accelerated Verlet kernels, and a custom build toolchain. Since this
+particular chip only does double precision SIMD, the default setup
+is to build Gromacs in double. Since most users only need single, we have added
+an option GMX_RELAXED_DOUBLE_PRECISION to accept single precision square root
+accuracy in the group kernels; unless you know that you really need 15 digits
+of accuracy in each individual force, we strongly recommend you use this. Note
+that all summation and other operations are still done in double.
+
+The recommended configuration is to use
+
+    cmake .. -DCMAKE_TOOLCHAIN_FILE=Toolchain-Fujitsu-Sparc64-mpi.cmake \
+             -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
+             -DCMAKE_INSTALL_PREFIX=/where/gromacs/should/be/installed \
+             -DGMX_MPI=ON \
+             -DGMX_BUILD_MDRUN_ONLY=ON \
+             -DGMX_RELAXED_DOUBLE_PRECISION=ON
+    make
+    make install
 
 ### Intel Xeon Phi ###
 
