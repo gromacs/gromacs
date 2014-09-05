@@ -138,6 +138,12 @@ void change_dd_dlb_cutoff_limit(t_commrec *cr);
  * possible after subsequently setting a shorter cut-off with change_dd_cutoff.
  */
 
+gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd);
+/* Return if the DLB lock is set */
+
+void dd_dlb_set_lock(gmx_domdec_t *dd, gmx_bool bValue);
+/* Set a lock such that with DLB=auto DLB can (not) get turned on */
+
 void dd_setup_dlb_resource_sharing(t_commrec           *cr,
                                    const gmx_hw_info_t *hwinfo,
                                    const gmx_hw_opt_t  *hw_opt);
