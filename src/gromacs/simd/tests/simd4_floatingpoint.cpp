@@ -35,6 +35,7 @@
 #include "gmxpre.h"
 
 #include <math.h>
+
 #include "gromacs/math/utilities.h"
 
 #include "simd4.h"

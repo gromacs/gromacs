@@ -35,6 +35,7 @@
 #include "gmxpre.h"
 
 #include <math.h>
+
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 

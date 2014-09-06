@@ -201,13 +201,13 @@
 #ifndef GMX_ANALYSISDATA_H
 #define GMX_ANALYSISDATA_H
 
-#include "analysisdata/analysisdata.h"
-#include "analysisdata/arraydata.h"
-#include "analysisdata/dataframe.h"
-#include "analysisdata/modules/average.h"
-#include "analysisdata/modules/displacement.h"
-#include "analysisdata/modules/histogram.h"
-#include "analysisdata/modules/lifetime.h"
-#include "analysisdata/modules/plot.h"
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/arraydata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/displacement.h"
+#include "gromacs/analysisdata/modules/histogram.h"
+#include "gromacs/analysisdata/modules/lifetime.h"
+#include "gromacs/analysisdata/modules/plot.h"
 
 #endif

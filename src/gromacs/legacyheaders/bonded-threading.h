@@ -38,7 +38,7 @@
 #ifndef GMX_LEGACYHEADERS_BONDED_THREADING_H
 #define GMX_LEGACYHEADERS_BONDED_THREADING_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

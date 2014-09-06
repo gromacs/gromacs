@@ -43,8 +43,6 @@
 
 #include "cmdlineprogramcontext.h"
 
-#include "config.h"
-
 #include <cstdlib>
 #include <cstring>
 
@@ -60,6 +58,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "config.h"
 
 namespace gmx
 {

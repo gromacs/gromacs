@@ -81,9 +81,9 @@
 #ifndef GMX_SELECTION_H
 #define GMX_SELECTION_H
 
-#include "selection/selection.h"
-#include "selection/selectioncollection.h"
-#include "selection/selectionoption.h"
-#include "selection/selectionoptionmanager.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionoption.h"
+#include "gromacs/selection/selectionoptionmanager.h"
 
 #endif

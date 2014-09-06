@@ -39,16 +39,16 @@
 
 #include "gromacs/legacyheaders/viewit.h"
 
-#include "config.h"
-
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "config.h"
 
 static const int   can_view_ftp[] = {
     0,

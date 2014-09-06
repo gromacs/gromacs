@@ -38,8 +38,8 @@
 #ifndef GMX_LEGACYHEADERS_TYPES_NS_H
 #define GMX_LEGACYHEADERS_TYPES_NS_H
 
-#include "gromacs/legacyheaders/types/nsgrid.h"
 #include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/legacyheaders/types/nsgrid.h"
 
 #ifdef __cplusplus
 extern "C" {

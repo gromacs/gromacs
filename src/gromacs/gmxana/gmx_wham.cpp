@@ -43,8 +43,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,19 +51,20 @@
 #include <sstream>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/random/random.h"
-#include "gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/xvgr.h"
-
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 //! longest file names allowed in input files
 #define WHAM_MAXFILELEN 2048

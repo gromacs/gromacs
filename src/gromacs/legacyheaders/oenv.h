@@ -38,8 +38,8 @@
 #ifndef _oenv_h
 #define _oenv_h
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

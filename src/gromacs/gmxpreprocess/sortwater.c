@@ -36,12 +36,12 @@
  */
 #include "gmxpre.h"
 
+#include "sortwater.h"
+
 #include <stdlib.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "sortwater.h"
-
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 

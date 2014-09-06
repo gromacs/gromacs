@@ -41,11 +41,11 @@
 #ifdef GMX_INTERNAL_XDR
 
 
-#include <stdlib.h>
-#include <limits.h>
-#include <string.h>
-
 #include "gmx_system_xdr.h"
+
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 /* NB - THIS FILE IS ONLY USED ON MICROSOFT WINDOWS, since that

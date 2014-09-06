@@ -41,15 +41,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.

@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/options/abstractoption.h"
+#include "abstractoption.h"
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"

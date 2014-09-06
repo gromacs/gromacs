@@ -36,16 +36,16 @@
  */
 #include "gmxpre.h"
 
+#include "resall.h"
+
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "resall.h"
-#include "pgutil.h"
-#include "fflibutil.h"
-
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

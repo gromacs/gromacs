@@ -45,10 +45,10 @@
 #  include <sched.h>
 #endif
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #ifdef GMX_NATIVE_WINDOWS
 /* MSVC definition for __cpuid() */
     #ifdef _MSC_VER

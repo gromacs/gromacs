@@ -42,7 +42,6 @@
 #include "gmxpre.h"
 
 #include "basicoptions.h"
-#include "basicoptionstorage.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -55,6 +54,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "basicoptionstorage.h"
 
 namespace
 {

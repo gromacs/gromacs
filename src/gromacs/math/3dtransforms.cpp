@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/3dtransforms.h"
+#include "3dtransforms.h"
 
 #include <math.h>
 #include <stdio.h>

@@ -57,9 +57,8 @@
 #include <string>
 #include <vector>
 
-#include "../utility/common.h"
-
-#include "optionflags.h"
+#include "gromacs/options/optionflags.h"
+#include "gromacs/utility/common.h"
 
 namespace gmx
 {

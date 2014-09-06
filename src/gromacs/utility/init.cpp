@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/init.h"
+#include "init.h"
 
 #include "config.h"
 

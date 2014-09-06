@@ -43,8 +43,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "gmx_lapack.h"
 #include "gmx_arpack.h"
+#include "gmx_lapack.h"
 
 void
 eigensolver(real *   a,

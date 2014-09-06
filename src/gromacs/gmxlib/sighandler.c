@@ -36,13 +36,14 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "gromacs/legacyheaders/sighandler.h"
 
 #include <stdlib.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/sighandler.h"
+
+#include "config.h"
 
 const char *gmx_stop_cond_name[] =
 {

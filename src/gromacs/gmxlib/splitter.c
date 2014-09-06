@@ -43,7 +43,6 @@
 #include <string.h>
 
 #include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"

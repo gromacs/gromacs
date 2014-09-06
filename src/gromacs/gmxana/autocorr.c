@@ -40,16 +40,16 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/utility/futil.h"
-#include "gstat.h"
+#include "gromacs/gmxana/correl.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "correl.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MODE(x) ((mode & (x)) == (x))
 

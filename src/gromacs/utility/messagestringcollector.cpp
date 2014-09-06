@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/messagestringcollector.h"
+#include "messagestringcollector.h"
 
 #include <vector>
 

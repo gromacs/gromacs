@@ -38,8 +38,6 @@
 
 #include "fatalerror.h"
 
-#include "config.h"
-
 #include <cerrno>
 #include <cstdarg>
 #include <cstdlib>
@@ -57,6 +55,8 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 static bool                bDebug         = false;
 static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;

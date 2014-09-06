@@ -39,20 +39,20 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "gromacs/math/units.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/math/vec.h"
-#include "gstat.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trxio.h"
 
 #include "gromacs/bonded/bonded.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void print_one(const output_env_t oenv, const char *base, const char *name,
                const char *title, const char *ylabel, int nf, real time[],
