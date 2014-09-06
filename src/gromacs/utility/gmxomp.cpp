@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/gmxomp.h"
+#include "gmxomp.h"
 
 #include "config.h"
 

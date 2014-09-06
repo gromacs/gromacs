@@ -35,7 +35,7 @@
 #ifndef GMX_SIMD_MATH_AVX_256_DOUBLE_H
 #define GMX_SIMD_MATH_AVX_256_DOUBLE_H
 
-#include "simd_math.h"
+#include "gromacs/simd/simd_math.h"
 
 /* Temporary:
  * Alias some old SSE definitions to new SIMD definitions so we don't need

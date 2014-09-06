@@ -55,12 +55,12 @@
  * \ingroup module_simd
  */
 
+#include "config.h"
+
 #include <math.h>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
-
-#include "config.h"
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */

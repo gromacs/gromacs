@@ -36,22 +36,21 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fileio/xvgr.h"
+#include "xvgr.h"
 
 #include "config.h"
 
-#include <string.h>
 #include <ctype.h>
+#include <string.h>
 #include <time.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/oenv.h"
-
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"

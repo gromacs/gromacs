@@ -67,7 +67,7 @@
 #include <windows.h>
 #endif
 
-#include "basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C"

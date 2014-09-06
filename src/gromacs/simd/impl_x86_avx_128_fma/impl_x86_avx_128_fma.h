@@ -36,11 +36,12 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 
+#include "config.h"
+
 #include <math.h>
+
 #include <immintrin.h>
 #include <x86intrin.h>
-
-#include "config.h"
 
 /* x86 128-bit AVX with FMA SIMD instruction wrappers
  *

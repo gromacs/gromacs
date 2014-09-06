@@ -38,12 +38,11 @@
 #ifndef GMX_FILEIO_TRXIO_H
 #define GMX_FILEIO_TRXIO_H
 
-#include "../legacyheaders/readinp.h"
-#include "../legacyheaders/oenv.h"
-
-#include "filenm.h"
-#include "gmxfio.h"
-#include "pdbio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/readinp.h"
 
 #ifdef __cplusplus
 extern "C" {

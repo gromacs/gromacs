@@ -38,19 +38,19 @@
 
 #include <stdlib.h>
 
-#include "gromacs/utility/futil.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "pull.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
                              rvec *x,

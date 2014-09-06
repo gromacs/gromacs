@@ -38,10 +38,10 @@
 #ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
 #define GMX_GMXPREPROCESS_GEN_VSITE_H
 
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
-#include "hackblock.h"
 
 #ifdef __cplusplus
 extern "C"

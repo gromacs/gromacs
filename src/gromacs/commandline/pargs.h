@@ -44,11 +44,11 @@
 #ifndef GMX_COMMANDLINE_PARGS_H
 #define GMX_COMMANDLINE_PARGS_H
 
-#include "../legacyheaders/oenv.h"
-#include "../fileio/filenm.h"
-#include "../math/vectypes.h"
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C"

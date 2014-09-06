@@ -35,6 +35,7 @@
 #include "gmxpre.h"
 
 #include "baseversion.h"
+
 #include "baseversion-gen.h"
 
 const char *gmx_version()

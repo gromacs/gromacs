@@ -36,13 +36,14 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/legacyheaders/warninp.h"
+
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct warninp {
     gmx_bool bAllowWarnings;

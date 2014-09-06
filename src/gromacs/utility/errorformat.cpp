@@ -41,9 +41,9 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "errorformat.h"
+
+#include "config.h"
 
 #include <cctype>
 #include <cstdio>

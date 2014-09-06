@@ -35,10 +35,10 @@
 #ifndef _kernelutil_x86_sse2_double_h_
 #define _kernelutil_x86_sse2_double_h_
 
+#include "config.h"
+
 #include <math.h>
 #include <stdio.h>
-
-#include "config.h"
 
 
 /* Normal sum of four ymm registers */

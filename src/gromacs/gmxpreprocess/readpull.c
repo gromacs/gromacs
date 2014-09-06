@@ -36,22 +36,22 @@
  */
 #include "gmxpre.h"
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "readir.h"
 #include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static char pulldim[STRLEN];

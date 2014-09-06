@@ -41,13 +41,14 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/selection/selectioncollection.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"

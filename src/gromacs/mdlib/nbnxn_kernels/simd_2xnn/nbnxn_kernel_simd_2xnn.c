@@ -42,7 +42,6 @@
 #include "config.h"
 
 #include "gromacs/legacyheaders/typedefs.h"
-
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 
@@ -57,9 +56,10 @@
 
 #define GMX_SIMD_J_UNROLL_SIZE 2
 #include "nbnxn_kernel_simd_2xnn.h"
-#include "../nbnxn_kernel_common.h"
+
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 #include "gromacs/utility/fatalerror.h"
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels

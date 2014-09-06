@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "readir.h"
+#include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

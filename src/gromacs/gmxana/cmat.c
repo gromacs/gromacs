@@ -37,12 +37,13 @@
 #include "gmxpre.h"
 
 #include "cmat.h"
-#include "gromacs/utility/smalloc.h"
+
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/fileio/matio.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 t_mat *init_mat(int n1, gmx_bool b1D)
 {

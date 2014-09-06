@@ -36,37 +36,36 @@
  */
 #include "gmxpre.h"
 
-#include <string.h>
 #include <math.h>
+#include <string.h>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/viewit.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/statistics/statistics.h"
-#include "gstat.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/calcmu.h"
-#include "gromacs/fileio/enxio.h"
-#include "gmx_ana.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/fileio/trxio.h"
-
 #include "gromacs/bonded/bonded.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/calcmu.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/random/random.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)

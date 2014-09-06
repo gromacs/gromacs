@@ -36,10 +36,12 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
-#include <stdarg.h>
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/md_logging.h"
+
+#include <stdarg.h>
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/types/commrec.h"
 
 
 void md_print_info(const t_commrec *cr, FILE *fplog,

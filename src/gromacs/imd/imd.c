@@ -49,10 +49,10 @@
 
 #include "imd.h"
 
+#include "config.h"
+
 #include <errno.h>
 #include <string.h>
-
-#include "config.h"
 
 #ifdef GMX_NATIVE_WINDOWS
 #include <windows.h>

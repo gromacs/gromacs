@@ -43,26 +43,23 @@
 
 #include "cmdlinemodulemanager.h"
 
+#include "config.h"
+
 #include <cstdio>
 
 #include <string>
 #include <utility>
 
-#include "config.h"
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#include "gromacs/legacyheaders/copyrite.h"
-
 #include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/commandline/cmdlinehelpmodule.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodule.h"
-#include "gromacs/commandline/cmdlinemodulemanager-impl.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
@@ -70,6 +67,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "cmdlinehelpmodule.h"
+#include "cmdlinemodulemanager-impl.h"
 
 namespace gmx
 {

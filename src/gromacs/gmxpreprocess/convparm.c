@@ -37,20 +37,21 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "convparm.h"
+
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "topio.h"
-#include "toputil.h"
-#include "convparm.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/topio.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gpp_atomtype.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int round_check(real r, int limit, int ftype, const char *name)
 {

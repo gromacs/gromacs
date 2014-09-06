@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <math.h>
 
 #include "gromacs/commandline/pargs.h"
@@ -60,8 +62,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "config.h"
 
 /*#define HAVE_NN_LOOPS*/
 

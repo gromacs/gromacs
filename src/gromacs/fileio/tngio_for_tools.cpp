@@ -36,9 +36,9 @@
 
 #include "tngio_for_tools.h"
 
-#include <math.h>
-
 #include "config.h"
+
+#include <math.h>
 
 #ifdef GMX_USE_TNG
 #include "tng/tng_io.h"

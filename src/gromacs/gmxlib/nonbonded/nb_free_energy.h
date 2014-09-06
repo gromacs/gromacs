@@ -38,7 +38,7 @@
 #ifndef _nb_free_energy_h_
 #define _nb_free_energy_h_
 
-#include "nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
 void

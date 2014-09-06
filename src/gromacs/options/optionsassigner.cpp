@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/options/optionsassigner.h"
+#include "optionsassigner.h"
 
 #include <deque>
 

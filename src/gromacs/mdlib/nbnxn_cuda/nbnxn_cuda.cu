@@ -36,10 +36,10 @@
 
 #include "nbnxn_cuda.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <stdlib.h>
-
-#include "config.h"
 
 #if defined(_MSVC)
 #include <limits>
@@ -58,9 +58,10 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_types.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/cstringutil.h"
+
+#include "nbnxn_cuda_types.h"
 
 #if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
 #define USE_TEXOBJ

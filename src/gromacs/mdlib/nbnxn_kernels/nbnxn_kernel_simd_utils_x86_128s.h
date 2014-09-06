@@ -35,9 +35,9 @@
 #ifndef _nbnxn_kernel_simd_utils_x86_128s_h_
 #define _nbnxn_kernel_simd_utils_x86_128s_h_
 
-#include "gromacs/legacyheaders/types/simple.h"
-
 #include "config.h"
+
+#include "gromacs/legacyheaders/types/simple.h"
 
 /* This files contains all functions/macros for the SIMD kernels
  * which have explicit dependencies on the j-cluster size and/or SIMD-width.

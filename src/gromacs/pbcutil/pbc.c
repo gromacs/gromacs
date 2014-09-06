@@ -36,18 +36,17 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/pbcutil/pbc.h"
+#include "pbc.h"
 
 #include <assert.h>
 #include <math.h>
 
-#include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"

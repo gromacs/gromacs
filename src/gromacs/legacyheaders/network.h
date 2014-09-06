@@ -45,8 +45,8 @@
 
 #include <stdio.h>
 
-#include "../utility/basedefinitions.h"
-#include "../utility/fatalerror.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
 
 #ifdef __cplusplus
 extern "C" {

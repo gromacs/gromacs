@@ -36,10 +36,11 @@
 #ifndef GMX_SIMD_IMPL_INTEL_MIC_H
 #define GMX_SIMD_IMPL_INTEL_MIC_H
 
-#include <math.h>
-#include <immintrin.h>
-
 #include "config.h"
+
+#include <math.h>
+
+#include <immintrin.h>
 
 /* Intel Xeon Phi, or
  * the-artist-formerly-known-as-Knight's-corner, or

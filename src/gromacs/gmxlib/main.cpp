@@ -38,13 +38,13 @@
 
 #include "gromacs/legacyheaders/main.h"
 
+#include "config.h"
+
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#include "config.h"
 
 #ifdef GMX_NATIVE_WINDOWS
 #include <process.h>

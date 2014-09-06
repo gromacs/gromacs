@@ -34,9 +34,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/pbcutil/ishift.h"
-
 #include "nbnxn_kernel_common.h"
+
+#include "gromacs/pbcutil/ishift.h"
 
 static void
 clear_f_all(const nbnxn_atomdata_t *nbat, real *f)

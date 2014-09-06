@@ -35,6 +35,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <errno.h>
 #include <stdlib.h>
 
@@ -45,8 +47,6 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "config.h"
 
 #ifdef GMX_DOUBLE
 #define FFTWPREFIX(name) fftw_ ## name

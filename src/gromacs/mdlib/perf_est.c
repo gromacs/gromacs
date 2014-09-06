@@ -36,16 +36,16 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/legacyheaders/perf_est.h"
+
 #include <math.h>
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "gromacs/legacyheaders/perf_est.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "nbnxn_search.h"
-#include "nbnxn_consts.h"
 
 /* Computational cost of bonded, non-bonded and PME calculations.
  * This will be machine dependent.

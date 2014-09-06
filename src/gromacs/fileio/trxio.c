@@ -38,6 +38,8 @@
 
 #include "trxio.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <math.h>
 
@@ -59,8 +61,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "config.h"
 
 #ifdef GMX_USE_PLUGINS
 #include "gromacs/fileio/vmdio.h"

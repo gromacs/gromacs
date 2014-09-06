@@ -44,7 +44,6 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/txtdump.h"
-
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

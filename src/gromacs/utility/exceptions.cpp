@@ -51,8 +51,8 @@
 #include <stdexcept>
 #include <typeinfo>
 
-#include <boost/exception/get_error_info.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/exception/get_error_info.hpp>
 
 #include "thread_mpi/system_error.h"
 

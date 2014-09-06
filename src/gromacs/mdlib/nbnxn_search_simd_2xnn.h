@@ -34,7 +34,7 @@
  */
 
 /* Get the half-width SIMD stuff from the kernel utils files */
-#include "nbnxn_kernels/nbnxn_kernel_simd_utils.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
 
 
 #if GMX_SIMD_REAL_WIDTH >= 2*NBNXN_CPU_CLUSTER_I_SIZE

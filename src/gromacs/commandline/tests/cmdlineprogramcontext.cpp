@@ -41,19 +41,20 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/commandline/cmdlineprogramcontext.h"
+
+#include "config.h"
+
 #include <string>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <gtest/gtest.h>
 
-#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/path.h"
 
 #include "testutils/cmdlinetest.h"
-
-#include "config.h"
 
 using gmx::test::CommandLine;
 using gmx::Path;

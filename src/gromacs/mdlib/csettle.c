@@ -40,7 +40,6 @@
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/constr.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"

@@ -47,10 +47,11 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/analysisdata/analysisdata.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 

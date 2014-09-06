@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/legacyheaders/qmmm.h"
+
 #include "config.h"
 
 #include <math.h>
@@ -43,25 +45,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/topology/mtop_util.h"
-
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

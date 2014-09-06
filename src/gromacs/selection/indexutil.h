@@ -65,8 +65,8 @@
 
 #include <string>
 
-#include "../legacyheaders/types/simple.h"
-#include "../topology/block.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/topology/block.h"
 
 struct t_topology;
 

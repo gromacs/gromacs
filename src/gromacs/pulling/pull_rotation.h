@@ -48,9 +48,9 @@
 #ifndef GMX_PULLING_PULL_ROTATION_H
 #define GMX_PULLING_PULL_ROTATION_H
 
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/timing/wallcycle.h"
-#include "../fileio/filenm.h"
 
 
 #ifdef __cplusplus

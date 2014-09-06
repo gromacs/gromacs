@@ -37,10 +37,10 @@
 #ifndef GMX_GMXANA_GSTAT_H
 #define GMX_GMXANA_GSTAT_H
 
-#include "../legacyheaders/typedefs.h"
-#include "../legacyheaders/oenv.h"
-#include "../commandline/pargs.h"
-#include "../topology/index.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/index.h"
 
 #ifdef __cplusplus
 extern "C" {

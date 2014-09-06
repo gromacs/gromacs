@@ -43,6 +43,8 @@
 
 #include "file.h"
 
+#include "config.h"
+
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -52,8 +54,6 @@
 #include <vector>
 
 #include <sys/stat.h>
-
-#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

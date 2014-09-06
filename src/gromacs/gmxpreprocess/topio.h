@@ -38,10 +38,10 @@
 #ifndef GMX_GMXPREPROCESS_TOPIO_H
 #define GMX_GMXPREPROCESS_TOPIO_H
 
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "readir.h"
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -37,12 +37,12 @@
 #include "gmxpre.h"
 
 #include "adress.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/math/vec.h"
 
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
 real

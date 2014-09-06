@@ -40,21 +40,20 @@
 
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
-#include "addconf.h"
-#include "read-conformation.h"
-#include "gromacs/fileio/pdbio.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/gmxpreprocess/addconf.h"
+#include "gromacs/gmxpreprocess/read-conformation.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef DEBUG

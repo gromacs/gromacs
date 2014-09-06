@@ -41,10 +41,12 @@
 
 #include "gmxpre.h"
 
-#include "../insert-molecules.h"
-#include "testutils/integrationtests.h"
-#include "testutils/cmdlinetest.h"
+#include "gromacs/gmxpreprocess/insert-molecules.h"
+
 #include "gromacs/utility/futil.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/integrationtests.h"
 
 namespace
 {
