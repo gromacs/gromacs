@@ -39,8 +39,6 @@
 
 #include "cstringutil.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -49,6 +47,9 @@
 #include <time.h>
 
 #include <sys/types.h>
+
+#include "config.h"
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif

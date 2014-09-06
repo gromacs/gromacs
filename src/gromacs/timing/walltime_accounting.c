@@ -35,11 +35,12 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/timing/walltime_accounting.h"
+#include "walltime_accounting.h"
+
+#include <time.h>
 
 #include "config.h"
 
-#include <time.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
