@@ -36,22 +36,22 @@
  */
 #include "gmxpre.h"
 
+#include <errno.h>
+#include <stdio.h>
+
 #include "config.h"
 
-#include <stdio.h>
-#include <errno.h>
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
 
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio_int.h"
+#include "gromacs/fileio/md5.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
-#include "md5.h"
-
-#include "gmxfio_int.h"
+#include "gromacs/utility/smalloc.h"
 
 
 /*******************************************************************

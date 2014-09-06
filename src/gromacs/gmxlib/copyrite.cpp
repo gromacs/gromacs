@@ -38,29 +38,28 @@
 
 #include "gromacs/legacyheaders/copyrite.h"
 
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+#include "config.h"
+
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
-
 #ifdef HAVE_EXTRAE
- #include "extrae_user_events.h"
+#include "extrae_user_events.h"
 #endif
 
 #include <boost/version.hpp>
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include "gromacs/legacyheaders/macros.h"
-
+#include "buildinfo.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/baseversion.h"
@@ -70,8 +69,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "buildinfo.h"
 
 static gmx_bool be_cool(void)
 {
