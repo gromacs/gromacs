@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/selection/position.h"
+#include "position.h"
 
 #include <string.h>
 

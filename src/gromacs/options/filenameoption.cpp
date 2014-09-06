@@ -42,7 +42,6 @@
 #include "gmxpre.h"
 
 #include "filenameoption.h"
-#include "filenameoptionstorage.h"
 
 #include <cstring>
 
@@ -56,6 +55,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "filenameoptionstorage.h"
 
 namespace gmx
 {

@@ -35,13 +35,14 @@
  */
 #include "gmxpre.h"
 
+#include "gmx_arpack.h"
+
 #include <math.h>
 #include <string.h>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "gmx_arpack.h"
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 

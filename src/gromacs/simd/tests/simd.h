@@ -75,7 +75,9 @@
  * \ingroup module_simd
  */
 #include <vector>
+
 #include <gtest/gtest.h>
+
 #include "gromacs/simd/simd.h"
 
 #include "base.h"

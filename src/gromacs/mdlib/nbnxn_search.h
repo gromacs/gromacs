@@ -37,7 +37,7 @@
 #define _nbnxn_search_h
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "nbnxn_pairlist.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
 
 #ifdef __cplusplus
 extern "C" {

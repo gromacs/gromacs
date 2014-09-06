@@ -38,20 +38,19 @@
 
 #include <assert.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/update.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define NTROTTERPARTS 3
 

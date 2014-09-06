@@ -41,12 +41,13 @@
  */
 #include "gmxpre.h"
 
+#include "symrec.h"
+
 #include <map>
 #include <string>
 #include <utility>
 
 #include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -54,7 +55,6 @@
 
 #include "poscalc.h"
 #include "selelem.h"
-#include "symrec.h"
 
 namespace gmx
 {

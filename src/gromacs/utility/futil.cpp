@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/futil.h"
+#include "futil.h"
 
 #include "config.h"
 
@@ -44,9 +44,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #ifdef HAVE_DIRENT_H
 /* POSIX */
@@ -58,9 +58,9 @@
 #endif
 
 #ifdef GMX_NATIVE_WINDOWS
-#include <windows.h>
 #include <direct.h>
 #include <io.h>
+#include <windows.h>
 #endif
 
 /* Windows file stuff, only necessary for visual studio */

@@ -53,7 +53,7 @@
  *
  **************************************************************/
 
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 #ifdef __cplusplus
 extern "C" {

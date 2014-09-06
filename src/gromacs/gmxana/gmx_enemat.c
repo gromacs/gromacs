@@ -36,25 +36,25 @@
  */
 #include "gmxpre.h"
 
-#include <string.h>
 #include <math.h>
+#include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/enxio.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gstat.h"
-#include "gromacs/math/units.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/strdb.h"
-#include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static int search_str2(int nstr, char **str, char *key)

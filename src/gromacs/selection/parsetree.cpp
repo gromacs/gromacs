@@ -221,15 +221,15 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
+#include "parsetree.h"
+
 #include <stdarg.h>
+#include <stdio.h>
 
 #include <boost/exception_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
@@ -238,12 +238,12 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "keywords.h"
-#include "parsetree.h"
+#include "poscalc.h"
+#include "scanner.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
+#include "selmethod.h"
 #include "symrec.h"
-
-#include "scanner.h"
 
 using gmx::SelectionParserValue;
 using gmx::SelectionParserValueList;

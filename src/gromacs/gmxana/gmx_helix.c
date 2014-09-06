@@ -39,26 +39,25 @@
 #include <math.h>
 #include <string.h>
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "fitahx.h"
-#include "gromacs/utility/futil.h"
-#include "gstat.h"
-#include "hxprops.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/fitahx.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/hxprops.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/viewit.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_helix(int argc, char *argv[])
 {

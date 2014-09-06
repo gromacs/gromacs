@@ -38,11 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_PDB2TOP_H
 #define GMX_GMXPREPROCESS_PDB2TOP_H
 
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
-#include "toputil.h"
-#include "hackblock.h"
 
 #ifdef __cplusplus
 extern "C"

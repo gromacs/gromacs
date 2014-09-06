@@ -38,11 +38,11 @@
 
 #include "utilities.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
-
-#include "config.h"
 
 #ifdef HAVE__FINITE
 #include <float.h>

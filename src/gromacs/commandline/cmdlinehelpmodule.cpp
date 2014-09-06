@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/commandline/cmdlinehelpmodule.h"
+#include "cmdlinehelpmodule.h"
 
 #include <string>
 #include <vector>
@@ -51,7 +51,6 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
@@ -64,6 +63,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "shellcompletions.h"
 
 namespace gmx
 {

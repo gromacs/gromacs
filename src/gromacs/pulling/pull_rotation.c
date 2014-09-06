@@ -36,37 +36,36 @@
  */
 #include "gmxpre.h"
 
+#include "pull_rotation.h"
+
 #include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/qsort_threadsafe.h"
-#include "gromacs/pulling/pull_rotation.h"
-#include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/math/utilities.h"
+#include "gromacs/utility/smalloc.h"
 
 static char *RotStr = {"Enforced rotation:"};
 

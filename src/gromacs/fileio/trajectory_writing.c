@@ -34,17 +34,17 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/sim_util.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "confio.h"
 #include "trajectory_writing.h"
-#include "mdoutf.h"
 
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/mdoutf.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/smalloc.h"
 
 void
 do_md_trajectory_writing(FILE           *fplog,

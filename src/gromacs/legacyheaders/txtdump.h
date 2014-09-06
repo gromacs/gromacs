@@ -40,8 +40,9 @@
 
 
 #include <stdio.h>
+
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "../fileio/tpxio.h"
 
 #ifdef __cplusplus
 extern "C" {

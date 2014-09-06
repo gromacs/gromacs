@@ -44,8 +44,8 @@
  */
 #include "gmxpre.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

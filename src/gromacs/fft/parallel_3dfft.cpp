@@ -35,19 +35,18 @@
  */
 #include "gmxpre.h"
 
+#include "parallel_3dfft.h"
+
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "gromacs/fft/fft.h"
-#include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/fft/fft5d.h"
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/utility/gmxmpi.h"
-
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "fft5d.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 struct gmx_parallel_3dfft  {
     fft5d_plan p1, p2;

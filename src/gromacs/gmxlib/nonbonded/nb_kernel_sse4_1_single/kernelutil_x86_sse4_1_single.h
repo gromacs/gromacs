@@ -35,9 +35,9 @@
 #ifndef _kernelutil_x86_sse4_1_single_h_
 #define _kernelutil_x86_sse4_1_single_h_
 
-#include <math.h>
-
 #include "config.h"
+
+#include <math.h>
 
 #undef gmx_restrict
 #define gmx_restrict

@@ -45,8 +45,8 @@
 #include <string>
 #include <vector>
 
-#include "basicoptions.h"
-#include "optionstoragetemplate.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/optionstoragetemplate.h"
 
 namespace gmx
 {

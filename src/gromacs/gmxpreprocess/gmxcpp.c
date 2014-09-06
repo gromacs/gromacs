@@ -36,21 +36,23 @@
  */
 #include "gmxpre.h"
 
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include "gmxcpp.h"
+
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <ctype.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
+#include <sys/types.h>
+
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gmxcpp.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     char *name;

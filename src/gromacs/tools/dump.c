@@ -36,12 +36,12 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

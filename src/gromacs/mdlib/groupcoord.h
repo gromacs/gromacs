@@ -48,6 +48,7 @@
  */
 
 #include <stdio.h>
+
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 

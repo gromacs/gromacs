@@ -48,9 +48,12 @@
  */
 
 #include <vector>
+
 #include <gtest/gtest.h>
+
 #include "gromacs/simd/simd.h"
-#include "gromacs/simd/tests/base.h"
+
+#include "base.h"
 
 namespace gmx
 {

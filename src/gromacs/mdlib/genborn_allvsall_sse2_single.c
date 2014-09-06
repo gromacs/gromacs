@@ -37,15 +37,14 @@
 #include "gmxpre.h"
 
 #include <math.h>
-#include "gromacs/legacyheaders/types/simple.h"
 
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
-
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/math/units.h"
 #include "gromacs/legacyheaders/genborn.h"
-#include "genborn_allvsall.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/genborn_allvsall.h"
+#include "gromacs/utility/smalloc.h"
 
 #if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
 

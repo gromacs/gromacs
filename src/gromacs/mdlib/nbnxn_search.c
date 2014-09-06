@@ -37,6 +37,8 @@
 
 #include "nbnxn_search.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <math.h>
 #include <string.h>
@@ -54,8 +56,6 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "config.h"
 
 /* nbnxn_internal.h included gromacs/simd/macros.h */
 #include "gromacs/mdlib/nbnxn_internal.h"

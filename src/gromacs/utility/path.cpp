@@ -43,6 +43,8 @@
 
 #include "path.h"
 
+#include "config.h"
+
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
@@ -51,8 +53,6 @@
 #include <algorithm>
 
 #include <sys/stat.h>
-
-#include "config.h"
 
 #ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>

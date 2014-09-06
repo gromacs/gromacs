@@ -47,7 +47,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

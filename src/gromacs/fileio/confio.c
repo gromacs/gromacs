@@ -42,25 +42,24 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/futil.h"
-#include "xdrf.h"
-#include "filenm.h"
-#include "pdbio.h"
-#include "tpxio.h"
-#include "trxio.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gmxfio.h"
-
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define CHAR_SHIFT 24

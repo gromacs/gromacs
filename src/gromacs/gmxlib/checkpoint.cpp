@@ -39,14 +39,14 @@
 
 #include "gromacs/legacyheaders/checkpoint.h"
 
+#include "config.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #include <fcntl.h>
-
-#include "config.h"
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>

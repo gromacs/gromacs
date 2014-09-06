@@ -35,11 +35,12 @@
 
 #include "gmxpre.h"
 
+#include "cudautils.cuh"
+
 #include <stdlib.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "cudautils.cuh"
+#include "gromacs/utility/smalloc.h"
 
 /*** Generic CUDA data operation wrappers ***/
 

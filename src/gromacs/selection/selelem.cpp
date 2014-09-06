@@ -41,12 +41,12 @@
  */
 #include "gmxpre.h"
 
+#include "selelem.h"
+
 #include <cstring>
 
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -54,7 +54,7 @@
 
 #include "keywords.h"
 #include "mempool.h"
-#include "selelem.h"
+#include "poscalc.h"
 #include "selmethod.h"
 
 /*!

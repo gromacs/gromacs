@@ -38,9 +38,11 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/utility/cstringutil.h"
 #include "pgutil.h"
+
 #include <string.h>
+
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
 #define BUFSIZE 1024

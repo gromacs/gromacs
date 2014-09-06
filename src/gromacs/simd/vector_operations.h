@@ -46,9 +46,9 @@
 #ifndef GMX_SIMD_VECTOR_OPERATIONS_H
 #define GMX_SIMD_VECTOR_OPERATIONS_H
 
-#include "gromacs/simd/simd.h"
-
 #include "config.h"
+
+#include "gromacs/simd/simd.h"
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */

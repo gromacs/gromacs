@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/trajectoryanalysis/modules.h"
+#include "modules.h"
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"

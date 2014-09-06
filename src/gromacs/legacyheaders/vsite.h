@@ -41,7 +41,7 @@
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "../pbcutil/ishift.h"
+#include "gromacs/pbcutil/ishift.h"
 
 #ifdef __cplusplus
 extern "C" {

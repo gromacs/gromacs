@@ -34,14 +34,13 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/topology/mtop_util.h"
+#include "mtop_util.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
-
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"

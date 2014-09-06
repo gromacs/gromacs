@@ -52,8 +52,8 @@
 #define GMX_BONDED_RESTCBT_H
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/idef.h"
 
 #ifdef __cplusplus
 extern "C" {

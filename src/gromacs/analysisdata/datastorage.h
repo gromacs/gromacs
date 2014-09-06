@@ -45,11 +45,10 @@
 
 #include <vector>
 
-#include "../utility/common.h"
-#include "../utility/gmxassert.h"
-#include "../utility/real.h"
-
-#include "dataframe.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

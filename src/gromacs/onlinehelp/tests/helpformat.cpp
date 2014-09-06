@@ -41,9 +41,9 @@
  */
 #include "gmxpre.h"
 
-#include <gtest/gtest.h>
-
 #include "gromacs/onlinehelp/helpformat.h"
+
+#include <gtest/gtest.h>
 
 #include "testutils/stringtest.h"
 

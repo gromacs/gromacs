@@ -47,6 +47,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/options/optionsassigner.h"
+
 #include <limits>
 #include <vector>
 
@@ -54,7 +56,6 @@
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/options/optionsassigner.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 

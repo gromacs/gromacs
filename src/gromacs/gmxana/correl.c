@@ -37,13 +37,14 @@
 
 #include "gmxpre.h"
 
+#include "correl.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/smalloc.h"
-#include "correl.h"
 
 #define SWAP(a, b) tempr = (a); (a) = (b); (b) = tempr
 

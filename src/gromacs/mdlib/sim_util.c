@@ -38,12 +38,12 @@
 
 #include "gromacs/legacyheaders/sim_util.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "config.h"
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -78,7 +78,6 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/adress.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_search.h"
@@ -98,6 +97,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "adress.h"
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,

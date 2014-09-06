@@ -60,8 +60,8 @@
   #define GMX_IMD
   #endif
 #else
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #define GMX_IMD
 #endif
 
