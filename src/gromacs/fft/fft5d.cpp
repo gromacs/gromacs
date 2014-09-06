@@ -34,13 +34,22 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "fft5d.h"
 
-#include <algorithm>
-
+#include <assert.h>
+#include <float.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <algorithm>
+
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 #ifdef NOGMX
 #define GMX_PARALLEL_ENV_INITIALIZED 1
@@ -52,20 +61,12 @@
 #endif
 #endif
 
-#include "gromacs/utility/gmxmpi.h"
-
 #ifdef GMX_OPENMP
 /* TODO: Do we still need this? Are we still planning ot use fftw + OpenMP? */
 #define FFT5D_THREADS
 /* requires fftw compiled with openmp */
 /* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif
-
-#include "fft5d.h"
-#include <float.h>
-#include <math.h>
-#include <assert.h>
-#include "gromacs/utility/smalloc.h"
 
 #ifndef __FLT_EPSILON__
 #define __FLT_EPSILON__ FLT_EPSILON
@@ -76,11 +77,9 @@
 FILE* debug = 0;
 #endif
 
-#include "gromacs/utility/fatalerror.h"
-
-
 #ifdef GMX_FFT_FFTW3
 #include "thread_mpi/mutex.h"
+
 #include "gromacs/utility/exceptions.h"
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */
