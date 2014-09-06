@@ -36,37 +36,35 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/fileio/xtcio.h"
-#include "gromacs/fileio/enxio.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/tngio.h"
-#include "gromacs/fileio/tngio_for_tools.h"
+#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/mtxio.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,

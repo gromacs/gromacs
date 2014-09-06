@@ -36,13 +36,14 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/utilities.h"
+#include "utilities.h"
+
+#include <assert.h>
+#include <limits.h>
+#include <math.h>
 
 #include "config.h"
 
-#include <assert.h>
-#include <math.h>
-#include <limits.h>
 #ifdef HAVE__FINITE
 #include <float.h>
 #endif

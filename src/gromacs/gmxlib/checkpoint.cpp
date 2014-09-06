@@ -39,48 +39,45 @@
 
 #include "gromacs/legacyheaders/checkpoint.h"
 
-#include "config.h"
-
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #include <fcntl.h>
+
+#include "config.h"
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #ifdef GMX_NATIVE_WINDOWS
 /* _chsize_s */
 #include <io.h>
 #include <sys/locking.h>
 #endif
 
+#include "buildinfo.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xdr_datatype.h"
+#include "gromacs/fileio/xdrf.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/network.h"
-
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/xdrf.h"
-#include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "buildinfo.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

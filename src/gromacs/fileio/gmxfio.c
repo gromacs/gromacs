@@ -36,11 +36,14 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "gmxfio.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "config.h"
+
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
@@ -50,16 +53,14 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio_int.h"
+#include "gromacs/fileio/md5.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
-#include "filenm.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gmxfio.h"
-#include "md5.h"
-
-#include "gmxfio_int.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* This is the new improved and thread safe version of gmxfio. */
 

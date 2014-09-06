@@ -36,13 +36,15 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "gromacs/legacyheaders/main.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <time.h>
+
+#include "config.h"
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -54,19 +56,17 @@
 #include <process.h>
 #endif
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/main.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
-
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
