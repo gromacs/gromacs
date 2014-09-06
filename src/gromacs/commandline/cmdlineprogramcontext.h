@@ -53,8 +53,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../utility/common.h"
-#include "../utility/programcontext.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/programcontext.h"
 
 namespace gmx
 {

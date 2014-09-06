@@ -45,9 +45,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../abstractdata.h"
-#include "../arraydata.h"
-#include "../datamodule.h"
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/arraydata.h"
+#include "gromacs/analysisdata/datamodule.h"
 
 namespace gmx
 {

@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/errorcodes.h"
+#include "errorcodes.h"
 
 #include <cstdlib>
 

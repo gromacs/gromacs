@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/analysisdata/datamodulemanager.h"
+#include "datamodulemanager.h"
 
 #include <vector>
 

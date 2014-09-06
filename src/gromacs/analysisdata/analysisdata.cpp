@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/analysisdata/analysisdata.h"
+#include "analysisdata.h"
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"

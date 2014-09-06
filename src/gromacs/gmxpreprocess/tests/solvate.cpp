@@ -41,10 +41,12 @@
 
 #include "gmxpre.h"
 
-#include "../solvate.h"
-#include "testutils/integrationtests.h"
-#include "testutils/cmdlinetest.h"
+#include "gromacs/gmxpreprocess/solvate.h"
+
 #include "gromacs/utility/futil.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/integrationtests.h"
 
 namespace
 {

@@ -34,15 +34,17 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "gromacs/simd/simd_math.h"
 
 #include <vector>
+
 #include "gromacs/math/utilities.h"
-#include "gromacs/simd/simd.h"
-#include "gromacs/simd/simd_math.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/simd/simd.h"
 
 #include "simd.h"
+
+#include "config.h"
 
 namespace gmx
 {

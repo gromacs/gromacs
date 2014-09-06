@@ -36,36 +36,35 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
-#include <math.h>
-#include <ctype.h>
-
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/futil.h"
 #include "pdb2top.h"
-#include "gpp_nextnb.h"
-#include "topdirs.h"
-#include "toputil.h"
-#include "h_db.h"
-#include "pgutil.h"
-#include "resall.h"
-#include "topio.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gen_ad.h"
-#include "gromacs/fileio/filenm.h"
-#include "gen_vsite.h"
-#include "add_par.h"
-#include "toputil.h"
-#include "fflibutil.h"
-#include "gromacs/legacyheaders/copyrite.h"
 
+#include <ctype.h>
+#include <math.h>
+#include <stdio.h>
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/gen_ad.h"
+#include "gromacs/gmxpreprocess/gen_vsite.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/topio.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 

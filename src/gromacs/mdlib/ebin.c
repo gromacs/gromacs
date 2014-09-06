@@ -37,15 +37,17 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "gromacs/legacyheaders/ebin.h"
+
 #include <math.h>
 #include <string.h>
-#include "gromacs/utility/smalloc.h"
+
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/ebin.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/math/units.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 t_ebin *mk_ebin(void)
 {

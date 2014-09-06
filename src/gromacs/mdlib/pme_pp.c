@@ -37,23 +37,22 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
-
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
+
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/sighandler.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/pme.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/sighandler.h"
-
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "config.h"
 
 enum {
     eCommType_ChargeA, eCommType_ChargeB, eCommType_SQRTC6A, eCommType_SQRTC6B,

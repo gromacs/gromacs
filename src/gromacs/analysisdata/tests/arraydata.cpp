@@ -46,9 +46,9 @@
  */
 #include "gmxpre.h"
 
-#include <gtest/gtest.h>
-
 #include "gromacs/analysisdata/arraydata.h"
+
+#include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/testasserts.h"

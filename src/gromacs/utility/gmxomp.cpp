@@ -40,12 +40,12 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/gmxomp.h"
-
-#include "config.h"
+#include "gmxomp.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "config.h"
 
 #ifdef GMX_OPENMP
 #include <omp.h>

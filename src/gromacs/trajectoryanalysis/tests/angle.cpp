@@ -41,9 +41,9 @@
  */
 #include "gmxpre.h"
 
-#include <gtest/gtest.h>
-
 #include "gromacs/trajectoryanalysis/modules/angle.h"
+
+#include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
 

@@ -36,26 +36,26 @@
  */
 #include "gmxpre.h"
 
+#include "gen_vsite.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gen_vsite.h"
-#include "resall.h"
-#include "add_par.h"
-#include "gromacs/math/vec.h"
-#include "toputil.h"
-#include "gromacs/math/units.h"
+#include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/futil.h"
-#include "gpp_atomtype.h"
-#include "fflibutil.h"
-
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define MAXNAME 32

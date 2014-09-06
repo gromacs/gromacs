@@ -34,20 +34,20 @@
  */
 #include "gmxpre.h"
 
+#include "calc_verletbuf.h"
+
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
 #include <sys/types.h>
 
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/coulomb.h"
-#include "calc_verletbuf.h"
-#include "../mdlib/nbnxn_consts.h"
-
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

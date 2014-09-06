@@ -36,21 +36,20 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/timing/wallcycle.h"
-
-#include "config.h"
+#include "wallcycle.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "cyclecounter.h"
+#include "config.h"
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last

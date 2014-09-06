@@ -39,11 +39,13 @@
  * Routines for Filters and convolutions
  */
 
-#include <math.h>
-#include "gromacs/legacyheaders/typedefs.h"
 #include "dens_filter.h"
-#include "gromacs/utility/smalloc.h"
+
+#include <math.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_DOUBLE
 #define EXP(x) (exp(x))

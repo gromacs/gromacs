@@ -39,6 +39,7 @@
 #define _coulomb_h
 
 #include <stdio.h>
+
 #include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus

@@ -44,11 +44,12 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/commandline/cmdlineparser.h"
+
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 

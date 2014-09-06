@@ -35,11 +35,11 @@
 #ifndef _NB_KERNEL_ALLVSALL_H
 #define _NB_KERNEL_ALLVSALL_H
 
-#include "config.h"
-
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "../nb_kernel.h"
+#include "gromacs/legacyheaders/types/simple.h"
+
+#include "config.h"
 
 void
 nb_kernel_allvsall(t_nblist *                nlist,

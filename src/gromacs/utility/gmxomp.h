@@ -49,9 +49,9 @@
 #ifndef GMX_UTILITY_OMP_H
 #define GMX_UTILITY_OMP_H
 
-#include "config.h"
-
 #include <stdio.h>
+
+#include "config.h"
 
 #ifndef GMX_NATIVE_WINDOWS
 /* Ugly hack because the openmp implementation below hacks into the SIMD
@@ -67,7 +67,7 @@
 #include <windows.h>
 #endif
 
-#include "basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C"
