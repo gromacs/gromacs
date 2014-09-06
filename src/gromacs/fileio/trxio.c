@@ -38,34 +38,33 @@
 
 #include "trxio.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <math.h>
 
-#ifdef GMX_USE_PLUGINS
-#include "vmdio.h"
-#endif
-#include "gmxfio.h"
-#include "trxio.h"
-#include "tpxio.h"
-#include "trnio.h"
-#include "tngio.h"
-#include "tngio_for_tools.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/timecontrol.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "xtcio.h"
-#include "pdbio.h"
-#include "confio.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "xdrf.h"
-
-#include "gromacs/fileio/timecontrol.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "config.h"
+
+#ifdef GMX_USE_PLUGINS
+#include "gromacs/fileio/vmdio.h"
+#endif
 
 /* defines for frame counter output */
 #define SKIP1   10

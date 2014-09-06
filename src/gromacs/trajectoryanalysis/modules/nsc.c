@@ -36,18 +36,18 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include "nsc.h"
+
 #include <math.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-/* Modified DvdS */
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
-#include "nsc.h"
 
 #define TEST_NSC 0
 

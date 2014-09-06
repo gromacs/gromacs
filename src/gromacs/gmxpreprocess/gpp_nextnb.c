@@ -37,14 +37,15 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "gpp_nextnb.h"
+
 #include <stdlib.h>
 
-/* #define DEBUG_NNB */
-#include "gpp_nextnb.h"
-#include "toputil.h"
-
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+/* #define DEBUG_NNB */
 
 typedef struct {
     int ai, aj;

@@ -50,9 +50,10 @@
 
 #include <algorithm>
 
+#include <sys/stat.h>
+
 #include "config.h"
 
-#include <sys/stat.h>
 #ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #else

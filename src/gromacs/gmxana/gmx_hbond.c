@@ -36,34 +36,34 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
 #include <math.h>
 
-/*#define HAVE_NN_LOOPS*/
-
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/viewit.h"
-#include "gstat.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "correl.h"
-#include "gmx_ana.h"
-#include "geminate.h"
-
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/correl.h"
+#include "gromacs/gmxana/geminate.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "config.h"
+
+/*#define HAVE_NN_LOOPS*/
 
 typedef short int t_E;
 typedef int t_EEst;
