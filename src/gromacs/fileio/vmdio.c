@@ -86,10 +86,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
@@ -102,8 +102,8 @@
 #ifndef _WIN32_IE
 #define _WIN32_IE 0x0500 /* SHGetFolderPath is available since WinXP/IE5 */
 #endif
-#include <windows.h>
 #include <shlobj.h>
+#include <windows.h>
 #endif
 
 #include "gromacs/fileio/gmxfio.h"

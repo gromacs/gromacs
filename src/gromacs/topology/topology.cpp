@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/topology/topology.h"
+#include "topology.h"
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"

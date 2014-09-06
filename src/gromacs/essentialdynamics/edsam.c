@@ -36,29 +36,29 @@
  */
 #include "gmxpre.h"
 
+#include "edsam.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/update.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/mdlib/groupcoord.h"
-
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))

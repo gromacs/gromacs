@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "topio.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -46,34 +48,31 @@
 
 #include <sys/types.h>
 
-#include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/math/units.h"
+#include "gromacs/gmxpreprocess/gmxcpp.h"
+#include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/topshake.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/vsite_parm.h"
+#include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/cstringutil.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/warninp.h"
-#include "vsite_parm.h"
-
-#include "grompp-impl.h"
-#include "toputil.h"
-#include "toppush.h"
-#include "topdirs.h"
-#include "gpp_nextnb.h"
-#include "topio.h"
-#include "topshake.h"
-#include "gmxcpp.h"
-#include "gpp_bond_atomtype.h"
-#include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/math/utilities.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */

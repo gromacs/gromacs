@@ -35,17 +35,16 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fft/fft.h"
-
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "external/fftpack/fftpack.h"
+
+#include "gromacs/fft/fft.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
-
-#include "external/fftpack/fftpack.h"
 
 /*! \internal
  * \brief

@@ -38,12 +38,12 @@
 
 #include "random.h"
 
+#include "config.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
-#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -52,10 +52,10 @@
 #include <process.h>
 #endif
 
+#include "external/Random123-1.08/include/Random123/threefry.h"
+
 #include "gromacs/math/utilities.h"
 #include "gromacs/random/random_gausstable.h"
-
-#include "external/Random123-1.08/include/Random123/threefry.h"
 
 #define RNG_N 624
 #define RNG_M 397

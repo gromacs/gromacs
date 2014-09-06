@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/topology/residuetypes.h"
+#include "residuetypes.h"
 
 #include <cassert>
 #include <cstdio>

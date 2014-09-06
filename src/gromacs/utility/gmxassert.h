@@ -45,7 +45,7 @@
 
 #include <boost/current_function.hpp>
 
-#include "basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 //! \addtogroup module_utility
 //! \{

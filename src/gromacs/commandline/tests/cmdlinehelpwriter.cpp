@@ -47,10 +47,11 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/commandline/cmdlinehelpwriter.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"

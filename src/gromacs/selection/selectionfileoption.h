@@ -43,7 +43,7 @@
 #ifndef GMX_SELECTION_SELECTIONFILEOPTION_H
 #define GMX_SELECTION_SELECTIONFILEOPTION_H
 
-#include "../options/abstractoption.h"
+#include "gromacs/options/abstractoption.h"
 
 namespace gmx
 {

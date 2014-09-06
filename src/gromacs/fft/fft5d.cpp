@@ -36,6 +36,8 @@
 
 #include "fft5d.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <float.h>
 #include <math.h>
@@ -48,8 +50,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "config.h"
 
 #ifdef NOGMX
 #define GMX_PARALLEL_ENV_INITIALIZED 1

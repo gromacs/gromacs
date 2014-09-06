@@ -40,22 +40,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/index.h"
-#include "gmx_ana.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void insert_ion(int nsa, int *nwater,
                        gmx_bool bSet[], int repl[], atom_id index[],

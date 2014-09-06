@@ -273,16 +273,14 @@
 
 #include "compiler.h"
 
-#include <algorithm>
-
 #include <math.h>
 #include <stdarg.h>
 
+#include <algorithm>
+
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -290,8 +288,10 @@
 #include "evaluate.h"
 #include "keywords.h"
 #include "mempool.h"
+#include "poscalc.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 using std::min;
 using gmx::SelectionTreeElement;

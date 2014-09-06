@@ -37,6 +37,7 @@
 #define GMX_GMXPREPROCESS_FFLIBUTIL_H
 
 #include <stdio.h>
+
 #include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus

@@ -39,6 +39,7 @@
 #define GMX_GMXPREPROCESS_GPP_BONDATOMTYPE_H
 
 #include <stdio.h>
+
 #include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus

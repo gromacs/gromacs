@@ -44,11 +44,12 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/fft/fft.h"
+
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "gromacs/fft/fft.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/utility/stringutil.h"
 

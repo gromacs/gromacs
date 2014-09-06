@@ -39,12 +39,12 @@
 #define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 
 #include "gromacs/legacyheaders/types/enums.h"
-#include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/genborn.h"
-#include "gromacs/legacyheaders/types/qmmmrec.h"
-#include "../../topology/idef.h"
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/ns.h"
+#include "gromacs/legacyheaders/types/qmmmrec.h"
+#include "gromacs/topology/idef.h"
 
 #ifdef __cplusplus
 extern "C" {

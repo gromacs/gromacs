@@ -36,11 +36,11 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "config.h"
 
 #ifdef HAVE_IO_H
 #include <io.h>

@@ -37,8 +37,8 @@
 #ifndef _GENBORN_ALLVSALL_SSE2_SINGLE_H
 #define _GENBORN_ALLVSALL_SSE2_SINGLE_H
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 int
 genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,

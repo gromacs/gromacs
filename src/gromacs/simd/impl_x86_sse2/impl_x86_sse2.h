@@ -36,10 +36,11 @@
 #ifndef GMX_SIMD_IMPL_X86_SSE2_H
 #define GMX_SIMD_IMPL_X86_SSE2_H
 
-#include <math.h>
-#include <emmintrin.h>
-
 #include "config.h"
+
+#include <math.h>
+
+#include <emmintrin.h>
 
 /* Set capabilities that can be inherited */
 #define GMX_SIMD_X86_SSE2_OR_HIGHER

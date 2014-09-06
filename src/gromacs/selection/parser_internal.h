@@ -46,6 +46,8 @@
 #ifndef GMX_SELECTION_PARSER_INTERNAL_H
 #define GMX_SELECTION_PARSER_INTERNAL_H
 
+#include "config.h"
+
 #include <exception>
 
 #include <boost/scoped_ptr.hpp>
@@ -53,11 +55,8 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "parsetree.h"
-#include "selelem.h"
-
 #include "scanner.h"
-
-#include "config.h"
+#include "selelem.h"
 
 //! Error handler needed by Bison.
 static void

@@ -38,10 +38,10 @@
 #ifndef _nb_generic_cg_h_
 #define _nb_generic_cg_h_
 
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 void
 gmx_nb_generic_cg_kernel(t_nblist *                nlist,

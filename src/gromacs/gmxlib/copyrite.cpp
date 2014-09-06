@@ -38,12 +38,12 @@
 
 #include "gromacs/legacyheaders/copyrite.h"
 
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#include "config.h"
 
 #ifdef HAVE_LIBMKL
 #include <mkl.h>

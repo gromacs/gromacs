@@ -36,6 +36,8 @@
 
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -43,8 +45,6 @@
 
 #include <string>
 #include <vector>
-
-#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 /* For sysconf */

@@ -36,10 +36,11 @@
 #ifndef GMX_SIMD_IMPL_X86_SSE4_1_H
 #define GMX_SIMD_IMPL_X86_SSE4_1_H
 
-#include <math.h>
-#include <smmintrin.h>
-
 #include "config.h"
+
+#include <math.h>
+
+#include <smmintrin.h>
 
 /* x86 SSE4.1 SIMD instruction wrappers
  *

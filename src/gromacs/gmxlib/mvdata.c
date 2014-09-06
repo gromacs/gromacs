@@ -37,16 +37,16 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "gromacs/legacyheaders/mvdata.h"
+
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/main.h"
-#include "gromacs/legacyheaders/mvdata.h"
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/tgroup.h"
-
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

@@ -148,8 +148,8 @@ typedef hrtime_t
 
 #elif defined(__xlC__) && defined (_AIX)
 /* AIX compilers */
-#include <sys/time.h>
 #include <sys/systemcfg.h>
+#include <sys/time.h>
 typedef unsigned long long
     gmx_cycles_t;
 

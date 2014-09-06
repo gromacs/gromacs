@@ -37,9 +37,9 @@
 
 /* We require SSE2 now! */
 
-#include <math.h>
-
 #include "config.h"
+
+#include <math.h>
 
 #define gmx_mm_castsi128_ps   _mm_castsi128_ps
 

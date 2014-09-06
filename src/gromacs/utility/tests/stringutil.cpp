@@ -45,13 +45,13 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/stringutil.h"
+
 #include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
-#include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
 #include "testutils/stringtest.h"
