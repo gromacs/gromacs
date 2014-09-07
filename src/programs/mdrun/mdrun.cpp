@@ -36,13 +36,13 @@
  */
 #include "gmxpre.h"
 
-#include "mdrun_main.h"
-
 #include "config.h"
 
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -52,10 +52,9 @@
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "mdrun_main.h"
 
 static bool is_multisim_option_set(int argc, const char *const argv[])
 {

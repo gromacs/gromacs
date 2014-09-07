@@ -41,25 +41,25 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_X11
 
 #include "gromacs/fileio/writeps.h"
 
 #include "Xstuff.h"
-#include "gromacs.bm"
-#include "xutil.h"
 #include "dialogs.h"
+#include "gromacs.bm"
 #include "molps.h"
 #include "nmol.h"
+#include "xutil.h"
 
 static void dump_it(t_manager *man)
 {

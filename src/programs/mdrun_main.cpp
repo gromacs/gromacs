@@ -34,9 +34,9 @@
  */
 #include "gmxpre.h"
 
-#include "mdrun/mdrun_main.h"
-
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+
+#include "mdrun/mdrun_main.h"
 
 int main(int argc, char *argv[])
 {

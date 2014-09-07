@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "testutils/stringtest.h"
+#include "stringtest.h"
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"

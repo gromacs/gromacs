@@ -37,6 +37,7 @@
 #include "mpi-printer.h"
 
 #include "config.h"
+
 #include "gromacs/utility/gmxmpi.h"
 
 #ifdef GMX_LIB_MPI

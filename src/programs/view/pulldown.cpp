@@ -36,16 +36,17 @@
  */
 #include "gmxpre.h"
 
+#include "pulldown.h"
+
 #include <string.h>
 
 #include <algorithm>
 
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/smalloc.h"
 
-#include "x11.h"
 #include "popup.h"
-#include "pulldown.h"
+#include "x11.h"
 
 static bool PDCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
