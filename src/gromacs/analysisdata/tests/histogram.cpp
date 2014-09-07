@@ -157,7 +157,7 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
 #else
@@ -243,7 +243,7 @@ class WeightedSimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static WeightedSimpleInputData singleton;
             return singleton.data_;
 #else
@@ -280,7 +280,7 @@ class WeightedDataSetInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static WeightedDataSetInputData singleton;
             return singleton.data_;
 #else
@@ -452,7 +452,7 @@ class AverageInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static AverageInputData singleton;
             return singleton.data_;
 #else
