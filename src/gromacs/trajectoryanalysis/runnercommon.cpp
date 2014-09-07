@@ -45,12 +45,11 @@
 
 #include <string.h>
 
-#include "gromacs/legacyheaders/oenv.h"
-
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"

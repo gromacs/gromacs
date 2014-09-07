@@ -38,7 +38,7 @@
 #ifndef _xdlg_h
 #define _xdlg_h
 
-#include "xdlgitem.h"
+#include "programs/view/xdlgitem.h"
 
 #define DLG_SHOW         (1<<0)
 #define DLG_HIDE         (1<<1)

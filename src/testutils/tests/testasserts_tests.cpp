@@ -41,9 +41,9 @@
  */
 #include "gmxpre.h"
 
-#include "testutils/testasserts.h"
-
 #include <gtest/gtest.h>
+
+#include "testutils/testasserts.h"
 
 namespace
 {

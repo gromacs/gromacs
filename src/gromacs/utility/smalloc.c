@@ -36,14 +36,14 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/smalloc.h"
-
-#include "config.h"
+#include "smalloc.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "config.h"
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>

@@ -36,14 +36,14 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/copyrite.h"
-
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include "gromacs/legacyheaders/copyrite.h"
+
+#include "config.h"
 
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
@@ -57,10 +57,10 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include "gromacs/legacyheaders/macros.h"
-
+#include "buildinfo.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/baseversion.h"
@@ -70,8 +70,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "buildinfo.h"
 
 static gmx_bool be_cool(void)
 {

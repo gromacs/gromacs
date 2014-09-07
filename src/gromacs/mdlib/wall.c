@@ -40,14 +40,13 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/math/vec.h"
-
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 

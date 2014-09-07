@@ -37,11 +37,9 @@
 #include "gmxpre.h"
 
 #include "gromacs/legacyheaders/oenv.h"
-
-#include "gromacs/utility/smalloc.h"
-
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 struct output_env
 {

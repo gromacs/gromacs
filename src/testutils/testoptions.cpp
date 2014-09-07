@@ -64,9 +64,9 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/programcontext.h"
 
-#include "refdata.h"
-#include "testfilemanager.h"
-#include "mpi-printer.h"
+#include "testutils/mpi-printer.h"
+#include "testutils/refdata.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {

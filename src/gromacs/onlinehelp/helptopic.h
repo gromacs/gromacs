@@ -44,11 +44,10 @@
 #ifndef GMX_ONLINEHELP_HELPTOPIC_H
 #define GMX_ONLINEHELP_HELPTOPIC_H
 
-#include "../utility/common.h"
-#include "../utility/stringutil.h"
-#include "../utility/uniqueptr.h"
-
-#include "helptopicinterface.h"
+#include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {

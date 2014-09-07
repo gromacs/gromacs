@@ -40,20 +40,19 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"

@@ -48,7 +48,8 @@
 #ifndef GMX_SELECTION_SELPARAM_H
 #define GMX_SELECTION_SELPARAM_H
 
-#include "indexutil.h"
+#include "gromacs/selection/indexutil.h"
+
 #include "selvalue.h"
 
 /*! \name Parameter flags

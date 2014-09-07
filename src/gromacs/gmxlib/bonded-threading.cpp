@@ -36,13 +36,12 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/bonded-threading.h"
-
 #include <assert.h>
 
 #include <algorithm>
 
 #include "gromacs/bonded/bonded.h"
+#include "gromacs/legacyheaders/bonded-threading.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

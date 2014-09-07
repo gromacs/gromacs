@@ -47,9 +47,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../datamodule.h"
-#include "../../options/timeunitmanager.h"
-#include "../../utility/common.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/options/timeunitmanager.h"
+#include "gromacs/utility/common.h"
 
 namespace gmx
 {

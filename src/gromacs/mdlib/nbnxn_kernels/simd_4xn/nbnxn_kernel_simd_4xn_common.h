@@ -32,11 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
-#include "../../nbnxn_consts.h"
 #ifdef CALC_COUL_EWALD
 #include "gromacs/math/utilities.h"
 #endif
@@ -57,7 +57,7 @@
 #define STRIDE     (UNROLLI)
 #endif
 
-#include "../nbnxn_kernel_simd_utils.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
 
 static gmx_inline void gmx_simdcall
 gmx_load_simd_4xn_interactions(int gmx_unused             excl,

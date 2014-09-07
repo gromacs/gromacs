@@ -35,16 +35,17 @@
 
 #include "gmxpre.h"
 
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
+
 #include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/perf_est.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05

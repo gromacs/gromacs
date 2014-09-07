@@ -36,9 +36,9 @@
 #ifndef _nbnxn_simd_h
 #define _nbnxn_simd_h
 
-#include "config.h"
-
 #include "gromacs/legacyheaders/typedefs.h"
+
+#include "config.h"
 
 /* Include SIMD, below we select kernels based on the SIMD width */
 #include "gromacs/simd/simd.h"

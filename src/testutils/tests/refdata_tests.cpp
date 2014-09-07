@@ -41,12 +41,12 @@
  */
 #include "gmxpre.h"
 
-#include "testutils/refdata.h"
-
 #include <vector>
 
-#include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
+#include <gtest/gtest.h>
+
+#include "testutils/refdata.h"
 
 namespace
 {

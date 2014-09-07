@@ -40,36 +40,35 @@
 #include <math.h>
 #include <string.h>
 
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/nrnb.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
 #  ifdef GMX_DOUBLE
-#    include "genborn_sse2_double.h"
-#    include "genborn_allvsall_sse2_double.h"
+#    include "gromacs/mdlib/genborn_allvsall_sse2_double.h"
+#    include "gromacs/mdlib/genborn_sse2_double.h"
 #  else
-#    include "genborn_sse2_single.h"
-#    include "genborn_allvsall_sse2_single.h"
+#    include "gromacs/mdlib/genborn_allvsall_sse2_single.h"
+#    include "gromacs/mdlib/genborn_sse2_single.h"
 #  endif /* GMX_DOUBLE */
 #endif   /* SSE or AVX present */
 
-#include "genborn_allvsall.h"
+#include "gromacs/mdlib/genborn_allvsall.h"
 
 /*#define DISABLE_SSE*/
 

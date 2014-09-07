@@ -39,9 +39,9 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/commrec_fwd.h"
-#include "../legacyheaders/types/nbnxn_cuda_types_ext.h"
-#include "../utility/basedefinitions.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

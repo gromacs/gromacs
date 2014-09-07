@@ -47,10 +47,10 @@
 #endif
 
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-#include <X11/cursorfont.h>
 #include <X11/Xresource.h>
+#include <X11/Xutil.h>
+#include <X11/cursorfont.h>
+#include <X11/keysym.h>
 
 #ifdef _acc_
 typedef unsigned char bmchar;

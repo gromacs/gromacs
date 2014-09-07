@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/selection/centerofmass.h"
+#include "centerofmass.h"
 
 #include <errno.h>
 

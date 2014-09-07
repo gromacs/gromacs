@@ -45,7 +45,6 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -57,9 +56,8 @@
 #include "gromacs/tools/check.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/tools/dump.h"
-
-#include "mdrun/mdrun_main.h"
-#include "view/view.h"
+#include "programs/mdrun/mdrun_main.h"
+#include "programs/view/view.h"
 
 namespace
 {

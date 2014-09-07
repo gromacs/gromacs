@@ -42,10 +42,9 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
 
-#include "analysissettings.h"
-
-#include "../analysisdata/modules/plot.h"
-#include "../options/timeunitmanager.h"
+#include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/options/timeunitmanager.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
 
 namespace gmx
 {

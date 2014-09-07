@@ -41,13 +41,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

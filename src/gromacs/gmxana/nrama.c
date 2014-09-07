@@ -36,16 +36,16 @@
  */
 #include "gmxpre.h"
 
+#include "nrama.h"
+
 #include <math.h>
 #include <stdlib.h>
 
-#include "nrama.h"
-
 #include "gromacs/bonded/bonded.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 #define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))

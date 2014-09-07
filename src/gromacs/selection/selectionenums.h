@@ -42,7 +42,7 @@
 #ifndef GMX_SELECTION_SELECTIONENUMS_H
 #define GMX_SELECTION_SELECTIONENUMS_H
 
-#include "../utility/flags.h"
+#include "gromacs/utility/flags.h"
 
 /*! \brief
  * Defines the type of covered fraction.

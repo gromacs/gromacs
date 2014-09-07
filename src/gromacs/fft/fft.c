@@ -35,9 +35,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fft/fft.h"
-
-#include "config.h"
+#include "fft.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -47,6 +45,8 @@
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
+
+#include "config.h"
 
 /* This file contains common fft utility functions, but not
  * the actual transform implementations. Check the

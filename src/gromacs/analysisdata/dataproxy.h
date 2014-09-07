@@ -45,8 +45,8 @@
 #ifndef GMX_ANALYSISDATA_DATAPROXY_H
 #define GMX_ANALYSISDATA_DATAPROXY_H
 
-#include "abstractdata.h"
-#include "datamodule.h"
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/datamodule.h"
 
 namespace gmx
 {

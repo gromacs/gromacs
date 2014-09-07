@@ -37,6 +37,7 @@
 #define GMX_SIMD_IMPL_INTEL_MIC_H
 
 #include <math.h>
+
 #include <immintrin.h>
 
 #include "config.h"

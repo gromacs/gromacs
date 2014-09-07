@@ -37,6 +37,7 @@
 #define _nbnxn_pairlist_h
 
 #include "thread_mpi/atomic.h"
+
 #include "gromacs/legacyheaders/types/nblist.h"
 
 #ifdef __cplusplus

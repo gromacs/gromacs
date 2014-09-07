@@ -38,20 +38,19 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/topology/mtop_util.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 

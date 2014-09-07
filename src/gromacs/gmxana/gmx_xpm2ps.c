@@ -36,21 +36,21 @@
  */
 #include "gmxpre.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/viewit.h"
-#include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/writeps.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define FUDGE 1.2
 #define DDD   2

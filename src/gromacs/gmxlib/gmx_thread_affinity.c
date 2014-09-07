@@ -42,22 +42,21 @@
 #  include <sched.h>
 #  include <sys/syscall.h>
 #endif
-#include <string.h>
-#include <errno.h>
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_cpuid.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/gmx_thread_affinity.h"
-
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

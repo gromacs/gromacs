@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 
-#include "xdlgitem.h"
+#include "programs/view/xdlgitem.h"
 
 typedef struct {
     edlgitem edlg;

@@ -43,16 +43,14 @@
 
 #include "exceptions.h"
 
-#include "config.h"
-
 #include <cstring>
 
 #include <new>
 #include <stdexcept>
 #include <typeinfo>
 
-#include <boost/exception/get_error_info.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/exception/get_error_info.hpp>
 
 #include "thread_mpi/system_error.h"
 
@@ -62,6 +60,8 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "errorformat.h"
+
+#include "config.h"
 
 namespace gmx
 {

@@ -40,24 +40,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/mdebin.h"
-#include "gromacs/math/units.h"
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/constr.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdebin.h"
 #include "gromacs/legacyheaders/mdrun.h"
-#include "mdebin_bar.h"
-
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdebin_bar.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/smalloc.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };

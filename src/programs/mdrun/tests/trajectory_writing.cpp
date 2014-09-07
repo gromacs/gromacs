@@ -43,9 +43,11 @@
 #include "gmxpre.h"
 
 #include <gtest/gtest.h>
-#include "moduletest.h"
+
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "programs/mdrun/tests/moduletest.h"
 
 #include "config.h"
 

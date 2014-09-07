@@ -36,16 +36,16 @@
  */
 #include "gmxpre.h"
 
+#include "nb_generic_cg.h"
+
 #include <math.h>
 
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "nb_generic_cg.h"
-#include "gromacs/legacyheaders/nonbonded.h"
-#include "nb_kernel.h"
-#include "gromacs/legacyheaders/nrnb.h"
-
 #include "gromacs/utility/fatalerror.h"
 
 void
