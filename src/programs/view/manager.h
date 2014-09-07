@@ -40,8 +40,8 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/pbcutil/rmpbc.h"
 
 #include "3dview.h"

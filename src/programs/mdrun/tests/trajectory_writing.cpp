@@ -42,12 +42,14 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <gtest/gtest.h>
-#include "moduletest.h"
+
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "config.h"
+#include "moduletest.h"
 
 namespace
 {

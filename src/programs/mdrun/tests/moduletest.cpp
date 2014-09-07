@@ -51,12 +51,11 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/file.h"
-
 #include "programs/mdrun/mdrun_main.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/integrationtests.h"
 #include "testutils/testoptions.h"
-#include "testutils/cmdlinetest.h"
 
 namespace gmx
 {

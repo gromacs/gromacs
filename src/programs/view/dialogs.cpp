@@ -43,19 +43,20 @@
 #include <unistd.h> // for fork()
 #endif
 
-#include "gromacs/legacyheaders/macros.h"
-#include "x11.h"
-#include "xdlghi.h"
-#include "xmb.h"
 #include "dialogs.h"
-#include "gromacs/legacyheaders/names.h"
-#include "nmol.h"
-#include "manager.h"
 
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "manager.h"
+#include "nmol.h"
+#include "x11.h"
+#include "xdlghi.h"
+#include "xmb.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 

@@ -36,17 +36,20 @@
  */
 #include "gmxpre.h"
 
+#include "xdlg.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gromacs/utility/cstringutil.h"
+
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "Xstuff.h"
-#include "xutil.h"
-#include "xdlg.h"
-#include "xmb.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "Xstuff.h"
+#include "xmb.h"
+#include "xutil.h"
 /*****************************
  *
  * Helpful routines

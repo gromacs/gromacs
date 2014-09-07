@@ -40,13 +40,14 @@
 
 #include <algorithm>
 
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/index.h"
-#include "xdlghi.h"
-#include "dialogs.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "dialogs.h"
+#include "xdlghi.h"
 
 t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
 {

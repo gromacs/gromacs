@@ -36,16 +36,17 @@
  */
 #include "gmxpre.h"
 
-#include <stdlib.h>
-
-#include "gromacs/legacyheaders/macros.h"
-#include "xutil.h"
-#include "Xstuff.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "logo.h"
 
+#include <stdlib.h>
+
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "Xstuff.h"
+#include "xutil.h"
 
 typedef struct {
     int            x, y, rad;

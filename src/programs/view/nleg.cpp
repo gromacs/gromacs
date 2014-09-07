@@ -36,16 +36,17 @@
  */
 #include "gmxpre.h"
 
+#include "nleg.h"
+
 #include <string.h>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/types/rgb.h"
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/types/rgb.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "buttons.h"
-#include "nleg.h"
 
 typedef struct {
     const char    *tp;

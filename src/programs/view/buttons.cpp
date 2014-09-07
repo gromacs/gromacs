@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "buttons.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -45,14 +47,12 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "ff.bm"
+#include "play.bm"
+#include "rewind.bm"
+#include "stop_ani.bm"
 #include "x11.h"
 #include "xutil.h"
-#include "buttons.h"
-
-#include "stop_ani.bm"
-#include "play.bm"
-#include "ff.bm"
-#include "rewind.bm"
 
 static void move_bbox(t_x11 *x11, t_butbox *bbox)
 {
