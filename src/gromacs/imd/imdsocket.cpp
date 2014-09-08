@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ extern int imdsock_winsockinit()
 
 
 /*! \brief Print a nice error message on UNIX systems, using errno.h. */
-static void print_IMD_error(char *file, int line, char *msg)
+static void print_IMD_error(const char *file, int line, char *msg)
 {
     fprintf(stderr, "%s Error in file %s on line %d.\n", IMDstr, file, line);
 
@@ -212,11 +212,10 @@ extern int imdsock_getport(IMDSocket *sock, int *port)
 {
     int                ret;
 #ifdef GMX_IMD
-    struct sockaddr_in sin;
     socklen_t          len;
 
 
-    len = sizeof(sin);
+    len = sizeof(struct sockaddr_in);
     ret = getsockname(sock->sockfd, (struct sockaddr *) &(sock->address), &len);
     if (ret)
     {
@@ -229,6 +228,7 @@ extern int imdsock_getport(IMDSocket *sock, int *port)
     }
 #else
     gmx_incons("imdsock_getport called without IMD support.");
+    ret = -1;
 #endif
 
     return ret;
