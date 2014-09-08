@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ extern int imdsock_winsockinit()
 
 
 /*! \brief Print a nice error message on UNIX systems, using errno.h. */
-static void print_IMD_error(char *file, int line, char *msg)
+static void print_IMD_error(const char *file, int line, char *msg)
 {
     fprintf(stderr, "%s Error in file %s on line %d.\n", IMDstr, file, line);
 
