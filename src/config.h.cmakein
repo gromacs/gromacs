@@ -150,6 +150,9 @@
 /* Add support for tracing using Extrae */
 #cmakedefine HAVE_EXTRAE
 
+/* Support for IMD */
+#cmakedefine GMX_IMD
+
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
 
