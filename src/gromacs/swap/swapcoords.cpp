@@ -64,26 +64,26 @@
 
 #include "gromacs/pbcutil/pbc.h"
 
-static char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
-static char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */
-static char* IonString[eIonNR] = {"anion", "cation" };                       /**< Type of ion, used for verbose output */
-static char* IonStr[eIonNR]    = {"-", "+"      };                           /**< Type of ion, used for short output */
-static char* CompStr[eCompNR] = {"A", "B" };                                 /**< Compartment name */
-static char *SwapStr[eSwapTypesNR+1] = { "", "X-", "Y-", "Z-", NULL};        /**< Name for the swap types. */
-static char *DimStr[DIM+1] = { "X", "Y", "Z", NULL};                         /**< Name for the swap dimension. */
+static const char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
+static const char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */
+static const char* IonString[eIonNR] = {"anion", "cation" };                       /**< Type of ion, used for verbose output */
+static const char* IonStr[eIonNR]    = {"-", "+"      };                           /**< Type of ion, used for short output */
+static const char* CompStr[eCompNR] = {"A", "B" };                                 /**< Compartment name */
+static const char *SwapStr[eSwapTypesNR+1] = { "", "X-", "Y-", "Z-", NULL};        /**< Name for the swap types. */
+static const char *DimStr[DIM+1] = { "X", "Y", "Z", NULL};                         /**< Name for the swap dimension. */
 
 /* eGrpSplit0 and eGrpSplit1 _must_ be neighbors in this list because
  * we sometimes loop from eGrpSplit0 to eGrpSplit1 */
 enum {
     eGrpIons, eGrpSplit0, eGrpSplit1, eGrpSolvent, eGrpNr
-};                                                                           /**< Group identifier */
-static char* GrpString[eGrpNr] = { "ion", "split0", "split1", "solvent" };   /**< Group name */
+};                                                                               /**< Group identifier */
+static const char* GrpString[eGrpNr] = { "ion", "split0", "split1", "solvent" }; /**< Group name */
 
 /** Keep track of through which channel the ions have passed */
 enum eChannelHistory {
     eChHistPassedNone, eChHistPassedCh0, eChHistPassedCh1, eChHistNr
 };
-static char* ChannelString[eChHistNr] = { "none", "channel0", "channel1" };  /**< Name for the channels */
+static const char* ChannelString[eChHistNr] = { "none", "channel0", "channel1" };  /**< Name for the channels */
 
 /*! \brief Domain identifier.
  *
@@ -93,7 +93,7 @@ static char* ChannelString[eChHistNr] = { "none", "channel0", "channel1" };  /**
 enum eDomain {
     eDomainNotset, eDomainA, eDomainB, eDomainNr
 };
-static char* DomainString[eDomainNr] = { "not_assigned", "Domain_A", "Domain_B" }; /**< Name for the domains */
+static const char* DomainString[eDomainNr] = { "not_assigned", "Domain_A", "Domain_B" }; /**< Name for the domains */
 
 
 
@@ -222,9 +222,9 @@ static gmx_bool is_in_channel(
 
 /*! \brief Prints to swap output file which ions are in which compartment. */
 static void print_ionlist(
-        t_swap *s,
-        double  time,
-        char    comment[])
+        t_swap       *s,
+        double        time,
+        const char    comment[])
 {
     int            itype, icomp, i, j;
     t_compartment *comp;
@@ -690,7 +690,7 @@ static void compartmentalize_ions(
         {
             fprintf(stderr, "\n"
                     "%s Warning: %d atoms were detected as being in both channels! Probably your split\n"
-                    "%s          cylinder is way too large, or one compartment has collapsed (step %"GMX_PRId64 ")\n",
+                    "%s          cylinder is way too large, or one compartment has collapsed (step %" GMX_PRId64 ")\n",
                     SwS, s->cyl0and1, SwS, step);
 
             fprintf(s->fpout, "Warning: %d atoms were assigned to both channels!\n", s->cyl0and1);
@@ -1933,7 +1933,6 @@ extern gmx_bool do_swapcoords(
         }
 
         /* Now actually correct the number of ions */
-        g      = &(s->group[eGrpSolvent]);
         nswaps = 0;
         alook  = gmx_mtop_atomlookup_init(mtop);
         for (ic = 0; ic < eCompNR; ic++)
@@ -1995,7 +1994,7 @@ extern gmx_bool do_swapcoords(
 
         if (bVerbose)
         {
-            fprintf(stderr, "%s Performed %d swap%s in step %"GMX_PRId64 ".\n", SwS, nswaps, nswaps > 1 ? "s" : "", step);
+            fprintf(stderr, "%s Performed %d swap%s in step %" GMX_PRId64 ".\n", SwS, nswaps, nswaps > 1 ? "s" : "", step);
         }
         if (s->fpout != NULL)
         {
