@@ -370,6 +370,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning_error(wi, warn_buf);
         }
 
+        if (ir->implicit_solvent != eisNO)
+        {
+            warning_error(wi, "Implicit solvent is not (yet) supported with the with Verlet lists.");
+        }
+
         if (ir->nstlist <= 0)
         {
             warning_error(wi, "With Verlet lists nstlist should be larger than 0");
@@ -1331,11 +1336,9 @@ nd %s",
     /* IMPLICIT SOLVENT */
     if (ir->coulombtype == eelGB_NOTUSED)
     {
-        ir->coulombtype      = eelCUT;
-        ir->implicit_solvent = eisGBSA;
-        fprintf(stderr, "Note: Old option for generalized born electrostatics given:\n"
-                "Changing coulombtype from \"generalized-born\" to \"cut-off\" and instead\n"
-                "setting implicit-solvent value to \"GBSA\" in input section.\n");
+        sprintf(warn_buf, "Invalid option %s for coulombtype",
+                eel_names[ir->coulombtype]);
+        warning_error(wi, warn_buf);
     }
 
     if (ir->sa_algorithm == esaSTILL)
