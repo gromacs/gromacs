@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ extern int imdsock_winsockinit()
 
 
 /*! \brief Print a nice error message on UNIX systems, using errno.h. */
-static void print_IMD_error(char *file, int line, char *msg)
+static void print_IMD_error(const char *file, int line, char *msg)
 {
     fprintf(stderr, "%s Error in file %s on line %d.\n", IMDstr, file, line);
 
@@ -104,6 +104,32 @@ static void print_IMD_error(char *file, int line, char *msg)
     {
         fprintf(stderr, "%s\n", msg);
     }
+}
+
+/*! \brief Byte swap in case we are little-endian */
+static uint16_t gmx_htons(uint16_t src)
+{
+    int num = 1;
+
+    if (*(char *)&num == 1)
+    {
+        return src;
+    }
+    else
+    {
+        uint16_t dest = 0;
+
+        dest |= (src & 0x0000FF00) << 8;
+        dest |= (src & 0x000000FF) << 8;
+
+        return dest;
+    }
+}
+
+/*! \brief Byte-unswap 16 bit word in case we are little-endian */
+static int gmx_ntohs(int src)
+{
+    return gmx_htons(src);
 }
 
 
@@ -138,7 +164,7 @@ extern int imdsock_bind(IMDSocket *sock, int port)
 #ifdef GMX_IMD
     memset(&(sock->address), 0, sizeof(sock->address));
     sock->address.sin_family = PF_INET;
-    sock->address.sin_port   = htons(port);
+    sock->address.sin_port   = gmx_htons(port);
 
     /* Try to bind to address and port ...*/
     ret = bind(sock->sockfd, (struct sockaddr *) &sock->address, sizeof(sock->address));
@@ -212,11 +238,10 @@ extern int imdsock_getport(IMDSocket *sock, int *port)
 {
     int                ret;
 #ifdef GMX_IMD
-    struct sockaddr_in sin;
     socklen_t          len;
 
 
-    len = sizeof(sin);
+    len = sizeof(struct sockaddr_in);
     ret = getsockname(sock->sockfd, (struct sockaddr *) &(sock->address), &len);
     if (ret)
     {
@@ -225,10 +250,11 @@ extern int imdsock_getport(IMDSocket *sock, int *port)
     }
     else
     {
-        *port = ntohs(sock->address.sin_port);
+        *port = gmx_ntohs(sock->address.sin_port);
     }
 #else
     gmx_incons("imdsock_getport called without IMD support.");
+    ret = -1;
 #endif
 
     return ret;
