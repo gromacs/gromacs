@@ -51,6 +51,9 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! \brief Select local atoms of a group.
  *
@@ -70,6 +73,7 @@
  *                            (collective) array such that it can be gmx_summed
  *                            in the communicate_group_positions routine.
  */
+
 extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
                                         const int nr, int anrs[], int *nr_loc,
                                         int *anrs_loc[], int *nalloc_loc,
@@ -200,3 +204,7 @@ extern void translate_x(rvec x[], const int nr, const rvec transvec);
  *
  */
 extern void rotate_x(rvec x[], const int nr, matrix rmat);
+
+#ifdef __cplusplus
+}
+#endif
