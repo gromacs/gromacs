@@ -177,6 +177,9 @@ else()
     endif()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
+# imd/imdsocket also gives deprecated-register warnings
+set_source_files_properties(imd/imd.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
+set_source_files_properties(imd/imdsocket.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
 target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
