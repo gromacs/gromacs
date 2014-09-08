@@ -63,6 +63,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/imd/gmx_htonl.h"
 #include "gromacs/imd/imdsocket.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/mdrun.h"
@@ -243,8 +244,8 @@ const char *eIMDType_names[IMD_NR + 1] = {
 static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t length)
 {
     /* We (ab-)use htonl network function for the correct endianness */
-    header->type   = htonl((gmx_int32_t) type);
-    header->length = htonl(length);
+    header->type   = gmx_htonl((gmx_int32_t) type);
+    header->length = gmx_htonl(length);
 }
 
 
@@ -252,8 +253,8 @@ static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t leng
 static void swap_header(IMDHeader *header)
 {
     /* and vice versa... */
-    header->type   = ntohl(header->type);
-    header->length = ntohl(header->length);
+    header->type   = gmx_ntohl(header->type);
+    header->length = gmx_ntohl(header->length);
 }
 
 
@@ -617,7 +618,7 @@ static gmx_bool imd_tryconnect(t_gmx_IMD_setup *IMDsetup)
 static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
 {
     /* do not wait for connection, when e.g. ctrl+c is pressed and we will terminate anyways. */
-    if (gmx_get_stop_condition() != gmx_stop_cond_none)
+    if (!((int) gmx_get_stop_condition() == gmx_stop_cond_none))
     {
         return;
     }
@@ -811,7 +812,6 @@ static void imd_sync_nodes(t_inputrec *ir, t_commrec *cr, double t)
 {
     int              new_nforces = 0;
     t_gmx_IMD_setup *IMDsetup;
-    int              start, end, i;
 
 
     IMDsetup = ir->imd->setup;
