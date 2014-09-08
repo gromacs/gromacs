@@ -175,7 +175,8 @@ else()
 endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
-# is a generated source file. These are awkward to suppress inline, so
+# is a generated source file. Similarly, imd/imdsocket give warnings
+# when using ntohl/htohs, respectively. These are awkward to suppress inline, so
 # we do it in the compilation command (after testing that the compiler
 # supports the suppressions). Setting the properties only works after
 # the related target has been created, e.g. after when the file is
@@ -188,13 +189,16 @@ endif()
 check_cxx_compiler_flag(-Wno-deprecated-register HAS_NO_DEPRECATED_REGISTER)
 if (HAS_NO_DEPRECATED_REGISTER)
     set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-deprecated-register")
+    set(_no_deprecated_compiler_flags "${_no_deprecated_compiler_flags} -Wno-deprecated-register")
 else()
     check_cxx_compiler_flag(-Wno-deprecated HAS_NO_DEPRECATED)
     if (HAS_NO_DEPRECATED)
         set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-deprecated")
+        set(_no_deprecated_compiler_flags "${_no_deprecated_compiler_flags} -Wno-deprecated")
     endif()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
+set_source_files_properties(imd/imd.cpp imd/imdsocket.cpp PROPERTIES COMPILE_FLAGS "${_no_deprecated_compiler_flags}")
 
 target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
