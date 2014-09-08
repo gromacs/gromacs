@@ -95,7 +95,7 @@ extern int imdsock_winsockinit()
 
 
 /*! \brief Print a nice error message on UNIX systems, using errno.h. */
-static void print_IMD_error(char *file, int line, char *msg)
+static void print_IMD_error(const char *file, int line, char *msg)
 {
     fprintf(stderr, "%s Error in file %s on line %d.\n", IMDstr, file, line);
 
