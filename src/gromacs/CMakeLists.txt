@@ -178,6 +178,10 @@ else()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
+# imd/imdsocket also give deprecated-register warnings when using ntohl/htohs, respectively
+set_source_files_properties(imd/imd.cpp PROPERTIES COMPILE_FLAGS "-Wno-deprecated-register")
+set_source_files_properties(imd/imdsocket.cpp PROPERTIES COMPILE_FLAGS "-Wno-deprecated-register")
+
 target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
