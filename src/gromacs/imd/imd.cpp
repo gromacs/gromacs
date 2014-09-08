@@ -239,12 +239,40 @@ const char *eIMDType_names[IMD_NR + 1] = {
 
 #ifdef GMX_IMD
 
+/*! \brief Byte swap in case we are little-endian */
+static gmx_int32_t gmx_htonl(gmx_int32_t src)
+{
+    int num = 1;
+
+    if (*(char *)&num == 1)
+    {
+        return src;
+    }
+    else
+    {
+        gmx_int32_t dest = 0;
+
+        dest |= (src & 0xFF000000) >> 24;
+        dest |= (src & 0x00FF0000) >> 8;
+        dest |= (src & 0x0000FF00) << 8;
+        dest |= (src & 0x000000FF) << 24;
+
+        return dest;
+    }
+}
+
+/*! \brief Byte-unswap 32 bit word in case we are little-endian */
+static gmx_int32_t gmx_ntohl(gmx_int32_t src)
+{
+    return gmx_htonl(src);
+}
+
 /*! \brief Fills the header with message and the length argument. */
 static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t length)
 {
     /* We (ab-)use htonl network function for the correct endianness */
-    header->type   = htonl((gmx_int32_t) type);
-    header->length = htonl(length);
+    header->type   = gmx_htonl((gmx_int32_t) type);
+    header->length = gmx_htonl(length);
 }
 
 
@@ -252,8 +280,8 @@ static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t leng
 static void swap_header(IMDHeader *header)
 {
     /* and vice versa... */
-    header->type   = ntohl(header->type);
-    header->length = ntohl(header->length);
+    header->type   = gmx_ntohl(header->type);
+    header->length = gmx_ntohl(header->length);
 }
 
 
@@ -617,7 +645,7 @@ static gmx_bool imd_tryconnect(t_gmx_IMD_setup *IMDsetup)
 static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
 {
     /* do not wait for connection, when e.g. ctrl+c is pressed and we will terminate anyways. */
-    if (gmx_get_stop_condition() != gmx_stop_cond_none)
+    if (!((int) gmx_get_stop_condition() == gmx_stop_cond_none))
     {
         return;
     }
@@ -811,7 +839,6 @@ static void imd_sync_nodes(t_inputrec *ir, t_commrec *cr, double t)
 {
     int              new_nforces = 0;
     t_gmx_IMD_setup *IMDsetup;
-    int              start, end, i;
 
 
     IMDsetup = ir->imd->setup;
