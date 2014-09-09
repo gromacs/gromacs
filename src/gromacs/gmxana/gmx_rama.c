@@ -80,7 +80,7 @@ int gmx_rama(int argc, char *argv[])
     output_env_t oenv;
     t_filenm     fnm[] = {
         { efTRX, "-f", NULL,  ffREAD },
-        { efTPX, NULL, NULL,  ffREAD },
+        { efTPR, NULL, NULL,  ffREAD },
         { efXVG, NULL, "rama", ffWRITE }
     };
 #define NFILE asize(fnm)
@@ -93,7 +93,7 @@ int gmx_rama(int argc, char *argv[])
 
 
     snew(xr, 1);
-    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPX, NFILE, fnm), xr, 3);
+    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPR, NFILE, fnm), xr, 3);
 
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Ramachandran Plot", "Phi", "Psi", oenv);
     xvgr_line_props(out, 0, elNone, ecFrank, oenv);

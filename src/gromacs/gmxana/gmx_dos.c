@@ -305,7 +305,7 @@ int gmx_dos(int argc, char *argv[])
 
     t_filenm            fnm[] = {
         { efTRN, "-f",    NULL,    ffREAD  },
-        { efTPX, "-s",    NULL,    ffREAD  },
+        { efTPR, "-s",    NULL,    ffREAD  },
         { efNDX, NULL,    NULL,    ffOPTRD },
         { efXVG, "-vacf", "vacf",  ffWRITE },
         { efXVG, "-mvacf", "mvacf", ffWRITE },
@@ -342,7 +342,7 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
                   TRUE);
     V     = det(box);
     tmass = 0;

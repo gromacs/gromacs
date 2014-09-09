@@ -409,25 +409,20 @@ static void list_tng(const char gmx_unused *fn)
 
 void list_trx(const char *fn)
 {
-    int ftp;
-
-    ftp = fn2ftp(fn);
-    if (ftp == efXTC)
+    switch (fn2ftp(fn))
     {
-        list_xtc(fn);
-    }
-    else if ((ftp == efTRR) || (ftp == efTRJ))
-    {
-        list_trn(fn);
-    }
-    else if (ftp == efTNG)
-    {
-        list_tng(fn);
-    }
-    else
-    {
-        fprintf(stderr, "File %s is of an unsupported type. Try using the command\n 'less %s'\n",
-                fn, fn);
+        case efXTC:
+            list_xtc(fn);
+            break;
+        case efTRR:
+            list_trn(fn);
+            break;
+        case efTNG:
+            list_tng(fn);
+            break;
+        default:
+            fprintf(stderr, "File %s is of an unsupported type. Try using the command\n 'less %s'\n",
+                    fn, fn);
     }
 }
 
@@ -622,7 +617,7 @@ int gmx_dump(int argc, char *argv[])
         "Position restraint output from -sys -s is broken"
     };
     t_filenm    fnm[] = {
-        { efTPX, "-s", NULL, ffOPTRD },
+        { efTPR, "-s", NULL, ffOPTRD },
         { efTRX, "-f", NULL, ffOPTRD },
         { efEDR, "-e", NULL, ffOPTRD },
         { efCPT, NULL, NULL, ffOPTRD },
@@ -648,9 +643,9 @@ int gmx_dump(int argc, char *argv[])
     }
 
 
-    if (ftp2bSet(efTPX, NFILE, fnm))
+    if (ftp2bSet(efTPR, NFILE, fnm))
     {
-        list_tpx(ftp2fn(efTPX, NFILE, fnm), bShowNumbers,
+        list_tpx(ftp2fn(efTPR, NFILE, fnm), bShowNumbers,
                  ftp2fn_null(efMDP, NFILE, fnm), bSysTop);
     }
     else if (ftp2bSet(efTRX, NFILE, fnm))

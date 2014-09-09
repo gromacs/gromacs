@@ -495,13 +495,13 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
 {
     t_filenm          fnm[] = {
         { efTRX, "-f1", NULL,  ffREAD },
-        { efTPX, "-f2", "foo", ffREAD },
+        { efTPR, "-f2", "foo", ffREAD },
         { efTRX, "-f3", NULL,  ffREAD },
         { efSTX, "-f4", NULL,  ffREAD }
     };
     args_.append("test");
     std::string       expected1 = addFileArg("-f1", "1.trr", efNoExtension);
-    std::string       expected2 = addFileArg("-f2", ".tpa", efEmptyValue);
+    std::string       expected2 = addFileArg("-f2", ".tpr", efEmptyValue);
     std::string       expected3 = addFileArg("-f3", ".trr", efEmptyValue);
     std::string       expected4 = addFileArg(NULL, ".pdb", efEmptyValue);
     std::string       deffnm    = gmx::Path::stripExtension(expected3);

@@ -338,7 +338,6 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
 
     switch (ftp)
     {
-        case efTRJ:
         case efTRR:
         case efTNG:
             break;
@@ -353,7 +352,6 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
 
     switch (ftp)
     {
-        case efTRJ:
         case efTRR:
         case efTNG:
             if (fr->bV)
@@ -395,7 +393,6 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
         case efXTC:
             write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec);
             break;
-        case efTRJ:
         case efTRR:
             fwrite_trn(status->fio, nframes_read(status),
                        fr->time, fr->step, fr->box, nind, xout, vout, fout);
@@ -433,8 +430,6 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
 
     switch (ftp)
     {
-        case efTRN:
-        case efTRJ:
         case efTRR:
         case efTNG:
             if (vout)
@@ -534,7 +529,6 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
 
     switch (gmx_fio_getftp(status->fio))
     {
-        case efTRJ:
         case efTRR:
             break;
         default:
@@ -551,7 +545,6 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
         case efXTC:
             write_xtc(status->fio, fr->natoms, fr->step, fr->time, fr->box, fr->x, prec);
             break;
-        case efTRJ:
         case efTRR:
             fwrite_trn(status->fio, fr->step, fr->time, fr->lambda, fr->box, fr->natoms,
                        fr->bX ? fr->x : NULL, fr->bV ? fr->v : NULL, fr->bF ? fr->f : NULL);
@@ -814,7 +807,6 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
         }
         switch (ftp)
         {
-            case efTRJ:
             case efTRR:
                 bRet = gmx_next_frame(status, fr);
                 break;
@@ -948,7 +940,6 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
     }
     switch (ftp)
     {
-        case efTRJ:
         case efTRR:
             break;
         case efCPT:
