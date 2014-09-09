@@ -200,10 +200,10 @@ gmx_rng_set_state(gmx_rng_t rng,  unsigned int *mt, int mti)
 unsigned int
 gmx_rng_make_seed(void)
 {
-    FILE        *fp;
-    unsigned int data;
-    int          ret;
-    long         my_pid;
+    FILE              *fp;
+    unsigned int       data;
+    int gmx_unused     ret;
+    long               my_pid;
 
 #ifdef HAVE_UNISTD_H
     /* We never want Gromacs execution to halt 10-20 seconds while
@@ -245,14 +245,13 @@ gmx_rng_make_seed(void)
 static void
 gmx_rng_update(gmx_rng_t rng)
 {
-    unsigned int       lastx, x1, x2, y, *mt;
-    int                mti, k;
+    unsigned int       x1, x2, y, *mt;
+    int                k;
     const unsigned int mag01[2] = {0x0UL, RNG_MATRIX_A};
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
     /* update random numbers */
     mt  = rng->mt;  /* pointer to array - avoid repeated dereferencing */
-    mti = rng->mti;
 
     x1        = mt[0];
     for (k = 0; k < RNG_N-RNG_M-3; k += 4)
@@ -393,8 +392,8 @@ gmx_rng_gaussian_table(gmx_rng_t rng)
 }
 
 void
-gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                       gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_2uniform(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                       gmx_uint64_t key1, gmx_uint64_t key2,
                        double* rnd)
 {
     const gmx_int64_t  mask_53bits     = 0x1FFFFFFFFFFFFF;
@@ -409,8 +408,8 @@ gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
 }
 
 void
-gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                              gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_3gaussian_table(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                              gmx_uint64_t key1, gmx_uint64_t key2,
                               real* rnd)
 {
     threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
@@ -423,8 +422,8 @@ gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
 }
 
 void
-gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                              gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_6gaussian_table(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                              gmx_uint64_t key1, gmx_uint64_t key2,
                               real* rnd)
 {
     threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
