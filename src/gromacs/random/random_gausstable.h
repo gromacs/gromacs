@@ -32,6 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* 14-bit table for fast gaussian lookup.
  * To be included in gmx_random.c
  */
@@ -4134,3 +4139,7 @@ static const real
     3.3158946e+00, 3.3558927e+00, 3.4021609e+00, 3.4572146e+00,
     3.5255561e+00, 3.6167130e+00, 3.7595601e+00, 4.0255485e+00
 };
+
+#ifdef __cplusplus
+}
+#endif

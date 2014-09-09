@@ -254,7 +254,7 @@ gmx_rng_make_seed(void)
 static void
 gmx_rng_update(gmx_rng_t rng)
 {
-    unsigned int       lastx, x1, x2, y, *mt;
+    unsigned int       x1, x2, y, *mt;
     int                mti, k;
     const unsigned int mag01[2] = {0x0UL, RNG_MATRIX_A};
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
@@ -409,8 +409,8 @@ gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
     const gmx_int64_t  mask_53bits     = 0x1FFFFFFFFFFFFF;
     const double       two_power_min53 = 1.0/9007199254740992.0;
 
-    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
-    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t ctr  = {{static_cast<uint64_t>(ctr1), static_cast<uint64_t>(ctr2)}};
+    threefry2x64_key_t key  = {{static_cast<uint64_t>(key1), static_cast<uint64_t>(key2)}};
     threefry2x64_ctr_t rand = threefry2x64(ctr, key);
 
     rnd[0] = (rand.v[0] & mask_53bits)*two_power_min53;
@@ -422,8 +422,8 @@ gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
                               gmx_int64_t key1, gmx_int64_t key2,
                               real* rnd)
 {
-    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
-    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t ctr  = {{static_cast<uint64_t>(ctr1), static_cast<uint64_t>(ctr2)}};
+    threefry2x64_key_t key  = {{static_cast<uint64_t>(key1), static_cast<uint64_t>(key2)}};
     threefry2x64_ctr_t rand = threefry2x64(ctr, key);
 
     rnd[0] = gaussian_table[(rand.v[0] >> 48) & GAUSS_MASK];
@@ -436,8 +436,8 @@ gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
                               gmx_int64_t key1, gmx_int64_t key2,
                               real* rnd)
 {
-    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
-    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t ctr  = {{static_cast<uint64_t>(ctr1), static_cast<uint64_t>(ctr2)}};
+    threefry2x64_key_t key  = {{static_cast<uint64_t>(key1), static_cast<uint64_t>(key2)}};
     threefry2x64_ctr_t rand = threefry2x64(ctr, key);
 
     rnd[0] = gaussian_table[(rand.v[0] >> 48) & GAUSS_MASK];
