@@ -54,7 +54,7 @@
 \tt     conf & \tt esp & Asc & \tt -c & Coordinate file in ESPResSo format \\[-0.1ex]
 \tt     conf & \tt g96 & Asc & \tt -c & Coordinate file in Gromos-96 format \\[-0.1ex]
 \tt     conf & \tt gro & Asc & \tt -c & Coordinate file in Gromos-87 format \\[-0.1ex]
-\tt     conf & \tt gro &     & \tt -c & Structure: \tt gro g96 pdb esp tpr tpb tpa \\[-0.1ex]
+\tt     conf & \tt gro &     & \tt -c & Structure: \tt gro g96 pdb esp tpr \\[-0.1ex]
 \tt      out & \tt gro &     & \tt -o & Structure: \tt gro g96 pdb esp \\[-0.1ex]
 \tt    polar & \tt hdb & Asc & \tt    & Hydrogen data base \\[-0.1ex]
 \tt   topinc & \tt itp & Asc & \tt    & Include file for topology \\[-0.1ex]
@@ -70,16 +70,14 @@
 \tt  residue & \tt rtp & Asc & \tt    & Residue Type file used by {\tt pdb2gmx} \\[-0.1ex]
 \tt      doc & \tt tex & Asc & \tt -o & LaTeX file \\[-0.1ex]
 \tt    topol & \tt top & Asc & \tt -p & Topology file \\[-0.1ex]
-\tt    topol & \tt tpb & Bin & \tt -s & Binary run input file \\[-0.1ex]
-\tt    topol & \tt tpr &     & \tt -s & Generic run input: \tt tpr tpb tpa \\[-0.1ex]
-\tt    topol & \tt tpr &     & \tt -s & Structure+mass(db): \tt tpr tpb tpa gro g96 pdb \\[-0.1ex]
+\tt    topol & \tt tpr &     & \tt -s & Generic run input: \tt tpr \\[-0.1ex]
+\tt    topol & \tt tpr &     & \tt -s & Structure+mass(db): \tt tpr gro g96 pdb \\[-0.1ex]
 \tt    topol & \tt tpr & xdr & \tt -s & Portable xdr run input file \\[-0.1ex]
-\tt     traj & \tt trj & Bin & \tt    & Trajectory file (architecture specific) \\[-0.1ex]
-\tt     traj & \tt trr &     & \tt    & Full precision trajectory: \tt trr trj cpt \\[-0.1ex]
+\tt     traj & \tt trr &     & \tt    & Full precision trajectory: \tt trr cpt \\[-0.1ex]
 \tt     traj & \tt trr & xdr & \tt    & Trajectory in portable xdr format \\[-0.1ex]
 \tt     root & \tt xpm & Asc & \tt    & X PixMap compatible matrix file \\[-0.1ex]
-\tt     traj & \tt xtc &     & \tt -f & Trajec., input: \tt xtc trr trj cpt gro g96 pdb \\[-0.1ex]
-\tt     traj & \tt xtc &     & \tt -f & Trajectory, output: \tt xtc trr trj gro g96 pdb \\[-0.1ex]
+\tt     traj & \tt xtc &     & \tt -f & Trajec., input: \tt xtc trr cpt gro g96 pdb \\[-0.1ex]
+\tt     traj & \tt xtc &     & \tt -f & Trajectory, output: \tt xtc trr gro g96 pdb \\[-0.1ex]
 \tt     traj & \tt xtc & xdr & \tt    & Compressed trajectory (portable xdr format) \\[-0.1ex]
 \tt    graph & \tt xvg & Asc & \tt -o & xvgr/xmgr file \\[-0.1ex]
 \dline
@@ -90,6 +88,6 @@
 
 % LocalWords:  lccX atomtp atp Asc Atomtype pdb gmx eiwit brk Brookhaven cpt tm
 % LocalWords:  xdr nnnice dat dlg ngmx sam edi edo ener edr ene ent eps conf ss
-% LocalWords:  PostScript ESPResSo gtraj Gromos gro tpr tpb tpa hdb topinc itp
-% LocalWords:  grompp mdp mtx ndx rtp tex LaTeX topol traj trj trr xpm PixMap
+% LocalWords:  PostScript ESPResSo gtraj Gromos gro tpr hdb topinc itp
+% LocalWords:  grompp mdp mtx ndx rtp tex LaTeX topol traj trr xpm PixMap
 % LocalWords:  xtc Trajec xvg xvgr xmgr ps

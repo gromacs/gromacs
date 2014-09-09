@@ -100,7 +100,7 @@ int gmx_rotacf(int argc, char *argv[])
     int             ePBC;
     t_filenm        fnm[] = {
         { efTRX, "-f", NULL,  ffREAD  },
-        { efTPX, NULL, NULL,  ffREAD },
+        { efTPR, NULL, NULL,  ffREAD },
         { efNDX, NULL, NULL,  ffREAD  },
         { efXVG, "-o", "rotacf",  ffWRITE }
     };
@@ -141,7 +141,7 @@ int gmx_rotacf(int argc, char *argv[])
                   "these can not be atom doublets\n");
     }
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
 
     snew(c1, nvec);
     for (i = 0; (i < nvec); i++)

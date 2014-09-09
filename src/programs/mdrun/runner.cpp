@@ -1103,7 +1103,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (SIMMASTER(cr))
     {
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPX, nfile, fnm), inputrec, state, NULL, mtop);
+        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, NULL, mtop);
 
         if (inputrec->cutoff_scheme != ecutsVERLET &&
             ((Flags & MD_TESTVERLET) || getenv("GMX_VERLET_SCHEME") != NULL))

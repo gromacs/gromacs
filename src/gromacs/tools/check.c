@@ -738,8 +738,8 @@ int gmx_check(int argc, char *argv[])
     t_filenm        fnm[] = {
         { efTRX, "-f",  NULL, ffOPTRD },
         { efTRX, "-f2",  NULL, ffOPTRD },
-        { efTPX, "-s1", "top1", ffOPTRD },
-        { efTPX, "-s2", "top2", ffOPTRD },
+        { efTPR, "-s1", "top1", ffOPTRD },
+        { efTPR, "-s2", "top2", ffOPTRD },
         { efTPS, "-c",  NULL, ffOPTRD },
         { efEDR, "-e",  NULL, ffOPTRD },
         { efEDR, "-e2", "ener2", ffOPTRD },

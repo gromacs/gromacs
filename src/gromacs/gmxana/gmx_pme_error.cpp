@@ -1106,9 +1106,9 @@ int gmx_pme_error(int argc, char *argv[])
 
 
     static t_filenm fnm[] = {
-        { efTPX, "-s",     NULL,    ffREAD },
+        { efTPR, "-s",     NULL,    ffREAD },
         { efOUT, "-o",    "error",  ffWRITE },
-        { efTPX, "-so",   "tuned",  ffOPTWR }
+        { efTPR, "-so",   "tuned",  ffOPTWR }
     };
 
     output_env_t    oenv = NULL;

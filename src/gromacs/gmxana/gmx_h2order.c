@@ -304,7 +304,7 @@ int gmx_h2order(int argc, char *argv[])
         { efTRX, "-f", NULL,  ffREAD },     /* trajectory file            */
         { efNDX, NULL, NULL,  ffREAD },     /* index file         */
         { efNDX, "-nm", NULL, ffOPTRD },    /* index with micelle atoms   */
-        { efTPX, NULL, NULL,  ffREAD },     /* topology file              */
+        { efTPR, NULL, NULL,  ffREAD },     /* topology file              */
         { efXVG, "-o",  "order", ffWRITE }, /* xvgr output file       */
     };
 
@@ -318,7 +318,7 @@ int gmx_h2order(int argc, char *argv[])
     }
     bMicel = opt2bSet("-nm", NFILE, fnm);
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &ngx, &index, &grpname);
 

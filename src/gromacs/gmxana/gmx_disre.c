@@ -717,7 +717,7 @@ int gmx_disre(int argc, char *argv[])
     gmx_rmpbc_t     gpbc = NULL;
 
     t_filenm        fnm[] = {
-        { efTPX, NULL, NULL, ffREAD },
+        { efTPR, NULL, NULL, ffREAD },
         { efTRX, "-f", NULL, ffREAD },
         { efXVG, "-ds", "drsum",  ffWRITE },
         { efXVG, "-da", "draver", ffWRITE },
@@ -745,9 +745,9 @@ int gmx_disre(int argc, char *argv[])
         init5(ntop);
     }
 
-    read_tpxheader(ftp2fn(efTPX, NFILE, fnm), &header, FALSE, NULL, NULL);
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE, NULL, NULL);
     snew(xtop, header.natoms);
-    read_tpx(ftp2fn(efTPX, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, NULL, &mtop);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, NULL, &mtop);
     bPDB = opt2bSet("-q", NFILE, fnm);
     if (bPDB)
     {

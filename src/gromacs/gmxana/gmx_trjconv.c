@@ -470,7 +470,7 @@ static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
 
 void check_trn(const char *fn)
 {
-    if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
+    if (fn2ftp(fn) != efTRR)
     {
         gmx_fatal(FARGS, "%s is not a trajectory file, exiting\n", fn);
     }
@@ -1033,9 +1033,9 @@ int gmx_trjconv(int argc, char *argv[])
         {
             /* check if velocities are possible in input and output files */
             ftpin = fn2ftp(in_file);
-            bVels = (ftp == efTRR || ftp == efTRJ || ftp == efGRO ||
+            bVels = (ftp == efTRR || ftp == efGRO ||
                      ftp == efG96 || ftp == efTNG)
-                && (ftpin == efTRR || ftpin == efTRJ || ftpin == efGRO ||
+                && (ftpin == efTRR || ftpin == efGRO ||
                     ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
@@ -1269,7 +1269,7 @@ int gmx_trjconv(int argc, char *argv[])
             useatoms.nr = nout;
         }
         /* select what to read */
-        if (ftp == efTRR || ftp == efTRJ)
+        if (ftp == efTRR)
         {
             flags = TRX_READ_X;
         }
@@ -1353,7 +1353,6 @@ int gmx_trjconv(int argc, char *argv[])
                     break;
                 case efXTC:
                 case efTRR:
-                case efTRJ:
                     out = NULL;
                     if (!bSplit && !bSubTraj)
                     {
@@ -1748,7 +1747,6 @@ int gmx_trjconv(int argc, char *argv[])
                                 write_tng_frame(trxout, &frout);
                                 // TODO when trjconv behaves better: work how to read and write lambda
                                 break;
-                            case efTRJ:
                             case efTRR:
                             case efXTC:
                                 if (bSplitHere)

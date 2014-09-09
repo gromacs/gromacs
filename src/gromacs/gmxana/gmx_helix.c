@@ -157,7 +157,7 @@ int gmx_helix(int argc, char *argv[])
     gmx_rmpbc_t    gpbc = NULL;
     gmx_bool       bRange;
     t_filenm       fnm[] = {
-        { efTPX, NULL,  NULL,   ffREAD  },
+        { efTPR, NULL,  NULL,   ffREAD  },
         { efNDX, NULL,  NULL,   ffREAD  },
         { efTRX, "-f",  NULL,   ffREAD  },
         { efSTO, "-cz", "zconf", ffWRITE },
@@ -173,7 +173,7 @@ int gmx_helix(int argc, char *argv[])
     bRange = (opt2parg_bSet("-ahxstart", asize(pa), pa) &&
               opt2parg_bSet("-ahxend", asize(pa), pa));
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
 
@@ -208,7 +208,7 @@ int gmx_helix(int argc, char *argv[])
 
     /* Read reference frame from tpx file to compute helix length */
     snew(xref, top->atoms.nr);
-    read_tpx(ftp2fn(efTPX, NFILE, fnm),
+    read_tpx(ftp2fn(efTPR, NFILE, fnm),
              NULL, NULL, &natoms, xref, NULL, NULL, NULL);
     calc_hxprops(nres, bb, xref);
     do_start_end(nres, bb, &nbb, bbindex, &nca, caindex, bRange, rStart, rEnd);

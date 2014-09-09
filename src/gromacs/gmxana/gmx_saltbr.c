@@ -150,7 +150,7 @@ int gmx_saltbr(int argc, char *argv[])
     };
     t_filenm        fnm[] = {
         { efTRX, "-f",  NULL, ffREAD },
-        { efTPX, NULL,  NULL, ffREAD },
+        { efTPR, NULL,  NULL, ffREAD },
     };
 #define NFILE asize(fnm)
 
@@ -190,7 +190,7 @@ int gmx_saltbr(int argc, char *argv[])
         return 0;
     }
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
     cg  = mk_charge(&top->atoms, &(top->cgs), &ncg);
     snew(cgdist, ncg);
     snew(nWithin, ncg);

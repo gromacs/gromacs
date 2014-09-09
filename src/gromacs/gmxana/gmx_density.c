@@ -671,7 +671,7 @@ int gmx_density(int argc, char *argv[])
     t_filenm           fnm[] = { /* files for g_density       */
         { efTRX, "-f", NULL,  ffREAD },
         { efNDX, NULL, NULL,  ffOPTRD },
-        { efTPX, NULL, NULL,  ffREAD },
+        { efTPR, NULL, NULL,  ffREAD },
         { efDAT, "-ei", "electrons", ffOPTRD }, /* file with nr. of electrons */
         { efXVG, "-o", "density", ffWRITE },
     };
@@ -693,7 +693,7 @@ int gmx_density(int argc, char *argv[])
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
     if (dens_opt[0][0] == 'n')
     {
         for (i = 0; (i < top->atoms.nr); i++)
