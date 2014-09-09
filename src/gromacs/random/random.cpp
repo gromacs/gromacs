@@ -245,7 +245,7 @@ gmx_rng_make_seed(void)
 static void
 gmx_rng_update(gmx_rng_t rng)
 {
-    unsigned int       lastx, x1, x2, y, *mt;
+    unsigned int       x1, x2, y, *mt;
     int                mti, k;
     const unsigned int mag01[2] = {0x0UL, RNG_MATRIX_A};
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
@@ -393,8 +393,8 @@ gmx_rng_gaussian_table(gmx_rng_t rng)
 }
 
 void
-gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                       gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_2uniform(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                       gmx_uint64_t key1, gmx_uint64_t key2,
                        double* rnd)
 {
     const gmx_int64_t  mask_53bits     = 0x1FFFFFFFFFFFFF;
@@ -409,8 +409,8 @@ gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
 }
 
 void
-gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                              gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_3gaussian_table(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                              gmx_uint64_t key1, gmx_uint64_t key2,
                               real* rnd)
 {
     threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
@@ -423,8 +423,8 @@ gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
 }
 
 void
-gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                              gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_6gaussian_table(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                              gmx_uint64_t key1, gmx_uint64_t key2,
                               real* rnd)
 {
     threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
