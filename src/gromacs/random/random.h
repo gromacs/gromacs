@@ -295,8 +295,8 @@ gmx_rng_gaussian_table(gmx_rng_t rng);
  * (threefry2x64).
  */
 void
-gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                       gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_2uniform(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                       gmx_uint64_t key1, gmx_uint64_t key2,
                        double* rnd);
 
 /* Return three Gaussian random numbers with expectation value
@@ -308,14 +308,14 @@ gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
  * threadsafe: yes
  */
 void
-gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                              gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_3gaussian_table(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                              gmx_uint64_t key1, gmx_uint64_t key2,
                               real* rnd);
 
 /* As gmx_rng_3gaussian_table, but returns 6 Gaussian numbers. */
 void
-gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
-                              gmx_int64_t key1, gmx_int64_t key2,
+gmx_rng_cycle_6gaussian_table(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
+                              gmx_uint64_t key1, gmx_uint64_t key2,
                               real* rnd);
 
 #ifdef __cplusplus
