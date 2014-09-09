@@ -458,7 +458,7 @@ static int pick_nbnxn_kernel_version(FILE            *fplog,
     }
 
     bCUDA32 = bCUDA40 = false;
-#if CUDA_VERSION == 3200
+#if CUDA_VERSION == 3020
     bCUDA32 = true;
     sprintf(sbuf, "3.2");
 #elif CUDA_VERSION == 4000
@@ -556,7 +556,7 @@ void nbnxn_cuda_init(FILE *fplog,
          * priorities, because we are querying the priority range which in this
          * case will be a single value.
          */
-#if CUDA_VERSION >= 5500
+#if CUDA_VERSION >= 5050
         {
             int highest_priority;
             stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);
