@@ -231,6 +231,12 @@ static void init_edsamstate(gmx_edsam_t ed, edsamstate_t *EDstate);
 static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv);
 /* End function declarations */
 
+/* Define a formats for reading otherwise cppcheck complains for scanf without width limits */
+static char max_ev_fmt_d[]       = "%7d"; /* Number of eigenvectors. 9,999,999 should be enough */
+static char max_ev_fmt_lf[]      = "%12lf";
+static char max_ev_fmt_dlf[]     = "%7d%12lf";
+static char max_ev_fmt_dlflflf[] = "%7d%12lf%12lf%12lf";
+static char max_ev_fmt_lelele[]  = "%12le%12le%12le";
 
 /* Do we have to perform essential dynamics constraints or possibly only flooding
  * for any of the ED groups? */
@@ -1439,11 +1445,10 @@ static int read_checked_edint(FILE *file, const char *label)
     char line[STRLEN+1];
     int  idum;
 
-
     fgets2 (line, STRLEN, file);
     check(line, label);
     fgets2 (line, STRLEN, file);
-    sscanf (line, "%d", &idum);
+    sscanf (line, max_ev_fmt_d, &idum);
     return idum;
 }
 
@@ -1467,7 +1472,7 @@ static int read_edint(FILE *file, gmx_bool *bEOF)
         *bEOF = TRUE;
         return -1;
     }
-    sscanf (line, "%d", &idum);
+    sscanf (line, max_ev_fmt_d, &idum);
     *bEOF = FALSE;
     return idum;
 }
@@ -1482,7 +1487,7 @@ static real read_checked_edreal(FILE *file, const char *label)
     fgets2 (line, STRLEN, file);
     check(line, label);
     fgets2 (line, STRLEN, file);
-    sscanf (line, "%lf", &rdum);
+    sscanf (line, max_ev_fmt_lf, &rdum);
     return (real) rdum; /* always read as double and convert to single */
 }
 
@@ -1497,7 +1502,7 @@ static void read_edx(FILE *file, int number, int *anrs, rvec *x)
     for (i = 0; i < number; i++)
     {
         fgets2 (line, STRLEN, file);
-        sscanf (line, "%d%lf%lf%lf", &anrs[i], &d[0], &d[1], &d[2]);
+        sscanf (line, max_ev_fmt_dlflflf, &anrs[i], &d[0], &d[1], &d[2]);
         anrs[i]--; /* we are reading FORTRAN indices */
         for (j = 0; j < 3; j++)
         {
@@ -1517,7 +1522,7 @@ static void scan_edvec(FILE *in, int nr, rvec *vec)
     for (i = 0; (i < nr); i++)
     {
         fgets2 (line, STRLEN, in);
-        sscanf (line, "%le%le%le", &x, &y, &z);
+        sscanf (line, max_ev_fmt_lelele, &x, &y, &z);
         vec[i][XX] = x;
         vec[i][YY] = y;
         vec[i][ZZ] = z;
@@ -1552,7 +1557,7 @@ static void read_edvec(FILE *in, int nr, t_eigvec *tvec, gmx_bool bReadRefproj, 
             fgets2 (line, STRLEN, in);
             if (bReadRefproj) /* ONLY when using flooding as harmonic restraint */
             {
-                nscan = sscanf(line, "%d%lf%lf%lf", &idum, &rdum, &refproj_dum, &refprojslope_dum);
+                nscan = sscanf(line, max_ev_fmt_dlflflf, &idum, &rdum, &refproj_dum, &refprojslope_dum);
                 /* Zero out values which were not scanned */
                 switch (nscan)
                 {
@@ -1581,7 +1586,7 @@ static void read_edvec(FILE *in, int nr, t_eigvec *tvec, gmx_bool bReadRefproj, 
             }
             else /* Normal flooding */
             {
-                nscan = sscanf(line, "%d%lf", &idum, &rdum);
+                nscan = sscanf(line, max_ev_fmt_dlf, &idum, &rdum);
                 if (nscan != 2)
                 {
                     gmx_fatal(FARGS, "Expected 2 values for flooding vec: <nr> <stpsz>\n");
@@ -2095,7 +2100,6 @@ static void do_radacc(rvec *xcoll, t_edpar *edi)
     if (rad < edi->vecs.radacc.radius)
     {
         ratio = edi->vecs.radacc.radius/rad - 1.0;
-        rad   = edi->vecs.radacc.radius;
     }
     else
     {
@@ -2136,7 +2140,6 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
     if (edi->buf->do_radcon != NULL)
     {
         bFirst = FALSE;
-        loc    = edi->buf->do_radcon;
     }
     else
     {
@@ -2182,23 +2185,18 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
                 rvec_inc(xcoll[j], vec_dum);
             }
         }
+
+        for (i = 0; i < edi->vecs.radcon.neig; i++)
+        {
+            /* calculate the projections, radius */
+            loc->proj[i] = projectx(edi, xcoll, edi->vecs.radcon.vec[i]);
+        }
     }
     else
     {
         edi->vecs.radcon.radius = rad;
     }
 
-    if (rad != edi->vecs.radcon.radius)
-    {
-        rad = 0.0;
-        for (i = 0; i < edi->vecs.radcon.neig; i++)
-        {
-            /* calculate the projections, radius */
-            loc->proj[i] = projectx(edi, xcoll, edi->vecs.radcon.vec[i]);
-            rad         += pow(loc->proj[i] - edi->vecs.radcon.refproj[i], 2);
-        }
-        rad = sqrt(rad);
-    }
 }
 
 
@@ -2444,7 +2442,7 @@ static void add_to_string_aligned(char **str, char *buf)
 }
 
 
-static void nice_legend(const char ***setname, int *nsets, char **LegendStr, char *value, char *unit, char EDgroupchar)
+static void nice_legend(const char ***setname, int *nsets, char **LegendStr, const char *value, const char *unit, char EDgroupchar)
 {
     char tmp[STRLEN], tmp2[STRLEN];
 

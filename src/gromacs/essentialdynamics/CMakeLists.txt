@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB ESSENTIALDYNAMICS_SOURCES *.cpp *.c)
+file(GLOB ESSENTIALDYNAMICS_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ESSENTIALDYNAMICS_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
