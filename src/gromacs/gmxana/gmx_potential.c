@@ -459,7 +459,7 @@ int gmx_potential(int argc, char *argv[])
     t_filenm    fnm[] = {                      /* files for g_order       */
         { efTRX, "-f", NULL,  ffREAD },        /* trajectory file             */
         { efNDX, NULL, NULL,  ffREAD },        /* index file          */
-        { efTPX, NULL, NULL,  ffREAD },        /* topology file               */
+        { efTPR, NULL, NULL,  ffREAD },        /* topology file               */
         { efXVG, "-o", "potential", ffWRITE }, /* xvgr output file    */
         { efXVG, "-oc", "charge", ffWRITE },   /* xvgr output file    */
         { efXVG, "-of", "field", ffWRITE },    /* xvgr output file    */
@@ -477,7 +477,7 @@ int gmx_potential(int argc, char *argv[])
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
     snew(grpname, ngrps);
     snew(index, ngrps);

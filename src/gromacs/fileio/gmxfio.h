@@ -66,9 +66,6 @@ enum {
 
 typedef struct t_fileio t_fileio;
 
-extern const char *itemstr[eitemNR];
-extern const char *comment_str[eitemNR];
-
 /* NOTE ABOUT THREAD SAFETY:
 
    The functions are all thread-safe, provided that two threads don't
@@ -83,11 +80,6 @@ extern const char *comment_str[eitemNR];
 t_fileio *gmx_fio_open(const char *fn, const char *mode);
 /* Open a new file for reading or writing.
  * The file type will be deduced from the file name.
- * If fn is NULL, stdin / stdout will be used for Ascii I/O (TPA type)
- * mode may be "r", "w", or "a". You should append a "b" to the mode
- * if you are writing a binary file, but the routine will also
- * doublecheck it and try to do it if you forgot. This has no effect on
- * unix, but is important on windows.
  */
 
 int gmx_fio_close(t_fileio *fp);
@@ -150,7 +142,7 @@ void gmx_fio_checktype(t_fileio *fio);
  ***************************************************/
 
 void gmx_fio_rewind(t_fileio *fio);
-/* Rewind the tpa file in fio */
+/* Rewind the file in fio */
 
 int gmx_fio_flush(t_fileio *fio);
 /* Flush the fio, returns 0 on success */
