@@ -12,12 +12,11 @@ OPTIONS
 Options to specify input and output files:
 
  -f     [<.xtc/.trr/...>] (path/to/long/trajectory/name.xtc) (Input)
-     File name option with a long value: xtc trr cpt trj gro g96 pdb tng
+     File name option with a long value: xtc trr cpt gro g96 pdb tng
  -f2    [<.xtc/.trr/...>] (path/to/long/trajectory.xtc) (Input)
-     File name option with a long value: xtc trr cpt trj gro g96 pdb tng
+     File name option with a long value: xtc trr cpt gro g96 pdb tng
  -lib   [<.xtc/.trr/...>] (path/to/long/trajectory/name.xtc) (Input, Opt., Lib.)
-     File name option with a long value and type: xtc trr cpt trj gro g96 pdb
-     tng
+     File name option with a long value and type: xtc trr cpt gro g96 pdb tng
  -longfileopt [<.dat>] (deffile.dat) (Input, Opt.)
      File name option with a long name
  -longfileopt2 [<.dat>] (path/to/long/file/name.dat) (Input, Opt., Lib.)

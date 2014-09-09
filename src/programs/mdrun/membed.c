@@ -1034,7 +1034,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         get_input(membed_input, &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
                   &maxwarn, &pieces, &bALLOW_ASYMMETRY);
 
-        tpr_version = get_tpr_version(ftp2fn(efTPX, nfile, fnm));
+        tpr_version = get_tpr_version(ftp2fn(efTPR, nfile, fnm));
         if (tpr_version < membed_version)
         {
             gmx_fatal(FARGS, "Version of *.tpr file to old (%d). "

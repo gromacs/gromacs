@@ -138,7 +138,7 @@ void write_tng_frame(t_trxstatus        *status,
                      struct t_trxframe  *fr);
 
 void close_trx(t_trxstatus *status);
-/* Close trj file as opened with read_first_x, read_frist_frame
+/* Close trajectory file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trj.
  */
 
@@ -234,12 +234,12 @@ gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t, rvec
  */
 
 void close_trj(t_trxstatus *status);
-/* Close trj file as opened with read_first_x, read_frist_frame
+/* Close trajectory file as opened with read_first_x, read_first_frame
  * or open_trx. Identical to close_trx.
  */
 
 void rewind_trj(t_trxstatus *status);
-/* Rewind trj file as opened with read_first_x */
+/* Rewind trajectory file as opened with read_first_x */
 
 struct t_topology *read_top(const char *fn, int *ePBC);
 /* Extract a topology data structure from a topology file.

@@ -1590,7 +1590,7 @@ int gmx_dipoles(int argc, char *argv[])
     t_filenm       fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
-        { efTPX, NULL, NULL,           ffREAD },
+        { efTPR, NULL, NULL,           ffREAD },
         { efNDX, NULL, NULL,           ffOPTRD },
         { efXVG, "-o",   "Mtot",       ffWRITE },
         { efXVG, "-eps", "epsilon",    ffWRITE },
@@ -1664,7 +1664,7 @@ int gmx_dipoles(int argc, char *argv[])
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPX, NFILE, fnm), NULL, box,
+    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), NULL, box,
                         &natoms, NULL, NULL, NULL, top);
 
     snew(gnx, ncos);
