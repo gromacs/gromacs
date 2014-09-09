@@ -2092,9 +2092,9 @@ int gmx_tune_pme(int argc, char *argv[])
         /* g_tune_pme */
         { efOUT, "-p",      "perf",     ffWRITE },
         { efLOG, "-err",    "bencherr", ffWRITE },
-        { efTPX, "-so",     "tuned",    ffWRITE },
+        { efTPR, "-so",     "tuned",    ffWRITE },
         /* mdrun: */
-        { efTPX, NULL,      NULL,       ffREAD },
+        { efTPR, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
         { efCOMPRESSED, "-x", NULL,     ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },

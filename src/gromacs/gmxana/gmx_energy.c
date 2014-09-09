@@ -2027,7 +2027,7 @@ int gmx_energy(int argc, char *argv[])
     t_filenm           fnm[] = {
         { efEDR, "-f",    NULL,      ffREAD  },
         { efEDR, "-f2",   NULL,      ffOPTRD },
-        { efTPX, "-s",    NULL,      ffOPTRD },
+        { efTPR, "-s",    NULL,      ffOPTRD },
         { efXVG, "-o",    "energy",  ffWRITE },
         { efXVG, "-viol", "violaver", ffOPTWR },
         { efXVG, "-pairs", "pairs",   ffOPTWR },
@@ -2172,7 +2172,7 @@ int gmx_energy(int argc, char *argv[])
 
         if (bORIRE || bOTEN)
         {
-            get_orires_parms(ftp2fn(efTPX, NFILE, fnm), &nor, &nex, &or_label, &oobs);
+            get_orires_parms(ftp2fn(efTPR, NFILE, fnm), &nor, &nex, &or_label, &oobs);
         }
 
         if (bORIRE)
@@ -2297,7 +2297,7 @@ int gmx_energy(int argc, char *argv[])
     }
     else if (bDisRe)
     {
-        nbounds = get_bounds(ftp2fn(efTPX, NFILE, fnm), &bounds, &index, &pair, &npairs,
+        nbounds = get_bounds(ftp2fn(efTPR, NFILE, fnm), &bounds, &index, &pair, &npairs,
                              &mtop, &top, &ir);
         snew(violaver, npairs);
         out = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations",
@@ -2316,7 +2316,7 @@ int gmx_energy(int argc, char *argv[])
     }
     else if (bDHDL)
     {
-        get_dhdl_parms(ftp2fn(efTPX, NFILE, fnm), &ir);
+        get_dhdl_parms(ftp2fn(efTPR, NFILE, fnm), &ir);
     }
 
     /* Initiate energies and set them to zero */

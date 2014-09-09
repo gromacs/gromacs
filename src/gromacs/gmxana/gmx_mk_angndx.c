@@ -272,7 +272,7 @@ int gmx_mk_angndx(int argc, char *argv[])
     int               *nr;
     char             **grpnames;
     t_filenm           fnm[] = {
-        { efTPX, NULL, NULL, ffREAD  },
+        { efTPR, NULL, NULL, ffREAD  },
         { efNDX, NULL, "angle", ffWRITE }
     };
 #define NFILE asize(fnm)
@@ -286,7 +286,7 @@ int gmx_mk_angndx(int argc, char *argv[])
 
     ft = select_ftype(opt[0], &nft, &mult);
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), NULL);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), NULL);
 
     ntype = calc_ntype(nft, ft, &(top->idef));
     snew(grpnames, ntype);
