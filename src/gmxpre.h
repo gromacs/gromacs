@@ -53,8 +53,22 @@
  *
  * \inlibraryapi
  */
+//! \cond
 #ifdef HAVE_CONFIG_H
 #include "gmxpre-config.h"
+#endif
+
+/* We use a few GNU functions for thread affinity and other low-level stuff.
+ * However, all such uses should be accompanied by #ifdefs and a feature test
+ * at CMake level, so that the actual uses will be compiled only when available.
+ * But since the define affects system headers, it should be defined before
+ * including any system headers, and this is a robust location to do that.
+ * If this were defined only in source files that needed it, it would clutter
+ * the list of includes somewhere close to the beginning and make automatic
+ * sorting of the includes more difficult.
+ */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
 #endif
 
 #ifdef GMX_FAHCORE
@@ -62,3 +76,4 @@
 #define USE_FAH_XDR  1
 #include "swindirect.h"
 #endif
+//! \endcond

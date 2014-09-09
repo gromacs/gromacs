@@ -34,22 +34,19 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
-#ifdef HAVE_SCHED_AFFINITY
-#  ifndef _GNU_SOURCE
-#    define _GNU_SOURCE 1
-#  endif
-#  include <sched.h>
-#  include <sys/syscall.h>
-#endif
-
 #include "gromacs/legacyheaders/gmx_thread_affinity.h"
+
+#include "config.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef HAVE_SCHED_AFFINITY
+#  include <sched.h>
+#  include <sys/syscall.h>
+#endif
 
 #include "thread_mpi/threads.h"
 

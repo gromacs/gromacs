@@ -34,21 +34,17 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/legacyheaders/gmx_cpuid.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
-
-#ifdef HAVE_SCHED_H
-#  ifndef _GNU_SOURCE
-#    define _GNU_SOURCE 1
-#  endif
-#  include <sched.h>
 #endif
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #ifdef GMX_NATIVE_WINDOWS
 /* MSVC definition for __cpuid() */
     #ifdef _MSC_VER
@@ -57,13 +53,13 @@
 /* sysinfo functions */
     #include <windows.h>
 #endif
+#ifdef HAVE_SCHED_H
+    #include <sched.h>
+#endif
 #ifdef HAVE_UNISTD_H
 /* sysconf() definition */
     #include <unistd.h>
 #endif
-
-#include "gromacs/legacyheaders/gmx_cpuid.h"
-
 
 
 /* For convenience, and to enable configure-time invocation, we keep all architectures
