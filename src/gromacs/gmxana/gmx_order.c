@@ -961,7 +961,7 @@ int gmx_order(int argc, char *argv[])
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
         { efNDX, "-nr", NULL,  ffREAD },              /* index for radial axis calculation	  */
-        { efTPX, NULL, NULL,  ffREAD },               /* topology file                */
+        { efTPR, NULL, NULL,  ffREAD },               /* topology file                */
         { efXVG, "-o", "order", ffWRITE },            /* xvgr output file     */
         { efXVG, "-od", "deuter", ffWRITE },          /* xvgr output file           */
         { efPDB, "-ob", NULL, ffWRITE },              /* write Scd as B factors to PDB if permolecule           */
@@ -989,7 +989,7 @@ int gmx_order(int argc, char *argv[])
     sgfnm  = opt2fn_null("-Sg", NFILE, fnm);
     skfnm  = opt2fn_null("-Sk", NFILE, fnm);
     ndxfnm = opt2fn_null("-n", NFILE, fnm);
-    tpsfnm = ftp2fn(efTPX, NFILE, fnm);
+    tpsfnm = ftp2fn(efTPR, NFILE, fnm);
     trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */
@@ -1060,7 +1060,7 @@ int gmx_order(int argc, char *argv[])
             fprintf(stderr, "Taking carbons as unsaturated!\n");
         }
 
-        top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+        top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
         block = init_index(ftp2fn(efNDX, NFILE, fnm), &grpname);
         index = block->index;                   /* get indices from t_block block */

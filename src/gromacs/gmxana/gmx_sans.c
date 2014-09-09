@@ -146,7 +146,7 @@ int gmx_sans(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     t_filenm   fnm[] = {
-        { efTPX,  "-s",       NULL,       ffREAD },
+        { efTPR,  "-s",       NULL,       ffREAD },
         { efTRX,  "-f",       NULL,       ffREAD },
         { efNDX,  NULL,       NULL,       ffOPTRD },
         { efDAT,  "-d",       "nsfactor", ffOPTRD },
@@ -217,7 +217,7 @@ int gmx_sans(int argc, char *argv[])
 
     /* Try to read files */
     fnDAT = ftp2fn(efDAT, NFILE, fnm);
-    fnTPX = ftp2fn(efTPX, NFILE, fnm);
+    fnTPX = ftp2fn(efTPR, NFILE, fnm);
     fnTRX = ftp2fn(efTRX, NFILE, fnm);
 
     gnsf = gmx_neutronstructurefactors_init(fnDAT);

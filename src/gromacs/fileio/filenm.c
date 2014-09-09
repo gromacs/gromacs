@@ -71,7 +71,7 @@ static const int trxs[] =
 #ifdef USE_XDR
     efXTC, efTRR, efCPT,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efTNG
+    efGRO, efG96, efPDB, efTNG
 };
 #define NTRXS asize(trxs)
 
@@ -89,7 +89,7 @@ static const int tros[] =
 #ifdef USE_XDR
     efXTC, efTRR,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efTNG
+    efGRO, efG96, efPDB, efTNG
 };
 #define NTROS asize(tros)
 
@@ -98,7 +98,7 @@ static const int trns[] =
 #ifdef USE_XDR
     efTRR, efCPT,
 #endif
-    efTRJ, efTNG
+    efTNG
 };
 #define NTRNS asize(trns)
 
@@ -108,29 +108,19 @@ static const int stos[] =
 
 static const int stxs[] =
 {
-    efGRO, efG96, efPDB, efBRK, efENT, efESP,
+    efGRO, efG96, efPDB, efBRK, efENT, efESP
 #ifdef USE_XDR
-    efTPR,
+    , efTPR
 #endif
-    efTPB, efTPA
 };
 #define NSTXS asize(stxs)
-
-static const int tpxs[] =
-{
-#ifdef USE_XDR
-    efTPR,
-#endif
-    efTPB, efTPA
-};
-#define NTPXS asize(tpxs)
 
 static const int tpss[] =
 {
 #ifdef USE_XDR
     efTPR,
 #endif
-    efTPB, efTPA, efGRO, efG96, efPDB, efBRK, efENT
+    efGRO, efG96, efPDB, efBRK, efENT
 };
 #define NTPSS asize(tpss)
 
@@ -155,7 +145,6 @@ static const t_deffile
     { eftGEN, ".???", "traj", NULL,
       "Full precision trajectory", NTRNS, trns },
     { eftXDR, ".trr", "traj", NULL, "Trajectory in portable xdr format" },
-    { eftBIN, ".trj", "traj", NULL, "Trajectory file (architecture specific)" },
     { eftGEN, ".???", "traj_comp", NULL,
       "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed},
     { eftXDR, ".xtc", "traj", NULL,
@@ -179,11 +168,8 @@ static const t_deffile
     { eftASC, ".ndx", "index",  "-n", "Index file", },
     { eftASC, ".top", "topol",  "-p", "Topology file"},
     { eftASC, ".itp", "topinc", NULL, "Include file for topology"},
-    { eftGEN, ".???", "topol", "-s", "Run input file", NTPXS, tpxs },
     { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
     { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
-    { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"},
-    { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"},
     { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
     { eftASC, ".rtp", "residue", NULL, "Residue Type file used by pdb2gmx" },
     { eftASC, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx" },
@@ -231,8 +217,6 @@ const char *ftp2ext_generic(int ftp)
                 return "sto";
             case efSTX:
                 return "stx";
-            case efTPX:
-                return "tpx";
             case efTPS:
                 return "tps";
             default:

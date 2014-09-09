@@ -1534,7 +1534,7 @@ int gmx_grompp(int argc, char *argv[])
         { efNDX, NULL,  NULL,        ffOPTRD },
         { efTOP, NULL,  NULL,        ffREAD  },
         { efTOP, "-pp", "processed", ffOPTWR },
-        { efTPX, "-o",  NULL,        ffWRITE },
+        { efTPR, "-o",  NULL,        ffWRITE },
         { efTRN, "-t",  NULL,        ffOPTRD },
         { efEDR, "-e",  NULL,        ffOPTRD },
         /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
@@ -2083,7 +2083,7 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     done_warning(wi, FARGS);
-    write_tpx_state(ftp2fn(efTPX, NFILE, fnm), ir, &state, sys);
+    write_tpx_state(ftp2fn(efTPR, NFILE, fnm), ir, &state, sys);
 
     /* Output IMD group, if bIMD is TRUE */
     write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);

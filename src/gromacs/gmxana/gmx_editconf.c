@@ -793,11 +793,9 @@ int gmx_editconf(int argc, char *argv[])
         gmx_fatal(FARGS, "Output file should be a .pdb file"
                   " when using the -grasp option\n");
     }
-    if ((bMead || bGrasp) && !((fn2ftp(infile) == efTPR) ||
-                               (fn2ftp(infile) == efTPA) ||
-                               (fn2ftp(infile) == efTPB)))
+    if ((bMead || bGrasp) && (fn2ftp(infile) != efTPR))
     {
-        gmx_fatal(FARGS, "Input file should be a .tp[abr] file"
+        gmx_fatal(FARGS, "Input file should be a .tpr file"
                   " when using the -mead option\n");
     }
 

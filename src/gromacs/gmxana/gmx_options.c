@@ -85,7 +85,7 @@ gmx_options(int argc, char *argv[])
 
         "All GROMACS programs can read compressed or g-zipped files. There "
         "might be a problem with reading compressed [TT].xtc[tt], "
-        "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "
+        "[TT].trr[tt] files, but these will not compress "
         "very well anyway.",
 
         "Most GROMACS programs can process a trajectory with fewer atoms than "

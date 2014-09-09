@@ -628,7 +628,7 @@ int gmx_hydorder(int argc, char *argv[])
     t_filenm           fnm[] = {                      /* files for g_order    */
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
-        { efTPX, "-s", NULL,  ffREAD },               /* topology file                */
+        { efTPR, "-s", NULL,  ffREAD },               /* topology file                */
         { efXPM, "-o", "intf",  ffWRMULT},            /* XPM- surface maps	*/
         { efOUT, "-or", "raw", ffOPTWRMULT },         /* xvgr output file           */
         { efOUT, "-Spect", "intfspect", ffOPTWRMULT}, /* Fourier spectrum interfaces */
@@ -655,7 +655,7 @@ int gmx_hydorder(int argc, char *argv[])
     }
 
     ndxfnm = ftp2fn(efNDX, NFILE, fnm);
-    tpsfnm = ftp2fn(efTPX, NFILE, fnm);
+    tpsfnm = ftp2fn(efTPR, NFILE, fnm);
     trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */

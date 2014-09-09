@@ -40,8 +40,8 @@
 
 /**************************************************************
  *
- * These routines handle trj (trajectory) I/O, they read and
- * write trj/trr files. The routines should be able to read single
+ * These routines handle trr (trajectory) I/O, they read and
+ * write trr files. The routines should be able to read single
  * and double precision files without the user noting it.
  * The files are backward compatible, therefore the header holds
  * some unused variables.
@@ -83,7 +83,7 @@ typedef struct           /* This struct describes the order and the	*/
 } t_trnheader;
 
 t_fileio *open_trn(const char *fn, const char *mode);
-/* Open a trj / trr file */
+/* Open a trr / trr file */
 
 void close_trn(t_fileio *fio);
 /* Close it */

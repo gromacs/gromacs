@@ -309,7 +309,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     snew(gmx, 1);
     snew(gmx->wd, 1);
 
-    ePBC = read_tpx_top(ftp2fn(efTPX, nfile, fnm),
+    ePBC = read_tpx_top(ftp2fn(efTPR, nfile, fnm),
                         NULL, box, &natom, NULL, NULL, NULL, &top);
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_DONT_SKIP);
@@ -365,7 +365,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     init_dlgs(x11, gmx);
 
     /* Now do file operations */
-    set_file(x11, gmx->man, ftp2fn(efTRX, nfile, fnm), ftp2fn(efTPX, nfile, fnm));
+    set_file(x11, gmx->man, ftp2fn(efTRX, nfile, fnm), ftp2fn(efTPR, nfile, fnm));
 
     ShowDlg(gmx->dlgs[edFilter]);
 }
@@ -397,7 +397,7 @@ int gmx_view(int argc, char *argv[])
     output_env_t oenv;
     t_filenm     fnm[] = {
         { efTRX, "-f", NULL, ffREAD },
-        { efTPX, NULL, NULL, ffREAD },
+        { efTPR, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD }
     };
 #define NFILE asize(fnm)
