@@ -133,7 +133,7 @@ gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
 
 static void reorder_ivec_yzx(ivec v)
 {
-    real tmp;
+    int tmp;
 
     tmp   = v[0];
     v[XX] = v[2];
