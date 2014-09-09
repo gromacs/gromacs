@@ -2444,7 +2444,7 @@ static void add_to_string_aligned(char **str, char *buf)
 }
 
 
-static void nice_legend(const char ***setname, int *nsets, char **LegendStr, char *value, char *unit, char EDgroupchar)
+static void nice_legend(const char ***setname, int *nsets, char **LegendStr, const char *value, const char *unit, char EDgroupchar)
 {
     char tmp[STRLEN], tmp2[STRLEN];
 
