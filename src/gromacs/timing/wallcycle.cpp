@@ -105,6 +105,7 @@ static const char *wcn[ewcNR] =
     "Enforced rotation", "Add rot. forces", "Coordinate swapping", "IMD", "Test"
 };
 
+#ifdef GMX_CYCLE_SUBCOUNTERS
 static const char *wcsn[ewcsNR] =
 {
     "DD redist.", "DD NS grid + sort", "DD setup comm.",
@@ -113,6 +114,7 @@ static const char *wcsn[ewcsNR] =
     "Bonded F", "Nonbonded F", "Ewald F correction",
     "NB X buffer ops.", "NB F buffer ops."
 };
+#endif
 
 gmx_bool wallcycle_have_counter(void)
 {
