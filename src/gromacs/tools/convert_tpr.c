@@ -374,11 +374,11 @@ int gmx_convert_tpr(int argc, char *argv[])
     char              buf[200], buf2[200];
     output_env_t      oenv;
     t_filenm          fnm[] = {
-        { efTPX, NULL,  NULL,    ffREAD  },
+        { efTPR, NULL,  NULL,    ffREAD  },
         { efTRN, "-f",  NULL,    ffOPTRD },
         { efEDR, "-e",  NULL,    ffOPTRD },
         { efNDX, NULL,  NULL,    ffOPTRD },
-        { efTPX, "-o",  "tpxout", ffWRITE }
+        { efTPR, "-o",  "tprout", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -423,7 +423,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     bTime      = opt2parg_bSet("-time", asize(pa), pa);
     bTraj      = (opt2bSet("-f", NFILE, fnm) || bTime);
 
-    top_fn = ftp2fn(efTPX, NFILE, fnm);
+    top_fn = ftp2fn(efTPR, NFILE, fnm);
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
     snew(ir, 1);

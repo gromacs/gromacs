@@ -101,7 +101,7 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     strcat(buf, ".");
 
     /* Add extension again */
-    strcat(buf, (ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
+    strcat(buf, (ftp == efTPR) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
     if (debug)
     {
         fprintf(debug, "rank %d par_fn '%s'\n", cr->nodeid, buf);
@@ -396,7 +396,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
              * at the actual file name
              */
             if (is_output(&fnm[i]) ||
-                fnm[i].ftp == efTPX || fnm[i].ftp == efCPT ||
+                fnm[i].ftp == efTPR || fnm[i].ftp == efCPT ||
                 strcmp(fnm[i].opt, "-rerun") == 0)
             {
                 ftp = fn2ftp(fnm[i].fns[0]);

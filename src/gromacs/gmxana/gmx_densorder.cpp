@@ -726,7 +726,7 @@ int gmx_densorder(int argc, char *argv[])
 
 
     t_filenm fnm[] = {
-        { efTPX, "-s",  NULL, ffREAD },               /* this is for the topology */
+        { efTPR, "-s",  NULL, ffREAD },               /* this is for the topology */
         { efTRX, "-f", NULL, ffREAD },                /* and this for the trajectory */
         { efNDX, "-n", NULL, ffREAD},                 /* this is to select groups */
         { efDAT, "-o", "Density4D", ffOPTWR},         /* This is for outputting the entire 4D densityfield in binary format */
@@ -751,7 +751,7 @@ int gmx_densorder(int argc, char *argv[])
     bRawOut  = opt2bSet("-or", NFILE, fnm);
     bGraph   = opt2bSet("-og", NFILE, fnm);
     bOut     = opt2bSet("-o", NFILE, fnm);
-    top      = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top      = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
     snew(grpname, 1);
     snew(index, 1);
     snew(ngx, 1);

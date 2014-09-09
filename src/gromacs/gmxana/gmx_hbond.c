@@ -3637,7 +3637,7 @@ int gmx_hbond(int argc, char *argv[])
     };
     t_filenm    fnm[] = {
         { efTRX, "-f",   NULL,     ffREAD  },
-        { efTPX, NULL,   NULL,     ffREAD  },
+        { efTPR, NULL,   NULL,     ffREAD  },
         { efNDX, NULL,   NULL,     ffOPTRD },
         /*    { efNDX, "-sel", "select", ffOPTRD },*/
         { efXVG, "-num", "hbnum",  ffWRITE },
@@ -3822,7 +3822,7 @@ int gmx_hbond(int argc, char *argv[])
     hb = mk_hbdata(bHBmap, opt2bSet("-dan", NFILE, fnm), bMerge || bContact, bGem, gemmode);
 
     /* get topology */
-    read_tpx_top(ftp2fn(efTPX, NFILE, fnm), &ir, box, &natoms, NULL, NULL, NULL, &top);
+    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), &ir, box, &natoms, NULL, NULL, NULL, &top);
 
     snew(grpnames, grNR);
     snew(index, grNR);

@@ -344,7 +344,7 @@ int gmx_nmeig(int argc, char *argv[])
 
     t_filenm               fnm[] = {
         { efMTX, "-f", "hessian",    ffREAD  },
-        { efTPX, NULL, NULL,         ffREAD  },
+        { efTPR, NULL, NULL,         ffREAD  },
         { efXVG, "-of", "eigenfreq", ffWRITE },
         { efXVG, "-ol", "eigenval",  ffWRITE },
         { efXVG, "-os", "spectrum",  ffOPTWR },
@@ -360,10 +360,10 @@ int gmx_nmeig(int argc, char *argv[])
     }
 
     /* Read tpr file for volume and number of harmonic terms */
-    read_tpxheader(ftp2fn(efTPX, NFILE, fnm), &tpx, TRUE, &version, &generation);
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &tpx, TRUE, &version, &generation);
     snew(top_x, tpx.natoms);
 
-    read_tpx(ftp2fn(efTPX, NFILE, fnm), NULL, box, &natoms,
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), NULL, box, &natoms,
              top_x, NULL, NULL, &mtop);
     if (bCons)
     {

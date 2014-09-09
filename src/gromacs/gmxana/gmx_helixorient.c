@@ -149,7 +149,7 @@ int gmx_helixorient(int argc, char *argv[])
 #define NPA asize(pa)
 
     t_filenm fnm[] = {
-        { efTPX, NULL, NULL, ffREAD },
+        { efTPR, NULL, NULL, ffREAD },
         { efTRX, "-f", NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD },
         { efDAT, "-oaxis",    "helixaxis", ffWRITE },
@@ -169,7 +169,7 @@ int gmx_helixorient(int argc, char *argv[])
         return 0;
     }
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
 
     for (i = 0; i < 3; i++)
     {

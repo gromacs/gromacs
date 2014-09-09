@@ -395,7 +395,7 @@ int gmx_genion(int argc, char *argv[])
     output_env_t       oenv;
     gmx_rng_t          rng;
     t_filenm           fnm[] = {
-        { efTPX, NULL,  NULL,      ffREAD  },
+        { efTPR, NULL,  NULL,      ffREAD  },
         { efNDX, NULL,  NULL,      ffOPTRD },
         { efSTO, "-o",  NULL,      ffWRITE },
         { efTOP, "-p",  "topol",   ffOPTRW }
@@ -420,7 +420,7 @@ int gmx_genion(int argc, char *argv[])
     }
 
     /* Read atom positions and charges */
-    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, &x, &v, box, FALSE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), title, &top, &ePBC, &x, &v, box, FALSE);
     atoms = top.atoms;
 
     /* Compute total charge */

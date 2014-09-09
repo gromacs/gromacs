@@ -205,7 +205,7 @@ int gmx_spol(int argc, char *argv[])
 
     t_filenm        fnm[] = {
         { efTRX, NULL,  NULL,  ffREAD },
-        { efTPX, NULL,  NULL,  ffREAD },
+        { efTPR, NULL,  NULL,  ffREAD },
         { efNDX, NULL,  NULL,  ffOPTRD },
         { efXVG, NULL,  "scdist",  ffWRITE }
     };
@@ -219,7 +219,7 @@ int gmx_spol(int argc, char *argv[])
 
     snew(top, 1);
     snew(ir, 1);
-    read_tpx_top(ftp2fn(efTPX, NFILE, fnm),
+    read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                  ir, box, &natoms, NULL, NULL, NULL, top);
 
     /* get index groups */
