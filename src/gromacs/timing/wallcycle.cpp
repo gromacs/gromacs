@@ -105,6 +105,7 @@ static const char *wcn[ewcNR] =
     "Enforced rotation", "Add rot. forces", "Coordinate swapping", "IMD", "Test"
 };
 
+#ifdef GMX_CYCLE_SUBCOUNTERS
 static const char *wcsn[ewcsNR] =
 {
     "DD redist.", "DD NS grid + sort", "DD setup comm.",
@@ -113,6 +114,7 @@ static const char *wcsn[ewcsNR] =
     "Bonded F", "Nonbonded F", "Ewald F correction",
     "NB X buffer ops.", "NB F buffer ops."
 };
+#endif
 
 gmx_bool wallcycle_have_counter(void)
 {
@@ -375,7 +377,10 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 {
     wallcc_t *wcc;
     double    cycles[ewcNR+ewcsNR];
-    double    cycles_n[ewcNR+ewcsNR], buf[ewcNR+ewcsNR], *cyc_all, *buf_all;
+    double    cycles_n[ewcNR+ewcsNR];
+#ifdef GMX_MPI
+    double    buf[ewcNR+ewcsNR], *cyc_all, *buf_all;
+#endif
     int       i, j;
     int       nsum;
 
@@ -495,7 +500,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
                           cr->mpi_comm_mysim);
             for (i = 0; i < ewcNR*ewcNR; i++)
             {
-                wc->wcc_all[i].c = buf_all[i];
+                wc->wcc_all[i].c = static_cast<long long unsigned int>(buf_all[i]);
             }
             sfree(buf_all);
             sfree(cyc_all);
