@@ -42,3 +42,17 @@ src/gromacs/selection/scanner.cpp       !filter
 src/gromacs/selection/scanner_flex.h    !filter
 nb_kernel_Elec*                         filter=copyright
 nb_kernel*pre                           filter=copyright
+*.eps                                   binary
+*.jpg                                   binary
+*.svg                                   binary
+*.png                                   binary
+*.pdf                                   binary
+*.ogl                                   binary
+*.gif                                   binary
+*.jpg                                   binary
+*.tpr                                   binary
+*.trr                                   binary
+*.tng                                   binary
+*.xtc                                   binary
+*.edr                                   binary
+*.cpt                                   binary
