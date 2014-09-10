@@ -1324,7 +1324,6 @@ static void dd_collect_cg(gmx_domdec_t *dd,
 {
     gmx_domdec_master_t *ma = NULL;
     int                  buf2[2], *ibuf, i, ncg_home = 0, *cg = NULL, nat_home = 0;
-    t_block             *cgs_gl;
 
     if (state_local->ddp_count == dd->comm->master_cg_ddp_count)
     {
@@ -1334,12 +1333,18 @@ static void dd_collect_cg(gmx_domdec_t *dd,
 
     if (state_local->ddp_count == dd->ddp_count)
     {
+        /* The local state and DD are in sync, use the DD indices */
         ncg_home = dd->ncg_home;
         cg       = dd->index_gl;
         nat_home = dd->nat_home;
     }
     else if (state_local->ddp_count_cg_gl == state_local->ddp_count)
     {
+        /* The DD is out of sync with the local state, but we have stored
+         * the cg indices with the local state, so we can use those.
+         */
+        t_block *cgs_gl;
+
         cgs_gl = &dd->comm->cgs_gl;
 
         ncg_home = state_local->ncg_gl;
@@ -1355,8 +1360,8 @@ static void dd_collect_cg(gmx_domdec_t *dd,
         gmx_incons("Attempted to collect a vector for a state for which the charge group distribution is unknown");
     }
 
-    buf2[0] = dd->ncg_home;
-    buf2[1] = dd->nat_home;
+    buf2[0] = ncg_home;
+    buf2[1] = nat_home;
     if (DDMASTER(dd))
     {
         ma   = dd->ma;
@@ -1398,7 +1403,7 @@ static void dd_collect_cg(gmx_domdec_t *dd,
 
     /* Collect the charge group indices on the master */
     dd_gatherv(dd,
-               dd->ncg_home*sizeof(int), dd->index_gl,
+               ncg_home*sizeof(int), cg,
                DDMASTER(dd) ? ma->ibuf : NULL,
                DDMASTER(dd) ? ma->ibuf+dd->nnodes : NULL,
                DDMASTER(dd) ? ma->cg : NULL);
