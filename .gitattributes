@@ -41,3 +41,14 @@ src/gromacs/selection/parser.h          !filter
 src/gromacs/selection/scanner.cpp       !filter
 src/gromacs/selection/scanner_flex.h    !filter
 nb_kernel_Elec*                         filter=copyright
+docs/manual/plots/*.eps                 binary
+docs/manual/plots/*.jpg                 binary
+docs/manual/plots/*.svg                 binary
+docs/manual/plots/*.png                 binary
+docs/manual/plots/*.pdf                 binary
+docs/manual/plots/*.ogl                 binary
+docs/old-html/images/*.gif              binary
+docs/old-html/images/*.jpg              binary
+*.tpr                                   binary
+*.tng                                   binary
+*.xtc                                   binary
