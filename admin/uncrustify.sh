@@ -286,10 +286,10 @@ if [[ $action == diff-* ]] ; then
 fi
 
 # Find the changed files
+git diff --no-index --name-only --exit-code org/ new/ | \
+    sed -e 's#new/##' > $tmpdir/changed
 changes=
-set -o pipefail
-if ! git diff --no-index --name-only --exit-code org/ new/ | \
-         sed -e 's#new/##' > $tmpdir/changed
+if [[ -s $tmpdir/changed ]]
 then
     changes=1
 fi

@@ -787,7 +787,7 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift)
         /* Only forces in domains near the PBC boundaries need to
            consider PBC in the treatment of fshift */
         bShiftForcesNeedPbc   = (dd->ci[dd->dim[d]] == 0);
-        bScrew = (bShiftForcesNeedPbc && dd->bScrewPBC && dd->dim[d] == XX);
+        bScrew                = (bShiftForcesNeedPbc && dd->bScrewPBC && dd->dim[d] == XX);
         if (fshift == NULL && !bScrew)
         {
             bShiftForcesNeedPbc = FALSE;
