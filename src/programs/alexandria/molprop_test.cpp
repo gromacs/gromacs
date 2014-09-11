@@ -26,10 +26,10 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/topology/atomprop.h"
 #include "molprop.h"
 #include "molprop_xml.h"
 #include "molprop_util.h"
-#include "atomprop.h"
 #include "poldata_xml.h"
 
 int alex_molprop_test(int argc, char*argv[])

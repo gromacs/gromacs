@@ -25,7 +25,7 @@
 #define GENTOP_NM2TYPE_H
 
 #include <stdio.h>
-#include "atomprop.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "poldata.h"

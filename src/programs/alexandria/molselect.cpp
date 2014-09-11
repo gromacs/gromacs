@@ -22,9 +22,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <string.h>
-#include "gromacs/legacyheaders/string2.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/strdb.h"
 #include "molselect.h"
 #include "stringutil.h"

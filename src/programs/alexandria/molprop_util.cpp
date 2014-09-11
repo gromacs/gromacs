@@ -26,16 +26,16 @@
 #include <stdlib.h>
 #include <vector>
 #include <algorithm>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/utilities.h"
-#include "typedefs.h"
-#include "string2.h"
-#include "gromacs/fileio/futil.h"
-#include "physics.h"
-#include "vec.h"
-#include "pbc.h"
-#include "xvgr.h"
-#include "atomprop.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/toputil.h"
@@ -182,11 +182,11 @@ bool molprop_2_topology2(alexandria::MolProp mp, gmx_atomprop_t ap,
 {
     alexandria::BondIterator bi;
 
-    int         natom, ftb;
-    t_param     b;
-    t_nextnb    nnb;
-    t_restp    *rtp;
-    t_topology *top;
+    int                      natom, ftb;
+    t_param                  b;
+    t_nextnb                 nnb;
+    t_restp                 *rtp;
+    t_topology              *top;
 
     snew(rtp, 1);
     snew(*mytop, 1);
@@ -612,11 +612,11 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
                              MolPropObservable                mpo,
                              const char                      *fc_str)
 {
-    alexandria::MolPropIterator     mpi;
-    alexandria::ExperimentIterator  ei;
-    alexandria::CalculationIterator ci;
+    alexandria::MolPropIterator        mpi;
+    alexandria::ExperimentIterator     ei;
+    alexandria::CalculationIterator    ci;
 
-    const char                     *method, *basis;
+    const char                        *method, *basis;
     int                                i, n;
     double                             value, error, vec[3];
     tensor                             quadrupole;

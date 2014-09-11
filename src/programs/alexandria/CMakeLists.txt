@@ -63,7 +63,6 @@ set(ALEXANDRIA_SOURCES
      #coulombintegrals/Slater_6S_6S.cpp
      coulombintegrals/gaussian_integrals.c
      coulombintegrals/slater_integrals.cpp
-        nmsimplex.c
 	xml_util.c
 	poldata.cpp
 	poldata_xml.cpp

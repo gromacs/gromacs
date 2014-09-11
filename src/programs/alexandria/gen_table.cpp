@@ -24,18 +24,19 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
-#include "copyrite.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
-#include "xvgr.h"
-#include "smalloc.h"
-#include "coulomb.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/legacyheaders/coulomb.h"
 #include "coulombintegrals/coulombintegrals.h"
-#include "atomprop.h"
+#include "gromacs/utility/cstringutil.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 
@@ -493,7 +494,7 @@ static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
                     if (eel == eelPME || eel == eelRF)
                     {
                         fprintf(stderr, "Not implemented\n");
-                        exit(1);
+                        return;
                     }
                     else if (eel == eelCUT)
                     {
@@ -528,7 +529,7 @@ static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
                     if (eel == eelPME || eel == eelRF)
                     {
                         fprintf(stderr, "Not implemented\n");
-                        exit(1);
+                        return;
                     }
                     else if (eel == eelCUT)
                     {
@@ -562,7 +563,7 @@ static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
                     if (eel == eelPME || eel == eelRF)
                     {
                         fprintf(stderr, "Not implemented\n");
-                        exit(1);
+                        return;
                     }
                     else if (eel == eelCUT)
                     {
@@ -631,7 +632,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                     if (eel == eelPME || eel == eelRF)
                     {
                         fprintf(stderr, "Not implemented\n");
-                        exit(1);
+                        return;
                     }
                     else if (eel == eelCUT)
                     {
@@ -667,7 +668,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                     if (eel == eelPME || eel == eelRF)
                     {
                         fprintf(stderr, "Not implemented\n");
-                        exit(1);
+                        return;
                     }
                     else if (eel == eelCUT)
                     {
@@ -702,7 +703,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                     if (eel == eelPME || eel == eelRF)
                     {
                         fprintf(stderr, "Not implemented\n");
-                        exit(1);
+                        return;
                     }
                     else if (eel == eelCUT)
                     {
@@ -1216,7 +1217,7 @@ static void do_maaren(FILE *fp, int pts_nm, int npow)
 
 int alex_gen_table(int argc, char *argv[])
 {
-    static const char    *desc[] = {
+    static const char          *desc[] = {
         "gen_table generates tables for mdrun for use with the USER defined",
         "potentials. Note that the format has been update for higher",
         "accuracy in the forces starting with version 4.0. Using older",
@@ -1235,20 +1236,20 @@ int alex_gen_table(int argc, char *argv[])
         "needed. If the width of one of the Slater is zero a Nucleus-Slater interaction",
         "will be generated."
     };
-    static char          *cqgen[] = {
+    static const char          *cqgen[] = {
         NULL, "None", "Yang", "Bultinck", "Rappe",
         "AXp", "AXs", "AXsp", "AXg", "AXgp",
         "ESP", "RESP", NULL
     };
-    static char          *opt[]      = { NULL, "cut", "rf", "pme", NULL };
-    static char          *model[]    = { NULL, "ljc", "dec", "dec-pair", "guillot2001a", "slater", "AB1", NULL };
-    static real           delta      = 0, efac = 500, rc = 0.9, rtol = 1e-05, xi = 0.15, xir = 0.0615;
-    static real           w1         = 20, w2 = 20;
-    static int            nrow1      = 1, nrow2 = 1;
-    static int            nrep       = 12;
-    static int            ndisp      = 6;
-    static int            pts_nm     = 500;
-    t_pargs               pa[]       = {
+    static const char          *opt[]      = { NULL, "cut", "rf", "pme", NULL };
+    static const char          *model[]    = { NULL, "ljc", "dec", "dec-pair", "guillot2001a", "slater", "AB1", NULL };
+    static real                 delta      = 0, efac = 500, rc = 0.9, rtol = 1e-05, xi = 0.15, xir = 0.0615;
+    static real                 w1         = 20, w2 = 20;
+    static int                  nrow1      = 1, nrow2 = 1;
+    static int                  nrep       = 12;
+    static int                  ndisp      = 6;
+    static int                  pts_nm     = 500;
+    t_pargs                     pa[]       = {
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
         { "-el",     FALSE, etENUM, {opt},
@@ -1283,20 +1284,20 @@ int alex_gen_table(int argc, char *argv[])
           "Power for the dispersion potential (with model AB1 or maaren)" }
     };
 #define NPA asize(pa)
-    t_filenm              fnm[] = {
+    t_filenm                    fnm[] = {
         { efXVG, "-o", "table", ffWRITE },
         { efDAT, "-di",   "gentop", ffOPTRD }
     };
 #define NFILE asize(fnm)
-    FILE                 *fp;
-    const char           *fn;
-    gmx_poldata_t         pd;
-    gmx_atomprop_t        aps;
-    int                   eel = 0, m = 0;
-    ChargeGenerationModel iModel;
-    output_env_t          oenv;
+    FILE                       *fp;
+    const char                 *fn;
+    gmx_poldata_t               pd;
+    gmx_atomprop_t              aps;
+    int                         eel = 0, m = 0;
+    ChargeGenerationModel       iModel;
+    output_env_t                oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

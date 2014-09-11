@@ -24,14 +24,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "network.h"
-#include "string2.h"
-#include "symtab.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "poldata.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "poldata.h"
 #include "gentop_vsite.h"
 
 typedef struct {

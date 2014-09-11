@@ -24,19 +24,16 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include "typedefs.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/futil.h"
-#include "symtab.h"
-#include "string2.h"
-#include "vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
 #include "poldata.h"
-#include "atomprop.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "gauss_io.h"

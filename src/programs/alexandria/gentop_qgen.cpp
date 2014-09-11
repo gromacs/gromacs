@@ -26,25 +26,24 @@
 #endif
 
 #include <ctype.h>
-#include <macros.h>
-#include <copyrite.h>
-#include <bondf.h>
-#include <string2.h>
-#include <smalloc.h>
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/confio.h"
-#include <physics.h>
-#include <vec.h>
+#include "gromacs/math/units.h"
 #include "gromacs/random/random.h"
-#include <txtdump.h>
-#include <readinp.h>
-#include <names.h>
-#include <vec.h>
-#include <atomprop.h>
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "molprop.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "coulombintegrals/coulombintegrals.h"
+#include "molprop.h"
 #include "poldata.h"
 #include "gentop_nm2type.h"
 #include "gentop_qgen.h"

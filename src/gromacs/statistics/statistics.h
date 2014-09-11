@@ -236,6 +236,15 @@ int gmx_stats_get_error(gmx_stats_t stats, real *error);
 int gmx_stats_get_ase(gmx_stats_t stats, real *aver, real *sigma, real *error);
 
 /*! \brief
+ * Return mean signed error and mean absolute error
+ * \param[in]  stats The data structure
+ * \param[out] mse  mean signed error
+ * \param[out] mae  mean absolute
+ * \return error code
+ */
+int gmx_stats_get_mse_mae(gmx_stats_t gstats, real *mse, real *mae);
+
+/*! \brief
  * Dump the x, y, dx, dy data to a text file
  * \param[in]  stats The data structure
  * \param[in] fp  File pointer

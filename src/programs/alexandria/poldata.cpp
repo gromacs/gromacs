@@ -28,10 +28,10 @@
 #include <string.h>
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
-#include "gromacs/legacyheaders/string2.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/cstringutil.h"
 #include "poldata.h"
 #include "gmx_simple_comm.h"
 #include "stringutil.h"

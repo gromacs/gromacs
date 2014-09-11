@@ -21,15 +21,15 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "mtop_util.h"
-#include "smalloc.h"
-#include "nrnb.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/timing/wallcycle.h"
-#include "vec.h"
-#include "mdatoms.h"
-#include "force.h"
-#include "shellfc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/shellfc.h"
 #include "stringutil.h"
 
 // Alexandria stuff
@@ -37,6 +37,8 @@
 #include "molprop_xml.h"
 #include "gmx_simple_comm.h"
 #include "moldip.h"
+
+#define STRLEN 256
 
 static void add_index_count(t_index_count *ic, const char *name, gmx_bool bConst)
 {

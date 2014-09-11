@@ -24,27 +24,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "typedefs.h"
-#include "physics.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/init.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/statistics/statistics.h"
-#include "pbc.h"
-#include "smalloc.h"
-#include "bondf.h"
-#include "atomprop.h"
-#include "macros.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "main.h"
-#include "copyrite.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 // Alexandria stuff
 #include "poldata_xml.h"
 #include "mymol.h"
 #include "molprop_util.h"
+
+#define STRLEN 256
 
 typedef struct {
     char       *a1, *a2;

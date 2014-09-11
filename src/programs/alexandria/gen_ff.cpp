@@ -24,9 +24,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gromacs/legacyheaders/string2.h"
-#include "gromacs/legacyheaders/atomprop.h"
-#include "gromacs/legacyheaders/physics.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/math/units.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/commandline/pargs.h"

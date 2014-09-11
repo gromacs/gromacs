@@ -25,7 +25,7 @@
 #define MOLPROP_TABLES_H
 
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "atomprop.h"
+#include "gromacs/topology/atomprop.h"
 #include "poldata.h"
 #include "molprop.h"
 #include "molprop_util.h"

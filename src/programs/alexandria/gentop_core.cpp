@@ -26,28 +26,29 @@
 #endif
 
 #include <ctype.h>
-#include "macros.h"
-#include "copyrite.h"
-#include "bondf.h"
-#include "string2.h"
-#include "smalloc.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
-#include "physics.h"
-#include "vec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "txtdump.h"
-#include "readinp.h"
-#include "names.h"
-#include "symtab.h"
-#include "vec.h"
-#include "atomprop.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "poldata.h"
 #include "gentop_nm2type.h"
 #include "gentop_core.h"
@@ -57,10 +58,10 @@
 void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
                       matrix box)
 {
-    int    i, ai, aj, ak, al, t1, t2, t3;
-    rvec   r_ij, r_kj, r_kl, m, n;
-    real   sign, th, costh, ph;
-    t_pbc  pbc;
+    int           i, ai, aj, ak, al, t1, t2, t3;
+    rvec          r_ij, r_kj, r_kl, m, n;
+    real          sign, th, costh, ph;
+    struct t_pbc  pbc;
 
     if (bPBC)
     {

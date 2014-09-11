@@ -1,6 +1,6 @@
 /*
  * alexandria - driver program for tools that are part of the
- * Alexandria force field. 
+ * Alexandria force field.
  * Output files are compatible with GROMACS 5.0 or newer.
  *
  * Copyright (C) 2014 David van der Spoel and Paul J. van Maaren
@@ -26,8 +26,7 @@
  */
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineinit.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/trajectoryanalysis/modules.h"
+#include "gromacs/selection/selhelp.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "alex_modules.h"
@@ -40,7 +39,7 @@ main(int argc, char *argv[])
     {
         gmx::CommandLineModuleManager manager("alexandria", &context);
         registerAlexandriaModules(&manager);
-        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
+        manager.addHelpTopic(gmx::createSelectionHelpTopic());
         manager.setQuiet(true);
         printf("\n                   Welcome to Alexandria\n\n");
         printf("Copyright (c) 2014, David van der Spoel and Paul J. van Maaren\n");

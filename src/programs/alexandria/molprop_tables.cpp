@@ -30,16 +30,17 @@
 #include <string.h>
 #include <math.h>
 #include "gromacs/math/utilities.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/exceptions.h"
-#include "smalloc.h"
-#include "string2.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "copyrite.h"
-#include "gmx_statistics.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/statistics/statistics.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molselect.h"
@@ -295,16 +296,16 @@ void gmx_molprop_stats_table(FILE                            *fp,
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     std::vector<std::string>::iterator         si;
-    int                          i, line, k, m, N, nprint;
-    double                       exp_val, qm_val;
-    real                         rms, R, a, da, b, db, chi2;
-    char                         lbuf[256], tmp[32], catbuf[STRLEN];
-    char                         buf[32];
-    t_cats                      *cats;
-    gmx_stats_t                  lsq, *lsqtot;
-    alexandria::CompositionSpecs cs;
-    alexandria::LongTable        lt(fp, true);
-    const char                  *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    int                                        i, line, k, m, N, nprint;
+    double                                     exp_val, qm_val;
+    real                                       rms, R, a, da, b, db, chi2;
+    char                                       lbuf[256], tmp[32], catbuf[STRLEN];
+    char                                       buf[32];
+    t_cats                                    *cats;
+    gmx_stats_t                                lsq, *lsqtot;
+    alexandria::CompositionSpecs               cs;
+    alexandria::LongTable                      lt(fp, true);
+    const char                                *alex = cs.searchCS(alexandria::iCalexandria)->name();
 
     nprint = 0;
     snew(cats, 1);
@@ -563,11 +564,11 @@ void gmx_molprop_composition_table(FILE *fp, std::vector<alexandria::MolProp> mp
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     alexandria::MolecularCompositionIterator   mci;
-    int                          q, m, iline, nprint;
-    char                         qbuf[32], longbuf[STRLEN], buf[256];
-    alexandria::LongTable        lt(fp, true);
-    alexandria::CompositionSpecs cs;
-    const char                  *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    int                                        q, m, iline, nprint;
+    char                                       qbuf[32], longbuf[STRLEN], buf[256];
+    alexandria::LongTable                      lt(fp, true);
+    alexandria::CompositionSpecs               cs;
+    const char                                *alex = cs.searchCS(alexandria::iCalexandria)->name();
 
     nprint = 0;
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
@@ -766,14 +767,14 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
                                              char                            *exp_type)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
-    double                       ahc, ahp, bos_pol, alexandria_pol, sig_pol;
-    char                        *ptype;
-    char                        *miller, *bosque;
-    char                         longbuf[STRLEN];
-    MolPropObservable            mpo = MPO_POLARIZABILITY;
-    alexandria::LongTable        lt(fp, false);
-    alexandria::CompositionSpecs cs;
-    const char                  *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    double                                     ahc, ahp, bos_pol, alexandria_pol, sig_pol;
+    char                                      *ptype;
+    char                                      *miller, *bosque;
+    char                                       longbuf[STRLEN];
+    MolPropObservable                          mpo = MPO_POLARIZABILITY;
+    alexandria::LongTable                      lt(fp, false);
+    alexandria::CompositionSpecs               cs;
+    const char                                *alex = cs.searchCS(alexandria::iCalexandria)->name();
 
     /* Prepare printing it! */
     atomtype_tab_header(lt);
@@ -1117,18 +1118,18 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
     alexandria::MolecularQuadrupoleIterator qi;
     alexandria::MolecularEnergyIterator     mei;
 
-    int                          j, iprint = 0, nexp, max_nexp;
+    int                                     j, iprint = 0, nexp, max_nexp;
 #define BLEN 1024
-    char                         lbuf[BLEN], myline[BLEN], mylbuf[BLEN], vbuf[BLEN];
-    double                       calc_val, calc_err, vc;
-    int                          nprint;
-    double                       dvec[DIM];
-    tensor                       quadrupole;
-    bool                         bPrintConf;
-    alexandria::CompositionSpecs cs;
-    const char                  *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    char                                    lbuf[BLEN], myline[BLEN], mylbuf[BLEN], vbuf[BLEN];
+    double                                  calc_val, calc_err, vc;
+    int                                     nprint;
+    double                                  dvec[DIM];
+    tensor                                  quadrupole;
+    bool                                    bPrintConf;
+    alexandria::CompositionSpecs            cs;
+    const char                             *alex = cs.searchCS(alexandria::iCalexandria)->name();
 
-    alexandria::LongTable        lt(fp, true);
+    alexandria::LongTable                   lt(fp, true);
 
     nprint = 0;
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)

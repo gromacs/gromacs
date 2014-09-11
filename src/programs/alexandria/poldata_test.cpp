@@ -25,8 +25,8 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/topology/atomprop.h"
 #include "poldata_xml.h"
-#include "atomprop.h"
 
 int alex_poldata_test(int argc, char*argv[])
 {

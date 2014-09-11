@@ -38,8 +38,8 @@
 #include <string>
 #include <vector>
 #include <string.h>
-#include "typedefs.h"
-#include "atomprop.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/topology/atomprop.h"
 #include "poldata.h"
 
 /*! \brief

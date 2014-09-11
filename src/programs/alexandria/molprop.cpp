@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 #include "gromacs/math/utilities.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "poldata.h"
 #include "gmx_simple_comm.h"
 #include "molprop.h"

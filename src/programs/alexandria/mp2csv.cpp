@@ -25,13 +25,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
-#include "copyrite.h"
-#include "smalloc.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/topology/atomprop.h"
 #include "molprop.h"
 #include "molprop_xml.h"
 #include "molprop_util.h"
-#include "atomprop.h"
 #include "poldata_xml.h"
 
 static void gmx_molprop_csv(const char *fn,

@@ -24,11 +24,11 @@
 #ifndef MYMOL_H
 #define MYMOL_H
 
-#include "typedefs.h"
-#include "vsite.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
-#include "atomprop.h"
+#include "gromacs/topology/atomprop.h"
 #include "gmx_resp.h"
 #include "gentop_qgen.h"
 #include "gentop_vsite.h"

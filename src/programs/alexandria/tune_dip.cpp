@@ -29,37 +29,34 @@
 #include <ctype.h>
 #include <math.h>
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/timing/wallcycle.h"
-#include "macros.h"
-#include "copyrite.h"
-#include "bondf.h"
-#include "string2.h"
-#include "smalloc.h"
-//#include "strdb.h"
-#include "physics.h"
-#include "vec.h"
-#include "txtdump.h"
-#include "readinp.h"
-#include "names.h"
-#include "vec.h"
-#include "atomprop.h"
-#include "xvgr.h"
-#include "mdatoms.h"
-#include "force.h"
-#include "vsite.h"
-#include "shellfc.h"
-#include "network.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/shellfc.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/legacyheaders/nmsimplex.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molselect.h"
-#include "mtop_util.h"
 #include "gmx_simple_comm.h"
-#include "nmsimplex.h"
 
 // Alexandria stuff
 #include "gentop_qgen.h"
@@ -976,7 +973,7 @@ int alex_tune_dip(int argc, char *argv[])
 
     cr = init_commrec();
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

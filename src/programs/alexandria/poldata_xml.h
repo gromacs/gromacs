@@ -25,7 +25,7 @@
 #define POLDATA_XML_H
 
 #include "poldata.h"
-#include "atomprop.h"
+#include "gromacs/topology/atomprop.h"
 
 /* This source code file is part of the Alexandria project */
 

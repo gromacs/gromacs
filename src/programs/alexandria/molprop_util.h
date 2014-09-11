@@ -26,7 +26,7 @@
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "atomprop.h"
+#include "gromacs/topology/atomprop.h"
 #include "molprop.h"
 #include "poldata.h"
 #include "molselect.h"

@@ -29,11 +29,11 @@
 #include <string.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "string2.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/cstringutil.h"
 #include "xml_util.h"
 #include "molprop.h"
 #include "molprop_xml.h"

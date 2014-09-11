@@ -21,15 +21,13 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
@@ -40,16 +38,17 @@
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gmx_fatal.h"
-#include "force.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "mtop_util.h"
-#include "shellfc.h"
-#include "mdatoms.h"
-#include "symtab.h"
-#include "vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/legacyheaders/shellfc.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/math/vec.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "gmx_simple_comm.h"
@@ -63,6 +62,8 @@
 #include "stringutil.h"
 
 static const char *gentop_version = "gentop 0.98";
+
+#define STRLEN 256
 
 static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *atoms)
 {

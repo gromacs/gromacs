@@ -26,8 +26,8 @@
 
 #include <stdio.h>
 #include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/atomprop.h"
 #include "poldata.h"
-#include "atomprop.h"
 #include "molprop.h"
 
 typedef struct

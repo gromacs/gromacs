@@ -24,11 +24,7 @@
 #ifndef MOLDIP_H
 #define MOLDIP_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "typedefs.h"
+#include "gromacs/utility/real.h"
 #include "mymol.h"
 
 typedef struct {
