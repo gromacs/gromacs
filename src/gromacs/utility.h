@@ -112,7 +112,7 @@
  * <H3>Other Functionality</H3>
  *
  * The header init.h declares gmx::init() and gmx::finalize() for initializing
- * and deinitializing the Gromacs library.
+ * and deinitializing the \Gromacs library.
  *
  * The header arrayref.h implements a gmx::ConstArrayRef class for exposing a
  * C array or part of a std::vector (basically, any continuous stretch of
@@ -132,6 +132,9 @@
  *
  * The header messagestringcollector.h declares a gmx::MessageStringCollector
  * class for composing messages with context information.
+ *
+ * The header processinfo.h declares gmx_getpid() for getting the current
+ * process id.
  *
  * The header programcontext.h declares a gmx::ProgramContextInterface that is
  * used to
