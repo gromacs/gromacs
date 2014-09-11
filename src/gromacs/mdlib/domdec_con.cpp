@@ -35,8 +35,9 @@
 
 #include "gmxpre.h"
 
-#include <algorithm>
 #include <assert.h>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/domdec.h"
