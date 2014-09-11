@@ -1573,6 +1573,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         {
             real dt_2, dvdl = 0;
 
+            /* TODO This should probably use invdt, so that sd integrator scaling works properly */
             dt_2 = 1.0/(ir->delta_t*ir->delta_t);
             for (i = 0; (i < lincsd->nc); i++)
             {
