@@ -3386,7 +3386,7 @@ static void dump_hbmap(t_hbdata *hb,
         for (i = 0; i < isize[grp]; i++)
         {
             fprintf(fp, (i%15) ? " " : "\n");
-            fprintf(fp, " %4u", index[grp][i]+1);
+            fprintf(fp, " %4d", index[grp][i]+1);
         }
         fprintf(fp, "\n");
         /*
@@ -3402,7 +3402,7 @@ static void dump_hbmap(t_hbdata *hb,
                 {
                     for (j = 0; (j < hb->d.nhydro[i]); j++)
                     {
-                        fprintf(fp, " %4u %4u", hb->d.don[i]+1,
+                        fprintf(fp, " %4d %4d", hb->d.don[i]+1,
                                 hb->d.hydro[i][j]+1);
                     }
                     fprintf(fp, "\n");
@@ -3415,7 +3415,7 @@ static void dump_hbmap(t_hbdata *hb,
                 if (hb->a.grp[i] == grp)
                 {
                     fprintf(fp, (i%15 && !first) ? " " : "\n");
-                    fprintf(fp, " %4u", hb->a.acc[i]+1);
+                    fprintf(fp, " %4d", hb->a.acc[i]+1);
                     first = FALSE;
                 }
             }
@@ -3446,7 +3446,7 @@ static void dump_hbmap(t_hbdata *hb,
                     sprintf(as, "%s", mkatomname(atoms, aaa));
                     if (bContact)
                     {
-                        fprintf(fp, " %6u %6u\n", ddd+1, aaa+1);
+                        fprintf(fp, " %6d %6d\n", ddd+1, aaa+1);
                         if (fplog)
                         {
                             fprintf(fplog, "%12s  %12s\n", ds, as);
@@ -3456,7 +3456,7 @@ static void dump_hbmap(t_hbdata *hb,
                     {
                         hhh = hb->d.hydro[i][m];
                         sprintf(hs, "%s", mkatomname(atoms, hhh));
-                        fprintf(fp, " %6u %6u %6u\n", ddd+1, hhh+1, aaa+1);
+                        fprintf(fp, " %6d %6d %6d\n", ddd+1, hhh+1, aaa+1);
                         if (fplog)
                         {
                             fprintf(fplog, "%12s  %12s  %12s\n", ds, hs, as);
