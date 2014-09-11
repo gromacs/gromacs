@@ -340,7 +340,7 @@ void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
     for (i = 1; (i < 12); i++)
     {
         fprintf(out,
-                "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                "%-6s%5d  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                 "ATOM  ", natoms + 1 + i, "CA", "LEG", space, nres + 1, space,
                 (xmin + (i * 0.12)) * 10, ymin * 10, zmin * 10, 1.0, bfac_min
                 + ((i - 1.0) * (bfac_max - bfac_min) / 10));

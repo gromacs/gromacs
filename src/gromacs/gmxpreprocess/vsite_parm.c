@@ -289,7 +289,7 @@ static void print_bad(FILE *fp,
         fprintf(fp, "bonds:");
         for (i = 0; i < nrbond; i++)
         {
-            fprintf(fp, " %u-%u (%g)",
+            fprintf(fp, " %d-%d (%g)",
                     bonds[i].AI+1, bonds[i].AJ+1, bonds[i].c);
         }
         fprintf(fp, "\n");
@@ -299,7 +299,7 @@ static void print_bad(FILE *fp,
         fprintf(fp, "angles:");
         for (i = 0; i < nrang; i++)
         {
-            fprintf(fp, " %u-%u-%u (%g)",
+            fprintf(fp, " %d-%d-%d (%g)",
                     angles[i].AI+1, angles[i].AJ+1,
                     angles[i].AK+1, angles[i].c);
         }
@@ -310,7 +310,7 @@ static void print_bad(FILE *fp,
         fprintf(fp, "idihs:");
         for (i = 0; i < nridih; i++)
         {
-            fprintf(fp, " %u-%u-%u-%u (%g)",
+            fprintf(fp, " %d-%d-%d-%d (%g)",
                     idihs[i].AI+1, idihs[i].AJ+1,
                     idihs[i].AK+1, idihs[i].AL+1, idihs[i].c);
         }
@@ -422,7 +422,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
         int i;
         for (i = 0; i < 4; i++)
         {
-            fprintf(debug, "atom %u type %s ",
+            fprintf(debug, "atom %d type %s ",
                     param->a[i]+1,
                     get_atomtype_name_AB(&at->atom[param->a[i]], atype));
         }
@@ -493,7 +493,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
 
     if (debug)
     {
-        fprintf(debug, "params for vsite3 %u: %g %g\n",
+        fprintf(debug, "params for vsite3 %d: %g %g\n",
                 param->AI+1, param->C0, param->C1);
     }
 
@@ -527,7 +527,7 @@ static gmx_bool calc_vsite3fd_param(t_param *param,
 
     if (debug)
     {
-        fprintf(debug, "params for vsite3fd %u: %g %g\n",
+        fprintf(debug, "params for vsite3fd %d: %g %g\n",
                 param->AI+1, param->C0, param->C1);
     }
     return bError;
@@ -562,7 +562,7 @@ static gmx_bool calc_vsite3fad_param(t_param *param,
 
     if (debug)
     {
-        fprintf(debug, "params for vsite3fad %u: %g %g\n",
+        fprintf(debug, "params for vsite3fad %d: %g %g\n",
                 param->AI+1, param->C0, param->C1);
     }
     return bError;
@@ -589,7 +589,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         int i;
         for (i = 0; i < 4; i++)
         {
-            fprintf(debug, "atom %u type %s ",
+            fprintf(debug, "atom %d type %s ",
                     param->a[i]+1, get_atomtype_name_AB(&at->atom[param->a[i]], atype));
         }
         fprintf(debug, "\n");
@@ -674,7 +674,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
     }
     if (debug)
     {
-        fprintf(debug, "params for vsite3out %u: %g %g %g\n",
+        fprintf(debug, "params for vsite3out %d: %g %g %g\n",
                 param->AI+1, param->C0, param->C1, param->C2);
     }
     return bError;
@@ -732,7 +732,7 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
         param->C2 = -bij;
         if (debug)
         {
-            fprintf(debug, "params for vsite4fd %u: %g %g %g\n",
+            fprintf(debug, "params for vsite4fd %d: %g %g %g\n",
                     param->AI+1, param->C0, param->C1, param->C2);
         }
     }
@@ -795,7 +795,7 @@ calc_vsite4fdn_param(t_param *param,
 
         if (debug)
         {
-            fprintf(debug, "params for vsite4fdn %u: %g %g %g\n",
+            fprintf(debug, "params for vsite4fdn %d: %g %g %g\n",
                     param->AI+1, param->C0, param->C1, param->C2);
         }
     }
@@ -866,7 +866,7 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                     if (debug)
                     {
                         fprintf(debug, "Found %d bonds, %d angles and %d idihs "
-                                "for virtual site %u (%s)\n", nrbond, nrang, nridih,
+                                "for virtual site %d (%s)\n", nrbond, nrang, nridih,
                                 plist[ftype].param[i].AI+1,
                                 interaction_function[ftype].longname);
                         print_bad(debug, nrbond, bonds, nrang, angles, nridih, idihs);
@@ -998,7 +998,7 @@ static void check_vsite_constraints(t_params *plist,
             atom = ps->param[i].a[k];
             if (vsite_type[atom] != NOTSET)
             {
-                fprintf(stderr, "ERROR: Cannot have constraint (%u-%u) with virtual site (%u)\n",
+                fprintf(stderr, "ERROR: Cannot have constraint (%d-%d) with virtual site (%d)\n",
                         ps->param[i].AI+1, ps->param[i].AJ+1, atom+1);
                 n++;
             }
@@ -1040,7 +1040,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
         nvsite = 0;
         if (debug)
         {
-            fprintf(debug, "constr %u %u:", ps->param[i].AI+1, ps->param[i].AJ+1);
+            fprintf(debug, "constr %d %d:", ps->param[i].AI+1, ps->param[i].AJ+1);
         }
         for (k = 0; (k < 2) && !bKeep && !bRemove; k++)
         {
@@ -1437,10 +1437,10 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                     }
                     if (debug)
                     {
-                        fprintf(debug, "dih w. vsite: %u %u %u %u\n",
+                        fprintf(debug, "dih w. vsite: %d %d %d %d\n",
                                 ps->param[i].AI+1, ps->param[i].AJ+1,
                                 ps->param[i].AK+1, ps->param[i].AL+1);
-                        fprintf(debug, "vsite %u from: %u %u %u\n",
+                        fprintf(debug, "vsite %d from: %d %d %d\n",
                                 atom+1, vsiteatoms[0]+1, vsiteatoms[1]+1, vsiteatoms[2]+1);
                     }
                 }
@@ -1499,7 +1499,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                     bKeep = TRUE;
                     if (debug)
                     {
-                        fprintf(debug, "unused atom in dih: %u\n", atom+1);
+                        fprintf(debug, "unused atom in dih: %d\n", atom+1);
                     }
                 }
             }
