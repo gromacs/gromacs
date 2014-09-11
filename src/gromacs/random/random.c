@@ -45,17 +45,11 @@
 #include <stdlib.h>
 #include <time.h>
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef GMX_NATIVE_WINDOWS
-#include <process.h>
-#endif
-
 #include "external/Random123-1.08/include/Random123/threefry.h"
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/random/random_gausstable.h"
+#include "gromacs/utility/sysinfo.h"
 
 #define RNG_N 624
 #define RNG_M 397
@@ -237,12 +231,8 @@ gmx_rng_make_seed(void)
     else
     {
         /* No random device available, use time-of-day and process id */
-#ifdef GMX_NATIVE_WINDOWS
-        my_pid = (long)_getpid();
-#else
-        my_pid = (long)getpid();
-#endif
-        data = (unsigned int)(((long)time(NULL)+my_pid) % (long)1000000);
+        my_pid = gmx_getpid();
+        data   = (unsigned int)(((long)time(NULL)+my_pid) % (long)1000000);
     }
     return data;
 }
