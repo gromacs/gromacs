@@ -293,8 +293,9 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
     int             i, m, res = 0, *iptr, ix;
     gmx_int64_t     s;
     double          d, x;
+    char            c;
     real           *ptr;
-    unsigned char   uc, *ucptr;
+    unsigned char  *ucptr;
     char           *cptr;
 #define NEXT_ITEM_BUF_LEN 128
     char            ni_buf[NEXT_ITEM_BUF_LEN];
@@ -327,10 +328,10 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
             }
             break;
         case eioUCHAR:
-            res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%c", &uc);
+            res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%c", &c);
             if (item)
             {
-                *((unsigned char *) item) = uc;
+                *((unsigned char *) item) = (unsigned char)c;
             }
             break;
         case eioNUCHAR:
