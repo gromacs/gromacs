@@ -35,21 +35,19 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/ebin.h"
 
 #include <math.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "gmx_fatal.h"
-#include "ebin.h"
-#include "main.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "vec.h"
-#include "physics.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 t_ebin *mk_ebin(void)
 {
@@ -79,10 +77,10 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
         eb->e_sim[i].e    = 0;
         eb->e_sim[i].eav  = 0;
         eb->e_sim[i].esum = 0;
-        eb->enm[i].name   = strdup(enm[i-index]);
+        eb->enm[i].name   = gmx_strdup(enm[i-index]);
         if (unit != NULL)
         {
-            eb->enm[i].unit = strdup(unit);
+            eb->enm[i].unit = gmx_strdup(unit);
         }
         else
         {
@@ -109,7 +107,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
                     }
                 }
             }
-            eb->enm[i].unit = strdup(u);
+            eb->enm[i].unit = gmx_strdup(u);
         }
     }
 
@@ -278,7 +276,7 @@ int main(int argc, char *argv[])
     {
         e[i] = i;
         sprintf(buf, "e%d", i);
-        ce[i] = strdup(buf);
+        ce[i] = gmx_strdup(buf);
     }
     ie = get_ebin_space(eb, NE, ce);
     add_ebin(eb, ie, NE, e, 0);
@@ -286,7 +284,7 @@ int main(int argc, char *argv[])
     {
         s[i] = i;
         sprintf(buf, "s%d", i);
-        cs[i] = strdup(buf);
+        cs[i] = gmx_strdup(buf);
     }
     is = get_ebin_space(eb, NS, cs);
     add_ebin(eb, is, NS, s, 0);
@@ -294,7 +292,7 @@ int main(int argc, char *argv[])
     {
         t[i] = i;
         sprintf(buf, "t%d", i);
-        ct[i] = strdup(buf);
+        ct[i] = gmx_strdup(buf);
     }
     it = get_ebin_space(eb, NT, ct);
     add_ebin(eb, it, NT, t, 0);

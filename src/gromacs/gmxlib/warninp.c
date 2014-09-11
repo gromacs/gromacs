@@ -34,17 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/warninp.h"
 
 #include <string.h>
 
-#include "smalloc.h"
-#include "copyrite.h"
-#include "string2.h"
-#include "gmx_fatal.h"
-#include "warninp.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct warninp {
     gmx_bool bAllowWarnings;

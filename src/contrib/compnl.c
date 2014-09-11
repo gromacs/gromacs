@@ -37,15 +37,15 @@
 #endif
 
 #include "ns.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "wnblist.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
-#include "pbc.h"
-#include "vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/math/vec.h"
 
 int main(int argc,char *argv[])
 {

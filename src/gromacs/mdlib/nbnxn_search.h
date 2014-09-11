@@ -36,7 +36,8 @@
 #ifndef _nbnxn_search_h
 #define _nbnxn_search_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,7 +66,7 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
 /* Put the atoms on the pair search grid.
  * Only atoms a0 to a1 in x are put on the grid.
  * The atom_density is used to determine the grid size.
- * When atom_density=-1, the density is determined from a1-a0 and the corners.
+ * When atom_density<=0, the density is determined from a1-a0 and the corners.
  * With domain decomposition part of the n particles might have migrated,
  * but have not been removed yet. This count is given by nmoved.
  * When move[i] < 0 particle i has migrated and will not be put on the grid.

@@ -34,11 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "copyrite.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
+#include "gromacs/legacyheaders/copyrite.h"
+
 #include "config.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,26 +48,26 @@
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
-
+#ifdef HAVE_EXTRAE
+#include <extrae_user_events.h>
+#endif
 #include <boost/version.hpp>
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
-#include "gromacs/legacyheaders/vec.h"
-
+#include "buildinfo.h"
 #include "gromacs/fft/fft.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
-
-#include "buildinfo.h"
+#include "gromacs/utility/smalloc.h"
 
 static gmx_bool be_cool(void)
 {
@@ -562,7 +562,12 @@ void please_cite(FILE *fp, const char *key)
           "M. Lundborg, R. Apostolov, D. Spangberg, A. Gardenas, D. van der Spoel and E. Lindahl",
           "An efficient and extensible format, library, and API for binary trajectory data from molecular simulations",
           "J. Comput. Chem.",
-          35, 2014, "260-269"}
+          35, 2014, "260-269"},
+        { "Goga2012",
+          "N. Goga and A. J. Rzepiela and A. H. de Vries and S. J. Marrink and H. J. C. Berendsen",
+          "Efficient Algorithms for Langevin and DPD Dynamics",
+          "J. Chem. Theory Comput.",
+          8, 2012, "3637--3649"}
     };
 #define NSTR (int)asize(citedb)
 
@@ -609,12 +614,16 @@ const char *GromacsVersion()
 
 const char *ShortProgram(void)
 {
+    const char *programName = NULL;
+
     try
     {
         // TODO: Use the display name once it doesn't break anything.
-        return gmx::getProgramContext().programName();
+        programName = gmx::getProgramContext().programName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return programName;
 }
 
 const char *Program(void)
@@ -693,6 +702,14 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "TNG support:        disabled\n");
 #endif
+#ifdef HAVE_EXTRAE
+    unsigned major, minor, revision;
+    Extrae_get_version(&major, &minor, &revision);
+    fprintf(fp, "Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision);
+#else
+    fprintf(fp, "Tracing support:    disabled\n");
+#endif
+
 
     fprintf(fp, "Built on:           %s\n", BUILD_TIME);
     fprintf(fp, "Built by:           %s\n", BUILD_USER);

@@ -32,31 +32,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "fflibutil.h"
+
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+
 #include <fcntl.h>
-#include "sysstuff.h"
-#include "network.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#include "fflibutil.h"
-
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/path.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 const char *fflib_forcefield_dir_ext()
 {
@@ -202,7 +203,7 @@ static int low_fflib_search_file_end(const char *ffdir,
                         sprintf(fn_dir, "%s%c%s", dir, DIR_SEPARATOR, nextname);
 
                         /* Copy the file name, possibly including the path. */
-                        fns[n] = strdup(fn_dir);
+                        fns[n] = gmx_strdup(fn_dir);
 
                         if (ffdir == NULL)
                         {
@@ -215,11 +216,11 @@ static int low_fflib_search_file_end(const char *ffdir,
                             srenew(fns_short, n+1);
                             if (strcmp(dir, ".") == 0 || bEnvIsSet)
                             {
-                                fns_short[n] = strdup(fn_dir);
+                                fns_short[n] = gmx_strdup(fn_dir);
                             }
                             else
                             {
-                                fns_short[n] = strdup(nextname);
+                                fns_short[n] = gmx_strdup(nextname);
                             }
                         }
                         n++;
@@ -295,7 +296,7 @@ int fflib_search_file_in_dirend(const char *filename, const char *dirend,
                 {
                     /* We have a match */
                     srenew(dns, n+1);
-                    dns[n] = strdup(f_short[i]);
+                    dns[n] = gmx_strdup(f_short[i]);
                     n++;
                 }
             }

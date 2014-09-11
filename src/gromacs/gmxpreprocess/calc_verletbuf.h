@@ -36,7 +36,7 @@
 #ifndef GMX_GMXPREPROCESS_CALC_VERLETBUF_H
 #define GMX_GMXPREPROCESS_CALC_VERLETBUF_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -40,22 +40,17 @@
 
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "network.h"
-#include "../fileio/filenm.h"
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int gmx_gethostname(char *name, size_t len);
-/* Sets the hostname to the value given by gethostname, if available,
- * and to "unknown" otherwise. name should have at least size len.
- * Returns 0 on success, -1 on error.
- */
-
 void gmx_log_open(const char *fn, const t_commrec *cr,
-                  gmx_bool bMasterOnly, gmx_bool bAppendFiles, FILE**);
+                  gmx_bool bAppendFiles, FILE**);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */

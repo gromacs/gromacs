@@ -34,23 +34,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <string.h>
-#include <math.h>
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "smalloc.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "disre.h"
-#include "names.h"
-#include "macros.h"
-#include "gmx_fatal.h"
 #include "gromacs/fileio/enxio.h"
-#include "vec.h"
-#include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -66,7 +66,7 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
     int      *set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
     {
         bVerbose = FALSE;
     }
@@ -571,7 +571,7 @@ int gmx_eneconv(int argc, char *argv[])
           "Stop on errors in the file" }
     };
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa),
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa),
                            pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
@@ -581,7 +581,6 @@ int gmx_eneconv(int argc, char *argv[])
     nset     = 0;
     timestep = 0.0;
     snew(fnms, argc);
-    nfile        = 0;
     lastfilestep = 0;
     laststep     = startstep = 0;
 

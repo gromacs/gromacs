@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
+#include "gmxpre.h"
+
 #include "helpwritercontext.h"
 
 #include <cctype>
@@ -61,7 +63,7 @@ namespace gmx
 namespace
 {
 
-//! \addtogroup module_onlinehelp
+//! \internal \addtogroup module_onlinehelp
 //! \{
 
 struct t_sandr
@@ -357,7 +359,7 @@ class WrapperToVector : public WrapperInterface
 std::string toUpperCase(const std::string &text)
 {
     std::string result(text);
-    transform(result.begin(), result.end(), result.begin(), toupper);
+    std::transform(result.begin(), result.end(), result.begin(), toupper);
     return result;
 }
 

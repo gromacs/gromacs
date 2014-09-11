@@ -38,8 +38,10 @@
 #define GMX_FILEIO_WRITEPS_H
 
 #include <stdio.h>
-#include "../legacyheaders/types/matrix.h"
-#include "../legacyheaders/types/simple.h"
+
+#include "gromacs/legacyheaders/types/rgb.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

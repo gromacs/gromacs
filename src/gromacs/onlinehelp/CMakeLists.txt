@@ -35,10 +35,6 @@
 file(GLOB ONLINEHELP_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ONLINEHELP_SOURCES} PARENT_SCOPE)
 
-set(ONLINEHELP_PUBLIC_HEADERS
-    helptopicinterface.h)
-gmx_install_headers(onlinehelp ${ONLINEHELP_PUBLIC_HEADERS})
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

@@ -34,19 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "mdatoms.h"
-#include "smalloc.h"
-#include "main.h"
-#include "qmmm.h"
-#include "mtop_util.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/qmmm.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/smalloc.h"
 
 #define ALMOST_ZERO 1e-30
 

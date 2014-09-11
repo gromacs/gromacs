@@ -34,30 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "gromacs/fileio/futil.h"
-#include "txtdump.h"
 #include "gromacs/fileio/enxio.h"
-#include "gstat.h"
-#include "xvgr.h"
-#include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int  nlj, nqq;
@@ -143,8 +139,13 @@ int gmx_lie(int argc, char *argv[])
 {
     const char        *desc[] = {
         "[THISMODULE] computes a free energy estimate based on an energy analysis",
-        "from. One needs an energy file with the following components:",
-        "Coul (A-B) LJ-SR (A-B) etc."
+        "from nonbonded energies. One needs an energy file with the following components:",
+        "Coul-(A-B) LJ-SR (A-B) etc.[PAR]",
+        "To utilize [TT]g_lie[tt] correctly, two simulations are required: one with the",
+        "molecule of interest bound to its receptor and one with the molecule in water.",
+        "Both need to utilize [TT]energygrps[tt] such that Coul-SR(A-B), LJ-SR(A-B), etc. terms",
+        "are written to the [TT].edr[tt] file. Values from the molecule-in-water simulation",
+        "are necessary for supplying suitable values for -Elj and -Eqq."
     };
     static real        lie_lj = 0, lie_qq = 0, fac_lj = 0.181, fac_qq = 0.5;
     static const char *ligand = "none";
@@ -179,7 +180,7 @@ int gmx_lie(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -190,6 +191,7 @@ int gmx_lie(int argc, char *argv[])
 
     ld = analyze_names(nre, enm, ligand);
     snew(fr, 1);
+
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "LIE free energy estimate",
                    "Time (ps)", "DGbind (kJ/mol)", oenv);
     while (do_enx(fp, fr))

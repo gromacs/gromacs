@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,64 @@
 #ifndef GMX_FILEIO_MATIO_H
 #define GMX_FILEIO_MATIO_H
 
-#include "../legacyheaders/typedefs.h"
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/types/rgb.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct {
+    char c1; /* should all be non-zero (and printable and not '"') */
+    char c2; /*
+              * should all be zero (single char color names: smaller xpm's)
+              * or should all be non-zero (double char color names: more colors)
+              */
+} t_xpmelmt;
+
+typedef short t_matelmt;
+
+typedef struct {
+    t_xpmelmt   code; /* see comment for t_xpmelmt */
+    const char *desc;
+    t_rgb       rgb;
+} t_mapping;
+
+#define MAT_SPATIAL_X (1<<0)
+#define MAT_SPATIAL_Y (1<<1)
+/* Defines if x and y are spatial dimensions,
+ * when not, there are n axis ticks at the middle of the elements,
+ * when set, there are n+1 axis ticks at the edges of the elements.
+ */
+
+typedef struct {
+    unsigned int flags; /* The possible flags are defined above */
+    int          nx, ny;
+    int          y0;
+    char         title[256];
+    char         legend[256];
+    char         label_x[256];
+    char         label_y[256];
+    gmx_bool     bDiscrete;
+    real        *axis_x;
+    real        *axis_y;
+    t_matelmt  **matrix;
+    int          nmap;
+    t_mapping   *map;
+} t_matrix;
+/* title      matrix title
+ * legend     label for the continuous legend
+ * label_x    label for the x-axis
+ * label_y    label for the y-axis
+ * nx, ny     size of the matrix
+ * axis_x[]   the x-ticklabels
+ * axis_y[]   the y-ticklables
+ * *matrix[]  element x,y is matrix[x][y]
+ * nmap       number of color levels for the output(?)
+ */
 
 gmx_bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
 
@@ -63,10 +116,10 @@ void printcmap(FILE *out, int n, t_mapping map[]);
 void writecmap(const char *fn, int n, t_mapping map[]);
 /* print mapping table to fn */
 
-int read_xpm_matrix(const char *fnm, t_matrix **matrix);
+int read_xpm_matrix(const char *fnm, t_matrix **mat);
 /* Reads a number of matrices from .xpm file fnm and returns this number */
 
-real **matrix2real(t_matrix *matrix, real **mat);
+real **matrix2real(t_matrix *in, real **out);
 /* Converts an matrix in a t_matrix struct to a matrix of reals
  * When mat==NULL memory will be allocated
  * Returns NULL when something went wrong
@@ -79,7 +132,7 @@ void write_xpm3(FILE *out, unsigned int flags,
                 const char *title, const char *legend,
                 const char *label_x, const char *label_y,
                 int n_x, int n_y, real axis_x[], real axis_y[],
-                real *matrix[], real lo, real mid, real hi,
+                real *mat[], real lo, real mid, real hi,
                 t_rgb rlo, t_rgb rmid, t_rgb rhi, int *nlevels);
 /* See write_xpm.
  * Writes a colormap varying as rlo -> rmid -> rhi.
@@ -88,7 +141,7 @@ void write_xpm_split(FILE *out, unsigned int flags,
                      const char *title, const char *legend,
                      const char *label_x, const char *label_y,
                      int n_x, int n_y, real axis_x[], real axis_y[],
-                     real *matrix[],
+                     real *mat[],
                      real lo_top, real hi_top, int *nlevel_top,
                      t_rgb rlo_top, t_rgb rhi_top,
                      real lo_bot, real hi_bot, int *nlevel_bot,
@@ -104,7 +157,7 @@ void write_xpm(FILE *out, unsigned int flags,
                const char *title, const char *legend,
                const char *label_x, const char *label_y,
                int n_x, int n_y, real t_x[], real t_y[],
-               real *matrix[], real lo, real hi,
+               real *mat[], real lo, real hi,
                t_rgb rlo, t_rgb rhi, int *nlevels);
 /* out        xpm file
  * flags      flags, defined types/matrix.h
@@ -120,7 +173,7 @@ void write_xpm(FILE *out, unsigned int flags,
  * n_x, n_y   size of the matrix
  * axis_x[]   the x-ticklabels (n_x or n_x+1)
  * axis_y[]   the y-ticklables (n_y or n_y+1)
- * *matrix[]  element x,y is matrix[x][y]
+ * *mat[]     element x,y is mat[x][y]
  * lo         output lower than lo is set to lo
  * hi         output higher than hi is set to hi
  * rlo        rgb value for level lo
@@ -131,8 +184,6 @@ void write_xpm(FILE *out, unsigned int flags,
 real **mk_matrix(int nx, int ny, gmx_bool b1D);
 
 void done_matrix(int nx, real ***m);
-
-void clear_matrix(int nx, int ny, real **m);
 
 #ifdef __cplusplus
 }

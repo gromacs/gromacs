@@ -34,12 +34,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
 #include "adress.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/utilities.h"
-#include "pbc.h"
-#include "types/simple.h"
-#include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
 
 real
 adress_weight(rvec                 x,

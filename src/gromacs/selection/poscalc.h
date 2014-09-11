@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,9 +52,9 @@
 #ifndef GMX_SELECTION_POSCALC_H
 #define GMX_SELECTION_POSCALC_H
 
-#include "../legacyheaders/typedefs.h"
+#include <cstdio>
 
-#include "../utility/common.h"
+#include "gromacs/utility/common.h"
 
 /*! \name Flags for position calculation.
  * \anchor poscalc_flags
@@ -127,10 +127,13 @@ typedef enum
 } e_poscalc_t;
 
 /** Data structure for position calculation. */
-typedef struct gmx_ana_poscalc_t gmx_ana_poscalc_t;
+struct gmx_ana_poscalc_t;
 
 struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
+struct t_pbc;
+struct t_topology;
+struct t_trxframe;
 
 namespace gmx
 {
@@ -277,6 +280,13 @@ class PositionCalculationCollection
         gmx_ana_poscalc_t *createCalculationFromEnum(const char *post, int flags);
 
         /*! \brief
+         * Computes the highest atom index required to evaluate this collection.
+         *
+         * Does not throw.
+         */
+        int getHighestRequiredAtomIndex() const;
+
+        /*! \brief
          * Initializes evaluation for a position calculation collection.
          *
          * This function does some final initialization of the data structures
@@ -323,10 +333,10 @@ void
 gmx_ana_poscalc_set_flags(gmx_ana_poscalc_t *pc, int flags);
 /** Sets the maximum possible input index group for position calculation. */
 void
-gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, struct gmx_ana_index_t *g);
+gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g);
 /** Initializes positions for position calculation output. */
 void
-gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, struct gmx_ana_pos_t *p);
+gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p);
 /** Frees the memory allocated for position calculation. */
 void
 gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc);
@@ -337,7 +347,7 @@ gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc);
 /** Updates a single COM/COG structure for a frame. */
 void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
-                       struct gmx_ana_pos_t *p, struct gmx_ana_index_t *g,
+                       gmx_ana_pos_t *p, gmx_ana_index_t *g,
                        t_trxframe *fr, t_pbc *pbc);
 
 #endif

@@ -34,33 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "config.h"
 
 #include <stdio.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
-#include "copyrite.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_X11
 
 #include "gromacs/fileio/writeps.h"
 
 #include "Xstuff.h"
-#include "gromacs.bm"
-#include "xutil.h"
 #include "dialogs.h"
+#include "gromacs.bm"
 #include "molps.h"
 #include "nmol.h"
+#include "xutil.h"
 
 static void dump_it(t_manager *man)
 {
@@ -310,7 +309,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     snew(gmx, 1);
     snew(gmx->wd, 1);
 
-    ePBC = read_tpx_top(ftp2fn(efTPX, nfile, fnm),
+    ePBC = read_tpx_top(ftp2fn(efTPR, nfile, fnm),
                         NULL, box, &natom, NULL, NULL, NULL, &top);
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_DONT_SKIP);
@@ -365,8 +364,8 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
     init_dlgs(x11, gmx);
 
-    /* Now do file shit */
-    set_file(x11, gmx->man, ftp2fn(efTRX, nfile, fnm), ftp2fn(efTPX, nfile, fnm));
+    /* Now do file operations */
+    set_file(x11, gmx->man, ftp2fn(efTRX, nfile, fnm), ftp2fn(efTPR, nfile, fnm));
 
     ShowDlg(gmx->dlgs[edFilter]);
 }
@@ -398,7 +397,7 @@ int gmx_view(int argc, char *argv[])
     output_env_t oenv;
     t_filenm     fnm[] = {
         { efTRX, "-f", NULL, ffREAD },
-        { efTPX, NULL, NULL, ffREAD },
+        { efTPR, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD }
     };
 #define NFILE asize(fnm)

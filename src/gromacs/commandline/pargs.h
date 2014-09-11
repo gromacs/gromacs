@@ -44,9 +44,11 @@
 #ifndef GMX_COMMANDLINE_PARGS_H
 #define GMX_COMMANDLINE_PARGS_H
 
-#include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/oenv.h"
-#include "../fileio/filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -228,12 +230,10 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 #define PCA_CAN_SET_DEFFNM (1<<10)
 /** Do not raise a fatal error when invalid options are encountered. */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
-/** Do not print help output (used for non-master nodes). */
-#define PCA_QUIET          (1<<12)
-/** Default to low priority. */
-#define PCA_BE_NICE        (1<<13)
 /** Is this node not reading: for parallel all nodes but the master */
 #define PCA_NOT_READ_NODE  (1<<16)
+/** Don't do any special processing for ffREAD files */
+#define PCA_DISABLE_INPUT_FILE_CHECKING (1<<17)
 
 /*! \brief
  * Parse command-line arguments.
@@ -243,6 +243,17 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
  * by \p Flags.
  *
  * Recognized arguments are removed from the list.
+ *
+ * For full functionality, this function needs to be used within a function
+ * that is passed to gmx_run_cmain().  It should be called as the first thing in
+ * that function.  Initialization code can be executed before it, but you need
+ * to be aware that if the program is executed with -h and MPI, the code before
+ * parse_common_args() only executes on the master node.
+ *
+ * If the return value is `FALSE`, the program should return immediately (this
+ * is necessary for -h and a few other cases).
+ *
+ * \see gmx_run_cmain().
  */
 gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nfile, t_filenm fnm[], int npargs, t_pargs *pa,

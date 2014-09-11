@@ -40,7 +40,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-%{
+%code top {
 /*! \internal \file parser.cpp
  * \brief Generated (from parser.y by Bison) parser for the selection language.
  *
@@ -51,7 +51,10 @@
  *
  * \ingroup module_selection
  */
-#include "gromacs/legacyheaders/smalloc.h"
+#include "gmxpre.h"
+}
+%{
+#include "gromacs/utility/scoped_ptr_sfree.h"
 
 #include "parser_internal.h"
 

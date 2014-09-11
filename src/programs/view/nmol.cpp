@@ -34,24 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nmol.h"
 
 #include <math.h>
-#include "sysstuff.h"
+#include <stdlib.h>
 #include <string.h>
-#include "smalloc.h"
-#include "macros.h"
-#include "xutil.h"
-#include "gromacs/math/3dview.h"
-#include "gmx_fatal.h"
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "3dview.h"
 #include "buttons.h"
 #include "manager.h"
-#include "nmol.h"
-#include "vec.h"
-#include "txtdump.h"
-#include "pbc.h"
+#include "xutil.h"
 
 #define MSIZE 4
 
@@ -459,7 +460,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
 
         for (i = 0; (i < NCUCEDGE); i++)
         {
-            m4_op(view->proj, corner[i], x4);
+            gmx_mat4_transform_point(view->proj, corner[i], x4);
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
         XSetForeground(x11->disp, x11->gc, YELLOW);
@@ -508,7 +509,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
                 }
             }
             rvec_inc(corner[i], box_center);
-            m4_op(view->proj, corner[i], x4);
+            gmx_mat4_transform_point(view->proj, corner[i], x4);
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
         if (debug)
@@ -572,7 +573,7 @@ void draw_mol(t_x11 *x11, t_manager *man)
     {
         if (man->bVis[i])
         {
-            m4_op(view->proj, man->x[i], x4);
+            gmx_mat4_transform_point(view->proj, man->x[i], x4);
             man->zz[i] = x4[ZZ];
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }

@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,14 +37,17 @@
 #ifndef GMX_FILEIO_ENXIO_H
 #define GMX_FILEIO_ENXIO_H
 
-#include "../legacyheaders/typedefs.h"
-#include "../legacyheaders/pbc.h"
-#include "gmxfio.h"
-#include "xdr_datatype.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xdr_datatype.h"
+#include "gromacs/legacyheaders/types/energy.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/state.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmx_groups_t;
 
 /**************************************************************
  * These are the base datatypes + functions for reading and
@@ -185,7 +188,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr);
 /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
 void get_enx_state(const char *fn, real t,
-                   gmx_groups_t *groups, t_inputrec *ir,
+                   struct gmx_groups_t *groups, t_inputrec *ir,
                    t_state *state);
 /*
  * Reads state variables from enx file fn at time t.

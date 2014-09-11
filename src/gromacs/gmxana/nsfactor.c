@@ -32,21 +32,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nsfactor.h"
+
+#include "config.h"
 
 #include <string.h>
 
-#include "gromacs/random/random.h"
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "vec.h"
-#include "nsfactor.h"
-
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 void check_binwidth(real binwidth)
 {
@@ -115,7 +117,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
         i = line_no;
         if (sscanf(line, "%s %d %d %lf", atomnm, &p, &n, &slength) == 4)
         {
-            gnsf->atomnm[i]  = strdup(atomnm);
+            gnsf->atomnm[i]  = gmx_strdup(atomnm);
             gnsf->n[i]       = n;
             gnsf->p[i]       = p;
             gnsf->slength[i] = slength;

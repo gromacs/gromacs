@@ -38,15 +38,22 @@
 #ifndef _mdatoms_h
 #define _mdatoms_h
 
-#include "typedefs.h"
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-t_mdatoms *init_mdatoms(FILE *fp, gmx_mtop_t *mtop, gmx_bool bFreeEnergy);
+struct gmx_mtop_t;
 
-void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
+t_mdatoms *init_mdatoms(FILE *fp, struct gmx_mtop_t *mtop, gmx_bool bFreeEnergy);
+
+void atoms2md(struct gmx_mtop_t *mtop, t_inputrec *ir,
               int nindex, int *index,
               int homenr,
               t_mdatoms *md);

@@ -34,24 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gpp_atomtype.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "macros.h"
-#include "topdirs.h"
-#include "toputil.h"
-#include "topdirs.h"
-#include "toputil.h"
-#include "symtab.h"
-#include "gmx_fatal.h"
-#include "txtdump.h"
-#include "gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct gpp_atomtype {
     int              nr;           /* The number of atomtypes		*/
@@ -372,7 +367,6 @@ void done_atomtype(gpp_atomtype_t ga)
     sfree(ga->atomnumber);
     ga->nr = 0;
     sfree(ga);
-    ga = NULL;
 }
 
 static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],

@@ -51,29 +51,29 @@
  * \ingroup module_selection
  * \endcond
  */
+#include "gmxpre.h"
+
+#include "scanner_internal.h"
+
 #include <stdlib.h>
 #include <string.h>
 
 #include <string>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
-
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "parser.h"
 #include "parsetree.h"
+#include "scanner.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
-
-#include "parser.h"
-#include "scanner.h"
-#include "scanner_internal.h"
 
 /*! \brief
  * Step in which the allocated memory for pretty-printed input is incremented.
@@ -104,7 +104,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     }
     else
     {
-        yylval->str = param->name ? strdup(param->name) : NULL;
+        yylval->str = param->name ? gmx_strdup(param->name) : NULL;
     }
     return PARAM;
 }
@@ -324,8 +324,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                 GMX_THROW(gmx::InternalError("Unsupported variable type"));
                 return INVALID;
         }
-        delete yylval->sel;
-        return INVALID; /* Should not be reached. */
+        /* This position should not be reached. */
     }
     /* For method symbols, return the correct type */
     if (symtype == gmx::SelectionParserSymbol::MethodSymbol)
@@ -338,7 +337,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (symtype == gmx::SelectionParserSymbol::PositionSymbol)
     {
         state->bMatchOf    = true;
-        yylval->str        = strdup(symbol->name().c_str());
+        yylval->str        = gmx_strdup(symbol->name().c_str());
         state->prev_pos_kw = 2;
         return KEYWORD_POS;
     }

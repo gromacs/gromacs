@@ -35,21 +35,20 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <string.h>
-#include "string2.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
-#include "symtab.h"
 #include "h_db.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 #include "gromacs/fileio/gmxfio.h"
-#include "fflibutil.h"
-#include "gmx_fatal.h"
-#include "macros.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Number of control atoms for each 'add' type.
  *
@@ -110,14 +109,14 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     }
     for (i = 0; (i < hack->nctl); i++)
     {
-        hack->a[i] = strdup(a[i]);
+        hack->a[i] = gmx_strdup(a[i]);
     }
     for (; i < 4; i++)
     {
         hack->a[i] = NULL;
     }
     hack->oname = NULL;
-    hack->nname = strdup(hn);
+    hack->nname = gmx_strdup(hn);
     hack->atom  = NULL;
     hack->cgnr  = NOTSET;
     hack->bXSet = FALSE;
@@ -163,8 +162,8 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
         }
         srenew(aah, nah+1);
         clear_t_hackblock(&aah[nah]);
-        aah[nah].name     = strdup(buf);
-        aah[nah].filebase = strdup(filebase);
+        aah[nah].name     = gmx_strdup(buf);
+        aah[nah].filebase = gmx_strdup(filebase);
 
         if (sscanf(line+n, "%d", &nab) == 1)
         {

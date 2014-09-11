@@ -39,11 +39,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "exceptions.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <cstring>
 
@@ -51,13 +51,12 @@
 #include <stdexcept>
 #include <typeinfo>
 
-#include <boost/exception/get_error_info.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/exception/get_error_info.hpp>
 
 #include "thread_mpi/system_error.h"
 
-#include "gromacs/legacyheaders/network.h"
-
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -177,11 +176,15 @@ GromacsException::GromacsException(const ExceptionInitializer &details)
 const char *GromacsException::what() const throw()
 {
     const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*this);
-    while (msg != NULL && msg->isContext())
+    if (msg == NULL)
+    {
+        return "No reason provided";
+    }
+    while (msg->isContext())
     {
         msg = &msg->child();
     }
-    return msg != NULL ? msg->text().c_str() : "No reason provided";
+    return msg->text().c_str();
 }
 
 void GromacsException::prependContext(const std::string &context)
@@ -517,7 +520,7 @@ int processExceptionAtExit(const std::exception & /*ex*/)
 #ifdef GMX_LIB_MPI
     // TODO: Consider moving the output done in gmx_abort() into the message
     // printing routine above, so that this could become a simple MPI_Abort().
-    gmx_abort(gmx_node_rank(), gmx_node_num(), returnCode);
+    gmx_abort(returnCode);
 #endif
     return returnCode;
 }

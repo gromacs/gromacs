@@ -34,31 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "princ.h"
-#include "rmpbc.h"
-#include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gstat.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/princ.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 void
@@ -79,7 +74,11 @@ int gmx_principal(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[THISMODULE] calculates the three principal axes of inertia for a group",
-        "of atoms.",
+        "of atoms. NOTE: Old versions of Gromacs wrote the output data in a",
+        "strange transposed way. As of Gromacs-5.0, the output file paxis1.dat",
+        "contains the x/y/z components of the first (major) principal axis for",
+        "each frame, and similarly for the middle and minor axes in paxis2.dat",
+        "and paxis3.dat."
     };
     static gmx_bool foo = FALSE;
 
@@ -104,30 +103,58 @@ int gmx_principal(int argc, char *argv[])
     matrix          axes, box;
     output_env_t    oenv;
     gmx_rmpbc_t     gpbc = NULL;
+    char **         legend;
 
-
-    t_filenm fnm[] = {
+    t_filenm        fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },
-        { efDAT, "-a1",  "axis1",    ffWRITE },
-        { efDAT, "-a2",  "axis2",    ffWRITE },
-        { efDAT, "-a3",  "axis3",    ffWRITE },
-        { efDAT, "-om",  "moi",      ffWRITE }
+        { efXVG, "-a1",  "paxis1",   ffWRITE },
+        { efXVG, "-a2",  "paxis2",   ffWRITE },
+        { efXVG, "-a3",  "paxis3",   ffWRITE },
+        { efXVG, "-om",  "moi",      ffWRITE }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }
 
-    axis1 = gmx_ffopen(opt2fn("-a1", NFILE, fnm), "w");
-    axis2 = gmx_ffopen(opt2fn("-a2", NFILE, fnm), "w");
-    axis3 = gmx_ffopen(opt2fn("-a3", NFILE, fnm), "w");
-    fmoi  = gmx_ffopen(opt2fn("-om", NFILE, fnm), "w");
+    snew(legend, DIM);
+    for (i = 0; i < DIM; i++)
+    {
+        snew(legend[i], STRLEN);
+        sprintf(legend[i], "%c component", 'X'+i);
+    }
+
+    axis1 = xvgropen(opt2fn("-a1", NFILE, fnm), "Principal axis 1 (major axis)",
+                     output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
+    xvgr_legend(axis1, DIM, (const char **)legend, oenv);
+
+    axis2 = xvgropen(opt2fn("-a2", NFILE, fnm), "Principal axis 2 (middle axis)",
+                     output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
+    xvgr_legend(axis2, DIM, (const char **)legend, oenv);
+
+    axis3 = xvgropen(opt2fn("-a3", NFILE, fnm), "Principal axis 3 (minor axis)",
+                     output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
+    xvgr_legend(axis3, DIM, (const char **)legend, oenv);
+
+    sprintf(legend[XX], "Axis 1 (major)");
+    sprintf(legend[YY], "Axis 2 (middle)");
+    sprintf(legend[ZZ], "Axis 3 (minor)");
+
+    fmoi  = xvgropen(opt2fn("-om", NFILE, fnm), "Moments of inertia around inertial axes",
+                     output_env_get_xvgr_tlabel(oenv), "I (au nm\\S2\\N)", oenv);
+    xvgr_legend(fmoi, DIM, (const char **)legend, oenv);
+
+    for (i = 0; i < DIM; i++)
+    {
+        sfree(legend[i]);
+    }
+    sfree(legend);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box, TRUE);
 
@@ -143,21 +170,21 @@ int gmx_principal(int argc, char *argv[])
 
         calc_principal_axes(&top, x, index, gnx, axes, moi);
 
-        fprintf(axis1, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][XX], axes[YY][XX], axes[ZZ][XX]);
-        fprintf(axis2, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][YY], axes[YY][YY], axes[ZZ][YY]);
-        fprintf(axis3, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][ZZ], axes[YY][ZZ], axes[ZZ][ZZ]);
+        fprintf(axis1, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][XX], axes[XX][YY], axes[XX][ZZ]);
+        fprintf(axis2, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[YY][XX], axes[YY][YY], axes[YY][ZZ]);
+        fprintf(axis3, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[ZZ][XX], axes[ZZ][YY], axes[ZZ][ZZ]);
         fprintf(fmoi,  "%15.10f     %15.10f  %15.10f  %15.10f\n", t, moi[XX], moi[YY], moi[ZZ]);
     }
     while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 
-
     close_trj(status);
-    gmx_ffclose(axis1);
-    gmx_ffclose(axis2);
-    gmx_ffclose(axis3);
-    gmx_ffclose(fmoi);
+
+    xvgrclose(axis1);
+    xvgrclose(axis2);
+    xvgrclose(axis3);
+    xvgrclose(fmoi);
 
     return 0;
 }

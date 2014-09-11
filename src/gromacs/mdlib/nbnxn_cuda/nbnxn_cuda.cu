@@ -32,12 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdlib.h>
+#include "nbnxn_cuda.h"
+
+#include "config.h"
+
 #include <assert.h>
+#include <stdlib.h>
 
 #if defined(_MSVC)
 #include <limits>
@@ -45,21 +47,21 @@
 
 #include <cuda.h>
 
-#include "types/simple.h"
-#include "types/nbnxn_pairlist.h"
-#include "types/nb_verlet.h"
-#include "types/ishift.h"
-#include "types/force_flags.h"
-#include "../nbnxn_consts.h"
-
 #ifdef TMPI_ATOMICS
 #include "thread_mpi/atomic.h"
 #endif
 
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/cstringutil.h"
+
 #include "nbnxn_cuda_types.h"
-#include "../../gmxlib/cuda_tools/cudautils.cuh"
-#include "nbnxn_cuda.h"
-#include "nbnxn_cuda_data_mgmt.h"
 
 #if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
 #define USE_TEXOBJ
@@ -79,7 +81,7 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
 /***** The kernels come here *****/
-#include "nbnxn_cuda_kernel_utils.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
 
 /* Top-level kernel generation: will generate through multiple inclusion the
  * following flavors for all kernels:
@@ -89,19 +91,19 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
  * - force and energy output with pair list pruning.
  */
 /** Force only **/
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 
 /*** Pair-list pruning kernels ***/
 /** Force only **/
 #define PRUNE_NBL
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
 
@@ -714,18 +716,18 @@ void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo)
             if (devinfo->prop.major >= 3)
             {
                 /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
-                stat = cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferShared);
-                stat = cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferShared);
-                stat = cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferShared);
+                cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferShared);
+                cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferShared);
+                cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferShared);
                 stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferShared);
             }
             else
             {
                 /* On Fermi prefer L1 gives 2% higher performance */
                 /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
-                stat = cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferL1);
-                stat = cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferL1);
-                stat = cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferL1);
+                cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferL1);
+                cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferL1);
+                cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferL1);
                 stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferL1);
             }
             CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");

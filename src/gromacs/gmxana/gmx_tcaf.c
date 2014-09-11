@@ -34,31 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <stdio.h>
+#include "gmxpre.h"
 
 #include <math.h>
-#include "gromacs/fileio/confio.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
-#include "gstat.h"
-#include "macros.h"
-#include "gromacs/math/utilities.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
-#include "gromacs/commandline/pargs.h"
+#include <stdio.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "pbc.h"
-#include "gmx_ana.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 #define NK  24
@@ -183,20 +182,23 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
                 tcafc[kc][i] /= tcafc[kc][0];
                 fprintf(fp_cub, "%g %g\n", i*dt, tcafc[kc][i]);
             }
-            fprintf(fp_cub, "&\n");
+            fprintf(fp_cub, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             tcafc[kc][0] = 1.0;
         }
     }
 
     fp_vk = xvgropen(fn_vk, "Fits", "k (nm\\S-1\\N)",
                      "\\8h\\4 (10\\S-3\\N kg m\\S-1\\N s\\S-1\\N)", oenv);
-    fprintf(fp_vk, "@    s0 symbol 2\n");
-    fprintf(fp_vk, "@    s0 symbol color 1\n");
-    fprintf(fp_vk, "@    s0 linestyle 0\n");
-    if (fn_cub)
+    if (output_env_get_print_xvgr_codes(oenv))
     {
-        fprintf(fp_vk, "@    s1 symbol 3\n");
-        fprintf(fp_vk, "@    s1 symbol color 2\n");
+        fprintf(fp_vk, "@    s0 symbol 2\n");
+        fprintf(fp_vk, "@    s0 symbol color 1\n");
+        fprintf(fp_vk, "@    s0 linestyle 0\n");
+        if (fn_cub)
+        {
+            fprintf(fp_vk, "@    s1 symbol 3\n");
+            fprintf(fp_vk, "@    s1 symbol color 2\n");
+        }
     }
     fp = xvgropen(fn_tcf, "TCAF Fits", "Time (ps)", "", oenv);
     for (k = 0; k < nk; k++)
@@ -215,7 +217,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         {
             fprintf(fp, "%g %g\n", i*dt, fit_function(effnVAC, fitparms, i*dt));
         }
-        fprintf(fp, "&\n");
+        fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
     }
     gmx_ffclose(fp);
     do_view(oenv, fn_tcf, "-nxy");
@@ -223,7 +225,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
     if (fn_cub)
     {
         fprintf(stdout, "Averaged over k-vectors:\n");
-        fprintf(fp_vk, "&\n");
+        fprintf(fp_vk, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         for (k = 0; k < nkc; k++)
         {
             tcafc[k][0]  = 1.0;
@@ -241,9 +243,9 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             {
                 fprintf(fp_cub, "%g %g\n", i*dt, fit_function(effnVAC, fitparms, i*dt));
             }
-            fprintf(fp_cub, "&\n");
+            fprintf(fp_cub, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
-        fprintf(fp_vk, "&\n");
+        fprintf(fp_vk, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         gmx_ffclose(fp_cub);
         do_view(oenv, fn_cub, "-nxy");
     }
@@ -336,7 +338,7 @@ int gmx_tcaf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

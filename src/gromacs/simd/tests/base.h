@@ -52,9 +52,11 @@
  * \ingroup module_simd
  */
 #include <vector>
-#include <gtest/gtest.h>
-#include "gromacs/simd/simd.h"
 
+#include <gtest/gtest.h>
+
+#include "gromacs/simd/simd.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
@@ -93,15 +95,14 @@ class SimdBaseTest : public ::testing::Test
          * conservative so it works with (inverse) square root, division,
          * exponentials, logarithms, and error functions.
          */
-        SimdBaseTest()
-        {
+        SimdBaseTest() :
 #ifdef GMX_DOUBLE
-            ulpTol_       = 255LL; // Aim for roughly twice the precision we have in single.
+            ulpTol_(255LL), // Aim for roughly twice the precision we have in single.
 #else
-            ulpTol_       = 10LL;  // Be a bit liberal so compiler optimization doesn't bite us.
+            ulpTol_(10LL),  // Be a bit liberal so compiler optimization doesn't bite us.
 #endif
-            absTol_       = 0;
-            range_        = std::pair<real, real>(1, 10);
+            absTol_(0), range_(std::pair<real, real>(1, 10))
+        {
         }
 
         /*! \brief Adjust ulp tolerance from the default 10 (float) or 255 (double). */

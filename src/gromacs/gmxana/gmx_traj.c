@@ -34,31 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
-#include "mshift.h"
-#include "xvgr.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "rmpbc.h"
-#include "physics.h"
-#include "nrjac.h"
-#include "gromacs/fileio/confio.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void low_print_data(FILE *fp, real time, rvec x[], int n, atom_id *index,
                            gmx_bool bDim[], const char *sffmt)
@@ -686,24 +684,24 @@ int gmx_traj(int argc, char *argv[])
         { efTRX, "-f", NULL, ffREAD },
         { efTPS, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD },
-        { efXVG, "-ox", "coord.xvg", ffOPTWR },
-        { efTRX, "-oxt", "coord.xtc", ffOPTWR },
-        { efXVG, "-ov", "veloc.xvg", ffOPTWR },
-        { efXVG, "-of", "force.xvg", ffOPTWR },
-        { efXVG, "-ob", "box.xvg",   ffOPTWR },
-        { efXVG, "-ot", "temp.xvg",  ffOPTWR },
-        { efXVG, "-ekt", "ektrans.xvg", ffOPTWR },
-        { efXVG, "-ekr", "ekrot.xvg", ffOPTWR },
-        { efXVG, "-vd", "veldist.xvg", ffOPTWR },
-        { efPDB, "-cv", "veloc.pdb", ffOPTWR },
-        { efPDB, "-cf", "force.pdb", ffOPTWR },
-        { efXVG, "-av", "all_veloc.xvg", ffOPTWR },
-        { efXVG, "-af", "all_force.xvg", ffOPTWR }
+        { efXVG, "-ox",  "coord",     ffOPTWR },
+        { efTRX, "-oxt", "coord",     ffOPTWR },
+        { efXVG, "-ov",  "veloc",     ffOPTWR },
+        { efXVG, "-of",  "force",     ffOPTWR },
+        { efXVG, "-ob",  "box",       ffOPTWR },
+        { efXVG, "-ot",  "temp",      ffOPTWR },
+        { efXVG, "-ekt", "ektrans",   ffOPTWR },
+        { efXVG, "-ekr", "ekrot",     ffOPTWR },
+        { efXVG, "-vd",  "veldist",   ffOPTWR },
+        { efPDB, "-cv",  "veloc",     ffOPTWR },
+        { efPDB, "-cf",  "force",     ffOPTWR },
+        { efXVG, "-av",  "all_veloc", ffOPTWR },
+        { efXVG, "-af",  "all_force", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -902,6 +900,12 @@ int gmx_traj(int argc, char *argv[])
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
+
+
+    if ((bOV || bOF) && fn2ftp(ftp2fn(efTRX, NFILE, fnm)) == efXTC)
+    {
+        gmx_fatal(FARGS, "Cannot extract velocities or forces since your input XTC file does not contain them.");
+    }
 
     if (bCV || bCF)
     {

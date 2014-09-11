@@ -39,22 +39,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "main.h"
+
 #include "macros.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "sysstuff.h"
 #include "txtdump.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/enxio.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "txtdump.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 
 static char *nm[5]  = { "OW", "HW1", "HW2", "DW", "SW" };
   
@@ -138,9 +137,9 @@ static void list_trn(char *fn)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "[TT]gmxdump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
-    "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]) or an energy",
-    "file ([TT].ene[tt]/[TT].edr[tt]) and prints that to standard",
+    "[TT]gmxdump[tt] reads a run input file ([TT].tpr[tt]),",
+    "a trajectory ([TT].trr[tt]/[TT].xtc[tt]) or an energy",
+    "file ([TT].edr[tt]) and prints that to standard",
     "output in a readable format. This program is essential for",
     "checking your run input file in case of problems.[PAR]"
   };

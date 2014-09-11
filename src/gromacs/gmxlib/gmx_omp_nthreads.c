@@ -33,23 +33,25 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+
+#include "config.h"
+
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "gmx_fatal.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "network.h"
-#include "copyrite.h"
-#include "gmx_omp_nthreads.h"
-#include "md_logging.h"
-
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
@@ -145,9 +147,9 @@ static void pick_module_nthreads(FILE *fplog, int m,
          * OMP_NUM_THREADS also has to be set */
         if (bFullOmpSupport && getenv("OMP_NUM_THREADS") == NULL)
         {
-            gmx_fatal(FARGS, "%s=%d is set, the default number of threads also "
-                      "needs to be set with OMP_NUM_THREADS!",
-                      modth_env_var[m], nth);
+            gmx_warning("%s=%d is set, the default number of threads also "
+                        "needs to be set with OMP_NUM_THREADS!",
+                        modth_env_var[m], nth);
         }
 
         /* with the group scheme warn if any env var except PME is set */
@@ -440,8 +442,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                 sprintf(sbuf, "thread-MPI threads");
 #else
                 sprintf(sbuf, "MPI processes");
-                sprintf(sbuf1, " per node");
-                sprintf(sbuf2, "On node %d: o", cr->sim_nodeid);
+                sprintf(sbuf1, " per rank");
+                sprintf(sbuf2, "On rank %d: o", cr->sim_nodeid);
 #endif
             }
 #endif

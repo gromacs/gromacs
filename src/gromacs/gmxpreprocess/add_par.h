@@ -38,8 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_ADD_PAR_H
 #define GMX_GMXPREPROCESS_ADD_PAR_H
 
-#include "typedefs.h"
-#include "pdb2top.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C"

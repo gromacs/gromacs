@@ -57,7 +57,7 @@ class File;
 class Options;
 
 //! \cond internal
-//! \addtogroup module_onlinehelp
+//! \addtogroup module_commandline
 //! \{
 
 //! Output format for ShellCompletionWriter.

@@ -118,6 +118,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
  * \code
    #include "gromacs/options/basicoptions.h"
    #include "gromacs/options/options.h"
+
    #include "testutils/testoptions.h"
 
    namespace gmx

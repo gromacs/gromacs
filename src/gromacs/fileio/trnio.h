@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,8 +40,8 @@
 
 /**************************************************************
  *
- * These routines handle trj (trajectory) I/O, they read and
- * write trj/trr files. The routines should be able to read single
+ * These routines handle trr (trajectory) I/O, they read and
+ * write trr files. The routines should be able to read single
  * and double precision files without the user noting it.
  * The files are backward compatible, therefore the header holds
  * some unused variables.
@@ -53,8 +53,7 @@
  *
  **************************************************************/
 
-#include "../legacyheaders/typedefs.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,7 +83,7 @@ typedef struct           /* This struct describes the order and the	*/
 } t_trnheader;
 
 t_fileio *open_trn(const char *fn, const char *mode);
-/* Open a trj / trr file */
+/* Open a trr / trr file */
 
 void close_trn(t_fileio *fio);
 /* Close it */

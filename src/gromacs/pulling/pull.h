@@ -50,13 +50,14 @@
 #ifndef GMX_PULLING_PULL_H
 #define GMX_PULLING_PULL_H
 
-#include "typedefs.h"
-#include "../fileio/filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct t_pbc;
 
 /*! \brief Get the distance to the reference and deviation for pull coord coord_ind.
  *
@@ -69,7 +70,7 @@ extern "C" {
  */
 void get_pull_coord_distance(const t_pull *pull,
                              int coord_ind,
-                             const t_pbc *pbc, double t,
+                             const struct t_pbc *pbc, double t,
                              dvec dr, double *dev);
 
 
@@ -96,7 +97,7 @@ void clear_pull_forces(t_pull *pull);
  *
  * \returns The pull potential energy.
  */
-real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
                     rvec *x, rvec *f, tensor vir, real *dvdlambda);
 
@@ -115,7 +116,7 @@ real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, t_pbc *pbc,
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  */
-void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+void pull_constraint(t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
                      t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir);
 
@@ -185,13 +186,13 @@ void pull_print_output(t_pull *pull, gmx_int64_t step, double time);
  * \param[in,out] xp   Updated x, can be NULL.
  *
  */
-void pull_calc_coms(t_commrec *cr,
-                    t_pull    *pull,
-                    t_mdatoms *md,
-                    t_pbc     *pbc,
-                    double     t,
-                    rvec       x[],
-                    rvec      *xp);
+void pull_calc_coms(t_commrec        *cr,
+                    t_pull           *pull,
+                    t_mdatoms        *md,
+                    struct t_pbc     *pbc,
+                    double            t,
+                    rvec              x[],
+                    rvec             *xp);
 
 #ifdef __cplusplus
 }

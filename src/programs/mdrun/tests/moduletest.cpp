@@ -39,22 +39,23 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
+#include "gmxpre.h"
+
 #include "moduletest.h"
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include "config.h"
 
+#include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/file.h"
+#include "programs/mdrun/mdrun_main.h"
+
+#include "testutils/cmdlinetest.h"
 #include "testutils/integrationtests.h"
 #include "testutils/testoptions.h"
-#include "testutils/cmdlinetest.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/utility/file.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/gmxpreprocess/grompp.h"
-#include "programs/mdrun/mdrun_main.h"
 
 namespace gmx
 {
@@ -68,11 +69,14 @@ namespace test
 namespace
 {
 
+#if defined(GMX_THREAD_MPI) || defined(DOXYGEN)
 //! Number of tMPI threads for child mdrun call.
-int gmx_unused g_numThreads = 1;
+int g_numThreads = 1;
+#endif
+#if defined(GMX_OPENMP) || defined(DOXYGEN)
 //! Number of OpenMP threads for child mdrun call.
-int gmx_unused g_numOpenMPThreads = 1;
-
+int g_numOpenMPThreads = 1;
+#endif
 //! \cond
 GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {

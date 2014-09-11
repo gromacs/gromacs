@@ -34,38 +34,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/qmmm.h"
+
+#include "config.h"
 
 #include <math.h>
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "physics.h"
-#include "macros.h"
-#include "vec.h"
-#include "force.h"
-#include "invblock.h"
-#include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "network.h"
-#include "pbc.h"
-#include "ns.h"
-#include "nrnb.h"
-#include "bondf.h"
-#include "mshift.h"
-#include "txtdump.h"
-#include "qmmm.h"
 #include <stdio.h>
-#include <string.h>
-#include "gmx_fatal.h"
-#include "typedefs.h"
 #include <stdlib.h>
-#include "mtop_util.h"
+#include <string.h>
 
+#include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* declarations of the interfaces to the QM packages. The _SH indicate
  * the QM interfaces can be used for Surface Hopping simulations
@@ -197,7 +193,7 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
 #elif defined GMX_QMMM_GAUSSIAN
             QMener = call_gaussian(cr, fr, qm, mm, f, fshift);
 #elif defined GMX_QMMM_ORCA
-            QMener = call_orca(cr, fr, qm, mm, f, fshift);
+            QMener = call_orca(fr, qm, mm, f, fshift);
 #else
             gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif
@@ -494,7 +490,7 @@ void init_QMMMrec(t_commrec  *cr,
     /* issue a fatal if the user wants to run with more than one node */
     if (PAR(cr))
     {
-        gmx_fatal(FARGS, "QM/MM does not work in parallel, use a single node instead\n");
+        gmx_fatal(FARGS, "QM/MM does not work in parallel, use a single rank instead\n");
     }
 
     /* Make a local copy of the QMMMrec */
@@ -770,7 +766,7 @@ void init_QMMMrec(t_commrec  *cr,
 #elif defined GMX_QMMM_GAUSSIAN
             init_gaussian(cr, qr->qm[0], qr->mm);
 #elif defined GMX_QMMM_ORCA
-            init_orca(cr, qr->qm[0], qr->mm);
+            init_orca(qr->qm[0]);
 #else
             gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif

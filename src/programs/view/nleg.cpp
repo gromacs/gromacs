@@ -34,17 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nleg.h"
 
 #include <string.h>
 
-#include "macros.h"
-#include "smalloc.h"
+#include <algorithm>
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/types/rgb.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "buttons.h"
-#include "nleg.h"
 
 typedef struct {
     const char    *tp;

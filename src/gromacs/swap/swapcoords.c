@@ -39,29 +39,30 @@
  * \author Carsten Kutzner <ckutzne@gwdg.de>
  * \ingroup module_swap
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "swapcoords.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "typedefs.h"
-#include "string2.h"
-#include "smalloc.h"
-#include "gromacs/mdlib/groupcoord.h"
-#include "mtop_util.h"
-#include "macros.h"
-#include "vec.h"
-#include "names.h"
-#include "network.h"
-#include "mdrun.h"
-#include "xvgr.h"
-#include "copyrite.h"
+
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
-#include "swapcoords.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 static char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
 static char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */
@@ -710,7 +711,7 @@ static void compartmentalize_ions(
         }
         else
         {
-            fprintf(stderr, "%s node %d: Inconsistency during ion compartmentalization. !inA: %d, !inB: %d, total ions %d\n",
+            fprintf(stderr, "%s rank %d: Inconsistency during ion compartmentalization. !inA: %d, !inB: %d, total ions %d\n",
                     SwS, cr->nodeid, not_in_comp[eCompA], not_in_comp[eCompB], iong->nat);
 
         }
@@ -727,7 +728,7 @@ static void compartmentalize_ions(
         }
         else
         {
-            fprintf(stderr, "%s node %d: %d atoms are in the ion group, but altogether %d have been assigned to the compartments.\n",
+            fprintf(stderr, "%s rank %d: %d atoms are in the ion group, but altogether %d have been assigned to the compartments.\n",
                     SwS, cr->nodeid, iong->nat, sum);
         }
     }
@@ -802,7 +803,7 @@ static void compartmentalize_solvent(
         }
         else
         {
-            fprintf(stderr, "%s node %d: Inconsistency during solvent compartmentalization. !inA: %d, !inB: %d, solvent atoms %d\n",
+            fprintf(stderr, "%s rank %d: Inconsistency during solvent compartmentalization. !inA: %d, !inB: %d, solvent atoms %d\n",
                     SwS, cr->nodeid, not_in_comp[eCompA], not_in_comp[eCompB], solg->nat);
         }
     }
@@ -817,7 +818,7 @@ static void compartmentalize_solvent(
         }
         else
         {
-            fprintf(stderr, "%s node %d: %d atoms in solvent group, but %d have been assigned to the compartments.\n",
+            fprintf(stderr, "%s rank %d: %d atoms in solvent group, but %d have been assigned to the compartments.\n",
                     SwS, cr->nodeid, solg->nat, sum);
         }
     }

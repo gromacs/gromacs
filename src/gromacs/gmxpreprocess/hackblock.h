@@ -38,10 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_HACKBLOCK_H
 #define GMX_GMXPREPROCESS_HACKBLOCK_H
 
-#include "typedefs.h"
-#include "../fileio/pdbio.h"
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/symtab.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,6 +66,7 @@ typedef struct {
     char  *s;              /* optional define string which gets copied from
                               .rtp/.tdb to .top and will be parsed by cpp
                               during grompp */
+    gmx_bool match;        /* boolean to mark that the entry has been found */
 } t_rbonded;
 
 typedef struct {

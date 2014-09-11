@@ -34,36 +34,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "smalloc.h"
-#include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "string2.h"
-#include "vec.h"
-#include "macros.h"
-#include "index.h"
-#include "gromacs/random/random.h"
-#include "pbc.h"
-#include "rmpbc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/matio.h"
-#include "cmat.h"
-#include "do_fit.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
-#include "viewit.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/cmat.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/random/random.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
 static gmx_inline
@@ -1096,9 +1094,12 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (clustidfn)
     {
         fp = xvgropen(clustidfn, "Clusters", output_env_get_xvgr_tlabel(oenv), "Cluster #", oenv);
-        fprintf(fp, "@    s0 symbol 2\n");
-        fprintf(fp, "@    s0 symbol size 0.2\n");
-        fprintf(fp, "@    s0 linestyle 0\n");
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@    s0 symbol 2\n");
+            fprintf(fp, "@    s0 symbol size 0.2\n");
+            fprintf(fp, "@    s0 linestyle 0\n");
+        }
         for (i = 0; i < nf; i++)
         {
             fprintf(fp, "%8g %8d\n", time[i], clust->cl[i]);
@@ -1108,7 +1109,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (sizefn)
     {
         fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
-        fprintf(fp, "@g%d type %s\n", 0, "bar");
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@g%d type %s\n", 0, "bar");
+        }
     }
     snew(structure, nf);
     fprintf(log, "\n%3s | %3s  %4s | %6s %4s | cluster members\n",
@@ -1511,13 +1515,13 @@ int gmx_cluster(int argc, char *argv[])
         { efXVG, "-sz",   "clust-size", ffOPTWR},
         { efXPM, "-tr",   "clust-trans", ffOPTWR},
         { efXVG, "-ntr",  "clust-trans", ffOPTWR},
-        { efXVG, "-clid", "clust-id.xvg", ffOPTWR},
+        { efXVG, "-clid", "clust-id",   ffOPTWR},
         { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
                            &oenv))
     {

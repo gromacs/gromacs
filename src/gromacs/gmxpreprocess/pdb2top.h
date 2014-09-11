@@ -38,11 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_PDB2TOP_H
 #define GMX_GMXPREPROCESS_PDB2TOP_H
 
-#include "typedefs.h"
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
-#include "toputil.h"
-#include "hackblock.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,7 +116,7 @@ void write_top(FILE *out, char *pr, char *molname,
 
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              t_atoms *atoms, rvec **x,
-             gpp_atomtype_t atype, t_symtab *tab,
+             gpp_atomtype_t atype, struct t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
              gmx_bool bAllowMissing,

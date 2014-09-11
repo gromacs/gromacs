@@ -191,6 +191,13 @@ enum {
     efptFEP, efptMASS, efptCOUL, efptVDW, efptBONDED, efptRESTRAINT, efptTEMPERATURE, efptNR
 };
 
+/* Printing the energy to the free energy dhdl file. YES is an alias to TOTAL, and
+ * will be converted in readir, so we never have to account for it in code.
+ */
+enum {
+    edHdLPrintEnergyNO, edHdLPrintEnergyTOTAL, edHdLPrintEnergyPOTENTIAL, edHdLPrintEnergyYES, edHdLPrintEnergyNR
+};
+
 /* How the lambda weights are calculated:
    elamstatsMETROPOLIS = using the metropolis criteria
    elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett
@@ -339,7 +346,7 @@ enum {
 /* flat-bottom posres geometries */
 enum {
     efbposresZERO, efbposresSPHERE, efbposresCYLINDER, efbposresX, efbposresY, efbposresZ,
-    efbposresNR
+    efbposresCYLINDERX, efbposresCYLINDERY, efbposresCYLINDERZ, efbposresNR
 };
 
 enum {

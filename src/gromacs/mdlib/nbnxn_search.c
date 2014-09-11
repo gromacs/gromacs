@@ -33,34 +33,35 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "nbnxn_search.h"
+
+#include "config.h"
+
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "types/commrec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
-#include "vec.h"
-#include "pbc.h"
-#include "nbnxn_consts.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/smalloc.h"
+
 /* nbnxn_internal.h included gromacs/simd/macros.h */
-#include "nbnxn_internal.h"
-#ifdef GMX_NBNXN_SIMD
+#include "gromacs/mdlib/nbnxn_internal.h"
+#ifdef GMX_SIMD
 #include "gromacs/simd/vector_operations.h"
 #endif
-#include "nbnxn_atomdata.h"
-#include "nbnxn_search.h"
-#include "gmx_omp_nthreads.h"
-#include "nrnb.h"
-#include "ns.h"
-
-#include "gromacs/fileio/gmxfio.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
@@ -419,6 +420,12 @@ static real grid_atom_density(int n, rvec corner0, rvec corner1)
 {
     rvec size;
 
+    if (n == 0)
+    {
+        /* To avoid zero density we use a minimum of 1 atom */
+        n = 1;
+    }
+
     rvec_sub(corner1, corner0, size);
 
     return n/(size[XX]*size[YY]*size[ZZ]);
@@ -439,6 +446,8 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 
     if (n > grid->na_sc)
     {
+        assert(atom_density > 0);
+
         /* target cell length */
         if (grid->bSimple)
         {
@@ -1374,14 +1383,13 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                                   int cxy_start, int cxy_end,
                                   int *sort_work)
 {
-    int  cxy;
-    int  cx, cy, cz = -1, c = -1, ncz;
-    int  na, ash, na_c, ind, a;
-    int  subdiv_z, sub_z, na_z, ash_z;
-    int  subdiv_y, sub_y, na_y, ash_y;
-    int  subdiv_x, sub_x, na_x, ash_x;
+    int        cxy;
+    int        cx, cy, cz = -1, c = -1, ncz;
+    int        na, ash, na_c, ind, a;
+    int        subdiv_z, sub_z, na_z, ash_z;
+    int        subdiv_y, sub_y, na_y, ash_y;
+    int        subdiv_x, sub_x, na_x, ash_x;
 
-    /* cppcheck-suppress unassignedVariable */
     nbnxn_bb_t bb_work_array[2], *bb_work_aligned;
 
     bb_work_aligned = (nbnxn_bb_t *)(((size_t)(bb_work_array+1)) & (~((size_t)15)));
@@ -1697,8 +1705,8 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     }
 
     /* Sort the super-cell columns along z into the sub-cells. */
-#pragma omp parallel for num_threads(nbs->nthread_max) schedule(static)
-    for (thread = 0; thread < nbs->nthread_max; thread++)
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for (thread = 0; thread < nthread; thread++)
     {
         if (grid->bSimple)
         {
@@ -1814,7 +1822,8 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
         nbs->ePBC = ePBC;
         copy_mat(box, nbs->box);
 
-        if (atom_density >= 0)
+        /* Avoid zero density */
+        if (atom_density > 0)
         {
             grid->atom_density = atom_density;
         }
@@ -1830,12 +1839,21 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
          * for the local atoms (dd_zone=0).
          */
         nbs->natoms_nonlocal = a1 - nmoved;
+
+        if (debug)
+        {
+            fprintf(debug, "natoms_local = %5d atom_density = %5.1f\n",
+                    nbs->natoms_local, grid->atom_density);
+        }
     }
     else
     {
         nbs->natoms_nonlocal = max(nbs->natoms_nonlocal, a1);
     }
 
+    /* We always use the home zone (grid[0]) for setting the cell size,
+     * since determining densities for non-local zones is difficult.
+     */
     nc_max_grid = set_grid_size_xy(nbs, grid,
                                    dd_zone, n-nmoved, corner0, corner1,
                                    nbs->grid[0].atom_density);
@@ -2924,10 +2942,10 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 }
 
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "nbnxn_search_simd_4xn.h"
+#include "gromacs/mdlib/nbnxn_search_simd_4xn.h"
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "nbnxn_search_simd_2xnn.h"
+#include "gromacs/mdlib/nbnxn_search_simd_2xnn.h"
 #endif
 
 /* Plain C or SIMD4 code for making a pair list of super-cell sci vs scj.
@@ -3310,8 +3328,11 @@ static void make_fep_list(const nbnxn_search_t    nbs,
     cj_ind_start = nbl_ci->cj_ind_start;
     cj_ind_end   = nbl_ci->cj_ind_end;
 
-    /* In worst case we have alternating energy groups and create npair lists */
-    nri_max = nbl->na_ci*(cj_ind_end - cj_ind_start);
+    /* In worst case we have alternating energy groups
+     * and create #atom-pair lists, which means we need the size
+     * of a cluster pair (na_ci*na_cj) times the number of cj's.
+     */
+    nri_max = nbl->na_ci*nbl->na_cj*(cj_ind_end - cj_ind_start);
     if (nlist->nri + nri_max > nlist->maxnri)
     {
         nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
@@ -3437,7 +3458,6 @@ static void make_fep_list(const nbnxn_search_t    nbs,
                              * Note that the charge has been set to zero,
                              * but we need to avoid 0/0, as perturbed atoms
                              * can be on top of each other.
-                             * (and the LJ parameters have not been zeroed)
                              */
                             nbl->cj[cj_ind].excl &= ~(1U << (i*nbl->na_cj + j));
                         }
@@ -3447,6 +3467,7 @@ static void make_fep_list(const nbnxn_search_t    nbs,
 
             if (nlist->nrj > nlist->jindex[nri])
             {
+                /* Actually add this new, non-empty, list */
                 nlist->nri++;
                 nlist->jindex[nlist->nri] = nlist->nrj;
             }
@@ -3512,8 +3533,14 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
     cj4_ind_start = nbl_sci->cj4_ind_start;
     cj4_ind_end   = nbl_sci->cj4_ind_end;
 
-    /* No energy groups (yet), so we split lists in max_nrj_fep pairs */
-    nri_max = nbl->na_sc*(1 + ((cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE)/max_nrj_fep);
+    /* Here we process one super-cell, max #atoms na_sc, versus a list
+     * cj4 entries, each with max NBNXN_GPU_JGROUP_SIZE cj's, each
+     * of size na_cj atoms.
+     * On the GPU we don't support energy groups (yet).
+     * So for each of the na_sc i-atoms, we need max one FEP list
+     * for each max_nrj_fep j-atoms.
+     */
+    nri_max = nbl->na_sc*nbl->na_cj*(1 + ((cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE)/max_nrj_fep);
     if (nlist->nri + nri_max > nlist->maxnri)
     {
         nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
@@ -3636,6 +3663,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
 
                 if (nlist->nrj > nlist->jindex[nri])
                 {
+                    /* Actually add this new, non-empty, list */
                     nlist->nri++;
                     nlist->jindex[nlist->nri] = nlist->nrj;
                 }

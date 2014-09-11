@@ -74,7 +74,13 @@
 #ifndef GMX_SELECTION_CENTEROFMASS_H
 #define GMX_SELECTION_CENTEROFMASS_H
 
-#include "../legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
+
+struct t_block;
+struct t_blocka;
+struct t_pbc;
+struct t_topology;
 
 /*! \brief
  * Calculate a single center of geometry.

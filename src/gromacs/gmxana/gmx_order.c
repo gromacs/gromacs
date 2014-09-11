@@ -34,30 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "gstat.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "index.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/confio.h"
-#include "cmat.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/cmat.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /****************************************************************************/
 /* This program calculates the order parameter per atom for an interface or */
@@ -356,7 +355,7 @@ static void print_types(atom_id index[], atom_id a[], int ngrps,
     fprintf(stderr, "Using following groups: \n");
     for (i = 0; i < ngrps; i++)
     {
-        fprintf(stderr, "Groupname: %s First atomname: %s First atomnr %u\n",
+        fprintf(stderr, "Groupname: %s First atomname: %s First atomnr %d\n",
                 groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
     }
     fprintf(stderr, "\n");
@@ -961,7 +960,7 @@ int gmx_order(int argc, char *argv[])
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
         { efNDX, "-nr", NULL,  ffREAD },              /* index for radial axis calculation	  */
-        { efTPX, NULL, NULL,  ffREAD },               /* topology file                */
+        { efTPR, NULL, NULL,  ffREAD },               /* topology file                */
         { efXVG, "-o", "order", ffWRITE },            /* xvgr output file     */
         { efXVG, "-od", "deuter", ffWRITE },          /* xvgr output file           */
         { efPDB, "-ob", NULL, ffWRITE },              /* write Scd as B factors to PDB if permolecule           */
@@ -977,7 +976,7 @@ int gmx_order(int argc, char *argv[])
     const char   *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
     output_env_t  oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -989,7 +988,7 @@ int gmx_order(int argc, char *argv[])
     sgfnm  = opt2fn_null("-Sg", NFILE, fnm);
     skfnm  = opt2fn_null("-Sk", NFILE, fnm);
     ndxfnm = opt2fn_null("-n", NFILE, fnm);
-    tpsfnm = ftp2fn(efTPX, NFILE, fnm);
+    tpsfnm = ftp2fn(efTPR, NFILE, fnm);
     trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */
@@ -1060,7 +1059,7 @@ int gmx_order(int argc, char *argv[])
             fprintf(stderr, "Taking carbons as unsaturated!\n");
         }
 
-        top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+        top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
         block = init_index(ftp2fn(efNDX, NFILE, fnm), &grpname);
         index = block->index;                   /* get indices from t_block block */

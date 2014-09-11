@@ -34,34 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
-#include "symtab.h"
-#include "smalloc.h"
-#include "macros.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
-#include "index.h"
-#include "vec.h"
-#include "typedefs.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
-#include "physics.h"
-#include "atomprop.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "pbc.h"
-#include "princ.h"
-#include "txtdump.h"
-#include "viewit.h"
-#include "rmpbc.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/princ.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct
 {
@@ -426,10 +424,8 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
 
         for (i = 0; i < nat; i++)
         {
-            fprintf(out, get_pdbformat(), "ATOM", a0 + i, "C", "BOX", 'K' + i
-                    / NCUCVERT, r0 + i, 10 * vert[i][XX], 10 * vert[i][YY], 10
-                    * vert[i][ZZ]);
-            fprintf(out, "\n");
+            gmx_fprintf_pdb_atomline(out, epdbATOM, a0 + i, "C", ' ', "BOX", 'K' + i / NCUCVERT, r0 + i, ' ',
+                                     10*vert[i][XX], 10*vert[i][YY], 10*vert[i][ZZ], 1.0, 0.0, "");
         }
 
         edge = compact_unitcell_edges();
@@ -453,10 +449,8 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
             {
                 for (x = 0; x <= 1; x++)
                 {
-                    fprintf(out, get_pdbformat(), "ATOM", a0 + i, "C", "BOX", 'K' + i
-                            / 8, r0 + i, x * 10 * box[XX][XX],
-                            y * 10 * box[YY][YY], z * 10 * box[ZZ][ZZ]);
-                    fprintf(out, "\n");
+                    gmx_fprintf_pdb_atomline(out, epdbATOM, a0 + i, "C", ' ', "BOX", 'K' + i/8, r0+i, ' ',
+                                             x * 10 * box[XX][XX], y * 10 * box[YY][YY], z * 10 * box[ZZ][ZZ], 1.0, 0.0, "");
                     i++;
                 }
             }
@@ -798,11 +792,9 @@ int gmx_editconf(int argc, char *argv[])
         gmx_fatal(FARGS, "Output file should be a .pdb file"
                   " when using the -grasp option\n");
     }
-    if ((bMead || bGrasp) && !((fn2ftp(infile) == efTPR) ||
-                               (fn2ftp(infile) == efTPA) ||
-                               (fn2ftp(infile) == efTPB)))
+    if ((bMead || bGrasp) && (fn2ftp(infile) != efTPR))
     {
-        gmx_fatal(FARGS, "Input file should be a .tp[abr] file"
+        gmx_fatal(FARGS, "Input file should be a .tpr file"
                   " when using the -mead option\n");
     }
 
@@ -1293,7 +1285,6 @@ int gmx_editconf(int argc, char *argv[])
             out = gmx_ffopen(outfile, "w");
             if (bMead)
             {
-                set_pdb_wide_format(TRUE);
                 fprintf(out, "REMARK    "
                         "The B-factors in this file hold atomic radii\n");
                 fprintf(out, "REMARK    "

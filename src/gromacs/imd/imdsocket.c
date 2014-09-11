@@ -46,17 +46,18 @@
  * \ingroup module_imd
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-
-#include <string.h>
-#include "smalloc.h"
-#include "gmx_fatal.h"
 #include "imdsocket.h"
-#include "imd.h"
 
+#include "config.h"
+
+#include <errno.h>
+#include <string.h>
+
+#include "gromacs/imd/imd.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK
@@ -78,7 +79,6 @@ extern int imdsock_winsockinit()
 #endif
 #else
 /* On UNIX, we can use nice errors from errno.h */
-#include <errno.h>
 #include <unistd.h>
 #endif
 
@@ -132,7 +132,7 @@ extern IMDSocket* imdsock_create()
 
 extern int imdsock_bind(IMDSocket *sock, int port)
 {
-    int ret = -1;
+    int ret;
 
 
 #ifdef GMX_IMD
@@ -142,6 +142,8 @@ extern int imdsock_bind(IMDSocket *sock, int port)
 
     /* Try to bind to address and port ...*/
     ret = bind(sock->sockfd, (struct sockaddr *) &sock->address, sizeof(sock->address));
+#else
+    ret = -1;
 #endif
 
     if (ret)
@@ -155,12 +157,14 @@ extern int imdsock_bind(IMDSocket *sock, int port)
 
 extern int imd_sock_listen(IMDSocket *sock)
 {
-    int ret = -1;
+    int ret;
 
 
 #ifdef GMX_IMD
     /* Try to set to listening state */
     ret = listen(sock->sockfd, MAXIMDCONNECTIONS);
+#else
+    ret = -1;
 #endif
 
     if (ret)
@@ -174,7 +178,7 @@ extern int imd_sock_listen(IMDSocket *sock)
 
 extern IMDSocket* imdsock_accept(IMDSocket *sock)
 {
-    int       ret = -1;
+    int       ret;
 
 #ifdef GMX_IMD
     socklen_t length;
@@ -206,7 +210,7 @@ extern IMDSocket* imdsock_accept(IMDSocket *sock)
 
 extern int imdsock_getport(IMDSocket *sock, int *port)
 {
-    int                ret = -1;
+    int                ret;
 #ifdef GMX_IMD
     struct sockaddr_in sin;
     socklen_t          len;

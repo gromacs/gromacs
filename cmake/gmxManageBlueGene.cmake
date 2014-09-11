@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "BlueGene.*static")
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Static BlueGene build toolchain selected, so shared libraries are disabled" FORCE)
 endif()
 
-set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene" FORCE)
+set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene")
 set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
 set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on BlueGene" FORCE)
 
@@ -64,7 +64,7 @@ set(GMX_MPI ON CACHE BOOL "MPI is required on BlueGene" FORCE)
 
 # Access to /etc/passwd is not available on the back end of BlueGeneP
 # (at least), despite being detected by CMake. This can cause linker
-# warnings about harmless things in src/gmxlib/string2.h.
+# warnings about harmless things in src/gromacs/utility/cstringutil.h.
 set(HAVE_PWD_H OFF)
 
 # The automatic testing for endianness does not work for the BlueGene cross-compiler

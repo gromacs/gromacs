@@ -39,9 +39,10 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-#include "gromacs/commandline/cmdlinehelpmodule.h"
+#include "gmxpre.h"
 
-#include <algorithm>
+#include "cmdlinehelpmodule.h"
+
 #include <string>
 #include <vector>
 
@@ -50,7 +51,6 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
@@ -63,6 +63,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "shellcompletions.h"
 
 namespace gmx
 {
@@ -134,15 +136,15 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
          *
          * Does not throw.
          */
-        explicit RootHelpTopic(const std::string &binaryName)
-            : binaryName_(binaryName)
+        explicit RootHelpTopic(const CommandLineHelpModuleImpl &helpModule)
+            : helpModule_(helpModule)
         {
         }
 
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
-        std::string                 binaryName_;
+        const CommandLineHelpModuleImpl  &helpModule_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
@@ -158,11 +160,10 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
     }
     {
         CommandLineCommonOptionsHolder optionsHolder;
-        CommandLineHelpContext         cmdlineContext(context);
+        CommandLineHelpContext         cmdlineContext(*helpModule_.context_);
+        cmdlineContext.setModuleDisplayName(helpModule_.binaryName_);
         optionsHolder.initOptions();
-        cmdlineContext.setModuleDisplayName(binaryName_);
         // TODO: Add <command> [<args>] into the synopsis.
-        // TODO: Propagate the -hidden option here.
         CommandLineHelpWriter(*optionsHolder.options())
             .writeHelp(cmdlineContext);
     }
@@ -549,7 +550,6 @@ class HelpExportHtml : public HelpExportInterface
 HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
     : links_(eHelpOutputFormat_Html)
 {
-    initProgramLinks(&links_, helpModule);
     File             linksFile("links.dat", "r");
     std::string      line;
     while (linksFile.readLine(&line))
@@ -557,6 +557,7 @@ HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
         links_.addLink(line, "../online/" + line, line);
     }
     linksFile.close();
+    initProgramLinks(&links_, helpModule);
     setupHeaderAndFooter();
 }
 
@@ -619,7 +620,12 @@ void HelpExportHtml::exportModuleGroup(const char                *title,
     {
         const std::string     &tag(module->first);
         std::string            displayName(tag);
-        std::replace(displayName.begin(), displayName.end(), '-', ' ');
+        // TODO: This does not work if the binary name would contain a dash,
+        // but that is not currently the case.
+        size_t                 dashPos = displayName.find('-');
+        GMX_RELEASE_ASSERT(dashPos != std::string::npos,
+                           "There should always be at least one dash in the tag");
+        displayName[dashPos] = ' ';
         indexFile_->writeLine(formatString("<a href=\"%s.html\">%s</a> - %s<br>",
                                            tag.c_str(), displayName.c_str(),
                                            module->second));
@@ -718,7 +724,7 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : rootTopic_(new RootHelpTopic(binaryName)), programContext_(programContext),
+    : rootTopic_(new RootHelpTopic(*this)), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false),
       outputOverride_(NULL)
@@ -739,8 +745,7 @@ void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter) const
         {
             const char *const moduleName = module->first.c_str();
             std::string       tag(formatString("%s-%s", program, moduleName));
-            std::string       displayName(tag);
-            std::replace(displayName.begin(), displayName.end(), '-', ' ');
+            std::string       displayName(formatString("%s %s", program, moduleName));
             exporter->exportModuleHelp(*module->second, tag, displayName);
         }
     }

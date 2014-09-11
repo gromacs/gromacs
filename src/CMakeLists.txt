@@ -43,9 +43,13 @@ if(GMX_GPU)
 endif()
 
 configure_file(config.h.cmakein config.h)
+configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
 
 if (BUILD_TESTING)
+    if(NOT GMX_DEVELOPER_BUILD)
+        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
+    endif()
     if (GMX_BUILD_UNITTESTS)
         add_subdirectory(external/gmock-1.7.0)
     endif()

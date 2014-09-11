@@ -38,19 +38,17 @@
 
 #include <stdlib.h>
 #include "errno.h"
-#include "sysstuff.h"
 #include "typedefs.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "mshift.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/pdbio.h"
 
 void cat(FILE *out,char *fn,real t)
@@ -82,8 +80,8 @@ int main(int argc,char *argv[])
     "calling the 'total' program. If you do not have the total program,",
     "get it. do_shift assumes that the total executable is in",
     "[TT]/home/mdgroup/total/total[tt]. If that is not the case, then you should",
-    "set an environment variable [BB]TOTAL[bb] as in: [PAR]",
-    "[TT]setenv TOTAL /usr/local/bin/total[tt][PAR]",
+    "set an environment variable [BB]GMX_TOTAL[bb] as in: [PAR]",
+    "[TT]setenv GMX_TOTAL /usr/local/bin/total[tt][PAR]",
     "where the right hand side should point to the total executable.[PAR]",
     "Output is printed in files [TT]shift.out[tt] where t is the time of the frame.[PAR]",
     "The program also needs an input file called [BB]random.dat[bb] which",
@@ -121,7 +119,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE ,NFILE,fnm,
+  parse_common_args(&argc,argv,PCA_CAN_TIME,NFILE,fnm,
 		    asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
 		    
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
@@ -143,7 +141,7 @@ int main(int argc,char *argv[])
   gmx_tmpnam(tmpfile);
   fprintf(stderr,"pdbfile = %s\ntmpfile = %s\n",pdbfile,tmpfile);
   
-  if ((dptr=getenv("TOTAL")) == NULL)
+  if ((dptr=getenv("GMX_TOTAL")) == NULL)
     dptr="/home/mdgroup/total/total";
   sprintf(total,"%s > /dev/null",dptr);
   fprintf(stderr,"total cmd='%s'\n",total);

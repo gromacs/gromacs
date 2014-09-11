@@ -34,17 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "mdrun_main.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdio.h>
+#include <string.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdrun.h"
@@ -52,9 +52,21 @@
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/fatalerror.h"
 
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/filenm.h"
+#include "mdrun_main.h"
+
+static bool is_multisim_option_set(int argc, const char *const argv[])
+{
+    for (int i = 0; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "-multi") == 0 || strcmp(argv[i], "-multidir") == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 int gmx_mdrun(int argc, char *argv[])
 {
@@ -69,10 +81,9 @@ int gmx_mdrun(int argc, char *argv[])
         "the structure provided is properly energy-minimized.",
         "The generated matrix can be diagonalized by [gmx-nmeig].[PAR]",
         "The [TT]mdrun[tt] program reads the run input file ([TT]-s[tt])",
-        "and distributes the topology over nodes if needed.",
+        "and distributes the topology over ranks if needed.",
         "[TT]mdrun[tt] produces at least four output files.",
-        "A single log file ([TT]-g[tt]) is written, unless the option",
-        "[TT]-seppot[tt] is used, in which case each node writes a log file.",
+        "A single log file ([TT]-g[tt]) is written.",
         "The trajectory file ([TT]-o[tt]), contains coordinates, velocities and",
         "optionally forces.",
         "The structure file ([TT]-c[tt]) contains the coordinates and",
@@ -90,23 +101,23 @@ int gmx_mdrun(int argc, char *argv[])
         "compiled with the GROMACS built-in thread-MPI library. OpenMP threads",
         "are supported when [TT]mdrun[tt] is compiled with OpenMP. Full OpenMP support",
         "is only available with the Verlet cut-off scheme, with the (older)",
-        "group scheme only PME-only processes can use OpenMP parallelization.",
+        "group scheme only PME-only ranks can use OpenMP parallelization.",
         "In all cases [TT]mdrun[tt] will by default try to use all the available",
         "hardware resources. With a normal MPI library only the options",
         "[TT]-ntomp[tt] (with the Verlet cut-off scheme) and [TT]-ntomp_pme[tt],",
-        "for PME-only processes, can be used to control the number of threads.",
+        "for PME-only ranks, can be used to control the number of threads.",
         "With thread-MPI there are additional options [TT]-nt[tt], which sets",
         "the total number of threads, and [TT]-ntmpi[tt], which sets the number",
         "of thread-MPI threads.",
         "The number of OpenMP threads used by [TT]mdrun[tt] can also be set with",
         "the standard environment variable, [TT]OMP_NUM_THREADS[tt].",
         "The [TT]GMX_PME_NUM_THREADS[tt] environment variable can be used to specify",
-        "the number of threads used by the PME-only processes.[PAR]",
+        "the number of threads used by the PME-only ranks.[PAR]",
         "Note that combined MPI+OpenMP parallelization is in many cases",
         "slower than either on its own. However, at high parallelization, using the",
         "combination is often beneficial as it reduces the number of domains and/or",
         "the number of MPI ranks. (Less and larger domains can improve scaling,",
-        "with separate PME processes fewer MPI ranks reduces communication cost.)",
+        "with separate PME ranks, using fewer MPI ranks reduces communication costs.)",
         "OpenMP-only parallelization is typically faster than MPI-only parallelization",
         "on a single CPU(-die). Since we currently don't have proper hardware",
         "topology detection, [TT]mdrun[tt] compiled with thread-MPI will only",
@@ -124,8 +135,8 @@ int gmx_mdrun(int argc, char *argv[])
         "to specify [TT]cutoff-scheme = Verlet[tt] in the [TT].mdp[tt] file.",
         "[PAR]",
         "With GPUs (only supported with the Verlet cut-off scheme), the number",
-        "of GPUs should match the number of MPI processes or MPI threads,",
-        "excluding PME-only processes/threads. With thread-MPI, unless set on the command line, the number",
+        "of GPUs should match the number of particle-particle ranks, i.e.",
+        "excluding PME-only ranks. With thread-MPI, unless set on the command line, the number",
         "of MPI threads will automatically be set to the number of GPUs detected.",
         "To use a subset of the available GPUs, or to manually provide a mapping of",
         "GPUs to PP ranks, you can use the [TT]-gpu_id[tt] option. The argument of [TT]-gpu_id[tt] is",
@@ -143,14 +154,15 @@ int gmx_mdrun(int argc, char *argv[])
         "With the Verlet cut-off scheme and verlet-buffer-tolerance set,",
         "the pair-list update interval nstlist can be chosen freely with",
         "the option [TT]-nstlist[tt]. [TT]mdrun[tt] will then adjust",
-        "the pair-list cut-off to maintain accuracy.",
-        "By default [TT]mdrun[tt] will try to increase nstlist to improve",
-        "the performance. For CPU runs nstlist might increase to 20, for GPU",
-        "runs up till 40. But for medium to high parallelization or with",
-        "fast GPUs, a (user supplied) larger nstlist value can give much",
+        "the pair-list cut-off to maintain accuracy, and not adjust nstlist.",
+        "Otherwise, by default, [TT]mdrun[tt] will try to increase the",
+        "value of nstlist set in the [TT].mdp[tt] file to improve the",
+        "performance. For CPU-only runs, nstlist might increase to 20, for",
+        "GPU runs up to 40. For medium to high parallelization or with",
+        "fast GPUs, a (user-supplied) larger nstlist value can give much",
         "better performance.",
         "[PAR]",
-        "When using PME with separate PME nodes or with a GPU, the two major",
+        "When using PME with separate PME ranks or with a GPU, the two major",
         "compute tasks, the non-bonded force calculation and the PME calculation",
         "run on different compute resources. If this load is not balanced,",
         "some of the resources will be idle part of time. With the Verlet",
@@ -185,9 +197,8 @@ int gmx_mdrun(int argc, char *argv[])
         "to avoid overloading cores; with [TT]-pinoffset[tt] you can specify",
         "the offset in logical cores for pinning.",
         "[PAR]",
-        "When [TT]mdrun[tt] is started using MPI with more than 1 process",
-        "or with thread-MPI with more than 1 thread, MPI parallelization is used.",
-        "Domain decomposition is always used with MPI parallelism.",
+        "When [TT]mdrun[tt] is started with more than 1 rank,",
+        "parallelization with domain decomposition is used.",
         "[PAR]",
         "With domain decomposition, the spatial decomposition can be set",
         "with option [TT]-dd[tt]. By default [TT]mdrun[tt] selects a good decomposition.",
@@ -204,18 +215,21 @@ int gmx_mdrun(int argc, char *argv[])
         "At high parallelization the options in the next two sections",
         "could be important for increasing the performace.",
         "[PAR]",
-        "When PME is used with domain decomposition, separate nodes can",
+        "When PME is used with domain decomposition, separate ranks can",
         "be assigned to do only the PME mesh calculation;",
-        "this is computationally more efficient starting at about 12 nodes.",
-        "The number of PME nodes is set with option [TT]-npme[tt],",
-        "this can not be more than half of the nodes.",
+        "this is computationally more efficient starting at about 12 ranks,",
+        "or even fewer when OpenMP parallelization is used.",
+        "The number of PME ranks is set with option [TT]-npme[tt],",
+        "but this cannot be more than half of the ranks.",
         "By default [TT]mdrun[tt] makes a guess for the number of PME",
-        "nodes when the number of nodes is larger than 11 or performance wise",
-        "not compatible with the PME grid x dimension.",
-        "But the user should optimize npme. Performance statistics on this issue",
+        "ranks when the number of ranks is larger than 16. With GPUs,",
+        "using separate PME ranks is not selected automatically,",
+        "since the optimal setup depends very much on the details",
+        "of the hardware. In all cases, you might gain performance",
+        "by optimizing [TT]-npme[tt]. Performance statistics on this issue",
         "are written at the end of the log file.",
         "For good load balancing at high parallelization, the PME grid x and y",
-        "dimensions should be divisible by the number of PME nodes",
+        "dimensions should be divisible by the number of PME ranks",
         "(the simulation will run correctly also when this is not the case).",
         "[PAR]",
         "This section lists all options that affect the domain decomposition.",
@@ -304,7 +318,7 @@ int gmx_mdrun(int argc, char *argv[])
         "With [TT]-multi[tt], the system number is appended to the run input ",
         "and each output filename, for instance [TT]topol.tpr[tt] becomes",
         "[TT]topol0.tpr[tt], [TT]topol1.tpr[tt] etc.",
-        "The number of nodes per system is the total number of nodes",
+        "The number of ranks per system is the total number of ranks",
         "divided by the number of systems.",
         "One use of this option is for NMR refinement: when distance",
         "or orientation restraints are present these can be ensemble averaged",
@@ -366,7 +380,7 @@ int gmx_mdrun(int argc, char *argv[])
         "and no old output files are modified and no new output files are opened.",
         "The result with appending will be the same as from a single run.",
         "The contents will be binary identical, unless you use a different number",
-        "of nodes or dynamic load balancing or the FFT library uses optimizations",
+        "of ranks or dynamic load balancing or the FFT library uses optimizations",
         "through timing.",
         "[PAR]",
         "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
@@ -378,7 +392,7 @@ int gmx_mdrun(int argc, char *argv[])
         "pressed), it will stop after the next neighbor search step ",
         "(with nstlist=0 at the next step).",
         "In both cases all the usual output will be written to file.",
-        "When running with MPI, a signal to one of the [TT]mdrun[tt] processes",
+        "When running with MPI, a signal to one of the [TT]mdrun[tt] ranks",
         "is sufficient, this signal should not be sent to mpirun or",
         "the [TT]mdrun[tt] process that is the parent of the others.",
         "[PAR]",
@@ -395,7 +409,7 @@ int gmx_mdrun(int argc, char *argv[])
     };
     t_commrec    *cr;
     t_filenm      fnm[] = {
-        { efTPX, NULL,      NULL,       ffREAD },
+        { efTPR, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
         { efCOMPRESSED, "-x", NULL,     ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },
@@ -440,7 +454,6 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bTestVerlet   = FALSE;
     gmx_bool        bVerbose      = FALSE;
     gmx_bool        bCompact      = TRUE;
-    gmx_bool        bSepPot       = FALSE;
     gmx_bool        bRerunVSite   = FALSE;
     gmx_bool        bConfout      = TRUE;
     gmx_bool        bReproducible = FALSE;
@@ -492,19 +505,19 @@ int gmx_mdrun(int argc, char *argv[])
         { "-dd",      FALSE, etRVEC, {&realddxyz},
           "Domain decomposition grid, 0 is optimize" },
         { "-ddorder", FALSE, etENUM, {ddno_opt},
-          "DD node order" },
+          "DD rank order" },
         { "-npme",    FALSE, etINT, {&npme},
-          "Number of separate nodes to be used for PME, -1 is guess" },
+          "Number of separate ranks to be used for PME, -1 is guess" },
         { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
           "Total number of threads to start (0 is guess)" },
         { "-ntmpi",   FALSE, etINT, {&hw_opt.nthreads_tmpi},
           "Number of thread-MPI threads to start (0 is guess)" },
         { "-ntomp",   FALSE, etINT, {&hw_opt.nthreads_omp},
-          "Number of OpenMP threads per MPI process/thread to start (0 is guess)" },
+          "Number of OpenMP threads per MPI rank to start (0 is guess)" },
         { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
-          "Number of OpenMP threads per MPI process/thread to start (0 is -ntomp)" },
+          "Number of OpenMP threads per MPI rank to start (0 is -ntomp)" },
         { "-pin",     FALSE, etENUM, {thread_aff_opt},
-          "Fix threads (or processes) to specific cores" },
+          "Set thread affinities" },
         { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
           "The starting logical core number for pinning to cores; used to avoid pinning threads from different mdrun instances to the same core" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
@@ -543,15 +556,13 @@ int gmx_mdrun(int argc, char *argv[])
         { "-nstlist", FALSE, etINT, {&nstlist},
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
         { "-tunepme", FALSE, etBOOL, {&bTunePME},
-          "Optimize PME load between PP/PME nodes or GPU/CPU" },
+          "Optimize PME load between PP/PME ranks or GPU/CPU" },
         { "-testverlet", FALSE, etBOOL, {&bTestVerlet},
           "Test the Verlet non-bonded scheme" },
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
         { "-compact", FALSE, etBOOL, {&bCompact},
           "Write a compact log file" },
-        { "-seppot",  FALSE, etBOOL, {&bSepPot},
-          "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
         { "-pforce",  FALSE, etREAL, {&pforce},
           "Print all forces larger than this (kJ/mol nm)" },
         { "-reprod",  FALSE, etBOOL, {&bReproducible},
@@ -593,7 +604,7 @@ int gmx_mdrun(int argc, char *argv[])
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    unsigned long   Flags, PCA_Flags;
+    unsigned long   Flags;
     ivec            ddxyz;
     int             dd_node_order;
     gmx_bool        bAddPart;
@@ -604,10 +615,17 @@ int gmx_mdrun(int argc, char *argv[])
     int             rc;
     char          **multidir = NULL;
 
-
     cr = init_commrec();
 
-    PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
+    unsigned long PCA_Flags = PCA_CAN_SET_DEFFNM;
+    // With -multi or -multidir, the file names are going to get processed
+    // further (or the working directory changed), so we can't check for their
+    // existence during parsing.  It isn't useful to do any completion based on
+    // file system contents, either.
+    if (is_multisim_option_set(argc, argv))
+    {
+        PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;
+    }
 
     /* Comment this in to do fexist calls only on master
      * works not with rerun or tables at the moment
@@ -676,11 +694,6 @@ int gmx_mdrun(int argc, char *argv[])
     sim_part_fn = sim_part;
     if (opt2bSet("-cpi", NFILE, fnm))
     {
-        if (bSepPot && bAppendFiles)
-        {
-            gmx_fatal(FARGS, "Output file appending is not supported with -seppot");
-        }
-
         bAppendFiles =
             read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
                                                           fnm, cr),
@@ -735,7 +748,6 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
-    Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
     Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
@@ -755,18 +767,14 @@ int gmx_mdrun(int argc, char *argv[])
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
        there instead.  */
-    if ((MASTER(cr) || bSepPot) && !bAppendFiles)
+    if (MASTER(cr) && !bAppendFiles)
     {
         gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
-                     !bSepPot, Flags & MD_APPENDFILES, &fplog);
+                     Flags & MD_APPENDFILES, &fplog);
         please_cite(fplog, "Hess2008b");
         please_cite(fplog, "Spoel2005a");
         please_cite(fplog, "Lindahl2001a");
         please_cite(fplog, "Berendsen95a");
-    }
-    else if (!MASTER(cr) && bSepPot)
-    {
-        gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr, !bSepPot, Flags, &fplog);
     }
     else
     {

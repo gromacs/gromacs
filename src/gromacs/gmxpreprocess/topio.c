@@ -34,53 +34,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <math.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <ctype.h>
-#include <assert.h>
-
-#include "gromacs/fileio/futil.h"
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "txtdump.h"
-#include "physics.h"
-#include "macros.h"
-#include "names.h"
-#include "string2.h"
-#include "symtab.h"
-#include "gmx_fatal.h"
-#include "warninp.h"
-#include "vsite_parm.h"
-
-#include "grompp-impl.h"
-#include "toputil.h"
-#include "toppush.h"
-#include "topdirs.h"
-#include "gpp_nextnb.h"
 #include "topio.h"
-#include "topshake.h"
-#include "gmxcpp.h"
-#include "gpp_bond_atomtype.h"
-#include "genborn.h"
+
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <sys/types.h>
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/gmxpreprocess/gmxcpp.h"
+#include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/topshake.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/vsite_parm.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
-#define CPPMARK     '#' /* mark from cpp			*/
-#define OPENDIR     '[' /* starting sign for directive		*/
-#define CLOSEDIR    ']' /* ending sign for directive		*/
-
-#define PM()  \
-    printf("line: %d, maxavail: %d\n", __LINE__, maxavail()); \
-    fflush(stdout)
+#define OPENDIR     '[' /* starting sign for directive */
+#define CLOSEDIR    ']' /* ending sign for directive   */
 
 static void free_nbparam(t_nbparam **param, int nr)
 {
@@ -178,7 +173,7 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
     char     buf[256];
     int      i, mb, nmol, ri, pt;
     double   q;
-    real     m;
+    real     m, mB;
     t_atoms *atoms;
 
     /* Check mass and charge */
@@ -192,30 +187,31 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
         {
             q += nmol*atoms->atom[i].q;
             m  = atoms->atom[i].m;
+            mB = atoms->atom[i].mB;
             pt = atoms->atom[i].ptype;
             /* If the particle is an atom or a nucleus it must have a mass,
              * else, if it is a shell, a vsite or a bondshell it can have mass zero
              */
-            if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus)))
+            if (((m <= 0.0) || (mB <= 0.0)) && ((pt == eptAtom) || (pt == eptNucleus)))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "atom %s (Res %s-%d) has mass %g\n",
+                sprintf(buf, "atom %s (Res %s-%d) has mass %g (state A) / %g (state B)\n",
                         *(atoms->atomname[i]),
                         *(atoms->resinfo[ri].name),
                         atoms->resinfo[ri].nr,
-                        m);
+                        m, mB);
                 warning_error(wi, buf);
             }
             else
-            if ((m != 0) && (pt == eptVSite))
+            if (((m != 0) || (mB != 0)) && (pt == eptVSite))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g\n"
+                sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g (state A) / %g (state B)\n"
                         "     Check your topology.\n",
                         *(atoms->atomname[i]),
                         *(atoms->resinfo[ri].name),
                         atoms->resinfo[ri].nr,
-                        m);
+                        m, mB);
                 warning_error(wi, buf);
                 /* The following statements make LINCS break! */
                 /* atoms->atom[i].m=0; */
@@ -340,7 +336,7 @@ static char ** cpp_opts(const char *define, const char *include,
                     else
                     {
                         srenew(cppopts, ++ncppopts);
-                        cppopts[ncppopts-1] = strdup(buf);
+                        cppopts[ncppopts-1] = gmx_strdup(buf);
                     }
                     sfree(buf);
                     ptr = rptr;
@@ -614,8 +610,8 @@ static char **read_topol(const char *infile, const char *outfile,
     comb     = 0;
 
     /* Init the number of CMAP torsion angles  and grid spacing */
-    plist->grid_spacing = 0;
-    plist->nc           = 0;
+    plist[F_CMAP].grid_spacing = 0;
+    plist[F_CMAP].nc           = 0;
 
     bWarn_copy_A_B = bFEP;
 
@@ -643,7 +639,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
             set_warning_line(wi, cpp_cur_file(&handle), cpp_cur_linenr(&handle));
 
-            pline = strdup(line);
+            pline = gmx_strdup(line);
 
             /* Strip trailing '\' from pline, if it exists */
             sl = strlen(pline);
@@ -661,7 +657,7 @@ static char **read_topol(const char *infile, const char *outfile,
                 /* Since we depend on the '\' being present to continue to read, we copy line
                  * to a tmp string, strip the '\' from that string, and cat it to pline
                  */
-                tmp_line = strdup(line);
+                tmp_line = gmx_strdup(line);
 
                 sl = strlen(tmp_line);
                 if ((sl > 0) && (tmp_line[sl-1] == CONTINUE))
@@ -700,7 +696,7 @@ static char **read_topol(const char *infile, const char *outfile,
                      * without the brackets into dirstr, then
                      * skip spaces and tabs on either side of directive
                      */
-                    dirstr = strdup((pline+1));
+                    dirstr = gmx_strdup((pline+1));
                     if ((dummy2 = strchr (dirstr, CLOSEDIR)) != NULL)
                     {
                         (*dummy2) = 0;
@@ -1000,7 +996,7 @@ static char **read_topol(const char *infile, const char *outfile,
                         }
                         default:
                             fprintf (stderr, "case: %d\n", d);
-                            invalid_case();
+                            gmx_incons("unknown directive");
                     }
                 }
             }
@@ -1364,7 +1360,6 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
         j       = 0;
         while (j < molt->ilist[i].nr)
         {
-            bexcl = FALSE;
             a1    = molt->ilist[i].iatoms[j+1];
             a2    = molt->ilist[i].iatoms[j+2];
             bexcl = ((bQMMM[a1] && bQMMM[a2]) ||

@@ -20,22 +20,20 @@
 
 #include <math.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "rmpbc.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
-#include "index.h"
-#include "smalloc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
 #include "gstat.h"
-#include "gromacs/fileio/matio.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 
 #define G_REF1      0
@@ -723,7 +721,7 @@ int gmx_sdf(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_CAN_TIME,
                     NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 
 

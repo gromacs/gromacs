@@ -34,25 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include "gmxcpp.h"
+
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <ctype.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "string2.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
-#include "macros.h"
-#include "gmx_fatal.h"
-#include "gmxcpp.h"
+#include <sys/types.h>
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     char *name;
@@ -169,7 +169,7 @@ static void add_include(const char *include)
     {
         nincl++;
         srenew(incl, nincl);
-        incl[nincl-1] = strdup(include);
+        incl[nincl-1] = gmx_strdup(include);
     }
 }
 
@@ -201,7 +201,7 @@ static void add_define(const char *name, const char *value)
         ndef++;
         srenew(defs, ndef);
         i            = ndef - 1;
-        defs[i].name = strdup(name);
+        defs[i].name = gmx_strdup(name);
     }
     else if (defs[i].def)
     {
@@ -213,7 +213,7 @@ static void add_define(const char *name, const char *value)
     }
     if (value && strlen(value) > 0)
     {
-        defs[i].def  = strdup(value);
+        defs[i].def  = gmx_strdup(value);
     }
     else
     {
@@ -284,7 +284,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     /* Find the file. First check whether it is in the current directory. */
     if (gmx_fexist(filenm))
     {
-        cpp->fn = strdup(filenm);
+        cpp->fn = gmx_strdup(filenm);
     }
     else
     {
@@ -334,7 +334,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     {
         cpp->path = cpp->fn;
         *ptr      = '\0';
-        cpp->fn   = strdup(ptr+1);
+        cpp->fn   = gmx_strdup(ptr+1);
         snew(cpp->cwd, STRLEN);
 
         gmx_getcwd(cpp->cwd, STRLEN);
@@ -809,5 +809,5 @@ char *cpp_error(gmx_cpp_t *handlep, int status)
             (handle) ? handle->line_nr : -1,
             handle->line ? handle->line : "");
 
-    return strdup(buf);
+    return gmx_strdup(buf);
 }

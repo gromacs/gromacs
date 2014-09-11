@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "gromacs/utility/programcontext.h"
+#include "gmxpre.h"
+
+#include "programcontext.h"
 
 #include <cstddef>
 

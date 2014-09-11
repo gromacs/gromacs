@@ -39,16 +39,17 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include "gromacs/analysisdata/modules/displacement.h"
+#include "gmxpre.h"
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/math/utilities.h"
+#include "displacement.h"
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/modules/histogram.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {

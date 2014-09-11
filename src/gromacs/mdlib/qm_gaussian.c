@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,37 +34,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "config.h"
 
 #ifdef GMX_QMMM_GAUSSIAN
 
 #include <math.h>
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "physics.h"
-#include "macros.h"
-#include "vec.h"
-#include "force.h"
-#include "invblock.h"
-#include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "network.h"
-#include "pbc.h"
-#include "ns.h"
-#include "nrnb.h"
-#include "bondf.h"
-#include "mshift.h"
-#include "txtdump.h"
-#include "qmmm.h"
 #include <stdio.h>
-#include <string.h>
-#include "gmx_fatal.h"
-#include "typedefs.h"
 #include <stdlib.h>
+#include <string.h>
+
+#include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/qmmm.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 
 /* TODO: this should be made thread-safe */
@@ -118,7 +112,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         /* we read the number of cpus and environment from the environment
          * if set.
          */
-        buf = getenv("NCPUS");
+        buf = getenv("GMX_QM_GAUSSIAN_NCPUS");
         if (buf)
         {
             sscanf(buf, "%d", &qm->nQMcpus);
@@ -128,7 +122,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             qm->nQMcpus = 1;
         }
         fprintf(stderr, "number of CPUs for gaussian = %d\n", qm->nQMcpus);
-        buf = getenv("MEM");
+        buf = getenv("GMX_QM_GAUSSIAN_MEMORY");
         if (buf)
         {
             sscanf(buf, "%d", &qm->QMmem);
@@ -138,7 +132,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             qm->QMmem = 50000000;
         }
         fprintf(stderr, "memory for gaussian = %d\n", qm->QMmem);
-        buf = getenv("ACC");
+        buf = getenv("GMX_QM_ACCURACY");
         if (buf)
         {
             sscanf(buf, "%d", &qm->accuracy);
@@ -149,7 +143,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         }
         fprintf(stderr, "accuracy in l510 = %d\n", qm->accuracy);
 
-        buf = getenv("CPMCSCF");
+        buf = getenv("GMX_QM_CPMCSCF");
         if (buf)
         {
             sscanf(buf, "%d", &i);
@@ -167,7 +161,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         {
             fprintf(stderr, "NOT using cp-mcscf in l1003\n");
         }
-        buf = getenv("SASTEP");
+        buf = getenv("GMX_QM_SA_STEP");
         if (buf)
         {
             sscanf(buf, "%d", &qm->SAstep);
@@ -202,35 +196,35 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             fclose(out);
         }
         /* gaussian settings on the system */
-        buf = getenv("GAUSS_DIR");
+        buf = getenv("GMX_QM_GAUSS_DIR");
         fprintf(stderr, "%s", buf);
 
         if (buf)
         {
-            qm->gauss_dir = strdup(buf);
+            qm->gauss_dir = gmx_strdup(buf);
         }
         else
         {
-            gmx_fatal(FARGS, "no $GAUSS_DIR, check gaussian manual\n");
+            gmx_fatal(FARGS, "no $GMX_QM_GAUSS_DIR, check gaussian manual\n");
         }
 
-        buf = getenv("GAUSS_EXE");
+        buf = getenv("GMX_QM_GAUSS_EXE");
         if (buf)
         {
-            qm->gauss_exe = strdup(buf);
+            qm->gauss_exe = gmx_strdup(buf);
         }
         else
         {
-            gmx_fatal(FARGS, "no $GAUSS_EXE, check gaussian manual\n");
+            gmx_fatal(FARGS, "no $GMX_QM_GAUSS_EXE set, check gaussian manual\n");
         }
-        buf = getenv("DEVEL_DIR");
+        buf = getenv("GMX_QM_MODIFIED_LINKS_DIR");
         if (buf)
         {
-            qm->devel_dir = strdup (buf);
+            qm->devel_dir = gmx_strdup (buf);
         }
         else
         {
-            gmx_fatal(FARGS, "no $DEVEL_DIR, this is were the modified links reside.\n");
+            gmx_fatal(FARGS, "no $GMX_QM_MODIFIED_LINKS_DIR, this is were the modified links reside.\n");
         }
 
         /*  if(fr->bRF){*/
@@ -1112,7 +1106,7 @@ real call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     if (!step)
     {
         snew(buf, 20);
-        buf = getenv("STATE");
+        buf = getenv("GMX_QM_GROUND_STATE");
         if (buf)
         {
             sscanf(buf, "%d", &state);

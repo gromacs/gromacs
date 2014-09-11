@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,15 +39,15 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "gmxregex.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #if defined(HAVE_POSIX_REGEX)
-// old Mac needs sys/types.h before regex.h
 #include <sys/types.h>
+// old Mac needs sys/types.h before regex.h
 #include <regex.h>
 #define USE_POSIX_REGEX
 #elif defined(HAVE_CXX11_REGEX)
@@ -55,8 +55,8 @@
 #define USE_CXX11_REGEX
 #endif
 
-#include "exceptions.h"
-#include "stringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {

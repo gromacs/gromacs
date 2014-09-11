@@ -34,31 +34,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <string.h>
+#include "gromacs/legacyheaders/mdebin.h"
+
 #include <float.h>
-#include "typedefs.h"
-#include "mdebin.h"
-#include "smalloc.h"
-#include "physics.h"
-#include "gromacs/fileio/enxio.h"
-#include "vec.h"
-#include "disre.h"
-#include "main.h"
-#include "network.h"
-#include "names.h"
-#include "orires.h"
-#include "constr.h"
-#include "mtop_util.h"
-#include "xvgr.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "macros.h"
-#include "mdrun.h"
-#include "mdebin_bar.h"
+#include <stdlib.h>
+#include <string.h>
 
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdebin_bar.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
@@ -547,7 +547,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         ni = groups->grps[egcTC].nm_ind[i];
         sprintf(buf, "T-%s", *(groups->grpname[ni]));
-        grpnms[i] = strdup(buf);
+        grpnms[i] = gmx_strdup(buf);
     }
     md->itemp = get_ebin_space(md->ebin, md->nTC, (const char **)grpnms,
                                unit_temp_K);
@@ -565,9 +565,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     for (j = 0; (j < md->nNHC); j++)
                     {
                         sprintf(buf, "Xi-%d-%s", j, bufi);
-                        grpnms[2*(i*md->nNHC+j)] = strdup(buf);
+                        grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
                         sprintf(buf, "vXi-%d-%s", j, bufi);
-                        grpnms[2*(i*md->nNHC+j)+1] = strdup(buf);
+                        grpnms[2*(i*md->nNHC+j)+1] = gmx_strdup(buf);
                     }
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
@@ -580,9 +580,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                         for (j = 0; (j < md->nNHC); j++)
                         {
                             sprintf(buf, "Xi-%d-%s", j, bufi);
-                            grpnms[2*(i*md->nNHC+j)] = strdup(buf);
+                            grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
                             sprintf(buf, "vXi-%d-%s", j, bufi);
-                            grpnms[2*(i*md->nNHC+j)+1] = strdup(buf);
+                            grpnms[2*(i*md->nNHC+j)+1] = gmx_strdup(buf);
                         }
                     }
                     md->itcb = get_ebin_space(md->ebin, md->mdeb_n,
@@ -596,9 +596,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     ni   = groups->grps[egcTC].nm_ind[i];
                     bufi = *(groups->grpname[ni]);
                     sprintf(buf, "Xi-%s", bufi);
-                    grpnms[2*i] = strdup(buf);
+                    grpnms[2*i] = gmx_strdup(buf);
                     sprintf(buf, "vXi-%s", bufi);
-                    grpnms[2*i+1] = strdup(buf);
+                    grpnms[2*i+1] = gmx_strdup(buf);
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
                                          (const char **)grpnms, unit_invtime);
@@ -612,7 +612,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             ni = groups->grps[egcTC].nm_ind[i];
             sprintf(buf, "Lamb-%s", *(groups->grpname[ni]));
-            grpnms[i] = strdup(buf);
+            grpnms[i] = gmx_strdup(buf);
         }
         md->itc = get_ebin_space(md->ebin, md->mde_n, (const char **)grpnms, "");
     }
@@ -628,11 +628,11 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             ni = groups->grps[egcACC].nm_ind[i];
             sprintf(buf, "Ux-%s", *(groups->grpname[ni]));
-            grpnms[3*i+XX] = strdup(buf);
+            grpnms[3*i+XX] = gmx_strdup(buf);
             sprintf(buf, "Uy-%s", *(groups->grpname[ni]));
-            grpnms[3*i+YY] = strdup(buf);
+            grpnms[3*i+YY] = gmx_strdup(buf);
             sprintf(buf, "Uz-%s", *(groups->grpname[ni]));
-            grpnms[3*i+ZZ] = strdup(buf);
+            grpnms[3*i+ZZ] = gmx_strdup(buf);
         }
         md->iu = get_ebin_space(md->ebin, 3*md->nU, (const char **)grpnms, unit_vel);
         sfree(grpnms);
@@ -733,7 +733,7 @@ static void print_lambda_vector(t_lambda *fep, int i,
     if (Nsep > 1)
     {
         /* and add the closing parenthesis */
-        str += sprintf(str, ")");
+        sprintf(str, ")");
     }
 }
 
@@ -825,7 +825,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         nsets += 1;   /*add fep state for expanded ensemble */
     }
 
-    if (fep->bPrintEnergy)
+    if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
     {
         nsets += 1;  /* add energy to the dhdl as well */
     }
@@ -846,14 +846,23 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
     {
         /* state for the fep_vals, if we have alchemical sampling */
         sprintf(buf, "%s", "Thermodynamic state");
-        setname[s] = strdup(buf);
+        setname[s] = gmx_strdup(buf);
         s         += 1;
     }
 
-    if (fep->bPrintEnergy)
+    if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
     {
-        sprintf(buf, "%s (%s)", "Energy", unit_energy);
-        setname[s] = strdup(buf);
+        switch (fep->edHdLPrintEnergy)
+        {
+            case edHdLPrintEnergyPOTENTIAL:
+                sprintf(buf, "%s (%s)", "Potential Energy", unit_energy);
+                break;
+            case edHdLPrintEnergyTOTAL:
+            case edHdLPrintEnergyYES:
+            default:
+                sprintf(buf, "%s (%s)", "Total Energy", unit_energy);
+        }
+        setname[s] = gmx_strdup(buf);
         s         += 1;
     }
 
@@ -879,7 +888,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                     sprintf(buf, "%s %s = %.4f", dhdl, efpt_singular_names[i],
                             lam);
                 }
-                setname[s] = strdup(buf);
+                setname[s] = gmx_strdup(buf);
                 s         += 1;
             }
         }
@@ -900,7 +909,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
             nsetsbegin = 0;
         }
 
-        if (fep->bPrintEnergy)
+        if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
         {
             nsetsbegin += 1;
         }
@@ -926,14 +935,14 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                         ir->simtempvals->temperatures[s-(nsetsbegin)],
                         unit_temp_K);
             }
-            setname[s] = strdup(buf);
+            setname[s] = gmx_strdup(buf);
             s++;
         }
         if (write_pV)
         {
             np                     = sprintf(buf, "pV (%s)", unit_energy);
-            setname[nsetsextend-1] = strdup(buf);  /* the first entry after
-                                                      nsets */
+            setname[nsetsextend-1] = gmx_strdup(buf);  /* the first entry after
+                                                          nsets */
         }
 
         xvgr_legend(fp, nsetsextend, (const char **)setname, oenv);
@@ -1208,9 +1217,19 @@ void upd_mdebin(t_mdebin       *md,
                 fprintf(md->fp_dhdl, " %4d", state->fep_state);
             }
             /* total energy (for if the temperature changes */
-            if (fep->bPrintEnergy)
+
+            if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
             {
-                store_energy = enerd->term[F_ETOT];
+                switch (fep->edHdLPrintEnergy)
+                {
+                    case edHdLPrintEnergyPOTENTIAL:
+                        store_energy = enerd->term[F_EPOT];
+                        break;
+                    case edHdLPrintEnergyTOTAL:
+                    case edHdLPrintEnergyYES:
+                    default:
+                        store_energy = enerd->term[F_ETOT];
+                }
                 fprintf(md->fp_dhdl, " %#.8g", store_energy);
             }
 
@@ -1528,7 +1547,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                             nj = groups->grps[egcENER].nm_ind[j];
                             sprintf(buf, "%s-%s", *(groups->grpname[ni]),
                                     *(groups->grpname[nj]));
-                            md->print_grpnms[n++] = strdup(buf);
+                            md->print_grpnms[n++] = gmx_strdup(buf);
                         }
                     }
                 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,9 +39,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "selhelp.h"
+
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -51,7 +55,6 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "selhelp.h"
 #include "selmethod.h"
 #include "symrec.h"
 
@@ -615,7 +618,7 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
 
 }   // namespace
 
-/*! \cond internal */
+//! \cond libapi */
 HelpTopicPointer createSelectionHelpTopic()
 {
     CompositeHelpTopicPointer root(new CompositeHelpTopic<CommonHelpText>);

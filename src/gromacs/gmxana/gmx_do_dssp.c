@@ -34,28 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "string2.h"
-#include "gromacs/fileio/strdb.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "mshift.h"
+#include "config.h"
+
+#include <stdlib.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
 #include "gromacs/fileio/matio.h"
-#include "index.h"
-#include "gstat.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "viewit.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int strip_dssp(char *dsspfile, int nres,
                       gmx_bool bPhobres[], real t,
@@ -213,7 +213,7 @@ static void check_oo(t_atoms *atoms)
 
     int   i;
 
-    OOO = strdup("O");
+    OOO = gmx_strdup("O");
 
     for (i = 0; (i < atoms->nr); i++)
     {
@@ -353,7 +353,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     leg[0] = "Structure";
     for (s = 0; s < (size_t)mat->nmap; s++)
     {
-        leg[s+1] = strdup(map[s].desc);
+        leg[s+1] = gmx_strdup(map[s].desc);
     }
 
     fp = xvgropen(outfile, "Secondary Structure",
@@ -495,7 +495,7 @@ int gmx_do_dssp(int argc, char *argv[])
     gmx_bool          *bPhbres, bDoAccSurf;
     real               t;
     int                i, j, natoms, nframe = 0;
-    matrix             box;
+    matrix             box = {{0}};
     int                gnx;
     char              *grpnm, *ss_str;
     atom_id           *index;
@@ -523,7 +523,7 @@ int gmx_do_dssp(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -623,8 +623,7 @@ int gmx_do_dssp(int argc, char *argv[])
     }
 
     mat.map  = NULL;
-    mat.nmap = getcmap(libopen(opt2fn("-map", NFILE, fnm)),
-                       opt2fn("-map", NFILE, fnm), &(mat.map));
+    mat.nmap = readcmap(opt2fn("-map", NFILE, fnm), &(mat.map));
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     if (natoms > atoms->nr)

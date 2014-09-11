@@ -38,22 +38,25 @@
 #ifndef _sim_util_h
 #define _sim_util_h
 
-#include "typedefs.h"
-#include "mdebin.h"
-#include "update.h"
-#include "vcm.h"
-#include "../fileio/enxio.h"
-#include "../fileio/mdoutf.h"
-#include "../timing/walltime_accounting.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/mdoutf.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct t_graph;
+
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
 void do_pbc_first(FILE *log, matrix box, t_forcerec *fr,
-                  t_graph *graph, rvec x[]);
+                  struct t_graph *graph, rvec x[]);
 
 void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
                        gmx_mtop_t *mtop, rvec x[]);
@@ -106,13 +109,13 @@ void finish_run(FILE *log, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                wallclock_gpu_t *gputimes,
+                struct nonbonded_verlet_t *nbv,
                 gmx_bool bWriteStat);
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
 
-void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
-                   gmx_int64_t step, int natoms,
+void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
+                   int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr);
 
@@ -133,8 +136,11 @@ void init_md(FILE *fplog,
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags);
+             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags,
+             gmx_wallcycle_t wcycle);
 /* Routine in sim_util.c */
+
+gmx_bool use_GPU(const struct nonbonded_verlet_t *nbv);
 
 #ifdef __cplusplus
 }

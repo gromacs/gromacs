@@ -34,28 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 
-#include "macros.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "names.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/strdb.h"
-#include "vec.h"
-#include "macros.h"
-#include "index.h"
-#include "pbc.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/matio.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static void calc_dist(int nind, atom_id index[], rvec x[], int ePBC, matrix box,
@@ -187,14 +185,14 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
         {
             lp += n;
             snew(equiv[neq], 1);
-            equiv[neq][0].nname = strdup(atomname);
+            equiv[neq][0].nname = gmx_strdup(atomname);
             while (sscanf(lp, "%d %s %s %n", &resnr, resname, atomname, &n) == 3)
             {
                 /* this is not efficient, but I'm lazy (again) */
                 srenew(equiv[neq], na+1);
                 equiv[neq][na].rnr   = resnr-1;
-                equiv[neq][na].rname = strdup(resname);
-                equiv[neq][na].aname = strdup(atomname);
+                equiv[neq][na].rname = gmx_strdup(resname);
+                equiv[neq][na].aname = gmx_strdup(atomname);
                 if (na > 0)
                 {
                     equiv[neq][na].nname = NULL;
@@ -268,7 +266,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
     }
     if (bFound)
     {
-        *nname = strdup(equiv[i-1][0].nname);
+        *nname = gmx_strdup(equiv[i-1][0].nname);
     }
 
     return bFound;
@@ -319,12 +317,12 @@ static int analyze_noe_equivalent(const char *eq_fn,
                                  rnrj, *atoms->resinfo[rnrj].name, *atoms->atomname[index[j]]);
                     if (nnm[i] && bEquiv)
                     {
-                        nnm[j] = strdup(nnm[i]);
+                        nnm[j] = gmx_strdup(nnm[i]);
                     }
                     if (bEquiv)
                     {
                         /* set index for matching atom */
-                        noe_index[j] = groupnr;
+                        noe_index[i] = groupnr;
                         /* skip matching atom */
                         i = j;
                     }
@@ -342,7 +340,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                    This is supposed to cover all CH3 groups and the like */
                 anmi   = *atoms->atomname[index[i]];
                 anmil  = strlen(anmi);
-                bMatch = i < isize-3 && anmi[anmil-1] == '1';
+                bMatch = i <= isize-3 && anmi[anmil-1] == '1';
                 if (bMatch)
                 {
                     for (j = 1; j < 3; j++)
@@ -400,18 +398,18 @@ static int analyze_noe_equivalent(const char *eq_fn,
             noe_gr[gi].anr  = index[i];
             if (nnm[i])
             {
-                noe_gr[gi].aname = strdup(nnm[i]);
+                noe_gr[gi].aname = gmx_strdup(nnm[i]);
             }
             else
             {
-                noe_gr[gi].aname = strdup(*atoms->atomname[index[i]]);
+                noe_gr[gi].aname = gmx_strdup(*atoms->atomname[index[i]]);
                 if (noe_index[i] == noe_index[i+1])
                 {
                     noe_gr[gi].aname[strlen(noe_gr[gi].aname)-1] = '*';
                 }
             }
             noe_gr[gi].rnr   = atoms->atom[index[i]].resind;
-            noe_gr[gi].rname = strdup(*atoms->resinfo[noe_gr[gi].rnr].name);
+            noe_gr[gi].rname = gmx_strdup(*atoms->resinfo[noe_gr[gi].rnr].name);
             /* dump group definitions */
             if (debug)
             {
@@ -645,7 +643,7 @@ int gmx_rmsdist(int argc, char *argv[])
         "equivalent atoms can be supplied ([TT]-equiv[tt]), each line containing",
         "a set of equivalent atoms specified as residue number and name and",
         "atom name; e.g.:[PAR]",
-        "[TT]3 SER  HB1 3 SER  HB2[tt][PAR]",
+        "[TT]HB* 3 SER  HB1 3 SER  HB2[tt][PAR]",
         "Residue and atom names must exactly match those in the structure",
         "file, including case. Specifying non-sequential atoms is undefined."
 
@@ -706,7 +704,7 @@ int gmx_rmsdist(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -786,7 +784,8 @@ int gmx_rmsdist(int argc, char *argv[])
     }
 
     /*do a first step*/
-    natom = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natom  = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    teller = 0;
 
     do
     {
@@ -794,13 +793,12 @@ int gmx_rmsdist(int argc, char *argv[])
 
         rmsnow = rms_diff(isize, d, d_r);
         fprintf(fp, "%g  %g\n", t, rmsnow);
+        teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     gmx_ffclose(fp);
-
-    teller = nframes_read(status);
 
     close_trj(status);
 

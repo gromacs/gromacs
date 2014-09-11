@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,12 +61,17 @@
 #ifndef GMX_SELECTION_INDEXUTIL_H
 #define GMX_SELECTION_INDEXUTIL_H
 
+#include <cstdio>
+
 #include <string>
 
-#include "../legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/topology/block.h"
+
+struct t_topology;
 
 /** Stores a set of index groups. */
-typedef struct gmx_ana_indexgrps_t gmx_ana_indexgrps_t;
+struct gmx_ana_indexgrps_t;
 
 /*! \brief
  * Specifies the type of index partition or index mapping in several contexts.
@@ -85,7 +90,7 @@ typedef enum
 /*! \brief
  * Stores a single index group.
  */
-typedef struct gmx_ana_index_t
+struct gmx_ana_index_t
 {
     /** Number of atoms. */
     int                 isize;
@@ -93,12 +98,12 @@ typedef struct gmx_ana_index_t
     atom_id            *index;
     /** Number of items allocated for \p index. */
     int                 nalloc_index;
-} gmx_ana_index_t;
+};
 
 /*! \brief
  * Data structure for calculating index group mappings.
  */
-typedef struct gmx_ana_indexmap_t
+struct gmx_ana_indexmap_t
 {
     /** Type of the mapping. */
     e_index_t           type;
@@ -168,7 +173,7 @@ typedef struct gmx_ana_indexmap_t
      * actually static.
      */
     bool                bStatic;
-} gmx_ana_indexmap_t;
+};
 
 
 /*! \name Functions for handling gmx_ana_indexgrps_t
@@ -231,9 +236,27 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc);
 void
 gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int maxn);
 
+/*! \brief
+ * Returns maximum atom index that appears in an index group.
+ *
+ * \param[in]  g      Index group to query.
+ * \returns    Largest atom index that appears in \p g, or zero if \p g is empty.
+ */
+int
+gmx_ana_index_get_max_index(gmx_ana_index_t *g);
 /** Checks whether an index group is sorted. */
 bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g);
+/*! \brief
+ * Checks whether an index group has atoms from a defined range.
+ *
+ * \param[in]  g      Index group to check.
+ * \param[in]  natoms Largest atom number allowed.
+ * \returns    true if all atoms in the index group are in the
+ *     range 0 to \p natoms (i.e., no atoms over \p natoms are referenced).
+ */
+bool
+gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms);
 /*@}*/
 
 /*! \name Functions for set operations on gmx_ana_index_t

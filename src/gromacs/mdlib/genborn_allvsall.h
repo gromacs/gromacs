@@ -37,12 +37,8 @@
 #ifndef _GENBORN_ALLVSALL_H
 #define _GENBORN_ALLVSALL_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 int
 genborn_allvsall_calc_still_radii(t_forcerec *           fr,

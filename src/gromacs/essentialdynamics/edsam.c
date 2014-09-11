@@ -34,34 +34,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "edsam.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
-#include "string2.h"
-#include "smalloc.h"
-#include "names.h"
 #include "gromacs/fileio/confio.h"
-#include "txtdump.h"
-#include "vec.h"
-#include <time.h>
-#include "nrnb.h"
-#include "mshift.h"
-#include "mdrun.h"
-#include "update.h"
-#include "physics.h"
-#include "nrjac.h"
-#include "mtop_util.h"
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
-
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
@@ -470,7 +467,7 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     char   fn[STRLEN];
 
 
-    sprintf(fn, "EDdump_node%d_edi%d", cr->nodeid, nr_edi);
+    sprintf(fn, "EDdump_rank%d_edi%d", cr->nodeid, nr_edi);
     out = gmx_ffopen(fn, "w");
 
     fprintf(out, "#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
@@ -1141,7 +1138,7 @@ static void get_flood_enx_names(t_edpar *edi, char** names, int *nnames)  /* get
     {
         srenew(names, count);
         sprintf(buf, "Vfl_%d", count);
-        names[count-1] = strdup(buf);
+        names[count-1] = gmx_strdup(buf);
         actual         = actual->next_edi;
         count++;
     }
@@ -1796,6 +1793,7 @@ static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms)
         /* Keep the curr_edi pointer for the case that the next group is empty: */
         last_edi = curr_edi;
         /* Let's prepare to read in the next edi data set: */
+        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         curr_edi = edi_read;
     }
     if (edi_nr == 0)
@@ -2454,7 +2452,7 @@ static void nice_legend(const char ***setname, int *nsets, char **LegendStr, cha
     sprintf(tmp, "%c %s", EDgroupchar, value);
     add_to_string_aligned(LegendStr, tmp);
     sprintf(tmp2, "%s (%s)", tmp, unit);
-    (*setname)[*nsets] = strdup(tmp2);
+    (*setname)[*nsets] = gmx_strdup(tmp2);
     (*nsets)++;
 }
 

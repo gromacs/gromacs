@@ -34,28 +34,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <string.h>
-#include <math.h>
+#include "gmxpre.h"
 
-#include "string2.h"
-#include "typedefs.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "gromacs/fileio/enxio.h"
+#include <math.h>
+#include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "names.h"
-#include "macros.h"
-#include "xvgr.h"
-#include "gstat.h"
-#include "physics.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/strdb.h"
-#include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static int search_str2(int nstr, char **str, char *key)
@@ -173,14 +172,14 @@ int gmx_enemat(int argc, char *argv[])
 
     t_filenm       fnm[] = {
         { efEDR, "-f", NULL, ffOPTRD },
-        { efDAT, "-groups", "groups.dat", ffREAD },
-        { efDAT, "-eref",   "eref.dat", ffOPTRD },
-        { efXPM, "-emat",   "emat", ffWRITE },
+        { efDAT, "-groups", "groups", ffREAD },
+        { efDAT, "-eref",   "eref",   ffOPTRD },
+        { efXPM, "-emat",   "emat",   ffWRITE },
         { efXVG, "-etot",   "energy", ffWRITE }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -513,39 +512,55 @@ int gmx_enemat(int argc, char *argv[])
                        oenv);
         xvgr_legend(out, 0, NULL, oenv);
         j = 0;
-        for (m = 0; (m < egNR+egSP); m++)
+        if (output_env_get_print_xvgr_codes(oenv))
         {
-            if (egrp_use[m])
+            char str1[STRLEN], str2[STRLEN];
+            if (output_env_get_xvg_format(oenv) == exvgXMGR)
             {
-                fprintf(out, "@ legend string %d \"%s\"\n", j++, egrp_nm[m]);
+                sprintf(str1, "@ legend string ");
+                sprintf(str2, " ");
             }
-        }
-        if (bFree)
-        {
-            fprintf(out, "@ legend string %d \"%s\"\n", j++, "Free");
-        }
-        if (bFree)
-        {
-            fprintf(out, "@ legend string %d \"%s\"\n", j++, "Diff");
-        }
-        fprintf(out, "@TYPE xy\n");
-        fprintf(out, "#%3s", "grp");
-        for (m = 0; (m < egNR+egSP); m++)
-        {
-            if (egrp_use[m])
+            else
             {
-                fprintf(out, " %9s", egrp_nm[m]);
+                sprintf(str1, "@ s");
+                sprintf(str2, " legend ");
             }
+
+            for (m = 0; (m < egNR+egSP); m++)
+            {
+                if (egrp_use[m])
+                {
+                    fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, egrp_nm[m]);
+                }
+            }
+            if (bFree)
+            {
+                fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Free");
+            }
+            if (bFree)
+            {
+                fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Diff");
+            }
+            fprintf(out, "@TYPE xy\n");
+            fprintf(out, "#%3s", "grp");
+
+            for (m = 0; (m < egNR+egSP); m++)
+            {
+                if (egrp_use[m])
+                {
+                    fprintf(out, " %9s", egrp_nm[m]);
+                }
+            }
+            if (bFree)
+            {
+                fprintf(out, " %9s", "Free");
+            }
+            if (bFree)
+            {
+                fprintf(out, " %9s", "Diff");
+            }
+            fprintf(out, "\n");
         }
-        if (bFree)
-        {
-            fprintf(out, " %9s", "Free");
-        }
-        if (bFree)
-        {
-            fprintf(out, " %9s", "Diff");
-        }
-        fprintf(out, "\n");
         for (i = 0; (i < ngroups); i++)
         {
             fprintf(out, "%3.0f", groupnr[i]);

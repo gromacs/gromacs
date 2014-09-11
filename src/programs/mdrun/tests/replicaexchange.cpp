@@ -40,20 +40,25 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#include "moduletest.h"
+#include "gmxpre.h"
+
+#include "config.h"
 
 #include <math.h>
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/fileio/path.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "../mdrun_main.h"
+#include "programs/mdrun/mdrun_main.h"
 
 #include "testutils/cmdlinetest.h"
+
+#include "moduletest.h"
 
 namespace
 {

@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -35,9 +35,11 @@
 #ifndef _gmx_hash_h
 #define _gmx_hash_h
 
-#include "typedefs.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef __cplusplus
 extern "C" {

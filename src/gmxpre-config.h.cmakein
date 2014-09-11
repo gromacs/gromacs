@@ -1,0 +1,67 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \libinternal \file
+ * \brief
+ * Configuration macros from the build system for gmxpre.h.
+ *
+ * This header is an internal implementation detail of gmxpre.h, and should not
+ * be included from anywhere else.
+ *
+ * \see gmxpre.h
+ */
+
+/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+#cmakedefine _LARGEFILE_SOURCE
+
+/* Define for large files, on AIX-style hosts. */
+#cmakedefine _LARGE_FILES
+
+/* Some systems requires this to be set to 64 for large file support */
+#cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
+
+/* Build special-purpose mdrun library */
+#cmakedefine GMX_FAHCORE
+
+/* This is here for simplicity, since the layout for some thread-MPI structs
+ * declared in headers depend on this being consistently defined.
+ * But thread-MPI itself does not include gmxpre.h, so the same define is also
+ * set in config.h (which gets included by thread-MPI, but only in the source
+ * files). There are some other config.h defines that appear in thread-MPI
+ * headers, but currently Gromacs does not use any code that would depend on
+ * those, and for thread-MPI, config.h provides the definitions wherever
+ * required. */
+/* Define for busy wait option  */
+#cmakedefine TMPI_WAIT_FOR_NO_ONE
+

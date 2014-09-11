@@ -39,17 +39,18 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
+#include "poscalc.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 /*! \internal \brief
  * Data structure for position keyword evaluation.
@@ -142,7 +143,7 @@ static gmx_ana_selparam_t smparams_com[] = {
 
 /** Selection method data for position keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_pos = {
-    "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL,
+    "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL | SMETH_ALLOW_UNSORTED,
     asize(smparams_keyword_pos), smparams_keyword_pos,
     &init_data_pos,
     &set_poscoll_pos,

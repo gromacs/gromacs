@@ -34,33 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/fileio/filenm.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "typedefs.h"
-#include "xvgr.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/tpxio.h"
-#include "vec.h"
-#include "index.h"
-#include "pbc.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
-#include "txtdump.h"
-#include "do_fit.h"
-#include "viewit.h"
-#include "rmpbc.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
@@ -177,7 +172,7 @@ int find_next_match_atoms_in_res(int *i1, atom_id index1[],
     {
         if (debug)
         {
-            fprintf(debug, "{%d %d}", *i1+bFW ? dx : dy, *i2+bFW ? dy : dx );
+            fprintf(debug, "{%d %d}", *i1 + (bFW ? dx : dy), *i2 + (bFW ? dy : dx) );
         }
         if (bFW)
         {
@@ -520,9 +515,9 @@ int gmx_confrms(int argc, char *argv[])
         { efTPS, "-f1",  "conf1.gro", ffREAD  },
         { efSTX, "-f2",  "conf2",     ffREAD  },
         { efSTO, "-o",   "fit.pdb",   ffWRITE },
-        { efNDX, "-n1", "fit1.ndx",  ffOPTRD },
-        { efNDX, "-n2", "fit2.ndx",  ffOPTRD },
-        { efNDX, "-no", "match.ndx", ffOPTWR }
+        { efNDX, "-n1",  "fit1",      ffOPTRD },
+        { efNDX, "-n2",  "fit2",      ffOPTRD },
+        { efNDX, "-no",  "match",     ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -556,7 +551,7 @@ int gmx_confrms(int argc, char *argv[])
     real    *msds;
 
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_CAN_VIEW,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

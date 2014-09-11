@@ -35,22 +35,21 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/mvdata.h"
 
 #include <string.h>
 
-#include "typedefs.h"
-#include "main.h"
-#include "mvdata.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "symtab.h"
-#include "vec.h"
-#include "tgroup.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 /* Probably the test for (nr) > 0 in the next macro is only needed
@@ -574,7 +573,7 @@ static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
     block_bc(cr, fep->init_lambda);
     block_bc(cr, fep->init_fep_state);
     block_bc(cr, fep->delta_lambda);
-    block_bc(cr, fep->bPrintEnergy);
+    block_bc(cr, fep->edHdLPrintEnergy);
     block_bc(cr, fep->n_lambda);
     if (fep->n_lambda > 0)
     {

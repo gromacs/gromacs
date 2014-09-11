@@ -38,16 +38,16 @@
 #ifndef _update_h
 #define _update_h
 
-#include "typedefs.h"
-#include "mshift.h"
-#include "tgroup.h"
-#include "network.h"
-#include "vec.h"
-
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_graph;
 
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_update *gmx_update_t;
@@ -92,6 +92,7 @@ void update_coords(FILE             *fplog,
                    rvec             *f, /* forces on home particles */
                    gmx_bool          bDoLR,
                    rvec             *f_lr,
+                   tensor           *vir_lr_constr,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
@@ -115,7 +116,7 @@ void update_constraints(FILE             *fplog,
                         t_mdatoms        *md,
                         t_state          *state,
                         gmx_bool          bMolPBC,
-                        t_graph          *graph,
+                        struct t_graph   *graph,
                         rvec              force[], /* forces on home particles */
                         t_idef           *idef,
                         tensor            vir_part,

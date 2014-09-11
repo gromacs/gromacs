@@ -45,7 +45,7 @@
 #ifndef GMX_SELECTION_SELVALUE_H
 #define GMX_SELECTION_SELVALUE_H
 
-#include "../legacyheaders/types/simple.h"
+#include "gromacs/utility/real.h"
 
 /** Defines the value type of a different selection objects. */
 typedef enum

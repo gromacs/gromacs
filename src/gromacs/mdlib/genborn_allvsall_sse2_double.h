@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,12 +37,8 @@
 #ifndef _GENBORN_ALLVSALL_SSE2_DOUBLE_H
 #define _GENBORN_ALLVSALL_SSE2_DOUBLE_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 int
 genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,

@@ -2,7 +2,7 @@
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
 
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4723) /*division by zero - is used on purpose here*/

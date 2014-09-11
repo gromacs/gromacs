@@ -34,51 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <stdlib.h>
 
-#include "sysstuff.h"
-#include "princ.h"
-#include "gromacs/fileio/futil.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "names.h"
-#include "gmx_fatal.h"
-#include "macros.h"
-#include "symtab.h"
-#include "index.h"
 #include "gromacs/fileio/confio.h"
-#include "network.h"
-#include "pbc.h"
-#include "pull.h"
-#include "gmx_ga2la.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
-                             t_mdatoms *md, rvec *x,
+                             rvec *x,
                              rvec x_pbc)
 {
     int a, m;
 
-    if (cr && PAR(cr))
+    if (cr != NULL && DOMAINDECOMP(cr))
     {
-        if (DOMAINDECOMP(cr))
-        {
-            if (!ga2la_get_home(cr->dd->ga2la, pgrp->pbcatom, &a))
-            {
-                a = -1;
-            }
-        }
-        else
-        {
-            a = pgrp->pbcatom;
-        }
-
-        if (a >= 0 && a < md->homenr)
+        if (ga2la_get_home(cr->dd->ga2la, pgrp->pbcatom, &a))
         {
             copy_rvec(x[a], x_pbc);
         }
@@ -94,7 +76,7 @@ static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
 }
 
 static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
-                              t_mdatoms *md, rvec *x,
+                              rvec *x,
                               rvec *x_pbc)
 {
     int g, n, m;
@@ -108,7 +90,7 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
         }
         else
         {
-            pull_set_pbcatom(cr, &pull->group[g], md, x, x_pbc[g]);
+            pull_set_pbcatom(cr, &pull->group[g], x, x_pbc[g]);
             for (m = 0; m < DIM; m++)
             {
                 if (pull->dim[m] == 0)
@@ -318,9 +300,21 @@ void pull_calc_coms(t_commrec *cr,
         snew(pull->dbuf, 3*pull->ngroup);
     }
 
-    if (pull->bRefAt)
+    if (pull->bRefAt && pull->bSetPBCatoms)
     {
-        pull_set_pbcatoms(cr, pull, md, x, pull->rbuf);
+        pull_set_pbcatoms(cr, pull, x, pull->rbuf);
+
+        if (cr != NULL && DOMAINDECOMP(cr))
+        {
+            /* We can keep these PBC reference coordinates fixed for nstlist
+             * steps, since atoms won't jump over PBC.
+             * This avoids a global reduction at the next nstlist-1 steps.
+             * Note that the exact values of the pbc reference coordinates
+             * are irrelevant, as long all atoms in the group are within
+             * half a box distance of the reference coordinate.
+             */
+            pull->bSetPBCatoms = FALSE;
+        }
     }
 
     if (pull->cosdim >= 0)

@@ -36,9 +36,11 @@
 #ifndef GMX_SIMD_IMPL_X86_SSE4_1_H
 #define GMX_SIMD_IMPL_X86_SSE4_1_H
 
-#include <math.h>
-#include <smmintrin.h>
+#include "config.h"
 
+#include <math.h>
+
+#include <smmintrin.h>
 
 /* x86 SSE4.1 SIMD instruction wrappers
  *
@@ -96,7 +98,7 @@
 #define gmx_simd4_dotproduct3_f   gmx_simd4_dotproduct3_f_sse4_1
 
 /* SIMD reduction function */
-static gmx_inline float
+static gmx_inline float gmx_simdcall
 gmx_simd_reduce_f_sse4_1(__m128 a)
 {
     float  f;
@@ -108,7 +110,7 @@ gmx_simd_reduce_f_sse4_1(__m128 a)
 }
 
 /* SIMD4 Dotproduct helper function */
-static gmx_inline float
+static gmx_inline float gmx_simdcall
 gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
 {
     float f;
@@ -116,7 +118,7 @@ gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
     return f;
 }
 
-static gmx_inline double
+static gmx_inline double gmx_simdcall
 gmx_simd_reduce_d_sse4_1(__m128d a)
 {
     double  f;

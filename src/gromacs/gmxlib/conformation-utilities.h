@@ -37,7 +37,9 @@
 #ifndef GMX_CONFORMATION_UTILITIES_H
 #define GMX_CONFORMATION_UTILITIES_H
 
-#include "typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

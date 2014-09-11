@@ -1,0 +1,1997 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+\chapter{Topologies}
+\label{ch:top}
+\section{Introduction}
+{\gromacs} must know on which atoms and combinations of atoms the
+various contributions to the potential functions (see
+\chref{ff}) must act. It must
+also know what \normindex{parameter}s must be applied to the various
+functions. All this is described in the {\em \normindex{topology}} file
+{\tt *.top}, which lists the {\em constant attributes} of each atom.
+There are many more atom types than elements, but only atom types
+present in biological systems are parameterized in the force field,
+plus some metals, ions and silicon. The bonded and special
+interactions are determined by fixed lists that are included in the
+topology file. Certain non-bonded interactions must be excluded (first
+and second neighbors), as these are already treated in bonded
+interactions.  In addition, there are {\em dynamic attributes} of
+atoms - their positions, velocities and forces. These do not
+strictly belong to the molecular topology, and are stored in the
+coordinate file {\tt *.gro} (positions and velocities), or trajectory
+file {\tt *.trr} (positions, velocities, forces).
+
+This chapter describes the setup of the topology file, the
+{\tt *.top} file and the database files: what the parameters
+stand for and how/where to change them if needed.
+First, all file formats are explained.
+Section \ssecref{fffiles} describes the organization of
+the files in each force field.
+
+{\bf Note:} if you construct your own topologies, we encourage you
+to upload them to our topology archive at {\wwwpage}! Just imagine
+how thankful you'd have been if your topology had been available
+there before you started. The same goes for new force fields or
+modified versions of the standard force fields - contribute them
+to the force field archive!
+
+\section{Particle type}
+\label{sec:parttype}
+
+In {\gromacs}, there are three types of \normindex{particle}s, see
+\tabref{ptype}. Only regular atoms and virtual interaction sites are used
+in {\gromacs}; shells are necessary for
+polarizable models like the Shell-Water models~\cite{Maaren2001a}.
+
+\begin{table}
+\centerline{
+\begin{tabular}{|l|c|}
+\dline
+Particle        		& Symbol        \\
+\hline
+\seeindex{atom}{particle}s      & A   \\
+\seeindex{shell}{particle}s     & S   \\
+\normindex{virtual interaction sites}	& V (or D)   \\
+\dline
+\end{tabular}
+}
+\caption{Particle types in {\gromacs}}
+\label{tab:ptype}
+\end{table}
+
+\subsection{Atom types}
+\label{subsec:atomtype}
+
+Each force field defines a set of \swapindex{atom}{type}s,
+which have a characteristic name or number, and mass (in
+a.m.u.). These listings are found in the {\tt atomtypes.atp}
+file (.atp = {\bf a}tom {\bf t}ype {\bf p}arameter file).
+Therefore, it is in this file that you can begin to change
+and/or add an atom type. A sample from the {\tt gromos43a1.ff} 
+force field is listed below.
+
+{\small
+\begin{verbatim}
+    O  15.99940 ;     carbonyl oxygen (C=O)
+   OM  15.99940 ;     carboxyl oxygen (CO-)
+   OA  15.99940 ;     hydroxyl, sugar or ester oxygen
+   OW  15.99940 ;     water oxygen
+    N  14.00670 ;     peptide nitrogen (N or NH)
+   NT  14.00670 ;     terminal nitrogen (NH2)
+   NL  14.00670 ;     terminal nitrogen (NH3)
+   NR  14.00670 ;     aromatic nitrogen
+   NZ  14.00670 ;     Arg NH (NH2)
+   NE  14.00670 ;     Arg NE (NH)
+    C  12.01100 ;     bare carbon
+  CH1  13.01900 ;     aliphatic or sugar CH-group
+  CH2  14.02700 ;     aliphatic or sugar CH2-group
+  CH3  15.03500 ;     aliphatic CH3-group
+\end{verbatim}}
+
+{\bf Note:} {\gromacs} makes use of the atom types as a name, {\em
+not} as a number (as {\eg} in {\gromos}).
+
+%Atomic detail is used except for hydrogen atoms bound to (aliphatic)
+%carbon atoms, which are treated as {\em \swapindex{united}{atom}s}. No
+%special \normindex{hydrogen-bond} term is included. {\bf Note} that other force field
+%like OPLS/AA, CHARMM, and AMBER use all atoms.
+
+%\subsection{Nucleus}
+%{\em Necessary for \normindex{polarisability}, not implemented yet.}
+%
+%\subsection{Shell}
+%{\em Necessary for polarisability, not implemented yet.}
+%
+%\subsection{Bond shell}
+%{\em Necessary for polarisability, not implemented yet.}
+
+\subsection{Virtual sites}
+\label{sec:vsitetop}
+Some force fields use \normindex{virtual interaction sites}
+(interaction sites that are constructed from other particle positions)
+on which certain interactions are located
+({\eg} on benzene rings, to reproduce the correct
+\normindex{quadrupole}). This is described in~\secref{virtual_sites}.
+
+To make virtual sites in your system, you should include a section
+{\tt [~virtual_sites?~]} (for backward compatibility the old name
+{\tt [~dummies?~]} can also be used) in your topology file,
+where the `{\tt ?}' stands
+for the number constructing particles for the virtual site. This will be
+`{\tt 2}' for type 2, `{\tt 3}' for types 3, 3fd, 3fad and 3out and
+`{\tt 4}' for type 4fdn. The last of these replace an older 4fd type (with the `type' value 1) 
+that could occasionally be unstable; while it is still supported internally
+in the code, the old 4fd type should not be used in new input files.
+ The different types are explained
+in~\secref{virtual_sites}.
+
+Parameters for type 2 should look like this:
+{\small
+\begin{verbatim}
+[ virtual_sites2 ]
+; Site  from        funct  a
+5       1     2     1      0.7439756
+\end{verbatim}}
+
+for type 3 like this:
+{\small
+\begin{verbatim}
+[ virtual_sites3 ]
+; Site  from               funct   a          b
+5       1     2     3      1       0.7439756  0.128012
+\end{verbatim}}
+
+for type 3fd like this:
+{\small
+\begin{verbatim}
+[ virtual_sites3 ]
+; Site  from               funct   a          d
+5       1     2     3      2       0.5        -0.105
+\end{verbatim}}
+
+for type 3fad like this:
+{\small
+\begin{verbatim}
+[ virtual_sites3 ]
+; Site  from               funct   theta      d
+5       1     2     3      3       120        0.5
+\end{verbatim}}
+
+for type 3out like this:
+{\small
+\begin{verbatim}
+[ virtual_sites3 ]
+; Site  from               funct   a          b          c
+5       1     2     3      4       -0.4       -0.4       6.9281
+\end{verbatim}}
+
+for type 4fdn like this:
+{\small
+\begin{verbatim}
+[ virtual_sites4 ]
+; Site  from                      funct   a          b          c
+5       1     2     3     4       2       1.0        0.9       0.105
+\end{verbatim}}
+
+This will result in the construction of a virtual site, number 5
+(first column `{\tt Site}'), based on the positions of the atoms
+whose indices are 1 and 2 or 1, 2 and 3 or 1, 2, 3 and 4 (next two,
+three or four columns `{\tt from}') following the rules determined by the function number
+(next column `{\tt funct}') with the parameters specified (last one,
+two or three columns `{\tt a b} . .'). Obviously, the atom numbers
+(including virtual site number) depend
+on the molecule. It may be instructive to study the topologies for
+TIP4P or TIP5P water models that are included with the {\gromacs} distribution.
+
+{\bf Note} that if any constant bonded interactions are defined between
+virtual sites and/or normal atoms, they will be removed by {\tt grompp}
+(unless the option {tt -normvsbds} is used).
+This removal of bonded interactions is done after generating exclusions,
+as the generation of exclusions is based on ``chemically'' bonded interactions.
+
+Virtual sites can be constructed in a more generic way using basic geometric
+parameters.  The directive that can be used is {\tt [ virtual_sitesn ]}.  Required
+parameters are listed in~\tabref{topfile2}.  An example entry for defining a virtual
+site at the center of geometry of a given set of atoms might be:
+
+{\small
+\begin{verbatim}
+[ virtual_sitesn ]
+; Site   funct    from
+5        1        1     2     3     4
+\end{verbatim}}
+
+\section{Parameter files}
+
+\label{sec:paramfiles}
+
+\subsection{Atoms}
+The {\em static} properties (see \tabref{statprop} assigned to the
+atom types are assigned based on data in several places.
+The mass is listed in {\tt atomtypes.atp}
+(see~\ssecref{atomtype}), whereas the charge is listed in {\tt *.rtp}
+(.rtp = {\bf r}esidue {\bf t}opology {\bf p}arameter file,
+see~\ssecref{rtp}).  This implies that the charges are only defined in
+the \normindex{building block}s of amino acids, nucleic acids or
+otherwise, as defined by the user. When generating a topology
+({\tt *.top}) using the {\tt \normindex{pdb2gmx}} program, the
+information from these files is combined.
+ 
+\begin{table}
+\centerline{
+\begin{tabular}{|l|c|c|}
+\dline
+Property        & Symbol        & Unit          \\
+\hline
+Type            & -             & -             \\
+Mass            & m             & a.m.u.        \\
+Charge          & q             & electron      \\
+epsilon         & $\epsilon$    & kJ/mol        \\
+sigma           & $\sigma$      & nm            \\
+\dline
+\end{tabular}
+}
+\caption{Static atom type properties in {\gromacs}}
+\label{tab:statprop}
+\end{table}
+
+%The following {\em dynamic} quantities are associated with an atom
+%\begin{itemize}
+%\item   Position {\bf x}
+%\item   Velocity {\bf v}
+%\end{itemize}
+%These quantities are listed in the coordinate file, {\tt *.gro}
+%(see section~\ssecref{grofile}).
+
+\subsection{Non-bonded parameters}
+\label{subsec:nbpar}
+The \swapindex{non-bonded}{parameter}s consist of the van der Waals 
+parameters V ({\tt c6} or $\sigma$, depending on the combination rule) and W 
+({\tt c12} or $\epsilon$), as listed in the file {\tt ffnonbonded.itp}, where 
+{\tt ptype} is the particle type (see \tabref{ptype}). As with the bonded parameters, entries in {\tt [~*type~]} directives 
+are applied to their counterparts in the topology file.  Missing parameters 
+generate warnings, except as noted below in section~\ssecref{pairinteractions}.
+
+{\small
+\begin{verbatim}
+[ atomtypes ]
+;name   at.num      mass      charge   ptype         V(c6)        W(c12)
+    O        8  15.99940       0.000       A   0.22617E-02   0.74158E-06
+   OM        8  15.99940       0.000       A   0.22617E-02   0.74158E-06
+   .....
+
+[ nonbond_params ]
+  ; i    j func       V(c6)        W(c12)
+    O    O    1 0.22617E-02   0.74158E-06
+    O   OA    1 0.22617E-02   0.13807E-05
+    .....
+\end{verbatim}}
+
+{\bf Note} that most of the included force fields also include the {\tt at.num.} column, 
+but this same information is implied in the OPLS-AA {\tt bond_type} column.
+The interpretation of the parameters V and W depends on the combination rule 
+that was chosen in the {\tt [~defaults~]} section of the topology file 
+(see~\ssecref{topfile}):
+\begin{eqnarray}
+\mbox{for combination rule 1}: & &
+\begin{array}{llllll}
+  \mbox{V}_{ii} & = & C^{(6)}_{i}  & = & 4\,\epsilon_i\sigma_i^{6} &
+  \mbox{[ kJ mol$^{-1}$ nm$^{6}$ ]}\\
+  \mbox{W}_{ii} & = & C^{(12)}_{i} & = & 4\,\epsilon_i\sigma_i^{12} &
+  \mbox{[ kJ mol$^{-1}$ nm$^{12}$ ]}\\
+\end{array}
+\\
+\mbox{for combination rules 2 and 3}: & &
+\begin{array}{llll}
+  \mbox{V}_{ii} & = & \sigma_i   & \mbox{[ nm ]} \\
+  \mbox{W}_{ii} & = & \epsilon_i & \mbox{[ kJ mol$^{-1}$ ]}
+\end{array}
+\end{eqnarray}
+Some or all combinations for different atom types can be given in the 
+{\tt [~nonbond_params~]} section, again with parameters V and W as defined 
+above. Any combination that is not given will be computed from the parameters 
+for the corresponding atom types, according to the \normindex{combination rule}:
+\begin{eqnarray}
+\mbox{for combination rules 1 and 3}: & &
+\begin{array}{lll}
+  C^{(6)}_{ij}  & = & \left(C^{(6)}_i\,C^{(6)}_j\right)^{\frac{1}{2}} \\
+  C^{(12)}_{ij} & = & \left(C^{(12)}_i\,C^{(12)}_j\right)^{\frac{1}{2}}
+\end{array}
+\\
+\mbox{for combination rule 2}: & &
+\begin{array}{lll}
+  \sigma_{ij}   & = & \frac{1}{2}(\sigma_i+\sigma_j) \\
+  \epsilon_{ij} & = & \sqrt{\epsilon_i\,\epsilon_j}
+\end{array}
+\end{eqnarray}
+When $\sigma$ and $\epsilon$ need to be supplied (rules 2 and 3),
+it would seem it is impossible to have a non-zero $C^{12}$ combined
+with a zero $C^6$ parameter. However, providing a negative $\sigma$
+will do exactly that, such that $C^6$ is set to zero and $C^{12}$ is
+calculated normally. This situation represents a special case in reading
+the value of $\sigma$, and nothing more.
+
+There is only one set of \normindex{combination rule}s
+for Buckingham potentials:
+\beq
+\begin{array}{rcl}
+A_{ij}   &=& \left(A_{ii} \, A_{jj}\right)^{1/2}    \\
+B_{ij}   &=& 2 / \left(\frac{1}{B_{ii}} + \frac{1}{B_{jj}}\right)        \\
+C_{ij}   &=& \left(C_{ii} \, C_{jj}\right)^{1/2}
+\end{array}
+\eeq
+
+\subsection{Bonded parameters}
+\label{subsec:bondparam}
+The \swapindex{bonded}{parameter}s ({\ie} bonds, bond angles, improper and proper
+dihedrals) are listed in {\tt ffbonded.itp}.~
+% The term {\tt func} is 1 for
+% harmonic and 2 for \gromosv{96} bond and angle potentials.
+% For the dihedral, this is explained after this listing.
+The entries in this database describe, respectively, the atom types
+in the interactions, the type of the interaction, and the parameters
+associated with that interaction. These parameters are then read
+by {\tt \normindex{grompp}} when processing a topology and applied
+to the relevant bonded parameters, {\ie} {\tt bondtypes} are applied to
+entries in the {\tt [~bonds~]} directive, etc. Any bonded parameter that is
+missing from the relevant {\tt [~*type~]} directive generates a fatal error.
+The types of interactions are listed in \tabref{topfile2}.
+Example excerpts from such files follow:
+
+{\small 
+\begin{verbatim}
+[ bondtypes ]
+  ; i    j func        b0          kb
+    C    O    1   0.12300     502080.
+    C   OM    1   0.12500     418400.
+    ......
+
+[ angletypes ]
+  ; i    j    k func       th0         cth
+   HO   OA    C    1   109.500     397.480
+   HO   OA  CH1    1   109.500     397.480
+   ......
+
+[ dihedraltypes ]
+  ; i    l func        q0          cq
+ NR5*  NR5    2     0.000     167.360
+ NR5* NR5*    2     0.000     167.360
+ ......
+
+[ dihedraltypes ]
+  ; j    k func      phi0          cp   mult
+    C   OA    1   180.000      16.736      2
+    C    N    1   180.000      33.472      2
+    ......
+
+[ dihedraltypes ]
+;
+; Ryckaert-Bellemans Dihedrals
+;
+; aj    ak      funct
+CP2     CP2     3       9.2789  12.156  -13.120 -3.0597 26.240  -31.495
+\end{verbatim}}
+
+In the {\tt ffbonded.itp} file, you can add bonded parameters. If you
+want to include parameters for new atom types, make sure you define
+them in {\tt atomtypes.atp} as well.
+
+
+
+\subsection{Intramolecular pair interactions\index{intramolecular pair interaction}}
+\label{subsec:pairinteractions}
+Extra Lennard-Jones and electrostatic interactions between pairs
+of atoms in a molecule can be added in the {\tt [~pairs~]} section of
+a molecule definition. The parameters for these interactions can
+be set independently from the non-bonded interaction parameters.
+In the {\gromos} force fields, pairs are only used
+to modify the \normindex{1-4 interaction}s (interactions of atoms
+separated by three bonds). In these force fields the 1-4 interactions
+are excluded from the non-bonded interactions (see \secref{excl}).
+
+{\small
+\begin{verbatim}
+
+[ pairtypes ]
+  ; i    j func         cs6          cs12 ; THESE ARE 1-4 INTERACTIONS
+    O    O    1 0.22617E-02   0.74158E-06
+    O   OM    1 0.22617E-02   0.74158E-06
+    .....
+\end{verbatim}}
+
+The pair interaction parameters for the atom types
+in {\tt ffnonbonded.itp} are listed in the {\tt [~pairtypes~]} section.
+The {\gromos} force fields list all these interaction parameters
+explicitly, but this section might be empty for force fields like
+OPLS that calculate the \normindex{1-4 interaction}s by uniformly scaling the parameters.
+Pair parameters that are not present in the {\tt [~pairtypes~]} section
+are only generated when {\tt gen-pairs} is set to ``yes'' in the {\tt [~defaults~]}
+directive of {\tt forcefield.itp} (see \ssecref{topfile}). 
+When {\tt gen-pairs} is set to ``no,'' {\tt \normindex{grompp}}
+will give a warning for each pair type for which no parameters are given.
+
+The normal pair interactions, intended for \normindex{1-4 interaction}s,
+have function type 1. Function type 2 and the {\tt [~pairs_nb~]} are intended
+for free-energy simulations. When determining hydration
+free energies, the solute needs to be decoupled from the solvent.
+This can be done by adding a B-state topology (see \secref{fecalc})
+that uses zero for all solute non-bonded parameters, {\ie} charges and LJ parameters.
+However, the free energy difference between the A and
+B states is not the total hydration free energy.  One has to
+add the free energy for reintroducing the internal Coulomb and 
+LJ interactions in the solute when in vacuum. This second step can be combined with
+the first step when the Coulomb and LJ interactions within
+the solute are not modified. For this purpose, there is a pairs
+function type 2, which is identical to function type 1, except
+that the B-state parameters are always identical to the A-state
+parameters. For searching the parameters in the {\tt [~pairtypes~]} section,
+no distinction is made between function type 1 and 2.
+The pairs section {\tt [~pairs_nb~]} is intended to replace the non-bonded interaction.
+It uses the unscaled charges and the non-bonded LJ parameters;
+it also only uses the A-state parameters. {\bf Note} that
+one should add exclusions for all atom pairs listed in {\tt [~pairs_nb~]},
+otherwise such pairs will also end up in the normal neighbor lists.
+
+Alternatively, this same behavior can be achieved without ever
+touching the topology, by using the {\tt couple-moltype}, {\tt
+  couple-lambda0}, {\tt couple-lambda1}, and {\tt couple-intramol}
+keywords.  See sections \secref{fecalc} and \secref{dgimplement} for
+more information.
+
+All three pair types always use plain Coulomb interactions,
+even when Reaction-field, PME, Ewald or shifted Coulomb interactions
+are selected for the non-bonded interactions.
+Energies for types 1 and 2 are written to the energy and log file
+in separate ``LJ-14'' and ``Coulomb-14'' entries per energy group pair.
+Energies for {\tt [~pairs_nb~]} are added to the ``LJ-(SR)'' and ``Coulomb-(SR)'' terms.
+
+\subsection{Implicit solvation parameters\index{implicit solvation parameters}}
+Starting with {\gromacs} 4.5, implicit solvent is supported. A section in the
+topology has been introduced to list those parameters:
+
+{\small
+\begin{verbatim}
+[ implicit_genborn_params ]
+; Atomtype  sar     st   pi      gbr      hct
+NH1         0.155   1    1.028   0.17063  0.79 ; N
+N           0.155   1    1       0.155    0.79 ; Proline backbone N
+H           0.1     1    1       0.115    0.85 ; H
+CT1         0.180   1    1.276   0.190    0.72 ; C
+\end{verbatim}}
+
+In this example the atom type is listed first, followed by five
+numbers, and a comment (following a semicolon).
+
+Values in columns 1-3 are not currently used. They pertain to more
+elaborate surface area algorithms, the one from Qiu {\em et al.}~\cite{Still97} in
+particular.  Column 4 contains the atomic van der Waals radii, which are used
+in computing the Born radii. The dielectric offset is specified in
+the {\tt *.mdp} file, and gets subtracted from the input van der Waals radii for the different
+Born radii methods, as described by Onufriev {\em et al.}~\cite{Case04}.  Column 5 is the 
+scale factor for the HCT and OBC models. The values are taken from the Tinker implementation of 
+the HCT pairwise scaling method~\cite{Truhlar96}.  This method has been modified such that the
+scaling factors have been adjusted to minimize differences between analytical surface areas and
+GB using the HCT algorithm.  The scaling is further modified in that it is not applied pairwise
+as proposed by Hawkins {\em et al.}~\cite{Truhlar96}, but on a per-atom (rather than a per-pair) 
+basis.
+
+
+
+\section{Exclusions}
+\label{sec:excl}
+The \normindex{exclusions} for non-bonded interactions are generated by {\tt
+grompp} for neighboring atoms up to a certain number of bonds away, as
+defined in the {\tt [~moleculetype~]} section in the topology file
+(see \ssecref{topfile}). Particles are considered bonded when they are
+connected by ``chemical'' bonds ({\tt [~bonds~]} types 1 to 5, 7 or 8)
+or constraints ({\tt [~constraints~]} type 1).
+Type 5 {\tt [~bonds~]} can be used to create a \normindex{connection}
+between two atoms without creating an interaction.
+There is a \normindex{harmonic interaction}
+({\tt [~bonds~]} type 6) that does not connect the atoms by a chemical bond.
+There is also a second constraint type ({\tt [~constraints~]} type 2)
+that fixes the distance, but does not connect
+the atoms by a chemical bond.
+For a complete list of all these interactions, see \tabref{topfile2}.
+
+Extra exclusions within a molecule can be added manually
+in a {\tt [~exclusions~]} section. Each line should start with one
+atom index, followed by one or more atom indices. All non-bonded
+interactions between the first atom and the other atoms will be excluded.
+
+When all non-bonded interactions within or between groups of atoms need
+to be excluded, is it more convenient and much more efficient to use
+energy monitor group exclusions (see \secref{groupconcept}).
+
+\section{Constraint algorithms\index{constraint algorithms}}
+\label{sec:constraints}
+Constraints are defined in the {\tt [~constraints~]} section.
+The format is two atom numbers followed by the function type,
+which can be 1 or 2, and the constraint distance.
+The only difference between the two types is that type 1 is used
+for generating exclusions and type 2 is not (see \secref{excl}).
+The distances are constrained using the LINCS or the SHAKE algorithm,
+which can be selected in the {\tt *.mdp} file.
+Both types of constraints can be perturbed in free-energy calculations
+by adding a second constraint distance (see \ssecref{constraintforce}).
+Several types of bonds and angles (see \tabref{topfile2}) can
+be converted automatically to constraints by {\tt grompp}.
+There are several options for this in the {\tt *.mdp} file.
+
+We have also implemented the \normindex{SETTLE} algorithm~\cite{Miyamoto92},
+which is an analytical solution of SHAKE, specifically for water. 
+SETTLE can be selected in the topology file. See, for instance, the
+SPC molecule definition:
+
+{\small
+\begin{verbatim}
+[ moleculetype ]
+; molname       nrexcl
+SOL             1
+
+[ atoms ]
+; nr    at type res nr  ren nm  at nm   cg nr   charge
+1       OW      1       SOL     OW1     1       -0.82
+2       HW      1       SOL     HW2     1        0.41
+3       HW      1       SOL     HW3     1        0.41
+
+[ settles ]
+; OW    funct   doh     dhh
+1       1       0.1     0.16333
+
+[ exclusions ]
+1       2       3
+2       1       3
+3       1       2
+\end{verbatim}}
+
+The {\tt [~settles~]} directive defines the first atom of the water molecule.
+The settle funct is always 1, and the distance between O-H and H-H distances
+must be given. {\bf Note} that the algorithm can also be used
+for TIP3P and TIP4P~\cite{Jorgensen83}.
+TIP3P just has another geometry. TIP4P has a virtual site, but since 
+that is generated it does not need to be shaken (nor stirred).
+
+\section{\normindex{pdb2gmx} input files}
+\label{sec:pdb2gmxfiles}
+The {\gromacs} program {\tt pdb2gmx} generates a topology for
+the input coordinate file. Several formats are supported for
+that coordinate file, but {\tt *.pdb} is the most commonly-used format
+(hence the name {\tt pdb2gmx}).
+{\tt pdb2gmx} searches for force fields in sub-directories of the {\gromacs} {\tt share/top}
+directory and your working directory. Force fields are recognized from
+the file {\tt forcefield.itp} in a directory with the extension {\tt .ff}.
+The file {\tt forcefield.doc} may be present, and if so, its first line
+will be used by {\tt pdb2gmx} to present a short description to the
+user to help in choosing a force field. Otherwise, the user can
+choose a force field with the {\tt -ff xxx} command-line argument
+to {\tt pdb2gmx}, which indicates that a force field in a
+{\tt xxx.ff} directory is desired. {\tt pdb2gmx} will search first in the
+working directory, then in the {\gromacs} {\tt share/top} directory, and
+use the first matching {\tt xxx.ff} directory found.
+
+Two general files are read by {\tt pdb2gmx}: an atom type file
+(extension {\tt .atp}, see~\ssecref{atomtype}) from the force-field directory,
+and a file called {\tt residuetypes.dat} from either the working directory, or
+the {\gromacs} {\tt share/top} directory. {\tt residuetypes.dat}
+determines which residue names are considered protein, DNA, RNA,
+water, and ions.
+
+{\tt pdb2gmx} can read one or multiple databases with topological information
+for different types of molecules. A set of files belonging to one database
+should have the same basename, preferably telling something about the type
+of molecules ({\eg} aminoacids, rna, dna). The possible files are:
+\begin{itemize}
+\item {\tt <basename>.rtp}
+\item {\tt <basename>.r2b} (optional)
+\item {\tt <basename>.arn} (optional)
+\item {\tt <basename>.hdb} (optional)
+\item {\tt <basename>.n.tdb} (optional)
+\item {\tt <basename>.c.tdb} (optional)
+\end{itemize}
+Only the {\tt .rtp} file, which contains the topologies of the building
+blocks, is mandatory. Information from other files will only be used 
+for building blocks that come from an {\tt .rtp} file with the same base name.
+The user can add building blocks to a force field by having additional
+files with the same base name in their working directory. By default, only
+extra building blocks can be defined, but calling {\tt pdb2gmx} with
+the {\tt -rtpo} option will allow building blocks in a local file
+to replace the default ones in the force field.
+
+
+\subsection{Residue database}
+\label{subsec:rtp}
+The files holding the residue databases have the extension {\tt .rtp}.
+Originally this file contained building blocks (amino acids) for proteins,
+and is the {\gromacs} interpretation of the {\tt rt37c4.dat} file of {\gromos}.
+So the residue database file contains information (bonds, charges, charge groups,
+and improper dihedrals) for a frequently-used building block. It is
+better {\em not} to change this file because it is standard input for
+{\tt pdb2gmx}, but if changes are needed make them in the
+{\tt *.top} file (see~\ssecref{topfile}), or in a {\tt .rtp} file
+in the working directory as explained in \secref{pdb2gmxfiles}.
+Defining topologies of new small molecules is probably easier
+by writing an include topology file {\tt *.itp} directly.
+This will be discussed in section~\ssecref{molitp}.
+When adding a new protein residue to the database, don't forget to
+add the residue name to the {\tt \normindex{residuetypes.dat}} file,
+so that {\tt grompp}, {\tt make_ndx} and analysis tools can recognize
+the residue as a protein residue (see \ssecref{defaultgroups}).
+
+The {\tt .rtp} files are only used by {\tt pdb2gmx}.
+As mentioned before, the only extra information this
+program needs from the {\tt .rtp} database is bonds, charges of atoms,
+charge groups, and improper dihedrals, because the rest is read from
+the coordinate input file.
+Some proteins contain residues that are not standard, but are
+listed in the coordinate file. You have to construct a building block
+for this ``strange'' residue, otherwise you will not obtain a
+{\tt *.top} file. This also holds for molecules in the
+coordinate file such as ligands, polyatomic ions, crystallization co-solvents, etc.
+The residue database is constructed in the following way:
+
+{\small
+\begin{verbatim}
+[ bondedtypes ]  ; mandatory
+; bonds  angles  dihedrals  impropers
+     1       1          1          2  ; mandatory
+
+[ GLY ]  ; mandatory
+
+ [ atoms ]  ; mandatory 
+; name  type  charge  chargegroup 
+     N     N  -0.280     0
+     H     H   0.280     0
+    CA   CH2   0.000     1
+     C     C   0.380     2
+     O     O  -0.380     2
+
+ [ bonds ]  ; optional
+;atom1 atom2      b0      kb
+     N     H
+     N    CA
+    CA     C
+     C     O
+    -C     N
+
+ [ exclusions ]  ; optional
+;atom1 atom2
+
+ [ angles ]  ; optional
+;atom1 atom2 atom3    th0    cth
+
+ [ dihedrals ]  ; optional
+;atom1 atom2 atom3 atom4   phi0     cp   mult
+
+ [ impropers ]  ; optional
+;atom1 atom2 atom3 atom4     q0     cq
+     N    -C    CA     H
+    -C   -CA     N    -O
+
+[ ZN ]
+
+ [ atoms ]
+    ZN    ZN   2.000     0
+\end{verbatim}}
+
+The file is free format; the only restriction is that there can be at
+most one entry on a line.  The first field in the file is the
+{\tt [~bondedtypes~]} field, which is followed by four numbers,
+indicating the interaction type for bonds, angles, dihedrals, and
+improper dihedrals.  The file contains residue entries, which consist
+of atoms and (optionally) bonds, angles, dihedrals, and impropers.  The
+charge group codes denote the charge group numbers. Atoms in the same
+charge group should always be ordered consecutively. When using the
+hydrogen database with {\tt pdb2gmx} for adding missing hydrogens
+(see~\ssecref{hdb}), the atom names defined in the {\tt .rtp} entry
+should correspond exactly to the naming convention used in the
+hydrogen database. The atom names in the bonded interaction can be
+preceded by a minus or a plus, indicating that the atom is in the
+preceding or following residue respectively.  Explicit parameters added
+to bonds, angles, dihedrals, and impropers override
+the standard parameters in the {\tt .itp} files.  This should only be
+used in special cases. Instead of parameters, a string can be added
+for each bonded interaction.  This is used in \gromosv{96} {\tt .rtp}
+files. These strings are copied to the topology file and can be
+replaced by force-field parameters by the C-preprocessor in {\tt grompp}
+using {\tt \#define} statements.
+
+{\tt pdb2gmx} automatically generates all angles. This means that for 
+most force fields the {\tt [~angles~]} field is only useful for overriding 
+{\tt .itp} parameters. For the \gromosv{96} force field the interaction 
+number of all angles needs to be specified.
+
+{\tt pdb2gmx} automatically generates one proper dihedral for every rotatable
+bond, preferably on heavy atoms. When the {\tt [~dihedrals~]} field is used,
+no other dihedrals will be generated for the bonds corresponding to the
+specified  dihedrals. It is possible to put more than one dihedral
+function on a rotatable bond. In the case of CHARMM27 FF {\tt pdb2gmx}
+can add correction maps to the dihedrals using the default {\tt -cmap} option.
+Please refer to \ssecref{charmmff} for more information.
+
+{\tt pdb2gmx} sets the number of exclusions to 3, which
+means that interactions between atoms connected by at most 3 bonds are
+excluded. Pair interactions are generated for all pairs of atoms that are
+separated by 3 bonds (except pairs of hydrogens).
+When more interactions need to be excluded, or some pair interactions should
+not be generated, an {\tt [~exclusions~]} field can be added, followed by
+pairs of atom names on separate lines. All non-bonded and pair interactions
+between these atoms will be excluded.
+
+\subsection{Residue to building block database}
+Each force field has its own naming convention for residues.
+Most residues have consistent naming, but some, especially those
+with different protonation states, can have many different names.
+The {\tt .r2b} files are used to convert standard residue names to
+the force-field build block names. If no {\tt .r2b} is present
+in the force-field directory or a residue is not listed, the building
+block name is assumed to be identical to the residue name.
+The {\tt .r2b} can contain 2 or 5 columns. The 2-column format
+has the residue name in the first column and the building block name
+in the second. The 5-column format has 3 additional columns with
+the building block for the residue occurring in the N-terminus, C-terminus
+and both termini at the same time (single residue molecule).
+This is useful for, for instance, the AMBER force fields.
+If one or more of the terminal versions are not present, a dash should be entered
+in the corresponding column.
+
+There is a {\gromacs} naming convention for residues which is only
+apparent (except for the {\tt pdb2gmx} code) through the {\tt .r2b} file
+and {\tt specbond.dat} files.
+This convention is only of importance when you are adding residue types
+to an {\tt .rtp} file. The convention is listed in \tabref{r2b}.
+For special bonds with, for instance, a heme group, the {\gromacs} naming
+convention is introduced through {\tt specbond.dat} (see~\ssecref{specbond}), which can
+subsequently be translated by the {\tt .r2b} file, if required.
+
+\begin{table}
+\centerline{
+\begin{tabular}{|ll|}
+\dline
+ARG  & protonated arginine \\
+ARGN & neutral arginine \\
+ASP  & negatively charged aspartic acid \\
+ASPH & neutral aspartic acid \\
+CYS  & neutral cysteine \\
+CYS2 & cysteine with sulfur bound to another cysteine or a heme \\
+GLU  & negatively charged glutamic acid \\
+GLUH & neutral glutamic acid \\
+HISD & neutral histidine with N$_\delta$ protonated \\
+HISE & neutral histidine with N$_\epsilon$ protonated \\
+HISH & positive histidine with both N$_\delta$ and N$_\epsilon$ protonated \\
+HIS1 & histidine bound to a heme \\
+LYSN & neutral lysine \\
+LYS  & protonated lysine \\
+HEME & heme \\
+\dline
+\end{tabular}
+}
+\caption{Internal {\gromacs} residue naming convention.}
+\label{tab:r2b}
+\end{table}
+
+\subsection{Atom renaming database}
+Force fields often use atom names that do not follow IUPAC or PDB convention.
+The {\tt .arn} database is used to translate the atom names in the coordinate
+file to the force-field names. Atoms that are not listed keep their names.
+The file has three columns: the building block name,
+the old atom name, and the new atom name, respectively. The residue name
+supports question-mark wildcards that match a single character.
+
+An additional general atom renaming file called {\tt xlateat.dat} is present
+in the {\tt share/top} directory, which translates common non-standard
+atom names in the coordinate file to IUPAC/PDB convention. Thus, when writing
+force-field files, you can assume standard atom names and no further
+atom name translation is required, except for translating from standard atom names
+to the force-field ones.
+
+\subsection{Hydrogen database}
+\label{subsec:hdb}
+The \swapindex{hydrogen}{database} is stored in {\tt .hdb} files. It
+contains information for the {\tt pdb2gmx} program on how to connect
+hydrogen atoms to existing atoms. In versions of the database before
+{\gromacs} 3.3, hydrogen atoms were named after the atom they are
+connected to: the first letter of the atom name was replaced by an
+`H.' In the versions from 3.3 onwards, the H atom has to be listed explicitly,
+because the old behavior was protein-specific and hence could not
+be generalized to other molecules.
+If more than one hydrogen atom is connected to the same atom, a
+number will be added to the end of the hydrogen atom name. For
+example, adding two hydrogen atoms to \texttt{ND2} (in asparagine), the
+hydrogen atoms will be named \texttt{HD21} and \texttt{HD22}. This is
+important since atom naming in the \texttt{.rtp} file (see~\ssecref{rtp})
+must be the same. The format of the hydrogen database is as follows:
+
+{\small
+\begin{verbatim}
+; res   # additions
+        # H add type    H       i       j       k
+ALA     1
+        1       1       H       N       -C      CA
+ARG     4
+        1       2       H       N       CA      C
+        1       1       HE      NE      CD      CZ
+        2       3       HH1     NH1     CZ      NE
+        2       3       HH2     NH2     CZ      NE
+\end{verbatim}}
+
+On the first line we see the residue name (ALA or ARG) and the number
+of kinds of hydrogen atoms that may be added to this residue by the
+hydrogen database. After that follows one line for each addition, on which
+we see:
+\begin{itemize}
+\item The number of H atoms added
+\item The method for adding H atoms, which can be any of:
+\begin{enumerate}
+\item[1]{\em one planar hydrogen, {\eg} rings or peptide bond}\\
+One hydrogen atom (n) is generated, lying in the plane of atoms
+(i,j,k) on the plane bisecting angle (j-i-k) at a distance of 0.1 nm
+from atom i, such that the angles (n-i-j) and (n-i-k) are $>$ 90$^{\rm o}$.
+
+\item[2]{\em one single hydrogen, {\eg} hydroxyl}\\
+One hydrogen atom (n) is generated at a distance of 0.1 nm from atom
+i, such that angle (n-i-j)=109.5 degrees and dihedral (n-i-j-k)=trans.
+
+\item[3]{\em two planar hydrogens, {\eg} ethylene -C=CH{$_2$}, or amide -C(=O)NH{$_2$}}\\
+Two hydrogens (n1,n2) are generated at a distance of 0.1 nm from atom
+i, such that angle (n1-i-j)=(n2-i-j)=120 degrees and dihedral
+(n1-i-j-k)=cis and (n2-i-j-k)=trans, such that names are according to
+IUPAC standards~\cite{iupac70}.
+
+\item[4]{\em two or three tetrahedral hydrogens, {\eg} -CH{$_3$}}\\
+Three (n1,n2,n3) or two (n1,n2) hydrogens are generated at a distance
+of 0.1 nm from atom i, such that angle
+(n1-i-j)=(n2-i-j)=(n3-i-j)=109.47$^{\rm o}$, dihedral (n1-i-j-k)=trans,
+(n2-i-j-k)=trans+120 and (n3-i-j-k)=trans+240$^{\rm o}$.
+
+\item[5]{\em one tetrahedral hydrogen, {\eg} C{$_3$}CH}\\
+One hydrogen atom (n$^\prime$) is generated at a distance of 0.1 nm from atom
+i in tetrahedral conformation such that angle
+(n$^\prime$-i-j)=(n$^\prime$-i-k)=(n$^\prime$-i-l)=109.47$^{\rm o}$.
+
+\item[6]{\em two tetrahedral hydrogens, {\eg} C-CH{$_2$}-C}\\
+Two hydrogen atoms (n1,n2) are generated at a distance of 0.1 nm from
+atom i in tetrahedral conformation on the plane bisecting angle j-i-k
+with angle (n1-i-n2)=(n1-i-j)=(n1-i-k)=109.47$^{\rm o}$.
+
+\item[7]{\em two water hydrogens}\\
+Two hydrogens are generated around atom i according to
+SPC~\cite{Berendsen81} water geometry. The symmetry axis will
+alternate between three coordinate axes in both directions.
+
+\item[10]{\em three water ``hydrogens''}\\
+Two hydrogens are generated around atom i according to
+SPC~\cite{Berendsen81} water geometry. The symmetry axis will
+alternate between three coordinate axes in both directions. In addition,
+an extra particle is generated on the position of the oxygen with
+the first letter of the name replaced by `M'. This is for
+use with four-atom water models such as TIP4P~\cite{Jorgensen83}.
+
+\item[11]{\em four water ``hydrogens''}\\
+Same as above, except that two additional
+particles are generated on the position of the oxygen, with names
+`LP1' and `LP2.' This is for
+use with five-atom water models such as TIP5P~\cite{Mahoney2000a}.
+\end{enumerate}
+
+\item
+The name of the new H atom (or its prefix, {\eg} {\tt HD2} for
+the asparagine example given earlier).
+
+\item
+Three or four control atoms (i,j,k,l), where the first always is the
+atom to which the H atoms are connected. The other two or three depend
+on the code selected. For water, there is only one control atom.
+\end{itemize}
+
+Some more exotic cases can be approximately constructed from the above tools,
+and with suitable use of energy minimization are good enough for beginning
+MD simulations. For example secondary amine hydrogen, nitrenyl hydrogen
+(C\nolinebreak[4]=\nolinebreak[4]NH) and even ethynyl hydrogen could be
+approximately constructed using method 2 above for hydroxyl hydrogen.
+
+\subsection{Termini database}
+\label{subsec:tdb}
+The \swapindex{termini}{database}s are stored in {\tt aminoacids.n.tdb} and
+{\tt aminoacids.c.tdb} for the N- and C-termini respectively. They contain
+information for the {\tt pdb2gmx} program on how to connect new atoms
+to existing ones, which atoms should be removed or changed, and which
+bonded interactions should be added. Their format is as follows
+(from {\tt gromos43a1.ff/aminoacids.c.tdb}):
+
+{\small
+\begin{verbatim}
+[ None ]
+
+[ COO- ]
+[ replace ]
+C	C	C	12.011	0.27
+O 	O1	OM	15.9994	-0.635
+OXT	O2	OM	15.9994	-0.635
+[ add ]
+2	8	O	C	CA	N
+	OM	15.9994	-0.635
+[ bonds ]
+C	O1	gb_5
+C	O2	gb_5
+[ angles ]
+O1	C	O2	ga_37
+CA	C	O1	ga_21
+CA	C	O2	ga_21
+[ dihedrals ]
+N	CA	C	O2	gd_20
+[ impropers ]
+C	CA	O2	O1	gi_1
+\end{verbatim}}
+
+The file is organized in blocks, each with a header specifying the
+name of the block. These blocks correspond to different types of
+termini that can be added to a molecule. In this example {\tt [~COO-~]}
+is the first block, corresponding to changing the terminal carbon
+atom into a deprotonated carboxyl group. {\tt [~None~]} is the
+second terminus type, corresponding to a terminus that leaves
+the molecule as it is. Block names cannot be any of the following:
+{\tt replace}, {\tt add}, {\tt delete}, {\tt bonds}, {\tt angles},
+{\tt dihedrals}, {\tt impropers}.  Doing so would interfere with
+the parameters of the block, and would probably also be very confusing
+to human readers.
+
+For each block the following options are present:
+\begin{itemize}
+\item {\tt [~replace~]} \\
+Replace an existing atom by one with a different atom type, atom name,
+charge, and/or mass. This entry can be used to replace an atom that is
+present both in the input coordinates and in the {\tt .rtp} database,
+but also to only rename an atom in the input coordinates such that
+it matches the name in the force field. In the latter case, there
+should also be a corresponding {\tt [~add~]} section present that
+gives instructions to add the same atom, such that the position in the sequence
+and the bonding is known. Such an atom can be present in the input
+coordinates and kept, or not present and constructed by {\tt pdb2gmx}.
+For each atom to be replaced on line should be
+entered with the following fields:
+\begin{itemize}
+\item name of the atom to be replaced
+\item new atom name (optional)
+\item new atom type
+\item new mass
+\item new charge
+\end{itemize}
+\item {\tt [~add~]} \\
+Add new atoms. For each (group of) added atom(s), a two-line entry is
+necessary. The first line contains the same fields as an entry in the
+hydrogen database (name of the new atom, 
+number of atoms, type of addition, control atoms,
+see~\ssecref{hdb}), but the possible types of addition are extended
+by two more, specifically for C-terminal additions:
+\begin{enumerate}
+\item[8]{\em two carboxyl oxygens, -COO{$^-$}}\\
+Two oxygens (n1,n2) are generated according to rule 3, at a distance
+of 0.136 nm from atom i and an angle (n1-i-j)=(n2-i-j)=117 degrees
+\item[9]{\em carboxyl oxygens and hydrogen, -COOH}\\
+Two oxygens (n1,n2) are generated according to rule 3, at distances of
+0.123 nm and 0.125 nm from atom i for n1 and n2, respectively, and angles
+(n1-i-j)=121 and (n2-i-j)=115 degrees. One hydrogen (n$^\prime$) is generated
+around n2 according to rule 2, where n-i-j and n-i-j-k should be read
+as n$^\prime$-n2-i and n$^\prime$-n2-i-j, respectively.
+\end{enumerate}
+After this line, another line follows that specifies the details of
+the added atom(s), in the same way as for replacing atoms, {\ie}: 
+\begin{itemize}
+\item atom type
+\item mass
+\item charge
+\item charge group (optional)
+\end{itemize}
+Like in the hydrogen database (see~\ssecref{rtp}), when more than
+one atom is connected to an existing one, a number will be appended to
+the end of the atom name. {\bf Note} that, like in the hydrogen database, the
+atom name is now on the same line as the control atoms, whereas it was
+at the beginning of the second line prior to {\gromacs} version 3.3.
+When the charge group field is left out, the added atom will have
+the same charge group number as the atom that it is bonded to.
+\item {\tt [~delete~]}\\
+Delete existing atoms. One atom name per line.
+\item {\tt [~bonds~]}, {\tt [~angles~]}, {\tt [~dihedrals~]} and {\tt [~impropers~]}\\
+Add additional bonded parameters. The format is identical to that used
+in the {\tt *.rtp} file, see~\ssecref{rtp}.
+\end{itemize}
+
+\subsection{Virtual site database}
+Since we cannot rely on the positions of hydrogens in input files, we need a special
+input file to decide the geometries and parameters with which to add virtual site
+hydrogens. For more complex virtual site constructs ({\eg} when entire aromatic side chains
+are made rigid) we also need information about the equilibrium bond lengths and angles
+for all atoms in the side chain. This information is specified in the {\tt .vsd} file for each force 
+field. Just as for the termini, there is one such file for each class of residues in 
+the {\tt .rtp} file. 
+
+The virtual site database is not really a very simple list of information. The first couple of sections
+specify which mass centers (typically called MCH$_3$/MNH$_3$) to use for CH$_3$, NH$_3$, 
+and NH$_2$ groups. Depending on the 
+equilibrium bond lengths and angles between the hydrogens and heavy atoms we need to apply
+slightly different constraint distances between these mass centers. {\bf Note} that we do {\em not} have to
+specify the actual parameters (that is automatic), just the type of mass center to use. To accomplish this,
+there are three sections names \verb+[ CH3 ]+, \verb+[ NH3 ]+, and \verb+[ NH2 ]+. For each of these we
+expect three columns. The first column is the atom type bound to the 2/3 hydrogens, the second column
+is the next heavy atom type which this is bound, and the third column the type of mass center to use.
+As a special case, in the  \verb+[ NH2 ]+ section it is also possible to specify \verb+planar+ in the second
+column, which will use a different construction without mass center. There are currently different opinions
+in some force fields whether an NH$_2$ group should be planar or not, but we try hard to stick to the
+default equilibrium parameters of the force field.
+
+The second part of the virtual site database contains explicit equilibrium bond lengths and angles
+for pairs/triplets of atoms in aromatic side chains. These entries are currently read by specific routines
+in the virtual site generation code, so if you would like to extend it {\eg} to nucleic acids you would also
+need to write new code there. These sections are named after the short amino acid names
+(\verb+[ PHE ]+, \verb+[ TYR ]+, \verb+[ TRP ]+, \verb+[ HID ]+, \verb+[ HIE ]+, \verb+[ HIP ]+), and simply
+contain 2 or 3 columns with atom names, followed by a number specifying the bond length (in nm) or angle
+(in degrees). {\bf Note} that these are approximations of the equilibrated geometry for the entire molecule, 
+which might not be identical to the equilibrium value for a single bond/angle if the molecule is strained.
+
+\subsection{Special bonds}
+\label{subsec:specbond}
+The primary mechanism used by {\tt \normindex{pdb2gmx}} to generate
+inter-residue bonds relies on head-to-tail linking of backbone atoms
+in different residues to build a macromolecule. In some cases ({\eg}
+\normindex{disulfide bonds}, a \normindex{heme group},
+\normindex{branched polymers}), it is necessary to create
+inter-residue bonds that do not lie on the backbone. The file {\tt
+  \normindex{specbond.dat}} takes care of this function. It is
+necessary that the residues belong to the same {\tt [~moleculetype~]}.
+The {\tt -merge} and {\tt -chainsep} functions of {\tt pdb2gmx} can be
+useful when managing special inter-residue bonds between different
+chains.
+
+The first line of {\tt specbond.dat} indicates the number of entries that are in the file. If you
+add a new entry, be sure to increment this number. The remaining lines in the file provide the
+specifications for creating bonds. The format of the lines is as follows:
+
+{\tt resA  atomA  nbondsA  resB  atomB  nbondsB  length  newresA  newresB }
+
+The columns indicate:
+\begin{enumerate}
+\item {\tt resA} The name of residue A that participates in the bond.
+\item {\tt atomA} The name of the atom in residue A that forms the bond.
+\item {\tt nbondsA} The total number of bonds {\tt atomA} can form.
+\item {\tt resB} The name of residue B that participates in the bond.
+\item {\tt atomB} The name of the atom in residue B that forms the bond.
+\item {\tt nbondsB} The total number of bonds {\tt atomB} can form.
+\item {\tt length} The reference length for the bond. If {\tt atomA} and {\tt atomB} are not within
+{\tt length} $\pm$ 10\% in the coordinate file supplied to {\tt pdb2gmx}, no bond will be formed.
+\item {\tt newresA} The new name of residue A, if necessary. Some force fields use {\eg} CYS2 for 
+a cysteine in a disulfide or heme linkage.
+\item {\tt newresB} The new name of residue B, likewise.
+\end{enumerate}
+
+
+\section{File formats}
+\subsection{Topology file\swapindexquiet{topology}{file}}
+\label{subsec:topfile}
+The topology file is built following the {\gromacs} specification for a
+molecular topology.  A {\tt *.top} file can be generated by
+{\tt pdb2gmx}.
+All possible entries in the topology file are listed in
+Tables \ref{tab:topfile1} and \ref{tab:topfile2}.
+Also tabulated are: all the units
+of the parameters, which interactions can be perturbed for free energy
+calculations, which bonded interactions are used by {\tt grompp}
+for generating exclusions, and which bonded interactions can be converted
+to constraints by {\tt grompp}.
+
+%\renewcommand\floatpagefraction{.2}
+
+\newcommand{\tts}{\tt \small}
+
+% move these figures so they end up on facing pages 
+% (first figure on even page)
+\newcommand{\kJmol}{kJ~mol$^{-1}$}
+\newcommand{\kJmolnm}[1]{\kJmol~nm$^{#1}$}
+\newcommand{\kJmolrad}[1]{\kJmol~rad$^{#1}$}
+\newcommand{\kJmoldeg}[1]{\kJmol~deg$^{#1}$}
+
+\begin{table}[p]
+\centering{
+\begin{tabular}{|l|llllc|}
+\multicolumn{6}{c}{\bf \large Parameters} \\
+\dline
+interaction 	& directive   	      & \#  & f. & parameters 				& F. E. \\
+type	&		      	      & at. & tp &					& 	\\
+\dline
+{\em mandatory} & {\tts defaults}	& & &	non-bonded function type; & \\
+		&			& & &	combination rule$^{(cr)}$; &\\
+		&			& & &   generate pairs (no/yes); & \\
+		&			& & &	fudge LJ (); fudge QQ () & \\
+\hline
+{\em mandatory} & {\tts atomtypes}	&   & 	& atom type; m (u); q (e); particle type; & \\
+		&			&   &	& V$^{(cr)}$; W$^{(cr)}$ & \\
+%\hline
+		& {\tts bondtypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts bonds})}		& \\
+		& {\tts pairtypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts pairs})}		& \\
+		& {\tts angletypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts angles})}		& \\
+		& {\tts dihedraltypes}$^{(*)}$ & \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts dihedrals})}& \\
+		& {\tts constrainttypes}& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts constraints})}	& \\
+LJ 		& {\tts nonbond_params}	& 2 & 1	& $V^{(cr)}$; $W^{(cr)}$ & \\
+Buckingham    	& {\tts nonbond_params}	& 2 & 2	& $a$ (\kJmol); $b$ (nm$^{-1})$;  & \\
+ & & & & $c_6$ (\kJmolnm{6}) & \\
+\dline
+\multicolumn{6}{c}{~} \\
+\multicolumn{6}{c}{\bf \large Molecule definition(s)} \\
+\dline
+{\em mandatory} & {\tts moleculetype}	& & & 	molecule name; $n_{ex}^{(nrexcl)}$  &	\\
+\hline
+{\em mandatory} & {\tts atoms}		& 1 & 	& atom type; residue number; 	& type	\\
+		&			&   &	& residue name; atom name; 	& 	\\
+		&			&   &	& charge group number; $q$ (e); $m$ (u) 	& $q,m$ \\
+\hline
+\multicolumn{6}{|c|}{} \\
+\multicolumn{6}{|c|}{intra-molecular interaction and geometry definitions as described
+in \tabref{topfile2}} \\
+\multicolumn{6}{|c|}{} \\
+\dline
+\multicolumn{6}{c}{~} \\
+\multicolumn{6}{c}{\bf \large System} \\
+\dline
+{\em mandatory} & {\tts system}		& & &	system name	&	\\
+\hline
+{\em mandatory} & {\tts molecules}	& & &	\multicolumn{2}{l|}{molecule name; number of molecules}	\\
+\dline
+\multicolumn{6}{c}{~} \\
+\multicolumn{6}{l}{`\# at' is the required number of atom type indices for this directive} \\
+\multicolumn{6}{l}{`f. tp' is the value used to select this function type} \\
+\multicolumn{6}{l}{`F. E.' indicates which of the parameters for this interaction can be} \\
+\multicolumn{6}{l}{\phantom{`F. E.'} interpolated during free energy calculations} \\
+\multicolumn{6}{l}{~$^{(cr)}$ the combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\\
+\multicolumn{6}{l}{~$^{(*)}$ for {\tts dihedraltypes} one can specify 4 atoms or the inner (outer for improper) 2 atoms}\\
+\multicolumn{6}{l}{~$^{(nrexcl)}$ exclude neighbors $n_{ex}$ bonds away for non-bonded interactions}\\
+\multicolumn{6}{l}{For free energy calculations, type, $q$ and $m$  or no parameters should be added}\\
+\multicolumn{6}{l}{for topology `B' ($\lambda = 1$) on the same line, after the normal parameters.}
+\end{tabular}
+}
+\caption{The topology ({\tts *.top}) file.}
+\label{tab:topfile1}
+\end{table}
+
+\newcommand{\fnm}[1]{\footnotemark[#1]}
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+%\renewcommand{\tts}{\tt \small}
+\newcommand{\ttss}{\tt \scriptsize}
+
+\begin{landscape}
+\begin{longtable}{|p{1.8in}|lcc>{\raggedright}p{2.5in}cc|}
+\caption{Details of {\tt [~moleculetype~]} directives}\\
+\dline
+Name of interaction              & Topology file directive          & num.  & func. & Order of parameters and their units                   & use in     & Cross- \\
+                                 &                                  & atoms\fnm{1} & type\fnm{2} &                                          & F.E.?\fnm{3} & references \\
+\dline
+\endhead
+\dline
+\endfoot
+% The footnotetext fields only work inside the body, and not from a
+% column with ``p'' formatting'!
+bond                               & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 1     & $b_0$ (nm); $k_b$ (\kJmolnm{-2})                      & all        & \ssecref{harmonicbond}
+\label{tab:topfile2} \footnotetext[1]{The required number of atom indices for this directive}\footnotetext[2]{The index to use to select this function type}\footnotetext[3]{Indicates which of the parameters for this interaction can be interpolated during free energy calculations}\footnotetext[4]{This interaction type will be used by {{\tts grompp}} for generating exclusions}\footnotetext[5]{This interaction type can be converted to constraints by {{\tts grompp}}}\footnotetext[7]{The combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\footnotetext[6]{No connection, and so no exclusions, are generated for this interaction}
+\\
+G96 bond                           & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 2     & $b_0$ (nm); $k_b$ (\kJmolnm{-4})                      & all        & \ssecref{G96bond} \\
+Morse                              & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 3     & $b_0$ (nm); $D$ (\kJmol); $\beta$ (nm$^{-1}$)         & all        & \ssecref{Morsebond} \\
+cubic bond                         & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 4     & $b_0$ (nm); $C_{i=2,3}$ (\kJmolnm{-i})                &            & \ssecref{cubicbond} \\
+connection                         & {\tts bonds}\fnm{4}            & 2     & 5     &                                                       &            & \tsecref{excl} \\
+harmonic potential                 & {\tts bonds}                   & 2     & 6     & $b_0$ (nm); $k_b$ (\kJmolnm{-2})                      & all        & \ssecref{harmonicbond},\tsecref{excl} \\
+FENE bond                          & {\tts bonds}\fnm{4}            & 2     & 7     & $b_m$ (nm); $k_b$ (\kJmolnm{-2})                      &            & \ssecref{FENEbond} \\
+tabulated bond                     & {\tts bonds}\fnm{4}            & 2     & 8     & table number ($\geq 0$); $k$ (\kJmol)                 & $k$        & \ssecref{tabulatedinteraction} \\
+tabulated bond\fnm{6}              & {\tts bonds}                   & 2     & 9     & table number ($\geq 0$); $k$ (\kJmol)                 & $k$        & \ssecref{tabulatedinteraction},\tsecref{excl} \\
+restraint potential                & {\tts bonds}                   & 2     & 10    & low, up$_1$, up$_2$ (nm); $k_{dr}$ (\kJmolnm{-2})     & all        & \ssecref{harmonicrestraint} \\
+extra LJ or Coulomb                & {\tts pairs}                   & 2     & 1     & $V$\fnm{7}; $W$\fnm{7}                                & all        & \ssecref{pairinteractions} \\
+extra LJ or Coulomb                & {\tts pairs}                   & 2     & 2     & fudge QQ (); $q_i$, $q_j$ (e), $V$\fnm{7}; $W$\fnm{7} &            & \ssecref{pairinteractions} \\
+extra LJ or Coulomb                & {\tts pairs_nb}                & 2     & 1     & $q_i$, $q_j$ (e); $V$\fnm{7}; $W$\fnm{7}              &            & \ssecref{pairinteractions} \\
+angle                              & {\tts angles}\fnm{5}           & 3     & 1     & $\theta_0$ (deg); $k_\theta$ (\kJmolrad{-2})          & all        & \ssecref{harmonicangle} \\
+G96 angle                          & {\tts angles}\fnm{5}           & 3     & 2     & $\theta_0$ (deg); $k_\theta$ (\kJmol)                 & all        & \ssecref{G96angle} \\
+cross bond-bond                    & {\tts angles}                  & 3     & 3     & $r_{1e}$, $r_{2e}$ (nm); $k_{rr'}$ (\kJmolnm{-2})     &            & \ssecref{bondbondcross} \\
+cross bond-angle                   & {\tts angles}                  & 3     & 4     & $r_{1e}$, $r_{2e}$ $r_{3e}$ (nm); $k_{r\theta}$ (\kJmolnm{-2}) &   & \ssecref{bondanglecross} \\
+Urey-Bradley                       & {\tts angles}\fnm{5}           & 3     & 5     & $\theta_0$ (deg); $k_\theta$ (\kJmolrad{-2}); $r_{13}$ (nm); $k_{UB}$ (\kJmolnm{-2}) & all & \ssecref{Urey-Bradley} \\
+quartic angle                      & {\tts angles}\fnm{5}           & 3     & 6     & $\theta_0$ (deg); $C_{i=0,1,2,3,4}$ (\kJmolrad{-i})   &            & \ssecref{quarticangle} \\
+tabulated angle                    & {\tts angles}                  & 3     & 8     & table number ($\geq 0$); $k$ (\kJmol)                 & $k$        & \ssecref{tabulatedinteraction} \\
+restricted bending potential       & {\tts angles}                  & 3     & 10    & $\theta_0$ (deg); $k_\theta$ (\kJmol)                 &            & \ssecref{ReB} \\
+proper dihedral                    & {\tts dihedrals}               & 4     & 1     & $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity       & $\phi,k$   & \ssecref{properdihedral} \\
+improper dihedral                  & {\tts dihedrals}               & 4     & 2     & $\xi_0$ (deg); $k_\xi$ (\kJmolrad{-2})                & all        & \ssecref{harmonicimproperdihedral} \\
+Ryckaert-Bellemans dihedral        & {\tts dihedrals}               & 4     & 3     & $C_0$, $C_1$, $C_2$, $C_3$, $C_4$, $C_5$ (\kJmol)     & all        & \ssecref{RBdihedral} \\
+periodic improper dihedral         & {\tts dihedrals}               & 4     & 4     & $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity       & $\phi,k$   & \ssecref{periodicimproperdihedral} \\
+Fourier dihedral                   & {\tts dihedrals}               & 4     & 5     & $C_1$, $C_2$, $C_3$, $C_4$ (\kJmol)                   & all        & \ssecref{Fourierdihedral} \\
+tabulated dihedral                 & {\tts dihedrals}               & 4     & 8     & table number ($\geq 0$); $k$ (\kJmol)                 & $k$        & \ssecref{tabulatedinteraction} \\
+proper dihedral (multiple)         & {\tts dihedrals}               & 4     & 9     & $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity       & $\phi,k$   & \ssecref{properdihedral} \\
+restricted dihedral                & {\tts dihedrals}               & 4     & 11    & $\phi_0$ (deg); $k_\phi$ (\kJmol)                    &            & \ssecref{ReT} \\
+combined bending-torsion potential & {\tts dihedrals}               & 4     & 10    & $a_0$, $a_1$, $a_2$, $a_3$, $a_4$ (\kJmol)       &            & \ssecref{CBT} \\
+exclusions                         & {\tts exclusions}              & 1     &       & one or more atom indices                              &            & \tsecref{excl} \\
+constraint                         & {\tts constraints}\fnm{4}      & 2     & 1     & $b_0$ (nm)                                            & all        & \sssecref{constraints},\tsecref{constraints} \\
+constraint\fnm{6}                  & {\tts constraints}             & 2     & 2     & $b_0$ (nm)                                            & all        & \sssecref{constraints},\tsecref{constraints},\tsecref{excl} \\
+SETTLE                             & {\tts settles}                 & 1     & 1     & $d_{\mbox{\sc oh}}$, $d_{\mbox{\sc hh}}$ (nm)         &            & \ssecref{SETTLE},\tsecref{constraints} \\
+2-body virtual site                & {\tts virtual_sites2}          & 3     & 1     & $a$ ()                                                &            & \ssecref{vsite2} \\
+3-body virtual site                & {\tts virtual_sites3}          & 4     & 1     & $a$, $b$ ()                                           &            & \ssecref{vsite3} \\
+3-body virtual site (fd)           & {\tts virtual_sites3}          & 4     & 2     & $a$ (); $d$ (nm)                                      &            & \ssecref{vsite3fd} \\
+3-body virtual site (fad)          & {\tts virtual_sites3}          & 4     & 3     & $\theta$ (deg); $d$ (nm)                              &            & \ssecref{vsite3fad} \\
+3-body virtual site (out)          & {\tts virtual_sites3}          & 4     & 4     & $a$, $b$ (); $c$ (nm$^{-1}$)                          &            & \ssecref{vsite3out} \\
+4-body virtual site (fdn)          & {\tts virtual_sites4}          & 5     & 2     & $a$, $b$ (); $c$ (nm)                                 &            & \ssecref{vsite4fdn} \\
+N-body virtual site (COG)          & {\tts virtual_sitesn}          & 1     & 1     & one or more constructing atom indices                 &            & \ssecref{vsiteN} \\
+N-body virtual site (COM)          & {\tts virtual_sitesn}          & 1     & 2     & one or more constructing atom indices                 &            & \ssecref{vsiteN} \\
+N-body virtual site (COW)          & {\tts virtual_sitesn}          & 1     & 3     & one or more pairs consisting of constructing atom index and weight & & \ssecref{vsiteN} \\
+position restraint                 & {\ttss position_restraints}    & 1     & 1     & $k_{x}$, $k_{y}$, $k_{z}$ (\kJmolnm{-2}) & all                     & \ssecref{positionrestraint} \\
+flat-bottomed position restraint   & {\ttss position_restraints}    & 1     & 2     & $g$, $r$ (nm), $k$ (\kJmolnm{-2})                     &            & \ssecref{fbpositionrestraint} \\
+%restraint potential                & {\tts bonds}                   & 2     & 10    & low, up$_1$, up$_2$ (nm); $k_{dr}$ (\kJmolnm{-2})     &            & \ssecref{} \\
+distance restraint                 & {\ttss distance_restraints}    & 2     & 1     & type; label; low, up$_1$, up$_2$ (nm); weight ()      &            & \ssecref{distancerestraint} \\
+dihedral restraint                 & {\ttss dihedral_restraints}    & 4     & 1     & $\phi_0$ (deg); $\Delta\phi$ (deg); &    all   & \ssecref{dihedralrestraint} \\
+orientation restraint              & {\ttss orientation_restraints} & 2     & 1     & exp.; label; $\alpha$; $c$ (U nm$^\alpha$); obs. (U); weight (U$^{-1}$) & & \ssecref{orientationrestraint} \\
+angle restraint                    & {\ttss angle_restraints}       & 4     & 1     & $\theta_0$ (deg); $k_c$ (\kJmol); multiplicity        & $\theta,k$ & \ssecref{anglerestraint} \\
+angle restraint (z)                & {\ttss angle_restraints_z}     & 2     & 1     & $\theta_0$ (deg); $k_c$ (\kJmol); multiplicity        & $\theta,k$ & \ssecref{anglerestraint} \\
+\end{longtable}
+\end{landscape}
+
+\renewcommand{\thefootnote}{\arabic{footnote}}
+
+%\renewcommand\floatpagefraction{.5}
+
+
+Description of the file layout:
+\begin{itemize}
+\item Semicolon (;) and newline characters surround comments
+\item On a line ending with $\backslash$ the newline character is ignored.
+\item Directives are surrounded by {\tt [} and {\tt ]}
+\item The topology hierarchy (which must be followed) consists of three levels:
+\begin{itemize}
+\item the parameter level, which defines certain force-field specifications 
+      (see~\tabref{topfile1})
+\item the molecule level, which should contain one or more molecule
+      definitions (see~\tabref{topfile2})
+\item the system level, containing only system-specific information 
+      ({\tt [~system~]} and {\tt [~molecules~]})
+\end{itemize}
+\item Items should be separated by spaces or tabs, not commas
+\item Atoms in molecules should be numbered consecutively starting at 1
+\item Atoms in the same charge group must be listed consecutively
+\item The file is parsed only once, which implies that no forward
+      references can be treated: items must be defined before they
+      can be used
+\item Exclusions can be generated from the bonds or
+      overridden manually
+\item The bonded force types can be generated from the atom types or
+      overridden per bond
+\item It is possible to apply multiple bonded interactions of the same type
+      on the same atoms
+\item Descriptive comment lines and empty lines are highly recommended
+\item Starting with {\gromacs} version 3.1.3, all directives at the
+      parameter level can be used multiple times and there are no
+      restrictions on the order, except that an atom type needs to be
+      defined before it can be used in other parameter definitions
+\item If parameters for a certain interaction are defined multiple times
+      for the same combination of atom types the last definition is used;
+      starting with {\gromacs} version 3.1.3 {\tt grompp} generates a
+      warning for parameter redefinitions with different values
+\item Using one of the {\tt [~atoms~]}, {\tt [~bonds~]},
+      {\tt [~pairs~]}, {\tt [~angles~]}, etc. without having used
+      {\tt [~moleculetype~]}
+      before is meaningless and generates a warning
+\item Using {\tt [~molecules~]} without having used
+      {\tt [~system~]} before is meaningless and generates a warning.
+\item After {\tt [~system~]} the only allowed directive is {\tt [~molecules~]}
+\item Using an unknown string in {\tt [ ]} causes all the data until
+      the next directive to be ignored and generates a warning
+\end{itemize}
+
+Here is an example of a topology file, {\tt urea.top}:
+
+{\small
+\begin{verbatim}
+;
+;       Example topology file
+;
+; The force-field files to be included
+#include "amber99.ff/forcefield.itp"
+
+[ moleculetype ]
+; name  nrexcl
+Urea         3
+
+[ atoms ]
+   1  C  1  URE      C      1     0.880229  12.01000   ; amber C  type
+   2  O  1  URE      O      2    -0.613359  16.00000   ; amber O  type
+   3  N  1  URE     N1      3    -0.923545  14.01000   ; amber N  type
+   4  H  1  URE    H11      4     0.395055   1.00800   ; amber H  type
+   5  H  1  URE    H12      5     0.395055   1.00800   ; amber H  type
+   6  N  1  URE     N2      6    -0.923545  14.01000   ; amber N  type
+   7  H  1  URE    H21      7     0.395055   1.00800   ; amber H  type
+   8  H  1  URE    H22      8     0.395055   1.00800   ; amber H  type
+
+[ bonds ]
+    1	2
+    1	3	
+    1   6
+    3	4
+    3	5
+    6	7
+    6	8
+
+[ dihedrals ] 
+;   ai    aj    ak    al funct  definition
+     2     1     3     4   9     
+     2     1     3     5   9     
+     2     1     6     7   9     
+     2     1     6     8   9     
+     3     1     6     7   9     
+     3     1     6     8   9     
+     6     1     3     4   9     
+     6     1     3     5   9     
+
+[ dihedrals ] 
+     3     6     1     2   4     
+     1     4     3     5   4	 
+     1     7     6     8   4
+
+[ position_restraints ]
+; you wouldn't normally use this for a molecule like Urea,
+; but we include it here for didactic purposes
+; ai   funct    fc
+   1     1     1000    1000    1000 ; Restrain to a point
+   2     1     1000       0    1000 ; Restrain to a line (Y-axis)
+   3     1     1000       0       0 ; Restrain to a plane (Y-Z-plane)
+
+[ dihedral_restraints ]
+; ai   aj    ak    al  type  label  phi  dphi  kfac  power
+    3    6     1    2     1      1  180     0     1      2
+    1    4     3    5     1      1  180     0     1      2
+
+; Include TIP3P water topology
+#include "amber99/tip3p.itp"
+
+[ system ]
+Urea in Water
+
+[ molecules ]
+;molecule name   nr.
+Urea             1
+SOL              1000
+\end{verbatim}}
+
+Here follows the explanatory text.
+
+{\bf {\tt \#include "amber99.ff/forcefield.itp"} :} this includes the
+information for the force field you are using, including
+bonded and non-bonded parameters. This example uses the AMBER99 force
+field, but your simulation may use a different force field.
+{\tt grompp} will automatically go and find this file and copy-and-paste
+its content. That content can be seen in
+\linebreak {\tt share/top/amber99.ff/forcefield.itp}, and it is
+
+{\small
+\begin{verbatim}
+#define _FF_AMBER
+#define _FF_AMBER99
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               yes             0.5     0.8333
+
+#include "ffnonbonded.itp"
+#include "ffbonded.itp"
+#include "gbsa.itp"
+\end{verbatim}}
+
+The two {\tt \#define} statements set up the conditions so that
+future parts of the topology can know that the AMBER 99 force
+field is in use.
+
+{\bf {\tt [~defaults~]} :}
+\begin{itemize}
+\item {\tt nbfunc} is the non-bonded function type. Use 1 (Lennard-Jones) or 2 (Buckingham)
+\item {\tt comb-rule} is the number of the \normindex{combination rule} (see \ssecref{nbpar}).
+\item {\tt gen-pairs} is for pair generation. The default is `no', {\ie} 
+get 1-4 parameters from the pairtypes list. When parameters
+are not present in the list, stop with a fatal error.
+Setting `yes' generates 1-4 parameters that are not present in the pair list
+from normal Lennard-Jones parameters using {\tt fudgeLJ}
+\item {\tt fudgeLJ} is the factor by which to multiply Lennard-Jones 1-4 interactions, default 1
+\item {\tt fudgeQQ} is the factor by which to multiply electrostatic 1-4 interactions, default 1
+\item $N$ is the power for the repulsion term in a 6-$N$ potential (with 
+nonbonded-type Lennard-Jones only), starting with {\gromacs} version 4.5,
+{\tt mdrun} also reads and applies $N$, for values not equal to 12 tabulated
+interaction functions are used
+(in older version you would have to use user tabulated interactions).
+\end{itemize}
+{\bf Note} that {\tt gen-pairs}, {\tt fudgeLJ}, {\tt fudgeQQ}, and $N$ are optional.
+{\tt fudgeLJ} is only used when generate pairs is set to `yes', and
+{\tt fudgeQQ} is always used. However, if you
+want to specify $N$ you need to give a value for the other parameters as well.
+
+Then some other {\tt \#include} statements add in the large amount of data needed
+to describe the rest of the force field. We will skip these and return to {\tt urea.top}.
+There we will see
+
+% move these figures so they end up on facing pages 
+% (first figure on even page)
+%\input{topolfig}
+
+{\bf {\tt [~moleculetype~]} :} defines the name of your molecule in
+this {\tt *.top} and nrexcl = 3 stands for excluding non-bonded
+interactions between atoms that are no further than 3 bonds away.
+
+{\bf {\tt [~atoms~]} :} defines the molecule, where {\tt nr} and
+{\tt type} are fixed, the rest is user defined. So {\tt atom} can be named
+as you like, {\tt cgnr} made larger or smaller (if possible, the total
+charge of a charge group should be zero), and charges can be changed
+here too.
+
+{\bf {\tt [~bonds~]} :} no comment.
+
+{\bf {\tt [~pairs~]} :} LJ and Coulomb 1-4 interactions
+
+{\bf {\tt [~angles~]} :} no comment
+
+{\bf {\tt [~dihedrals~]} :} in this case there are 9 proper dihedrals
+(funct = 1), 3 improper (funct = 4) and no Ryckaert-Bellemans type
+dihedrals. If you want to include Ryckaert-Bellemans type dihedrals
+in a topology, do the following (in case of {\eg} decane):
+\begin{verbatim}
+[ dihedrals ]
+;  ai    aj    ak    al funct       c0       c1       c2
+    1    2     3     4     3 
+    2    3     4     5     3
+\end{verbatim}
+In the original implementation of the potential for
+alkanes~\cite{Ryckaert78} no 1-4 interactions were used, which means
+that in order to implement that particular force field you need to remove the 1-4
+interactions from the {\tt [~pairs~]} section of your topology. In
+most modern force fields, like OPLS/AA or Amber the rules are
+different, and the Ryckaert-Bellemans potential is used as a cosine
+series in combination with 1-4 interactions.
+
+{\bf {\tt [~position_restraints~]} :} harmonically restrain the selected particles
+to reference positions (\ssecref{positionrestraint}). 
+The reference positions are read from a 
+separate coordinate file by {\tt \normindex{grompp}}.
+
+
+{\bf {\tt [~dihedral_restraints~]} :} restrain selected dihedrals to a reference value.
+The implementation of dihedral restraints is described in section \ssecref{dihedralrestraint} of the manual.
+The parameters specified in the [dihedral_restraints] directive are as follows:
+\begin{itemize}
+\item {\tt type} has only one possible value which is 1
+\item {\tt label} is unused and has been removed from the code.
+\item {\tt phi} is the value of $\phi_0$ in \eqnref{dphi} and \eqnref{dihre} of the manual.
+\item {\tt dphi} is the value of $\Delta\phi$ in \eqnref{dihre} of the manual.
+\item {\tt kfac} is analogous to {\tt fac} in the implementation of distance restraints. It is the factor by which the force constant is multiplied. By doing so, different restraints can be maintained with different force constants.
+\item {\tt power} is unused and has been removed from the code.
+\end{itemize}
+
+{\bf {\tt \#include "tip3p.itp"} :} includes a topology file that was already
+constructed (see section~\ssecref{molitp}).
+
+{\bf {\tt [~system~]} :} title of your system, user-defined
+
+{\bf {\tt [~molecules~]} :} this defines the total number of (sub)molecules
+in your system that are defined in this {\tt *.top}. In this
+example file, it stands for 1 urea molecule dissolved in 1000 water
+molecules. The molecule type SOL is defined in the {\tt tip3p.itp} file.
+Each name here must correspond to a name given with {\tt [~moleculetype~]}
+earlier in the topology. The order of the blocks of molecule types and
+the numbers of such molecules must match the coordinate file that
+accompanies the topology when supplied to {\tt \normindex{grompp}}.
+The blocks of molecules do not need to be contiguous, but some
+tools (e.g. {\tt \normindex{genion}}) may act only on the first or
+last such block of a particular molecule type. Also, these blocks
+have nothing to do with the definition of \normindex{groups}
+(see \secref{groupconcept} and \secref{usinggroups}).
+
+\subsection{Molecule.itp file}
+\label{subsec:molitp}
+If you construct a topology file you will use frequently (like the water
+molecule, {\tt tip3p.itp}, which is already constructed for you) it is
+good to make a {\tt molecule.itp} file. This only lists the
+information of one particular molecule and allows you to re-use the
+{\tt [ moleculetype ]} in multiple systems without re-invoking
+{\tt pdb2gmx} or manually copying and pasting. An example
+{\tt urea.itp} follows: 
+
+{\small
+\begin{verbatim}
+[ moleculetype ]
+; molname	nrexcl
+URE		3
+
+[ atoms ]
+   1  C  1  URE      C      1     0.880229  12.01000   ; amber C  type
+...
+   8  H  1  URE    H22      8     0.395055   1.00800   ; amber H  type
+
+[ bonds ]
+    1	2
+...
+    6	8
+[ dihedrals ] 
+;   ai    aj    ak    al funct  definition
+     2     1     3     4   9     
+...
+     6     1     3     5   9     
+[ dihedrals ] 
+     3     6     1     2   4     
+     1     4     3     5   4	 
+     1     7     6     8   4
+\end{verbatim}}
+
+Using {\tt *.itp} files results in a very short {\tt *.top} file:
+
+{\small
+\begin{verbatim}
+;
+;       Example topology file
+;
+; The force field files to be included
+#include "amber99.ff/forcefield.itp"
+
+#include "urea.itp"
+
+; Include TIP3P water topology
+#include "amber99/tip3p.itp"
+
+[ system ]
+Urea in Water
+
+[ molecules ]
+;molecule name   nr.
+Urea             1
+SOL              1000
+\end{verbatim}}
+
+\subsection{Ifdef statements}
+\label{subsec:ifdef}
+A very powerful feature in {\gromacs} is the use of {\tt \#ifdef}
+statements in your {\tt *.top} file. By making use of this statement,
+and associated {\tt \#define} statements like were seen in
+\linebreak {\tt amber99.ff/forcefield.itp} earlier,
+different parameters for one molecule can be used in the same
+{\tt *.top} file. An example is given for TFE, where there is an option to
+use different charges on the atoms: charges derived by De Loof
+{\etal}~\cite{Loof92} or by Van Buuren and
+Berendsen~\cite{Buuren93a}. In fact, you can use much of the functionality of the
+C preprocessor, {\tt cpp}, because {\tt grompp} contains similar pre-processing
+functions to scan the file.  The
+way to make use of the {\tt \#ifdef} option is as follows:
+\begin{itemize}
+\item either use the option {\tt define = -DDeLoof} in the
+      {\tt *.mdp} file (containing {\tt grompp} input
+      parameters), or use the line {\tt \#define DeLoof}
+      early in your {\tt *.top} or {\tt *.itp} file; and
+\item put the {\tt \#ifdef} statements in your {\tt *.top}, as
+      shown below: 
+\end{itemize}
+
+{\small
+\begin{verbatim}
+...
+
+
+
+[ atoms ]
+; nr     type     resnr    residu     atom      cgnr      charge        mass
+#ifdef DeLoof
+; Use Charges from DeLoof
+   1        C        1        TFE        C         1        0.74        
+   2        F        1        TFE        F         1       -0.25        
+   3        F        1        TFE        F         1       -0.25        
+   4        F        1        TFE        F         1       -0.25        
+   5      CH2        1        TFE      CH2         1        0.25        
+   6       OA        1        TFE       OA         1       -0.65        
+   7       HO        1        TFE       HO         1        0.41        
+#else
+; Use Charges from VanBuuren
+   1        C        1        TFE        C         1        0.59        
+   2        F        1        TFE        F         1       -0.2         
+   3        F        1        TFE        F         1       -0.2         
+   4        F        1        TFE        F         1       -0.2         
+   5      CH2        1        TFE      CH2         1        0.26        
+   6       OA        1        TFE       OA         1       -0.55        
+   7       HO        1        TFE       HO         1        0.3         
+#endif
+
+[ bonds ]
+;  ai    aj funct           c0           c1
+    6     7     1 1.000000e-01 3.138000e+05 
+    1     2     1 1.360000e-01 4.184000e+05 
+    1     3     1 1.360000e-01 4.184000e+05 
+    1     4     1 1.360000e-01 4.184000e+05 
+    1     5     1 1.530000e-01 3.347000e+05 
+    5     6     1 1.430000e-01 3.347000e+05 
+...
+\end{verbatim}}
+
+This mechanism is used by {\tt pdb2gmx} to implement optional position
+restraints (\ssecref{positionrestraint}) by {\tt \#include}-ing an {\tt .itp} file whose contents
+will be meaningful only if a particular {\tt \#define} is set (and spelled
+correctly!)
+
+\subsection{Topologies for free energy calculations}
+\index{free energy topologies}
+Free energy differences between two systems, A and B, can be calculated as
+described in \secref{fecalc}.
+Systems A and B are described by topologies
+consisting of the same number of molecules with the same number of
+atoms. Masses and non-bonded interactions can be perturbed by adding B
+parameters under the {\tt [~atoms~]} directive. Bonded interactions can be 
+perturbed by adding B parameters to the bonded types or the bonded
+interactions. The parameters that can be perturbed are listed in  
+Tables \ref{tab:topfile1} and \ref{tab:topfile2}.
+The $\lambda$-dependence of the interactions is described
+in section \secref{feia}.
+The bonded parameters that are used (on the line of the bonded
+interaction definition, or the ones looked up on atom types
+in the bonded type lists) is explained in \tabref{topfe}.
+In most cases, things should work intuitively.
+When the A and B atom types in a bonded interaction
+are not all identical and parameters are not present for the B-state,
+either on the line or in the bonded types,
+{\tt grompp} uses the A-state parameters and issues a warning.
+For free energy calculations, all or no parameters for topology B
+($\lambda = 1$) should be added on the same line, after the normal
+parameters, in the same order as the normal parameters.
+From {\gromacs} 4.6 onward, if $\lambda$ is treated as a vector, then
+the {\tt bonded-lambdas} component controls all bonded terms that are
+not explicitly labeled as restraints.  Restrain terms are controlled
+by the {\tt restraint-lambdas} component.
+
+\begin{table}
+\centerline{
+\begin{tabular}{|c|cc|cc|cc|c|}
+\dline
+B-state atom types & \multicolumn{2}{c|}{parameters} & \multicolumn{4}{c|}{parameters in bonded types} & \\
+all identical to      & \multicolumn{2}{c|}{on line} & \multicolumn{2}{c|}{A atom types} & \multicolumn{2}{c|}{B atom types} & message \\
+A-state atom types & A & B & A & B & A & B & \\
+\dline
+    & +AB & $-$ &  x  &  x  &     &     & \\
+    & +A  & +B  &  x  &  x  &     &     & \\
+yes & $-$ & $-$ & $-$ & $-$ &     &     & error \\
+    & $-$ & $-$ & +AB & $-$ &     &     & \\
+    & $-$ & $-$ & +A  & +B  &     &     & \\
+\hline
+    & +AB & $-$ &  x  &  x  &  x  &  x  & warning \\
+    & +A  & +B  &  x  &  x  &  x  &  x  & \\
+    & $-$ & $-$ & $-$ & $-$ &  x  &  x  & error \\
+no  & $-$ & $-$ & +AB & $-$ & $-$ & $-$ & warning \\
+    & $-$ & $-$ & +A  & +B  & $-$ & $-$ & warning \\
+    & $-$ & $-$ & +A  &  x  & +B  & $-$ & \\
+    & $-$ & $-$ & +A  &  x  &  +  & +B  & \\
+\dline
+\end{tabular}
+}
+\caption{The bonded parameters that are used for free energy topologies,
+on the line of the bonded interaction definition or looked up
+in the bond types section based on atom types. A and B indicate the
+parameters used for state A and B respectively, + and $-$ indicate
+the (non-)presence of parameters in the topology, x indicates that
+the presence has no influence.}
+\label{tab:topfe}
+\end{table}
+
+Below is an example of a topology which changes from 200 propanols to
+200 pentanes using the \gromosv{96} force field.\\
+
+{\small
+\begin{verbatim}
+ 
+; Include force field parameters
+#include "gromos43a1.ff/forcefield.itp"
+
+[ moleculetype ]
+; Name            nrexcl
+PropPent          3
+
+[ atoms ]
+; nr type resnr residue atom cgnr  charge    mass  typeB chargeB  massB
+  1    H    1     PROP    PH    1   0.398    1.008  CH3     0.0  15.035
+  2   OA    1     PROP    PO    1  -0.548  15.9994  CH2     0.0  14.027
+  3  CH2    1     PROP   PC1    1   0.150   14.027  CH2     0.0  14.027
+  4  CH2    1     PROP   PC2    2   0.000   14.027
+  5  CH3    1     PROP   PC3    2   0.000   15.035
+
+[ bonds ]
+;  ai    aj funct    par_A  par_B 
+    1     2     2    gb_1   gb_26
+    2     3     2    gb_17  gb_26
+    3     4     2    gb_26  gb_26
+    4     5     2    gb_26
+
+[ pairs ]
+;  ai    aj funct
+    1     4     1
+    2     5     1
+
+[ angles ]
+;  ai    aj    ak funct    par_A   par_B
+    1     2     3     2    ga_11   ga_14
+    2     3     4     2    ga_14   ga_14
+    3     4     5     2    ga_14   ga_14
+
+[ dihedrals ]
+;  ai    aj    ak    al funct    par_A   par_B
+    1     2     3     4     1    gd_12   gd_17
+    2     3     4     5     1    gd_17   gd_17
+
+[ system ]
+; Name
+Propanol to Pentane
+
+[ molecules ]
+; Compound        #mols
+PropPent          200
+\end{verbatim}}
+
+Atoms that are not perturbed, {\tt PC2} and {\tt PC3}, do not need B-state parameter
+specifications, since the B parameters will be copied from the A parameters.
+Bonded interactions between atoms that are not perturbed do not need B
+parameter specifications, as is the case for the last bond in the example topology.
+Topologies using the OPLS/AA force field need no bonded parameters at all,
+since both the A and B parameters are determined by the atom types.
+Non-bonded interactions involving one or two perturbed atoms use the 
+free-energy perturbation functional forms.
+Non-bonded interactions between two non-perturbed atoms use the normal
+functional forms.
+This means that when, for instance, only the charge of a particle is
+perturbed, its Lennard-Jones interactions will also be affected when
+lambda is not equal to zero or one.
+
+{\bf Note} that this topology uses the \gromosv{96} force field, in which the bonded
+interactions are not determined by the atom types. The bonded interaction
+strings are converted by the C-preprocessor. The force-field parameter
+files contain lines like:
+
+{\small
+\begin{verbatim}
+#define gb_26       0.1530  7.1500e+06
+
+#define gd_17     0.000       5.86          3
+\end{verbatim}}
+
+\subsection{Constraint forces\index{constraint force}}
+\label{subsec:constraintforce}
+The constraint force between two atoms in one molecule can be calculated
+with the free energy perturbation code by adding a constraint between the
+two atoms, with a different length in the A and B topology. When the B length
+is 1 nm longer than the A length and lambda is kept constant at zero,
+the derivative of the Hamiltonian with respect to lambda is the constraint
+force. For constraints between molecules, the pull code can be used,
+see \secref{pull}.
+Below is an example for calculating the constraint force at 0.7 nm
+between two methanes in water, by combining the two methanes into one ``molecule.''
+{\bf Note} that the definition of a ``molecule'' in {\gromacs} does not necessarily
+correspond to the chemical definition of a molecule.  In {\gromacs}, a ``molecule''
+can be defined as any group of atoms that one wishes to consider simultaneously.
+The added constraint is of function type 2, which means that it is not
+used for generating exclusions (see~\secref{excl}). 
+Note that the constraint free energy term is included in the derivative term, and is
+specifically included in the {\tt bonded-lambdas} component. However, the free
+energy for changing constraints is {\em not} included in the potential energy
+differences used for BAR and MBAR, as this requires reevaluating the energy at
+each of the constraint components.  This functionality is planned for later versions.\\
+
+{\small
+\begin{verbatim}
+; Include force-field parameters
+#include "gromos43a1.ff/forcefield.itp"
+
+[ moleculetype ]
+; Name            nrexcl
+Methanes               1
+
+[ atoms ]
+; nr   type   resnr  residu   atom    cgnr     charge    mass
+   1    CH4     1     CH4      C1       1          0    16.043
+   2    CH4     1     CH4      C2       2          0    16.043
+[ constraints ]
+;  ai    aj funct   length_A  length_B
+    1     2     2        0.7       1.7
+
+#include "gromos43a1.ff/spc.itp"
+
+[ system ]
+; Name
+Methanes in Water
+
+[ molecules ]
+; Compound        #mols
+Methanes              1
+SOL                2002
+\end{verbatim}}
+
+\subsection{Coordinate file}
+\label{subsec:grofile}
+Files with the {\tt .gro} file extension contain a molecular structure in 
+\gromosv{87} format. A sample piece is included below:
+
+{\small
+\begin{verbatim}
+MD of 2 waters, reformat step, PA aug-91
+    6
+    1WATER  OW1    1   0.126   1.624   1.679  0.1227 -0.0580  0.0434
+    1WATER  HW2    2   0.190   1.661   1.747  0.8085  0.3191 -0.7791
+    1WATER  HW3    3   0.177   1.568   1.613 -0.9045 -2.6469  1.3180
+    2WATER  OW1    4   1.275   0.053   0.622  0.2519  0.3140 -0.1734
+    2WATER  HW2    5   1.337   0.002   0.680 -1.0641 -1.1349  0.0257
+    2WATER  HW3    6   1.326   0.120   0.568  1.9427 -0.8216 -0.0244
+   1.82060   1.82060   1.82060
+\end{verbatim}}
+
+This format is fixed, {\ie} all columns are in a fixed position. If you
+want to read such a file in your own program without using the
+{\gromacs} libraries you can use the following formats:
+
+{\bf C-format:} {\tt "\%5i\%5s\%5s\%5i\%8.3f\%8.3f\%8.3f\%8.4f\%8.4f\%8.4f"}
+
+Or to be more precise, with title {\em etc.} it looks like this:
+
+\begin{verbatim}
+  "%s\n", Title
+  "%5d\n", natoms
+  for (i=0; (i<natoms); i++) {
+    "%5d%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n",
+      residuenr,residuename,atomname,atomnr,x,y,z,vx,vy,vz
+  }
+  "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",
+    box[X][X],box[Y][Y],box[Z][Z],
+    box[X][Y],box[X][Z],box[Y][X],box[Y][Z],box[Z][X],box[Z][Y]
+\end{verbatim}
+
+{\bf Fortran format:} {\tt (i5,2a5,i5,3f8.3,3f8.4)}
+
+So {\tt confin.gro} is the {\gromacs} coordinate file and is almost
+the same as the \gromosv{87} file (for {\gromos} users: when used with
+{\tt ntx=7}).  The only difference is the box for which {\gromacs} uses a
+tensor, not a vector.
+
+
+
+\section{Force field organization \index{force field organization}}
+\label{sec:fforganization}
+
+\subsection{Force-field files}
+\label{subsec:fffiles}
+Many force fields are available by default.
+Force fields are detected by the presence of {\tt <name>.ff} directories
+in the {\tt \$GMXLIB/share/gromacs/top} sub-directory and/or the working directory.
+The information regarding the location of the force field files is printed
+by {\tt pdb2gmx} so you can easily keep track of which version of a force field
+is being called, in case you have made modifications in one location or another.
+The force fields included with {\gromacs} are:
+
+{\small
+\begin{itemize}
+ \item AMBER03 protein, nucleic AMBER94 (Duan et al., J. Comp. Chem. 24, 1999-2012, 2003)
+ \item AMBER94 force field (Cornell et al., JACS 117, 5179-5197, 1995)
+ \item AMBER96 protein, nucleic AMBER94 (Kollman et al., Acc. Chem. Res. 29, 461-469, 1996)
+ \item AMBER99 protein, nucleic AMBER94 (Wang et al., J. Comp. Chem. 21, 1049-1074, 2000)
+ \item AMBER99SB protein, nucleic AMBER94 (Hornak et al., Proteins 65, 712-725, 2006)
+ \item AMBER99SB-ILDN protein, nucleic AMBER94 (Lindorff-Larsen et al., Proteins 78, 1950-58, 2010)
+ \item AMBERGS force field (Garcia \& Sanbonmatsu, PNAS 99, 2782-2787, 2002)
+ \item CHARMM27 all-atom force field (CHARM22 plus CMAP for proteins)
+ \item GROMOS96 43a1 force field
+ \item GROMOS96 43a2 force field (improved alkane dihedrals)
+ \item GROMOS96 45a3 force field (Schuler JCC 2001 22 1205)
+ \item GROMOS96 53a5 force field (JCC 2004 vol 25 pag 1656)
+ \item GROMOS96 53a6 force field (JCC 2004 vol 25 pag 1656)
+ \item GROMOS96 54a7 force field (Eur. Biophys. J. (2011), 40,, 843-856, DOI: 10.1007/s00249-011-0700-9)
+ \item OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)
+\end{itemize}} 
+ 
+A force field is included at the beginning of a topology file with an
+{\tt \#include} statement followed by {\tt <name>.ff/forcefield.itp}.
+This statement includes the force-field file,
+which, in turn, may include other force-field files. All the force fields
+are organized in the same way. An example of the
+{\tt amber99.ff/forcefield.itp} was shown in \ssecref{topfile}.
+
+For each force field, there several files which are only used by {\tt pdb2gmx}.
+These are: residue databases ({\tt .rtp}, see~\ssecref{rtp})
+the hydrogen database ({\tt .hdb}, see~\ssecref{hdb}), two termini databases
+({\tt .n.tdb} and {\tt .c.tdb}, see~\ssecref{tdb}) and
+the atom type database ({\tt .atp}, see~\ssecref{atomtype}), which contains only the masses.  Other optional
+files are described in~\secref{pdb2gmxfiles}.
+
+
+\subsection{Changing force-field parameters\index{force field}}
+If one wants to change the parameters of few bonded interactions in
+a molecule, this is most easily accomplished by typing the parameters
+behind the definition of the bonded interaction directly in the {\tt *.top} file 
+under the {\tt [~moleculetype~]} section (see \ssecref{topfile} for the format
+and units).
+If one wants to change the parameters for all instances of a certain
+interaction one can change them in the force-field file or add a
+new {\tt [~???types~]} section after including the force field.
+When parameters for a certain interaction are defined multiple times,
+the last definition is used. As of {\gromacs} version 3.1.3, a warning is
+generated when parameters are redefined with a different value.
+Changing the Lennard-Jones parameters of an atom type is not
+recommended, because in the {\gromos} force fields
+the Lennard-Jones parameters for several combinations of atom types
+are not generated according to the standard combination rules.
+Such combinations (and possibly others that do follow the
+combination rules) are defined in the {\tt [~nonbond_params~]}
+section, and changing the Lennard-Jones parameters of an atom type
+has no effect on these combinations.
+
+\subsection{Adding atom types\swapindexquiet{adding}{atom types}}
+As of {\gromacs} version 3.1.3, atom types can be added in an extra
+{\tt [~atomtypes~]} section after the the inclusion of the normal
+force field. After the definition of the new atom type(s), additional
+non-bonded and pair parameters can be defined.
+In pre-3.1.3 versions of {\gromacs}, the new atom types needed to be
+added in the {\tt [~atomtypes~]} section of the force-field files,
+because all non-bonded parameters above the last {\tt [~atomtypes~]}
+section would be overwritten using the standard combination rules.
+
+% LocalWords:  parameterized fffiles ptype polarizable gromacs atp ype arameter
+% LocalWords:  lll carboxyl OA hydroxyl NL porphyrin OPLS CP HCR OWT fd funct
+% LocalWords:  grompp statprop atomtype rtp esidue opology pdb gmx kJ mol gro
+% LocalWords:  grofile dihedrals bon itp func kb th cth cq cp mult Ryckaert aj
+% LocalWords:  Bellemans ak alkanes alkane llrllrllr LJ der nb topfile llllll
+% LocalWords:  llll nonbond params ij pairtypes fecalc moleculetype indices mdp
+% LocalWords:  constraintforce SPC molname nrexcl nr ren HW doh dhh aminoacids
+% LocalWords:  dat basename rna dna arn hdb sn rtpo gmxfiles molitp ndx ARG CYS
+% LocalWords:  defaultgroups impropers chargegroup bondedtypes hydrogens ARGN
+% LocalWords:  preprocessor protonation specbond protonated arginine aspartic
+% LocalWords:  ASPH GLU glutamic GLUH HISD histidine HISE HISH LYSN LYS IUPAC
+% LocalWords:  wildcards xlateat asparagine HD HH cis deprotonated oxygens COOH
+% LocalWords:  llllc tp cr QQ atomtypes bondtypes angletypes dihedraltypes FENE
+% LocalWords:  constrainttypes intra nbpar morse dr Coul rr UB dih constr hh ai
+% LocalWords:  vsite sitesn construc restr ffgmx resnr residu cgnr al fc spc gb
+% LocalWords:  FudgeLJ FudgeQQ nonbonded mdrun decane posre Ifdef ifdef TFE cpp
+% LocalWords:  Loof Buuren Berendsen DDeloof DeLoof VanBuuren endif feia topfe
+% LocalWords:  propanols pentanes ffG PropPent typeB chargeB massB ga gd mols
+% LocalWords:  Propanol Pentane methanes aug natoms residuenr residuename vx vy
+% LocalWords:  atomname atomnr vz Fortran confin ntx GROMOS nbfunc GROningen ff
+% LocalWords:  fudgeLJ fudgeQQ ffgmxnb ffgmxbon tdb ffbonded ffnonbonded nonbond
+% LocalWords:  MAchine BIOSON Groningen Spoel Drunen Comp Phys Comm trr AA fdn
+% LocalWords:  aliphatic CHARMM polarisability quadrupole tt normvsbds Waals jj
+% LocalWords:  pairinteractions num Buckingham rcl trans Intramolecular Lennard
+% LocalWords:  excl gen solute unscaled moltype intramol dgimplement Qiu HCT rt
+% LocalWords:  Onufriev OBC LINCS doc xxx residuetypes polyatomic co rotatable
+% LocalWords:  heme cysteine lysine CH NH LP amine nitrenyl ethynyl vsd MCH MNH
+% LocalWords:  chainsep resA atomA nbondsA resB atomB nbondsB newresA newresB
+% LocalWords:  rad deg lcc cc nm intramolecular forcefield PME Ewald
+% LocalWords:  solvation et groupconcept PHE TYR TRP equilibrated pre
+% LocalWords:  macromolecule disulfide harmonicbond Morsebond vsiteN
+% LocalWords:  cubicbond FENEbond tabulatedinteraction harmonicangle
+% LocalWords:  harmonicrestraint bondbondcross bondanglecross genion
+% LocalWords:  quarticangle properdihedral harmonicimproperdihedral
+% LocalWords:  RBdihedral periodicimproperdihedral Fourierdihedral
+% LocalWords:  positionrestraint distancerestraint dihedralrestraint
+% LocalWords:  orientationrestraint anglerestraint usinggroups ing
+% LocalWords:  DDeLoof MBAR Duan JACS Kollman Acc Hornak ILDN AMBERGS
+% LocalWords:  Lindorff Sanbonmatsu PNAS CMAP Schuler JCC pag
+% LocalWords:  aminoacid

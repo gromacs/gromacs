@@ -33,13 +33,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include <stdlib.h>
 #include <string.h>
 
-#include "string2.h"
-#include "readir.h"
-#include "names.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MAXPTR 254
 

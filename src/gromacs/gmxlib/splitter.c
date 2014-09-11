@@ -34,18 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "splitter.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gromacs/legacyheaders/splitter.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
-#include "macros.h"
-#include "smalloc.h"
-#include "mshift.h"
-#include "gmx_fatal.h"
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int atom, sid;

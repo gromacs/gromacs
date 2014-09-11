@@ -40,7 +40,8 @@
 #include <limits.h>
 #include <math.h>
 
-#include "../legacyheaders/types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -144,9 +145,9 @@ gmx_numzero(double a);
 unsigned int
 gmx_log2i(unsigned int x);
 
-/*! /brief Multiply two large ints
+/*! \brief Multiply two large ints
  *
- *  \return False iff overflow occured
+ * \return False iff overflow occured
  */
 gmx_bool
 check_int_multiply_for_overflow(gmx_int64_t  a,

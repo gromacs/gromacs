@@ -34,25 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdio.h>
+#include "config.h"
+
 #include <errno.h>
+#include <stdio.h>
+
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
 
-#include "gmx_fatal.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
-#include "md5.h"
-
-#include "gmxfio_int.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio_int.h"
+#include "gromacs/fileio/md5.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 /*******************************************************************

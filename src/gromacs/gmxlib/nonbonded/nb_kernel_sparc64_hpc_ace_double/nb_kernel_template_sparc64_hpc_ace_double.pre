@@ -36,16 +36,16 @@
 #error This file must be processed with the Gromacs pre-preprocessor
 /* #endif */
 /* #if INCLUDE_HEADER */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "config.h"
 
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "types/simple.h"
-#include "vec.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/legacyheaders/nrnb.h"
 
 #include "kernelutil_sparc64_hpc_ace_double.h"
 /* #endif */
@@ -543,20 +543,12 @@ void
             /*             #define INNERFLOPS INNERFLOPS+1 */
             /*         #endif */
             /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
-            /*             #if ROUND == 'Loop' */
             gmx_fjsp_load_2pair_swizzle_v2r8(vdwparam+vdwioffset{I}+vdwjidx{J}A,
                                          vdwparam+vdwioffset{I}+vdwjidx{J}B,&c6_{I}{J},&c12_{I}{J});
 
-	    /*                 #if 'LJEwald' in KERNEL_VDW */
+	    /*             #if 'LJEwald' in KERNEL_VDW */
             c6grid_{I}{J}       = gmx_fjsp_load_2real_swizzle_v2r8(vdwgridparam+vdwioffset{I}+vdwjidx{J}A,
                                                                    vdwgridparam+vdwioffset{I}+vdwjidx{J}B);
-            /*                 #endif */
-            /*             #else */
-            gmx_fjsp_load_1pair_swizzle_v2r8(vdwparam+vdwioffset{I}+vdwjidx{J}A,&c6_{I}{J},&c12_{I}{J});
-
-            /*                 #if 'LJEwald' in KERNEL_VDW */
-            c6grid_{I}{J}       = gmx_fjsp_load_1real_swizzle_v2r8(vdwgridparam+vdwioffset{I}+vdwjidx{J}A);
-            /*                 #endif */
             /*             #endif */
             /*         #endif */
             /*     #endif */
@@ -858,13 +850,13 @@ void
             rinvsix          = _fjsp_mul_v2r8(_fjsp_mul_v2r8(rinvsq{I}{J},rinvsq{I}{J}),rinvsq{I}{J});
             ewcljrsq         = _fjsp_mul_v2r8(ewclj2,rsq{I}{J});
             ewclj6           = _fjsp_mul_v2r8(ewclj2,_fjsp_mul_v2r8(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(-ewcljrsq);
+            exponent         = gmx_simd_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
 	    poly             = _fjsp_mul_v2r8(exponent,_fjsp_madd_v2r8(_fjsp_mul_v2r8(ewcljrsq,ewcljrsq),one_half,_fjsp_sub_v2r8(one,ewcljrsq)));
             /*                 #define INNERFLOPS INNERFLOPS+9 */
             /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_VDW=='PotentialSwitch' */
             /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
-            vvdw6            = _fjsp_mul_v2r8(_fjsp_madd_v2r8(-c6grid_{I}{J},_fjsp_sub_v2r8(one,poly),c6_{I}{J}),rinvsix);
+            vvdw6            = _fjsp_mul_v2r8(_fjsp_madd_v2r8(c6grid_{I}{J},_fjsp_sub_v2r8(poly,one),c6_{I}{J}),rinvsix);
             vvdw12           = _fjsp_mul_v2r8(c12_{I}{J},_fjsp_mul_v2r8(rinvsix,rinvsix));
             /*                 #define INNERFLOPS INNERFLOPS+5 */
             /*                 #if KERNEL_MOD_VDW=='PotentialShift' */
@@ -883,7 +875,7 @@ void
             /*                  #endif */
             /*              #elif KERNEL_VF=='Force' */
             /* f6A = 6 * C6grid * (1 - poly) */
-            f6A              = _fjsp_mul_v2r8(c6grid_{I}{J},_fjsp_msub_v2r8(one,poly));
+            f6A              = _fjsp_mul_v2r8(c6grid_{I}{J},_fjsp_sub_v2r8(one,poly));
             /* f6B = C6grid * exponent * beta^6 */
             f6B              = _fjsp_mul_v2r8(_fjsp_mul_v2r8(c6grid_{I}{J},one_sixth),_fjsp_mul_v2r8(exponent,ewclj6));
             /* fvdw = 12*C12/r13 - ((6*C6 - f6A)/r6 + f6B)/r */

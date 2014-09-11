@@ -34,25 +34,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
 #include <assert.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "smalloc.h"
-#include "update.h"
-#include "vec.h"
-#include "macros.h"
-#include "physics.h"
-#include "names.h"
-#include "gmx_fatal.h"
-#include "txtdump.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "update.h"
-#include "mdrun.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define NTROTTERPARTS 3
 
@@ -1355,58 +1353,43 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
     return ener_npt;
 }
 
-static real vrescale_gamdev(int ia,
+static real vrescale_gamdev(real ia,
                             gmx_int64_t step, gmx_int64_t *count,
                             gmx_int64_t seed1, gmx_int64_t seed2)
 /* Gamma distribution, adapted from numerical recipes */
 {
-    int    j;
     real   am, e, s, v1, v2, x, y;
     double rnd[2];
 
-    if (ia < 6)
-    {
-        do
-        {
-            x = 1.0;
-            for (j = 1; j <= ia; j++)
-            {
-                gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
-                x *= rnd[0];
-            }
-        }
-        while (x == 0);
-        x = -log(x);
-    }
-    else
+    assert(ia > 1);
+
+    do
     {
         do
         {
             do
             {
-                do
-                {
-                    gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
-                    v1 = rnd[0];
-                    v2 = 2.0*rnd[1] - 1.0;
-                }
-                while (v1*v1 + v2*v2 > 1.0 ||
-                       v1*v1*GMX_REAL_MAX < 3.0*ia);
-                /* The last check above ensures that both x (3.0 > 2.0 in s)
-                 * and the pre-factor for e do not go out of range.
-                 */
-                y  = v2/v1;
-                am = ia - 1;
-                s  = sqrt(2.0*am + 1.0);
-                x  = s*y + am;
+                gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
+                v1 = rnd[0];
+                v2 = 2.0*rnd[1] - 1.0;
             }
-            while (x <= 0.0);
-            e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
-
-            gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
+            while (v1*v1 + v2*v2 > 1.0 ||
+                   v1*v1*GMX_REAL_MAX < 3.0*ia);
+            /* The last check above ensures that both x (3.0 > 2.0 in s)
+             * and the pre-factor for e do not go out of range.
+             */
+            y  = v2/v1;
+            am = ia - 1;
+            s  = sqrt(2.0*am + 1.0);
+            x  = s*y + am;
         }
-        while (rnd[0] > e);
+        while (x <= 0.0);
+
+        e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
+
+        gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
     }
+    while (rnd[0] > e);
 
     return x;
 }
@@ -1430,30 +1413,48 @@ static real gaussian_count(gmx_int64_t step, gmx_int64_t *count,
     return x*r;
 }
 
-static real vrescale_sumnoises(int nn,
+static real vrescale_sumnoises(real nn,
                                gmx_int64_t step, gmx_int64_t *count,
                                gmx_int64_t seed1, gmx_int64_t seed2)
 {
 /*
- * Returns the sum of n independent gaussian noises squared
+ * Returns the sum of nn independent gaussian noises squared
  * (i.e. equivalent to summing the square of the return values
- * of nn calls to gmx_rng_gaussian_real).xs
+ * of nn calls to gmx_rng_gaussian_real).
  */
-    real r, gauss;
+    const real ndeg_tol = 0.0001;
+    real       r;
 
-    r = 2.0*vrescale_gamdev(nn/2, step, count, seed1, seed2);
-
-    if (nn % 2 == 1)
+    if (nn < 2 + ndeg_tol)
     {
-        gauss = gaussian_count(step, count, seed1, seed2);
+        int  nn_int, i;
+        real gauss;
 
-        r += gauss*gauss;
+        nn_int = (int)(nn + 0.5);
+
+        if (nn - nn_int < -ndeg_tol || nn - nn_int > ndeg_tol)
+        {
+            gmx_fatal(FARGS, "The v-rescale thermostat was called with a group with #DOF=%f, but for #DOF<3 only integer #DOF are supported", nn + 1);
+        }
+
+        r = 0;
+        for (i = 0; i < nn_int; i++)
+        {
+            gauss = gaussian_count(step, count, seed1, seed2);
+
+            r += gauss*gauss;
+        }
+    }
+    else
+    {
+        /* Use a gamma distribution for any real nn > 2 */
+        r = 2.0*vrescale_gamdev(0.5*nn, step, count, seed1, seed2);
     }
 
     return r;
 }
 
-static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
+static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
                                  gmx_int64_t step, gmx_int64_t seed)
 {
 /*
@@ -1517,7 +1518,7 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
 
             Ek_new  = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i],
                                            opts->tau_t[i]/dt,
-                                           ir->ld_seed, step);
+                                           step, ir->ld_seed);
 
             /* Analytically Ek_new>=0, but we check for rounding errors */
             if (Ek_new <= 0)

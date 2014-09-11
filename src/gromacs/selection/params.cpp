@@ -39,24 +39,25 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include <algorithm>
 #include <string>
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/vec.h"
-
+#include "gromacs/math/vec.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
-#include "gromacs/selection/selparam.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "parsetree.h"
-#include "position.h"
 #include "scanner.h"
 #include "selelem.h"
+#include "selmethod.h"
+#include "selparam.h"
 
 using gmx::SelectionParserValue;
 using gmx::SelectionParserValueList;
@@ -540,7 +541,7 @@ parse_values_varnum(const SelectionParserValueList    &values,
                 param->val.u.r[i++] = value->u.r.r1;
                 break;
             case STR_VALUE:
-                param->val.u.s[i++] = strdup(value->stringValue().c_str());
+                param->val.u.s[i++] = gmx_strdup(value->stringValue().c_str());
                 break;
             case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
             default: /* Should not be reached */
@@ -616,7 +617,7 @@ add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
         // FIXME: Use exceptions.
         return SelectionTreeElementPointer();
     }
-    _gmx_selelem_update_flags(child, scanner);
+    _gmx_selelem_update_flags(child);
     if ((child->flags & SEL_DYNAMIC) && !(param->flags & SPAR_DYNAMIC))
     {
         _gmx_selparser_error(scanner, "dynamic values not supported");
@@ -865,7 +866,7 @@ parse_values_std(const SelectionParserValueList &values,
                     param->val.u.r[i] = value->u.r.r1;
                     break;
                 case STR_VALUE:
-                    param->val.u.s[i] = strdup(value->stringValue().c_str());
+                    param->val.u.s[i] = gmx_strdup(value->stringValue().c_str());
                     break;
                 case POS_VALUE:
                     gmx_ana_pos_init_const(&param->val.u.p[i], value->u.x);

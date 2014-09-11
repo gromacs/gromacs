@@ -39,11 +39,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "gromacs/utility/init.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
+#include "init.h"
+
 #include "config.h"
-#endif
 
 #ifdef GMX_LIB_MPI
 #include "gromacs/utility/gmxmpi.h"

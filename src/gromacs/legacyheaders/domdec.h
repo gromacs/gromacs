@@ -36,9 +36,10 @@
 #ifndef _domdec_h
 #define _domdec_h
 
-#include "typedefs.h"
-#include "vsite.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -34,28 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include <assert.h>
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "macros.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
-#include "typedefs.h"
-#include "xvgr.h"
-#include "gstat.h"
+#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "vec.h"
-#include "gromacs/fileio/matio.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 int gmx_vanhove(int argc, char *argv[])
@@ -147,7 +147,7 @@ int gmx_vanhove(int argc, char *argv[])
     FILE        *fp;
     t_rgb        rlo = {1, 1, 1}, rhi = {0, 0, 0};
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -199,6 +199,7 @@ int gmx_vanhove(int argc, char *argv[])
             srenew(sbox, nalloc);
             srenew(sx, nalloc);
         }
+        assert(time != NULL); assert(sbox != NULL);
 
         time[nfr] = t;
         copy_mat(box, sbox[nfr]);
@@ -434,12 +435,15 @@ int gmx_vanhove(int argc, char *argv[])
     if (orfile)
     {
         fp = xvgropen(orfile, "Van Hove function", "r (nm)", "G (nm\\S-1\\N)", oenv);
-        fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+        }
         snew(legend, nr);
         for (fbin = 0; fbin < nr; fbin++)
         {
             sprintf(buf, "%g ps", (fbin + 1)*fshift*dt);
-            legend[fbin] = strdup(buf);
+            legend[fbin] = gmx_strdup(buf);
         }
         xvgr_legend(fp, nr, (const char**)legend, oenv);
         for (i = 0; i < nalloc; i++)
@@ -459,7 +463,10 @@ int gmx_vanhove(int argc, char *argv[])
     {
         sprintf(buf, "Probability of moving less than %g nm", rint);
         fp = xvgropen(otfile, buf, "t (ps)", "", oenv);
-        fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+        }
         for (f = 0; f <= ftmax; f++)
         {
             fprintf(fp, "%g %g\n", f*dt, (real)pt[f]/(tcount[f]*isize));

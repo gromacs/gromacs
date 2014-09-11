@@ -34,27 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
 #include <math.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "physics.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "copyrite.h"
-#include "vec.h"
-#include "index.h"
-#include "macros.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
-#include "gstat.h"
 #include "gromacs/fileio/trnio.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static void dump_dih_trn(int nframes, int nangles, real **dih, const char *fn,
@@ -181,7 +180,7 @@ int gmx_g_angle(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
                            &oenv))
     {
@@ -443,15 +442,18 @@ int gmx_g_angle(int argc, char *argv[])
         {
             maxstat = max(maxstat, angstat[i]*norm_fac);
         }
-        fprintf(out, "@with g0\n");
-        fprintf(out, "@    world xmin -180\n");
-        fprintf(out, "@    world xmax  180\n");
-        fprintf(out, "@    world ymin 0\n");
-        fprintf(out, "@    world ymax %g\n", maxstat*1.05);
-        fprintf(out, "@    xaxis  tick major 60\n");
-        fprintf(out, "@    xaxis  tick minor 30\n");
-        fprintf(out, "@    yaxis  tick major 0.005\n");
-        fprintf(out, "@    yaxis  tick minor 0.0025\n");
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(out, "@with g0\n");
+            fprintf(out, "@    world xmin -180\n");
+            fprintf(out, "@    world xmax  180\n");
+            fprintf(out, "@    world ymin 0\n");
+            fprintf(out, "@    world ymax %g\n", maxstat*1.05);
+            fprintf(out, "@    xaxis  tick major 60\n");
+            fprintf(out, "@    xaxis  tick minor 30\n");
+            fprintf(out, "@    yaxis  tick major 0.005\n");
+            fprintf(out, "@    yaxis  tick minor 0.0025\n");
+        }
     }
     for (i = first; (i <= last); i++)
     {

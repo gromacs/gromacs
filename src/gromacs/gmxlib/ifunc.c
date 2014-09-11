@@ -35,17 +35,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-
-#include "typedefs.h"
-#include "bondf.h"
-#include "disre.h"
-#include "orires.h"
-#include "genborn.h"
-
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \
     {str, lstr, (nra), (nrpa), (nrpb), IF_BOND,                        (ind), (func)}
@@ -86,7 +82,7 @@
 #define    def_nofc(str, lstr) \
     {str, lstr,    0,     0,     0, IF_NULL,                    -1, unimplemented}
 
-/* this MUST correspond to the enum in include/types/idef.h */
+/* this MUST correspond to the enum in src/gromacs/topology/idef.h */
 const t_interaction_function interaction_function[F_NRE] =
 {
     def_bond    ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds         ),

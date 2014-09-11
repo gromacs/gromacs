@@ -56,7 +56,7 @@ if(GMX_OPENMP)
         if(OPENMP_FOUND)
             # CMake on Windows doesn't support linker flags passed to target_link_libraries
             # (i.e. it treats /openmp as \openmp library file). Also, no OpenMP linker flags are needed.
-            if(NOT (WIN32 AND NOT CYGWIN))
+            if(NOT (WIN32 AND NOT CYGWIN AND NOT MINGW))
                 if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP AND NOT APPLE)
                     set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
                     set(OpenMP_SHARED_LINKER_FLAGS "")
@@ -69,6 +69,10 @@ if(GMX_OPENMP)
                         set(OpenMP_SHARED_LINKER_FLAGS "${OpenMP_C_FLAGS}")
                     endif()
                 endif()
+            endif()
+            if(MINGW)
+                #GCC Bug 48659
+                set(OpenMP_C_FLAGS "${OpenMP_C_FLAGS} -mstackrealign")
             endif()
         else()
             message(WARNING

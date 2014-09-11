@@ -35,6 +35,8 @@
 #ifndef _nbnxn_kernel_simd_utils_x86_128s_h_
 #define _nbnxn_kernel_simd_utils_x86_128s_h_
 
+#include "config.h"
+
 #include "gromacs/legacyheaders/types/simple.h"
 
 /* This files contains all functions/macros for the SIMD kernels
@@ -49,7 +51,7 @@ typedef gmx_simd_int32_t gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_shuffle_4_ps_fil01_to_2_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3,
                                __m128 *out0, __m128 *out1)
 {
@@ -62,7 +64,7 @@ gmx_shuffle_4_ps_fil01_to_2_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3,
 }
 
 /* Collect element 2 of the 4 inputs to out */
-static gmx_inline __m128
+static gmx_inline __m128 gmx_simdcall
 gmx_shuffle_4_ps_fil2_to_1_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3)
 {
     __m128 _c01, _c23;
@@ -74,7 +76,7 @@ gmx_shuffle_4_ps_fil2_to_1_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3)
 }
 
 /* Sum the elements within each input register and store the sums in out */
-static gmx_inline __m128
+static gmx_inline __m128 gmx_simdcall
 gmx_mm_transpose_sum4_pr(__m128 in0, __m128 in1,
                          __m128 in2, __m128 in3)
 {
@@ -115,7 +117,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * prepare_table_load_buffer(), but it is only used with full-width
  * AVX_256. */
 
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *ti,
              __m128 *ctab0_S, __m128 *ctab1_S)
 {
@@ -138,7 +140,7 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *t
     gmx_shuffle_4_ps_fil01_to_2_ps(ctab_S[0], ctab_S[1], ctab_S[2], ctab_S[3], ctab0_S, ctab1_S);
 }
 
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *ti,
                __m128 *ctab0_S, __m128 *ctab1_S, __m128 *ctabv_S)
 {
@@ -163,19 +165,19 @@ load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused 
     *ctabv_S = gmx_shuffle_4_ps_fil2_to_1_ps(ctab_S[0], ctab_S[1], ctab_S[2], ctab_S[3]);
 }
 
-static gmx_inline gmx_exclfilter
+static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load1_exclfilter(int e)
 {
     return _mm_set1_epi32(e);
 }
 
-static gmx_inline gmx_exclfilter
+static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load_exclusion_filter(const unsigned *i)
 {
     return gmx_simd_load_i(i);
 }
 
-static gmx_inline gmx_simd_bool_t
+static gmx_inline gmx_simd_bool_t gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return _mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));

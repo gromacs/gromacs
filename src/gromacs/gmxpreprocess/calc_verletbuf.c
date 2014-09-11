@@ -32,23 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "calc_verletbuf.h"
 
 #include <assert.h>
+#include <math.h>
+#include <stdlib.h>
 
 #include <sys/types.h>
-#include <math.h>
-#include "typedefs.h"
-#include "physics.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "macros.h"
-#include "vec.h"
-#include "coulomb.h"
-#include "calc_verletbuf.h"
-#include "../mdlib/nbnxn_consts.h"
+
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_NBNXN_SIMD
 /* The include below sets the SIMD instruction type (precision+width)
@@ -207,7 +208,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
             for (i = 0; i < il->nr; i += 1+NRAL(ft))
             {
                 const t_iparams *ip;
-                real             cam[5], inv_mass, m_aj;
+                real             cam[5] = {0}, inv_mass, m_aj;
                 int              a1, j, aj, coeff;
 
                 ip = &ffparams->iparams[il->iatoms[i]];
@@ -265,6 +266,8 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                             inv_mass += coeff*coeff/m_aj;
                         }
                         vsite_m[a1] = 1/inv_mass;
+                        /* Correct for loop increment of i */
+                        i += j - 1 - NRAL(ft);
                         break;
                     default:
                         /* Use the mass of the lightest constructing atom.
@@ -411,6 +414,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             add_at(&att, &natt, &prop[a], nmol);
         }
 
+        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         sfree(vsite_m);
         sfree(prop);
     }

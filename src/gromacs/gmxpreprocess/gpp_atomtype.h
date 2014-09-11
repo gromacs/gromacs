@@ -39,8 +39,9 @@
 #define GMX_GMXPREPROCESS_GPP_ATOMTYPE_H
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "grompp-impl.h"
+
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,7 +83,7 @@ gpp_atomtype_t init_atomtype(void);
 void done_atomtype(gpp_atomtype_t at);
 /* Free the memory in the structure */
 
-int set_atomtype(int nt, gpp_atomtype_t at, t_symtab *tab,
+int set_atomtype(int nt, gpp_atomtype_t at, struct t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
                  int bondatomtype,
                  real radius, real vol, real surftens, int atomnumber,
@@ -95,7 +96,7 @@ set_atomtype_gbparam(gpp_atomtype_t at, int i,
                      real radius, real vol, real surftens,
                      real gb_radius, real S_hct);
 
-int add_atomtype(gpp_atomtype_t at, t_symtab *tab,
+int add_atomtype(gpp_atomtype_t at, struct t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
                  int bondatomtype,
                  real radius, real vol, real surftens, real atomnumber,

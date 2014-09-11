@@ -34,35 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "rmpbc.h"
 #include "gromacs/commandline/pargs.h"
-#include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "index.h"
-#include "smalloc.h"
-#include "calcgrid.h"
-#include "nrnb.h"
-#include "physics.h"
-#include "coulomb.h"
-#include "pme.h"
-#include "gstat.h"
-#include "gromacs/fileio/matio.h"
-#include "mtop_util.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void clust_size(const char *ndx, const char *trx, const char *xpm,
                        const char *xpmw, const char *ncl, const char *acl,
@@ -151,7 +146,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         {
             index[i] = i;
         }
-        gname = strdup("mols");
+        gname = gmx_strdup("mols");
     }
     else
     {
@@ -507,7 +502,7 @@ int gmx_clustsize(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

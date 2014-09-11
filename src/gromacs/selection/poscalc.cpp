@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,19 +59,23 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "poscalc.h"
+
 #include <string.h>
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
+#include <algorithm>
 
-#include "gromacs/selection/centerofmass.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "centerofmass.h"
 
 namespace gmx
 {
@@ -188,11 +192,11 @@ struct gmx_ana_poscalc_t
      * already been calculated in \p sbase.
      * The structure pointed by \p sbase is always a static calculation.
      */
-    struct gmx_ana_poscalc_t                 *sbase;
+    gmx_ana_poscalc_t                        *sbase;
     /** Next structure in the linked list of calculations. */
-    struct gmx_ana_poscalc_t                 *next;
+    gmx_ana_poscalc_t                        *next;
     /** Previous structure in the linked list of calculations. */
-    struct gmx_ana_poscalc_t                 *prev;
+    gmx_ana_poscalc_t                        *prev;
     /** Number of references to this structure. */
     int                                       refcount;
     /** Collection this calculation belongs to. */
@@ -557,6 +561,25 @@ PositionCalculationCollection::createCalculationFromEnum(const char *post, int f
     int          cflags = flags;
     typeFromEnum(post, &type, &cflags);
     return impl_->createCalculation(type, cflags);
+}
+
+int PositionCalculationCollection::getHighestRequiredAtomIndex() const
+{
+    int                result = 0;
+    gmx_ana_poscalc_t *pc     = impl_->first_;
+    while (pc)
+    {
+        // Calculations with a base just copy positions from the base, so
+        // those do not need to be considered in the check.
+        if (!pc->sbase)
+        {
+            gmx_ana_index_t g;
+            gmx_ana_index_set(&g, pc->b.nra, pc->b.a, 0);
+            result = std::max(result, gmx_ana_index_get_max_index(&g));
+        }
+        pc = pc->next;
+    }
+    return result;
 }
 
 void PositionCalculationCollection::initEvaluation()

@@ -40,17 +40,16 @@
 #include <math.h>
 #include <string.h>
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "random.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/futil.h"
-#include "physics.h"
-#include "xvgr.h"
-#include "vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "names.h"
 #include "ehdata.h"
 
@@ -673,7 +672,7 @@ int main(int argc,char *argv[])
   int seed;
   
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,
+  parse_common_args(&argc,argv,0,NFILE,fnm,
 		    NPA,pa,asize(desc),desc,0,NULL);
   please_cite(stdout,"Timneanu2004a");
   

@@ -34,34 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/matio.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "do_fit.h"
-#include "rmpbc.h"
-#include "txtdump.h"
-#include "eigio.h"
-#include "physics.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip)
 {
@@ -256,20 +255,14 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
         {
             for (i = 0; i < n; i++)
             {
-                if (bSplit && i > 0 && abs(x[i]) < 1e-5)
+                if (bSplit && i > 0 && fabs(x[i]) < 1e-5)
                 {
-                    if (output_env_get_print_xvgr_codes(oenv))
-                    {
-                        fprintf(out, "&\n");
-                    }
+                    fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
                 }
                 fprintf(out, "%10.4f %10.5f\n",
                         x[i]*scale_x, y ? y[g][i] : sy[g][s][i]);
             }
-            if (output_env_get_print_xvgr_codes(oenv))
-            {
-                fprintf(out, "&\n");
-            }
+            fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
     }
     gmx_ffclose(out);
@@ -471,8 +464,10 @@ static void overlap(const char *outfile, int natoms,
 
     out = xvgropen(outfile, "Subspace overlap",
                    "Eigenvectors of trajectory 2", "Overlap", oenv);
-    fprintf(out, "@ subtitle \"using %d eigenvectors of trajectory 1\"\n",
-            noutvec);
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(out, "@ subtitle \"using %d eigenvectors of trajectory 1\"\n", noutvec);
+    }
     overlap = 0;
     for (x = 0; x < nvec2; x++)
     {
@@ -650,7 +645,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         for (v = 0; v < noutvec; v++)
         {
             sprintf(str, "vec %d", eignr[outvec[v]]+1);
-            ylabel[v] = strdup(str);
+            ylabel[v] = gmx_strdup(str);
         }
         sprintf(str, "projection on eigenvectors (%s)", proj_unit);
         write_xvgr_graphs(projfile, noutvec, 1, str, NULL, output_env_get_xvgr_tlabel(oenv),
@@ -669,9 +664,9 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                            oenv);
         for (i = 0; i < nframes; i++)
         {
-            if (bSplit && i > 0 && abs(inprod[noutvec][i]) < 1e-5)
+            if (bSplit && i > 0 && fabs(inprod[noutvec][i]) < 1e-5)
             {
-                fprintf(xvgrout, "&\n");
+                fprintf(xvgrout, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
             fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec-1][i]);
         }
@@ -684,7 +679,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         rvec       *x;
         real       *b = NULL;
         matrix      box;
-        char       *resnm, *atnm, pdbform[STRLEN];
+        char       *resnm, *atnm;
         gmx_bool    bPDB, b4D;
         FILE       *out;
 
@@ -716,8 +711,8 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         init_t_atoms(&atoms, nframes, FALSE);
         snew(x, nframes);
         snew(b, nframes);
-        atnm  = strdup("C");
-        resnm = strdup("PRJ");
+        atnm  = gmx_strdup("C");
+        resnm = gmx_strdup("PRJ");
 
         if (nframes > 10000)
         {
@@ -745,9 +740,6 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         }
         if ( ( b4D || bSplit ) && bPDB)
         {
-            strcpy(pdbform, get_pdbformat());
-            strcat(pdbform, "%8.4f%8.4f\n");
-
             out = gmx_ffopen(threedplotfile, "w");
             fprintf(out, "HEADER    %s\n", str);
             if (b4D)
@@ -757,13 +749,13 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             j = 0;
             for (i = 0; i < atoms.nr; i++)
             {
-                if (j > 0 && bSplit && abs(inprod[noutvec][i]) < 1e-5)
+                if (j > 0 && bSplit && fabs(inprod[noutvec][i]) < 1e-5)
                 {
                     fprintf(out, "TER\n");
                     j = 0;
                 }
-                fprintf(out, pdbform, "ATOM", i+1, "C", "PRJ", ' ', j+1,
-                        10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i]);
+                gmx_fprintf_pdb_atomline(out, epdbATOM, i+1, "C", ' ', "PRJ", ' ', j+1, ' ',
+                                         10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i], "");
                 if (j > 0)
                 {
                     fprintf(out, "CONECT%5d%5d\n", i, i+1);
@@ -885,7 +877,7 @@ static void components(const char *outfile, int natoms,
     {
         v = outvec[g];
         sprintf(str, "vec %d", eignr[v]+1);
-        ylabel[g] = strdup(str);
+        ylabel[g] = gmx_strdup(str);
         snew(y[g], 4);
         for (s = 0; s < 4; s++)
         {
@@ -942,7 +934,7 @@ static void rmsf(const char *outfile, int natoms, real *sqrtm,
             gmx_fatal(FARGS, "Selected vector %d is larger than the number of eigenvalues (%d)", eignr[v]+1, neig);
         }
         sprintf(str, "vec %d", eignr[v]+1);
-        ylabel[g] = strdup(str);
+        ylabel[g] = gmx_strdup(str);
         snew(y[g], natoms);
         for (i = 0; i < natoms; i++)
         {
@@ -1109,7 +1101,7 @@ int gmx_anaeig(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

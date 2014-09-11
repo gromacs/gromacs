@@ -35,7 +35,8 @@
 
 #ifndef _tables_h
 #define _tables_h
-#include "types/simple.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,7 +54,7 @@ void table_spline3_fill_ewald_lr(real                                 *table_F,
                                  real                                 *table_V,
                                  real                                 *table_FDV0,
                                  int                                   ntab,
-                                 real                                  dx,
+                                 double                                dx,
                                  real                                  beta,
                                  real_space_grid_contribution_computer v_lr);
 /* Fill tables of ntab points with spacing dr with the ewald long-range
@@ -64,7 +65,7 @@ void table_spline3_fill_ewald_lr(real                                 *table_F,
  * The force can then be interpolated linearly.
  */
 
-real ewald_spline3_table_scale(real ewaldcoeff, real rc);
+real ewald_spline3_table_scale(const interaction_const_t *ic);
 /* Return the scaling for the Ewald quadratic spline tables. */
 
 double v_q_ewald_lr(double beta, double r);

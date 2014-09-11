@@ -32,27 +32,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "config.h"
+
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "readinp.h"
-#include "calcgrid.h"
-#include "checkpoint.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "physics.h"
-#include "mdatoms.h"
-#include "coulomb.h"
-#include "mtop_util.h"
-#include "network.h"
-#include "main.h"
-#include "macros.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
@@ -670,7 +675,7 @@ static real estimate_reciprocal(
                     xtot, xtot == 1 ? "" : "s");
             if (PAR(cr))
             {
-                fprintf(stdout, " (%d sample%s per node)", x_per_core, x_per_core == 1 ? "" : "s");
+                fprintf(stdout, " (%d sample%s per rank)", x_per_core, x_per_core == 1 ? "" : "s");
             }
             fprintf(stdout, ".\n");
         }
@@ -761,7 +766,7 @@ static real estimate_reciprocal(
 #ifdef DEBUG
     if (PAR(cr))
     {
-        fprintf(stderr, "Node %3d: nx=[%3d...%3d]  e_rec3=%e\n",
+        fprintf(stderr, "Rank %3d: nx=[%3d...%3d]  e_rec3=%e\n",
                 cr->nodeid, startlocal, stoplocal, e_rec3);
     }
 #endif
@@ -1100,9 +1105,9 @@ int gmx_pme_error(int argc, char *argv[])
 
 
     static t_filenm fnm[] = {
-        { efTPX, "-s",     NULL,    ffREAD },
+        { efTPR, "-s",     NULL,    ffREAD },
         { efOUT, "-o",    "error",  ffWRITE },
-        { efTPX, "-so",   "tuned",  ffOPTWR }
+        { efTPR, "-so",   "tuned",  ffOPTWR }
     };
 
     output_env_t    oenv = NULL;
@@ -1124,12 +1129,8 @@ int gmx_pme_error(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     cr = init_commrec();
-#ifdef GMX_LIB_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
 
     PCA_Flags  = PCA_NOEXIT_ON_ARGS;
-    PCA_Flags |= (MASTER(cr) ? 0 : PCA_QUIET);
 
     if (!parse_common_args(&argc, argv, PCA_Flags,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,

@@ -34,16 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <string.h>
-#include "typedefs.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "Xstuff.h"
 #include "x11.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "Xstuff.h"
 
 /* These colours will be mapped to black on a monochrome screen */
 unsigned long BLACK, BLUE, GREEN, CYAN, RED, BROWN, GREY, DARKGREY;
@@ -319,10 +321,10 @@ t_x11 *GetX11(int *argc, char *argv[])
     bool            bVerbose = false;
     int             i;
 
-    title = strdup(argv[0]);
+    title = gmx_strdup(argv[0]);
 
     /* First check environment */
-    fontname = getenv("GMXFONT");
+    fontname = getenv("GMX_FONT");
     display  = getenv("DISPLAY");
 
     snew(ARGV, *argc);
@@ -356,7 +358,7 @@ t_x11 *GetX11(int *argc, char *argv[])
                             break;
                         case 't':
                             sfree(title);
-                            title = strdup(argv[++i]);
+                            title = gmx_strdup(argv[++i]);
                             break;
                         case 'v':
                             bVerbose = true;
@@ -482,7 +484,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     {
         x11->bg = LIGHTGREY;
     }
-    x11->title = strdup(title);
+    x11->title = gmx_strdup(title);
     sfree(title);
     x11->wlist              = NULL;
     x11->GetNamedColor      = &GetNamedColor;

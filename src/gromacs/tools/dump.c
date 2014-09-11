@@ -34,42 +34,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "config.h"
+
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-#include <assert.h>
-#include "main.h"
-#include "macros.h"
-#include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "txtdump.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "names.h"
-#include "txtdump.h"
-#include "gromacs/gmxpreprocess/gmxcpp.h"
-#include "checkpoint.h"
-#include "mtop_util.h"
-#include "gromacs/fileio/xtcio.h"
-#include "gromacs/fileio/enxio.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/tngio.h"
-#include "gromacs/fileio/tngio_for_tools.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#include "gromacs/linearalgebra/mtxio.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/mtxio.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/gmxpreprocess/gmxcpp.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
-
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                      gmx_bool bSysTop)
@@ -384,6 +380,9 @@ static void list_tng(const char gmx_unused *fn)
                 /* Can't write any output because we don't know what
                    arrays are valid. */
                 fprintf(stderr, "\nWARNING: Incomplete frame at time %g, will not write output\n", frame_time);
+            }
+            else
+            {
                 list_tng_inner(fn, (0 == i), values, step, frame_time,
                                n_values_per_frame, n_atoms, prec, nframe, block_name);
             }
@@ -408,25 +407,20 @@ static void list_tng(const char gmx_unused *fn)
 
 void list_trx(const char *fn)
 {
-    int ftp;
-
-    ftp = fn2ftp(fn);
-    if (ftp == efXTC)
+    switch (fn2ftp(fn))
     {
-        list_xtc(fn);
-    }
-    else if ((ftp == efTRR) || (ftp == efTRJ))
-    {
-        list_trn(fn);
-    }
-    else if (ftp == efTNG)
-    {
-        list_tng(fn);
-    }
-    else
-    {
-        fprintf(stderr, "File %s is of an unsupported type. Try using the command\n 'less %s'\n",
-                fn, fn);
+        case efXTC:
+            list_xtc(fn);
+            break;
+        case efTRR:
+            list_trn(fn);
+            break;
+        case efTNG:
+            list_tng(fn);
+            break;
+        default:
+            fprintf(stderr, "File %s is of an unsupported type. Try using the command\n 'less %s'\n",
+                    fn, fn);
     }
 }
 
@@ -607,9 +601,9 @@ static void list_mtx(const char *fn)
 int gmx_dump(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[THISMODULE] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
-        "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]), an energy",
-        "file ([TT].ene[tt]/[TT].edr[tt]), or a checkpoint file ([TT].cpt[tt])",
+        "[THISMODULE] reads a run input file ([TT].tpr[tt]),",
+        "a trajectory ([TT].trr[tt]/[TT].xtc[tt]/[TT]/tng[tt]), an energy",
+        "file ([TT].edr[tt]) or a checkpoint file ([TT].cpt[tt])",
         "and prints that to standard output in a readable format.",
         "This program is essential for checking your run input file in case of",
         "problems.[PAR]",
@@ -621,7 +615,7 @@ int gmx_dump(int argc, char *argv[])
         "Position restraint output from -sys -s is broken"
     };
     t_filenm    fnm[] = {
-        { efTPX, "-s", NULL, ffOPTRD },
+        { efTPR, "-s", NULL, ffOPTRD },
         { efTRX, "-f", NULL, ffOPTRD },
         { efEDR, "-e", NULL, ffOPTRD },
         { efCPT, NULL, NULL, ffOPTRD },
@@ -647,9 +641,9 @@ int gmx_dump(int argc, char *argv[])
     }
 
 
-    if (ftp2bSet(efTPX, NFILE, fnm))
+    if (ftp2bSet(efTPR, NFILE, fnm))
     {
-        list_tpx(ftp2fn(efTPX, NFILE, fnm), bShowNumbers,
+        list_tpx(ftp2fn(efTPR, NFILE, fnm), bShowNumbers,
                  ftp2fn_null(efMDP, NFILE, fnm), bSysTop);
     }
     else if (ftp2bSet(efTRX, NFILE, fnm))

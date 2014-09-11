@@ -32,12 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_FILEIO_TNGIO_FOR_TOOLS_H
 #define GMX_FILEIO_TNGIO_FOR_TOOLS_H
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "../../external/tng_io/include/tng_io_fwd.h"
+#include <stdio.h>
+
+#include "tng/tng_io_fwd.h"
+
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,13 +50,16 @@ extern "C" {
 }
 #endif
 
+struct gmx_mtop_t;
+struct t_trxframe;
+
 /*! \brief Prepare to write TNG output from trajectory conversion tools */
 void gmx_prepare_tng_writing(const char              *filename,
                              char                     mode,
                              tng_trajectory_t        *in,
                              tng_trajectory_t        *out,
                              int                      nAtoms,
-                             const gmx_mtop_t        *mtop,
+                             const struct gmx_mtop_t *mtop,
                              const atom_id           *index,
                              const char              *indexGroupName);
 
@@ -67,7 +74,7 @@ void gmx_prepare_tng_writing(const char              *filename,
  * atoms.
  */
 void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
-                                 t_trxframe             *frame,
+                                 struct t_trxframe      *frame,
                                  int                     natoms);
 
 /*! \brief Creates a molecule containing only the indexed atoms and sets
@@ -80,7 +87,7 @@ void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
 
 /*! \brief Read the first/next TNG frame. */
 gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
-                                 t_trxframe                 *fr,
+                                 struct t_trxframe          *fr,
                                  gmx_int64_t                *requestedIds,
                                  int                         numRequestedIds);
 

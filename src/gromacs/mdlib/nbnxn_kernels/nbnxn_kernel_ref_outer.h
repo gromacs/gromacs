@@ -332,20 +332,19 @@ NBK_FUNC_NAME(_VgrpF)
             {
 #define CALC_COULOMB
 #define HALF_LJ
-#include "nbnxn_kernel_ref_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_inner.h"
 #undef HALF_LJ
 #undef CALC_COULOMB
             }
-            /* cppcheck-suppress duplicateBranch */
             else if (do_coul)
             {
 #define CALC_COULOMB
-#include "nbnxn_kernel_ref_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_inner.h"
 #undef CALC_COULOMB
             }
             else
             {
-#include "nbnxn_kernel_ref_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_inner.h"
             }
 #undef CHECK_EXCLS
             cjind++;
@@ -357,20 +356,19 @@ NBK_FUNC_NAME(_VgrpF)
             {
 #define CALC_COULOMB
 #define HALF_LJ
-#include "nbnxn_kernel_ref_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_inner.h"
 #undef HALF_LJ
 #undef CALC_COULOMB
             }
-            /* cppcheck-suppress duplicateBranch */
             else if (do_coul)
             {
 #define CALC_COULOMB
-#include "nbnxn_kernel_ref_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_inner.h"
 #undef CALC_COULOMB
             }
             else
             {
-#include "nbnxn_kernel_ref_inner.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_inner.h"
             }
         }
         ninner += cjind1 - cjind0;

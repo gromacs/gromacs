@@ -39,16 +39,22 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
+
 #include "integrationtests.h"
 
-#include "testutils/testoptions.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/utility/file.h"
-#include <stdlib.h>
+#include "config.h"
+
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/testoptions.h"
 
 namespace gmx
 {
@@ -75,7 +81,7 @@ IntegrationTestFixture::IntegrationTestFixture()
     // TODO fix this when we have an encapsulation layer for handling
     // environment variables
 #ifdef GMX_NATIVE_WINDOWS
-    _putenv_s("GMX_MAXBACKUP", s_maxBackup.c_str());
+    _putenv(("GMX_MAXBACKUP="+s_maxBackup).c_str());
 #else
     setenv("GMX_MAXBACKUP", s_maxBackup.c_str(), true);
 #endif

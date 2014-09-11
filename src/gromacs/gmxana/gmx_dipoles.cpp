@@ -34,40 +34,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <string.h>
+#include "gmxpre.h"
+
 #include <math.h>
+#include <string.h>
 
 #include <algorithm>
 
-#include "macros.h"
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "pbc.h"
-#include "bondf.h"
-#include "gromacs/fileio/futil.h"
-#include "xvgr.h"
-#include "txtdump.h"
-#include "gromacs/statistics/statistics.h"
-#include "gstat.h"
-#include "index.h"
-#include "gromacs/random/random.h"
-#include "names.h"
-#include "physics.h"
-#include "calcmu.h"
 #include "gromacs/fileio/enxio.h"
-#include "nrjac.h"
 #include "gromacs/fileio/matio.h"
-#include "gmx_ana.h"
-#include "copyrite.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/calcmu.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/random/random.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
@@ -91,7 +90,7 @@ static t_gkrbin *mk_gkrbin(real radius, real rcmax, gmx_bool bPhi, int ndegrees)
 
     snew(gb, 1);
 
-    if ((ptr = getenv("GKRWIDTH")) != NULL)
+    if ((ptr = getenv("GMX_DIPOLE_SPACING")) != NULL)
     {
         double bw = strtod(ptr, NULL);
         gb->spacing = bw;
@@ -953,7 +952,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             gmx::BinaryInformationSettings settings;
             settings.generatedByHeader(true);
             settings.linePrefix("# ");
-            gmx::printBinaryInformation(dip3d, gmx::getProgramContext(),
+            gmx::printBinaryInformation(dip3d, output_env_get_program_context(oenv),
                                         settings);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -1590,7 +1589,7 @@ int gmx_dipoles(int argc, char *argv[])
     t_filenm       fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
-        { efTPX, NULL, NULL,           ffREAD },
+        { efTPR, NULL, NULL,           ffREAD },
         { efNDX, NULL, NULL,           ffOPTRD },
         { efXVG, "-o",   "Mtot",       ffWRITE },
         { efXVG, "-eps", "epsilon",    ffWRITE },
@@ -1614,7 +1613,7 @@ int gmx_dipoles(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -1664,7 +1663,7 @@ int gmx_dipoles(int argc, char *argv[])
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPX, NFILE, fnm), NULL, box,
+    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), NULL, box,
                         &natoms, NULL, NULL, NULL, top);
 
     snew(gnx, ncos);

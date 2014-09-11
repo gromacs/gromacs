@@ -35,26 +35,27 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
-#include "main.h"
-#include "constr.h"
-#include "copyrite.h"
-#include "physics.h"
-#include "vec.h"
-#include "pbc.h"
-#include "smalloc.h"
-#include "mdrun.h"
-#include "nrnb.h"
-#include "domdec.h"
-#include "mtop_util.h"
-#include "gmx_omp_nthreads.h"
+#include <stdlib.h>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int    b0;         /* first constraint for this thread */
@@ -646,6 +647,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
             dlen2 = 2*len2 - norm2(dx);
             if (dlen2 < wfac*len2 && (nlocat == NULL || nlocat[b]))
             {
+                /* not race free - see detailed comment in caller */
                 *warn = b;
             }
             if (dlen2 > 0)

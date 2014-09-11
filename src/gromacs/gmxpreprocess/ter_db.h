@@ -38,9 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_TER_DB_H
 #define GMX_GMXPREPROCESS_TER_DB_H
 
-#include "sysstuff.h"
-#include "hackblock.h"
-#include "grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 
 #ifdef __cplusplus
 extern "C" {

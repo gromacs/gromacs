@@ -32,6 +32,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ * \brief
+ * Enumerated types used in the "Computational Electrophysiology" module.
+ *
+ * The following enums are mainly used for indexing arrays and when
+ * looping over the available ions, channels, or compartments. This hopefully
+ * adds to the code's readability because it makes clear which object is dealt
+ * with in a block of code.
+ *
+ * \author Carsten Kutzner <ckutzne@gwdg.de>
+ * \inlibraryapi
+ * \ingroup module_swap
+ */
 #ifndef GMX_SWAP_ENUMS_H_
 #define GMX_SWAP_ENUMS_H_
 
@@ -39,23 +52,23 @@
 extern "C" {
 #endif
 
-/* The following three enums are mainly used for indexing arrays and when
- * looping over the available ions, channels, or compartments. This hopefully
- * adds to the code's readability because it makes clear which object is dealt
- * with in a block of code.
- *
- * The two compartments for CompEL setups */
+/*! \brief The two compartments for CompEL setups. */
 enum eCompartment {
     eCompA, eCompB, eCompNR
 };
-/* The positive and negative ions CompEL setups, future versions of the
- * protocol might consider more than two types of ions */
+
+/*! \brief The positive and negative ions CompEL setups.
+ *
+ * Future versions of the protocol might consider more than two types of ions.
+ */
 enum eIontype {
     eIonNEG, eIonPOS, eIonNR
 };
-/* The chanels that define with their COM the compartment boundaries in
- * CompEL setups. In principle one could also use modified setups with
- * more than two channels. */
+
+/*! \brief The channels that define with their COM the compartment boundaries in CompEL setups.
+ *
+ * In principle one could also use modified setups with more than two channels.
+ */
 enum eChannel {
     eChan0, eChan1, eChanNR
 };

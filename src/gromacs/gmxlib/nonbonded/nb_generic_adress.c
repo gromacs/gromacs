@@ -34,20 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nb_generic_adress.h"
 
 #include <math.h>
 
-#include "types/simple.h"
-#include "vec.h"
-#include "typedefs.h"
-#include "nb_generic_adress.h"
-#include "nrnb.h"
-
-#include "nonbonded.h"
-#include "nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define ALMOST_ZERO 1e-30
 #define ALMOST_ONE 1-(1e-30)

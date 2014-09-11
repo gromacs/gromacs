@@ -34,28 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
-
-#include "sysstuff.h"
 #include <string.h>
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "princ.h"
-#include "rmpbc.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/commandline/pargs.h"
-#include "index.h"
-#include "gmx_ana.h"
-#include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/princ.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /****************************************************************************/
 /* This program calculates the ordering of water molecules across a box, as */
@@ -306,21 +303,21 @@ int gmx_h2order(int argc, char *argv[])
         { efTRX, "-f", NULL,  ffREAD },     /* trajectory file            */
         { efNDX, NULL, NULL,  ffREAD },     /* index file         */
         { efNDX, "-nm", NULL, ffOPTRD },    /* index with micelle atoms   */
-        { efTPX, NULL, NULL,  ffREAD },     /* topology file              */
+        { efTPR, NULL, NULL,  ffREAD },     /* topology file              */
         { efXVG, "-o",  "order", ffWRITE }, /* xvgr output file       */
     };
 
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE, NFILE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME, NFILE,
                            fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
     bMicel = opt2bSet("-nm", NFILE, fnm);
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &ngx, &index, &grpname);
 

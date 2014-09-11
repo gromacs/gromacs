@@ -162,16 +162,18 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                                       void              *newval)
 {
     void* prev;
-#ifndef __x86_64__
+#if (defined(__x86_64__) && !defined(__ILP32__))
+    __asm__ __volatile__("lock ; cmpxchgq %1,%2"
+                         : "=a" (prev)
+                         : "q" (newval), "m" (a->value), "0" (oldval)
+                         : "memory");
+#elif (defined(__x86_64__) && defined(__ILP32__)) || defined(__i386__)
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a" (prev)
                          : "q" (newval), "m" (a->value), "0" (oldval)
                          : "memory");
 #else
-    __asm__ __volatile__("lock ; cmpxchgq %1,%2"
-                         : "=a" (prev)
-                         : "q" (newval), "m" (a->value), "0" (oldval)
-                         : "memory");
+#    error Cannot detect whether this is a 32-bit or 64-bit x86 build.
 #endif
     return prev == oldval;
 }
@@ -194,17 +196,18 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     void *volatile *ret = (void* volatile*)b;
-#ifndef __x86_64__
-    __asm__ __volatile__("\txchgl %0, %1;"
-                         : "+r" (ret), "+m" (a->value)
-                         :
-                         : "memory");
-
-#else
+#if (defined(__x86_64__) && !defined(__ILP32__))
     __asm__ __volatile__("\txchgq %0, %1;"
                          : "+r" (ret), "+m" (a->value)
                          :
                          : "memory");
+#elif (defined(__x86_64__) && defined(__ILP32__)) || defined(__i386__)
+    __asm__ __volatile__("\txchgl %0, %1;"
+                         : "+r" (ret), "+m" (a->value)
+                         :
+                         : "memory");
+#else
+#    error Cannot detect whether this is a 32-bit or 64-bit x86 build.
 #endif
     return (void*)ret;
 }

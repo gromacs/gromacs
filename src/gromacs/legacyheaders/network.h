@@ -45,94 +45,68 @@
 
 #include <stdio.h>
 
-#include "types/simple.h"
-#include "typedefs.h"
-#include "main.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-t_commrec *init_commrec(void);
+struct gmx_domdec_t;
+struct gmx_multisim_t;
+struct t_commrec;
+
+struct t_commrec *init_commrec(void);
 /* Allocate, initialize and return the commrec. */
 
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
+struct t_commrec *reinitialize_commrec_for_this_thread(const struct t_commrec *cro);
 /* Initialize communication records for thread-parallel simulations.
    Must be called on all threads before any communication takes place by
    the individual threads. Copies the original commrec to
    thread-local versions (a small memory leak results because we don't
    deallocate the old shared version).  */
 
-void gmx_fill_commrec_from_mpi(t_commrec *cr);
+void gmx_fill_commrec_from_mpi(struct t_commrec *cr);
 /* Continues t_commrec construction */
 
-int gmx_node_num(void);
-/* return the number of nodes in the ring */
-
-int gmx_node_rank(void);
-/* return the rank of the node */
-
-int gmx_physicalnode_id_hash(void);
-/* Return a non-negative hash that is, hopefully, unique for each physical node.
- * This hash is useful for determining hardware locality.
- */
-
-int gmx_hostname_num(void);
-/* Ostensibly, returns a integer characteristic of and unique to each
-   physical node in the MPI system. If the first part of the MPI
-   hostname (up to the first dot) ends with a number, returns this
-   number. If the first part of the MPI hostname does not ends in a
-   number (0-9 characters), returns 0.
- */
-
-void gmx_setup_nodecomm(FILE *fplog, t_commrec *cr);
+void gmx_setup_nodecomm(FILE *fplog, struct t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
-void gmx_init_intranode_counters(t_commrec *cr);
+void gmx_init_intranode_counters(struct t_commrec *cr);
 /* Initializes intra-physical-node MPI process/thread counts and ID. */
 
-gmx_bool gmx_mpi_initialized(void);
-/* return TRUE when MPI_Init has been called.
- * return FALSE when MPI_Init has not been called OR
- * when GROMACS was compiled without MPI support.
- */
-
-void gmx_barrier(const t_commrec *cr);
+void gmx_barrier(const struct t_commrec *cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
 
-void gmx_bcast(int nbytes, void *b, const t_commrec *cr);
+void gmx_bcast(int nbytes, void *b, const struct t_commrec *cr);
 /* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */
 
-void gmx_bcast_sim(int nbytes, void *b, const t_commrec *cr);
+void gmx_bcast_sim(int nbytes, void *b, const struct t_commrec *cr);
 /* Broadcast nbytes bytes from the sim master to cr->mpi_comm_mysim */
 
-void gmx_sumi(int nr, int r[], const t_commrec *cr);
+void gmx_sumi(int nr, int r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of ints */
 
-void gmx_sumli(int nr, gmx_int64_t r[], const t_commrec *cr);
+void gmx_sumli(int nr, gmx_int64_t r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of large ints */
 
-void gmx_sumf(int nr, float r[], const t_commrec *cr);
+void gmx_sumf(int nr, float r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of floats */
 
-void gmx_sumd(int nr, double r[], const t_commrec *cr);
+void gmx_sumd(int nr, double r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
-void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms);
+void gmx_sumi_sim(int nr, int r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of ints */
 
-void gmx_sumli_sim(int nr, gmx_int64_t r[], const gmx_multisim_t *ms);
+void gmx_sumli_sim(int nr, gmx_int64_t r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of large ints */
 
-void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms);
+void gmx_sumf_sim(int nr, float r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of floats */
 
-void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
+void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of doubles */
-
-void gmx_abort(int nodeid, int nnodes, int errorno);
-/* Abort the parallel run */
 
 #ifdef GMX_DOUBLE
 #define gmx_sum       gmx_sumd
@@ -142,9 +116,27 @@ void gmx_abort(int nodeid, int nnodes, int errorno);
 #define gmx_sum_sim   gmx_sumf_sim
 #endif
 
+gmx_bool gmx_fexist_master(const char *fname, struct t_commrec *cr);
+/* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
+
+void
+gmx_fatal_collective(int f_errno, const char *file, int line,
+                     const struct t_commrec *cr, struct gmx_domdec_t *dd,
+                     const char *fmt, ...);
+/* As gmx_fatal declared in utility/fatalerror.h,
+ * but only the master process prints the error message.
+ * This should only be called one of the following two situations:
+ * 1) On all nodes in cr->mpi_comm_mysim, with cr!=NULL,dd==NULL.
+ * 2) On all nodes in dd->mpi_comm_all,   with cr==NULL,dd!=NULL.
+ * This will call MPI_Finalize instead of MPI_Abort when possible,
+ * This is useful for handling errors in code that is executed identically
+ * for all processes.
+ */
+
+/* This doesn't currently work if enabled (needs some header cleanup). */
 #ifdef DEBUG_GMX
 #define debug_gmx() do { FILE *fp = debug ? debug : stderr; \
-                         if (bDebugMode()) { fprintf(fp, "NODEID=%d, %s  %d\n", gmx_mpi_initialized() ? gmx_node_rank() : -1, __FILE__, __LINE__); } fflush(fp); } while (0)
+                         if (bDebugMode()) { fprintf(fp, "rank=%d, %s  %d\n", gmx_mpi_initialized() ? gmx_node_rank() : -1, __FILE__, __LINE__); } fflush(fp); } while (0)
 #else
 #define debug_gmx()
 #endif

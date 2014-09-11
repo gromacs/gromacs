@@ -41,6 +41,9 @@
  *
  * \inlibraryapi
  */
+#ifndef GMX_CONFIG_H
+#define GMX_CONFIG_H
+
 #include "gromacs/utility/gmx_header_config.h"
 
 /* TODO: For now, disable Doxygen warnings from here */
@@ -60,12 +63,6 @@
 
 /* Binary directory for the build */
 #cmakedefine CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@"
-
-/* Turn off water-water neighborlist optimization only - not used right now */
-#cmakedefine DISABLE_WATERWATER_NLIST
-
-/* Turn off all water neighborlist optimization - not used right now */
-#cmakedefine DISABLE_WATER_NLIST
 
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
@@ -93,6 +90,12 @@
 /* Target platform is BlueGene/Q */
 #cmakedefine GMX_TARGET_BGQ
 
+/** Define if we are building for Cygwin */
+#cmakedefine GMX_CYGWIN
+
+/** Define if we have sufficient C++11 support */
+#cmakedefine GMX_CXX11
+
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
 #cmakedefine GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 
@@ -111,6 +114,12 @@
 /* AVX2 256-bit SIMD instruction set level was selected */
 #cmakedefine GMX_SIMD_X86_AVX2_256
 
+/* 32-bit ARM NEON SIMD instruction set level was selected */
+#cmakedefine GMX_SIMD_ARM_NEON
+
+/* ARM (AArch64) NEON Advanced SIMD instruction set level was selected */
+#cmakedefine GMX_SIMD_ARM_NEON_ASIMD
+
 /* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
 #cmakedefine GMX_SIMD_IBM_QPX
 
@@ -123,6 +132,9 @@
 /* String for SIMD instruction choice (for writing to log files and stdout) */
 #define GMX_SIMD_STRING "@GMX_SIMD@"
 
+/* Calling convention string (if any) for routines with SIMD variable args */
+#define gmx_simdcall @GMX_SIMD_CALLING_CONVENTION@
+
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN
 
@@ -131,6 +143,9 @@
 
 /* Compile to use TNG library */
 #cmakedefine GMX_USE_TNG
+
+/* Add support for tracing using Extrae */
+#cmakedefine HAVE_EXTRAE
 
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
@@ -191,7 +206,10 @@
 #cmakedefine TMPI_ATOMICS
 
 /* Define for busy wait option  */
+/* See gmxpre-config.h.cmakein for explanation for the #ifdef */
+#ifndef TMPI_WAIT_FOR_NO_ONE
 #cmakedefine TMPI_WAIT_FOR_NO_ONE
+#endif
 
 /* Define for copy buffer option */
 #cmakedefine TMPI_COPY_BUFFER
@@ -322,11 +340,8 @@
 /* Define to 1 if you have the sysconf() function */
 #cmakedefine HAVE_SYSCONF
 
-/* Define to 1 if you have the sched_getaffinity() function */
-#cmakedefine HAVE_SCHED_GETAFFINITY
-
-/* Define to 1 if you have the sched_setaffinity() function */
-#cmakedefine HAVE_SCHED_SETAFFINITY
+/* Define to 1 if you have the all the affinity functions in sched.h */
+#cmakedefine HAVE_SCHED_AFFINITY
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
@@ -340,26 +355,8 @@
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
 
-/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
-#cmakedefine _LARGEFILE_SOURCE
-
-/* Define for large files, on AIX-style hosts. */
-#cmakedefine _LARGE_FILES
-
-/* Some systems requires this to be set to 64 for large file support */
-#cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
-
-/* Build special-purpose mdrun library */
-#cmakedefine GMX_FAHCORE   
-
 /* Enable gromacs quotes */
 #cmakedefine GMX_COOL_QUOTES
-
-#ifdef GMX_FAHCORE
-#define FULLINDIRECT 1
-#define USE_FAH_XDR  1
-#include "swindirect.h"
-#endif
 
 /* default name mangling maybe wrong on exotic plattforms */
 #define F77_FUNC(name,NAME) name ## _
@@ -367,4 +364,9 @@
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
 
+/* Define if we have zlib */
+#cmakedefine HAVE_ZLIB
+
 /*! \endcond */
+
+#endif

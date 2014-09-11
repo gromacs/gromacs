@@ -34,16 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
+
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "statistics.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
 static void horizontal()
 {

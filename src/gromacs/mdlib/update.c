@@ -34,41 +34,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/update.h"
 
-#include <stdio.h>
 #include <math.h>
-
-#include "types/commrec.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "nrnb.h"
-#include "physics.h"
-#include "macros.h"
-#include "vec.h"
-#include "main.h"
-#include "update.h"
-#include "gromacs/random/random.h"
-#include "mshift.h"
-#include "tgroup.h"
-#include "force.h"
-#include "names.h"
-#include "txtdump.h"
-#include "mdrun.h"
-#include "constr.h"
-#include "disre.h"
-#include "orires.h"
-#include "gmx_omp_nthreads.h"
+#include <stdio.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/gmxomp.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/random/random.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -581,14 +577,16 @@ static void do_update_sd1(gmx_stochd_t *sd,
                           unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
-                          int ngtc, real tau_t[], real ref_t[],
+                          int ngtc, real ref_t[],
+                          gmx_bool bDoConstr,
+                          gmx_bool bFirstHalfConstr,
                           gmx_int64_t step, int seed, int* gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
     real            kT;
     int             gf = 0, ga = 0, gt = 0;
-    real            ism, sd_V;
+    real            ism;
     int             n, d;
 
     sdc = sd->sdc;
@@ -601,41 +599,128 @@ static void do_update_sd1(gmx_stochd_t *sd,
         sig[n].V  = sqrt(kT*(1 - sdc[n].em*sdc[n].em));
     }
 
-    for (n = start; n < nrend; n++)
+    if (!bDoConstr)
     {
-        real rnd[3];
-        int  ng  = gatindex ? gatindex[n] : n;
-        ism = sqrt(invmass[n]);
-        if (cFREEZE)
+        for (n = start; n < nrend; n++)
         {
-            gf  = cFREEZE[n];
-        }
-        if (cACC)
-        {
-            ga  = cACC[n];
-        }
-        if (cTC)
-        {
-            gt  = cTC[n];
-        }
+            real rnd[3];
+            int  ng = gatindex ? gatindex[n] : n;
 
-        gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
-        for (d = 0; d < DIM; d++)
-        {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            ism = sqrt(invmass[n]);
+            if (cFREEZE)
             {
-                sd_V = ism*sig[gt].V*rnd[d];
-
-                v[n][d] = v[n][d]*sdc[gt].em
-                    + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                    + sd_V;
-
-                xprime[n][d] = x[n][d] + v[n][d]*dt;
+                gf  = cFREEZE[n];
             }
-            else
+            if (cACC)
             {
-                v[n][d]      = 0.0;
-                xprime[n][d] = x[n][d];
+                ga  = cACC[n];
+            }
+            if (cTC)
+            {
+                gt  = cTC[n];
+            }
+
+            gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
+
+            for (d = 0; d < DIM; d++)
+            {
+                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                {
+                    real sd_V, vn;
+
+                    sd_V         = ism*sig[gt].V*rnd[d];
+                    vn           = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
+                    v[n][d]      = vn*sdc[gt].em + sd_V;
+                    /* Here we include half of the friction+noise
+                     * update of v into the integration of x.
+                     */
+                    xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
+                }
+                else
+                {
+                    v[n][d]      = 0.0;
+                    xprime[n][d] = x[n][d];
+                }
+            }
+        }
+    }
+    else
+    {
+        /* We do have constraints */
+        if (bFirstHalfConstr)
+        {
+            /* First update without friction and noise */
+            real im;
+
+            for (n = start; n < nrend; n++)
+            {
+                im = invmass[n];
+
+                if (cFREEZE)
+                {
+                    gf  = cFREEZE[n];
+                }
+                if (cACC)
+                {
+                    ga  = cACC[n];
+                }
+                if (cTC)
+                {
+                    gt  = cTC[n];
+                }
+
+                for (d = 0; d < DIM; d++)
+                {
+                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                    {
+                        v[n][d]      = v[n][d] + (im*f[n][d] + accel[ga][d])*dt;
+                        xprime[n][d] = x[n][d] +  v[n][d]*dt;
+                    }
+                    else
+                    {
+                        v[n][d]      = 0.0;
+                        xprime[n][d] = x[n][d];
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Update friction and noise only */
+            for (n = start; n < nrend; n++)
+            {
+                real rnd[3];
+                int  ng = gatindex ? gatindex[n] : n;
+
+                ism = sqrt(invmass[n]);
+                if (cFREEZE)
+                {
+                    gf  = cFREEZE[n];
+                }
+                if (cACC)
+                {
+                    ga  = cACC[n];
+                }
+                if (cTC)
+                {
+                    gt  = cTC[n];
+                }
+
+                gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
+
+                for (d = 0; d < DIM; d++)
+                {
+                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                    {
+                        real sd_V, vn;
+
+                        sd_V         = ism*sig[gt].V*rnd[d];
+                        vn           = v[n][d];
+                        v[n][d]      = vn*sdc[gt].em + sd_V;
+                        /* Add the friction and noise contribution only */
+                        xprime[n][d] = xprime[n][d] + 0.5*(v[n][d] - vn)*dt;
+                    }
+                }
             }
         }
     }
@@ -1063,7 +1148,12 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
         }
         if (md->nPerturbed && md->bPerturbed[n])
         {
-            dekindl += 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
+            /* The minus sign here might be confusing.
+             * The kinetic contribution from dH/dl doesn't come from
+             * d m(l)/2 v^2 / dl, but rather from d p^2/2m(l) / dl,
+             * where p are the momenta. The difference is only a minus sign.
+             */
+            dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
         }
     }
     ekind->dekindl = dekindl;
@@ -1224,55 +1314,12 @@ static void deform(gmx_update_t upd,
         x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
         x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
     }
-    if (*scale_tot)
+    if (scale_tot != NULL)
     {
         /* The transposes of the scaling matrices are stored,
          * so we need to do matrix multiplication in the inverse order.
          */
         mmul_ur0(*scale_tot, mu, *scale_tot);
-    }
-}
-
-static void combine_forces(int nstcalclr,
-                           gmx_constr_t constr,
-                           t_inputrec *ir, t_mdatoms *md, t_idef *idef,
-                           t_commrec *cr,
-                           gmx_int64_t step,
-                           t_state *state, gmx_bool bMolPBC,
-                           int start, int nrend,
-                           rvec f[], rvec f_lr[],
-                           t_nrnb *nrnb)
-{
-    int  i, d, nm1;
-
-    /* f contains the short-range forces + the long range forces
-     * which are stored separately in f_lr.
-     */
-
-    if (constr != NULL && !(ir->eConstrAlg == econtSHAKE && ir->epc == epcNO))
-    {
-        /* We need to constrain the LR forces separately,
-         * because due to the different pre-factor for the SR and LR
-         * forces in the update algorithm, we can not determine
-         * the constraint force for the coordinate constraining.
-         * Constrain only the additional LR part of the force.
-         */
-        /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
-        constrain(NULL, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
-                  state->x, f_lr, f_lr, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
-                  NULL, NULL, nrnb, econqForce, ir->epc == epcMTTK, state->veta, state->veta);
-    }
-
-    /* Add nstcalclr-1 times the LR force to the sum of both forces
-     * and store the result in forces_lr.
-     */
-    nm1 = nstcalclr - 1;
-    for (i = start; i < nrend; i++)
-    {
-        for (d = 0; d < DIM; d++)
-        {
-            f_lr[i][d] = f[i][d] + nm1*f_lr[i][d];
-        }
     }
 }
 
@@ -1414,6 +1461,75 @@ static rvec *get_xprime(const t_state *state, gmx_update_t upd)
     return upd->xp;
 }
 
+static void combine_forces(gmx_update_t upd,
+                           int nstcalclr,
+                           gmx_constr_t constr,
+                           t_inputrec *ir, t_mdatoms *md, t_idef *idef,
+                           t_commrec *cr,
+                           gmx_int64_t step,
+                           t_state *state, gmx_bool bMolPBC,
+                           int start, int nrend,
+                           rvec f[], rvec f_lr[],
+                           tensor *vir_lr_constr,
+                           t_nrnb *nrnb)
+{
+    int  i, d;
+
+    /* f contains the short-range forces + the long range forces
+     * which are stored separately in f_lr.
+     */
+
+    if (constr != NULL && vir_lr_constr != NULL &&
+        !(ir->eConstrAlg == econtSHAKE && ir->epc == epcNO))
+    {
+        /* We need to constrain the LR forces separately,
+         * because due to the different pre-factor for the SR and LR
+         * forces in the update algorithm, we have to correct
+         * the constraint virial for the nstcalclr-1 extra f_lr.
+         * Constrain only the additional LR part of the force.
+         */
+        /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
+        rvec *xp;
+        real  fac;
+        int   gf = 0;
+
+        xp  = get_xprime(state, upd);
+
+        fac = (nstcalclr - 1)*ir->delta_t*ir->delta_t;
+
+        for (i = 0; i < md->homenr; i++)
+        {
+            if (md->cFREEZE != NULL)
+            {
+                gf = md->cFREEZE[i];
+            }
+            for (d = 0; d < DIM; d++)
+            {
+                if ((md->ptype[i] != eptVSite) &&
+                    (md->ptype[i] != eptShell) &&
+                    !ir->opts.nFreeze[gf][d])
+                {
+                    xp[i][d] = state->x[i][d] + fac*f_lr[i][d]*md->invmass[i];
+                }
+            }
+        }
+        constrain(NULL, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
+                  state->x, xp, xp, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
+                  NULL, vir_lr_constr, nrnb, econqCoord, ir->epc == epcMTTK, state->veta, state->veta);
+    }
+
+    /* Add nstcalclr-1 times the LR force to the sum of both forces
+     * and store the result in forces_lr.
+     */
+    for (i = start; i < nrend; i++)
+    {
+        for (d = 0; d < DIM; d++)
+        {
+            f_lr[i][d] = f[i][d] + (nstcalclr - 1)*f_lr[i][d];
+        }
+    }
+}
+
 void update_constraints(FILE             *fplog,
                         gmx_int64_t       step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
@@ -1488,7 +1604,7 @@ void update_constraints(FILE             *fplog,
         if (EI_VV(inputrec->eI) && bFirstHalf)
         {
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, ekind, cr, step, 1, md,
+                      inputrec, ekind, cr, step, 1, 1.0, md,
                       state->x, state->v, state->v,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
@@ -1498,7 +1614,7 @@ void update_constraints(FILE             *fplog,
         else
         {
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, ekind, cr, step, 1, md,
+                      inputrec, ekind, cr, step, 1, 1.0, md,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
@@ -1540,8 +1656,57 @@ void update_constraints(FILE             *fplog,
     }
 
     where();
+
+    if (inputrec->eI == eiSD1 && bDoConstr && !bFirstHalf)
+    {
+        wallcycle_start(wcycle, ewcUPDATE);
+        xprime = get_xprime(state, upd);
+
+        nth = gmx_omp_nthreads_get(emntUpdate);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+
+        for (th = 0; th < nth; th++)
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+
+            /* The second part of the SD integration */
+            do_update_sd1(upd->sd,
+                          start_th, end_th, dt,
+                          inputrec->opts.acc, inputrec->opts.nFreeze,
+                          md->invmass, md->ptype,
+                          md->cFREEZE, md->cACC, md->cTC,
+                          state->x, xprime, state->v, force,
+                          inputrec->opts.ngtc, inputrec->opts.ref_t,
+                          bDoConstr, FALSE,
+                          step, inputrec->ld_seed,
+                          DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+        }
+        inc_nrnb(nrnb, eNR_UPDATE, homenr);
+        wallcycle_stop(wcycle, ewcUPDATE);
+
+        if (bDoConstr)
+        {
+            /* Constrain the coordinates xprime for half a time step */
+            wallcycle_start(wcycle, ewcCONSTR);
+
+            constrain(NULL, bLog, bEner, constr, idef,
+                      inputrec, NULL, cr, step, 1, 0.5, md,
+                      state->x, xprime, NULL,
+                      bMolPBC, state->box,
+                      state->lambda[efptBONDED], dvdlambda,
+                      state->v, NULL, nrnb, econqCoord, FALSE, 0, 0);
+
+            wallcycle_stop(wcycle, ewcCONSTR);
+        }
+    }
+
     if ((inputrec->eI == eiSD2) && !(bFirstHalf))
     {
+        wallcycle_start(wcycle, ewcUPDATE);
         xprime = get_xprime(state, upd);
 
         nth = gmx_omp_nthreads_get(emntUpdate);
@@ -1566,13 +1731,14 @@ void update_constraints(FILE             *fplog,
                           DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
+        wallcycle_stop(wcycle, ewcUPDATE);
 
         if (bDoConstr)
         {
             /* Constrain the coordinates xprime */
             wallcycle_start(wcycle, ewcCONSTR);
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, NULL, cr, step, 1, md,
+                      inputrec, NULL, cr, step, 1, 1.0, md,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
@@ -1580,6 +1746,7 @@ void update_constraints(FILE             *fplog,
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }
+
 
     /* We must always unshift after updating coordinates; if we did not shake
        x was shifted in do_force */
@@ -1727,6 +1894,7 @@ void update_coords(FILE             *fplog,
                    rvec             *f,    /* forces on home particles */
                    gmx_bool          bDoLR,
                    rvec             *f_lr,
+                   tensor           *vir_lr_constr,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
@@ -1738,7 +1906,7 @@ void update_coords(FILE             *fplog,
                    gmx_constr_t      constr,
                    t_idef           *idef)
 {
-    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE;
+    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double            dt, alpha;
     real             *imass, *imassin;
     rvec             *force;
@@ -1749,6 +1917,8 @@ void update_coords(FILE             *fplog,
     tensor            vir_con;
     rvec             *vcom, *xcom, *vall, *xall, *xin, *vin, *forcein, *fall, *xpall, *xprimein, *xprime;
     int               nth, th;
+
+    bDoConstr = (NULL != constr);
 
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
@@ -1787,9 +1957,10 @@ void update_coords(FILE             *fplog,
          * to produce twin time stepping.
          */
         /* is this correct in the new construction? MRS */
-        combine_forces(inputrec->nstcalclr, constr, inputrec, md, idef, cr,
+        combine_forces(upd,
+                       inputrec->nstcalclr, constr, inputrec, md, idef, cr,
                        step, state, bMolPBC,
-                       start, nrend, f, f_lr, nrnb);
+                       start, nrend, f, f_lr, vir_lr_constr, nrnb);
         force = f_lr;
     }
     else
@@ -1855,18 +2026,20 @@ void update_coords(FILE             *fplog,
                 }
                 break;
             case (eiSD1):
+                /* With constraints, the SD1 update is done in 2 parts */
                 do_update_sd1(upd->sd,
                               start_th, end_th, dt,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force,
-                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t,
+                              inputrec->opts.ngtc, inputrec->opts.ref_t,
+                              bDoConstr, TRUE,
                               step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 break;
             case (eiSD2):
-                /* The SD update is done in 2 parts, because an extra constraint step
-                 * is needed
+                /* The SD2 update is always done in 2 parts,
+                 * because an extra constraint step is needed
                  */
                 do_update_sd2(upd->sd,
                               bInitStep, start_th, end_th,

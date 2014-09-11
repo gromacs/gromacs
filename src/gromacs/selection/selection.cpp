@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,10 +39,14 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include "selection.h"
 
-#include "nbsearch.h"
-#include "position.h"
+#include "gromacs/selection/nbsearch.h"
+#include "gromacs/selection/position.h"
+#include "gromacs/topology/topology.h"
+
 #include "selelem.h"
 #include "selvalue.h"
 
@@ -245,8 +249,13 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
 
 Selection::operator AnalysisNeighborhoodPositions() const
 {
-    return AnalysisNeighborhoodPositions(data().rawPositions_.x,
-                                         data().rawPositions_.count());
+    AnalysisNeighborhoodPositions pos(data().rawPositions_.x,
+                                      data().rawPositions_.count());
+    if (hasOnlyAtoms())
+    {
+        pos.exclusionIds(atomIndices());
+    }
+    return pos;
 }
 
 
@@ -345,9 +354,15 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
 
 SelectionPosition::operator AnalysisNeighborhoodPositions() const
 {
-    return AnalysisNeighborhoodPositions(sel_->rawPositions_.x,
-                                         sel_->rawPositions_.count())
-               .selectSingleFromArray(i_);
+    AnalysisNeighborhoodPositions pos(sel_->rawPositions_.x,
+                                      sel_->rawPositions_.count());
+    if (sel_->hasOnlyAtoms())
+    {
+        // TODO: Move atomIndices() such that it can be reused here as well.
+        pos.exclusionIds(constArrayRefFromArray<int>(sel_->rawPositions_.m.mapb.a,
+                                                     sel_->rawPositions_.m.mapb.nra));
+    }
+    return pos.selectSingleFromArray(i_);
 }
 
 } // namespace gmx

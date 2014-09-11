@@ -92,8 +92,7 @@
  * The header file.h declares a gmx::File class for basic I/O support.
  *
  * The header path.h declares helpers for manipulating paths and for managing
- * directories (this has been moved to src/gromacs/fileio/ to wait for
- * resolution of #950).
+ * directories.
  *
  * The fate of these headers depends on what is decided in Redmine issue #950.
  *
@@ -109,14 +108,11 @@
  * The header flags.h implements a gmx::FlagsTemplate template for better type
  * safety when using bit flag fields.
  *
- * The header uniqueptr.h declares gmx::gmx_unique_ptr, which is intended for
- * declaring smart pointer types with unique ownership.
- *
  *
  * <H3>Other Functionality</H3>
  *
  * The header init.h declares gmx::init() and gmx::finalize() for initializing
- * and deinitializing the Gromacs library.
+ * and deinitializing the \Gromacs library.
  *
  * The header arrayref.h implements a gmx::ConstArrayRef class for exposing a
  * C array or part of a std::vector (basically, any continuous stretch of
@@ -137,6 +133,9 @@
  * The header messagestringcollector.h declares a gmx::MessageStringCollector
  * class for composing messages with context information.
  *
+ * The header sysinfo.h declares gmx_getpid() for getting the current process
+ * id.
+ *
  * The header programcontext.h declares a gmx::ProgramContextInterface that is
  * used to
  * initialize and access information about the running program, such as the
@@ -145,6 +144,9 @@
  *
  * The header qsort_threadsafe.h provides a guaranteed threadsafe
  * implementation for qsort().
+ *
+ * The header uniqueptr.h declares gmx::gmx_unique_ptr, which is intended for
+ * declaring smart pointer types with unique ownership.
  *
  * \endif
  *
@@ -161,10 +163,10 @@
 #ifndef GMX_UTILITY_H
 #define GMX_UTILITY_H
 
-#include "utility/errorcodes.h"
-#include "utility/exceptions.h"
-#include "utility/gmxassert.h"
-#include "utility/init.h"
-#include "utility/programcontext.h"
+#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/init.h"
+#include "gromacs/utility/programcontext.h"
 
 #endif

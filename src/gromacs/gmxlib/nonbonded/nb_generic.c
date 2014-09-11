@@ -34,21 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nb_generic.h"
 
 #include <math.h>
 
-#include "types/simple.h"
-#include "vec.h"
-#include "typedefs.h"
-#include "nb_generic.h"
-#include "nrnb.h"
-
-#include "nonbonded.h"
-#include "nb_kernel.h"
-
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
 
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,
@@ -417,7 +415,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fvdw             = (vvdw_rep - vvdw_disp - c6grid*(1.0/6.0)*exponent*ewclj6)*rinvsq;
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
-                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion + c6grid*sh_lj_ewald)/6.0;
+                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion - c6grid*sh_lj_ewald)/6.0;
                         }
                         else
                         {

@@ -1,0 +1,163 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+\setlength {\parindent}{0.0cm}
+\setlength {\parskip}{1ex}
+\newcommand{\ve}[1]{\mbox{\boldmath ${#1}$}} 
+  % defines bold italic vectors. To be used in text or math mode.
+  % Example: \ve{F}
+\newcommand{\de}{\mbox{d}} 
+  % defines a straight d for derivatives.
+\newcommand{\intel}{Intel {\em i\/}860}
+\newcommand{\gromacs}{GROMACS}
+\newcommand{\gromosv}[1]{GROMOS-#1}
+\newcommand{\gromos}{GROMOS}
+\newcommand{\dline}{\hline\hline}
+\newcommand{\etal}{{\em et al.}}
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+\newcommand{\bea}{\begin{eqnarray}}
+\newcommand{\eea}{\end{eqnarray}}
+\newcommand{\Dt}{{\Delta t}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\hDt}{\half \Dt}
+\newcommand{\rvi}{\ve{r}_i}
+\newcommand{\rvj}{\ve{r}_j}
+\newcommand{\rvk}{\ve{r}_k}
+\newcommand{\rij}{r_{ij}}
+\newcommand{\rvij}{\ve{r}_{ij}}
+\newcommand{\rnorm}{\frac{\rvij}{\rij}}
+\newcommand{\Fvi}{\ve{F}_i}
+\newcommand{\Fvj}{\ve{F}_j}
+\newcommand{\Fvk}{\ve{F}_k}
+\newcommand{\Fvij}{\ve{F}_{ij}}
+\newcommand{\Fvji}{\ve{F}_{ji}}
+\newcommand{\vvi}{\ve{v}_i}
+\newcommand{\al}{\alpha}
+\newcommand{\be}{\beta}
+\newcommand{\ab}{\alpha\beta}
+\newcommand{\rnij}{\ve{r}_{ij}^n}
+\newcommand{\rni}{\ve{r}_i^n}
+\newcommand{\hdt}{\frac{\Delta t}{2}}
+%\newcommand{\type}[1]{\\ {\tt \% #1}\\}
+\newcommand{\normindex}[1]{#1{\index{#1}}}
+\newcommand{\seeindexquiet}[2]{\index{#1|see{#2}}}
+\newcommand{\seeindex}[2]{#1{\seeindexquiet{#1}{#2}}}
+\newcommand{\swapindexquiet}[2]{{\index{#1 #2}}{\seeindexquiet{#2, #1}{#1 #2}}}
+\newcommand{\swapindex}[2]{{\normindex{#1 #2}}{\seeindexquiet{#2, #1}{#1 #2}}}
+\newcommand{\swapindexthreequiet}[3]{{\index{#1 #2 #3}}{\seeindexquiet{#2!#3!#1}{#1 #2 #3}}}
+\newcommand{\swapindexthree}[3]{{\normindex{#1 #2 #3}}{\seeindexquiet{#2!#3!#1}{#1 #2 #3}}}
+\newcommand{\pawsindexquiet}[2]{{\seeindexquiet{#1 #2}{#2, #1}}{\index{#2, #1}}}
+\newcommand{\pawsindex}[2]{#1 #2{\pawsindexquiet{#1}{#2}}}
+\newcommand{\boldindex}[1]{#1\index{#1@\textbf{#1}}}
+\newcommand{\eg}{\em e.g.\@}
+\newcommand{\ie}{\em i.e.\@}
+\newcommand{\mc}[3]{\multicolumn{#1}{#2}{#3}}
+
+% Commands for correct spacing in tables
+%       TeX and TUG News, Vol.2, No.3, p10, 1993. 
+%
+\newcommand\T{\rule{0pt}{2.6ex}}         % Top strut
+\newcommand\B{\rule[-1.2ex]{0pt}{0pt}}   % Bottom strut
+\newcommand{\Ts}{\rule{0pt}{2.4ex}}      % Smaller top strut (To be used in 
+                                         % math mode in \frac, together with 
+                                         % \displaystyle
+
+\newcommand{\captspace}{\vspace{2mm}}
+
+\newif\ifpdfman
+\ifx\pdfoutput\undefined
+  \pdfmanfalse % not using pdflatex  
+\else
+  \pdfoutput=1 % using pdflatex
+  \pdfmantrue
+\fi
+
+\ifpdfman
+  \usepackage[pdftex]{graphicx}
+  \usepackage[pdftex,plainpages=false,pdfpagelabels,colorlinks=true,urlcolor=blue,citecolor=blue,pdfstartview=FitV]{hyperref}
+\else
+  \usepackage{graphicx}
+  \usepackage[plainpages=false,colorlinks=true,urlcolor=blue,citecolor=blue]{hyperref}
+\fi
+
+% Work-arounds to allow unescaped underscores in text.
+% These \usepackage commands should come late in the
+% list of packages, and in this order.
+\newcommand{\UnderscoreCommands}{\do\index}
+\usepackage[strings]{underscore}
+\usepackage[english]{babel}
+
+% Slightly darker colors print better on b/w printers
+\usepackage{color}
+\definecolor{blue}{rgb}{0,0,0.5}
+\definecolor{red}{rgb}{0.5,0,0}
+
+\makeindex
+% The total a4 paper width is 210 mm, and the margins are defined
+% relative to the standard margin of 1 inch.
+\setlength{\textwidth}{15cm}
+\setlength{\oddsidemargin}{9.6mm}  %35mm-1inch
+\setlength{\evensidemargin}{-0.4mm} %25mm-1inch
+\setlength{\topmargin}{-4.4mm} % 21mm top margin
+\setlength{\textheight}{22cm}
+
+\renewcommand{\textfraction}{0.0}
+\newcommand{\qtw}{3.75cm}  % 1/4 of the textwidth
+\newcommand{\ttw}{4.33cm}  % 1/3 of the textwidth
+\newcommand{\htw}{7.5cm}  % 1/2 of the textwidth
+\newcommand{\ntw}{13cm} % 0.9 of the textwidth
+\newcommand{\gmxver}{@GMX_VERSION_STRING@}
+\newcommand{\gmxyear}{\the\year}
+\newcommand{\figref}[1]{Fig.~\ref{fig:#1}}
+\newcommand{\figsref}[2]{Figs.~\ref{fig:#1} and ~\ref{fig:#2}}
+\newcommand{\tabref}[1]{Table~\ref{tab:#1}}
+\newcommand{\eqnref}[1]{eqn.~\ref{eqn:#1}}
+\newcommand{\eqnsref}[2]{eqns.~\ref{eqn:#1} and \ref{eqn:#2}}
+\newcommand{\secref}[1]{sec.~\ref{sec:#1}}
+\newcommand{\tsecref}[1]{\ref{sec:#1}}
+\newcommand{\ssecref}[1]{\ref{subsec:#1}}
+\newcommand{\sssecref}[1]{\ref{subsubsec:#1}}
+\newcommand{\chref}[1]{chapter~\ref{ch:#1}}
+\newcommand{\appref}[1]{Appendix~\ref{app:#1}}
+\newcommand{\wwwpage}{\href{http://www.gromacs.org}{www.gromacs.org}}
+\newcommand{\gerritpage}{\href{http://gerrit.gromacs.org}{gerrit.gromacs.org}}
+\newcommand{\redminepage}{\href{http://redmine.gromacs.org}{redmine.gromacs.org}}
+% NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
+\newcommand{\mcc}[2]{\multicolumn{#1}{c|}{#2}}
+\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
+\setlength{\headwidth}{\textwidth}
+\setlength{\headheight}{1.0cm}
+
+% LocalWords:  GROMOS et al ij ji rgb eqn eqns GROMACS

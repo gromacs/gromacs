@@ -32,15 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/simd/simd_math.h"
+
+#include "config.h"
 
 #include <vector>
+
 #include "gromacs/math/utilities.h"
-#include "gromacs/simd/simd.h"
-#include "gromacs/simd/simd_math.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/simd/simd.h"
 
 #include "simd.h"
 
@@ -60,7 +62,7 @@ class SimdMathTest : public SimdTest
     public:
         ::testing::AssertionResult
                             compareSimdMathFunction(const char * refFuncExpr, const char *simdFuncExpr,
-                                                    real refFunc(real x),     gmx_simd_real_t simdFunc(gmx_simd_real_t x));
+                                                    real refFunc(real x),     gmx_simd_real_t gmx_simdcall simdFunc(gmx_simd_real_t x));
 };
 
 /*! \brief Test approximate equality of SIMD vs reference version of a function.
@@ -84,7 +86,7 @@ class SimdMathTest : public SimdTest
  */
 ::testing::AssertionResult
 SimdMathTest::compareSimdMathFunction(const char * refFuncExpr, const char *simdFuncExpr,
-                                      real refFunc(real x),     gmx_simd_real_t simdFunc(gmx_simd_real_t x))
+                                      real refFunc(real x),     gmx_simd_real_t gmx_simdcall simdFunc(gmx_simd_real_t x))
 {
     std::vector<real>            vx(GMX_SIMD_REAL_WIDTH);
     std::vector<real>            vref(GMX_SIMD_REAL_WIDTH);
@@ -208,7 +210,7 @@ TEST_F(SimdMathTest, gmxSimdInvsqrtR)
 }
 
 /*! \brief Function wrapper to return first result when testing \ref gmx_simd_invsqrt_pair_r */
-gmx_simd_real_t
+gmx_simd_real_t gmx_simdcall
 tst_invsqrt_pair0(gmx_simd_real_t x)
 {
     gmx_simd_real_t r0, r1;
@@ -217,7 +219,7 @@ tst_invsqrt_pair0(gmx_simd_real_t x)
 }
 
 /*! \brief Function wrapper to return second result when testing \ref gmx_simd_invsqrt_pair_r */
-gmx_simd_real_t
+gmx_simd_real_t gmx_simdcall
 tst_invsqrt_pair1(gmx_simd_real_t x)
 {
     gmx_simd_real_t r0, r1;
@@ -281,6 +283,23 @@ TEST_F(SimdMathTest, gmxSimdExp2R)
 {
     setRange(-100, 100);
     GMX_EXPECT_SIMD_FUNC_NEAR(ref_exp2, gmx_simd_exp2_r);
+
+    // We do not care about the SIMD implementation getting denormal values right,
+    // but they must be clamped to zero rather than producing garbage.
+    // Check by setting the absolute tolerance to machine precision.
+    setAbsTol(GMX_REAL_EPS);
+
+    // First two values will have denormal results in single, third value in double too.
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(ref_exp2(-150.0), ref_exp2(-300.0), ref_exp2(-1050.0)),
+                              gmx_simd_exp2_r(setSimdRealFrom3R(-150.0, -300.0, -1050.0)));
+
+    // Reset absolute tolerance to enforce ULP checking
+    setAbsTol(0.0);
+
+    // Make sure that underflowing values are set to zero.
+    // First two values underflow in single, third value in double too.
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(ref_exp2(-200.0), ref_exp2(-600.0), ref_exp2(-1500.0)),
+                              gmx_simd_exp2_r(setSimdRealFrom3R(-200.0, -600.0, -1500.0)));
 }
 #endif
 
@@ -294,6 +313,22 @@ TEST_F(SimdMathTest, gmxSimdExpR)
 {
     setRange(-75, 75);
     GMX_EXPECT_SIMD_FUNC_NEAR(ref_exp, gmx_simd_exp_r);
+
+    // We do not care about the SIMD implementation getting denormal values right,
+    // but they must be clamped to zero rather than producing garbage.
+    // Check by setting the absolute tolerance to machine precision.
+    setAbsTol(GMX_REAL_EPS);
+    // First two values will have denormal results in single, third value in double too.
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(ref_exp(-90.0), ref_exp(-100.0), ref_exp(-725.0)),
+                              gmx_simd_exp_r(setSimdRealFrom3R(-90.0, -100.0, -725.0)));
+
+    // Reset absolute tolerance to enforce ULP checking
+    setAbsTol(0.0);
+
+    // Make sure that underflowing values are set to zero.
+    // First two values underflow in single, third value in double too.
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(ref_exp(-150.0), ref_exp(-300.0), ref_exp(-800.0)),
+                              gmx_simd_exp_r(setSimdRealFrom3R(-150.0, -300.0, -800.0)));
 }
 
 /*! \brief Function wrapper for erf(x), with argument/return in default Gromacs precision.
@@ -451,9 +486,9 @@ TEST_F(SimdMathTest, gmxSimdPmecorrForceR)
 {
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #ifdef GMX_DOUBLE
-    setUlpTol((gmx_int64_t)(1e-10/GMX_REAL_EPS));
+    setUlpTol((gmx_int64_t)(5e-10/GMX_REAL_EPS));
 #else
-    setUlpTol((gmx_int64_t)(1e-6/GMX_REAL_EPS));
+    setUlpTol((gmx_int64_t)(5e-6/GMX_REAL_EPS));
 #endif
 
     setRange(0.15, 4);
@@ -473,9 +508,9 @@ TEST_F(SimdMathTest, gmxSimdPmecorrPotentialR)
 {
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #ifdef GMX_DOUBLE
-    setUlpTol((gmx_int64_t)(1e-10/GMX_REAL_EPS));
+    setUlpTol((gmx_int64_t)(5e-10/GMX_REAL_EPS));
 #else
-    setUlpTol((gmx_int64_t)(1e-6/GMX_REAL_EPS));
+    setUlpTol((gmx_int64_t)(5e-6/GMX_REAL_EPS));
 #endif
     setRange(0.15, 4);
     setAbsTol(GMX_REAL_EPS);

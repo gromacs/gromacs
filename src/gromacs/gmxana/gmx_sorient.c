@@ -34,22 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "macros.h"
 #include "gromacs/commandline/pargs.h"
-#include "smalloc.h"
-#include "gstat.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "pbc.h"
-#include "index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
                          atom_id index[], rvec xref, gmx_bool bPBC)
@@ -184,15 +184,15 @@ int gmx_sorient(int argc, char *argv[])
         { efTRX, NULL,  NULL,  ffREAD },
         { efTPS, NULL,  NULL,  ffREAD },
         { efNDX, NULL,  NULL,  ffOPTRD },
-        { efXVG, NULL,  "sori.xvg",  ffWRITE },
-        { efXVG, "-no", "snor.xvg",  ffWRITE },
-        { efXVG, "-ro", "sord.xvg",  ffWRITE },
-        { efXVG, "-co", "scum.xvg",  ffWRITE },
-        { efXVG, "-rc", "scount.xvg",  ffWRITE }
+        { efXVG, NULL,  "sori",   ffWRITE },
+        { efXVG, "-no", "snor",   ffWRITE },
+        { efXVG, "-ro", "sord",   ffWRITE },
+        { efXVG, "-co", "scum",   ffWRITE },
+        { efXVG, "-rc", "scount", ffWRITE }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

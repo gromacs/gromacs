@@ -39,22 +39,25 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-#include "gromacs/commandline/cmdlineinit.h"
+#include "gmxpre.h"
+
+#include "cmdlineinit.h"
+
+#include "config.h"
 
 #include <cstring>
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {

@@ -35,42 +35,41 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/genborn.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "smalloc.h"
-#include "genborn.h"
-#include "vec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "names.h"
-#include "physics.h"
-#include "domdec.h"
-#include "network.h"
-#include "gmx_fatal.h"
-#include "mtop_util.h"
-#include "pbc.h"
-#include "nrnb.h"
-#include "bondf.h"
-
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
 #  ifdef GMX_DOUBLE
-#    include "genborn_sse2_double.h"
-#    include "genborn_allvsall_sse2_double.h"
+#    include "gromacs/mdlib/genborn_allvsall_sse2_double.h"
+#    include "gromacs/mdlib/genborn_sse2_double.h"
 #  else
-#    include "genborn_sse2_single.h"
-#    include "genborn_allvsall_sse2_single.h"
+#    include "gromacs/mdlib/genborn_allvsall_sse2_single.h"
+#    include "gromacs/mdlib/genborn_sse2_single.h"
 #  endif /* GMX_DOUBLE */
 #endif   /* SSE or AVX present */
 
-#include "genborn_allvsall.h"
+#include "gromacs/mdlib/genborn_allvsall.h"
 
 /*#define DISABLE_SSE*/
 
@@ -87,7 +86,7 @@ typedef struct gbtmpnbls {
     int         list_nalloc;
 } t_gbtmpnbls;
 
-/* This function is exactly the same as the one in bondfree.c. The reason
+/* This function is exactly the same as the one in bonded/bonded.cpp. The reason
  * it is copied here is that the bonded gb-interactions are evaluated
  * not in calc_bonds, but rather in calc_gb_forces
  */

@@ -39,13 +39,14 @@
 #define _md_logging_h
 
 #include <stdio.h>
-#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void md_print_info(const t_commrec *cr, FILE *fplog,
+struct t_commrec;
+
+void md_print_info(const struct t_commrec *cr, FILE *fplog,
                    const char *fmt, ...);
 /* Print an general information message to stderr on the master node
  * and to fplog if fplog!=NULL.
@@ -53,7 +54,7 @@ void md_print_info(const t_commrec *cr, FILE *fplog,
  * the arguments after that contain the values to be printed, as in printf.
  */
 
-void md_print_warn(const t_commrec *cr, FILE *fplog,
+void md_print_warn(const struct t_commrec *cr, FILE *fplog,
                    const char *fmt, ...);
 /* As md_print_info above, but for important notices or warnings.
  * The only difference with md_print_info is that a newline is printed

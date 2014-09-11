@@ -35,15 +35,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "hackblock.h"
 
 #include <string.h>
-#include "hackblock.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "macros.h"
+
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
@@ -93,7 +94,7 @@ void free_t_restp(int nrtp, t_restp **rtp)
             free_t_bondeds(&(*rtp)[i].rb[j]);
         }
     }
-    free(*rtp);
+    sfree(*rtp);
 }
 
 void free_t_hack(int nh, t_hack **h)
@@ -166,7 +167,7 @@ void clear_t_hack(t_hack *hack)
     }
 }
 
-#define safe_strdup(str) ((str != NULL) ? strdup(str) : NULL)
+#define safe_strdup(str) ((str != NULL) ? gmx_strdup(str) : NULL)
 
 static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
 {
@@ -176,7 +177,8 @@ static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
     {
         d->a[i] = safe_strdup(s->a[i]);
     }
-    d->s = safe_strdup(s->s);
+    d->s     = safe_strdup(s->s);
+    d->match = s->match;
 }
 
 static gmx_bool contains_char(t_rbonded *s, char c)
@@ -196,6 +198,33 @@ static gmx_bool contains_char(t_rbonded *s, char c)
     return bRet;
 }
 
+gmx_bool rbonded_atoms_exist_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
+{
+    int      i, k;
+    gmx_bool matchFound = FALSE;
+    gmx_bool atomsMatch;
+
+    for (i = 0; i < nlist && !matchFound; i++)
+    {
+        atomsMatch = TRUE;
+        for (k = 0; k < natoms && atomsMatch; k++)
+        {
+            atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[k]);
+        }
+        /* Try reverse if forward match did not work */
+        if (!atomsMatch)
+        {
+            atomsMatch = TRUE;
+            for (k = 0; k < natoms && atomsMatch; k++)
+            {
+                atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[natoms-1-k]);
+            }
+        }
+        matchFound = atomsMatch;
+    }
+    return matchFound;
+}
+
 gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool bPlus)
 {
     int      i, j;
@@ -210,20 +239,26 @@ gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool
             srenew(d[i].b, d[i].nb + s[i].nb);
             for (j = 0; j < s[i].nb; j++)
             {
-                if (!(bMin && contains_char(&s[i].b[j], '-'))
-                    && !(bPlus && contains_char(&s[i].b[j], '+')))
+                /* Check if this bonded string already exists before adding.
+                 * We are merging from the main rtp to the hackblocks, so this
+                 * will mean the hackblocks overwrite the man rtp, as intended.
+                 */
+                if (!rbonded_atoms_exist_in_list(&s[i].b[j], d[i].b, d[i].nb, btsNiatoms[i]))
                 {
-                    copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
-                    d[i].nb++;
-                }
-                else if (i == ebtsBONDS)
-                {
-                    bBondsRemoved = TRUE;
+                    if (!(bMin && contains_char(&s[i].b[j], '-'))
+                        && !(bPlus && contains_char(&s[i].b[j], '+')))
+                    {
+                        copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
+                        d[i].nb++;
+                    }
+                    else if (i == ebtsBONDS)
+                    {
+                        bBondsRemoved = TRUE;
+                    }
                 }
             }
         }
     }
-
     return bBondsRemoved;
 }
 
@@ -362,7 +397,7 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
                     }
                     fprintf(out, " %s]", SS(hb[i].rb[j].b[k].s));
                 }
-                fprintf(out, "\n");
+                fprintf(out, " Entry matched: %s\n", yesno_names[hb[i].rb[j].b[k].match]);
             }
         }
         fprintf(out, "\n");

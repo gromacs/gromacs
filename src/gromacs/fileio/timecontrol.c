@@ -34,16 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/fileio/timecontrol.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "timecontrol.h"
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "xmb.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/fatalerror.h"
+
 #include "Xstuff.h"
-#include "x11.h"
-#include "xutil.h"
-#include "xdlg.h"
-#include "xmb.h"
-#include "gmx_fatal.h"
-#include "gromacs.bm"
-#include "stop.bm"
-#include "info.bm"
 #include "alert.bm"
+#include "gromacs.bm"
+#include "info.bm"
+#include "stop.bm"
+#include "x11.h"
+#include "xdlg.h"
+#include "xutil.h"
 
 #define ID_BOX     -3
 #define ID_ICON    -2

@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
-#include "testutils/testasserts.h"
+#include "gmxpre.h"
+
+#include "testasserts.h"
 
 #include <cmath>
 
@@ -47,8 +49,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

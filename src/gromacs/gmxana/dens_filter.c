@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,18 +33,19 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
 /* dens_filter.c
  * Routines for Filters and convolutions
  */
 
-#include <math.h>
-#include "typedefs.h"
 #include "dens_filter.h"
-#include "smalloc.h"
-#include "vec.h"
+
+#include <math.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_DOUBLE
 #define EXP(x) (exp(x))

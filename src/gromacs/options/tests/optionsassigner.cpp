@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,10 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
+#include "gmxpre.h"
+
+#include "gromacs/options/optionsassigner.h"
+
 #include <limits>
 #include <vector>
 
@@ -52,7 +56,6 @@
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/options/optionsassigner.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -183,11 +186,11 @@ TEST(OptionsAssignerTest, HandlesSubSections)
     int          value1 = 1;
     int          value2 = 2;
     using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addSubSection(&sub1));
+    ASSERT_NO_THROW(options.addSubSection(&sub2));
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
     ASSERT_NO_THROW(sub1.addOption(IntegerOption("p").store(&value1)));
     ASSERT_NO_THROW(sub2.addOption(IntegerOption("p").store(&value2)));
-    ASSERT_NO_THROW(options.addSubSection(&sub1));
-    ASSERT_NO_THROW(options.addSubSection(&sub2));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -223,13 +226,13 @@ TEST(OptionsAssignerTest, HandlesNoStrictSubSections)
     int          pvalue2 = 2;
     int          rvalue  = 5;
     using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addSubSection(&sub1));
+    ASSERT_NO_THROW(options.addSubSection(&sub2));
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&pvalue)));
     ASSERT_NO_THROW(sub1.addOption(IntegerOption("p").store(&pvalue1)));
     ASSERT_NO_THROW(sub1.addOption(IntegerOption("q").store(&qvalue)));
     ASSERT_NO_THROW(sub2.addOption(IntegerOption("p").store(&pvalue2)));
     ASSERT_NO_THROW(sub2.addOption(IntegerOption("r").store(&rvalue)));
-    ASSERT_NO_THROW(options.addSubSection(&sub1));
-    ASSERT_NO_THROW(options.addSubSection(&sub2));
 
     gmx::OptionsAssigner assigner(&options);
     assigner.setNoStrictSectioning(true);
@@ -824,6 +827,56 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValue)
     EXPECT_EQ(1, index);
 }
 
+TEST(OptionsAssignerStringTest, HandlesEnumDefaultValueFromVariable)
+{
+    gmx::Options           options(NULL, NULL);
+    std::string            value("test");
+    const char * const     allowed[] = { "none", "test", "value" };
+    int                    index     = -1;
+    using gmx::StringOption;
+    ASSERT_NO_THROW(options.addOption(
+                            StringOption("p").store(&value)
+                                .enumValue(allowed).storeEnumIndex(&index)));
+    EXPECT_EQ("test", value);
+    EXPECT_EQ(1, index);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ("test", value);
+    EXPECT_EQ(1, index);
+}
+
+TEST(OptionsAssignerStringTest, HandlesEnumDefaultValueFromVector)
+{
+    gmx::Options             options(NULL, NULL);
+    std::vector<std::string> value;
+    value.push_back("test");
+    value.push_back("value");
+    const char * const       allowed[] = { "none", "test", "value" };
+    int                      index[2]  = {-1, -1};
+    using gmx::StringOption;
+    ASSERT_NO_THROW(options.addOption(
+                            StringOption("p").storeVector(&value).valueCount(2)
+                                .enumValue(allowed).storeEnumIndex(index)));
+    EXPECT_EQ("test", value[0]);
+    EXPECT_EQ("value", value[1]);
+    EXPECT_EQ(1, index[0]);
+    EXPECT_EQ(2, index[1]);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ("test", value[0]);
+    EXPECT_EQ("value", value[1]);
+    EXPECT_EQ(1, index[0]);
+    EXPECT_EQ(2, index[1]);
+}
+
 TEST(OptionsAssignerStringTest, HandlesEnumDefaultIndex)
 {
     gmx::Options           options(NULL, NULL);
@@ -844,6 +897,25 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultIndex)
     EXPECT_NO_THROW(options.finish());
 
     EXPECT_EQ("test", value);
+    EXPECT_EQ(1, index);
+}
+
+TEST(OptionsAssignerStringTest, HandlesEnumDefaultIndexFromVariable)
+{
+    gmx::Options           options(NULL, NULL);
+    const char * const     allowed[] = { "none", "test", "value" };
+    int                    index     = 1;
+    using gmx::StringOption;
+    ASSERT_NO_THROW(options.addOption(
+                            StringOption("p")
+                                .enumValue(allowed).storeEnumIndex(&index)));
+    EXPECT_EQ(1, index);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
     EXPECT_EQ(1, index);
 }
 

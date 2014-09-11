@@ -50,7 +50,7 @@ MACRO(GMX_TEST_FLOAT_FORMAT FP_IEEE754 FP_BIG_ENDIAN_BYTE FP_BIG_ENDIAN_WORD)
         MESSAGE(STATUS "Checking floating point format")
 
         TRY_COMPILE(HAVE_${FP_IEEE754} "${CMAKE_BINARY_DIR}"    
-                    "${CMAKE_SOURCE_DIR}/cmake/TestFloatFormat.c"
+                    "${CMAKE_SOURCE_DIR}/cmake/TestFloatFormat.cpp"
                     COPY_FILE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestFloatFormat.bin")  
 
         if(HAVE_${FP_IEEE754})
@@ -104,6 +104,7 @@ MACRO(GMX_TEST_FLOAT_FORMAT FP_IEEE754 FP_BIG_ENDIAN_BYTE FP_BIG_ENDIAN_WORD)
             MESSAGE(STATUS "Checking floating point format - IEEE754 (LE byte, LE word)")
         else()
             MESSAGE(STATUS "Checking floating point format - unknown")
+            MESSAGE(WARNING "Cannot detect your floating-point format. It is extremely unlikely to be anything else than IEEE754, but if we do not know the endian we need to rely on your OS providing the math functions erfd() and erfcd() rather than using our built-in ones.")
         endif()
     ENDIF()
 ENDMACRO(GMX_TEST_FLOAT_FORMAT FP_IEEE754 FP_BIG_ENDIAN_BYTE FP_BIG_ENDIAN_WORD)

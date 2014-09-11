@@ -47,12 +47,16 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/refdata.h"
+
+// currently the bug manifests itself only in AbstractAnalysisData testing
+#if (defined __ICL && __ICL >= 1400) || (defined __ICC & __ICC >= 1400)
+#define INTEL_STATIC_ANON_NAMESPACE_BUG //see #1558 for details
+#endif
 
 namespace gmx
 {

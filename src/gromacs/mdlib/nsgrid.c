@@ -35,26 +35,24 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/nsgrid.h"
+
+#include <stdio.h>
 #include <stdlib.h>
 
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "nsgrid.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "network.h"
-#include "domdec.h"
-#include "pbc.h"
-#include <stdio.h>
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /***********************************
  *         Grid Routines
@@ -291,7 +289,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
                      */
                     /* Determine the shift for the corners of the triclinic box */
                     add_tric = izones_size[j]*box[j][i]/box[j][j];
-                    if (dd && dd->ndim == 1 && j == ZZ)
+                    if (dd->ndim == 1 && j == ZZ)
                     {
                         /* With 1D domain decomposition the cg's are not in
                          * the triclinic box, but trilinic x-y and rectangular y-z.

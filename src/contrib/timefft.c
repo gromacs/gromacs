@@ -38,8 +38,8 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "xvgr.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
 #include "mdrun.h"
 #include "main.h"
@@ -87,8 +87,7 @@ int main(int argc,char *argv[])
   cr = init_par(&argc,&argv);
   if (MASTER(cr))
     CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,
-		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
+  parse_common_args(&argc,argv, PCA_CAN_SET_DEFFNM,
 		    NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
   gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,1,0,&fplog);
 

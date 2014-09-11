@@ -38,10 +38,10 @@
 #ifndef GMX_GMXPREPROCESS_TOPIO_H
 #define GMX_GMXPREPROCESS_TOPIO_H
 
-#include "typedefs.h"
-#include "readir.h"
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +55,7 @@ char **do_top(gmx_bool         bVerbose,
               const char      *topppfile,
               t_gromppopts    *opts,
               gmx_bool         bZero,
-              t_symtab        *symtab,
+              struct t_symtab *symtab,
               t_params         plist[],
               int             *combination_rule,
               double          *repulsion_power,

@@ -34,40 +34,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <string.h>
 #include <stdio.h>
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "sysstuff.h"
-#include "gmx_fatal.h"
-#include "network.h"
-#include "txtdump.h"
-#include "names.h"
-#include "physics.h"
-#include "vec.h"
-#include "gromacs/math/utilities.h"
-#include "main.h"
-#include "force.h"
-#include "vcm.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
-#include "network.h"
-#include "rbin.h"
-#include "tgroup.h"
-#include "gromacs/fileio/xtcio.h"
+#include <string.h>
+
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
-#include "domdec.h"
-#include "constr.h"
-#include "checkpoint.h"
-#include "xvgr.h"
-#include "md_support.h"
-#include "mdrun.h"
-#include "sim_util.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/md_support.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/rbin.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_global_stat
 {

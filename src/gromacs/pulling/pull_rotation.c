@@ -34,38 +34,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "pull_rotation.h"
+
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "domdec.h"
-#include "smalloc.h"
-#include "network.h"
-#include "pbc.h"
-#include "mdrun.h"
-#include "txtdump.h"
-#include "names.h"
-#include "mtop_util.h"
-#include "names.h"
-#include "nrjac.h"
-#include "vec.h"
-#include "gmx_ga2la.h"
-#include "xvgr.h"
-#include "copyrite.h"
-#include "macros.h"
 
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/qsort_threadsafe.h"
-#include "gromacs/pulling/pull_rotation.h"
-#include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/math/utilities.h"
+#include "gromacs/utility/smalloc.h"
 
 static char *RotStr = {"Enforced rotation:"};
 
@@ -942,7 +942,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
             add_to_string_aligned(&LegendStr, buf);
 
             sprintf(buf2, "%s (degrees)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
         }
         for (g = 0; g < rot->ngrp; g++)
@@ -962,19 +962,19 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
             }
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (degrees)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
 
             sprintf(buf, "tau%d", g);
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (kJ/mol)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
 
             sprintf(buf, "energy%d", g);
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (kJ/mol)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
         }
         fprintf(fp, "#\n");

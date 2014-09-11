@@ -42,14 +42,15 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
+
+#include "selmethod.h"
 
 /*! \internal
  * \brief
@@ -230,7 +231,7 @@ init_data_common(int /* npar */, gmx_ana_selparam_t *param)
 static void
 init_common(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
+    t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     if ((param[0].flags & SPAR_SET) && d->cutoff <= 0)
     {
@@ -254,7 +255,7 @@ free_data_common(void *data)
 static void
 init_frame_common(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
+    t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     d->nbsearch.reset();
     gmx::AnalysisNeighborhoodPositions pos(d->p.x, d->p.count());
@@ -272,7 +273,7 @@ static void
 evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
+    t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     out->nr = pos->m.mapb.nra;
     for (int b = 0; b < pos->count(); ++b)
@@ -296,7 +297,7 @@ static void
 evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
+    t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     out->u.g->isize = 0;
     for (int b = 0; b < pos->count(); ++b)

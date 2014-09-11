@@ -34,30 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "string2.h"
-#include "sysstuff.h"
-#include "princ.h"
-#include "gromacs/fileio/futil.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "names.h"
-#include "gmx_fatal.h"
-#include "macros.h"
-#include "index.h"
-#include "symtab.h"
-#include "readinp.h"
-#include "readir.h"
-#include "mdatoms.h"
-#include "pbc.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static char pulldim[STRLEN];
@@ -149,7 +143,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     RTYPE("pull-r1",          pull->cyl_r1, 1.0);
     CTYPE("Switch from r1 to r0 in case of dynamic reaction force");
     RTYPE("pull-r0",          pull->cyl_r0, 1.5);
-    RTYPE("pull_constr_tol",  pull->constr_tol, 1E-6);
+    RTYPE("pull-constr-tol",  pull->constr_tol, 1E-6);
     EETYPE("pull-start",      *bStart, yesno_names);
     EETYPE("pull-print-reference", pull->bPrintRef, yesno_names);
     ITYPE("pull-nstxout",     pull->nstxout, 10);
@@ -251,6 +245,11 @@ void make_pull_groups(t_pull *pull,
     for (g = 1; g < pull->ngroup; g++)
     {
         pgrp = &pull->group[g];
+
+        if (strcmp(pgnames[g], "") == 0)
+        {
+            gmx_fatal(FARGS, "Group pull_group%d required by grompp was undefined.", g);
+        }
 
         ig        = search_string(pgnames[g], grps->nr, gnames);
         pgrp->nat = grps->index[ig+1] - grps->index[ig];

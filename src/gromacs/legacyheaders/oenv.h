@@ -38,8 +38,8 @@
 #ifndef _oenv_h
 #define _oenv_h
 
-#include "types/simple.h"
-#include "types/oenv.h"
+#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,9 +80,6 @@ void output_env_done(output_env_t oenv);
 int output_env_get_verbosity(const output_env_t oenv);
 /* return the verbosity */
 
-int output_env_get_debug_level(const output_env_t oenv);
-/* return the debug level */
-
 const char *output_env_get_time_unit(const output_env_t oenv);
 /* return time unit (e.g. ps or ns) */
 
@@ -96,7 +93,7 @@ real output_env_get_time_factor(const output_env_t oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
 real output_env_get_time_invfactor(const output_env_t oenv);
-/* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
+/* return inverse time conversion factor to ps (i.e. 1e3 for ns->ps) */
 
 real output_env_conv_time(const output_env_t oenv, real time);
 /* return converted time */
@@ -110,14 +107,10 @@ gmx_bool output_env_get_view(const output_env_t oenv);
 xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
 /* Returns enum (see above) for xvg output formatting */
 
-const char *output_env_get_program_name(const output_env_t oenv);
-/* return the program name */
-
-const char *output_env_get_cmd_line(const output_env_t oenv);
-/* return the command line */
-
-const char *output_env_get_short_program_name(const output_env_t oenv);
-/* get the short version (without path component) of the program name */
+/*! \brief
+ * Returns display name for the currently running program.
+ */
+const char *output_env_get_program_display_name(const output_env_t oenv);
 
 #ifdef __cplusplus
 }
@@ -130,11 +123,18 @@ class ProgramContextInterface;
 void output_env_init(output_env_t *oenvp,
                      const gmx::ProgramContextInterface &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
-                     int verbosity, int debug_level);
+                     int verbosity);
 /* initialize an output_env structure, setting the command line,
    the default time value a gmx_boolean view that is set to TRUE when the
    user requests direct viewing of graphs,
    the graph formatting type, the verbosity, and debug level */
+
+/*! \brief
+ * Returns gmx::ProgramContextInterface from an output_env structure.
+ */
+const gmx::ProgramContextInterface &
+output_env_get_program_context(const output_env_t oenv);
+
 #endif
 
 #endif

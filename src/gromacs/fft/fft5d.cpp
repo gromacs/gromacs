@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,15 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <algorithm>
+#include "fft5d.h"
 
+#include "config.h"
+
+#include <assert.h>
+#include <float.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <algorithm>
+
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef NOGMX
 #define GMX_PARALLEL_ENV_INITIALIZED 1
@@ -52,20 +61,12 @@
 #endif
 #endif
 
-#include "gromacs/utility/gmxmpi.h"
-
 #ifdef GMX_OPENMP
 /* TODO: Do we still need this? Are we still planning ot use fftw + OpenMP? */
 #define FFT5D_THREADS
 /* requires fftw compiled with openmp */
 /* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif
-
-#include "fft5d.h"
-#include <float.h>
-#include <math.h>
-#include <assert.h>
-#include "smalloc.h"
 
 #ifndef __FLT_EPSILON__
 #define __FLT_EPSILON__ FLT_EPSILON
@@ -76,11 +77,9 @@
 FILE* debug = 0;
 #endif
 
-#include "gmx_fatal.h"
-
-
 #ifdef GMX_FFT_FFTW3
 #include "thread_mpi/mutex.h"
+
 #include "gromacs/utility/exceptions.h"
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */
@@ -89,19 +88,18 @@ static tMPI::mutex big_fftw_mutex;
 #define FFTW_UNLOCK try { big_fftw_mutex.unlock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 #endif /* GMX_FFT_FFTW3 */
 
+#ifdef GMX_MPI
 /* largest factor smaller than sqrt */
 static int lfactor(int z)
 {
-    int i;
-    for (i = static_cast<int>(sqrt(static_cast<double>(z)));; i--)
+    int i = static_cast<int>(sqrt(static_cast<double>(z)));
+    while (z%i != 0)
     {
-        if (z%i == 0)
-        {
-            return i;
-        }
+        i--;
     }
-    return 1;
+    return i;
 }
+#endif
 
 /* largest factor */
 static int l2factor(int z)
@@ -109,16 +107,17 @@ static int l2factor(int z)
     int i;
     if (z == 1)
     {
-        return 1;
+        i = 1;
     }
-    for (i = z/2;; i--)
+    else
     {
-        if (z%i == 0)
+        i = z/2;
+        while (z%i != 0)
         {
-            return i;
+            i--;
         }
     }
-    return 1;
+    return i;
 }
 
 /* largest prime factor: WARNING: slow recursion, only use for small numbers */
@@ -213,7 +212,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     if (debug)
     {
-        fprintf(debug, "FFT5D: Using %dx%d processor grid, rank %d,%d\n",
+        fprintf(debug, "FFT5D: Using %dx%d rank grid, rank %d,%d\n",
                 P[0], P[1], prank[0], prank[1]);
     }
 
@@ -1344,7 +1343,7 @@ fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int
     {
         if (prank == 0)
         {
-            printf("FFT5D: WARNING: Number of processors %d not evenly dividable by %d\n", size, P0);
+            printf("FFT5D: WARNING: Number of ranks %d not evenly divisible by %d\n", size, P0);
         }
         P0 = lfactor(size);
     }

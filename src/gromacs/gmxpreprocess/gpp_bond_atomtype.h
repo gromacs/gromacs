@@ -38,12 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_GPP_BONDATOMTYPE_H
 #define GMX_GMXPREPROCESS_GPP_BONDATOMTYPE_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
-#include "typedefs.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,7 +61,7 @@ t_bond_atomtype init_bond_atomtype(void);
 void done_bond_atomtype(t_bond_atomtype *at);
 /* Free the memory in the structure */
 
-void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
+void add_bond_atomtype(t_bond_atomtype at, struct t_symtab *tab,
                        char *name);
 /* Add a complete new atom type to an existing atomtype structure */
 

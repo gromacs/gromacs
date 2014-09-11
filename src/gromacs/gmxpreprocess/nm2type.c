@@ -35,32 +35,27 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nm2type.h"
 
 #include <string.h>
 
-#include "gromacs/math/utilities.h"
-#include "macros.h"
-#include "bondf.h"
-#include "string2.h"
-#include "smalloc.h"
-#include "sysstuff.h"
 #include "gromacs/fileio/confio.h"
-#include "physics.h"
-#include "vec.h"
-#include "gromacs/math/3dview.h"
-#include "txtdump.h"
-#include "readinp.h"
-#include "names.h"
-#include "toppush.h"
-#include "pdb2top.h"
-#include "gpp_nextnb.h"
-#include "gpp_atomtype.h"
-#include "fflibutil.h"
-
-#include "nm2type.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 {
@@ -108,7 +103,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
                         {
                             gmx_fatal(FARGS, "Error on line %d of %s", line, libfilename);
                         }
-                        newbuf[i] = strdup(nbbuf);
+                        newbuf[i] = gmx_strdup(nbbuf);
                         strcat(format, "%*s%*s");
                     }
                 }
@@ -116,8 +111,8 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
                 {
                     newbuf = NULL;
                 }
-                nm2t[nnnm].elem   = strdup(elem);
-                nm2t[nnnm].type   = strdup(type);
+                nm2t[nnnm].elem   = gmx_strdup(elem);
+                nm2t[nnnm].type   = gmx_strdup(type);
                 nm2t[nnnm].q      = qq;
                 nm2t[nnnm].m      = mm;
                 nm2t[nnnm].nbonds = nb;
@@ -199,7 +194,7 @@ static int match_str(const char *atom, const char *template_string)
     }
 }
 
-int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
+int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
             gpp_atomtype_t atype, int *nbonds, t_params *bonds)
 {
     int      cur = 0;

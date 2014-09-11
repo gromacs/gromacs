@@ -34,12 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "oenv.h"
+#include "gmxpre.h"
 
-#include "smalloc.h"
+#include "gromacs/legacyheaders/oenv.h"
 
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 struct output_env
 {
@@ -50,7 +51,6 @@ struct output_env
         view        = FALSE;
         xvg_format  = exvgNONE;
         verbosity   = 0;
-        debug_level = 0;
     }
 
     const gmx::ProgramContextInterface  &programContext;
@@ -63,8 +63,6 @@ struct output_env
     xvg_format_t                         xvg_format;
     /* The level of verbosity for this program */
     int                                  verbosity;
-    /* the debug level */
-    int                                  debug_level;
 };
 
 /* The source code in this file should be thread-safe.
@@ -95,7 +93,7 @@ static const char *time_units_xvgr[] = {
 void output_env_init(output_env_t *oenvp,
                      const gmx::ProgramContextInterface &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
-                     int verbosity, int debug_level)
+                     int verbosity)
 {
     try
     {
@@ -105,7 +103,6 @@ void output_env_init(output_env_t *oenvp,
         oenv->view        = view;
         oenv->xvg_format  = xvg_format;
         oenv->verbosity   = verbosity;
-        oenv->debug_level = debug_level;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -129,11 +126,6 @@ void output_env_done(output_env_t oenv)
 int output_env_get_verbosity(const output_env_t oenv)
 {
     return oenv->verbosity;
-}
-
-int output_env_get_debug_level(const output_env_t oenv)
-{
-    return oenv->debug_level;
 }
 
 const char *output_env_get_time_unit(const output_env_t oenv)
@@ -202,30 +194,21 @@ xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
     return oenv->xvg_format;
 }
 
-const char *output_env_get_program_name(const output_env_t oenv)
+const char *output_env_get_program_display_name(const output_env_t oenv)
 {
+    const char *displayName = NULL;
+
     try
     {
-        return oenv->programContext.fullBinaryPath();
+        displayName = oenv->programContext.displayName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return displayName;
 }
 
-const char *output_env_get_short_program_name(const output_env_t oenv)
+const gmx::ProgramContextInterface &
+output_env_get_program_context(const output_env_t oenv)
 {
-    try
-    {
-        // TODO: Use the display name once it doesn't break anything.
-        return oenv->programContext.programName();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-const char *output_env_get_cmd_line(const output_env_t oenv)
-{
-    try
-    {
-        return oenv->programContext.commandLine();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return oenv->programContext;
 }

@@ -37,16 +37,16 @@
 #ifndef GMX_GMXANA_GSTAT_H
 #define GMX_GMXANA_GSTAT_H
 
-#include "../legacyheaders/typedefs.h"
-#include "../commandline/pargs.h"
-#include "../legacyheaders/oenv.h"
-#include "../legacyheaders/mshift.h"
-#include "../legacyheaders/rmpbc.h"
-#include "../legacyheaders/index.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/index.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmx_residuetype_t;
 
 /***********************************************
  *
@@ -300,7 +300,6 @@ void read_ang_dih(const char *trj_fn,
  * Read a trajectory and calculate angles and dihedrals.
  *
  * trj_fn      file name of trajectory
- * tpb_fn      file name of tpb file
  * bAngles     do we have to read angles or dihedrals
  * bSaveAll    do we have to store all in the dih array
  * bRb         do we have Ryckaert-Bellemans dihedrals (trans = 0)
@@ -399,7 +398,7 @@ gmx_bool has_dihedral(int Dih, t_dlist *dl);
 t_dlist *mk_dlist(FILE *log,
                   t_atoms *atoms, int *nlist,
                   gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
-                  int maxchi, int r0, gmx_residuetype_t rt);
+                  int maxchi, int r0, struct gmx_residuetype_t *rt);
 
 void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt,  int printtype,
               gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega, int maxchi);

@@ -34,21 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "strdb.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "strdb.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "string2.h"
-
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 gmx_bool get_a_line(FILE *fp, char line[], int n)
 {
@@ -145,7 +142,7 @@ int get_strings(const char *db, char ***strings)
 #ifdef DEBUG
         fprintf(stderr, "Have read: %s\n", buf);
 #endif
-        ptr[i] = strdup(buf);
+        ptr[i] = gmx_strdup(buf);
     }
     gmx_ffclose(in);
 
@@ -226,7 +223,7 @@ int get_file(const char *db, char ***strings)
             maxi += 50;
             srenew(ptr, maxi);
         }
-        ptr[i] = strdup(buf);
+        ptr[i] = gmx_strdup(buf);
         i++;
     }
     nstr = i;

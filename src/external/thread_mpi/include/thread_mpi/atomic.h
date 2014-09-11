@@ -116,7 +116,7 @@ extern "C"
 #endif
 
 /* now check specifically for several architectures: */
-#if ((defined(i386) || defined(__x86_64__)) && !defined(__OPEN64__))
+#if ((defined(__i386__) || defined(__x86_64__)) && !defined(__OPEN64__))
 /* first x86: */
 #include "atomic/gcc_x86.h"
 
@@ -169,7 +169,8 @@ extern "C"
 #elif defined(__FUJITSU) && defined(__sparc__)
 
 /* Fujitsu FX10 SPARC compiler requires gcc compatibility with -Xg */
-#error Atomics support for Fujitsu FX10 compiler requires -Xg (gcc compatibility)
+#warning Atomics support for Fujitsu FX10 compiler requires -Xg (gcc compatibility)
+#define TMPI_NO_ATOMICS
 
 #elif defined(_CRAYC)
 

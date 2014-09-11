@@ -40,9 +40,11 @@
  * \ingroup module_commandline
  */
 // For GMX_BINARY_SUFFIX
-#ifdef HAVE_CONFIG_H
+#include "gmxpre.h"
+
+#include "gromacs/commandline/cmdlinemodulemanager.h"
+
 #include "config.h"
-#endif
 
 #include <vector>
 
@@ -50,7 +52,6 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
-#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/file.h"
 
@@ -83,6 +84,7 @@ class MockModule : public gmx::CommandLineModuleInterface
         virtual const char *name() const { return name_; }
         virtual const char *shortDescription() const { return descr_; }
 
+        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
         MOCK_METHOD2(run, int(int argc, char *argv[]));
         MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext &context));
 
@@ -93,6 +95,11 @@ class MockModule : public gmx::CommandLineModuleInterface
         }
 
     private:
+        //! Disable nice() calls for tests.
+        void disableNice(gmx::CommandLineModuleSettings *settings)
+        {
+            settings->setDefaultNiceLevel(0);
+        }
         //! Checks the context passed to writeHelp().
         void checkHelpContext(const gmx::CommandLineHelpContext &context) const;
 
@@ -107,6 +114,8 @@ MockModule::MockModule(const char *name, const char *description)
     using ::testing::_;
     using ::testing::Invoke;
     using ::testing::WithArg;
+    ON_CALL(*this, init(_))
+        .WillByDefault(WithArg<0>(Invoke(this, &MockModule::disableNice)));
     ON_CALL(*this, writeHelp(_))
         .WillByDefault(WithArg<0>(Invoke(this, &MockModule::checkHelpContext)));
 }
@@ -209,6 +218,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, init(_));
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
@@ -312,6 +322,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, init(_));
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
@@ -331,6 +342,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, init(_));
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
@@ -350,6 +362,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, init(_));
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;

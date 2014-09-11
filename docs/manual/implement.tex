@@ -1,0 +1,575 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+\chapter{Some implementation details}
+In this chapter we will present some implementation details. This is
+far from complete, but we deemed it necessary to clarify some things
+that would otherwise be hard to understand.
+
+\section{Single Sum Virial in {\gromacs}}
+\label{sec:virial}
+The \normindex{virial} $\Xi$ can be written in full tensor form as:
+\beq
+\Xi~=~-\half~\sum_{i < j}^N~\rvij\otimes\Fvij
+\eeq
+where $\otimes$ denotes the {\em direct product} of two vectors.\footnote
+{$({\bf u}\otimes{\bf v})^{\ab}~=~{\bf u}_{\al}{\bf v}_{\be}$} When this is 
+computed in the inner loop of an MD program 9 multiplications and 9
+additions are needed.\footnote{The calculation of 
+Lennard-Jones and Coulomb forces is about 50 floating point operations.}
+
+Here it is shown how it is possible to extract the virial calculation
+from the inner loop~\cite{Bekker93b}.
+
+\subsection{Virial}
+In a system with \index{periodic boundary conditions}, the
+periodicity must be taken into account for the virial:
+\beq
+\Xi~=~-\half~\sum_{i < j}^{N}~\rnij\otimes\Fvij
+\eeq
+where $\rnij$ denotes the distance vector of the
+{\em nearest image} of atom $i$ from atom $j$. In this definition we add
+a {\em shift vector} $\delta_i$ to the position vector $\rvi$ 
+of atom $i$. The difference vector $\rnij$ is thus equal to:
+\beq
+\rnij~=~\rvi+\delta_i-\rvj
+\eeq
+or in shorthand:
+\beq
+\rnij~=~\rni-\rvj
+\eeq
+In a triclinic system, there are 27 possible images of $i$; when a truncated 
+octahedron is used, there are 15 possible images.
+
+\subsection{Virial from non-bonded forces}
+Here the derivation for the single sum virial in the {\em non-bonded force} 
+routine is given. $i \neq j$ in all formulae below.
+\newcommand{\di}{\delta_{i}}
+\newcommand{\qrt}{\frac{1}{4}}
+\bea
+\Xi	
+&~=~&-\half~\sum_{i < j}^{N}~\rnij\otimes\Fvij				\\
+&~=~&-\qrt\sum_{i=1}^N~\sum_{j=1}^N ~(\rvi+\di-\rvj)\otimes\Fvij	\\
+&~=~&-\qrt\sum_{i=1}^N~\sum_{j=1}^N ~(\rvi+\di)\otimes\Fvij-\rvj\otimes\Fvij	\\
+&~=~&-\qrt\left(\sum_{i=1}^N~\sum_{j=1}^N ~(\rvi+\di)\otimes\Fvij~-~\sum_{i=1}^N~\sum_{j=1}^N ~\rvj\otimes\Fvij\right)	\\
+&~=~&-\qrt\left(\sum_{i=1}^N~(\rvi+\di)\otimes\sum_{j=1}^N~\Fvij~-~\sum_{j=1}^N ~\rvj\otimes\sum_{i=1}^N~\Fvij\right)	\\
+&~=~&-\qrt\left(\sum_{i=1}^N~(\rvi+\di)\otimes\Fvi~+~\sum_{j=1}^N ~\rvj\otimes\Fvj\right)	\\
+&~=~&-\qrt\left(2~\sum_{i=1}^N~\rvi\otimes\Fvi+\sum_{i=1}^N~\di\otimes\Fvi\right)
+\eea
+In these formulae we introduced:
+\bea
+\Fvi&~=~&\sum_{j=1}^N~\Fvij					\\
+\Fvj&~=~&\sum_{i=1}^N~\Fvji
+\eea
+which is the total force on $i$ with respect to $j$. Because we use Newton's Third Law:
+\beq
+\Fvij~=~-\Fvji
+\eeq
+we must, in the implementation, double the term containing the shift $\delta_i$.
+
+\subsection{The intra-molecular shift (mol-shift)}
+For the bonded forces and SHAKE it is possible to make a {\em mol-shift}
+list, in which the periodicity is stored. We simple have an array {\tt mshift}
+in which for each atom an index in the {\tt shiftvec} array is stored.
+
+The algorithm to generate such a list can be derived from graph theory,
+considering each particle in a molecule as a bead in a graph, the bonds 
+as edges.
+\begin{enumerate}
+\item[1]	Represent the bonds and atoms as bidirectional graph
+\item[2]	Make all atoms white
+\item[3]	Make one of the white atoms black (atom $i$) and put it in the
+		central box
+\item[4]	Make all of the neighbors of $i$ that are currently 
+		white, gray 
+\item[5]	Pick one of the gray atoms (atom $j$), give it the
+		correct periodicity with respect to any of 
+		its black neighbors
+		and make it black
+\item[6]	Make all of the neighbors of $j$ that are currently 
+		white, gray
+\item[7]	If any gray atom remains, go to [5]
+\item[8]	If any white atom remains, go to [3]
+\end{enumerate}
+Using this algorithm we can 
+\begin{itemize}
+\item	optimize the bonded force calculation as well as SHAKE 
+\item	calculate the virial from the bonded forces
+	in the single sum method again
+\end{itemize}
+
+Find a representation of the bonds as a bidirectional graph.
+
+\subsection{Virial from Covalent Bonds}
+Since the covalent bond force gives a contribution to the virial, we have:
+\bea
+b	&~=~&	\|\rnij\|					\\
+V_b	&~=~&	\half k_b(b-b_0)^2				\\
+\Fvi	&~=~&	-\nabla V_b					\\
+	&~=~&	k_b(b-b_0)\frac{\rnij}{b}			\\
+\Fvj	&~=~&	-\Fvi
+\eea
+The virial contribution from the bonds then is:
+\bea
+\Xi_b	&~=~&	-\half(\rni\otimes\Fvi~+~\rvj\otimes\Fvj)	\\
+	&~=~&	-\half\rnij\otimes\Fvi
+\eea
+
+\subsection{Virial from SHAKE}
+An important contribution to the virial comes from shake. Satisfying 
+the constraints a force {\bf G} that is exerted on the particles ``shaken.'' If this
+force does not come out of the algorithm (as in standard SHAKE) it can be
+calculated afterward (when using {\em leap-frog}) by:
+\bea
+\Delta\rvi&~=~&\rvi(t+\Dt)-
+[\rvi(t)+{\bf v}_i(t-\frac{\Dt}{2})\Dt+\frac{\Fvi}{m_i}\Dt^2]	\\
+{\bf G}_i&~=~&\frac{m_i\Delta\rvi}{\Dt^2}
+\eea
+This does not help us in the general case. Only when no periodicity
+is needed (like in rigid water) this can be used, otherwise
+we must add the virial calculation in the inner loop of SHAKE.
+
+When it {\em is} applicable the virial can be calculated in the single sum way:
+\beq
+\Xi~=~-\half\sum_i^{N_c}~\rvi\otimes\Fvi
+\eeq
+where $N_c$ is the number of constrained atoms.
+
+%Another method is the Non-Iterative shake as proposed (and implemented)
+%by Yoneya. In this algorithm the Lagrangian multipliers are solved in a 
+%matrix equation, and given these multipliers it is easy to get the periodicity
+%in the virial afterwards. 
+
+%More...
+
+
+\section{Optimizations}
+Here we describe some of the algorithmic optimizations used 
+in {\gromacs}, apart from parallelism. 
+One of these, the implementation of the 
+1.0/sqrt(x) function is treated separately in \secref{sqrt}.
+The most important other optimizations are described below.
+
+\subsection{Inner Loops for Water}
+\label{sec:waterloops}
+{\gromacs} uses special inner loops to calculate non-bonded
+interactions for water molecules with other atoms, and yet
+another set of loops for interactions between pairs of
+water molecules. There highly optimized loops for two types of water models.
+For three site models similar to
+SPC~\cite{Berendsen81}, {\ie}:
+\begin{enumerate}
+\item   There are three atoms in the molecule.
+\item   The whole molecule is a single charge group.
+\item   The first atom has Lennard-Jones (\secref{lj}) and 
+        Coulomb (\secref{coul}) interactions.
+\item   Atoms two and three have only Coulomb interactions, 
+        and equal charges.
+\end{enumerate}
+These loops also works for the SPC/E~\cite{Berendsen87} and 
+TIP3P~\cite{Jorgensen83} water models.
+And for four site water models similar to TIP4P~\cite{Jorgensen83}:
+\begin{enumerate}
+\item   There are four atoms in the molecule.
+\item   The whole molecule is a single charge group.
+\item   The first atom has only Lennard-Jones (\secref{lj}) interactions.
+\item   Atoms two and three have only Coulomb (\secref{coul}) interactions, 
+        and equal charges.
+\item   Atom four has only Coulomb interactions.
+\end{enumerate}
+
+The benefit of these implementations is that there are more floating-point
+operations in a single loop, which implies that some compilers
+can schedule the code better. However, it turns out that even
+some of the most advanced compilers have problems with scheduling, 
+implying that manual tweaking is necessary to get optimum 
+\normindex{performance}.
+This may include common-sub-expression elimination, or moving
+code around. 
+
+\subsection{Fortran Code}
+Unfortunately, on a few platforms \normindex{Fortran} compilers are
+still better than C-compilers. For some machines ({\eg} SGI
+Power Challenge) the difference may be up to a factor of 3, in the
+case of vector computers this may be even larger. Therefore, some of
+the routines that take up a lot of computer time have been translated
+into Fortran and even assembly code for Intel and AMD x86 processors.
+In most cases, the Fortran or assembly loops should be selected 
+automatically by the {\tt configure} script when appropriate, but you can
+also tweak this by setting options to the {\tt configure} script.
+
+\section{Computation of the 1.0/sqrt function}
+\label{sec:sqrt}
+\subsection{Introduction}
+The {\gromacs} project started with the development of a $1/\sqrt{x}$
+processor that calculates:
+\begin{equation}
+Y(x) = \frac{1}{ \sqrt{x} }
+\end{equation}
+As the project continued, the {\intel} processor was used to implement
+{\gromacs}, which now turned into almost a full software project.  The
+$1/\sqrt{x}$ processor was implemented using a Newton-Raphson
+iteration scheme for one step. For this it needed look-up tables to
+provide the initial approximation. The $1/\sqrt{x}$ function makes it
+possible to use two almost independent tables for the exponent seed
+and the fraction seed with the IEEE floating-point representation.
+
+\subsection{General}
+According to~\cite{Bekker87} the $1/\sqrt{x}$ function can be evaluated using
+the Newton-Raphson iteration scheme. The inverse function is:
+\begin{equation}
+X(y) = \frac{1}{y^{2}}
+\end{equation}
+So instead of calculating:
+\begin{equation}
+Y(a) = q
+\end{equation}
+the equation:
+\begin{equation}
+X(q) - a = 0
+\label{eqn:inversef}
+\end{equation}
+can now be solved using Newton-Raphson. An iteration is performed by
+calculating:
+\begin{equation}
+y_{n+1} = y_{n} - \frac{f(y_{n})}{f'(y_{n})}
+\label{eqn:nr}
+\end{equation}
+The absolute error $\varepsilon$, in this approximation is defined by:
+\begin{equation}
+\varepsilon \equiv y_{n} - q
+\end{equation}
+Using Taylor series expansion to estimate the error results in:
+\begin{equation}
+\varepsilon _{n+1} = - \frac{\varepsilon _{n}^{2}}{2}
+                       \frac{ f''(y_{n})}{f'(y_{n})}
+\label{eqn:taylor}
+\end{equation}
+according to~\cite{Bekker87} equation (3.2). This is an estimation of the
+absolute error.
+
+\subsection{Applied to floating-point numbers}
+Floating-point numbers in IEEE 32 bit single-precision format have a nearly
+constant relative error of $\Delta x / x = 2^{-24}$. As seen earlier in the
+Taylor series expansion equation (\eqnref{taylor}), the error in every
+iteration step is absolute and in general dependent of $y$. If the error is
+expressed as a relative error $\varepsilon_{r}$ the following holds:
+\begin{equation}
+\varepsilon _{{r}_{n+1}} \equiv \frac{\varepsilon_{n+1}}{y}
+\end{equation}
+and so:
+\begin{equation}
+\varepsilon _{{r}_{n+1}} =
+- ( \frac{\varepsilon _{n}}{y} )^{2} y \frac{ f''}{2f'}
+\end{equation}
+For the function $f(y) = y^{-2}$ the term $y f''/2f'$ is constant (equal
+to $-3/2$) so the relative error $\varepsilon _{r_{n}}$ is independent of $y$.
+\begin{equation}
+\varepsilon _{{r}_{n+1}} =
+\frac{3}{2} (\varepsilon_{r_{n}})^{2}
+\label{eqn:epsr}
+\end{equation}
+
+The conclusion of this is that the function $1/\sqrt{x}$ can be
+calculated with a specified accuracy.
+
+\begin{figure}
+\begin{center}
+\newcommand{\twltt}{\tt}
+\setlength{\unitlength}{0.0080in}
+\begin{picture}(489,176)(40,390)
+\thicklines
+\put(180,505){$\underbrace{\hspace{2.68in}}$}
+\put( 60,505){$\underbrace{\hspace{0.88in}}$}
+\put( 40,510){\framebox(480,30){}}
+\put( 45,505){\vector( 0,-1){ 15}}
+\put( 40,540){\dashbox{4}(0,0){}}
+\multiput(250,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(220,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(190,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(280,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(310,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(340,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(370,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(400,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(430,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(460,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(490,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(205,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(235,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(265,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(295,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(325,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(355,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(385,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(415,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(445,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(475,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(505,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\put( 40,510){\framebox(480,30){}}
+\put( 40,540){\dashbox{4}(0,0){}}
+\multiput(250,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(220,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(190,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(160,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(130,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(100,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(280,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(310,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(340,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(370,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(400,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(430,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(460,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(490,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput( 70,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\put( 55,540){\line( 0,-1){ 30}}
+\multiput( 85,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(115,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(145,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(205,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(235,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(265,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(295,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(325,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(355,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(385,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(415,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(445,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(475,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(505,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\put(175,540){\line( 0,-1){ 30}}
+\put(175,540){\line( 0,-1){ 30}}
+\multiput(145,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(115,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput( 85,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\put( 55,540){\line( 0,-1){ 30}}
+\multiput( 70,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(100,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(130,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\multiput(160,540)(0.00000,-8.57143){4}{\line( 0,-1){  4.286}}
+\put(345,470){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $F$}}}
+\put(110,470){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $E$}}}
+\put( 40,470){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $S$}}}
+\put(505,545){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $0$}}}
+\put(160,545){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $23$}}}
+\put( 40,545){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $31$}}}
+\put(140,400){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $Value=(-1)^{S}(2^{E-127})(1.F)$}}}
+\put(505,545){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $0$}}}
+\put(160,545){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $23$}}}
+\put( 40,545){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $31$}}}
+\put(140,400){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $Value=(-1)^{S}(2^{E-127})(1.F)$}}}
+\end{picture}
+\end{center}
+\caption{IEEE single-precision floating-point format}
+\label{fig:ieee}
+\end{figure}
+
+\subsection{Specification of the look-up table}
+To calculate the function $1/\sqrt{x}$ using the previously mentioned
+iteration scheme, it is clear that the first estimation of the solution must
+be accurate enough to get precise results. The requirements for the
+calculation are
+\begin{itemize}
+\item Maximum possible accuracy with the used IEEE format
+\item Use only one iteration step for maximum speed
+\end{itemize}
+
+The first requirement states that the result of $1/\sqrt{x}$ may have a
+relative error $\varepsilon_{r}$ equal to the $\varepsilon_{r}$ of a IEEE 32
+bit single-precision floating-point number. From this, the $1/\sqrt{x}$
+of the initial approximation can be derived, rewriting the definition of
+the relative error for succeeding steps (\eqnref{epsr}):
+\begin{equation}
+\frac{\varepsilon_{n}}{y} =
+\sqrt{\varepsilon_ {r_{n+1}} \frac{2f'}{yf''}}
+\end{equation}
+So for the look-up table the needed accuracy is:
+\begin{equation}
+\frac{\Delta Y}{Y} = \sqrt{\frac{2}{3} 2^{-24}}
+\label{eqn:accy}
+\end{equation}
+which defines the width of the table that must be $\geq 13$ bit.
+
+At this point the relative error, $\varepsilon_{r_{n}}$, of the look-up table
+is known. From this the maximum relative error in the argument can be 
+calculated as follows. The absolute error $\Delta x$ is defined as:
+\begin{equation}
+\Delta x \equiv \frac{\Delta Y}{Y'}
+\end{equation}
+and thus:
+\begin{equation}
+\frac{\Delta x}{Y} = \frac{\Delta Y}{Y} (Y')^{-1}
+\end{equation}
+and thus:
+\begin{equation}
+\Delta x = constant \frac{Y}{Y'}
+\end{equation}
+For the $1/\sqrt{x}$ function, $Y / Y' \sim x$ holds, so
+$\Delta x / x = constant$. This is a property of the used floating-point
+representation as earlier mentioned. The needed accuracy of the argument of the
+look-up table follows from:
+\begin{equation}
+\frac{\Delta x}{x} = -2 \frac{\Delta Y}{Y}
+\end{equation}
+So, using the floating-point accuracy (\eqnref{accy}):
+\begin{equation}
+\frac{\Delta x}{x} = -2 \sqrt{\frac{2}{3} 2^{-24}}
+\end{equation}
+This defines the length of the look-up table which should be $\geq 12$ bit.
+
+\subsection{Separate exponent and fraction computation}
+The used IEEE 32 bit single-precision floating-point format specifies
+that a number is represented by a exponent and a fraction. The previous 
+section specifies for every possible floating-point number the look-up table 
+length and width. Only the size of the fraction of a floating-point number 
+defines the accuracy. The conclusion from this can be that the size of the 
+look-up table is length of look-up table, earlier specified, times the size of 
+the exponent ($2^{12}2^{8}, 1Mb$). The $1/\sqrt{x}$  function has the 
+property that the exponent is independent of the fraction. This becomes clear 
+if the floating-point representation is used. Define:
+\begin{equation}
+x \equiv (-1)^{S}(2^{E-127})(1.F)
+\label{eqn:fpdef}
+\end{equation}
+See \figref{ieee}, where $0 \leq S \leq 1$, $0 \leq E \leq 255$,
+$1 \leq 1.F < 2$ and $S$, $E$, $F$ integer (normalization conditions). 
+The sign bit ($S$) can be omitted because $1/\sqrt{x}$ is only defined 
+for $x > 0$. The $1/\sqrt{x}$ function applied to $x$ results in:
+\begin{equation}
+y(x) = \frac{1}{\sqrt{x}}
+\end{equation}
+or:
+\begin{equation}
+y(x) = \frac{1}{\sqrt{(2^{E-127})(1.F)}}
+\end{equation}
+This can be rewritten as:
+\begin{equation}
+y(x) = (2^{E-127})^{-1/2}(1.F)^{-1/2}
+\label{eqn:yx}
+\end{equation}
+Define:
+\begin{equation}
+(2^{E'-127}) \equiv (2^{E-127})^{-1/2}
+\end{equation}
+\begin{equation}
+1.F'\equiv (1.F)^{-1/2}
+\end{equation}
+Then $\frac{1}{\sqrt{2}} < 1.F' \leq 1$ holds, so the condition
+$1 \leq 1.F' < 2$, which is essential for normalized real representation, is
+not valid anymore. By introducing an extra term, this can be corrected.
+Rewrite the $1/\sqrt{x}$ function applied to floating-point numbers (\eqnref{yx}) as:
+\begin{equation}
+y(x) = (2^{\frac{127-E}{2}-1}) (2(1.F)^{-1/2})
+\end{equation}
+and:
+\begin{equation}
+(2^{E'-127}) \equiv (2^{\frac{127-E}{2}-1})
+\label{eqn:exp}
+\end{equation}
+\begin{equation}
+1.F'\equiv 2(1.F)^{-1/2}
+\label{eqn:frac}
+\end{equation}
+Then $\sqrt{2} < 1.F \leq 2$ holds. This is not the exact valid range as
+defined for normalized floating-point numbers in \eqnref{fpdef}. 
+The value $2$  causes the problem. By mapping this value on the nearest
+representation $< 2$, this can be solved. The small error that is introduced
+by this approximation is within the allowable range. 
+
+The integer representation of the exponent is the next problem. Calculating
+$(2^{\frac{127-E}{2}-1})$ introduces a fractional result if $(127-E) = odd$.
+This is again easily accounted for by splitting up the calculation into an
+odd and an even part. For $(127-E) = even$ $E'$ in equation (\eqnref{exp})
+can be exactly calculated in integer arithmetic as a function of $E$.
+\begin{equation}
+E' = \frac{127-E}{2} + 126
+\end{equation}
+
+For $(127-E) = odd$ equation (\eqnref{yx}) can be rewritten as:
+\begin{equation}
+y(x) = (2^{\frac{127-E-1}{2}})(\frac{1.F}{2})^{-1/2}
+\end{equation}
+Thus:
+\begin{equation}
+E' = \frac{126-E}{2} + 127
+\end{equation}
+which also can be calculated exactly in integer arithmetic.
+{\bf Note} that the fraction is automatically corrected for its range earlier
+mentioned, so the exponent does not need an extra correction.
+
+The conclusions from this are:
+\begin{itemize}
+\item The fraction and exponent look-up table are independent. The fraction
+look-up table exists of two tables (odd and even exponent) so the odd/even
+information of the exponent (lsb bit) has to be used to select the right
+table.
+\item The exponent table is an 256 x 8 bit table, initialized for $odd$
+and $even$.% as specified before
+\end{itemize}
+
+\subsection{Implementation}
+The look-up tables can be generated by a small C program, which uses
+floating-point numbers and operations with IEEE 32 bit single-precision format.
+Note that because of the $odd$/$even$ information that is needed, the
+fraction table is twice the size earlier specified (13 bit i.s.o. 12 bit).
+%\figref{expgen} in the appendix shows how to fill the exponent table,
+%\figref{fractgen} shows how to fill the fraction table.
+
+The function according to~\eqnref{nr} has to be implemented. 
+Applied to the $1/\sqrt{x}$ function, equation~\eqnref{inversef} leads to:
+\begin{equation}
+f = a - \frac{1}{y^{2}}
+\end{equation}
+and so:
+\begin{equation}
+f' = \frac{2}{y^{3}}
+\end{equation}
+so:
+\begin{equation}
+y_{n+1} = y_{n} - \frac{ a - \frac{1}{y^{2}_{n}} }{ \frac{2}{y^{3}_{n}} }
+\end{equation}
+or:
+\begin{equation}
+y_{n+1} = \frac{y_{n}}{2} (3 - a y^{2}_{n})
+\end{equation}
+Where $y_{0}$ can be found in the look-up tables, and $y_{1}$ gives the result
+to the maximum accuracy. 
+%In \figref{as_implementation}) the assembler implementation is given. 
+It is clear that only one iteration extra (in double 
+precision) is needed for a double-precision result.
+
+% LocalWords:  Virial virial triclinic intra mol mshift shiftvec sqrt SPC lj yf
+% LocalWords:  coul Fortran SGI AMD Raphson IEEE taylor epsr accy ieee yx fpdef
+% LocalWords:  lsb nr inversef src formulae GROMACS

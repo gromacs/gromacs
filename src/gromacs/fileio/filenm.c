@@ -34,23 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "filenm.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "futil.h"
-#include "gmx_fatal.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "string2.h"
-#include "types/simple.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* XDR should be available on all platforms now,
  * but we keep the possibility of turning it off...
@@ -60,9 +56,6 @@
 /* Use bitflag ... */
 #define IS_SET(fn) ((fn.flag & ffSET) != 0)
 #define IS_OPT(fn) ((fn.flag & ffOPT) != 0)
-#define IS_MULT(fn) ((fn.flag & ffMULT) != 0)
-#define UN_SET(fn) (fn.flag = (fn.flag & ~ffSET))
-#define DO_SET(fn) (fn.flag = (fn.flag |  ffSET))
 
 enum
 {
@@ -77,7 +70,7 @@ static const int trxs[] =
 #ifdef USE_XDR
     efXTC, efTRR, efCPT,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efTNG
+    efGRO, efG96, efPDB, efTNG
 };
 #define NTRXS asize(trxs)
 
@@ -95,7 +88,7 @@ static const int tros[] =
 #ifdef USE_XDR
     efXTC, efTRR,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efTNG
+    efGRO, efG96, efPDB, efTNG
 };
 #define NTROS asize(tros)
 
@@ -104,7 +97,7 @@ static const int trns[] =
 #ifdef USE_XDR
     efTRR, efCPT,
 #endif
-    efTRJ, efTNG
+    efTNG
 };
 #define NTRNS asize(trns)
 
@@ -114,29 +107,19 @@ static const int stos[] =
 
 static const int stxs[] =
 {
-    efGRO, efG96, efPDB, efBRK, efENT, efESP,
+    efGRO, efG96, efPDB, efBRK, efENT, efESP
 #ifdef USE_XDR
-    efTPR,
+    , efTPR
 #endif
-    efTPB, efTPA
 };
 #define NSTXS asize(stxs)
-
-static const int tpxs[] =
-{
-#ifdef USE_XDR
-    efTPR,
-#endif
-    efTPB, efTPA
-};
-#define NTPXS asize(tpxs)
 
 static const int tpss[] =
 {
 #ifdef USE_XDR
     efTPR,
 #endif
-    efTPB, efTPA, efGRO, efG96, efPDB, efBRK, efENT
+    efGRO, efG96, efPDB, efBRK, efENT
 };
 #define NTPSS asize(tpss)
 
@@ -161,7 +144,6 @@ static const t_deffile
     { eftGEN, ".???", "traj", NULL,
       "Full precision trajectory", NTRNS, trns },
     { eftXDR, ".trr", "traj", NULL, "Trajectory in portable xdr format" },
-    { eftBIN, ".trj", "traj", NULL, "Trajectory file (architecture specific)" },
     { eftGEN, ".???", "traj_comp", NULL,
       "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed},
     { eftXDR, ".xtc", "traj", NULL,
@@ -185,11 +167,8 @@ static const t_deffile
     { eftASC, ".ndx", "index",  "-n", "Index file", },
     { eftASC, ".top", "topol",  "-p", "Topology file"},
     { eftASC, ".itp", "topinc", NULL, "Include file for topology"},
-    { eftGEN, ".???", "topol", "-s", "Run input file", NTPXS, tpxs },
     { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
     { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
-    { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"},
-    { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"},
     { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
     { eftASC, ".rtp", "residue", NULL, "Residue Type file used by pdb2gmx" },
     { eftASC, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx" },
@@ -237,8 +216,6 @@ const char *ftp2ext_generic(int ftp)
                 return "sto";
             case efSTX:
                 return "stx";
-            case efTPX:
-                return "tpx";
             case efTPS:
                 return "tps";
             default:
@@ -335,26 +312,15 @@ const char *ftp2defnm(int ftp)
     }
 }
 
-static void check_opts(int nf, t_filenm fnm[])
+const char *ftp2defopt(int ftp)
 {
-    int              i;
-    const t_deffile *df;
-
-    for (i = 0; (i < nf); i++)
+    if ((0 <= ftp) && (ftp < efNR))
     {
-        df = &(deffile[fnm[i].ftp]);
-        if (fnm[i].opt == NULL)
-        {
-            if (df->defopt == NULL)
-            {
-                gmx_fatal(FARGS, "No default cmd-line option for %s (type %d)\n",
-                          deffile[fnm[i].ftp].ext, fnm[i].ftp);
-            }
-            else
-            {
-                fnm[i].opt = df->defopt;
-            }
-        }
+        return deffile[ftp].defopt;
+    }
+    else
+    {
+        return NULL;
     }
 }
 
@@ -391,246 +357,6 @@ int fn2ftp(const char *fn)
     }
 
     return i;
-}
-
-static void set_extension(char *buf, int ftp)
-{
-    int              len, extlen;
-    const t_deffile *df;
-
-    /* check if extension is already at end of filename */
-    df     = &(deffile[ftp]);
-    len    = strlen(buf);
-    extlen = strlen(df->ext);
-    if ((len <= extlen) || (gmx_strcasecmp(&(buf[len - extlen]), df->ext) != 0))
-    {
-        strcat(buf, df->ext);
-    }
-}
-
-static void add_filenm(t_filenm *fnm, const char *filenm)
-{
-    srenew(fnm->fns, fnm->nfiles+1);
-    fnm->fns[fnm->nfiles] = strdup(filenm);
-    fnm->nfiles++;
-}
-
-static void set_grpfnm(t_filenm *fnm, const char *name, const char *deffnm)
-{
-    char       buf[256], buf2[256];
-    int        i, type;
-    gmx_bool   bValidExt;
-    int        nopts;
-    const int *ftps;
-
-    nopts = deffile[fnm->ftp].ntps;
-    ftps  = deffile[fnm->ftp].tps;
-    if ((nopts == 0) || (ftps == NULL))
-    {
-        gmx_fatal(FARGS, "nopts == 0 || ftps == NULL");
-    }
-
-    bValidExt = FALSE;
-    if (name && deffnm == NULL)
-    {
-        strcpy(buf, name);
-        /* First check whether we have a valid filename already */
-        type = fn2ftp(name);
-        if ((fnm->flag & ffREAD) && (fnm->ftp == efTRX))
-        {
-            /*if file exist don't add an extension for trajectory reading*/
-            bValidExt = gmx_fexist(name);
-        }
-        for (i = 0; (i < nopts) && !bValidExt; i++)
-        {
-            if (type == ftps[i])
-            {
-                bValidExt = TRUE;
-            }
-        }
-    }
-    else if (deffnm != NULL)
-    {
-        strcpy(buf, deffnm);
-    }
-    else
-    {
-        /* No name given, set the default name */
-        strcpy(buf, ftp2defnm(fnm->ftp));
-    }
-
-    if (!bValidExt && (fnm->flag & ffREAD))
-    {
-        /* for input-files only: search for filenames in the directory */
-        for (i = 0; (i < nopts) && !bValidExt; i++)
-        {
-            type = ftps[i];
-            strcpy(buf2, buf);
-            set_extension(buf2, type);
-            if (gmx_fexist(buf2))
-            {
-                bValidExt = TRUE;
-                strcpy(buf, buf2);
-            }
-        }
-    }
-
-    if (!bValidExt)
-    {
-        /* Use the first extension type */
-        set_extension(buf, ftps[0]);
-    }
-
-    add_filenm(fnm, buf);
-}
-
-static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm,
-                       gmx_bool bReadNode)
-{
-    /* Set the default filename, extension and option for those fields that
-     * are not already set. An extension is added if not present, if fn = NULL
-     * or empty, the default filename is given.
-     */
-    char buf[256];
-    int  i, len, extlen;
-
-    if ((fnm->flag & ffREAD) && !bReadNode)
-    {
-        return;
-    }
-
-    if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
-    {
-        gmx_fatal(FARGS, "file type out of range (%d)", fnm->ftp);
-    }
-
-    if (name)
-    {
-        strcpy(buf, name);
-    }
-    if ((fnm->flag & ffREAD) && name && gmx_fexist(name))
-    {
-        /* check if filename ends in .gz or .Z, if so remove that: */
-        len = strlen(name);
-        for (i = 0; i < NZEXT; i++)
-        {
-            extlen = strlen(z_ext[i]);
-            if (len > extlen)
-            {
-                if (gmx_strcasecmp(name+len-extlen, z_ext[i]) == 0)
-                {
-                    buf[len-extlen] = '\0';
-                    break;
-                }
-            }
-        }
-    }
-
-    if (deffile[fnm->ftp].ntps)
-    {
-        set_grpfnm(fnm, name ? buf : NULL, deffnm);
-    }
-    else
-    {
-        if (name == NULL || deffnm != NULL)
-        {
-            if (deffnm != NULL)
-            {
-                strcpy(buf, deffnm);
-            }
-            else
-            {
-                strcpy(buf, ftp2defnm(fnm->ftp));
-            }
-        }
-        set_extension(buf, fnm->ftp);
-
-        add_filenm(fnm, buf);
-    }
-}
-
-static void set_filenms(int nf, t_filenm fnm[], const char *deffnm, gmx_bool bReadNode)
-{
-    int i;
-
-    for (i = 0; (i < nf); i++)
-    {
-        if (!IS_SET(fnm[i]))
-        {
-            set_filenm(&(fnm[i]), fnm[i].fn, deffnm, bReadNode);
-        }
-    }
-}
-
-void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     const char *deffnm, gmx_bool bReadNode)
-{
-    int       i, j;
-    gmx_bool *bRemove;
-
-    check_opts(nf, fnm);
-
-    for (i = 0; (i < nf); i++)
-    {
-        UN_SET(fnm[i]);
-    }
-
-    if (*argc > 1)
-    {
-        snew(bRemove, (*argc)+1);
-        i = 1;
-        do
-        {
-            for (j = 0; (j < nf); j++)
-            {
-                if (strcmp(argv[i], fnm[j].opt) == 0)
-                {
-                    DO_SET(fnm[j]);
-                    bRemove[i] = TRUE;
-                    i++;
-                    /* check if we are out of arguments for this option */
-                    if ((i >= *argc) || (argv[i][0] == '-'))
-                    {
-                        set_filenm(&fnm[j], fnm[j].fn, deffnm, bReadNode);
-                    }
-                    /* sweep up all file arguments for this option */
-                    while ((i < *argc) && (argv[i][0] != '-'))
-                    {
-                        set_filenm(&fnm[j], argv[i], NULL, bReadNode);
-                        bRemove[i] = TRUE;
-                        i++;
-                        /* only repeat for 'multiple' file options: */
-                        if (!IS_MULT(fnm[j]))
-                        {
-                            break;
-                        }
-                    }
-
-                    break; /* jump out of 'j' loop */
-                }
-            }
-            /* No file found corresponding to option argv[i] */
-            if (j == nf)
-            {
-                i++;
-            }
-        }
-        while (i < *argc);
-
-        /* Remove used entries */
-        for (i = j = 0; (i <= *argc); i++)
-        {
-            if (!bRemove[i])
-            {
-                argv[j++] = argv[i];
-            }
-        }
-        (*argc) = j - 1;
-        sfree(bRemove);
-    }
-
-    set_filenms(nf, fnm, deffnm, bReadNode);
-
 }
 
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
@@ -817,8 +543,8 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                 extpos  = strrchr(buf, '.');
                 *extpos = '\0';
                 sprintf(newname, "%s%s.%s", buf, suffix, extpos + 1);
-                free(fnm[i].fns[j]);
-                fnm[i].fns[j] = strdup(newname);
+                sfree(fnm[i].fns[j]);
+                fnm[i].fns[j] = gmx_strdup(newname);
             }
         }
     }
@@ -836,7 +562,7 @@ t_filenm *dup_tfn(int nf, const t_filenm tfn[])
         ret[i] = tfn[i]; /* just directly copy all non-string fields */
         if (tfn[i].opt)
         {
-            ret[i].opt = strdup(tfn[i].opt);
+            ret[i].opt = gmx_strdup(tfn[i].opt);
         }
         else
         {
@@ -845,7 +571,7 @@ t_filenm *dup_tfn(int nf, const t_filenm tfn[])
 
         if (tfn[i].fn)
         {
-            ret[i].fn = strdup(tfn[i].fn);
+            ret[i].fn = gmx_strdup(tfn[i].fn);
         }
         else
         {
@@ -857,7 +583,7 @@ t_filenm *dup_tfn(int nf, const t_filenm tfn[])
             snew(ret[i].fns, tfn[i].nfiles);
             for (j = 0; j < tfn[i].nfiles; j++)
             {
-                ret[i].fns[j] = strdup(tfn[i].fns[j]);
+                ret[i].fns[j] = gmx_strdup(tfn[i].fns[j]);
             }
         }
     }

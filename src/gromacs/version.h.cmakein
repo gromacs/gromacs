@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,58 +32,74 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _gmx_version_h
-#define _gmx_version_h
+/*! \file
+ * \brief
+ * Version information for software that links to \Gromacs.
+ *
+ * \if libapi
+ * This include file will be configured by CMake and contains version
+ * information.  It is not used by \Gromacs, but intended for software that
+ * links to \Gromacs.
+ * The values come from the main CMakeLists.txt.
+ * \endif
+ *
+ * This file exists from 4.6 onward, and can be included as
+ * `<gromacs/version.h>`.  In 4.6, it is also included by
+ * `<gromacs/typedefs.h>, but that header has already moved in 5.0.
+ *
+ * This header defines two values, the \Gromacs version, and the API version.
+ * The versions are in numerical form, where, for example, version
+ * 4.6.1 would be 40601.
+ *
+ * The API version is defined in ::GMX_API_VERSION, and denotes the
+ * version of the programmer interface, i.e. the installed header files
+ * and compatible library.
+ *
+ * Programs written against the \Gromacs library can use this file
+ * to provide some backward compatibility even though parts of the API
+ * change.  For example:
+ * \code
+   #include <gromacs/version.h>
+   #if (GMX_API_VERSION < 50000)
+       .... <do pre-5.0 stuff>
+   #else
+       .... <do post-5.0 stuff>
+   #endif
+   \endcode
+ * where version.h is included directly. For code that must be compatible
+ * between 4.5 and 4.6, an interim solution is to include typedefs.h, which
+ * includes this file:
+ * \code
+   #include <gromacs/typedefs.h>
+   #if !defined(GMX_API_VERSION) || (GMX_API_VERSION < 40600)
+       ....  <do 4.5 specific stuff>
+   #elif (GMX_API_VERSION < 40700)
+       ....  <do 4.6 specific stuff>
+   #endif
+   \endcode
+ *
+ * \inpublicapi
+ */
+#ifndef GMX_VERSION_H
+#define GMX_VERSION_H
 
-/* This include file will be configured by CMake and contains version
-   information, primarily for software that links to Gromacs.
+/*! \brief
+ * API version of this set of \Gromacs headers.
+ *
+ * If there are multiple versions of \Gromacs that work with the same set of
+ * headers, then this version is not updated between the versions, even though
+ * ::GMX_VERSION is.
+ * For 4.6 and 5.0 (and likely for some time in the future as well), this
+ * tracks the exact \Gromacs version.
+ */
+#define GMX_API_VERSION @GMX_API_VERSION@
 
-   This file exists from 4.6 onward. In 4.6, it is #included in
-   include/typedefs.h, but that is not guaranteed to be the case in later
-   versions.
+/*! \brief
+ * Exact \Gromacs version of this set of headers.
+ *
+ * This specifies the version number of the actual \Gromacs library that
+ * installed these headers.
+ */
+#define GMX_VERSION @GMX_VERSION_NUMERIC@
 
-   The versions are in numerical form, where, for example, version
-   4.6.1 would be 40601.
-   The values come from the main CMakeLists.txt.
-
-   This header defines two values, the Gromacs version, and the API version.
-
-   The API version is defined in GMX_API_VERSION, and denotes the
-   version of the programmer interface, i.e. the installed header files
-   and compatible library.
-
-   programs written against the gromacs library can use this file
-   to provide some backward compatibility even though parts of the API
-   change. For example:
-
-#include <gromacs/version.h>
-#if (GMX_API_VERSION < 50000)
-    .... <do pre-5.0 stuff>
-#else
-    .... <do post-5.0 stuff>
 #endif
-
-    where version.h is included directly. For code that must be compatible
-    between 4.5 and 4.6, an interim solution is to include typedefs.h, which
-    includes this file:
-
-#include <gromacs/typedefs.h>
-#if !defined(GMX_API_VERSION) || (GMX_API_VERSION < 40600)
-    ....  <do 4.5 specific stuff>
-#elif (GMX_API_VERSION < 40700)
-    ....  <do 4.6 specific stuff>
-#endif
-
-   */
-#define GMX_API_VERSION @API_VERSION@
-
-
-/* GMX_VERSION contains the version number of the actual Gromacs library 
-   and the Gromacs programs, in numerical format.
-
-   As of 4.6, the Gromacs and API versions are the same, but this is not
-   guaranteed to be the case in the future. */
-#define GMX_VERSION @NUM_VERSION@
-
-#endif /* _gmx_version_h */
-

@@ -36,36 +36,29 @@
  * on the code from g_anaeig. You can reach him as olange@gwdg.de. He
  * probably also holds copyright to the following code.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include <ctype.h>
 #include <math.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
-#include "readinp.h"
+
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/matio.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "do_fit.h"
-#include "rmpbc.h"
-#include "txtdump.h"
-#include "eigio.h"
-#include "index.h"
-#include "string2.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct
 {
@@ -623,7 +616,7 @@ int gmx_make_edi(int argc, char *argv[])
         "(collective coordinates etc.), at least on the 'protein' side, ED sampling",
         "is not very parallel-friendly from an implementation point of view. Because",
         "parallel ED requires some extra communication, expect the performance to be",
-        "lower as in a free MD simulation, especially on a large number of nodes and/or",
+        "lower as in a free MD simulation, especially on a large number of ranks and/or",
         "when the ED group contains a lot of atoms. [PAR]",
         "Please also note that if your ED group contains more than a single protein,",
         "then the [TT].tpr[tt] file must contain the correct PBC representation of the ED group.",
@@ -863,7 +856,6 @@ int gmx_make_edi(int argc, char *argv[])
         printf("\n");
     }
 
-    EigvecFile = NULL;
     EigvecFile = opt2fn("-f", NFILE, fnm);
 
     /*read eigenvectors from eigvec.trr*/

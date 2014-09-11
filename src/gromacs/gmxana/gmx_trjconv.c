@@ -34,41 +34,43 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <string.h>
+#include "config.h"
+
 #include <math.h>
-
-#include "copyrite.h"
-#include "macros.h"
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "index.h"
-#include "vec.h"
-#include "gromacs/fileio/xtcio.h"
-#include "do_fit.h"
-#include "rmpbc.h"
-#include "pbc.h"
-#include "viewit.h"
-#include "xvgr.h"
-#include "gmx_ana.h"
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 enum {
     euSel, euRect, euTric, euCompact, euNR
@@ -466,7 +468,7 @@ static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
 
 void check_trn(const char *fn)
 {
-    if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
+    if (fn2ftp(fn) != efTRR)
     {
         gmx_fatal(FARGS, "%s is not a trajectory file, exiting\n", fn);
     }
@@ -489,7 +491,7 @@ void do_trunc(const char *fn, real t0)
         gmx_fatal(FARGS, "You forgot to set the truncation time");
     }
 
-    /* Check whether this is a .trj file */
+    /* Check whether this is a .trr file */
     check_trn(fn);
 
     in   = open_trn(fn, "r");
@@ -612,18 +614,18 @@ int gmx_trjconv(int argc, char *argv[])
         "[PAR]",
 
         "The following formats are supported for input and output:",
-        "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].g96[tt]",
+        "[TT].xtc[tt], [TT].trr[tt], [TT].gro[tt], [TT].g96[tt]",
         "and [TT].pdb[tt].",
         "The file formats are detected from the file extension.",
         "The precision of [TT].xtc[tt] and [TT].gro[tt] output is taken from the",
         "input file for [TT].xtc[tt], [TT].gro[tt] and [TT].pdb[tt],",
         "and from the [TT]-ndec[tt] option for other input formats. The precision",
         "is always taken from [TT]-ndec[tt], when this option is set.",
-        "All other formats have fixed precision. [TT].trr[tt] and [TT].trj[tt]",
+        "All other formats have fixed precision. [TT].trr[tt]",
         "output can be single or double precision, depending on the precision",
         "of the [THISMODULE] binary.",
         "Note that velocities are only supported in",
-        "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
+        "[TT].trr[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
 
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
         "[TT].gro, .g96[tt] or [TT].pdb[tt] file. By default, all frames all written to one file.",
@@ -694,6 +696,10 @@ int gmx_trjconv(int argc, char *argv[])
         "Use option [TT]-pbc mol[tt] in addition to [TT]-center[tt] when you",
         "want all molecules in the box after the centering.[PAR]",
 
+        "Option [TT]-box[tt] sets the size of the new box. If you want to"
+        "modify only some of the dimensions, e.g. when reading from a trajectory,"
+        "you can use -1 for those dimensions that should stay the same"
+
         "It is not always possible to use combinations of [TT]-pbc[tt],",
         "[TT]-fit[tt], [TT]-ur[tt] and [TT]-center[tt] to do exactly what",
         "you want in one call to [THISMODULE]. Consider using multiple",
@@ -707,7 +713,7 @@ int gmx_trjconv(int argc, char *argv[])
         "can reduce the number of frames while using low-pass frequency",
         "filtering, this reduces aliasing of high frequency motions.[PAR]",
 
-        "Using [TT]-trunc[tt] [THISMODULE] can truncate [TT].trj[tt] in place, i.e.",
+        "Using [TT]-trunc[tt] [THISMODULE] can truncate [TT].trr[tt] in place, i.e.",
         "without copying the file. This is useful when a run has crashed",
         "during disk I/O (i.e. full disk), or when two contiguous",
         "trajectories must be concatenated without having double frames.[PAR]",
@@ -918,7 +924,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW |
-                           PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_TIME_UNIT,
                            NFILE, fnm, NPA, pa, asize(desc), desc,
                            0, NULL, &oenv))
     {
@@ -1025,9 +1031,10 @@ int gmx_trjconv(int argc, char *argv[])
         {
             /* check if velocities are possible in input and output files */
             ftpin = fn2ftp(in_file);
-            bVels = (ftp == efTRR || ftp == efTRJ || ftp == efGRO || ftp == efG96)
-                && (ftpin == efTRR || ftpin == efTRJ || ftpin == efGRO || ftpin == efG96 ||
-                    ftpin == efCPT);
+            bVels = (ftp == efTRR || ftp == efGRO ||
+                     ftp == efG96 || ftp == efTNG)
+                && (ftpin == efTRR || ftpin == efGRO ||
+                    ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
         {
@@ -1036,7 +1043,7 @@ int gmx_trjconv(int argc, char *argv[])
             {
                 gmx_fatal(FARGS, "Output file name '%s' does not contain a '.'", out_file);
             }
-            outf_base = strdup(out_file);
+            outf_base = gmx_strdup(out_file);
             outf_base[outf_ext - out_file] = '\0';
         }
 
@@ -1241,20 +1248,26 @@ int gmx_trjconv(int argc, char *argv[])
         /* Make atoms struct for output in GRO or PDB files */
         if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB))
         {
-            /* get memory for stuff to go in .pdb file */
-            init_t_atoms(&useatoms, atoms->nr, FALSE);
+            /* get memory for stuff to go in .pdb file, and initialize
+             * the pdbinfo structure part if the input has it.
+             */
+            init_t_atoms(&useatoms, atoms->nr, (atoms->pdbinfo != NULL));
             sfree(useatoms.resinfo);
             useatoms.resinfo = atoms->resinfo;
             for (i = 0; (i < nout); i++)
             {
                 useatoms.atomname[i] = atoms->atomname[index[i]];
                 useatoms.atom[i]     = atoms->atom[index[i]];
+                if (atoms->pdbinfo != NULL)
+                {
+                    useatoms.pdbinfo[i]  = atoms->pdbinfo[index[i]];
+                }
                 useatoms.nres        = max(useatoms.nres, useatoms.atom[i].resind+1);
             }
             useatoms.nr = nout;
         }
         /* select what to read */
-        if (ftp == efTRR || ftp == efTRJ)
+        if (ftp == efTRR)
         {
             flags = TRX_READ_X;
         }
@@ -1338,7 +1351,6 @@ int gmx_trjconv(int argc, char *argv[])
                     break;
                 case efXTC:
                 case efTRR:
-                case efTRJ:
                     out = NULL;
                     if (!bSplit && !bSubTraj)
                     {
@@ -1411,7 +1423,10 @@ int gmx_trjconv(int argc, char *argv[])
                     clear_mat(fr.box);
                     for (m = 0; m < DIM; m++)
                     {
-                        fr.box[m][m] = newbox[m];
+                        if (newbox[m] >= 0)
+                        {
+                            fr.box[m][m] = newbox[m];
+                        }
                     }
                 }
 
@@ -1730,7 +1745,6 @@ int gmx_trjconv(int argc, char *argv[])
                                 write_tng_frame(trxout, &frout);
                                 // TODO when trjconv behaves better: work how to read and write lambda
                                 break;
-                            case efTRJ:
                             case efTRR:
                             case efXTC:
                                 if (bSplitHere)

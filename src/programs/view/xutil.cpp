@@ -34,16 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "xutil.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "smalloc.h"
-#include "typedefs.h"
-#include "xutil.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "Xstuff.h"
 
 int CheckWin(Window win, const char *file, int line)
@@ -167,7 +169,7 @@ void InitWin(t_windata *win, int x0, int y0, int w, int h, int bw, const char *t
     win->cursor = 0;
     if (text)
     {
-        win->text = strdup(text);
+        win->text = gmx_strdup(text);
     }
     else
     {

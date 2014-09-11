@@ -33,8 +33,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _INTERACTION_CONST_
-#define _INTERACTION_CONST_
+#ifndef GMX_LEGACYHEADERS_INTERACTION_CONST_H
+#define GMX_LEGACYHEADERS_INTERACTION_CONST_H
+
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -133,4 +135,4 @@ typedef struct {
 }
 #endif
 
-#endif /* _INTERACTION_CONST_ */
+#endif

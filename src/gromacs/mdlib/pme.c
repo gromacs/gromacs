@@ -57,34 +57,37 @@
  * /Erik 001109
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include "gromacs/legacyheaders/pme.h"
+
+#include "config.h"
+
 #include <assert.h>
-#include "typedefs.h"
-#include "txtdump.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "coulomb.h"
-#include "gmx_fatal.h"
-#include "pme.h"
-#include "network.h"
-#include "physics.h"
-#include "nrnb.h"
-#include "macros.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Include the SIMD macro file and then check for support */
 #include "gromacs/simd/simd.h"
@@ -751,7 +754,7 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t pme,
     {
         if (atc->count[atc->nodeid] + nsend != n)
         {
-            gmx_fatal(FARGS, "%d particles communicated to PME node %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
+            gmx_fatal(FARGS, "%d particles communicated to PME rank %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
                       "This usually means that your system is not well equilibrated.",
                       n - (atc->count[atc->nodeid] + nsend),
                       pme->nodeid, 'x'+atc->dimind);
@@ -771,7 +774,7 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t pme,
             /* Communicate the count */
             if (debug)
             {
-                fprintf(debug, "dimind %d PME node %d send to node %d: %d\n",
+                fprintf(debug, "dimind %d PME rank %d send to rank %d: %d\n",
                         atc->dimind, atc->nodeid, commnode[i], scount);
             }
             pme_dd_sendrecv(atc, FALSE, i,
@@ -946,7 +949,7 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
         /* Copy data to contiguous send buffer */
         if (debug)
         {
-            fprintf(debug, "PME send node %d %d -> %d grid start %d Communicating %d to %d\n",
+            fprintf(debug, "PME send rank %d %d -> %d grid start %d Communicating %d to %d\n",
                     pme->nodeid, overlap->nodeid, send_id,
                     pme->pmegrid_start_iy,
                     send_index0-pme->pmegrid_start_iy,
@@ -978,7 +981,7 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
         /* Get data from contiguous recv buffer */
         if (debug)
         {
-            fprintf(debug, "PME recv node %d %d <- %d grid start %d Communicating %d to %d\n",
+            fprintf(debug, "PME recv rank %d %d <- %d grid start %d Communicating %d to %d\n",
                     pme->nodeid, overlap->nodeid, recv_id,
                     pme->pmegrid_start_iy,
                     recv_index0-pme->pmegrid_start_iy,
@@ -1042,12 +1045,12 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
 
         if (debug)
         {
-            fprintf(debug, "PME send node %d %d -> %d grid start %d Communicating %d to %d\n",
+            fprintf(debug, "PME send rank %d %d -> %d grid start %d Communicating %d to %d\n",
                     pme->nodeid, overlap->nodeid, send_id,
                     pme->pmegrid_start_ix,
                     send_index0-pme->pmegrid_start_ix,
                     send_index0-pme->pmegrid_start_ix+send_nindex);
-            fprintf(debug, "PME recv node %d %d <- %d grid start %d Communicating %d to %d\n",
+            fprintf(debug, "PME recv rank %d %d <- %d grid start %d Communicating %d to %d\n",
                     pme->nodeid, overlap->nodeid, recv_id,
                     pme->pmegrid_start_ix,
                     recv_index0-pme->pmegrid_start_ix,
@@ -1097,13 +1100,12 @@ static int copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid, 
     {
 #ifdef DEBUG_PME
         FILE *fp, *fp2;
-        char  fn[STRLEN], format[STRLEN];
+        char  fn[STRLEN];
         real  val;
         sprintf(fn, "pmegrid%d.pdb", pme->nodeid);
         fp = gmx_ffopen(fn, "w");
         sprintf(fn, "pmegrid%d.txt", pme->nodeid);
         fp2 = gmx_ffopen(fn, "w");
-        sprintf(format, "%s%s\n", pdbformat, "%6.2f%6.2f");
 #endif
 
         for (ix = 0; ix < local_fft_ndata[XX]; ix++)
@@ -1119,8 +1121,8 @@ static int copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid, 
                     val = 100*pmegrid[pmeidx];
                     if (pmegrid[pmeidx] != 0)
                     {
-                        fprintf(fp, format, "ATOM", pmeidx, "CA", "GLY", ' ', pmeidx, ' ',
-                                5.0*ix, 5.0*iy, 5.0*iz, 1.0, val);
+                        gmx_fprintf_pdb_atomline(fp, epdbATOM, pmeidx, "CA", ' ', "GLY", ' ', pmeidx, ' ',
+                                                 5.0*ix, 5.0*iy, 5.0*iz, 1.0, val, "");
                     }
                     if (pmegrid[pmeidx] != 0)
                     {
@@ -1434,7 +1436,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                    *pm
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "pme_simd4.h"
+#include "gromacs/mdlib/pme_simd4.h"
 #else
                     DO_BSPLINE(4);
 #endif
@@ -1443,7 +1445,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                    *pm
 #ifdef PME_SIMD4_SPREAD_GATHER
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "pme_simd4.h"
+#include "gromacs/mdlib/pme_simd4.h"
 #else
                     DO_BSPLINE(5);
 #endif
@@ -2597,7 +2599,7 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
 #define PME_GATHER_F_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "pme_simd4.h"
+#include "gromacs/mdlib/pme_simd4.h"
 #else
                     DO_FSPLINE(4);
 #endif
@@ -2606,7 +2608,7 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
 #ifdef PME_SIMD4_SPREAD_GATHER
 #define PME_GATHER_F_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "pme_simd4.h"
+#include "gromacs/mdlib/pme_simd4.h"
 #else
                     DO_FSPLINE(5);
 #endif
@@ -3131,8 +3133,9 @@ init_overlap_comm(pme_overlap_t *  ol,
     {
         /* s2g0 the local interpolation grid start.
          * s2g1 the local interpolation grid end.
-         * Because grid overlap communication only goes forward,
-         * the grid the slabs for fft's should be rounded down.
+         * Since in calc_pidx we divide particles, and not grid lines,
+         * spatially uniform along dimension x or y, we need to round
+         * s2g0 down and s2g1 up.
          */
         ol->s2g0[i] = ( i   *ndata + 0       )/nnodes;
         ol->s2g1[i] = ((i+1)*ndata + nnodes-1)/nnodes + norder - 1;
@@ -3354,7 +3357,7 @@ void gmx_pme_check_restrictions(int pme_order,
             *bValidSettings = FALSE;
             return;
         }
-        gmx_fatal(FARGS, "The number of PME grid lines per node along x is %g. But when using OpenMP threads, the number of grid lines per node along x should be >= pme_order (%d) or = pmeorder-1. To resolve this issue, use less nodes along x (and possibly more along y and/or z) by specifying -dd manually.",
+        gmx_fatal(FARGS, "The number of PME grid lines per rank along x is %g. But when using OpenMP threads, the number of grid lines per rank along x should be >= pme_order (%d) or = pmeorder-1. To resolve this issue, use fewer ranks along x (and possibly more along y and/or z) by specifying -dd manually.",
                   nkx/(double)nnodes_major, pme_order);
     }
 
@@ -3407,7 +3410,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         MPI_Comm_size(pme->mpi_comm, &pme->nnodes);
         if (pme->nnodes != nnodes_major*nnodes_minor)
         {
-            gmx_incons("PME node count mismatch");
+            gmx_incons("PME rank count mismatch");
         }
     }
     else
@@ -3456,7 +3459,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         {
             if (pme->nnodes % nnodes_major != 0)
             {
-                gmx_incons("For 2D PME decomposition, #PME nodes must be divisible by the number of nodes in the major dimension");
+                gmx_incons("For 2D PME decomposition, #PME ranks must be divisible by the number of ranks in the major dimension");
             }
             pme->ndecompdim = 2;
 
@@ -3543,8 +3546,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                     "\n"
                     "NOTE: The load imbalance in PME FFT and solve is %d%%.\n"
                     "      For optimal PME load balancing\n"
-                    "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_nodes_x (%d)\n"
-                    "      and PME grid_y (%d) and grid_z (%d) should be divisible by #PME_nodes_y (%d)\n"
+                    "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_ranks_x (%d)\n"
+                    "      and PME grid_y (%d) and grid_z (%d) should be divisible by #PME_ranks_y (%d)\n"
                     "\n",
                     (int)((imbal-1)*100 + 0.5),
                     pme->nkx, pme->nky, pme->nnodes_major,
@@ -3834,7 +3837,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     int  fft_my, fft_mz;
     int  buf_my = -1;
     int  nsx, nsy, nsz;
-    ivec ne;
+    ivec localcopy_end;
     int  offx, offy, offz, x, y, z, i0, i0t;
     int  sx, sy, sz, fx, fy, fz, tx1, ty1, tz1, ox, oy, oz;
     gmx_bool bClearBufX, bClearBufY, bClearBufXY, bClearBuf;
@@ -3870,8 +3873,14 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
 
     for (d = 0; d < DIM; d++)
     {
-        ne[d] = min(pmegrid->offset[d]+pmegrid->n[d]-(pmegrid->order-1),
-                    local_fft_ndata[d]);
+        /* Determine up to where our thread needs to copy from the
+         * thread-local charge spreading grid to the rank-local FFT grid.
+         * This is up to our spreading grid end minus order-1 and
+         * not beyond the local FFT grid.
+         */
+        localcopy_end[d] =
+            min(pmegrid->offset[d]+pmegrid->n[d]-(pmegrid->order-1),
+                local_fft_ndata[d]);
     }
 
     offx = pmegrid->offset[XX];
@@ -3886,7 +3895,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     /* Now loop over all the thread data blocks that contribute
      * to the grid region we (our thread) are operating on.
      */
-    /* Note that ffy_nx/y is equal to the number of grid points
+    /* Note that fft_nx/y is equal to the number of grid points
      * between the first point of our node grid and the one of the next node.
      */
     for (sx = 0; sx >= -pmegrids->nthread_comm[XX]; sx--)
@@ -3902,12 +3911,15 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
         }
         pmegrid_g = &pmegrids->grid_th[fx*pmegrids->nc[YY]*pmegrids->nc[ZZ]];
         ox       += pmegrid_g->offset[XX];
+        /* Determine the end of our part of the source grid */
         if (!bCommX)
         {
-            tx1 = min(ox + pmegrid_g->n[XX], ne[XX]);
+            /* Use our thread local source grid and target grid part */
+            tx1 = min(ox + pmegrid_g->n[XX], localcopy_end[XX]);
         }
         else
         {
+            /* Use our thread local source grid and the spreading range */
             tx1 = min(ox + pmegrid_g->n[XX], pme->pme_order);
         }
 
@@ -3924,12 +3936,15 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
             }
             pmegrid_g = &pmegrids->grid_th[fy*pmegrids->nc[ZZ]];
             oy       += pmegrid_g->offset[YY];
+            /* Determine the end of our part of the source grid */
             if (!bCommY)
             {
-                ty1 = min(oy + pmegrid_g->n[YY], ne[YY]);
+                /* Use our thread local source grid and target grid part */
+                ty1 = min(oy + pmegrid_g->n[YY], localcopy_end[YY]);
             }
             else
             {
+                /* Use our thread local source grid and the spreading range */
                 ty1 = min(oy + pmegrid_g->n[YY], pme->pme_order);
             }
 
@@ -3944,7 +3959,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                 }
                 pmegrid_g = &pmegrids->grid_th[fz];
                 oz       += pmegrid_g->offset[ZZ];
-                tz1       = min(oz + pmegrid_g->n[ZZ], ne[ZZ]);
+                tz1       = min(oz + pmegrid_g->n[ZZ], localcopy_end[ZZ]);
 
                 if (sx == 0 && sy == 0 && sz == 0)
                 {
@@ -4000,7 +4015,13 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                     if (bCommY)
                     {
                         commbuf = commbuf_y;
-                        buf_my  = ty1 - offy;
+                        /* The y-size of the communication buffer is set by
+                         * the overlap of the grid part of our local slab
+                         * with the part starting at the next slab.
+                         */
+                        buf_my  =
+                            pme->overlap[1].s2g1[pme->nodeid_minor] -
+                            pme->overlap[1].s2g0[pme->nodeid_minor+1];
                         if (bCommX)
                         {
                             /* We index commbuf modulo the local grid size */
@@ -4113,6 +4134,12 @@ static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid, int grid_index)
             sendptr = overlap->sendbuf + send_index0*local_fft_ndata[ZZ];
             recvptr = overlap->recvbuf;
 
+            if (debug != NULL)
+            {
+                fprintf(debug, "PME fftgrid comm y %2d x %2d x %2d\n",
+                        local_fft_ndata[XX], send_nindex, local_fft_ndata[ZZ]);
+            }
+
 #ifdef GMX_MPI
             MPI_Sendrecv(sendptr, send_size_y*datasize, GMX_MPI_REAL,
                          send_id, ipulse,
@@ -4179,7 +4206,7 @@ static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid, int grid_index)
 
         if (debug != NULL)
         {
-            fprintf(debug, "PME fftgrid comm %2d x %2d x %2d\n",
+            fprintf(debug, "PME fftgrid comm x %2d x %2d x %2d\n",
                     send_nindex, local_fft_ndata[YY], local_fft_ndata[ZZ]);
         }
 
@@ -4805,7 +4832,7 @@ int gmx_pme_do(gmx_pme_t pme,
 
         if (debug)
         {
-            fprintf(debug, "PME: nnodes = %d, nodeid = %d\n",
+            fprintf(debug, "PME: number of ranks = %d, rank = %d\n",
                     cr->nnodes, cr->nodeid);
             fprintf(debug, "Grid = %p\n", (void*)grid);
             if (grid == NULL)
@@ -4830,7 +4857,7 @@ int gmx_pme_do(gmx_pme_t pme,
 
         if (debug)
         {
-            fprintf(debug, "Node= %6d, pme local particles=%6d\n",
+            fprintf(debug, "Rank= %6d, pme local particles=%6d\n",
                     cr->nodeid, atc->n);
         }
 
@@ -4946,6 +4973,9 @@ int gmx_pme_do(gmx_pme_t pme,
                         inc_nrnb(nrnb, eNR_FFT, 2*npme);
                     }
 
+                    /* Note: this wallcycle region is closed below
+                       outside an OpenMP region, so take care if
+                       refactoring code here. */
                     wallcycle_start(wcycle, ewcPME_SPREADGATHER);
                 }
 
@@ -4991,6 +5021,8 @@ int gmx_pme_do(gmx_pme_t pme,
 
             inc_nrnb(nrnb, eNR_GATHERFBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+            /* Note: this wallcycle region is opened above inside an OpenMP
+               region, so take care if refactoring code here. */
             wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
         }
 
@@ -5151,10 +5183,10 @@ int gmx_pme_do(gmx_pme_t pme,
             }
             if (flags & GMX_PME_SOLVE)
             {
-                int loop_count;
                 /* solve in k-space for our local cells */
 #pragma omp parallel num_threads(pme->nthread) private(thread)
                 {
+                    int loop_count;
                     thread = gmx_omp_get_thread_num();
                     if (thread == 0)
                     {

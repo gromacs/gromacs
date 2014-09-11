@@ -34,23 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "specbond.h"
 
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
-#include "string2.h"
-#include "smalloc.h"
-#include "specbond.h"
-#include "pdb2top.h"
-#include "vec.h"
-#include "macros.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 gmx_bool yesno(void)
 {
@@ -92,12 +91,12 @@ t_specbond *get_specbonds(int *nspecbond)
         }
         else
         {
-            sb[n].res1    = strdup(r1buf);
-            sb[n].res2    = strdup(r2buf);
-            sb[n].newres1 = strdup(nr1buf);
-            sb[n].newres2 = strdup(nr2buf);
-            sb[n].atom1   = strdup(a1buf);
-            sb[n].atom2   = strdup(a2buf);
+            sb[n].res1    = gmx_strdup(r1buf);
+            sb[n].res2    = gmx_strdup(r2buf);
+            sb[n].newres1 = gmx_strdup(nr1buf);
+            sb[n].newres2 = gmx_strdup(nr2buf);
+            sb[n].atom1   = gmx_strdup(a1buf);
+            sb[n].atom2   = gmx_strdup(a2buf);
             sb[n].nbond1  = nb1;
             sb[n].nbond2  = nb2;
             sb[n].length  = length;
@@ -217,9 +216,9 @@ static void rename_1res(t_atoms *pdba, int resind, char *newres, gmx_bool bVerbo
                *pdba->resinfo[resind].name,
                pdba->resinfo[resind].nr);
     }
-    /* this used to free *resname, which fucks up the symtab! */
+    /* this used to free *resname, which messes up the symtab! */
     snew(pdba->resinfo[resind].rtp, 1);
-    *pdba->resinfo[resind].rtp = strdup(newres);
+    *pdba->resinfo[resind].rtp = gmx_strdup(newres);
 }
 
 int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
@@ -348,8 +347,8 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                         /* Store the residue numbers in the bonds array */
                         bonds[nbonds].res1 = specp[i];
                         bonds[nbonds].res2 = specp[j];
-                        bonds[nbonds].a1   = strdup(*pdba->atomname[ai]);
-                        bonds[nbonds].a2   = strdup(*pdba->atomname[aj]);
+                        bonds[nbonds].a1   = gmx_strdup(*pdba->atomname[ai]);
+                        bonds[nbonds].a2   = gmx_strdup(*pdba->atomname[aj]);
                         /* rename residues */
                         if (bSwap)
                         {

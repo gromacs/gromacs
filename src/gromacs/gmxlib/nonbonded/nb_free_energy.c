@@ -34,19 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nb_free_energy.h"
 
 #include <math.h>
 
-#include "vec.h"
-#include "typedefs.h"
-#include "nonbonded.h"
-#include "nb_kernel.h"
-#include "nrnb.h"
-#include "macros.h"
-#include "nb_free_energy.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
 
 void
 gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
@@ -63,8 +63,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 #define  NSTATES  2
     int           i, j, n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid;
     real          shX, shY, shZ;
-    real          Fscal, FscalC[NSTATES], FscalV[NSTATES], tx, ty, tz;
-    real          Vcoul[NSTATES], Vvdw[NSTATES];
+    real          tx, ty, tz, Fscal;
+    double        FscalC[NSTATES], FscalV[NSTATES];  /* Needs double for sc_power==48 */
+    double        Vcoul[NSTATES], Vvdw[NSTATES];     /* Needs double for sc_power==48 */
     real          rinv6, r, rt, rtC, rtV;
     real          iqA, iqB;
     real          qq[NSTATES], vctot, krsq;
@@ -72,12 +73,12 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          Vvdw6, Vvdw12, vvtot;
     real          ix, iy, iz, fix, fiy, fiz;
     real          dx, dy, dz, rsq, rinv;
-    real          c6[NSTATES], c12[NSTATES], c6grid[NSTATES];
+    real          c6[NSTATES], c12[NSTATES], c6grid;
     real          LFC[NSTATES], LFV[NSTATES], DLF[NSTATES];
     double        dvdl_coul, dvdl_vdw;
     real          lfac_coul[NSTATES], dlfac_coul[NSTATES], lfac_vdw[NSTATES], dlfac_vdw[NSTATES];
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
-    real          rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV;
+    double        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
     real          sigma2[NSTATES], sigma_pow[NSTATES], sigma_powm2[NSTATES], rs, rs2;
     int           do_tab, tab_elemsize;
     int           n0, n1C, n1V, nnn;
@@ -104,21 +105,34 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const real *  chargeB;
     real          sigma6_min, sigma6_def, lam_power, sc_power, sc_r_power;
     real          alpha_coul, alpha_vdw, lambda_coul, lambda_vdw, ewc_lj;
+    real          ewcljrsq, ewclj, ewclj2, exponent, poly, vvdw_disp, vvdw_rep, sh_lj_ewald;
+    real          ewclj6;
     const real *  nbfp, *nbfp_grid;
     real *        dvdl;
     real *        Vv;
     real *        Vc;
     gmx_bool      bDoForces, bDoShiftForces, bDoPotential;
-    real          rcoulomb, sh_ewald;
-    real          rvdw, sh_invrc6;
-    gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoffAll, bEwald;
+    real          rcoulomb, rvdw, sh_invrc6;
+    gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoffAll;
+    gmx_bool      bEwald, bEwaldLJ;
     real          rcutoff_max2;
-    real          rcutoff, rcutoff2, rswitch, d, d2, swV3, swV4, swV5, swF2, swF3, swF4, sw, dsw, rinvcorr;
-    const real *  tab_ewald_F;
-    const real *  tab_ewald_V;
     const real *  tab_ewald_F_lj;
     const real *  tab_ewald_V_lj;
-    real          tab_ewald_scale, tab_ewald_halfsp;
+    real          d, d2, sw, dsw, rinvcorr;
+    real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
+    real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
+    gmx_bool      bConvertEwaldToCoulomb, bConvertLJEwaldToLJ6;
+    gmx_bool      bComputeVdwInteraction, bComputeElecInteraction;
+    const real *  ewtab;
+    int           ewitab;
+    real          ewrt, eweps, ewtabscale, ewtabhalfspace, sh_ewald;
+
+    sh_ewald            = fr->ic->sh_ewald;
+    ewtab               = fr->ic->tabq_coul_FDV0;
+    ewtabscale          = fr->ic->tabq_scale;
+    ewtabhalfspace      = 0.5/ewtabscale;
+    tab_ewald_F_lj      = fr->ic->tabq_vdw_F;
+    tab_ewald_V_lj      = fr->ic->tabq_vdw_V;
 
     x                   = xx[0];
     f                   = ff[0];
@@ -162,41 +176,43 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     bDoPotential        = kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL;
 
     rcoulomb            = fr->rcoulomb;
-    sh_ewald            = fr->ic->sh_ewald;
     rvdw                = fr->rvdw;
     sh_invrc6           = fr->ic->sh_invrc6;
+    sh_lj_ewald         = fr->ic->sh_lj_ewald;
+    ewclj               = fr->ewaldcoeff_lj;
+    ewclj2              = ewclj*ewclj;
+    ewclj6              = ewclj2*ewclj2*ewclj2;
 
-    /* Ewald (PME) reciprocal force and energy quadratic spline tables */
-    tab_ewald_F         = fr->ic->tabq_coul_F;
-    tab_ewald_V         = fr->ic->tabq_coul_V;
-    tab_ewald_scale     = fr->ic->tabq_scale;
-    tab_ewald_F_lj      = fr->ic->tabq_vdw_F;
-    tab_ewald_V_lj      = fr->ic->tabq_vdw_V;
-    tab_ewald_halfsp    = 0.5/tab_ewald_scale;
-
-    if (fr->coulomb_modifier == eintmodPOTSWITCH || fr->vdw_modifier == eintmodPOTSWITCH)
+    if (fr->coulomb_modifier == eintmodPOTSWITCH)
     {
-        rcutoff         = (fr->coulomb_modifier == eintmodPOTSWITCH) ? fr->rcoulomb : fr->rvdw;
-        rcutoff2        = rcutoff*rcutoff;
-        rswitch         = (fr->coulomb_modifier == eintmodPOTSWITCH) ? fr->rcoulomb_switch : fr->rvdw_switch;
-        d               = rcutoff-rswitch;
-        swV3            = -10.0/(d*d*d);
-        swV4            =  15.0/(d*d*d*d);
-        swV5            =  -6.0/(d*d*d*d*d);
-        swF2            = -30.0/(d*d*d);
-        swF3            =  60.0/(d*d*d*d);
-        swF4            = -30.0/(d*d*d*d*d);
+        d               = fr->rcoulomb-fr->rcoulomb_switch;
+        elec_swV3       = -10.0/(d*d*d);
+        elec_swV4       =  15.0/(d*d*d*d);
+        elec_swV5       =  -6.0/(d*d*d*d*d);
+        elec_swF2       = -30.0/(d*d*d);
+        elec_swF3       =  60.0/(d*d*d*d);
+        elec_swF4       = -30.0/(d*d*d*d*d);
     }
     else
     {
-        /* Stupid compilers dont realize these variables will not be used */
-        rswitch         = 0.0;
-        swV3            = 0.0;
-        swV4            = 0.0;
-        swV5            = 0.0;
-        swF2            = 0.0;
-        swF3            = 0.0;
-        swF4            = 0.0;
+        /* Avoid warnings from stupid compilers (looking at you, Clang!) */
+        elec_swV3 = elec_swV4 = elec_swV5 = elec_swF2 = elec_swF3 = elec_swF4 = 0.0;
+    }
+
+    if (fr->vdw_modifier == eintmodPOTSWITCH)
+    {
+        d               = fr->rvdw-fr->rvdw_switch;
+        vdw_swV3        = -10.0/(d*d*d);
+        vdw_swV4        =  15.0/(d*d*d*d);
+        vdw_swV5        =  -6.0/(d*d*d*d*d);
+        vdw_swF2        = -30.0/(d*d*d);
+        vdw_swF3        =  60.0/(d*d*d*d);
+        vdw_swF4        = -30.0/(d*d*d*d*d);
+    }
+    else
+    {
+        /* Avoid warnings from stupid compilers (looking at you, Clang!) */
+        vdw_swV3 = vdw_swV4 = vdw_swV5 = vdw_swF2 = vdw_swF3 = vdw_swF4 = 0.0;
     }
 
     if (fr->cutoff_scheme == ecutsVERLET)
@@ -240,6 +256,34 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     rcutoff_max2    = rcutoff_max2*rcutoff_max2;
 
     bEwald          = (icoul == GMX_NBKERNEL_ELEC_EWALD);
+    bEwaldLJ        = (ivdw == GMX_NBKERNEL_VDW_LJEWALD);
+
+    /* For Ewald/PME interactions we cannot easily apply the soft-core component to
+     * reciprocal space. When we use vanilla (not switch/shift) Ewald interactions, we
+     * can apply the small trick of subtracting the _reciprocal_ space contribution
+     * in this kernel, and instead apply the free energy interaction to the 1/r
+     * (standard coulomb) interaction.
+     *
+     * However, we cannot use this approach for switch-modified since we would then
+     * effectively end up evaluating a significantly different interaction here compared to the
+     * normal (non-free-energy) kernels, either by applying a cutoff at a different
+     * position than what the user requested, or by switching different
+     * things (1/r rather than short-range Ewald). For these settings, we just
+     * use the traditional short-range Ewald interaction in that case.
+     */
+    bConvertEwaldToCoulomb = (bEwald && (fr->coulomb_modifier != eintmodPOTSWITCH));
+    /* For now the below will always be true (since LJ-PME only works with Shift in Gromacs-5.0),
+     * but writing it this way means we stay in sync with coulomb, and it avoids future bugs.
+     */
+    bConvertLJEwaldToLJ6   = (bEwaldLJ && (fr->vdw_modifier   != eintmodPOTSWITCH));
+
+    /* We currently don't implement exclusion correction, needed with the Verlet cut-off scheme, without conversion */
+    if (fr->cutoff_scheme == ecutsVERLET &&
+        ((bEwald   && !bConvertEwaldToCoulomb) ||
+         (bEwaldLJ && !bConvertLJEwaldToLJ6)))
+    {
+        gmx_incons("Unimplemented non-bonded setup");
+    }
 
     /* fix compiler warnings */
     nj1   = 0;
@@ -374,12 +418,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
             tj[STATE_A]      = ntiA+2*typeA[jnr];
             tj[STATE_B]      = ntiB+2*typeB[jnr];
 
-            if (ivdw == GMX_NBKERNEL_VDW_LJEWALD)
-            {
-                c6grid[STATE_A] = nbfp_grid[tj[STATE_A]];
-                c6grid[STATE_B] = nbfp_grid[tj[STATE_B]];
-            }
-
             if (nlist->excl_fep == NULL || nlist->excl_fep[k])
             {
                 c6[STATE_A]      = nbfp[tj[STATE_A]];
@@ -471,14 +509,15 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             n1V        = tab_elemsize*n0;
                         }
 
-                        /* With Ewald and soft-core we should put the cut-off on r,
-                         * not on the soft-cored rC, as the real-space and
-                         * reciprocal space contributions should (almost) cancel.
+                        /* Only process the coulomb interactions if we have charges,
+                         * and if we either include all entries in the list (no cutoff
+                         * used in the kernel), or if we are within the cutoff.
                          */
-                        if (qq[i] != 0 &&
-                            !(bExactElecCutoff &&
-                              ((!bEwald && rC >= rcoulomb) ||
-                               (bEwald && r >= rcoulomb))))
+                        bComputeElecInteraction = !bExactElecCutoff ||
+                            ( bConvertEwaldToCoulomb && r < rcoulomb) ||
+                            (!bConvertEwaldToCoulomb && rC < rcoulomb);
+
+                        if ( (qq[i] != 0) && bComputeElecInteraction)
                         {
                             switch (icoul)
                             {
@@ -486,12 +525,10 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     /* simple cutoff */
                                     Vcoul[i]   = qq[i]*rinvC;
                                     FscalC[i]  = Vcoul[i];
-                                    break;
-
-                                case GMX_NBKERNEL_ELEC_EWALD:
-                                    /* Ewald FEP is done only on the 1/r part */
-                                    Vcoul[i]   = qq[i]*(rinvC - sh_ewald);
-                                    FscalC[i]  = Vcoul[i];
+                                    /* The shift for the Coulomb potential is stored in
+                                     * the RF parameter c_rf, which is 0 without shift.
+                                     */
+                                    Vcoul[i]  -= qq[i]*fr->ic->c_rf;
                                     break;
 
                                 case GMX_NBKERNEL_ELEC_REACTIONFIELD:
@@ -518,6 +555,26 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     gmx_fatal(FARGS, "Free energy and GB not implemented.\n");
                                     break;
 
+                                case GMX_NBKERNEL_ELEC_EWALD:
+                                    if (bConvertEwaldToCoulomb)
+                                    {
+                                        /* Ewald FEP is done only on the 1/r part */
+                                        Vcoul[i]   = qq[i]*(rinvC-sh_ewald);
+                                        FscalC[i]  = qq[i]*rinvC;
+                                    }
+                                    else
+                                    {
+                                        ewrt      = rC*ewtabscale;
+                                        ewitab    = (int) ewrt;
+                                        eweps     = ewrt-ewitab;
+                                        ewitab    = 4*ewitab;
+                                        FscalC[i] = ewtab[ewitab]+eweps*ewtab[ewitab+1];
+                                        rinvcorr  = rinvC-sh_ewald;
+                                        Vcoul[i]  = qq[i]*(rinvcorr-(ewtab[ewitab+2]-ewtabhalfspace*eweps*(ewtab[ewitab]+FscalC[i])));
+                                        FscalC[i] = qq[i]*(rinvC-rC*FscalC[i]);
+                                    }
+                                    break;
+
                                 case GMX_NBKERNEL_ELEC_NONE:
                                     FscalC[i]  = 0.0;
                                     Vcoul[i]   = 0.0;
@@ -530,26 +587,33 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                             if (fr->coulomb_modifier == eintmodPOTSWITCH)
                             {
-                                d                = rC-rswitch;
+                                d                = rC-fr->rcoulomb_switch;
                                 d                = (d > 0.0) ? d : 0.0;
                                 d2               = d*d;
-                                sw               = 1.0+d2*d*(swV3+d*(swV4+d*swV5));
-                                dsw              = d2*(swF2+d*(swF3+d*swF4));
+                                sw               = 1.0+d2*d*(elec_swV3+d*(elec_swV4+d*elec_swV5));
+                                dsw              = d2*(elec_swF2+d*(elec_swF3+d*elec_swF4));
 
-                                Vcoul[i]  *= sw;
-                                FscalC[i]  = FscalC[i]*sw + Vcoul[i]*dsw;
+                                FscalC[i]        = FscalC[i]*sw - rC*Vcoul[i]*dsw;
+                                Vcoul[i]        *= sw;
+
+                                FscalC[i]        = (rC < rcoulomb) ? FscalC[i] : 0.0;
+                                Vcoul[i]         = (rC < rcoulomb) ? Vcoul[i] : 0.0;
                             }
                         }
 
-                        if ((c6[i] != 0 || c12[i] != 0) &&
-                            !(bExactVdwCutoff &&
-                              ((ivdw != GMX_NBKERNEL_VDW_LJEWALD && rV >= rvdw) ||
-                               (ivdw == GMX_NBKERNEL_VDW_LJEWALD && r >= rvdw))))
+                        /* Only process the VDW interactions if we have
+                         * some non-zero parameters, and if we either
+                         * include all entries in the list (no cutoff used
+                         * in the kernel), or if we are within the cutoff.
+                         */
+                        bComputeVdwInteraction = !bExactVdwCutoff ||
+                            ( bConvertLJEwaldToLJ6 && r < rvdw) ||
+                            (!bConvertLJEwaldToLJ6 && rV < rvdw);
+                        if ((c6[i] != 0 || c12[i] != 0) && bComputeVdwInteraction)
                         {
                             switch (ivdw)
                             {
                                 case GMX_NBKERNEL_VDW_LENNARDJONES:
-                                case GMX_NBKERNEL_VDW_LJEWALD:
                                     /* cutoff LJ */
                                     if (sc_r_power == 6.0)
                                     {
@@ -557,19 +621,14 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     }
                                     else
                                     {
-                                        rinv6            = pow(rinvV, 6.0);
+                                        rinv6            = rinvV*rinvV;
+                                        rinv6            = rinv6*rinv6*rinv6;
                                     }
                                     Vvdw6            = c6[i]*rinv6;
                                     Vvdw12           = c12[i]*rinv6*rinv6;
-                                    if (fr->vdw_modifier == eintmodPOTSHIFT)
-                                    {
-                                        Vvdw[i]          = ( (Vvdw12-c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
-                                                             -(Vvdw6-c6[i]*sh_invrc6)*(1.0/6.0));
-                                    }
-                                    else
-                                    {
-                                        Vvdw[i]          = Vvdw12*(1.0/12.0) - Vvdw6*(1.0/6.0);
-                                    }
+
+                                    Vvdw[i]          = ( (Vvdw12 - c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
+                                                         - (Vvdw6 - c6[i]*sh_invrc6)*(1.0/6.0));
                                     FscalV[i]        = Vvdw12 - Vvdw6;
                                     break;
 
@@ -603,6 +662,41 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     FscalV[i] -= c12[i]*tabscale*FF*rV;
                                     break;
 
+                                case GMX_NBKERNEL_VDW_LJEWALD:
+                                    if (sc_r_power == 6.0)
+                                    {
+                                        rinv6            = rpinvV;
+                                    }
+                                    else
+                                    {
+                                        rinv6            = rinvV*rinvV;
+                                        rinv6            = rinv6*rinv6*rinv6;
+                                    }
+                                    c6grid           = nbfp_grid[tj[i]];
+
+                                    if (bConvertLJEwaldToLJ6)
+                                    {
+                                        /* cutoff LJ */
+                                        Vvdw6            = c6[i]*rinv6;
+                                        Vvdw12           = c12[i]*rinv6*rinv6;
+
+                                        Vvdw[i]          = ( (Vvdw12 - c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
+                                                             - (Vvdw6 - c6[i]*sh_invrc6 - c6grid*sh_lj_ewald)*(1.0/6.0));
+                                        FscalV[i]        = Vvdw12 - Vvdw6;
+                                    }
+                                    else
+                                    {
+                                        /* Normal LJ-PME */
+                                        ewcljrsq         = ewclj2*rV*rV;
+                                        exponent         = exp(-ewcljrsq);
+                                        poly             = exponent*(1.0 + ewcljrsq + ewcljrsq*ewcljrsq*0.5);
+                                        vvdw_disp        = (c6[i]-c6grid*(1.0-poly))*rinv6;
+                                        vvdw_rep         = c12[i]*rinv6*rinv6;
+                                        FscalV[i]        = vvdw_rep - vvdw_disp - c6grid*(1.0/6.0)*exponent*ewclj6;
+                                        Vvdw[i]          = (vvdw_rep - c12[i]*sh_invrc6*sh_invrc6)/12.0 - (vvdw_disp - c6[i]*sh_invrc6 - c6grid*sh_lj_ewald)/6.0;
+                                    }
+                                    break;
+
                                 case GMX_NBKERNEL_VDW_NONE:
                                     Vvdw[i]    = 0.0;
                                     FscalV[i]  = 0.0;
@@ -615,14 +709,14 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                             if (fr->vdw_modifier == eintmodPOTSWITCH)
                             {
-                                d          = rV-rswitch;
-                                d          = (d > 0.0) ? d : 0.0;
-                                d2         = d*d;
-                                sw         = 1.0+d2*d*(swV3+d*(swV4+d*swV5));
-                                dsw        = d2*(swF2+d*(swF3+d*swF4));
+                                d                = rV-fr->rvdw_switch;
+                                d                = (d > 0.0) ? d : 0.0;
+                                d2               = d*d;
+                                sw               = 1.0+d2*d*(vdw_swV3+d*(vdw_swV4+d*vdw_swV5));
+                                dsw              = d2*(vdw_swF2+d*(vdw_swF3+d*vdw_swF4));
 
-                                Vvdw[i]   *= sw;
-                                FscalV[i]  = FscalV[i]*sw + Vvdw[i]*dsw;
+                                FscalV[i]        = FscalV[i]*sw - rV*Vvdw[i]*dsw;
+                                Vvdw[i]         *= sw;
 
                                 FscalV[i]  = (rV < rvdw) ? FscalV[i] : 0.0;
                                 Vvdw[i]    = (rV < rvdw) ? Vvdw[i] : 0.0;
@@ -675,56 +769,92 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 }
             }
 
-            if (icoul == GMX_NBKERNEL_ELEC_EWALD &&
-                !(bExactElecCutoff && r >= rcoulomb))
+            if (bConvertEwaldToCoulomb && ( !bExactElecCutoff || r < rcoulomb ) )
             {
-                /* Because we compute the soft-core normally,
-                 * we have to remove the Ewald short range portion.
-                 * Done outside of the states loop because this part
-                 * doesn't depend on the scaled R.
+                /* See comment in the preamble. When using Ewald interactions
+                 * (unless we use a switch modifier) we subtract the reciprocal-space
+                 * Ewald component here which made it possible to apply the free
+                 * energy interaction to 1/r (vanilla coulomb short-range part)
+                 * above. This gets us closer to the ideal case of applying
+                 * the softcore to the entire electrostatic interaction,
+                 * including the reciprocal-space component.
+                 */
+                real v_lr, f_lr;
+
+                ewrt      = r*ewtabscale;
+                ewitab    = (int) ewrt;
+                eweps     = ewrt-ewitab;
+                ewitab    = 4*ewitab;
+                f_lr      = ewtab[ewitab]+eweps*ewtab[ewitab+1];
+                v_lr      = (ewtab[ewitab+2]-ewtabhalfspace*eweps*(ewtab[ewitab]+f_lr));
+                f_lr     *= rinv;
+
+                /* Note that any possible Ewald shift has already been applied in
+                 * the normal interaction part above.
+                 */
+
+                if (ii == jnr)
+                {
+                    /* If we get here, the i particle (ii) has itself (jnr)
+                     * in its neighborlist. This can only happen with the Verlet
+                     * scheme, and corresponds to a self-interaction that will
+                     * occur twice. Scale it down by 50% to only include it once.
+                     */
+                    v_lr *= 0.5;
+                }
+
+                for (i = 0; i < NSTATES; i++)
+                {
+                    vctot      -= LFC[i]*qq[i]*v_lr;
+                    Fscal      -= LFC[i]*qq[i]*f_lr;
+                    dvdl_coul  -= (DLF[i]*qq[i])*v_lr;
+                }
+            }
+
+            if (bConvertLJEwaldToLJ6 && (!bExactVdwCutoff || r < rvdw))
+            {
+                /* See comment in the preamble. When using LJ-Ewald interactions
+                 * (unless we use a switch modifier) we subtract the reciprocal-space
+                 * Ewald component here which made it possible to apply the free
+                 * energy interaction to r^-6 (vanilla LJ6 short-range part)
+                 * above. This gets us closer to the ideal case of applying
+                 * the softcore to the entire VdW interaction,
+                 * including the reciprocal-space component.
+                 */
+                /* We could also use the analytical form here
+                 * iso a table, but that can cause issues for
+                 * r close to 0 for non-interacting pairs.
                  */
                 real rs, frac, f_lr;
                 int  ri;
 
-                rs     = rsq*rinv*tab_ewald_scale;
-                ri     = (int)rs;
-                frac   = rs - ri;
-                f_lr   = (1 - frac)*tab_ewald_F[ri] + frac*tab_ewald_F[ri+1];
-                FF     = f_lr*rinv;
-                VV     = tab_ewald_V[ri] - tab_ewald_halfsp*frac*(tab_ewald_F[ri] + f_lr);
-
-                if (ii == jnr)
-                {
-                    VV   *= 0.5;
-                }
-
-                for (i = 0; i < NSTATES; i++)
-                {
-                    vctot      -= LFC[i]*qq[i]*VV;
-                    Fscal      -= LFC[i]*qq[i]*FF;
-                    dvdl_coul  -= (DLF[i]*qq[i])*VV;
-                }
-            }
-
-            if (ivdw == GMX_NBKERNEL_VDW_LJEWALD &&
-                !(bExactVdwCutoff && r >= rvdw))
-            {
-                real rs, frac, f_lr;
-                int  ri;
-
-                rs     = rsq*rinv*tab_ewald_scale;
+                rs     = rsq*rinv*ewtabscale;
                 ri     = (int)rs;
                 frac   = rs - ri;
                 f_lr   = (1 - frac)*tab_ewald_F_lj[ri] + frac*tab_ewald_F_lj[ri+1];
-                FF     = f_lr*rinv;
-                VV     = tab_ewald_V_lj[ri] - tab_ewald_halfsp*frac*(tab_ewald_F_lj[ri] + f_lr);
-                for (i = 0; i < NSTATES; i++)
+                /* TODO: Currently the Ewald LJ table does not contain
+                 * the factor 1/6, we should add this.
+                 */
+                FF     = f_lr*rinv/6.0;
+                VV     = (tab_ewald_V_lj[ri] - ewtabhalfspace*frac*(tab_ewald_F_lj[ri] + f_lr))/6.0;
+
+                if (ii == jnr)
                 {
-                    vvtot      += LFV[i]*c6grid[i]*VV*(1.0/6.0);
-                    Fscal      += LFV[i]*c6grid[i]*FF*(1.0/6.0);
-                    dvdl_vdw   += (DLF[i]*c6grid[i])*VV*(1.0/6.0);
+                    /* If we get here, the i particle (ii) has itself (jnr)
+                     * in its neighborlist. This can only happen with the Verlet
+                     * scheme, and corresponds to a self-interaction that will
+                     * occur twice. Scale it down by 50% to only include it once.
+                     */
+                    VV *= 0.5;
                 }
 
+                for (i = 0; i < NSTATES; i++)
+                {
+                    c6grid      = nbfp_grid[tj[i]];
+                    vvtot      += LFV[i]*c6grid*VV;
+                    Fscal      += LFV[i]*c6grid*FF;
+                    dvdl_vdw   += (DLF[i]*c6grid)*VV;
+                }
             }
 
             if (bDoForces)
@@ -793,6 +923,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
      * 12  flops per outer iteration
      * 150 flops per inner iteration
      */
+#pragma omp atomic
     inc_nrnb(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri*12 + nlist->jindex[n]*150);
 }
 

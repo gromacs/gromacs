@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,28 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_multifit_nlin.h>
-#include <gsl/gsl_sf.h>
-#include <gsl/gsl_version.h>
-#endif
-
-#include <math.h>
-#include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
 #include "geminate.h"
 
+#include <math.h>
+#include <stdlib.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
+
+static void missing_code_message()
+{
+    fprintf(stderr, "You have requested code to run that is deprecated.\n");
+    fprintf(stderr, "Revert to an older GROMACS version or help in porting the code.\n");
+}
 
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,
@@ -589,63 +585,6 @@ extern t_gemParams *init_gemParams(const double sigma, const double D,
  * the ACF data on a log-scale and does not operate on the raw data.
  * This needs to be redone in gemFunc_residual() as well as in the
  * t_gemParams structure. */
-#ifdef HAVE_LIBGSL
-static double gemFunc_residual2(const gsl_vector *p, void *data)
-{
-    gemFitData *GD;
-    int         i, iLog, nLin, nFitPoints, nData;
-    double      r, residual2, *ctTheory, *y;
-
-    GD         = (gemFitData *)data;
-    nLin       = GD->params->nLin;
-    nFitPoints = GD->params->nFitPoints;
-    nData      = GD->nData;
-    residual2  = 0;
-    ctTheory   = GD->ctTheory;
-    y          = GD->y;
-
-    /* Now, we'd save a lot of time by not calculating eq10v2 for all
-     * time points, but only those that we sample to calculate the mse.
-     */
-
-    eq10v2(GD->ctTheory, GD->doubleLogTime /* GD->time */, nFitPoints /* GD->nData */,
-           gsl_vector_get(p, 0), gsl_vector_get(p, 1),
-           GD->params);
-
-    fixGemACF(GD->ctTheory, nFitPoints);
-
-    /* Removing a bunch of points from the log-part. */
-#pragma omp parallel for schedule(dynamic) \
-    firstprivate(nData, ctTheory, y, nFitPoints) \
-    private (i, iLog, r) \
-    reduction(+:residual2) \
-    default(shared)
-    for (i = 0; i < nFitPoints; i++)
-    {
-        iLog       = GD->logtime[i];
-        r          = log(ctTheory[i /* iLog */]);
-        residual2 += sqr(r-log(y[iLog]));
-    }
-    residual2 /= nFitPoints; /* Not really necessary for the fitting, but gives more meaning to the returned data. */
-    /* printf("ka=%3.5f\tkd=%3.5f\trmse=%3.5f\n", gsl_vector_get(p,0), gsl_vector_get(p,1), residual2); */
-    return residual2;
-
-/*   for (i=0; i<nLin; i++) { */
-/*     /\* Linear part ----------*\/ */
-/*     r = ctTheory[i]; */
-/*     residual2 += sqr(r-y[i]); */
-/*     /\* Log part -------------*\/ */
-/*     iLog = GETLOGINDEX(i, GD->params); */
-/*     if (iLog >= nData) */
-/*       gmx_fatal(FARGS, "log index out of bounds: %i", iLog); */
-/*     r = ctTheory[iLog]; */
-/*     residual2 += sqr(r-y[iLog]); */
-
-/*   } */
-/*   residual2 /= GD->n; */
-/*   return residual2; */
-}
-#endif
 
 static real* d2r(const double *d, const int nn);
 
@@ -662,253 +601,11 @@ extern real fitGemRecomb(double gmx_unused      *ct,
     gemFitData *GD;
     char       *dumpstr, dumpname[128];
 
-    /* nmsimplex2 had convergence problems prior to gsl v1.14,
-     * but it's O(N) instead of O(N) operations, so let's use it if v >= 1.14 */
-#ifdef HAVE_LIBGSL
-    gsl_multimin_fminimizer *s;
-    gsl_vector              *x, *dx; /* parameters and initial step size */
-    gsl_multimin_function    fitFunc;
-#ifdef GSL_MAJOR_VERSION
-#ifdef GSL_MINOR_VERSION
-#if ((GSL_MAJOR_VERSION == 1 && GSL_MINOR_VERSION >= 14) || \
-    (GSL_MAJOR_VERSION > 1))
-    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
-#else
-    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
-#endif /* #if ... */
-#endif /* GSL_MINOR_VERSION */
-#else
-    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
-#endif /* GSL_MAJOR_VERSION */
-    fprintf(stdout, "Will fit ka and kd to the ACF according to the reversible geminate recombination model.\n");
-#else  /* HAVE_LIBGSL */
-    fprintf(stderr, "Sorry, can't do reversible geminate recombination without gsl. "
-            "Recompile using --with-gsl.\n");
+    missing_code_message();
     return -1;
-#endif /* HAVE_LIBGSL */
 
-#ifdef HAVE_LIBGSL
-#ifdef GMX_OPENMP
-    nThreads = gmx_omp_get_max_threads();
-    gmx_omp_set_num_threads(nThreads);
-    fprintf(stdout, "We will be using %i threads.\n", nThreads);
-#endif
-
-    iter    = 0;
-    status  = 0;
-    maxiter = 100;
-    tol     = 1e-10;
-
-    p = 2;                                        /* Number of parameters to fit. ka and kd.  */
-    n = params->nFitPoints; /* params->nLin*2 */; /* Number of points in the reduced dataset  */
-
-    if (params->D <= 0)
-    {
-        fprintf(stderr, "Fitting of D is not implemented yet. It must be provided on the command line.\n");
-        return -1;
-    }
-
-/*   if (nData<n) { */
-/*     fprintf(stderr, "Reduced data set larger than the complete data set!\n"); */
-/*     n=nData; */
-/*   } */
-    snew(dumpdata, nData);
-    snew(GD, 1);
-
-    GD->n        = n;
-    GD->y        = ct;
-    GD->ctTheory = NULL;
-    snew(GD->ctTheory, nData);
-    GD->LinLog = NULL;
-    snew(GD->LinLog, n);
-    GD->time   = time;
-    GD->ka     = 0;
-    GD->kd     = 0;
-    GD->tDelta = time[1]-time[0];
-    GD->nData  = nData;
-    GD->params = params;
-    snew(GD->logtime, params->nFitPoints);
-    snew(GD->doubleLogTime, params->nFitPoints);
-
-    for (i = 0; i < params->nFitPoints; i++)
-    {
-        GD->doubleLogTime[i]  = (double)(getLogIndex(i, params));
-        GD->logtime[i]        = (int)(GD->doubleLogTime[i]);
-        GD->doubleLogTime[i] *= GD->tDelta;
-
-        if (GD->logtime[i] >= nData)
-        {
-            fprintf(stderr, "Ayay. It seems we're indexing out of bounds.\n");
-            params->nFitPoints = i;
-        }
-    }
-
-    fitFunc.f      = &gemFunc_residual2;
-    fitFunc.n      = 2;
-    fitFunc.params = (void*)GD;
-
-    x  = gsl_vector_alloc (fitFunc.n);
-    dx = gsl_vector_alloc (fitFunc.n);
-    gsl_vector_set (x,  0, 25);
-    gsl_vector_set (x,  1, 0.5);
-    gsl_vector_set (dx, 0, 0.1);
-    gsl_vector_set (dx, 1, 0.01);
-
-
-    s = gsl_multimin_fminimizer_alloc (T, fitFunc.n);
-    gsl_multimin_fminimizer_set (s, &fitFunc, x, dx);
-    gsl_vector_free (x);
-    gsl_vector_free (dx);
-
-    do
-    {
-        iter++;
-        status = gsl_multimin_fminimizer_iterate (s);
-
-        if (status != 0)
-        {
-            gmx_fatal(FARGS, "Something went wrong in the iteration in minimizer %s:\n \"%s\"\n",
-                      gsl_multimin_fminimizer_name(s), gsl_strerror(status));
-        }
-
-        d2         = gsl_multimin_fminimizer_minimum(s);
-        size       = gsl_multimin_fminimizer_size(s);
-        params->ka = gsl_vector_get (s->x, 0);
-        params->kd = gsl_vector_get (s->x, 1);
-
-        if (status)
-        {
-            fprintf(stderr, "%s\n", gsl_strerror(status));
-            break;
-        }
-
-        status = gsl_multimin_test_size(size, tol);
-
-        if (status == GSL_SUCCESS)
-        {
-            fprintf(stdout, "Converged to minimum at\n");
-        }
-
-        printf ("iter %5d: ka = %2.5f  kd = %2.5f  f() = %7.3f  size = %.3f  chi2 = %2.5f\n",
-                iter,
-                params->ka,
-                params->kd,
-                s->fval, size, d2);
-
-        if (iter%1 == 0)
-        {
-            eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params);
-            /* fixGemACF(GD->ctTheory, nFitPoints); */
-            sprintf(dumpname, "Iter_%i.xvg", iter);
-            for (i = 0; i < GD->nData; i++)
-            {
-                dumpdata[i] = (real)(GD->ctTheory[i]);
-                if (!gmx_isfinite(dumpdata[i]))
-                {
-                    gmx_fatal(FARGS, "Non-finite value in acf.");
-                }
-            }
-            dumpN(dumpdata, GD->nData, dumpname);
-        }
-    }
-    while ((status == GSL_CONTINUE) && (iter < maxiter));
-
-    /*   /\* Calculate the theoretical ACF from the parameters one last time. *\/ */
-    eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params);
-    *ctFit = GD->ctTheory;
-
-    sfree(GD);
-    gsl_multimin_fminimizer_free (s);
-
-
-    return d2;
-
-#endif /* HAVE_LIBGSL */
 }
 
-#ifdef HAVE_LIBGSL
-static int balFunc_f(const gsl_vector *x, void *data, gsl_vector *f)
-{
-    /* C + sum{ A_i * exp(-B_i * t) }*/
-
-    balData *BD;
-    int      n, i, j, nexp;
-    double  *y, *A, *B, C,     /* There are the parameters to be optimized. */
-             t, ct;
-
-    BD   = (balData *)data;
-    n    = BD->n;
-    nexp = BD->nexp;
-    y    = BD->y,
-    snew(A, nexp);
-    snew(B, nexp);
-
-    for (i = 0; i < nexp; i++)
-    {
-        A[i] = gsl_vector_get(x, i*2);
-        B[i] = gsl_vector_get(x, i*2+1);
-    }
-    C = gsl_vector_get(x, nexp*2);
-
-    for (i = 0; i < n; i++)
-    {
-        t  = i*BD->tDelta;
-        ct = 0;
-        for (j = 0; j < nexp; j++)
-        {
-            ct += A[j] * exp(B[j] * t);
-        }
-        ct += C;
-        gsl_vector_set (f, i, ct - y[i]);
-    }
-    return GSL_SUCCESS;
-}
-
-/* The derivative stored in jacobian form (J)*/
-static int balFunc_df(const gsl_vector *params, void *data, gsl_matrix *J)
-{
-    balData *BD;
-    size_t   n, i, j;
-    double  *y, *A, *B, C, /* There are the parameters. */
-             t;
-    int      nexp;
-
-    BD   = (balData*)data;
-    n    = BD->n;
-    y    = BD->y;
-    nexp = BD->nexp;
-
-    snew(A, nexp);
-    snew(B, nexp);
-
-    for (i = 0; i < nexp; i++)
-    {
-        A[i] = gsl_vector_get(params, i*2);
-        B[i] = gsl_vector_get(params, i*2+1);
-    }
-    C = gsl_vector_get(params, nexp*2);
-    for (i = 0; i < n; i++)
-    {
-        t = i*BD->tDelta;
-        for (j = 0; j < nexp; j++)
-        {
-            gsl_matrix_set (J, i, j*2,   exp(B[j]*t));        /* df(t)/dA_j */
-            gsl_matrix_set (J, i, j*2+1, A[j]*t*exp(B[j]*t)); /* df(t)/dB_j */
-        }
-        gsl_matrix_set (J, i, nexp*2, 1);                     /* df(t)/dC */
-    }
-    return GSL_SUCCESS;
-}
-
-/* Calculation of the function and its derivative */
-static int balFunc_fdf(const gsl_vector *params, void *data,
-                       gsl_vector *f, gsl_matrix *J)
-{
-    balFunc_f(params, data, f);
-    balFunc_df(params, data, J);
-    return GSL_SUCCESS;
-}
-#endif /* HAVE_LIBGSL */
 
 /* Removes the ballistic term from the beginning of the ACF,
  * just like in Omer's paper.
@@ -916,8 +613,7 @@ static int balFunc_fdf(const gsl_vector *params, void *data,
 extern void takeAwayBallistic(double gmx_unused *ct, double *t, int len, real tMax, int nexp, gmx_bool gmx_unused bDerivative)
 {
 
-    /* Use nonlinear regression with GSL instead.
-     * Fit with 4 exponentials and one constant term,
+    /* Fit with 4 exponentials and one constant term,
      * subtract the fatest exponential. */
 
     int      nData, i, status, iter;
@@ -939,183 +635,8 @@ extern void takeAwayBallistic(double gmx_unused *ct, double *t, int len, real tM
 
     p = nexp*2+1;            /* Number of parameters. */
 
-#ifdef HAVE_LIBGSL
-    const gsl_multifit_fdfsolver_type *T
-        = gsl_multifit_fdfsolver_lmsder;
-
-    gsl_multifit_fdfsolver   *s;           /* The solver itself. */
-    gsl_multifit_function_fdf fitFunction; /* The function to be fitted. */
-    gsl_matrix               *covar;       /* Covariance matrix for the parameters.
-                                            * We'll not use the result, though. */
-    gsl_vector_view           theParams;
-
-    nData = 0;
-    do
-    {
-        nData++;
-    }
-    while (t[nData] < tMax+t[0] && nData < len);
-
-    guess = NULL;
-    n     = nData;
-
-    snew(guess, p);
-    snew(A, p);
-    covar = gsl_matrix_alloc (p, p);
-
-    /* Set up an initial gess for the parameters.
-     * The solver is somewhat sensitive to the initial guess,
-     * but this worked fine for a TIP3P box with -geminate dd
-     * EDIT: In fact, this seems like a good starting pont for other watermodels too. */
-    for (i = 0; i < nexp; i++)
-    {
-        guess[i*2]   = 0.1;
-        guess[i*2+1] = -0.5 + (((double)i)/nexp - 0.5)*0.3;
-    }
-    guess[nexp * 2] = 0.01;
-
-    theParams = gsl_vector_view_array(guess, p);
-
-    snew(BD, 1);
-    BD->n      = n;
-    BD->y      = ct;
-    BD->tDelta = t[1]-t[0];
-    BD->nexp   = nexp;
-
-    fitFunction.f      =  &balFunc_f;
-    fitFunction.df     =  &balFunc_df;
-    fitFunction.fdf    =  &balFunc_fdf;
-    fitFunction.n      =  nData;
-    fitFunction.p      =  p;
-    fitFunction.params =  BD;
-
-    s = gsl_multifit_fdfsolver_alloc (T, nData, p);
-    if (s == NULL)
-    {
-        gmx_fatal(FARGS, "Could not set up the nonlinear solver.");
-    }
-
-    gsl_multifit_fdfsolver_set(s, &fitFunction, &theParams.vector);
-
-    /* \=============================================/ */
-
-    iter = 0;
-    do
-    {
-        iter++;
-        status = gsl_multifit_fdfsolver_iterate (s);
-
-        if (status)
-        {
-            break;
-        }
-        status = gsl_multifit_test_delta (s->dx, s->x, 1e-4, 1e-4);
-    }
-    while (iter < 5000 && status == GSL_CONTINUE);
-
-    if (iter == 5000)
-    {
-        fprintf(stderr, "The non-linear fitting did not converge in 5000 steps.\n"
-                "Check the quality of the fit!\n");
-    }
-    else
-    {
-        fprintf(stderr, "Non-linear fitting of ballistic term converged in %d steps.\n\n", (int)iter);
-    }
-    for (i = 0; i < nexp; i++)
-    {
-        fprintf(stdout, "%c * exp(%c * t) + ", 'A'+(char)i*2, 'B'+(char)i*2);
-    }
-
-    fprintf(stdout, "%c\n", 'A'+(char)nexp*2);
-    fprintf(stdout, "Here are the actual numbers for A-%c:\n", 'A'+nexp*2);
-
-    for (i = 0; i < nexp; i++)
-    {
-        A[i*2]   = gsl_vector_get(s->x, i*2);
-        A[i*2+1] = gsl_vector_get(s->x, i*2+1);
-        fprintf(stdout, " %g*exp(%g * x) +", A[i*2], A[i*2+1]);
-    }
-    A[i*2] = gsl_vector_get(s->x, i*2);        /* The last and constant term */
-    fprintf(stdout, " %g\n", A[i*2]);
-
-    fflush(stdout);
-
-    /* Implement some check for parameter quality */
-    for (i = 0; i < nexp; i++)
-    {
-        if (A[i*2] < 0 || A[i*2] > 1)
-        {
-            fprintf(stderr, "WARNING: ----------------------------------\n"
-                    " | A coefficient does not lie within [0,1].\n"
-                    " | This may or may not be a problem.\n"
-                    " | Double check the quality of the fit!\n");
-        }
-        if (A[i*2+1] > 0)
-        {
-            fprintf(stderr, "WARNING: ----------------------------------\n"
-                    " | One factor in the exponent is positive.\n"
-                    " | This could be a problem if the coefficient\n"
-                    " | is large. Double check the quality of the fit!\n");
-        }
-    }
-    if (A[i*2] < 0 || A[i*2] > 1)
-    {
-        fprintf(stderr, "WARNING: ----------------------------------\n"
-                " | The constant term does not lie within [0,1].\n"
-                " | This may or may not be a problem.\n"
-                " | Double check the quality of the fit!\n");
-    }
-
-    /* Sort the terms */
-    sorted = (nexp > 1) ?  FALSE : TRUE;
-    while (!sorted)
-    {
-        sorted = TRUE;
-        for (i = 0; i < nexp-1; i++)
-        {
-            ddt[0] = A[i*2] * A[i*2+1];
-            ddt[1] = A[i*2+2] * A[i*2+3];
-
-            if ((bDerivative && (ddt[0] < 0 && ddt[1] < 0 && ddt[0] > ddt[1])) || /* Compare derivative at t=0... */
-                (!bDerivative && (A[i*2+1] > A[i*2+3])))                          /* Or just the coefficient in the exponent */
-            {
-                sorted = FALSE;
-                a[0]   = A[i*2];   /* coefficient */
-                a[1]   = A[i*2+1]; /* parameter in the exponent */
-
-                A[i*2]   = A[i*2+2];
-                A[i*2+1] = A[i*2+3];
-
-                A[i*2+2] = a[0];
-                A[i*2+3] = a[1];
-            }
-        }
-    }
-
-    /* Subtract the fastest component */
-    fprintf(stdout, "Fastest component is %g * exp(%g * t)\n"
-            "Subtracting fastest component from ACF.\n", A[0], A[1]);
-
-    for (i = 0; i < len; i++)
-    {
-        ct[i] = (ct[i] - A[0] * exp(A[1] * i*BD->tDelta)) / (1-A[0]);
-    }
-
-    sfree(guess);
-    sfree(A);
-
-    gsl_multifit_fdfsolver_free(s);
-    gsl_matrix_free(covar);
-    fflush(stdout);
-
-#else
-    /* We have no gsl. */
-    fprintf(stderr, "Sorry, can't take away ballistic component without gsl. "
-            "Recompile using --with-gsl.\n");
+    missing_code_message();
     return;
-#endif /* HAVE_LIBGSL */
-
 }
 
 extern void dumpN(const real *e, const int nn, char *fn)
@@ -1195,10 +716,10 @@ extern void fixGemACF(double *ct, int len)
     bBad = FALSE;
 
     /* An acf of binary data must be one at t=0. */
-    if (abs(ct[0]-1.0) > 1e-6)
+    if (fabs(ct[0]-1.0) > 1e-6)
     {
         ct[0] = 1.0;
-        fprintf(stderr, "|ct[0]-1.0| = %1.6d. Setting ct[0] to 1.0.\n", abs(ct[0]-1.0));
+        fprintf(stderr, "|ct[0]-1.0| = %1.6f. Setting ct[0] to 1.0.\n", fabs(ct[0]-1.0));
     }
 
     for (i = 0; i < len; i++)

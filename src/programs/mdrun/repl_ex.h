@@ -38,8 +38,12 @@
 #ifndef _repl_ex_h
 #define _repl_ex_h
 
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Abstract type for replica exchange */
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
@@ -67,5 +71,9 @@ extern gmx_bool replica_exchange(FILE *fplog,
 
 extern void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
 /* Should only be called on the master nodes */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* _repl_ex_h */

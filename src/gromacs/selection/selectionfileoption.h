@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@
 #ifndef GMX_SELECTION_SELECTIONFILEOPTION_H
 #define GMX_SELECTION_SELECTIONFILEOPTION_H
 
-#include "../options/abstractoption.h"
+#include "gromacs/options/abstractoption.h"
 
 namespace gmx
 {
@@ -76,7 +76,8 @@ class SelectionFileOption : public AbstractOption
         explicit SelectionFileOption(const char *name);
 
     private:
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const;
 };
 
 /*! \libinternal \brief
@@ -94,13 +95,6 @@ class SelectionFileOptionInfo : public OptionInfo
          * Does not throw.
          */
         explicit SelectionFileOptionInfo(SelectionFileOptionStorage *option);
-
-        //! \copydoc SelectionOptionInfo::setManager()
-        void setManager(SelectionOptionManager *manager);
-
-    private:
-        SelectionFileOptionStorage &option();
-        const SelectionFileOptionStorage &option() const;
 };
 
 } // namespace gmx

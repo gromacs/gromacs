@@ -39,6 +39,10 @@
 
 #include <stdio.h>
 
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/topology/atoms.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,7 +63,7 @@ t_nm2type *rd_nm2type(const char *ffdir, int *nnm);
 void dump_nm2type(FILE *fp, int nnm, t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
 
-int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
+int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
             gpp_atomtype_t atype, int *nbonds, t_params *bond);
 /* Try to determine the atomtype (force field dependent) for the atoms
  * with help of the bond list

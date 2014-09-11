@@ -39,10 +39,14 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 
-#include "../solvate.h"
-#include "testutils/integrationtests.h"
+#include "gmxpre.h"
+
+#include "gromacs/gmxpreprocess/solvate.h"
+
+#include "gromacs/utility/futil.h"
+
 #include "testutils/cmdlinetest.h"
-#include "gromacs/fileio/futil.h"
+#include "testutils/integrationtests.h"
 
 namespace
 {

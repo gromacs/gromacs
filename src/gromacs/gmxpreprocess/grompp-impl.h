@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_GROMPP_IMPL_H
 #define GMX_GMXPREPROCESS_GROMPP_IMPL_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,6 +53,28 @@ typedef struct {
 /* The t_nbparam struct is used to temporary store the explicit
  * non-bonded parameter combinations, which will be copied to t_params.
  */
+
+#ifndef __cplusplus
+/*
+ * With the macros below you don't
+ * have to use an index if you don't wan't to. You can eg. use
+ * param.C0 instead of param.c[0].
+ * In a similar fashion, you can use param.AI instead of
+ * param.a[0]
+ *
+ * For C++ those should be replaced with member functions.
+ */
+
+#define AI  a[0]
+#define AJ  a[1]
+#define AK  a[2]
+#define AL  a[3]
+#define AM  a[4]
+
+#define C0  c[0]
+#define C1  c[1]
+#define C2  c[2]
+#endif
 
 typedef struct {
     atom_id    a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/

@@ -34,15 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "gromacs/random/random.h"
-#include "smalloc.h"
-#include "vec.h"
 #include "sortwater.h"
+
+#include <stdlib.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
+#include "gromacs/utility/smalloc.h"
 
 static rvec   *xptr, box_1;
 static int     nwat;

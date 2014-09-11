@@ -57,21 +57,16 @@
 #include <string>
 #include <vector>
 
-#include "../utility/common.h"
-#include "../utility/uniqueptr.h"
-
-#include "optionflags.h"
+#include "gromacs/options/optionflags.h"
+#include "gromacs/utility/common.h"
 
 namespace gmx
 {
 
 class AbstractOptionStorage;
 template <typename T> class OptionStorageTemplate;
+class OptionManagerContainer;
 class Options;
-
-//! Smart pointer for managing an AbstractOptionStorage object.
-typedef gmx_unique_ptr<AbstractOptionStorage>::type
-    AbstractOptionStoragePointer;
 
 /*! \brief
  * Abstract base class for specifying option properties.
@@ -108,8 +103,10 @@ class AbstractOption
         /*! \brief
          * Creates a default storage object for the option.
          *
-         * \returns The created storage object.
-         * \throws  APIError if invalid option settings have been provided.
+         * \param[in] managers  Manager container (unused if the option does
+         *     not use a manager).
+         * \returns   The created storage object.
+         * \throws    APIError if invalid option settings have been provided.
          *
          * This method is called by Options::addOption() when initializing an
          * option from the settings.
@@ -119,8 +116,16 @@ class AbstractOption
          * They should also throw APIError if they detect problems.
          *
          * Should only be called by Options::addOption().
+         *
+         * The ownership of the return value is passed, but is not using a
+         * smart pointer to avoid introducing such a dependency in an installed
+         * header.  The implementation will always consist of a single `new`
+         * call and returning that value, and the caller always immediately
+         * wraps the pointer in a smart pointer, so there is not exception
+         * safety issue.
          */
-        virtual AbstractOptionStoragePointer createStorage() const = 0;
+        virtual AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const = 0;
 
         //! Sets the description for the option.
         void setDescription(const char *descr) { descr_ = descr; }

@@ -34,32 +34,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <stdio.h>
-#include <math.h>
+#include "gmxpre.h"
 
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
-#include "gstat.h"
-#include "macros.h"
-#include "gromacs/math/utilities.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/tpxio.h"
+#include <math.h>
+#include <stdio.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "vec.h"
-#include "xvgr.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static gmx_bool bAllowed(real phi, real psi)
 {
@@ -440,7 +439,7 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
     return j;
 }
 
-static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
+static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int nf, int maxchi, real **dih,
                           int nlist, t_dlist dlist[],
                           atom_id index[],
@@ -682,15 +681,15 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
         snew(leg, NJC);
         for (i = 0; (i < NKKKPHI); i++)
         {
-            leg[i] = strdup(kkkphi[i].name);
+            leg[i] = gmx_strdup(kkkphi[i].name);
         }
         for (i = 0; (i < NKKKPSI); i++)
         {
-            leg[i+NKKKPHI] = strdup(kkkpsi[i].name);
+            leg[i+NKKKPHI] = gmx_strdup(kkkpsi[i].name);
         }
         for (i = 0; (i < NKKKCHI); i++)
         {
-            leg[i+NKKKPHI+NKKKPSI] = strdup(kkkchi1[i].name);
+            leg[i+NKKKPHI+NKKKPSI] = gmx_strdup(kkkchi1[i].name);
         }
         xvgr_legend(fp, NJC, (const char**)leg, oenv);
         fprintf(fp, "%5s ", "#Res.");
@@ -763,16 +762,22 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
                 strcpy(hhisfile, hisfile);
                 strcat(hhisfile, ".xvg");
                 fp = xvgropen(hhisfile, title, "Degrees", "", oenv);
-                fprintf(fp, "@ with g0\n");
+                if (output_env_get_print_xvgr_codes(oenv))
+                {
+                    fprintf(fp, "@ with g0\n");
+                }
                 xvgr_world(fp, -180, 0, 180, 0.1, oenv);
-                fprintf(fp, "# this effort to set graph size fails unless you run with -autoscale none or -autoscale y flags\n");
-                fprintf(fp, "@ xaxis tick on\n");
-                fprintf(fp, "@ xaxis tick major 90\n");
-                fprintf(fp, "@ xaxis tick minor 30\n");
-                fprintf(fp, "@ xaxis ticklabel prec 0\n");
-                fprintf(fp, "@ yaxis tick off\n");
-                fprintf(fp, "@ yaxis ticklabel off\n");
-                fprintf(fp, "@ type xy\n");
+                if (output_env_get_print_xvgr_codes(oenv))
+                {
+                    fprintf(fp, "# this effort to set graph size fails unless you run with -autoscale none or -autoscale y flags\n");
+                    fprintf(fp, "@ xaxis tick on\n");
+                    fprintf(fp, "@ xaxis tick major 90\n");
+                    fprintf(fp, "@ xaxis tick minor 30\n");
+                    fprintf(fp, "@ xaxis ticklabel prec 0\n");
+                    fprintf(fp, "@ yaxis tick off\n");
+                    fprintf(fp, "@ yaxis ticklabel off\n");
+                    fprintf(fp, "@ type xy\n");
+                }
                 if (bSSHisto)
                 {
                     for (k = 0; (k < 3); k++)
@@ -801,13 +806,13 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
                         }
                     }
                 }
-                fprintf(fp, "&\n");
+                fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
                 gmx_ffclose(fp);
                 if (bSSHisto)
                 {
                     for (k = 0; (k < 3); k++)
                     {
-                        fprintf(ssfp[k], "&\n");
+                        fprintf(ssfp[k], "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
                         gmx_ffclose(ssfp[k]);
                     }
                 }
@@ -842,30 +847,35 @@ static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
     FILE *fp;
 
     fp = xvgropen(fn, title, xaxis, yaxis, oenv);
-    fprintf(fp, "@ with g0\n");
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(fp, "@ with g0\n");
+    }
     xvgr_world(fp, -180, -180, 180, 180, oenv);
-    fprintf(fp, "@ xaxis tick on\n");
-    fprintf(fp, "@ xaxis tick major 90\n");
-    fprintf(fp, "@ xaxis tick minor 30\n");
-    fprintf(fp, "@ xaxis ticklabel prec 0\n");
-    fprintf(fp, "@ yaxis tick on\n");
-    fprintf(fp, "@ yaxis tick major 90\n");
-    fprintf(fp, "@ yaxis tick minor 30\n");
-    fprintf(fp, "@ yaxis ticklabel prec 0\n");
-    fprintf(fp, "@    s0 type xy\n");
-    fprintf(fp, "@    s0 symbol 2\n");
-    fprintf(fp, "@    s0 symbol size 0.410000\n");
-    fprintf(fp, "@    s0 symbol fill 1\n");
-    fprintf(fp, "@    s0 symbol color 1\n");
-    fprintf(fp, "@    s0 symbol linewidth 1\n");
-    fprintf(fp, "@    s0 symbol linestyle 1\n");
-    fprintf(fp, "@    s0 symbol center false\n");
-    fprintf(fp, "@    s0 symbol char 0\n");
-    fprintf(fp, "@    s0 skip 0\n");
-    fprintf(fp, "@    s0 linestyle 0\n");
-    fprintf(fp, "@    s0 linewidth 1\n");
-    fprintf(fp, "@ type xy\n");
-
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(fp, "@ xaxis tick on\n");
+        fprintf(fp, "@ xaxis tick major 90\n");
+        fprintf(fp, "@ xaxis tick minor 30\n");
+        fprintf(fp, "@ xaxis ticklabel prec 0\n");
+        fprintf(fp, "@ yaxis tick on\n");
+        fprintf(fp, "@ yaxis tick major 90\n");
+        fprintf(fp, "@ yaxis tick minor 30\n");
+        fprintf(fp, "@ yaxis ticklabel prec 0\n");
+        fprintf(fp, "@    s0 type xy\n");
+        fprintf(fp, "@    s0 symbol 2\n");
+        fprintf(fp, "@    s0 symbol size 0.410000\n");
+        fprintf(fp, "@    s0 symbol fill 1\n");
+        fprintf(fp, "@    s0 symbol color 1\n");
+        fprintf(fp, "@    s0 symbol linewidth 1\n");
+        fprintf(fp, "@    s0 symbol linestyle 1\n");
+        fprintf(fp, "@    s0 symbol center false\n");
+        fprintf(fp, "@    s0 symbol char 0\n");
+        fprintf(fp, "@    s0 skip 0\n");
+        fprintf(fp, "@    s0 linestyle 0\n");
+        fprintf(fp, "@    s0 linewidth 1\n");
+        fprintf(fp, "@ type xy\n");
+    }
     return fp;
 }
 
@@ -1008,15 +1018,15 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
     char *leg[edMax];
 #define NLEG asize(leg)
 
-    leg[0] = strdup("Phi");
-    leg[1] = strdup("Psi");
-    leg[2] = strdup("Omega");
-    leg[3] = strdup("Chi1");
-    leg[4] = strdup("Chi2");
-    leg[5] = strdup("Chi3");
-    leg[6] = strdup("Chi4");
-    leg[7] = strdup("Chi5");
-    leg[8] = strdup("Chi6");
+    leg[0] = gmx_strdup("Phi");
+    leg[1] = gmx_strdup("Psi");
+    leg[2] = gmx_strdup("Omega");
+    leg[3] = gmx_strdup("Chi1");
+    leg[4] = gmx_strdup("Chi2");
+    leg[5] = gmx_strdup("Chi3");
+    leg[6] = gmx_strdup("Chi4");
+    leg[7] = gmx_strdup("Chi5");
+    leg[8] = gmx_strdup("Chi6");
 
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns",
@@ -1057,7 +1067,6 @@ static void order_params(FILE *log,
 {
     FILE *fp;
     int   nh[edMax];
-    char  buf[STRLEN];
     int   i, Dih, Xi;
     real  S2Max, S2Min;
 
@@ -1073,7 +1082,7 @@ static void order_params(FILE *log,
 
     for (i = 0; i < NLEG; i++)
     {
-        leg[i] = strdup(const_leg[i]);
+        leg[i] = gmx_strdup(const_leg[i]);
     }
 
     /* Print order parameters */
@@ -1170,11 +1179,10 @@ static void order_params(FILE *log,
         x0 *= 10.0; /* nm -> angstrom */
         y0 *= 10.0; /* nm -> angstrom */
         z0 *= 10.0; /* nm -> angstrom */
-        sprintf(buf, "%s%%6.f%%6.2f\n", get_pdbformat());
         for (i = 0; (i < 10); i++)
         {
-            fprintf(fp, buf, "ATOM  ", atoms->nr+1+i, "CA", "LEG", ' ',
-                    atoms->nres+1, ' ', x0, y0, z0+(1.2*i), 0.0, -0.1*i);
+            gmx_fprintf_pdb_atomline(fp, epdbATOM, atoms->nr+1+i, "CA", ' ', "LEG", ' ', atoms->nres+1, ' ',
+                                     x0, y0, z0+(1.2*i), 0.0, -0.1*i, "");
         }
         gmx_ffclose(fp);
     }
@@ -1353,7 +1361,7 @@ int gmx_chi(int argc, char *argv[])
     gmx_bool           bDo_rt, bDo_oh, bDo_ot, bDo_jc;
     real               dt = 0, traj_t_ns;
     output_env_t       oenv;
-    gmx_residuetype_t  rt;
+    gmx_residuetype_t *rt;
 
     atom_id            isize, *index;
     int                ndih, nactdih, nf;
@@ -1381,7 +1389,7 @@ int gmx_chi(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
                            &oenv))
     {
@@ -1565,7 +1573,7 @@ int gmx_chi(int argc, char *argv[])
         }
     }
 
-    /* Correlation comes last because it fucks up the angles */
+    /* Correlation comes last because it messes up the angles */
     if (bCorr)
     {
         do_dihcorr(opt2fn("-corr", NFILE, fnm), nf, ndih, dih, dt, nlist, dlist, time,

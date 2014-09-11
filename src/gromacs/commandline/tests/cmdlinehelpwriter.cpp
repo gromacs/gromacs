@@ -45,12 +45,14 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
+#include "gmxpre.h"
+
+#include "gromacs/commandline/cmdlinehelpwriter.h"
+
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/commandline/cmdlinehelpwriter.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
@@ -224,15 +226,15 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
     using gmx::SelectionFileOption;
     using gmx::SelectionOption;
 
-    gmx::Options options(NULL, NULL);
+    gmx::Options                options(NULL, NULL);
+    gmx::SelectionCollection    selections;
+    gmx::SelectionOptionManager manager(&selections);
+    options.addManager(&manager);
     options.addOption(SelectionFileOption("sf"));
     options.addOption(SelectionOption("refsel").required()
                           .description("Reference selection option"));
     options.addOption(SelectionOption("sel").required().valueCount(2)
                           .description("Selection option"));
-    gmx::SelectionCollection    selections;
-    gmx::SelectionOptionManager manager(&selections);
-    setManagerForSelectionOptions(&options, &manager);
     options.finish();
     manager.parseRequestedFromString(
             "resname SOL;"

@@ -32,11 +32,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
+
 #include "gromacs/math/utilities.h"
 
 #include "simd.h"
@@ -128,25 +127,47 @@ TEST_F(SimdFloatingpointTest, gmxSimdFnegR)
 }
 
 #ifdef GMX_SIMD_HAVE_LOGICAL
+/* 1.3333282470703125 has mantissa 0101010101010101 (followed by zeros)
+ * 1.79998779296875   has mantissa 1100110011001100 (followed by zeros)
+ * 1.26666259765625   has mantissa 0100010001000100 (followed by zeros)
+ * 1.8666534423828125 has mantissa 1101110111011101 (followed by zeros)
+ *
+ * Since all of them have the same exponent (2^0), the exponent will
+ * not change with AND or OR operations.
+ */
 TEST_F(SimdFloatingpointTest, gmxSimdAndR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_Bits3, gmx_simd_and_r(rSimd_Bits1, rSimd_Bits2)); // Bits1 & Bits2 = Bits3
-}
-
-TEST_F(SimdFloatingpointTest, gmxSimdAndnotR)
-{
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_Bits4, gmx_simd_andnot_r(rSimd_Bits1, rSimd_Bits2)); // (~Bits1) & Bits2 = Bits3
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(1.26666259765625),
+                            gmx_simd_and_r(gmx_simd_set1_r(1.3333282470703125),
+                                           gmx_simd_set1_r(1.79998779296875)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdOrR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_Bits5, gmx_simd_or_r(rSimd_Bits1, rSimd_Bits2)); // Bits1 | Bits2 = Bits3
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(1.8666534423828125),
+                            gmx_simd_or_r(gmx_simd_set1_r(1.3333282470703125),
+                                          gmx_simd_set1_r(1.79998779296875)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdXorR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_Bits6, gmx_simd_xor_r(rSimd_Bits1, rSimd_Bits2)); // Bits1 ^ Bits2 = Bits3
+    /* Test xor by taking xor with a number and its negative. This should result
+     * in only the sign bit being set. We then use this bit change the sign of
+     * different numbers.
+     */
+    gmx_simd_real_t signbit = gmx_simd_xor_r(gmx_simd_set1_r(1.5), gmx_simd_set1_r(-1.5));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-1, 2, -3), gmx_simd_xor_r(signbit, setSimdRealFrom3R(1, -2, 3)));
 }
+
+TEST_F(SimdFloatingpointTest, gmxSimdAndnotR)
+{
+    /* Use xor (which we already tested, so fix that first if both tests fail)
+     * to extract the sign bit, and then use andnot to take absolute values.
+     */
+    gmx_simd_real_t signbit = gmx_simd_xor_r(gmx_simd_set1_r(1.5), gmx_simd_set1_r(-1.5));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 3), gmx_simd_andnot_r(signbit, setSimdRealFrom3R(-1, 2, -3)));
+}
+
 #endif
 
 TEST_F(SimdFloatingpointTest, gmxSimdMaxR)

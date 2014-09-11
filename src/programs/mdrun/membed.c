@@ -32,31 +32,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "membed.h"
 
 #include <signal.h>
 #include <stdlib.h>
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "vec.h"
-#include "macros.h"
-#include "main.h"
-#include "gromacs/fileio/futil.h"
+
 #include "gromacs/essentialdynamics/edsam.h"
-#include "index.h"
-#include "physics.h"
-#include "names.h"
-#include "mtop_util.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
-#include "membed.h"
-#include "pbc.h"
-#include "readinp.h"
 #include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* information about scaling center */
 typedef struct {
@@ -1039,7 +1036,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         get_input(membed_input, &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
                   &maxwarn, &pieces, &bALLOW_ASYMMETRY);
 
-        tpr_version = get_tpr_version(ftp2fn(efTPX, nfile, fnm));
+        tpr_version = get_tpr_version(ftp2fn(efTPR, nfile, fnm));
         if (tpr_version < membed_version)
         {
             gmx_fatal(FARGS, "Version of *.tpr file to old (%d). "

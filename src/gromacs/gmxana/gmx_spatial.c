@@ -32,33 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-
+#include <math.h>
+#include <stdlib.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include <math.h>
-#include "index.h"
-#include "pbc.h"
-#include "rmpbc.h"
-#include "gmx_ana.h"
-#include "macros.h"
-
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/smalloc.h"
 
 static const double bohr = 0.529177249;  /* conversion factor to compensate for VMD plugin conversion... */
-
-static void mequit(void)
-{
-    printf("Memory allocation error\n");
-    exit(1);
-}
 
 int gmx_spatial(int argc, char *argv[])
 {
@@ -218,25 +209,13 @@ int gmx_spatial(int argc, char *argv[])
         MINBIN[i] -= (double)iNAB*rBINWIDTH;
         nbin[i]    = (long)ceil((MAXBIN[i]-MINBIN[i])/rBINWIDTH);
     }
-    bin = (long ***)malloc(nbin[XX]*sizeof(long **));
-    if (!bin)
-    {
-        mequit();
-    }
+    snew(bin, nbin[XX]);
     for (i = 0; i < nbin[XX]; ++i)
     {
-        bin[i] = (long **)malloc(nbin[YY]*sizeof(long *));
-        if (!bin[i])
-        {
-            mequit();
-        }
+        snew(bin[i], nbin[YY]);
         for (j = 0; j < nbin[YY]; ++j)
         {
-            bin[i][j] = (long *)calloc(nbin[ZZ], sizeof(long));
-            if (!bin[i][j])
-            {
-                mequit();
-            }
+            snew(bin[i][j], nbin[ZZ]);
         }
     }
     copy_mat(box, box_pbc);

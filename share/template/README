@@ -1,16 +1,32 @@
 Once installed, this directory contains CMakelist.txt,
 Makefile.pkg and a small program that you could use as
 a template when writing your own analysis software.
+Further explanation for the template code can be found
+in the Doxygen documentation (link to the latest development
+version):
+  <http://jenkins.gromacs.org/job/Documentation_Gerrit_Nightly/javadoc/doxygen/html-user/page_analysistemplate.xhtml>
 
 The CMakelist.txt can be used together with cmake to
 build the template program:
 $ source /path/to/GMXRC
 $ cmake /path/to/template
+Alternatively, setting CMAKE_PREFIX_PATH will direct cmake
+to find a particular GROMACS installation.
 
-The Makefile.pkg can be used if cmake is unavailble. It
-makes use of pkg-config only to build the template program:
+The Makefile.pkg can be used if cmake is unavailable. It
+makes use of pkg-config to build the template program:
 $ source /path/to/GMXRC
 $ make -f Makefile.pkg
+
+You will need to make sure that you use a sufficiently similar C++
+compiler and C++ Standard Library as the one that was used for
+compiling GROMACS, preferably the same one.  Boost headers used to
+compile GROMACS are also required, and are automatically added to
+the include path by both of the above build systems.
+See the Doxygen documentation for using GROMACS as a library for
+more details about the build system used to build the template, as
+well as its limitations (link to the latest development version):
+  <http://jenkins.gromacs.org/job/Documentation_Gerrit_Nightly/javadoc/doxygen/html-user/page_usinglibrary.xhtml>
 
 ----------------------------------------------------------
 

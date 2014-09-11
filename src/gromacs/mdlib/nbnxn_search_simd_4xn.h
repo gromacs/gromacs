@@ -33,6 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "config.h"
 
 #if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_REAL_WIDTH)
@@ -110,6 +111,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     float                              d2;
     int                                xind_f, xind_l, cj;
 
+    /* cppcheck-suppress selfAssignment . selfAssignment for width 4.*/
     cjf = CI_TO_CJ_SIMD_4XN(cjf);
     cjl = CI_TO_CJ_SIMD_4XN(cjl+1) - 1;
 

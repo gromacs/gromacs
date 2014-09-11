@@ -38,19 +38,19 @@
 #ifndef _GPU_UTILS_H_
 #define _GPU_UTILS_H_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
-#include "types/simple.h"
-#include "types/hw_info.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM_INT ;
+#define FUNC_TERM_SIZE_T ;
 #define FUNC_TERM_VOID ;
 #define FUNC_QUALIFIER
 #else
 #define FUNC_TERM_INT {return -1; }
+#define FUNC_TERM_SIZE_T {return 0; }
 #define FUNC_TERM_VOID {}
 #define FUNC_QUALIFIER static
 #endif
@@ -58,15 +58,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-FUNC_QUALIFIER
-int do_quick_memtest(int gmx_unused dev_id) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int do_full_memtest(int gmx_unused dev_id) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int do_timed_memtest(int gmx_unused dev_id, int gmx_unused time_limit) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 int detect_cuda_gpus(gmx_gpu_info_t gmx_unused *gpu_info, char gmx_unused *err_str) FUNC_TERM_INT
@@ -104,7 +95,7 @@ FUNC_QUALIFIER
 void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unused *gpu_info, int gmx_unused index) FUNC_TERM_VOID
 
 FUNC_QUALIFIER
-size_t sizeof_cuda_dev_info(void) FUNC_TERM_INT
+size_t sizeof_cuda_dev_info(void) FUNC_TERM_SIZE_T
 
 #ifdef __cplusplus
 }

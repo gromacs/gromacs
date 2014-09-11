@@ -38,8 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_H_DB_H
 #define GMX_GMXPREPROCESS_H_DB_H
 
-#include "sysstuff.h"
-#include "hackblock.h"
+#include <stdio.h>
+
+#include "gromacs/gmxpreprocess/hackblock.h"
 
 #ifdef __cplusplus
 extern "C" {

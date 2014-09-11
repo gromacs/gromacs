@@ -39,22 +39,23 @@
  * \ingroup module_analysisdata
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-#include "gromacs/analysisdata/modules/plot.h"
+#include "gmxpre.h"
 
-#include <string>
-#include <vector>
+#include "plot.h"
 
 #include <cstdio>
 #include <cstring>
 
-#include <boost/shared_ptr.hpp>
+#include <string>
+#include <vector>
 
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/vec.h"
-#include "gromacs/legacyheaders/xvgr.h"
+#include <boost/shared_ptr.hpp>
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"
@@ -331,7 +332,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
                    : exvgNONE);
             output_env_t                  oenv;
-            output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0, 0);
+            output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
             boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
                                   impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),

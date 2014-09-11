@@ -38,13 +38,12 @@
 #ifndef _viewit_h
 #define _viewit_h
 
-#include "typedefs.h"
-#include "../fileio/filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/types/oenv.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 void do_view(const output_env_t oenv, const char *fn, const char *opts);
 /* forks off appropriate command to view file.

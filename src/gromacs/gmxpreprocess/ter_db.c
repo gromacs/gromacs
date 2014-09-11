@@ -34,28 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "ter_db.h"
 
 #include <ctype.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "symtab.h"
-#include "gromacs/fileio/futil.h"
-#include "resall.h"
-#include "h_db.h"
-#include "string2.h"
-#include "gmx_fatal.h"
-#include "ter_db.h"
-#include "toputil.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "fflibutil.h"
-
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* use bonded types definitions in hackblock.h */
 #define ekwRepl ebtsNR+1
@@ -122,7 +118,7 @@ static void read_atom(char *line, gmx_bool bAdd,
     {
         if (nr == 4)
         {
-            *nname = strdup(buf[i++]);
+            *nname = gmx_strdup(buf[i++]);
         }
         else
         {
@@ -292,8 +288,8 @@ static void read_ter_db_file(char *fn,
                     srenew(tb, maxnb);
                 }
                 clear_t_hackblock(&tb[nb]);
-                tb[nb].name     = strdup(header);
-                tb[nb].filebase = strdup(filebase);
+                tb[nb].name     = gmx_strdup(header);
+                tb[nb].filebase = gmx_strdup(filebase);
             }
         }
         else
@@ -331,7 +327,7 @@ static void read_ter_db_file(char *fn,
                         gmx_fatal(FARGS, "Reading Termini Database '%s': "
                                   "expected atom name on line\n%s", fn, line);
                     }
-                    tb[nb].hack[nh].oname = strdup(buf);
+                    tb[nb].hack[nh].oname = gmx_strdup(buf);
                     /* we only replace or delete one atom at a time */
                     tb[nb].hack[nh].nr = 1;
                 }
@@ -355,7 +351,7 @@ static void read_ter_db_file(char *fn,
                     {
                         if (tb[nb].hack[nh].oname != NULL)
                         {
-                            tb[nb].hack[nh].nname = strdup(tb[nb].hack[nh].oname);
+                            tb[nb].hack[nh].nname = gmx_strdup(tb[nb].hack[nh].oname);
                         }
                         else
                         {
@@ -373,7 +369,7 @@ static void read_ter_db_file(char *fn,
                 {
                     if (sscanf(line+n, "%s%n", buf, &ni) == 1)
                     {
-                        tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = strdup(buf);
+                        tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = gmx_strdup(buf);
                     }
                     else
                     {
@@ -387,7 +383,7 @@ static void read_ter_db_file(char *fn,
                 }
                 strcpy(buf, "");
                 sscanf(line+n, "%s", buf);
-                tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = strdup(buf);
+                tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = gmx_strdup(buf);
                 tb[nb].rb[kwnr].nb++;
             }
             else

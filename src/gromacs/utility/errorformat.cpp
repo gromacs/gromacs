@@ -39,11 +39,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "gmxpre.h"
 
 #include "errorformat.h"
+
+#include "config.h"
 
 #include <cctype>
 #include <cstdio>

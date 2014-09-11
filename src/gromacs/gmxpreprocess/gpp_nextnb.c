@@ -35,17 +35,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "macros.h"
-/* #define DEBUG_NNB */
 #include "gpp_nextnb.h"
-#include "gmx_fatal.h"
-#include "toputil.h"
+
+#include <stdlib.h>
+
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
+/* #define DEBUG_NNB */
 
 typedef struct {
     int ai, aj;

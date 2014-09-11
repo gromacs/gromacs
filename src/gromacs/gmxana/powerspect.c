@@ -33,16 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "smalloc.h"
-#include "gromacs/fft/fft.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
-#include "interf.h"
 #include "powerspect.h"
+
+#include "gromacs/fft/fft.h"
+#include "gromacs/gmxana/interf.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
 {
@@ -73,7 +72,6 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
 /*Prepare data structures for FFT, with time averaging of power spectrum*/
     if ( (status = gmx_fft_init_2d_real(&fftp, xbins, ybins, GMX_FFT_FLAG_NONE) ) != 0)
     {
-        free(fftp);
         gmx_fatal(status, __FILE__, __LINE__, "Error allocating FFT");
     }
 
@@ -113,8 +111,8 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
     gmx_ffclose(datfile1);
     gmx_ffclose(datfile2);
 
-    free(ftspect1);
-    free(ftspect2);
+    sfree(ftspect1);
+    sfree(ftspect2);
 
 }
 

@@ -32,36 +32,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "config.h"
 
+#include <stdlib.h>
 #include <time.h>
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
-
-
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
-#include "readinp.h"
-#include "calcgrid.h"
-#include "checkpoint.h"
-#include "macros.h"
-#include "gmx_ana.h"
-#include "names.h"
-#include "perf_est.h"
-#include "inputrec.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/inputrec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/perf_est.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/walltime_accounting.h"
-
+#include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in
@@ -144,25 +144,12 @@ static void cleandata(t_perf *perfdata, int test_nr)
 }
 
 
-static gmx_bool is_equal(real a, real b)
+static void remove_if_exists(const char *fn)
 {
-    real diff, eps = 1.0e-7;
-
-
-    diff = a - b;
-
-    if (diff < 0.0)
+    if (gmx_fexist(fn))
     {
-        diff = -diff;
-    }
-
-    if (diff < eps)
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
+        fprintf(stdout, "Deleting %s\n", fn);
+        remove(fn);
     }
 }
 
@@ -201,7 +188,6 @@ static int parse_logfile(const char *logfile, const char *errfile,
     const char      matchstring[] = "R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G";
     const char      errSIG[]      = "signal, stopping at the next";
     int             iFound;
-    int             procs;
     float           dum1, dum2, dum3, dum4;
     int             ndum;
     int             npme;
@@ -270,7 +256,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Look for domain decomp grid and separate PME nodes: */
                 if (str_starts(line, matchstrdd))
                 {
-                    sscanf(line, "Domain decomposition grid %d x %d x %d, separate PME nodes %d",
+                    sscanf(line, "Domain decomposition grid %d x %d x %d, separate PME ranks %d",
                            &(perfdata->nx), &(perfdata->ny), &(perfdata->nz), &npme);
                     if (perfdata->nPMEnodes == -1)
                     {
@@ -278,7 +264,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                     }
                     else if (perfdata->nPMEnodes != npme)
                     {
-                        gmx_fatal(FARGS, "PME nodes from command line and output file are not identical");
+                        gmx_fatal(FARGS, "PME ranks from command line and output file are not identical");
                     }
                     iFound = eFoundDDStr;
                 }
@@ -288,7 +274,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                     fclose(fp);
                     return eParselogNoDDGrid;
                 }
-                else if (str_starts(line, "The number of nodes you selected"))
+                else if (str_starts(line, "The number of ranks you selected"))
                 {
                     fclose(fp);
                     return eParselogLargePrimeFactor;
@@ -320,7 +306,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Already found matchstring - look for cycle data */
                 if (str_starts(line, "Total  "))
                 {
-                    sscanf(line, "Total %d %lf", &procs, &(perfdata->Gcycles[test_nr]));
+                    sscanf(line, "Total %*f %lf", &(perfdata->Gcycles[test_nr]));
                     iFound = eFoundCycleStr;
                 }
                 break;
@@ -410,7 +396,7 @@ static gmx_bool analyze_data(
     {
         sep_line(fp);
         fprintf(fp, "Summary of successful runs:\n");
-        fprintf(fp, "Line tpr PME nodes  Gcycles Av.     Std.dev.       ns/day        PME/f");
+        fprintf(fp, "Line tpr PME ranks  Gcycles Av.     Std.dev.       ns/day        PME/f");
         if (nnodes > 1)
         {
             fprintf(fp, "    DD grid");
@@ -530,11 +516,11 @@ static gmx_bool analyze_data(
         /* We have optimized the number of PME-only nodes */
         if (winPME == -1)
         {
-            sprintf(strbuf, "%s", "the automatic number of PME nodes");
+            sprintf(strbuf, "%s", "the automatic number of PME ranks");
         }
         else
         {
-            sprintf(strbuf, "%d PME nodes", winPME);
+            sprintf(strbuf, "%d PME ranks", winPME);
         }
     }
     fprintf(fp, "Best performance was achieved with %s", strbuf);
@@ -545,8 +531,8 @@ static gmx_bool analyze_data(
     fprintf(fp, "\n");
 
     /* Only mention settings if they were modified: */
-    bRefinedCoul = !is_equal(info->rcoulomb[k_win], info->rcoulomb[0]);
-    bRefinedVdW  = !is_equal(info->rvdw[k_win], info->rvdw[0]    );
+    bRefinedCoul = !gmx_within_tol(info->rcoulomb[k_win], info->rcoulomb[0], GMX_REAL_EPS);
+    bRefinedVdW  = !gmx_within_tol(info->rvdw[k_win], info->rvdw[0], GMX_REAL_EPS);
     bRefinedGrid = !(info->nkx[k_win] == info->nkx[0] &&
                      info->nky[k_win] == info->nky[0] &&
                      info->nkz[k_win] == info->nkz[0]);
@@ -608,25 +594,25 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
     {
         if ( (cp = getenv("MPIRUN")) != NULL)
         {
-            *cmd_mpirun = strdup(cp);
+            *cmd_mpirun = gmx_strdup(cp);
         }
         else
         {
-            *cmd_mpirun = strdup(def_mpirun);
+            *cmd_mpirun = gmx_strdup(def_mpirun);
         }
     }
     else
     {
-        *cmd_mpirun = strdup(empty_mpirun);
+        *cmd_mpirun = gmx_strdup(empty_mpirun);
     }
 
     if ( (cp = getenv("MDRUN" )) != NULL)
     {
-        *cmd_mdrun  = strdup(cp);
+        *cmd_mdrun  = gmx_strdup(cp);
     }
     else
     {
-        *cmd_mdrun  = strdup(def_mdrun);
+        *cmd_mdrun  = gmx_strdup(def_mdrun);
     }
 }
 
@@ -647,7 +633,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
     /* This string should always be identical to the one in copyrite.c,
      * gmx_print_version_info() in the defined(GMX_MPI) section */
     const char match_mpi[]    = "MPI library:        MPI";
-    const char match_mdrun[]  = "Program: ";
+    const char match_mdrun[]  = "Executable: ";
     gmx_bool   bMdrun         = FALSE;
     gmx_bool   bMPI           = FALSE;
 
@@ -700,7 +686,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
             gmx_fatal(FARGS, "Need a threaded version of mdrun. This one\n"
                       "(%s)\n"
                       "seems to have been compiled with MPI instead.",
-                      *cmd_mdrun);
+                      cmd_mdrun);
         }
     }
     else
@@ -710,7 +696,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
             gmx_fatal(FARGS, "Need an MPI-enabled version of mdrun. This one\n"
                       "(%s)\n"
                       "seems to have been compiled without MPI support.",
-                      *cmd_mdrun);
+                      cmd_mdrun);
         }
     }
 
@@ -801,6 +787,11 @@ static void modify_PMEsettings(
     sfree(ir);
 }
 
+static gmx_bool can_scale_rvdw(int vdwtype)
+{
+    return (evdwCUT == vdwtype ||
+            evdwPME == vdwtype);
+}
 
 #define EPME_SWITCHED(e) ((e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
 
@@ -950,7 +941,7 @@ static void make_benchmark_tprs(
     fprintf(fp, " No.   scaling  rcoulomb");
     fprintf(fp, "  nkx  nky  nkz");
     fprintf(fp, "   spacing");
-    if (evdwCUT == ir->vdwtype)
+    if (can_scale_rvdw(ir->vdwtype))
     {
         fprintf(fp, "      rvdw");
     }
@@ -973,11 +964,11 @@ static void make_benchmark_tprs(
         {
             /* Determine which Coulomb radii rc to use in the benchmarks */
             add = (rmax-rmin)/(*ntprs-1);
-            if (is_equal(rmin, info->rcoulomb[0]))
+            if (gmx_within_tol(rmin, info->rcoulomb[0], GMX_REAL_EPS))
             {
                 ir->rcoulomb = rmin + j*add;
             }
-            else if (is_equal(rmax, info->rcoulomb[0]))
+            else if (gmx_within_tol(rmax, info->rcoulomb[0], GMX_REAL_EPS))
             {
                 ir->rcoulomb = rmin + (j-1)*add;
             }
@@ -1007,11 +998,14 @@ static void make_benchmark_tprs(
                 ir->rlist = ir->rcoulomb + nlist_buffer;
             }
 
-            if (bScaleRvdw && evdwCUT == ir->vdwtype)
+            if (bScaleRvdw && can_scale_rvdw(ir->vdwtype))
             {
-                if (ecutsVERLET == ir->cutoff_scheme)
+                if (ecutsVERLET == ir->cutoff_scheme ||
+                    evdwPME == ir->vdwtype)
                 {
-                    /* With Verlet, the van der Waals radius must always equal the Coulomb radius */
+                    /* With either the Verlet cutoff-scheme or LJ-PME,
+                       the van der Waals radius must always equal the
+                       Coulomb radius */
                     ir->rvdw = ir->rcoulomb;
                 }
                 else
@@ -1059,7 +1053,7 @@ static void make_benchmark_tprs(
         fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);
         fprintf(fp, "%5d%5d%5d", ir->nkx, ir->nky, ir->nkz);
         fprintf(fp, " %9f ", info->fsx[j]);
-        if (evdwCUT == ir->vdwtype)
+        if (can_scale_rvdw(ir->vdwtype))
         {
             fprintf(fp, "%10f", ir->rvdw);
         }
@@ -1074,8 +1068,8 @@ static void make_benchmark_tprs(
         fprintf(fp, "  %-14s\n", fn_bench_tprs[j]);
 
         /* Make it clear to the user that some additional settings were modified */
-        if (!is_equal(ir->rvdw, info->rvdw[0])
-            || !is_equal(ir->rlistlong, info->rlistlong[0]) )
+        if (!gmx_within_tol(ir->rvdw, info->rvdw[0], GMX_REAL_EPS)
+            || !gmx_within_tol(ir->rlistlong, info->rlistlong[0], GMX_REAL_EPS) )
         {
             bNote = TRUE;
         }
@@ -1159,32 +1153,11 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
         /* Delete the files which are created for each benchmark run: (options -b*) */
         else if ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt, nfile, fnm) || !is_optional(&fnm[i])) )
         {
-            fn = opt2fn(opt, nfile, fnm);
-            if (gmx_fexist(fn))
-            {
-                fprintf(stdout, "Deleting %s\n", fn);
-                remove(fn);
-            }
+            remove_if_exists(opt2fn(opt, nfile, fnm));
         }
     }
 }
 
-
-/* Returns the largest common factor of n1 and n2 */
-static int largest_common_factor(int n1, int n2)
-{
-    int factor, nmax;
-
-    nmax = min(n1, n2);
-    for (factor = nmax; factor > 0; factor--)
-    {
-        if (0 == (n1 % factor) && 0 == (n2 % factor) )
-        {
-            return(factor);
-        }
-    }
-    return 0; /* one for the compiler */
-}
 
 enum {
     eNpmeAuto, eNpmeAll, eNpmeReduced, eNpmeSubset, eNpmeNr
@@ -1272,7 +1245,7 @@ static void make_npme_list(
                 gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");
                 break;
         }
-        if (largest_common_factor(npp, npme) >= min_factor)
+        if (gmx_greatest_common_divisor(npp, npme) >= min_factor)
         {
             (*nPMEnodes)[nlist] = npme;
             nlist++;
@@ -1315,19 +1288,20 @@ static void init_perfdata(t_perf *perfdata[], int ntprs, int datasets, int repea
 
 
 /* Check for errors on mdrun -h */
-static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp)
+static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp,
+                              const t_filenm *fnm, int nfile)
 {
-    char *command, *msg;
-    int   ret;
+    const char *fn = NULL;
+    char       *command, *msg;
+    int         ret;
 
 
     snew(command, length +  15);
     snew(msg, length + 500);
 
-    fprintf(stdout, "Making sure the benchmarks can be executed ...\n");
-    /* FIXME: mdrun -h no longer actually does anything useful.
-     * It unconditionally prints the help, ignoring all other options. */
-    sprintf(command, "%s-h -quiet", mdrun_cmd_line);
+    fprintf(stdout, "Making sure the benchmarks can be executed by running just 1 step...\n");
+    sprintf(command, "%s -nsteps 1 -quiet", mdrun_cmd_line);
+    fprintf(stdout, "Executing '%s' ...\n", command);
     ret = gmx_system_call(command);
 
     if (0 != ret)
@@ -1345,6 +1319,14 @@ static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp)
 
         exit(ret);
     }
+    fprintf(stdout, "Benchmarks can be executed!\n");
+
+    /* Clean up the benchmark output files we just created */
+    fprintf(stdout, "Cleaning up ...\n");
+    remove_if_exists(opt2fn("-bc", nfile, fnm));
+    remove_if_exists(opt2fn("-be", nfile, fnm));
+    remove_if_exists(opt2fn("-bcpo", nfile, fnm));
+    remove_if_exists(opt2fn("-bg", nfile, fnm));
 
     sfree(command);
     sfree(msg    );
@@ -1395,7 +1377,7 @@ static void do_the_tests(
         "No DD grid found for these settings.",
         "TPX version conflict!",
         "mdrun was not started in parallel!",
-        "Number of PP nodes has a prime factor that is too large.",
+        "Number of PP ranks has a prime factor that is too large.",
         "An error occured."
     };
     char        str_PME_f_load[13];
@@ -1432,7 +1414,7 @@ static void do_the_tests(
         *pmeentries  = 1;
         snew(nPMEnodes, 1);
         nPMEnodes[0] = npme_fixed;
-        fprintf(stderr, "Will use a fixed number of %d PME-only nodes.\n", nPMEnodes[0]);
+        fprintf(stderr, "Will use a fixed number of %d PME-only ranks.\n", nPMEnodes[0]);
     }
 
     if (0 == repeats)
@@ -1453,7 +1435,7 @@ static void do_the_tests(
     for (k = 0; k < nr_tprs; k++)
     {
         fprintf(fp, "\nIndividual timings for input file %d (%s):\n", k, tpr_names[k]);
-        fprintf(fp, "PME nodes      Gcycles       ns/day        PME/f    Remark\n");
+        fprintf(fp, "PME ranks      Gcycles       ns/day        PME/f    Remark\n");
         /* Loop over various numbers of PME nodes: */
         for (i = 0; i < *pmeentries; i++)
         {
@@ -1472,10 +1454,10 @@ static void do_the_tests(
                         cmd_stub, pd->nPMEnodes, tpr_names[k], cmd_args_bench);
 
                 /* To prevent that all benchmarks fail due to a show-stopper argument
-                 * on the mdrun command line, we make a quick check with mdrun -h first */
+                 * on the mdrun command line, we make a quick check first */
                 if (bFirst)
                 {
-                    make_sure_it_runs(pd->mdrun_cmd_line, cmdline_length, fp);
+                    make_sure_it_runs(pd->mdrun_cmd_line, cmdline_length, fp, fnm, nfile);
                 }
                 bFirst = FALSE;
 
@@ -1603,7 +1585,7 @@ static void check_input(
     /* Check number of nodes */
     if (nnodes < 1)
     {
-        gmx_fatal(FARGS, "Number of nodes/threads must be a positive integer.");
+        gmx_fatal(FARGS, "Number of ranks/threads must be a positive integer.");
     }
 
     /* Automatically choose -ntpr if not set */
@@ -1649,13 +1631,13 @@ static void check_input(
     /* Add test scenarios if rmin or rmax were set */
     if (*ntprs <= 2)
     {
-        if (!is_equal(*rmin, rcoulomb) && (*ntprs == 1) )
+        if (!gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) && (*ntprs == 1) )
         {
             (*ntprs)++;
             fprintf(stderr, "NOTE: Setting -rmin to %g changed -ntpr to %d\n",
                     *rmin, *ntprs);
         }
-        if (!is_equal(*rmax, rcoulomb) && (*ntprs == 1) )
+        if (!gmx_within_tol(*rmax, rcoulomb, GMX_REAL_EPS) && (*ntprs == 1) )
         {
             (*ntprs)++;
             fprintf(stderr, "NOTE: Setting -rmax to %g changed -ntpr to %d\n",
@@ -1664,13 +1646,13 @@ static void check_input(
     }
     old = *ntprs;
     /* If one of rmin, rmax is set, we need 2 tpr files at minimum */
-    if (!is_equal(*rmax, rcoulomb) || !is_equal(*rmin, rcoulomb) )
+    if (!gmx_within_tol(*rmax, rcoulomb, GMX_REAL_EPS) || !gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) )
     {
         *ntprs = max(*ntprs, 2);
     }
 
     /* If both rmin, rmax are set, we need 3 tpr files at minimum */
-    if (!is_equal(*rmax, rcoulomb) && !is_equal(*rmin, rcoulomb) )
+    if (!gmx_within_tol(*rmax, rcoulomb, GMX_REAL_EPS) && !gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) )
     {
         *ntprs = max(*ntprs, 3);
     }
@@ -1682,7 +1664,7 @@ static void check_input(
 
     if (*ntprs > 1)
     {
-        if (is_equal(*rmin, rcoulomb) && is_equal(rcoulomb, *rmax)) /* We have just a single rc */
+        if (gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) && gmx_within_tol(rcoulomb, *rmax, GMX_REAL_EPS)) /* We have just a single rc */
         {
             fprintf(stderr, "WARNING: Resetting -ntpr to 1 since no Coulomb radius scaling is requested.\n"
                     "Please set rmin < rmax to test Coulomb radii in the [rmin, rmax] interval\n"
@@ -1740,18 +1722,18 @@ static void check_input(
         /* No more than 50% of all nodes can be assigned as PME-only nodes. */
         if (2*npme_fixed > nnodes)
         {
-            gmx_fatal(FARGS, "Cannot have more than %d PME-only nodes for a total of %d nodes (you chose %d).\n",
+            gmx_fatal(FARGS, "Cannot have more than %d PME-only ranks for a total of %d ranks (you chose %d).\n",
                       nnodes/2, nnodes, npme_fixed);
         }
         if ((npme_fixed > 0) && (5*npme_fixed < nnodes))
         {
-            fprintf(stderr, "WARNING: Only %g percent of the nodes are assigned as PME-only nodes.\n",
+            fprintf(stderr, "WARNING: Only %g percent of the ranks are assigned as PME-only ranks.\n",
                     100.0*((real)npme_fixed / (real)nnodes));
         }
         if (opt2parg_bSet("-min", npargs, pa) || opt2parg_bSet("-max", npargs, pa))
         {
             fprintf(stderr, "NOTE: The -min, -max, and -npme options have no effect when a\n"
-                    "      fixed number of PME-only nodes is requested with -fix.\n");
+                    "      fixed number of PME-only ranks is requested with -fix.\n");
         }
     }
 }
@@ -2021,8 +2003,8 @@ static void couple_files_options(int nfile, t_filenm fnm[])
 int gmx_tune_pme(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "For a given number [TT]-np[tt] or [TT]-ntmpi[tt] of processors/threads, [THISMODULE] systematically",
-        "times [gmx-mdrun] with various numbers of PME-only nodes and determines",
+        "For a given number [TT]-np[tt] or [TT]-ntmpi[tt] of ranks, [THISMODULE] systematically",
+        "times [gmx-mdrun] with various numbers of PME-only ranks and determines",
         "which setting is fastest. It will also test whether performance can",
         "be enhanced by shifting load from the reciprocal to the real space",
         "part of the Ewald sum. ",
@@ -2035,7 +2017,7 @@ int gmx_tune_pme(int argc, char *argv[])
         "via the MPIRUN variable, e.g.[PAR]",
         "[TT]export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"[tt][PAR]",
         "Please call [THISMODULE] with the normal options you would pass to",
-        "[gmx-mdrun] and add [TT]-np[tt] for the number of processors to perform the",
+        "[gmx-mdrun] and add [TT]-np[tt] for the number of ranks to perform the",
         "tests on, or [TT]-ntmpi[tt] for the number of threads. You can also add [TT]-r[tt]",
         "to repeat each test several times to get better statistics. [PAR]",
         "[THISMODULE] can test various real space / reciprocal space workloads",
@@ -2047,7 +2029,7 @@ int gmx_tune_pme(int argc, char *argv[])
         "In this last test, the Fourier spacing is multiplied with [TT]rmax[tt]/rcoulomb. ",
         "The remaining [TT].tpr[tt] files will have equally-spaced Coulomb radii (and Fourier "
         "spacings) between these extremes. [BB]Note[bb] that you can set [TT]-ntpr[tt] to 1",
-        "if you just seek the optimal number of PME-only nodes; in that case",
+        "if you just seek the optimal number of PME-only ranks; in that case",
         "your input [TT].tpr[tt] file will remain unchanged.[PAR]",
         "For the benchmark runs, the default of 1000 time steps should suffice for most",
         "MD systems. The dynamic load balancing needs about 100 time steps",
@@ -2110,9 +2092,9 @@ int gmx_tune_pme(int argc, char *argv[])
         /* g_tune_pme */
         { efOUT, "-p",      "perf",     ffWRITE },
         { efLOG, "-err",    "bencherr", ffWRITE },
-        { efTPX, "-so",     "tuned",    ffWRITE },
+        { efTPR, "-so",     "tuned",    ffWRITE },
         /* mdrun: */
-        { efTPX, NULL,      NULL,       ffREAD },
+        { efTPR, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
         { efCOMPRESSED, "-x", NULL,     ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },
@@ -2188,22 +2170,22 @@ int gmx_tune_pme(int argc, char *argv[])
         /* g_tune_pme options: */
         /***********************/
         { "-np",       FALSE, etINT,  {&nnodes},
-          "Number of nodes to run the tests on (must be > 2 for separate PME nodes)" },
+          "Number of ranks to run the tests on (must be > 2 for separate PME ranks)" },
         { "-npstring", FALSE, etENUM, {procstring},
-          "Specify the number of processors to [TT]$MPIRUN[tt] using this string"},
+          "Specify the number of ranks to [TT]$MPIRUN[tt] using this string"},
         { "-ntmpi",    FALSE, etINT,  {&nthreads},
           "Number of MPI-threads to run the tests on (turns MPI & mpirun off)"},
         { "-r",        FALSE, etINT,  {&repeats},
           "Repeat each test this often" },
         { "-max",      FALSE, etREAL, {&maxPMEfraction},
-          "Max fraction of PME nodes to test with" },
+          "Max fraction of PME ranks to test with" },
         { "-min",      FALSE, etREAL, {&minPMEfraction},
-          "Min fraction of PME nodes to test with" },
+          "Min fraction of PME ranks to test with" },
         { "-npme",     FALSE, etENUM, {npmevalues_opt},
           "Within -min and -max, benchmark all possible values for [TT]-npme[tt], or just a reasonable subset. "
           "Auto neglects -min and -max and chooses reasonable values around a guess for npme derived from the .tpr"},
         { "-fix",      FALSE, etINT,  {&npme_fixed},
-          "If >= -1, do not vary the number of PME-only nodes, instead use this fixed value and only vary rcoulomb and the PME grid spacing."},
+          "If >= -1, do not vary the number of PME-only ranks, instead use this fixed value and only vary rcoulomb and the PME grid spacing."},
         { "-rmax",     FALSE, etREAL, {&rmax},
           "If >0, maximal rcoulomb for -ntpr>1 (rcoulomb upscaling results in fourier grid downscaling)" },
         { "-rmin",     FALSE, etREAL, {&rmin},
@@ -2362,7 +2344,7 @@ int gmx_tune_pme(int argc, char *argv[])
             {
                 fprintf(stdout, "- %d ", maxPMEnodes);
             }
-            fprintf(stdout, "PME-only nodes.\n  Note that the automatic number of PME-only nodes and no separate PME nodes are always tested.\n");
+            fprintf(stdout, "PME-only ranks.\n  Note that the automatic number of PME-only ranks and no separate PME ranks are always tested.\n");
         }
     }
     else
@@ -2382,18 +2364,19 @@ int gmx_tune_pme(int argc, char *argv[])
     sep_line(fp);
     fprintf(fp, "\n      P E R F O R M A N C E   R E S U L T S\n");
     sep_line(fp);
-    fprintf(fp, "%s for Gromacs %s\n", ShortProgram(), GromacsVersion());
+    fprintf(fp, "%s for Gromacs %s\n", output_env_get_program_display_name(oenv),
+            gmx_version());
     if (!bThreads)
     {
-        fprintf(fp, "Number of nodes         : %d\n", nnodes);
+        fprintf(fp, "Number of ranks         : %d\n", nnodes);
         fprintf(fp, "The mpirun command is   : %s\n", cmd_mpirun);
         if (strcmp(procstring[0], "none") != 0)
         {
-            fprintf(fp, "Passing # of nodes via  : %s\n", procstring[0]);
+            fprintf(fp, "Passing # of ranks via  : %s\n", procstring[0]);
         }
         else
         {
-            fprintf(fp, "Not setting number of nodes in system call\n");
+            fprintf(fp, "Not setting number of ranks in system call\n");
         }
     }
     else

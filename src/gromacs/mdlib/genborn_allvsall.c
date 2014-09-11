@@ -34,20 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "genborn_allvsall.h"
 
 #include <math.h>
-#include "types/simple.h"
 
-#include "vec.h"
-#include "smalloc.h"
-
-#include "network.h"
-#include "physics.h"
-#include "genborn.h"
-#include "genborn_allvsall.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 
 typedef struct

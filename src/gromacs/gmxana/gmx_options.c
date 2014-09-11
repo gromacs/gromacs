@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,13 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "macros.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 /*
  * This program is needed to create the files:
@@ -62,10 +60,6 @@ gmx_options(int argc, char *argv[])
         "If the configuration script found Motif or Lesstif on your system, "
         "you can use the graphical interface (if not, you will get an error):[BR]"
         "[TT]-X[tt] gmx_bool [TT]no[tt] Use dialog box GUI to edit command line options",
-
-        "When compiled on an SGI-IRIX system, all GROMACS programs have an "
-        "additional option:[BR]"
-        "[TT]-npri[tt] int [TT]0[tt] Set non blocking priority (try 128)",
 
         "Optional files are not used unless the option is set, in contrast to "
         "non-optional files, where the default file name is used when the "
@@ -91,7 +85,7 @@ gmx_options(int argc, char *argv[])
 
         "All GROMACS programs can read compressed or g-zipped files. There "
         "might be a problem with reading compressed [TT].xtc[tt], "
-        "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "
+        "[TT].trr[tt] files, but these will not compress "
         "very well anyway.",
 
         "Most GROMACS programs can process a trajectory with fewer atoms than "

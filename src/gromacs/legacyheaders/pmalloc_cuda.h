@@ -36,12 +36,11 @@
 #ifndef PMALLOC_CUDA_H
 #define PMALLOC_CUDA_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stdlib.h>
-#include "types/simple.h"
+
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;
@@ -53,13 +52,13 @@
 extern "C" {
 #endif
 
-/*! Allocates nbytes of page-locked memory. */
+/** Allocates nbytes of page-locked memory. */
 void pmalloc(void gmx_unused **h_ptr, size_t gmx_unused nbytes) FUNC_TERM
 
-/*! Allocates nbytes of page-locked memory with write-combining. */
+/** Allocates nbytes of page-locked memory with write-combining. */
 void pmalloc_wc(void gmx_unused **h_ptr, size_t gmx_unused nbytes) FUNC_TERM
 
-/*! Frees page locked memory allocated with pmalloc. */
+/** Frees page locked memory allocated with pmalloc. */
 void pfree(void gmx_unused *h_ptr) FUNC_TERM
 
 #ifdef __cplusplus

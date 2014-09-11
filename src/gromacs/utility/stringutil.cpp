@@ -39,11 +39,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "stringutil.h"
 
 #include <cctype>
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 
 #include <algorithm>
@@ -175,6 +177,18 @@ namespace
 {
 
 /*! \brief
+ * Helper function to identify word boundaries for replaceAllWords().
+ *
+ * \returns  `true` if the character is considered part of a word.
+ *
+ * \ingroup module_utility
+ */
+bool isWordChar(char c)
+{
+    return std::isalnum(c) || c == '-' || c == '_';
+}
+
+/*! \brief
  * Common implementation for string replacement functions.
  *
  * \param[in] input  Input string.
@@ -201,8 +215,8 @@ replaceInternal(const std::string &input, const char *from, const char *to,
         size_t matchEnd = matchPos + matchLength;
         if (bWholeWords)
         {
-            if (!((matchPos == 0 || !std::isalnum(input[matchPos-1]))
-                  && (matchEnd == input.length() || !std::isalnum(input[matchEnd]))))
+            if (!((matchPos == 0 || !isWordChar(input[matchPos-1]))
+                  && (matchEnd == input.length() || !isWordChar(input[matchEnd]))))
             {
                 matchPos = input.find(from, matchPos + 1);
                 continue;

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012, by the GROMACS development team, led by
+# Copyright (c) 2012,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,8 +34,5 @@
 
 if(GMX_GPU)
     file(GLOB CUDA_TOOLS_SOURCES *.cu)
-    CUDA_ADD_LIBRARY(cuda_tools STATIC ${CUDA_TOOLS_SOURCES}
-            OPTIONS
-            RELWITHDEBINFO -g
-            DEBUG -g -D_DEBUG_=1)
+    set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${CUDA_TOOLS_SOURCES} PARENT_SCOPE)
 endif()

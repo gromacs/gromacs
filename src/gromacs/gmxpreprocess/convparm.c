@@ -35,25 +35,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "convparm.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "physics.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "gmx_fatal.h"
-#include "topio.h"
-#include "toputil.h"
-#include "convparm.h"
-#include "names.h"
-#include "gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/topio.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int round_check(real r, int limit, int ftype, const char *name)
 {

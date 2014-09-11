@@ -34,35 +34,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "readir.h"
 
 #include <ctype.h>
-#include <stdlib.h>
 #include <limits.h>
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "physics.h"
-#include "names.h"
-#include "gmx_fatal.h"
-#include "macros.h"
-#include "index.h"
-#include "symtab.h"
-#include "string2.h"
-#include "readinp.h"
-#include "warninp.h"
-#include "readir.h"
-#include "toputil.h"
-#include "index.h"
-#include "network.h"
-#include "vec.h"
-#include "pbc.h"
-#include "mtop_util.h"
-#include "chargegroup.h"
-#include "inputrec.h"
-#include "calc_verletbuf.h"
+#include <stdlib.h>
+
+#include "gromacs/gmxpreprocess/calc_verletbuf.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/chargegroup.h"
+#include "gromacs/legacyheaders/inputrec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -235,7 +234,10 @@ static void process_interaction_modifier(const t_inputrec *ir, int *eintmod)
 
 void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi)
-/* Check internal consistency */
+/* Check internal consistency.
+ * NOTE: index groups are not set here yet, don't check things
+ * like temperature coupling group options here, but in triple_check
+ */
 {
     /* Strange macro: first one fills the err_buf, and then one can check
      * the condition, which will print the message and increase the error
@@ -365,6 +367,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             sprintf(warn_buf, "coulomb_modifier=%s is not supported with the Verlet cut-off scheme", eintmod_names[ir->coulomb_modifier]);
             warning_error(wi, warn_buf);
+        }
+
+        if (ir->implicit_solvent != eisNO)
+        {
+            warning_error(wi, "Implicit solvent is not (yet) supported with the with Verlet lists.");
         }
 
         if (ir->nstlist <= 0)
@@ -549,6 +556,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->nsteps == 0 && !ir->bContinuation)
+    {
+        warning_note(wi, "For a correct single-point energy evaluation with nsteps = 0, use continuation = yes to avoid constraining the input coordinates.");
+    }
+
     /* LD STUFF */
     if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
         ir->bContinuation && ir->ld_seed != -1)
@@ -567,6 +579,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK(ir->nstlist <= 0);
         sprintf(err_buf, "TPI does not work with full electrostatics other than PME");
         CHECK(EEL_FULL(ir->coulombtype) && !EEL_PME(ir->coulombtype));
+        sprintf(err_buf, "TPI does not work (yet) with the Verlet cut-off scheme");
+        CHECK(ir->cutoff_scheme == ecutsVERLET);
     }
 
     /* SHAKE / LINCS */
@@ -955,14 +969,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "%s temperature control not supported for integrator %s.", etcoupl_names[ir->etc], ei_names[ir->eI]);
         CHECK(!(EI_VV(ir->eI)));
 
-        for (i = 0; i < ir->opts.ngtc; i++)
-        {
-            sprintf(err_buf, "all tau_t must currently be equal using Andersen temperature control, violated for group %d", i);
-            CHECK(ir->opts.tau_t[0] != ir->opts.tau_t[i]);
-            sprintf(err_buf, "all tau_t must be postive using Andersen temperature control, tau_t[%d]=%10.6f",
-                    i, ir->opts.tau_t[i]);
-            CHECK(ir->opts.tau_t[i] < 0);
-        }
         if (ir->nstcomm > 0 && (ir->etc == etcANDERSEN))
         {
             sprintf(warn_buf, "Center of mass removal not necessary for %s.  All velocities of coupled groups are rerandomized periodically, so flying ice cube errors will not occur.", etcoupl_names[ir->etc]);
@@ -971,14 +977,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         sprintf(err_buf, "nstcomm must be 1, not %d for %s, as velocities of atoms in coupled groups are randomized every time step", ir->nstcomm, etcoupl_names[ir->etc]);
         CHECK(ir->nstcomm > 1 && (ir->etc == etcANDERSEN));
-
-        for (i = 0; i < ir->opts.ngtc; i++)
-        {
-            int nsteps = (int)(ir->opts.tau_t[i]/ir->delta_t);
-            sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
-            CHECK((nsteps % ir->nstcomm) && (ir->etc == etcANDERSENMASSIVE));
-        }
     }
+
     if (ir->etc == etcBERENDSEN)
     {
         sprintf(warn_buf, "The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",
@@ -1009,7 +1009,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "tau-p must be > 0 instead of %g\n", ir->tau_p);
         CHECK(ir->tau_p <= 0);
 
-        if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc))
+        if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc) - 10*GMX_REAL_EPS)
         {
             sprintf(warn_buf, "For proper integration of the %s barostat, tau-p (%g) should be at least %d times larger than nstpcouple*dt (%g)",
                     EPCOUPLTYPE(ir->epc), ir->tau_p, pcouple_min_integration_steps(ir->epc), dt_pcoupl);
@@ -1082,7 +1082,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         ir->epsilon_r  = 1.0;
     }
 
-    if (getenv("GALACTIC_DYNAMICS") == NULL)
+    if (getenv("GMX_DO_GALACTIC_DYNAMICS") == NULL)
     {
         sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
         CHECK(ir->epsilon_r < 0);
@@ -1134,6 +1134,19 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT)
+    {
+        sprintf(err_buf,
+                "Explicit switch/shift coulomb interactions cannot be used in combination with a secondary coulomb-modifier.");
+        CHECK( ir->coulomb_modifier != eintmodNONE);
+    }
+    if (ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
+    {
+        sprintf(err_buf,
+                "Explicit switch/shift vdw interactions cannot be used in combination with a secondary vdw-modifier.");
+        CHECK( ir->vdw_modifier != eintmodNONE);
+    }
+
     if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT ||
         ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
     {
@@ -1143,13 +1156,22 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_note(wi, warn_buf);
     }
 
-    if (ir->coulombtype == eelPMESWITCH)
+    if (ir->coulombtype == eelPMESWITCH || ir->coulomb_modifier == eintmodPOTSWITCH)
     {
         if (ir->rcoulomb_switch/ir->rcoulomb < 0.9499)
         {
-            sprintf(warn_buf, "The switching range for %s should be 5%% or less, energy conservation will be good anyhow, since ewald_rtol = %g",
-                    eel_names[ir->coulombtype],
-                    ir->ewald_rtol);
+            real percentage  = 100*(ir->rcoulomb-ir->rcoulomb_switch)/ir->rcoulomb;
+            sprintf(warn_buf, "The switching range should be 5%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate electrostatic energies, energy conservation will be good regardless, since ewald_rtol = %g.",
+                    percentage, ir->rcoulomb_switch, ir->rcoulomb, ir->ewald_rtol);
+            warning(wi, warn_buf);
+        }
+    }
+
+    if (ir->vdwtype == evdwSWITCH || ir->vdw_modifier == eintmodPOTSWITCH)
+    {
+        if (ir->rvdw_switch == 0)
+        {
+            sprintf(warn_buf, "rvdw-switch is equal 0 even though you are using a switched Lennard-Jones potential.  This suggests it was not set in the mdp, which can lead to large energy errors.  In GROMACS, 0.05 to 0.1 nm is often a reasonable vdw switching range.");
             warning(wi, warn_buf);
         }
     }
@@ -1304,14 +1326,18 @@ nd %s",
         }
     }
 
+    if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
+    {
+        sprintf(warn_buf, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
+        warning_error(wi, warn_buf);
+    }
+
     /* IMPLICIT SOLVENT */
     if (ir->coulombtype == eelGB_NOTUSED)
     {
-        ir->coulombtype      = eelCUT;
-        ir->implicit_solvent = eisGBSA;
-        fprintf(stderr, "Note: Old option for generalized born electrostatics given:\n"
-                "Changing coulombtype from \"generalized-born\" to \"cut-off\" and instead\n"
-                "setting implicit-solvent value to \"GBSA\" in input section.\n");
+        sprintf(warn_buf, "Invalid option %s for coulombtype",
+                eel_names[ir->coulombtype]);
+        warning_error(wi, warn_buf);
     }
 
     if (ir->sa_algorithm == esaSTILL)
@@ -1399,7 +1425,7 @@ int str_nelem(const char *str, int maxptr, char *ptr[])
     int   np = 0;
     char *copy0, *copy;
 
-    copy0 = strdup(str);
+    copy0 = gmx_strdup(str);
     copy  = copy0;
     ltrim(copy);
     while (*copy != '\0')
@@ -1654,7 +1680,7 @@ static void do_wall_params(t_inputrec *ir,
         }
         for (i = 0; i < ir->nwall; i++)
         {
-            opts->wall_atomtype[i] = strdup(names[i]);
+            opts->wall_atomtype[i] = gmx_strdup(names[i]);
         }
 
         if (ir->wall_type == ewt93 || ir->wall_type == ewt104)
@@ -1769,7 +1795,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         warning_note(wi, warn_buf);
     }
 
-    /* remove the following deprecated commands */
+    /* ignore the following deprecated commands */
     REM_TYPE("title");
     REM_TYPE("cpp");
     REM_TYPE("domain-decomposition");
@@ -1779,6 +1805,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     REM_TYPE("dihre-tau");
     REM_TYPE("nstdihreout");
     REM_TYPE("nstcheckpoint");
+    REM_TYPE("optimize-fft");
 
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
@@ -1839,7 +1866,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nstxout", ir->nstxout,    0);
     ITYPE ("nstvout", ir->nstvout,    0);
     ITYPE ("nstfout", ir->nstfout,    0);
-    ir->nstcheckpoint = 1000;
     CTYPE ("Output frequency for energies to log file and energy file");
     ITYPE ("nstlog",  ir->nstlog, 1000);
     ITYPE ("nstcalcenergy", ir->nstcalcenergy, 100);
@@ -1862,8 +1888,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nstlist", ir->nstlist,    10);
     CTYPE ("ns algorithm (simple or grid)");
     EETYPE("ns-type",     ir->ns_type,    ens_names);
-    /* set ndelta to the optimal value of 2 */
-    ir->ndelta = 2;
     CTYPE ("Periodic boundary conditions: xyz, no, xy");
     EETYPE("pbc",         ir->ePBC,       epbc_names);
     EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
@@ -1912,7 +1936,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     EETYPE("lj-pme-comb-rule", ir->ljpme_combination_rule, eljpme_names);
     EETYPE("ewald-geometry", ir->ewald_geometry, eewg_names);
     RTYPE ("epsilon-surface", ir->epsilon_surface, 0.0);
-    EETYPE("optimize-fft", ir->bOptFFT,  yesno_names);
 
     CCTYPE("IMPLICIT SOLVENT ALGORITHM");
     EETYPE("implicit-solvent", ir->implicit_solvent, eis_names);
@@ -2120,7 +2143,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("temperature-lambdas", is->fep_lambda[efptTEMPERATURE], NULL);
     ITYPE ("calc-lambda-neighbors", fep->lambda_neighbors, 1);
     STYPE ("init-lambda-weights", is->lambda_weights, NULL);
-    EETYPE("dhdl-print-energy", fep->bPrintEnergy, yesno_names);
+    EETYPE("dhdl-print-energy", fep->edHdLPrintEnergy, edHdLPrintEnergy_names);
     RTYPE ("sc-alpha", fep->sc_alpha, 0.0);
     ITYPE ("sc-power", fep->sc_power, 1);
     RTYPE ("sc-r-power", fep->sc_r_power, 6.0);
@@ -2320,7 +2343,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         if (ir->efep != efepNO)
         {
-            opts->couple_moltype = strdup(is->couple_moltype);
+            opts->couple_moltype = gmx_strdup(is->couple_moltype);
             if (opts->couple_lam0 == opts->couple_lam1)
             {
                 warning(wi, "The lambda=0 and lambda=1 states for coupling are identical");
@@ -2333,7 +2356,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
         else
         {
-            warning(wi, "Can not couple a molecule with free_energy = no");
+            warning_note(wi, "Free energy is turned off, so we will not decouple the molecule listed in your input.");
         }
     }
     /* FREE ENERGY AND EXPANDED ENSEMBLE OPTIONS */
@@ -2345,11 +2368,23 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
     }
 
-    if (ir->bSimTemp)
+    if (fep->edHdLPrintEnergy == edHdLPrintEnergyYES)
     {
-        fep->bPrintEnergy = TRUE;
-        /* always print out the energy to dhdl if we are doing expanded ensemble, since we need the total energy
-           if the temperature is changing. */
+        fep->edHdLPrintEnergy = edHdLPrintEnergyTOTAL;
+        warning_note(wi, "Old option for dhdl-print-energy given: "
+                     "changing \"yes\" to \"total\"\n");
+    }
+
+    if (ir->bSimTemp && (fep->edHdLPrintEnergy == edHdLPrintEnergyNO))
+    {
+        /* always print out the energy to dhdl if we are doing
+           expanded ensemble, since we need the total energy for
+           analysis if the temperature is changing. In some
+           conditions one may only want the potential energy, so
+           we will allow that if the appropriate mdp setting has
+           been enabled. Otherwise, total it is:
+         */
+        fep->edHdLPrintEnergy = edHdLPrintEnergyTOTAL;
     }
 
     if ((ir->efep != efepNO) || ir->bSimTemp)
@@ -2900,7 +2935,7 @@ static void decode_cos(char *s, t_cosines *cosine)
     double  a, phi;
     int     i;
 
-    t = strdup(s);
+    t = gmx_strdup(s);
     trim(t);
 
     cosine->n   = 0;
@@ -3081,7 +3116,7 @@ static void make_swap_groups(
 
 void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
 {
-    int      ig = -1, i;
+    int      ig, i;
 
 
     ig            = search_string(IMDgname, grps->nr, gnames);
@@ -3247,7 +3282,7 @@ void do_index(const char* mdparin, const char *ndx,
         nstcmin = tcouple_min_integration_steps(ir->etc);
         if (nstcmin > 1)
         {
-            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
+            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin - 10*GMX_REAL_EPS)
             {
                 sprintf(warn_buf, "For proper integration of the %s thermostat, tau-t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
                         ETCOUPLTYPE(ir->etc),
@@ -3788,7 +3823,15 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                         case efbposresSPHERE:
                             AbsRef[XX] = AbsRef[YY] = AbsRef[ZZ] = 1;
                             break;
+                        case efbposresCYLINDERX:
+                            AbsRef[YY] = AbsRef[ZZ] = 1;
+                            break;
+                        case efbposresCYLINDERY:
+                            AbsRef[XX] = AbsRef[ZZ] = 1;
+                            break;
                         case efbposresCYLINDER:
+                        /* efbposres is a synonym for efbposresCYLINDERZ for backwards compatibility */
+                        case efbposresCYLINDERZ:
                             AbsRef[XX] = AbsRef[YY] = 1;
                             break;
                         case efbposresX: /* d=XX */
@@ -3941,7 +3984,7 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
 void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
-    char                      err_buf[256];
+    char                      err_buf[STRLEN];
     int                       i, m, c, nmol, npct;
     gmx_bool                  bCharge, bAcc;
     real                      gdt_max, *mgrp, mt;
@@ -3953,6 +3996,71 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     char                      warn_buf[STRLEN];
 
     set_warning_line(wi, mdparin, -1);
+
+    if (ir->cutoff_scheme == ecutsVERLET &&
+        ir->verletbuf_tol > 0 &&
+        ir->nstlist > 1 &&
+        ((EI_MD(ir->eI) || EI_SD(ir->eI)) &&
+         (ir->etc == etcVRESCALE || ir->etc == etcBERENDSEN)))
+    {
+        /* Check if a too small Verlet buffer might potentially
+         * cause more drift than the thermostat can couple off.
+         */
+        /* Temperature error fraction for warning and suggestion */
+        const real T_error_warn    = 0.002;
+        const real T_error_suggest = 0.001;
+        /* For safety: 2 DOF per atom (typical with constraints) */
+        const real nrdf_at         = 2;
+        real       T, tau, max_T_error;
+        int        i;
+
+        T   = 0;
+        tau = 0;
+        for (i = 0; i < ir->opts.ngtc; i++)
+        {
+            T   = max(T, ir->opts.ref_t[i]);
+            tau = max(tau, ir->opts.tau_t[i]);
+        }
+        if (T > 0)
+        {
+            /* This is a worst case estimate of the temperature error,
+             * assuming perfect buffer estimation and no cancelation
+             * of errors. The factor 0.5 is because energy distributes
+             * equally over Ekin and Epot.
+             */
+            max_T_error = 0.5*tau*ir->verletbuf_tol/(nrdf_at*BOLTZ*T);
+            if (max_T_error > T_error_warn)
+            {
+                sprintf(warn_buf, "With a verlet-buffer-tolerance of %g kJ/mol/ps, a reference temperature of %g and a tau_t of %g, your temperature might be off by up to %.1f%%. To ensure the error is below %.1f%%, decrease verlet-buffer-tolerance to %.0e or decrease tau_t.",
+                        ir->verletbuf_tol, T, tau,
+                        100*max_T_error,
+                        100*T_error_suggest,
+                        ir->verletbuf_tol*T_error_suggest/max_T_error);
+                warning(wi, warn_buf);
+            }
+        }
+    }
+
+    if (ETC_ANDERSEN(ir->etc))
+    {
+        int i;
+
+        for (i = 0; i < ir->opts.ngtc; i++)
+        {
+            sprintf(err_buf, "all tau_t must currently be equal using Andersen temperature control, violated for group %d", i);
+            CHECK(ir->opts.tau_t[0] != ir->opts.tau_t[i]);
+            sprintf(err_buf, "all tau_t must be postive using Andersen temperature control, tau_t[%d]=%10.6f",
+                    i, ir->opts.tau_t[i]);
+            CHECK(ir->opts.tau_t[i] < 0);
+        }
+
+        for (i = 0; i < ir->opts.ngtc; i++)
+        {
+            int nsteps = (int)(ir->opts.tau_t[i]/ir->delta_t);
+            sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
+            CHECK((nsteps % ir->nstcomm) && (ir->etc == etcANDERSENMASSIVE));
+        }
+    }
 
     if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != eiBD &&
         ir->comm_mode == ecmNO &&
@@ -4032,11 +4140,12 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
     }
 
-    if (ir->eI == eiSD1 &&
-        (gmx_mtop_ftype_count(sys, F_CONSTR) > 0 ||
-         gmx_mtop_ftype_count(sys, F_SETTLE) > 0))
+    if (ir->eI == eiSD2)
     {
-        sprintf(warn_buf, "With constraints integrator %s is less accurate, consider using %s instead", ei_names[ir->eI], ei_names[eiSD2]);
+        sprintf(warn_buf, "The stochastic dynamics integrator %s is deprecated, since\n"
+                "it is slower than integrator %s and is slightly less accurate\n"
+                "with constraints. Use the %s integrator.",
+                ei_names[ir->eI], ei_names[eiSD1], ei_names[eiSD1]);
         warning_note(wi, warn_buf);
     }
 

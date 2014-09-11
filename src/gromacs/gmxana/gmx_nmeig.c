@@ -34,36 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "vec.h"
-#include "pbc.h"
-#include "copyrite.h"
-#include "gromacs/fileio/futil.h"
-#include "index.h"
-#include "mshift.h"
-#include "xvgr.h"
-#include "gstat.h"
-#include "txtdump.h"
-#include "eigio.h"
-#include "mtop_util.h"
-#include "physics.h"
-#include "main.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/mtxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/linearalgebra/eigensolver.h"
-#include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static double cv_corr(double nu, double T)
 {
@@ -351,7 +343,7 @@ int gmx_nmeig(int argc, char *argv[])
 
     t_filenm               fnm[] = {
         { efMTX, "-f", "hessian",    ffREAD  },
-        { efTPX, NULL, NULL,         ffREAD  },
+        { efTPR, NULL, NULL,         ffREAD  },
         { efXVG, "-of", "eigenfreq", ffWRITE },
         { efXVG, "-ol", "eigenval",  ffWRITE },
         { efXVG, "-os", "spectrum",  ffOPTWR },
@@ -360,17 +352,17 @@ int gmx_nmeig(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, 0,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }
 
     /* Read tpr file for volume and number of harmonic terms */
-    read_tpxheader(ftp2fn(efTPX, NFILE, fnm), &tpx, TRUE, &version, &generation);
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &tpx, TRUE, &version, &generation);
     snew(top_x, tpx.natoms);
 
-    read_tpx(ftp2fn(efTPX, NFILE, fnm), NULL, box, &natoms,
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), NULL, box, &natoms,
              top_x, NULL, NULL, &mtop);
     if (bCons)
     {

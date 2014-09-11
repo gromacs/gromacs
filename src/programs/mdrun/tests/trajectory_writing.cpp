@@ -40,14 +40,16 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
+#include "gmxpre.h"
+
+#include "config.h"
+
 #include <gtest/gtest.h>
-#include "moduletest.h"
+
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/utility/stringutil.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "moduletest.h"
 
 namespace
 {

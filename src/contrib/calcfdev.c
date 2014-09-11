@@ -37,8 +37,7 @@
 #endif
 
 #include "typedefs.h"
-#include "main.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "txtdump.h"
 
 void calc_force(int natom,rvec f[],rvec fff[])

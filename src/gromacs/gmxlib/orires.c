@@ -34,22 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "nrjac.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "orires.h"
-#include "do_fit.h"
-#include "main.h"
-#include "copyrite.h"
-#include "pbc.h"
-#include "mtop_util.h"
+#include "gromacs/legacyheaders/orires.h"
+
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec xref[],
@@ -364,7 +366,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     if (od->nr == 0)
     {
         /* This means that this is not the master node */
-        gmx_fatal(FARGS, "Orientation restraints are only supported on the master node, use less processors");
+        gmx_fatal(FARGS, "Orientation restraints are only supported on the master rank, use fewer ranks");
     }
 
     bTAV  = (od->edt != 0);

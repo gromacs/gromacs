@@ -34,23 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "vec.h"
-#include "coulomb.h"
-#include "smalloc.h"
-#include "physics.h"
-#include "txtdump.h"
-#include "gromacs/fileio/futil.h"
-#include "names.h"
-#include "macros.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 real calc_ewaldcoeff_q(real rc, real dtol)
 {
@@ -226,7 +225,7 @@ void ewald_LRcorrection(int start, int end,
     {
         clear_mat(dxdf_lj);
     }
-    if ((calc_excl_corr || dipole_coeff != 0 || EVDW_PME(fr->vdwtype)) && !bFreeEnergy)
+    if ((calc_excl_corr || dipole_coeff != 0) && !bFreeEnergy)
     {
         for (i = start; (i < end); i++)
         {
@@ -387,7 +386,7 @@ void ewald_LRcorrection(int start, int end,
             }
         }
     }
-    else if (calc_excl_corr || dipole_coeff != 0 || EVDW_PME(fr->vdwtype))
+    else if (calc_excl_corr || dipole_coeff != 0)
     {
         for (i = start; (i < end); i++)
         {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "gromacs/math/vectypes.h"
 
 typedef real rvec5[5];
 
@@ -97,6 +99,12 @@ typedef struct {
     double  *eig_diag;
     double **v;
 } t_oriresdata;
+
+typedef struct {
+    int   n;      /* n+1 is the number of points */
+    real  scale;  /* distance between two points */
+    real *data;   /* the actual table data, per point there are 4 numbers */
+} bondedtable_t;
 
 /*
  * Data struct used in the force calculation routines

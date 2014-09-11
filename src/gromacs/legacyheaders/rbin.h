@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,13 +38,13 @@
 #ifndef _rbin_h
 #define _rbin_h
 
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "network.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_commrec;
 
 typedef struct {
     int     nreal;
@@ -65,7 +65,7 @@ int add_binr(t_bin *b, int nr, real r[]);
 int add_bind(t_bin *b, int nr, double r[]);
 /* Add reals to the bin. Returns index */
 
-void sum_bin(t_bin *b, t_commrec *cr);
+void sum_bin(t_bin *b, struct t_commrec *cr);
 /* Globally sum the reals in the bin */
 
 void extract_binr(t_bin *b, int index, int nr, real r[]);

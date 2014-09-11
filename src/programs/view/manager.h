@@ -39,14 +39,16 @@
 #define _manager_h
 
 #include <stdio.h>
-#include "typedefs.h"
+
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/pbcutil/rmpbc.h"
+
+#include "3dview.h"
+#include "buttons.h"
+#include "nleg.h"
 #include "x11.h"
 #include "xutil.h"
-#include "gromacs/math/3dview.h"
-#include "nleg.h"
-#include "buttons.h"
-#include "rmpbc.h"
-#include "gromacs/fileio/trxio.h"
 
 /* Some window sizes */
 #define EWIDTH      200

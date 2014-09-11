@@ -37,11 +37,12 @@
 #ifndef GMX_FFT_PARALLEL_3DFFT_H
 #define GMX_FFT_PARALLEL_3DFFT_H
 
-#include "../legacyheaders/types/nrnb.h"
-#include "../legacyheaders/types/simple.h"
-#include "../math/gmxcomplex.h"
-#include "../utility/gmxmpi.h"
-#include "fft.h"
+#include "gromacs/fft/fft.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

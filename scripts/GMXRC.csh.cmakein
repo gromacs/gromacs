@@ -75,6 +75,7 @@ setenv GMXBIN ${GMXPREFIX}/@BIN_INSTALL_DIR@
 setenv GMXLDLIB ${GMXPREFIX}/@LIB_INSTALL_DIR@
 setenv GMXMAN ${GMXPREFIX}/@MAN_INSTALL_DIR@
 setenv GMXDATA ${GMXPREFIX}/@DATA_INSTALL_DIR@
+setenv GROMACS_DIR ${GMXPREFIX}
 
 #make them begin with :
 if ($?LD_LIBRARY_PATH) setenv LD_LIBRARY_PATH ":${LD_LIBRARY_PATH}"
@@ -87,7 +88,7 @@ setenv PKG_CONFIG_PATH ${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH}
 #debian/ubuntu needs a : at the end
 setenv MANPATH ${GMXMAN}:${MANPATH}
 
-setenv GMXFONT	10x20
+setenv GMX_FONT	10x20
 
 # Read completions if we understand it (i.e. have tcsh)
 # Currently disabled, since the completions don't work with the new

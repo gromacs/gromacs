@@ -34,18 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "fgrid.h"
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include "string2.h"
-#include "smalloc.h"
-#include "fgrid.h"
-#include "gromacs/fileio/futil.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *type[] = {
     "button", "radiobuttons", "groupbox", "checkbox",
@@ -102,9 +102,10 @@ void ReadDlgError(const char *infile, eDLGERR err, const char *s,
 static void ReadAccOpen(const char *infile, FILE *in)
 {
     char buf[STRLEN];
+    int  result;
 
-    fscanf(in, "%4s", buf);
-    if (strcmp(buf, "{") != 0)
+    result = fscanf(in, "%4s", buf);
+    if ((1 != result) || strcmp(buf, "{") != 0)
     {
         ReadDlgErr(infile, eACCOEXP, buf);
     }
@@ -113,9 +114,10 @@ static void ReadAccOpen(const char *infile, FILE *in)
 static void ReadAccClose(const char *infile, FILE *in)
 {
     char buf[STRLEN];
+    int  result;
 
-    fscanf(in, "%4s", buf);
-    if (strcmp(buf, "}") != 0)
+    result = fscanf(in, "%4s", buf);
+    if ((1 != result) || strcmp(buf, "}") != 0)
     {
         ReadDlgErr(infile, eACCCEXP, buf);
     }
@@ -201,7 +203,7 @@ static t_fsimple *NewFSimple(void)
 static void AddFItemName(t_fitem *fitem, char *name)
 {
     srenew(fitem->name, ++fitem->nname);
-    fitem->name[fitem->nname-1] = strdup(name);
+    fitem->name[fitem->nname-1] = gmx_strdup(name);
 }
 
 static t_fgroup *NewFGroup(void)
@@ -303,12 +305,12 @@ void DoneFGrid(t_fgrid *fgrid)
 static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
 {
     char     set[STRLEN], get[STRLEN], help[STRLEN], def[STRLEN];
-    edlgitem edlg;
+    int      edlg;
     t_fitem *fitem;
 
     fitem = NewFItem();
 
-    for (edlg = (edlgitem)0; (edlg < edlgNR+1); edlg = (edlgitem)(edlg + 1))
+    for (edlg = 0; (edlg < edlgNR+1); edlg++)
     {
         if (strcmp(buf, type[edlg]) == 0)
         {
@@ -326,7 +328,7 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
         ReadDlgErr(infile, eITEMEXP, buf);
     }
 
-    fitem->edlg = edlg;
+    fitem->edlg = (edlgitem)edlg;
     switch (edlg)
     {
         case edlgBN:
@@ -356,10 +358,10 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
     ReadQuoteString(infile, in, get);
     ReadQuoteString(infile, in, def);
     ReadQuoteString(infile, in, help);
-    fitem->set  = strdup(set);
-    fitem->get  = strdup(get);
-    fitem->def  = strdup(def);
-    fitem->help = strdup(help);
+    fitem->set  = gmx_strdup(set);
+    fitem->get  = gmx_strdup(get);
+    fitem->def  = gmx_strdup(def);
+    fitem->help = gmx_strdup(help);
 
     return fitem;
 }
@@ -368,15 +370,16 @@ t_fgrid *FGridFromFile(const char *infile)
 {
     FILE      *in;
     char       buf[STRLEN];
+    int        result;
 
     t_fgrid   *fgrid;
     t_fgroup  *fgroup;
     t_fsimple *fsimple;
     int        gridx, gridy;
 
-    in = libopen(infile);
-    fscanf(in, "%6s", buf);
-    if (strcmp(buf, "grid") != 0)
+    in     = libopen(infile);
+    result = fscanf(in, "%6s", buf);
+    if ((1 != result) || strcmp(buf, "grid") != 0)
     {
         ReadDlgErr(infile, eGRIDEXP, buf);
     }
@@ -388,14 +391,14 @@ t_fgrid *FGridFromFile(const char *infile)
     fgrid->w = gridx;
     fgrid->h = gridy;
     ReadAccOpen(infile, in);
-    fscanf(in, "%15s", buf);
-    while (bNotAccClose(buf))
+    result = fscanf(in, "%15s", buf);
+    while ((1 == result) && bNotAccClose(buf))
     {
         if (strcmp(buf, "group") == 0)
         {
             fgroup = AddFGridFGroup(fgrid);
             ReadQuoteString(infile, in, buf);
-            fgroup->name = strdup(buf);
+            fgroup->name = gmx_strdup(buf);
             if ((fscanf(in, "%5d%5d%5d%5d", &fgroup->x, &fgroup->y, &fgroup->w, &fgroup->h)) != 4)
             {
                 ReadDlgErr(infile, eNOVALS, "group x,y,w,h");
@@ -409,11 +412,11 @@ t_fgrid *FGridFromFile(const char *infile)
                 ReadDlgErr(infile, eTOOHIGH, buf);
             }
             ReadAccOpen(infile, in);
-            fscanf(in, "%15s", buf);
-            while (bNotAccClose(buf))
+            result = fscanf(in, "%15s", buf);
+            while ((1 == result) && bNotAccClose(buf))
             {
                 AddFGroupFItem(fgroup, ScanFItem(infile, in, buf));
-                fscanf(in, "%15s", buf);
+                result = fscanf(in, "%15s", buf);
             }
         }
         else if (strcmp(buf, "simple") == 0)
@@ -432,13 +435,26 @@ t_fgrid *FGridFromFile(const char *infile)
                 ReadDlgErr(infile, eTOOHIGH, "simple");
             }
             ReadAccOpen(infile, in);
-            fscanf(in, "%15s", buf);
-            fsimple->fitem = ScanFItem(infile, in, buf);
-            ReadAccClose(infile, in);
+            result = fscanf(in, "%15s", buf);
+            if (1 == result)
+            {
+                fsimple->fitem = ScanFItem(infile, in, buf);
+                ReadAccClose(infile, in);
+            }
         }
-        fscanf(in, "%15s", buf);
+        if (1 == result)
+        {
+            result = fscanf(in, "%15s", buf);
+        }
     }
     gmx_ffclose(in);
+    /* Since we always read one variable at a time the result from
+     * fscanf should always be 1.
+     */
+    if (1 != result)
+    {
+        ReadDlgErr(infile, eNOVALS, "fgrid");
+    }
 
     return fgrid;
 }

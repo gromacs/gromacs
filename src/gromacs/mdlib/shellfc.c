@@ -34,31 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/shellfc.h"
+
+#include <stdlib.h>
 #include <string.h>
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "vec.h"
-#include "txtdump.h"
-#include "force.h"
-#include "mdrun.h"
-#include "mdatoms.h"
-#include "vsite.h"
-#include "network.h"
-#include "names.h"
-#include "constr.h"
-#include "domdec.h"
-#include "physics.h"
-#include "shellfc.h"
-#include "mtop_util.h"
-#include "chargegroup.h"
-#include "macros.h"
 
+#include "gromacs/legacyheaders/chargegroup.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int     nnucl;
@@ -230,7 +232,6 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
 }
 
 gmx_shellfc_t init_shell_flexcon(FILE *fplog,
-                                 gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x)
 {
@@ -282,11 +283,6 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
     {
         /* We're not doing shells or flexible constraints */
         return NULL;
-    }
-
-    if (bCutoffSchemeIsVerlet)
-    {
-        gmx_fatal(FARGS, "The shell code does not work with the Verlet cut-off scheme.\n");
     }
 
     snew(shfc, 1);
@@ -532,6 +528,12 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
             {
                 fprintf(fplog, "\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
             }
+            /* Prediction improves performance, so we should implement either:
+             * 1. communication for the atoms needed for prediction
+             * 2. prediction using the velocities of shells; currently the
+             *    shell velocities are zeroed, it's a bit tricky to keep
+             *    track of the shell displacements and thus the velocity.
+             */
             shfc->bPredict = FALSE;
         }
     }
@@ -890,11 +892,11 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
             }
         }
     }
-    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x, xnold-start, NULL, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
-    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x, xnew-start, NULL, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
@@ -911,7 +913,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
     }
 
     /* Project the acceleration on the old bond directions */
-    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x_old, xnew-start, acc_dir, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqDeriv_FlexCon, FALSE, 0, 0);
@@ -992,26 +994,31 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         force[i] = shfc->f[i];
     }
 
-    /* When we had particle decomposition, this code only worked with
-     * PD when all particles involved with each shell were in the same
-     * charge group. Not sure if this is still relevant. */
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
     {
         /* This is the only time where the coordinates are used
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        cg0 = 0;
-        cg1 = top->cgs.nr;
-        put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
-                                 &(top->cgs), state->x, fr->cg_cm);
+        if (inputrec->cutoff_scheme == ecutsVERLET)
+        {
+            put_atoms_in_box_omp(fr->ePBC, state->box, md->homenr, state->x);
+        }
+        else
+        {
+            cg0 = 0;
+            cg1 = top->cgs.nr;
+            put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
+                                     &(top->cgs), state->x, fr->cg_cm);
+        }
+
         if (graph)
         {
             mk_mshift(fplog, graph, fr->ePBC, state->box, state->x);
         }
     }
 
-    /* After this all coordinate arrays will contain whole molecules */
+    /* After this all coordinate arrays will contain whole charge groups */
     if (graph)
     {
         shift_self(graph, state->box, state->x);

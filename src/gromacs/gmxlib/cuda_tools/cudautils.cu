@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,12 +33,14 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
+#include "cudautils.cuh"
+
 #include <stdlib.h>
 
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "typedefs.h"
-#include "cudautils.cuh"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/smalloc.h"
 
 /*** Generic CUDA data operation wrappers ***/
 

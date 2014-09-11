@@ -149,7 +149,6 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
             if(SIZEOF_LONG_INT EQUAL 8) #standard fseek is OK for 64bit
                 SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
             else()
-                SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
                 MESSAGE(FATAL_ERROR "Checking for 64bit file support failed.")
             endif()
         endif()

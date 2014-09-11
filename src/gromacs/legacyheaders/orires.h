@@ -38,12 +38,15 @@
 #ifndef _orires_h
 #define _orires_h
 
-#include "sysstuff.h"
-#include "typedefs.h"
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_pbc;
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec x[],
@@ -57,7 +60,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
 real calc_orires_dev(const gmx_multisim_t *ms,
                      int nfa, const t_iatom fa[], const t_iparams ip[],
                      const t_mdatoms *md, const rvec x[],
-                     const t_pbc *pbc, t_fcdata *fcd, history_t *hist);
+                     const struct t_pbc *pbc, t_fcdata *fcd, history_t *hist);
 /*
  * Calculates the time averaged D matrices, the S matrix for each experiment.
  * Returns the weighted RMS deviation of the orientation restraints.

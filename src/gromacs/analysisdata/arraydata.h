@@ -45,10 +45,9 @@
 
 #include <vector>
 
-#include "../utility/gmxassert.h"
-
-#include "abstractdata.h"
-#include "dataframe.h"
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

@@ -34,34 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
+#include <string.h>
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gmx_fatal.h"
-#include "fitahx.h"
-#include "gromacs/fileio/futil.h"
-#include "gstat.h"
-#include "hxprops.h"
-#include "macros.h"
-#include "gromacs/math/utilities.h"
-#include "pbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "physics.h"
-#include "index.h"
-#include "smalloc.h"
-#include "gromacs/commandline/pargs.h"
-#include <string.h>
-#include "sysstuff.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/fitahx.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/hxprops.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_helix(int argc, char *argv[])
 {
@@ -160,14 +156,14 @@ int gmx_helix(int argc, char *argv[])
     gmx_rmpbc_t    gpbc = NULL;
     gmx_bool       bRange;
     t_filenm       fnm[] = {
-        { efTPX, NULL,  NULL,   ffREAD  },
+        { efTPR, NULL,  NULL,   ffREAD  },
         { efNDX, NULL,  NULL,   ffREAD  },
         { efTRX, "-f",  NULL,   ffREAD  },
         { efSTO, "-cz", "zconf", ffWRITE },
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -176,7 +172,7 @@ int gmx_helix(int argc, char *argv[])
     bRange = (opt2parg_bSet("-ahxstart", asize(pa), pa) &&
               opt2parg_bSet("-ahxend", asize(pa), pa));
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
 
@@ -211,7 +207,7 @@ int gmx_helix(int argc, char *argv[])
 
     /* Read reference frame from tpx file to compute helix length */
     snew(xref, top->atoms.nr);
-    read_tpx(ftp2fn(efTPX, NFILE, fnm),
+    read_tpx(ftp2fn(efTPR, NFILE, fnm),
              NULL, NULL, &natoms, xref, NULL, NULL, NULL);
     calc_hxprops(nres, bb, xref);
     do_start_end(nres, bb, &nbb, bbindex, &nca, caindex, bRange, rStart, rEnd);

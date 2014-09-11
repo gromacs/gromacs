@@ -33,6 +33,10 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 cmake_minimum_required(VERSION 2.8.8)
+# When we require cmake >= 2.8.12, it will provide
+# CMAKE_MINIMUM_REQUIRED_VERSION automatically, but in the meantime we
+# need to set a variable, and it must have a different name.
+set(GMX_CMAKE_MINIMUM_REQUIRED_VERSION "2.8.8")
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -44,66 +48,28 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# PROJECT_VERSION should have the following structure:
-# VERSION-dev[-SUFFIX] where the VERSION should have the for: vMajor.vMinor.vPatch
-#
-# The "-dev" suffix is important to keep because it makes possible to distinguish
-# between a build from official release and a build from git release branch on a
-# machine with no git.
-#
-# NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "5.0-beta2-dev")
-# The version number of the regressiontest tarball against which this
-# git branch can be tested. Normally, this will be the version of the
-# last patch release. Comment the next line out for branches leading
-# to a major/minor release.
-set(REGRESSIONTEST_VERSION "5.0-beta1")
-set(CUSTOM_VERSION_STRING ""
-    CACHE STRING "Custom version string (if empty, use hard-coded default)")
-mark_as_advanced(CUSTOM_VERSION_STRING)
-if (CUSTOM_VERSION_STRING)
-    set(PROJECT_VERSION ${CUSTOM_VERSION_STRING})
-endif()
-set(LIBRARY_SOVERSION 0)
-set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
-# It is a bit irritating, but this has to be set separately for now!
-SET(CPACK_PACKAGE_VERSION_MAJOR "5")
-SET(CPACK_PACKAGE_VERSION_MINOR "0")
-#SET(CPACK_PACKAGE_VERSION_PATCH "0")
-
-# The numerical gromacs version. It is 40600 for 4.6.0.
-# The #define GMX_VERSION in gromacs/version.h is set to this value.
-math(EXPR NUM_VERSION
-    "${CPACK_PACKAGE_VERSION_MAJOR}*10000 + ${CPACK_PACKAGE_VERSION_MINOR}*100")
-if(CPACK_PACKAGE_VERSION_PATCH)
-    math(EXPR NUM_VERSION
-         "${NUM_VERSION} + ${CPACK_PACKAGE_VERSION_PATCH}")
-endif()
-
-# The API version tracks the numerical Gromacs version (for now).
-# It is potentially different from the Gromacs version in the future, if
-# the programs/libraries diverge from the presumably more stable API.
-# The #define GMX_API_VERSION in version.h is set to this value to
-# provide backward compatibility of software written against the Gromacs API.
-set(API_VERSION ${NUM_VERSION})
+# Set up common version variables, as well as general information about
+# the build tree (whether the build is from a source package or from a git
+# repository).  Also declares a few functions that will be used for generating
+# version info files later.
+include(gmxVersionInfo)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
     set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
-set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
-mark_as_advanced(GMX_INSTALL_PREFIX)
-
 include(gmxBuildTypeReference)
-include(gmxBuildTypeThreadSanitizer)
+include(gmxBuildTypeProfile)
+include(gmxBuildTypeTSAN)
+include(gmxBuildTypeASAN)
 include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert Profile." FORCE)
     # There's no need to offer a user the choice of ThreadSanitizer
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert")
+        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
     # Add appropriate GROMACS-specific build types for the Visual
@@ -115,22 +81,30 @@ if(CMAKE_CONFIGURATION_TYPES)
         "List of configuration types"
         FORCE)
 endif()
-set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL)
+set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
 
-enable_language(C)
-enable_language(CXX)
-
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
+set(CPACK_PACKAGE_NAME "gromacs")
+set(CPACK_PACKAGE_VERSION_MAJOR ${GMX_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${GMX_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${GMX_VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION       ${GMX_VERSION_STRING})
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
 set(CPACK_PACKAGE_VENDOR "gromacs.org")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance molecular simulation")
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 # Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
-set(CPACK_SOURCE_IGNORE_FILES "\\\\.isreposource$;\\\\.git/;\\\\.gitignore$")
+set(CPACK_SOURCE_IGNORE_FILES "\\\\.isreposource$;\\\\.git/;\\\\.gitignore$;\\\\.gitattributes;")
 set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/share/man/man1;share/man/man1;${CMAKE_BINARY_DIR}/share/man/man7;share/man/man7;${CMAKE_BINARY_DIR}/share/html/final;share/html/final")
+# CPack source archives include only the directories we list here.
+# This variable is a list of pairs of names of source and destination
+# directories. Most of these are used for content GROMACS generates as
+# part of the configuration or build.
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/docs/man/man1;docs/man/man1;${CMAKE_BINARY_DIR}/docs/man/man7;docs/man/man7;${CMAKE_BINARY_DIR}/docs/old-html/final;docs/old-html/final;${CMAKE_BINARY_DIR}/docs/install-guide/final;/")
 set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
+set(CPACK_GMX_BUILD_HELP "${GMX_BUILD_HELP}") #Works even though GMX_BUILD_HELP is defined later because it is off by default.
 
 #must come after all cpack settings!
 include(CPack)
@@ -144,14 +118,9 @@ set(MEMORYCHECK_SUPPRESSIONS_FILE
     "File that contains suppressions for the memory checker")
 include(CTest)
 
-set(SOURCE_IS_GIT_REPOSITORY OFF)
-set(SOURCE_IS_SOURCE_DISTRIBUTION OFF)
-if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
-    set(SOURCE_IS_GIT_REPOSITORY ON)
-endif()
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/admin/.isreposource")
-    set(SOURCE_IS_SOURCE_DISTRIBUTION ON)
-endif()
+# Variables that accumulate stuff influencing the installed headers
+set(INSTALLED_HEADER_INCLUDE_DIRS "")
+set(INSTALLED_HEADER_DEFINITIONS "")
 
 ########################################################################
 # Check and warn if cache generated on a different host is being reused
@@ -171,13 +140,32 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
+# Detect architecture before setting options so we can alter defaults
+########################################################################
+# Detect the architecture the compiler is targetting, detect
+# SIMD instructions possibilities on that hardware, suggest SIMD instruction set
+# to use if none is specified, and populate the cache option for CPU
+# SIMD.
+include(gmxDetectTargetArchitecture)
+gmx_detect_target_architecture()
+
+########################################################################
 # User input options                                                   #
 ########################################################################
 include(gmxOptionUtilities)
 
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
+if(GMX_TARGET_FUJITSU_SPARC64)
+    # Fujitsu only has SIMD in double precision, so this will be faster
+    set(GMX_DOUBLE_DEFAULT ON)
+else()
+    set(GMX_DOUBLE_DEFAULT OFF)
+endif()
+option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
+option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
+mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
+
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
 gmx_dependent_option(
@@ -195,19 +183,21 @@ option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
-# decide on GPU settings based on user-settings and GPU/CUDA detection
+# Decide on GPU settings based on user-settings and GPU/CUDA detection.
+# We support CUDA >=v4.0 on *nix, but <= v4.1 doesn't work with MSVC
+if(MSVC)
+    set(REQUIRED_CUDA_VERSION 4.1)
+else()
+    set(REQUIRED_CUDA_VERSION 4.0)
+endif()
+set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 include(gmxManageGPU)
-
-# Detect the architecture the compiler is targetting, detect
-# SIMD instructions possibilities on that hardware, suggest SIMD instruction set
-# to use if none is specified, and populate the cache option for CPU
-# SIMD.
-include(gmxDetectTargetArchitecture)
-gmx_detect_target_architecture()
 
 if(GMX_CPU_ACCELERATION)
     # Stay compatible with old Jenkins command line options for specific SIMD acceleration
     set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
+    message("You set GMX_CPU_ACCELERATION, which is deprecated, and will be removed in a later version of GROMACS. It is replaced by GMX_SIMD. For now, copying the value from GMX_CPU_ACCELERATION to GMX_SIMD.")
+    # TODO remove all references to GMX_CPU_ACCELERATION in master branch
 endif()
 
 if(NOT GMX_TARGET_MIC)
@@ -221,7 +211,7 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_SIMD}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 IBM_QPX Sparc64_HPC_ACE Reference)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 ARM_NEON ARM_NEON_ASIMD IBM_QPX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
@@ -262,9 +252,6 @@ option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
 
-option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_REPOSITORY})
-mark_as_advanced(GMX_GIT_VERSION_INFO)
-
 if(UNIX)
     option(GMX_SYMLINK_OLD_BINARY_NAMES "Create symbolic links for pre-5.0 binary names" ON)
 endif()
@@ -281,6 +268,10 @@ option(GMX_BUILD_FOR_COVERAGE
        OFF)
 mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
+option(GMX_DEVELOPER_BUILD
+    "Enable Developer convenience features: always build unit-tests"
+    OFF)
+mark_as_advanced(GMX_DEVELOPER_BUILD)
 
 ######################################################################
 # Detect OpenMP support
@@ -296,13 +287,19 @@ include(gmxManageOpenMP)
 #####################################################################
 
 # The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
-# are used with permission from CMake v2.8.9 so that GROMACS can detect
-# invalid options with the Intel Compilers.
+# are used with permission from CMake v3.0.0 so that GROMACS can detect
+# invalid options with the Intel Compilers, and we have added a line
+# to detect warnings with the Fujitsu compilers on K computer and ICC.
+# CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
+# a semicolon. Since this is also used as a separator in lists inside CMake,
+# that string ends up being split into two separate patterns, and the last
+# part is just a single word that also matches other messages. We solved this
+# by replacing the semicolon with a period that matches any character.
+#
 # These files should be removed from the source tree when a CMake version that
 # includes the features in question becomes required for building GROMACS.
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-
 
 include(gmxCFlags)
 gmx_c_flags()
@@ -315,27 +312,33 @@ set(EXTRA_CXX_FLAGS "")
 # Run through a number of tests for buggy compilers and other issues
 include(gmxTestCompilerProblems)
 gmx_test_compiler_problems()
+# GMX_SIMD will not be set automatically until the second
+# pass (which is not strictly guaranteed to occur), so putting this
+# check here among logically-related tests is inefficient, but the
+# potential loss is likely zero.
+if(GMX_SIMD STREQUAL "AVX_256"
+        AND CMAKE_COMPILER_IS_GNUCC
+        AND (C_COMPILER_VERSION VERSION_EQUAL "4.6.1"
+            OR CXX_COMPILER_VERSION VERSION_EQUAL "4.6.1"))
+    message(FATAL_ERROR "gcc 4.6.1 has buggy support for AVX, and GROMACS mdrun will not work. If you want simulation performance, use a more recent compiler. Otherwise, use GMX_SIMD=SSE4.1")
+    # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
+endif()
 
 
-set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
     add_definitions(-DGMX_DOUBLE)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
+    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE")
+    if(GMX_RELAXED_DOUBLE_PRECISION)
+        add_definitions(-DGMX_RELAXED_DOUBLE_PRECISION)
+    endif()
 endif()
 if(GMX_SOFTWARE_INVSQRT)
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
+    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
 endif()
 
 if(WIN32 AND NOT CYGWIN)
-    set(GMX_WSOCKLIB_PATH CACHE PATH "Path to winsock (wsock32.lib) library.")
-    mark_as_advanced(GMX_WSOCKLIB_PATH)
-    find_library(WSOCK32_LIBRARY NAMES wsock32 PATHS ${GMX_WSOCKLIB_PATH})
-    if(WSOCK32_LIBRARY)
-        list(APPEND GMX_EXTRA_LIBRARIES ${WSOCK32_LIBRARY})
-        add_definitions(-DGMX_HAVE_WINSOCK)
-    else()
-        message(STATUS "No winsock found. Cannot use interactive molecular dynamics (IMD).")
-    endif(WSOCK32_LIBRARY)
+    list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
+    add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
 
 
@@ -369,8 +372,6 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(sigaction         HAVE_SIGACTION)
 check_function_exists(sysconf           HAVE_SYSCONF)
-check_function_exists(sched_setaffinity HAVE_SCHED_SETAFFINITY)
-check_function_exists(sched_getaffinity HAVE_SCHED_GETAFFINITY)
 check_function_exists(rsqrt             HAVE_RSQRT)
 check_function_exists(rsqrtf            HAVE_RSQRTF)
 check_function_exists(sqrtf             HAVE_SQRTF)
@@ -378,6 +379,9 @@ check_function_exists(sqrtf             HAVE_SQRTF)
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
+
+include(TestSchedAffinity)
+test_sched_affinity(HAVE_SCHED_AFFINITY)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
@@ -391,6 +395,10 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 # things can be sorted out now, before the detection takes place.
 if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
     include(gmxManageBlueGene)
+endif()
+
+if(GMX_TARGET_FUJITSU_SPARC64)
+    include(gmxManageFujitsuSparc64)
 endif()
 
 ########################################################################
@@ -413,6 +421,9 @@ include(gmxManageSharedLibraries)
 # tests. This exports LIBXML2_FOUND, which we should not use because
 # it does not tell us that linking will succeed. Instead, we test that
 # next.
+if(DEFINED LIBXML2_LIBRARIES)
+  set(LibXml2_FIND_QUIETLY TRUE)
+endif()
 find_package(LibXml2)
 include(gmxTestLibXml2)
 gmx_test_libxml2(HAVE_LIBXML2)
@@ -468,6 +479,19 @@ if (GMX_ALEXANDRIA)
   endif(OPENBABEL2_FOUND)
 endif (GMX_ALEXANDRIA)
 
+option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
+mark_as_advanced(GMX_EXTRAE)
+
+if (GMX_EXTRAE)
+  find_package(EXTRAE)
+  if(EXTRAE_FOUND)
+    include_directories(${EXTRAE_INCLUDE_DIR})
+    set(HAVE_EXTRAE 1)
+  else()
+    message(FATAL_ERROR "EXTRAE library was not found. Please add the correct path to CMAKE_PREFIX_PATH")
+  endif()
+endif()
+
 option(GMX_X11 "Use X window system" OFF)
 if (GMX_X11)
     find_package(X11)
@@ -513,25 +537,6 @@ if(WIN32 AND NOT CYGWIN)
     add_definitions(-DNOMINMAX)
 endif()
 
-# only bother with finding git and using version.h if the source is a git repo
-if(GMX_GIT_VERSION_INFO)
-    if (NOT SOURCE_IS_GIT_REPOSITORY)
-        message(FATAL_ERROR
-            "Cannot generate git version information from source tree not under git. "
-            "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
-    endif()
-    # We need at least git v1.5.3 be able to parse git's date output. If not
-    # found or the version is too small, we can't generate version information.
-    find_package(Git)
-
-    if(NOT GIT_FOUND OR GIT_VERSION_STRING VERSION_LESS "1.5.3")
-        message(FATAL_ERROR
-            "No compatible git version found (>= 1.5.3 required). "
-            "Won't be able to generate development version information. "
-            "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
-    endif()
-endif()
-
 # Detect boost unless GMX_EXTERNAL_BOOST is explicitly OFF
 # Used for default if GMX_EXTERNAL_BOOST is not defined (first CMake pass)
 if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
@@ -555,6 +560,9 @@ if(GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
         "version of Boost included with Gromacs.")
 endif()
 
+if(NOT DEFINED GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
+    message(WARNING "libxml2 not found. Will build GROMACS without unit-tests. This is not recommended, because the unit-tests help to verify that GROMACS functions correctly. Most likely you are missing the libxml2-dev(el) package. After you installed it, set GMX_BUILD_UNITTESTS=ON.")
+endif()
 option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ${HAVE_LIBXML2})
 mark_as_advanced(GMX_BUILD_UNITTESTS)
 gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
@@ -564,25 +572,22 @@ if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
         "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
 endif()
 
-########################################################################
-# Generate development version info for cache
-########################################################################
-# set(GEN_VERSION_INFO_INTERNAL "ON")
-# include(gmxGenerateVersionString)
+if(GMX_USE_TNG AND NOT GMX_EXTERNAL_TNG)
+    # TNG wants zlib if it is available
+    find_package(ZLIB QUIET)
+    include(gmxTestZLib)
+    gmx_test_zlib(HAVE_ZLIB)
+endif()
 
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
 
 add_definitions( -DHAVE_CONFIG_H )
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
-include_directories(${CMAKE_BINARY_DIR}/src)
-# Required for gmx_header_config_gen.h to be found before installation
-include_directories(${CMAKE_BINARY_DIR}/src/gromacs/utility)
-# Required for now to make old code compile
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
+include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
@@ -596,7 +601,7 @@ gmx_set_build_information()
 # Note: it's better to not use the later set value of GMX_SIMD because
 # it reflects the system's capability of both compiling and running AVX code.
 # TODO: After merge with 5.0 one could implement a cache variable dependency
-# such that GMX_USE_RDTSCP can change if GMX_CPU_ACCELERATION is changed to AVX
+# such that GMX_USE_RDTSCP can change if GMX_SIMD is changed to AVX
 # after the first cmake pass.
 if (BUILD_CPU_FEATURES MATCHES "rdtscp" OR GMX_SIMD MATCHES "AVX")
     set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
@@ -697,10 +702,7 @@ if(GMX_LOAD_PLUGINS)
   # so, should we use plug-ins?
   if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
     if(NOT VMD_QUIETLY)
-      MESSAGE(STATUS
-          "Found the ability to use plug-ins when building shared libaries, "
-          "so will compile to use plug-ins (e.g. to read VMD-supported file "
-          "formats).")
+      MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
     endif()
     if(NOT GMX_VMD_PLUGIN_PATH)
       find_package(VMD)
@@ -779,43 +781,75 @@ else()
     set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
     set(GMX_SHARED_LINKER_FLAGS ${GMX_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS})
 endif()
-set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 
 ########################################################################
 # Specify install locations
 ########################################################################
-set(GMX_LIB_INSTALL_DIR lib CACHE STRING
-    "Library installation directory (default: lib)")
+# Use GNUInstallDirs to set paths on multiarch systems.
+include(GNUInstallDirs)
+
+# Customization for the installation tree paths.
+set(GMX_LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING
+    "Library installation directory (default: ${CMAKE_INSTALL_LIBDIR})")
 set(GMX_DATA_INSTALL_DIR gromacs CACHE STRING
     "Data installation directory under share/ (default: gromacs)")
 mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
 
-set(LIB_INSTALL_DIR  ${GMX_INSTALL_PREFIX}${GMX_LIB_INSTALL_DIR})
-set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
-set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/${GMX_DATA_INSTALL_DIR})
-set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
-set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
+# These variables are used internally to provide a central location for
+# customizing the install locations.
+set(LIB_INSTALL_DIR       ${GMX_LIB_INSTALL_DIR})
+set(BIN_INSTALL_DIR       bin)
+set(DATA_INSTALL_DIR      share/${GMX_DATA_INSTALL_DIR})
+set(MAN_INSTALL_DIR       share/man)
+# If the nesting level wrt. the installation root is changed,
+# gromacs-config.cmake.cmakein needs to be adapted.
+set(CMAKE_INSTALL_DIR     share/cmake)
+# TODO: Make GMXRC adapt if this is changed
+set(PKGCONFIG_INSTALL_DIR ${LIB_INSTALL_DIR}/pkgconfig)
+set(INCL_INSTALL_DIR      include)
 
+# These variables get written into config.h for use in finding the data
+# directories.
 set(GMXLIB_SEARCH_DIR share/${GMX_DATA_INSTALL_DIR}/top)
 set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
+
+list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR})
 
 # Binary and library suffix options
 include(gmxManageSuffixes)
 
-##################################################################
-# Shared library settings
-##################################################################
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+################################################################
+# Shared library load path settings
+################################################################
+# CMake supports RPATH on OS X only from 2.8.12 upwards.
+# CMAKE_SYSTEM_VERSION > 8.0 matches OS X 10.5 and above, where RPATH support
+# was added.
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
+   ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
+    # The build folder always has bin/ and lib/; if we are also going to
+    # install to lib/, then the installation RPATH works also in the build
+    # tree.  This makes installation slightly faster (no need to rewrite the
+    # RPATHs), and makes the binaries in the build tree relocatable.
     if(GMX_LIB_INSTALL_DIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     endif()
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
+    # Set the RPATH as relative to the executable location to make the
+    # binaries relocatable.
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
+    else()
+        set(CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
+    endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    set(CMAKE_MACOSX_RPATH 1)
 else()
-    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) #rpath supported for >10.4
+    # We are on Darwin/OSX, and CMake cannot handle RPATHs automatically.
+    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0)
+        # Set the RPATH options manually.
         set(CMAKE_INSTALL_NAME_DIR "@rpath")
         set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} "-Wl,-rpath,@executable_path/../${GMX_LIB_INSTALL_DIR}")
     else()
+        # Use the old INSTALL_NAME_DIR mechanism if RPATH is not supported.
         set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
     endif()
 endif()
@@ -826,41 +860,20 @@ install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
 
 if(GMX_EXTERNAL_BOOST)
     include_directories(${Boost_INCLUDE_DIRS})
-    set(PKG_CFLAGS "${PKG_CFLAGS} -I${Boost_INCLUDE_DIRS}")
+    list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 else()
-    include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
+    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/boost)
+    list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR}/gromacs/external/boost)
+    list(APPEND INSTALLED_HEADED_DEFINITIONS "-DBOOST_NO_TYPEID")
     # typeid not supported for minimal internal version
     # (would add significant amount of code)
     add_definitions(-DBOOST_NO_TYPEID)
-    # TODO: Propagate the above settings to the installed CMakeFiles.txt template
-    # (from share/template/)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${CMAKE_INSTALL_PREFIX}/${INCL_INSTALL_DIR}/gromacs/external/boost")
     if (NOT GMX_BUILD_MDRUN_ONLY)
         install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
                 DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
                 COMPONENT development)
     endif()
 endif()
-
-if(GMX_USE_TNG)
-    find_package(ZLIB QUIET)
-    include(gmxTestZLib)
-    gmx_test_zlib(HAVE_ZLIB)
-    set(TNG_BUILD_WITH_ZLIB ${HAVE_ZLIB} CACHE BOOL  "Build TNG with zlib compression")
-    set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
-    set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
-    set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
-    set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
-    set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
-    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
-    set(GMX_TNG_LIBRARIES tng_io)
-endif()
-mark_as_advanced(TNG_BUILD_FORTRAN)
-mark_as_advanced(TNG_BUILD_EXAMPLES)
-mark_as_advanced(TNG_BUILD_COMPRESSION_TESTS)
-mark_as_advanced(TNG_BUILD_DOCUMENTATION)
-mark_as_advanced(TNG_BUILD_TEST)
-mark_as_advanced(TNG_EXAMPLE_FILES_DIR)
 
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
@@ -887,7 +900,7 @@ if (BUILD_TESTING)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    add_subdirectory(doxygen)
+    add_subdirectory(docs)
     add_subdirectory(share)
     add_subdirectory(scripts)
 endif()
@@ -907,24 +920,13 @@ set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has alread
 #######################
 ## uninstall target
 #######################
-    CONFIGURE_FILE(
-                   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
-                   IMMEDIATE @ONLY)
+CONFIGURE_FILE(   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+                  "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+                  IMMEDIATE @ONLY)
 ###########################
 ADD_CUSTOM_TARGET(uninstall
                   "${CMAKE_COMMAND}" -P
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
-
-########################################################################
-# Manual                                                               #
-########################################################################
-
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_MANUAL)
-if(GMX_BUILD_MANUAL)
-    # Make sure we only do detection of manual-building dependencies
-    # when the user opted in for that.
-    add_subdirectory(manual)
-endif()
+set_directory_properties(PROPERTIES
+            ADDITIONAL_MAKE_CLEAN_FILES "install_manifest.txt")

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,12 +39,21 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
-#include "gromacs/options/timeunitmanager.h"
+#include "gmxpre.h"
+
+#include "timeunitmanager.h"
+
+#include <cstdlib>
+
+#include <algorithm>
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace
 {
@@ -106,6 +115,27 @@ double TimeUnitManager::timeScaleFactor() const
 double TimeUnitManager::inverseTimeScaleFactor() const
 {
     return 1.0 / timeScaleFactor();
+}
+
+void TimeUnitManager::setTimeUnitFromEnvironment()
+{
+    const char *const value = std::getenv("GMXTIMEUNIT");
+    if (value != NULL)
+    {
+        ConstArrayRef<const char *>                 timeUnits(g_timeUnits);
+        ConstArrayRef<const char *>::const_iterator i =
+            std::find(timeUnits.begin(), timeUnits.end(), std::string(value));
+        if (i == timeUnits.end())
+        {
+            std::string message = formatString(
+                        "Time unit provided with environment variable GMXTIMEUNIT=%s "
+                        "is not recognized as a valid time unit.\n"
+                        "Possible values are: %s",
+                        value, joinStrings(timeUnits, ", ").c_str());
+            GMX_THROW(InvalidInputError(message));
+        }
+        timeUnit_ = i - timeUnits.begin();
+    }
 }
 
 void TimeUnitManager::addTimeUnitOption(Options *options, const char *name)

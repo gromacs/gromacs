@@ -32,6 +32,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/* This software has been altered by GROMACS for its use, including
+ * the renaming of the functions md5_init, md5_append and md5_finish
+ * to have a gmx_ prefix, and the #include guard md5_INCLUDED to have
+ * a GMX_ prefix (both to avoid name clashes). */
 /*
    Copyright (C) 1999, 2000, 2002 Aladdin Enterprises.  All rights reserved.
 
@@ -80,8 +84,8 @@
    1999-05-03 lpd Original version.
  */
 
-#ifndef md5_INCLUDED
-#  define md5_INCLUDED
+#ifndef GMX_md5_INCLUDED
+#  define GMX_md5_INCLUDED
 
 /*
  * This package supports both compile-time and run-time determination of CPU
@@ -109,16 +113,16 @@ extern "C"
 #endif
 
 /* Initialize the algorithm. */
-void md5_init(md5_state_t *pms);
+void gmx_md5_init(md5_state_t *pms);
 
 /* Append a string to the message. */
-void md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes);
+void gmx_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes);
 
 /* Finish the message and return the digest. */
-void md5_finish(md5_state_t *pms, md5_byte_t digest[16]);
+void gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16]);
 
 #ifdef __cplusplus
 }  /* end extern "C" */
 #endif
 
-#endif /* md5_INCLUDED */
+#endif

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,27 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "physics.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/commandline/pargs.h"
-#include "index.h"
-#include "macros.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
-#include "gstat.h"
-#include "vec.h"
-#include "gmx_ana.h"
-#include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_rotacf(int argc, char *argv[])
 {
@@ -102,7 +99,7 @@ int gmx_rotacf(int argc, char *argv[])
     int             ePBC;
     t_filenm        fnm[] = {
         { efTRX, "-f", NULL,  ffREAD  },
-        { efTPX, NULL, NULL,  ffREAD },
+        { efTPR, NULL, NULL,  ffREAD },
         { efNDX, NULL, NULL,  ffREAD  },
         { efXVG, "-o", "rotacf",  ffWRITE }
     };
@@ -115,7 +112,7 @@ int gmx_rotacf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -143,7 +140,7 @@ int gmx_rotacf(int argc, char *argv[])
                   "these can not be atom doublets\n");
     }
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
 
     snew(c1, nvec);
     for (i = 0; (i < nvec); i++)

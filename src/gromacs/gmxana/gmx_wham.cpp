@@ -41,9 +41,9 @@
  *  \author Jochen Hub <jhub@gwdg.de>
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "config.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -53,20 +53,26 @@
 #include <sstream>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "names.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gmx_ana.h"
-#include "macros.h"
-#include "string2.h"
-#include "xvgr.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 //! longest file names allowed in input files
 #define WHAM_MAXFILELEN 2048
+
+/*! \brief
+ * x-axis legend for output files
+ */
+static const char *xlabel = "\\xx\\f{} (nm)";
 
 /*! \brief
  * enum for energy units
@@ -1207,7 +1213,7 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
         snew(fn, strlen(fnhist)+10);
         snew(buf, strlen(fnhist)+10);
         sprintf(fn, "%s_cumul.xvg", strncpy(buf, fnhist, strlen(fnhist)-4));
-        fp = xvgropen(fn, "CDFs of umbrella windows", "z", "CDF", opt->oenv);
+        fp = xvgropen(fn, "CDFs of umbrella windows", xlabel, "CDF", opt->oenv);
     }
 
     nbin = opt->bins;
@@ -1453,11 +1459,11 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
     }
     else
     {
-        fn = strdup(fnhist);
+        fn = gmx_strdup(fnhist);
         strcpy(title, "Umbrella histograms");
     }
 
-    fp   = xvgropen(fn, title, "z", "count", opt->oenv);
+    fp   = xvgropen(fn, title, xlabel, "count", opt->oenv);
     bins = opt->bins;
 
     /* Write histograms */
@@ -1630,7 +1636,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
     }
 
     /* do bootstrapping */
-    fp = xvgropen(fnprof, "Boot strap profiles", "z", ylabel, opt->oenv);
+    fp = xvgropen(fnprof, "Boot strap profiles", xlabel, ylabel, opt->oenv);
     for (ib = 0; ib < opt->nBootStrap; ib++)
     {
         printf("  *******************************************\n"
@@ -1716,13 +1722,16 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
             bsProfiles_av2[i] += tmp*tmp;
             fprintf(fp, "%e\t%e\n", (i+0.5)*opt->dz+opt->min, tmp);
         }
-        fprintf(fp, "&\n");
+        fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
     }
     gmx_ffclose(fp);
 
     /* write average and stddev */
-    fp = xvgropen(fnres, "Average and stddev from bootstrapping", "z", ylabel, opt->oenv);
-    fprintf(fp, "@TYPE xydy\n");
+    fp = xvgropen(fnres, "Average and stddev from bootstrapping", xlabel, ylabel, opt->oenv);
+    if (output_env_get_print_xvgr_codes(opt->oenv))
+    {
+        fprintf(fp, "@TYPE xydy\n");
+    }
     for (i = 0; i < opt->bins; i++)
     {
         bsProfiles_av [i] /= opt->nBootStrap;
@@ -2683,7 +2692,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
                 {
                     fprintf(fpcorr, "%g  %g\n", k*dt, corr[k]);
                 }
-                fprintf(fpcorr, "&\n");
+                fprintf(fpcorr, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
             }
 
             /* esimate integrated correlation time, fitting is too unstable */
@@ -2710,17 +2719,20 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
     }
 
     /* plot IACT along reaction coordinate */
-    fp = xvgropen(fn, "Integrated autocorrelation times", "z", "IACT [ps]", opt->oenv);
-    fprintf(fp, "@    s0 symbol 1\n@    s0 symbol size 0.5\n@    s0 line linestyle 0\n");
-    fprintf(fp, "#  WIN   tau(gr1)  tau(gr2) ...\n");
-    for (i = 0; i < nwins; i++)
+    fp = xvgropen(fn, "Integrated autocorrelation times", xlabel, "IACT [ps]", opt->oenv);
+    if (output_env_get_print_xvgr_codes(opt->oenv))
     {
-        fprintf(fp, "# %3d   ", i);
-        for (ig = 0; ig < window[i].nPull; ig++)
+        fprintf(fp, "@    s0 symbol 1\n@    s0 symbol size 0.5\n@    s0 line linestyle 0\n");
+        fprintf(fp, "#  WIN   tau(gr1)  tau(gr2) ...\n");
+        for (i = 0; i < nwins; i++)
         {
-            fprintf(fp, " %11g", window[i].tau[ig]);
+            fprintf(fp, "# %3d   ", i);
+            for (ig = 0; ig < window[i].nPull; ig++)
+            {
+                fprintf(fp, " %11g", window[i].tau[ig]);
+            }
+            fprintf(fp, "\n");
         }
-        fprintf(fp, "\n");
     }
     for (i = 0; i < nwins; i++)
     {
@@ -2735,8 +2747,12 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
                opt->sigSmoothIact);
         /* smooth IACT along reaction coordinate and overwrite g=1+2tau */
         smoothIact(window, nwins, opt);
-        fprintf(fp, "&\n@    s1 symbol 1\n@    s1 symbol size 0.5\n@    s1 line linestyle 0\n");
-        fprintf(fp, "@    s1 symbol color 2\n");
+        fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
+        if (output_env_get_print_xvgr_codes(opt->oenv))
+        {
+            fprintf(fp, "@    s1 symbol 1\n@    s1 symbol size 0.5\n@    s1 line linestyle 0\n");
+            fprintf(fp, "@    s1 symbol color 2\n");
+        }
         for (i = 0; i < nwins; i++)
         {
             for (ig = 0; ig < window[i].nPull; ig++)
@@ -2943,7 +2959,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
                     nHist++;
                     fAv += window[i].forceAv[ig];
                 }
-                /* at the same time, rememer closest histogram */
+                /* at the same time, remember closest histogram */
                 if (dist < distmin)
                 {
                     winmin   = i;
@@ -2979,7 +2995,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
     }
     if (opt->verbose)
     {
-        fp = xvgropen("pmfintegrated.xvg", "PMF from force integration", "z", "PMF [kJ/mol]", opt->oenv);
+        fp = xvgropen("pmfintegrated.xvg", "PMF from force integration", xlabel, "PMF (kJ/mol)", opt->oenv);
         for (j = 0; j < opt->bins; ++j)
         {
             fprintf(fp, "%g  %g\n", (j+0.5)*dz+opt->min, pot[j]);
@@ -3369,7 +3385,7 @@ int gmx_wham(int argc, char *argv[])
     opt.stepchange            = 100;
     opt.stepUpdateContrib     = 100;
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, 0,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &opt.oenv))
     {
         return 0;
@@ -3490,7 +3506,7 @@ int gmx_wham(int argc, char *argv[])
 
     /* write histograms */
     histout = xvgropen(opt2fn("-hist", NFILE, fnm), "Umbrella histograms",
-                       "z", "count", opt.oenv);
+                       xlabel, "count", opt.oenv);
     for (l = 0; l < opt.bins; ++l)
     {
         fprintf(histout, "%e\t", (double)(l+0.5)/opt.bins*(opt.max-opt.min)+opt.min);
@@ -3599,7 +3615,7 @@ int gmx_wham(int argc, char *argv[])
     }
 
     /* write profile or density of states */
-    profout = xvgropen(opt2fn("-o", NFILE, fnm), title, "z", ylabel, opt.oenv);
+    profout = xvgropen(opt2fn("-o", NFILE, fnm), title, xlabel, ylabel, opt.oenv);
     for (i = 0; i < opt.bins; ++i)
     {
         fprintf(profout, "%e\t%e\n", (double)(i+0.5)/opt.bins*(opt.max-opt.min)+opt.min, profile[i]);

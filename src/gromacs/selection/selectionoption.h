@@ -43,10 +43,9 @@
 #ifndef GMX_SELECTION_SELECTIONOPTION_H
 #define GMX_SELECTION_SELECTIONOPTION_H
 
-#include "../options/abstractoption.h"
-
-#include "selection.h"
-#include "selectionenums.h"
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
 
 namespace gmx
 {
@@ -59,6 +58,10 @@ class SelectionOptionStorage;
  * Specifies an option that provides selection(s).
  *
  * Public methods in this class do not throw.
+ *
+ * To use options of this type, SelectionOptionManager must first be added to
+ * the Options collection.  For trajectory analysis tools, the framework takes
+ * care of this.
  *
  * \todo
  * Support for specifying that an option accepts, e.g., two to four selections.
@@ -145,7 +148,8 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         using MyBase::defaultValue;
         using MyBase::defaultValueIfSet;
 
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const;
 
         const char             *defaultText_;
         SelectionFlags          selectionFlags_;
@@ -210,22 +214,6 @@ class SelectionOptionInfo : public OptionInfo
          * Does not throw.
          */
         explicit SelectionOptionInfo(SelectionOptionStorage *option);
-
-        /*! \brief
-         * Set manager for handling interaction with other options and the
-         * selection collection.
-         *
-         * \param   manager  Selection manager to set.
-         *
-         * This must be called before the values are added.
-         *
-         * Typically it is called through setManagerForSelectionOptions(),
-         * which recursively sets the manager for all selection options in
-         * an Options object.
-         *
-         * Does not throw.
-         */
-        void setManager(SelectionOptionManager *manager);
 
         /*! \brief
          * Sets the number of selections allowed for the option.

@@ -34,37 +34,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/force.h"
+
+#include "config.h"
+
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "physics.h"
-#include "force.h"
-#include "nonbonded.h"
-#include "names.h"
-#include "network.h"
-#include "pbc.h"
-#include "ns.h"
-#include "nrnb.h"
-#include "bondf.h"
-#include "mshift.h"
-#include "txtdump.h"
-#include "coulomb.h"
-#include "pme.h"
-#include "mdrun.h"
-#include "domdec.h"
-#include "qmmm.h"
-#include "gmx_omp_nthreads.h"
 
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/qmmm.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void ns(FILE              *fp,
         t_forcerec        *fr,
@@ -137,13 +139,7 @@ static void reduce_thread_forces(int n, rvec *f,
     }
 }
 
-void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda)
-{
-    fprintf(fplog, "  %-30s V %12.5e  dVdl %12.5e\n", s, v, dvdlambda);
-}
-
-void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
-                       t_forcerec *fr,      t_inputrec *ir,
+void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
                        t_mdatoms  *md,
@@ -154,7 +150,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                        t_fcdata   *fcd,
                        gmx_localtop_t *top,
                        gmx_genborn_t *born,
-                       t_atomtypes *atype,
                        gmx_bool       bBornRadii,
                        matrix     box,
                        t_lambda   *fepvals,
@@ -167,7 +162,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
 {
     int         i, j;
     int         donb_flags;
-    gmx_bool    bDoEpot, bSepDVDL, bSB;
+    gmx_bool    bDoEpot, bSB;
     int         pme_flags;
     matrix      boxs;
     rvec        box_size;
@@ -180,8 +175,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
 #ifdef GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
-
-#define PRINT_SEPDVDL(s, v, dvdlambda) if (bSepDVDL) { gmx_print_sepdvdl(fplog, s, v, dvdlambda); }
 
     set_pbc(&pbc, fr->ePBC, box);
 
@@ -198,19 +191,12 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         box_size[i] = box[i][i];
     }
 
-    bSepDVDL = (fr->bSepDVDL && do_per_step(step, ir->nstlog));
     debug_gmx();
 
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
         enerd->term[F_EQM] = calculate_QMMM(cr, x, f, fr);
-    }
-
-    if (bSepDVDL)
-    {
-        fprintf(fplog, "Step %s: non-bonded V and dVdl for node %d:\n",
-                gmx_step_str(step, buf), cr->nodeid);
     }
 
     /* Call the short range functions all in one go. */
@@ -230,7 +216,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         /* foreign lambda component for walls */
         real dvdl_walls = do_walls(ir, fr, box, md, x, f, lambda[efptVDW],
                                    enerd->grpp.ener[egLJSR], nrnb);
-        PRINT_SEPDVDL("Walls", 0.0, dvdl_walls);
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }
 
@@ -348,24 +333,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
     }
 
-    if (bSepDVDL)
-    {
-        real V_short_range    = 0;
-        real dvdl_short_range = 0;
-
-        for (i = 0; i < enerd->grpp.nener; i++)
-        {
-            V_short_range +=
-                (fr->bBHAM ?
-                 enerd->grpp.ener[egBHAMSR][i] :
-                 enerd->grpp.ener[egLJSR][i])
-                + enerd->grpp.ener[egCOULSR][i] + enerd->grpp.ener[egGB][i];
-        }
-        dvdl_short_range = dvdl_nb[efptVDW] + dvdl_nb[efptCOUL];
-        PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",
-                      V_short_range,
-                      dvdl_short_range);
-    }
     debug_gmx();
 
 
@@ -409,11 +376,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
     if (flags & GMX_FORCE_BONDED)
     {
         wallcycle_sub_start(wcycle, ewcsBONDED);
-        calc_bonds(fplog, cr->ms,
-                   idef, x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
-                   flags,
-                   fr->bSepDVDL && do_per_step(step, ir->nstlog), step);
+        calc_bonds(cr->ms,
+                   idef, (const rvec *) x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
+                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+                   flags);
 
         /* Check if we have to determine energy differences
          * at foreign lambda's.
@@ -432,7 +398,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                 {
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
-                calc_bonds_lambda(fplog, idef, x, fr, &pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
+                calc_bonds_lambda(idef, (const rvec *) x, fr, &pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
                                   fcd, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
@@ -446,11 +412,19 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
     where();
 
     *cycles_pme = 0;
+    clear_mat(fr->vir_el_recip);
+    clear_mat(fr->vir_lj_recip);
+
+    /* Do long-range electrostatics and/or LJ-PME, including related short-range
+     * corrections.
+     */
     if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
-        real Vlr             = 0, Vcorr = 0;
-        real dvdl_long_range = 0;
-        int  status          = 0;
+        real Vlr               = 0, Vcorr = 0;
+        real dvdl_long_range   = 0;
+        int  status            = 0;
+        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
+        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
 
         bSB = (ir->nwall == 2);
         if (bSB)
@@ -459,20 +433,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
             svmul(ir->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
             box_size[ZZ] *= ir->wall_ewald_zfac;
         }
-    }
-
-    /* Do long-range electrostatics and/or LJ-PME, including related short-range
-     * corrections.
-     */
-
-    clear_mat(fr->vir_el_recip);
-    clear_mat(fr->vir_lj_recip);
-
-    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
-    {
-        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
-        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
-        int  status            = 0;
 
         if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
@@ -574,15 +534,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                                                    fr->vir_el_recip);
             }
 
-            PRINT_SEPDVDL("Ewald excl./charge/dip. corr.", Vcorr_q, dvdl_long_range_correction_q);
-            PRINT_SEPDVDL("Ewald excl. corr. LJ", Vcorr_lj, dvdl_long_range_correction_lj);
             enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction_q;
             enerd->dvdl_lin[efptVDW]  += dvdl_long_range_correction_lj;
-        }
 
-        if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)))
-        {
-            if (cr->duty & DUTY_PME)
+            if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)) && (cr->duty & DUTY_PME))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
@@ -654,7 +609,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                                         md->chargeA + md->homenr - fr->n_tpi,
                                         &Vlr_q);
                 }
-                PRINT_SEPDVDL("PME mesh", Vlr_q + Vlr_lj, dvdl_long_range_q+dvdl_long_range_lj);
             }
         }
 
@@ -665,7 +619,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                              box_size, cr, md->homenr,
                              fr->vir_el_recip, fr->ewaldcoeff_q,
                              lambda[efptCOUL], &dvdl_long_range_q, fr->ewald_table);
-            PRINT_SEPDVDL("Ewald long-range", Vlr_q, dvdl_long_range_q);
         }
 
         /* Note that with separate PME nodes we get the real energies later */
@@ -700,8 +653,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                                        fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
 
                 enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
-                PRINT_SEPDVDL("RF exclusion correction",
-                              enerd->term[F_RF_EXCL], dvdl_rf_excl);
             }
         }
     }
@@ -723,7 +674,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         fr->t_wait += t3-t2;
         if (fr->timesteps == 11)
         {
-            fprintf(stderr, "* PP load balancing info: node %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
+            fprintf(stderr, "* PP load balancing info: rank %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
                     cr->nodeid, gmx_step_str(fr->timesteps, buf),
                     100*fr->t_wait/(fr->t_wait+fr->t_fnbf),
                     (fr->t_fnbf+fr->t_wait)/fr->t_fnbf);

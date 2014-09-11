@@ -1,5 +1,6 @@
+#include <stdlib.h>
 #include <math.h>
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
@@ -31,7 +32,7 @@ F77_FUNC(dlagts,DLAGTS)(int *job,
     --a;
 
     *info = 0;
-    if (fabs(*job) > 2 || *job == 0) {
+    if (abs(*job) > 2 || *job == 0) {
 	*info = -1;
     } else if (*n < 0) {
 	*info = -2;
@@ -77,7 +78,7 @@ F77_FUNC(dlagts,DLAGTS)(int *job,
 	}
     }
 
-    if (fabs(fabs(*job)-1.0)<GMX_DOUBLE_MIN) {
+    if (1 == abs(*job)) {
 	i__1 = *n;
 	for (k = 2; k <= i__1; ++k) {
 	    if (in[k - 1] == 0) {

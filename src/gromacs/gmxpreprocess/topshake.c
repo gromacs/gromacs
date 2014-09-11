@@ -35,24 +35,21 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "topshake.h"
 
 #include <ctype.h>
 #include <math.h>
 
-#include "sysstuff.h"
-#include "physics.h"
-#include "macros.h"
-#include "readir.h"
-#include "typedefs.h"
-#include "topshake.h"
-#include "toppush.h"
-#include "toputil.h"
-#include "topdirs.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void copy_bond (t_params *pr, int to, int from)
 /* copies an entry in a bond list to another position.

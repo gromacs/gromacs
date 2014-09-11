@@ -38,7 +38,8 @@
 #ifndef GMX_FILEIO_FILENM_H
 #define GMX_FILEIO_FILENM_H
 
-#include "../legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,14 +48,14 @@ extern "C" {
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {
     efMDP,
-    efTRX, efTRO, efTRN, efTRR, efTRJ, efCOMPRESSED, efXTC, efTNG,
+    efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
     efEDR,
     efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR,
     efCPT,
     efLOG, efXVG, efOUT,
     efNDX,
     efTOP, efITP,
-    efTPX, efTPS, efTPR, efTPA, efTPB,
+    efTPS, efTPR,
     efTEX, efRTP, efATP, efHDB,
     efDAT, efDLG,
     efMAP, efEPS, efMAT, efM2P,
@@ -114,13 +115,11 @@ const char *ftp2desc(int ftp);
 const char *ftp2defnm(int ftp);
 /* Return default file name for file type */
 
+const char *ftp2defopt(int ftp);
+/* Return default option name for file type */
+
 const char *ftp2ftype(int ftp);
 /* Return Binary or ASCII depending on file type */
-
-void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     const char *deffnm, gmx_bool bReadNode);
-/* Parse command line for file names. When bKeep is set args are
- * not removed from argv. */
 
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
 /* Return the filename belonging to cmd-line option opt, or NULL when

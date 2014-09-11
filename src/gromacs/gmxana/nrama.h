@@ -38,10 +38,9 @@
 #ifndef GMX_GMXANA_NRAMA_H
 #define GMX_GMXANA_NRAMA_H
 
-#include "typedefs.h"
-#include "oenv.h"
-#include "mshift.h"
-#include "../fileio/trxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

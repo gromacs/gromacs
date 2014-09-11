@@ -44,10 +44,10 @@
 
 #include <string>
 
-#include "../options/optionstoragetemplate.h"
-#include "selection.h"
-#include "selectionenums.h"
-#include "selectionoption.h"
+#include "gromacs/options/optionstoragetemplate.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
+#include "gromacs/selection/selectionoption.h"
 
 namespace gmx
 {
@@ -69,15 +69,14 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
+         * \param     manager    Manager for this object.
          */
-        SelectionOptionStorage(const SelectionOption &settings);
+        SelectionOptionStorage(const SelectionOption  &settings,
+                               SelectionOptionManager *manager);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "selection"; }
         virtual std::string formatSingleValue(const Selection &value) const;
-
-        //! \copydoc SelectionOptionInfo::setManager()
-        void setManager(SelectionOptionManager *manager);
 
         /*! \brief
          * Adds selections to the storage.
@@ -127,7 +126,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         virtual void processAll();
 
         SelectionOptionInfo     info_;
-        SelectionOptionManager *manager_;
+        SelectionOptionManager &manager_;
         std::string             defaultText_;
         SelectionFlags          selectionFlags_;
 };

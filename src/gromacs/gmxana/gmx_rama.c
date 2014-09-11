@@ -34,25 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
-#include "sysstuff.h"
 #include <string.h>
-#include "typedefs.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "vec.h"
-#include "xvgr.h"
-#include "physics.h"
-#include "pbc.h"
-#include "gromacs/fileio/futil.h"
+
 #include "gromacs/commandline/pargs.h"
-#include "index.h"
-#include "nrama.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/nrama.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static void plot_rama(FILE *out, t_xrama *xr)
@@ -83,12 +80,12 @@ int gmx_rama(int argc, char *argv[])
     output_env_t oenv;
     t_filenm     fnm[] = {
         { efTRX, "-f", NULL,  ffREAD },
-        { efTPX, NULL, NULL,  ffREAD },
+        { efTPR, NULL, NULL,  ffREAD },
         { efXVG, NULL, "rama", ffWRITE }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, 0, NULL, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -96,16 +93,18 @@ int gmx_rama(int argc, char *argv[])
 
 
     snew(xr, 1);
-    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPX, NFILE, fnm), xr, 3);
+    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPR, NFILE, fnm), xr, 3);
 
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Ramachandran Plot", "Phi", "Psi", oenv);
     xvgr_line_props(out, 0, elNone, ecFrank, oenv);
     xvgr_view(out, 0.2, 0.2, 0.8, 0.8, oenv);
     xvgr_world(out, -180, -180, 180, 180, oenv);
-    fprintf(out, "@    xaxis  tick on\n@    xaxis  tick major 60\n@    xaxis  tick minor 30\n");
-    fprintf(out, "@    yaxis  tick on\n@    yaxis  tick major 60\n@    yaxis  tick minor 30\n");
-    fprintf(out, "@ s0 symbol 2\n@ s0 symbol size 0.4\n@ s0 symbol fill 1\n");
-
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(out, "@    xaxis  tick on\n@    xaxis  tick major 60\n@    xaxis  tick minor 30\n");
+        fprintf(out, "@    yaxis  tick on\n@    yaxis  tick major 60\n@    yaxis  tick minor 30\n");
+        fprintf(out, "@ s0 symbol 2\n@ s0 symbol size 0.4\n@ s0 symbol fill 1\n");
+    }
     j = 0;
     do
     {

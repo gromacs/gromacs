@@ -38,12 +38,15 @@
 #ifndef _disre_h
 #define _disre_h
 
-#include "sysstuff.h"
-#include "typedefs.h"
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_pbc;
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,
@@ -57,7 +60,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
  */
 
 void calc_disres_R_6(int nfa, const t_iatom *fa, const t_iparams ip[],
-                     const rvec *x, const t_pbc *pbc,
+                     const rvec *x, const struct t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist);
 /* Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints

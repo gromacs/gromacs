@@ -34,19 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/nrnb.h"
+
+#include <stdlib.h>
 #include <string.h>
-#include "types/commrec.h"
-#include "sysstuff.h"
-#include "gmx_fatal.h"
-#include "names.h"
-#include "macros.h"
-#include "nrnb.h"
-#include "main.h"
-#include "smalloc.h"
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     const char *name;
@@ -426,6 +424,15 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
         fprintf(out, " %-32s %16s %15.3f  %6.1f\n",
                 "Total", "", *mflop, tfrac);
         fprintf(out, "%s\n\n", myline);
+
+        if (nrnb->n[eNR_NBKERNEL_GENERIC] > 0)
+        {
+            fprintf(out,
+                    "WARNING: Using the slow generic C kernel. This is fine if you are\n"
+                    "comparing different implementations or MD software. Routine\n"
+                    "simulations should use a different non-bonded setup for much better\n"
+                    "performance.\n\n");
+        }
     }
 }
 
@@ -583,7 +590,7 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
 
     fprintf(log, "\nDetailed load balancing info in percentage of average\n");
 
-    fprintf(log, " Type                 NODE:");
+    fprintf(log, " Type                 RANK:");
     for (i = 0; (i < cr->nnodes); i++)
     {
         fprintf(log, "%3d ", i);

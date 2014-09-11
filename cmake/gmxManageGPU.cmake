@@ -64,11 +64,23 @@ if(GMX_GPU OR GMX_GPU_AUTO)
         # Noise is acceptable when there is a GPU or the user required one.
         set(FIND_CUDA_QUIETLY QUIET)
     endif()
-    # We support CUDA >=v4.0 on *nix, but <= v4.1 doesn't work with MSVC
-    if(MSVC)
-        find_package(CUDA 4.1 ${FIND_CUDA_QUIETLY})
-    else()
-        find_package(CUDA 4.0 ${FIND_CUDA_QUIETLY})
+    find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
+
+    # Cmake 2.8.12 (and CMake 3.0) introduced a new bug where the cuda
+    # library dir is added twice as an rpath on APPLE, which in turn causes
+    # the install_name_tool to wreck the binaries when it tries to remove this
+    # path. Since this is set inside the cuda module, we remove the extra rpath
+    # added in the library string - an rpath is not a library anyway, and at
+    # least for Gromacs this works on all CMake versions. This should be
+    # reasonably future-proof, since newer versions of CMake appear to handle
+    # the rpath automatically based on the provided library path, meaning
+    # the explicit rpath specification is no longer needed.
+    if(APPLE AND (CMAKE_VERSION VERSION_GREATER 2.8.11))
+        foreach(elem ${CUDA_LIBRARIES})
+            if(elem MATCHES "-Wl,.*")
+                list(REMOVE_ITEM CUDA_LIBRARIES ${elem})
+            endif()
+        endforeach(elem)
     endif()
 endif()
 
@@ -107,7 +119,7 @@ Compute capability information not available, consult the NVIDIA website:
 https://developer.nvidia.com/cuda-gpus")
     endif()
 
-        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >=2.0 (Fermi or later). This requires the NVIDIA CUDA toolkit, which was not found. Its location can be hinted by setting the CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable). The typical location would be /usr/local/cuda[-version]. Note that CPU or GPU acceleration can be selected at runtime.
+        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >= ${REQUIRED_CUDA_COMPUTE_CAPABILITY} (Fermi or later). This requires the NVIDIA CUDA toolkit, which was not found. Its location can be hinted by setting the CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable). The typical location would be /usr/local/cuda[-version]. Note that CPU or GPU acceleration can be selected at runtime.
 
 ${_msg}")
         unset(_msg)

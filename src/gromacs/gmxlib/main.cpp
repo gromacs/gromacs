@@ -34,50 +34,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/main.h"
+
+#include "config.h"
+
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <time.h>
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#include "smalloc.h"
-#include "types/commrec.h"
-#include "gmx_fatal.h"
-#include "network.h"
-#include "main.h"
-#include "macros.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "string2.h"
-#include "copyrite.h"
-
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
 
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#ifdef GMX_NATIVE_WINDOWS
-#include <process.h>
-#endif
-
 #define BUFSIZE 1024
-
 
 static void par_fn(char *base, int ftp, const t_commrec *cr,
                    gmx_bool bAppendSimId, gmx_bool bAppendNodeId,
@@ -98,16 +86,16 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     }
     if (bAppendNodeId)
     {
-        strcat(buf, "_node");
+        strcat(buf, "_rank");
         sprintf(buf+strlen(buf), "%d", cr->nodeid);
     }
     strcat(buf, ".");
 
     /* Add extension again */
-    strcat(buf, (ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
+    strcat(buf, (ftp == efTPR) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
     if (debug)
     {
-        fprintf(debug, "node %d par_fn '%s'\n", cr->nodeid, buf);
+        fprintf(debug, "rank %d par_fn '%s'\n", cr->nodeid, buf);
         if (fn2ftp(buf) == efLOG)
         {
             fprintf(debug, "log\n");
@@ -223,82 +211,21 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
 }
 
 
-int gmx_gethostname(char *name, size_t len)
-{
-    if (len < 8)
-    {
-        gmx_incons("gmx_gethostname called with len<8");
-    }
-#if defined(HAVE_UNISTD_H) && !defined(__native_client__)
-    if (gethostname(name, len-1) != 0)
-    {
-        strncpy(name, "unknown", 8);
-        return -1;
-    }
-    return 0;
-#else
-    strncpy(name, "unknown", 8);
-    return -1;
-#endif
-}
-
-
-void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
+void gmx_log_open(const char *lognm, const t_commrec *cr,
                   gmx_bool bAppendFiles, FILE** fplog)
 {
-    int    len, pid;
-    char   buf[256], host[256];
+    int    pid;
+    char   host[256];
     time_t t;
     char   timebuf[STRLEN];
     FILE  *fp = *fplog;
-    char  *tmpnm;
 
     debug_gmx();
 
-    /* Communicate the filename for logfile */
-    if (cr->nnodes > 1 && !bMasterOnly
-#ifdef GMX_THREAD_MPI
-        /* With thread MPI the non-master log files are opened later
-         * when the files names are already known on all nodes.
-         */
-        && FALSE
-#endif
-        )
+    if (!bAppendFiles)
     {
-        if (MASTER(cr))
-        {
-            len = strlen(lognm) + 1;
-        }
-        gmx_bcast(sizeof(len), &len, cr);
-        if (!MASTER(cr))
-        {
-            snew(tmpnm, len+8);
-        }
-        else
-        {
-            tmpnm = gmx_strdup(lognm);
-        }
-        gmx_bcast(len*sizeof(*tmpnm), tmpnm, cr);
+        fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+" );
     }
-    else
-    {
-        tmpnm = gmx_strdup(lognm);
-    }
-
-    debug_gmx();
-
-    if (!bMasterOnly && !MASTER(cr))
-    {
-        /* Since log always ends with '.log' let's use this info */
-        par_fn(tmpnm, efLOG, cr, FALSE, !bMasterOnly, buf, 255);
-        fp = gmx_fio_fopen(buf, bAppendFiles ? "a+" : "w+" );
-    }
-    else if (!bAppendFiles)
-    {
-        fp = gmx_fio_fopen(tmpnm, bAppendFiles ? "a+" : "w+" );
-    }
-
-    sfree(tmpnm);
 
     gmx_fatal_set_log_file(fp);
 
@@ -307,15 +234,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
 
     time(&t);
 
-#ifndef NO_GETPID
-#   ifdef GMX_NATIVE_WINDOWS
-    pid = _getpid();
-#   else
-    pid = getpid();
-#   endif
-#else
-    pid = 0;
-#endif
+    pid = gmx_getpid();
 
     if (bAppendFiles)
     {
@@ -332,7 +251,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
 
     fprintf(fp,
             "Log file opened on %s"
-            "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
+            "Host: %s  pid: %d  rank ID: %d  number of ranks:  %d\n",
             timebuf, host, pid, cr->nodeid, cr->nnodes);
     try
     {
@@ -380,7 +299,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     nnodes  = cr->nnodes;
     if (nnodes % nsim != 0)
     {
-        gmx_fatal(FARGS, "The number of nodes (%d) is not a multiple of the number of simulations (%d)", nnodes, nsim);
+        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%d)", nnodes, nsim);
     }
 
     nnodpersim = nnodes/nsim;
@@ -388,7 +307,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
 
     if (debug)
     {
-        fprintf(debug, "We have %d simulations, %d nodes per simulation, local simulation is %d\n", nsim, nnodpersim, sim);
+        fprintf(debug, "We have %d simulations, %d ranks per simulation, local simulation is %d\n", nsim, nnodpersim, sim);
     }
 
     snew(ms, 1);
@@ -437,7 +356,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
         fprintf(debug, "This is simulation %d", cr->ms->sim);
         if (PAR(cr))
         {
-            fprintf(debug, ", local number of nodes %d, local nodeid %d",
+            fprintf(debug, ", local number of ranks %d, local rank ID %d",
                     cr->nnodes, cr->sim_nodeid);
         }
         fprintf(debug, "\n\n");
@@ -460,7 +379,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
              * at the actual file name
              */
             if (is_output(&fnm[i]) ||
-                fnm[i].ftp == efTPX || fnm[i].ftp == efCPT ||
+                fnm[i].ftp == efTPR || fnm[i].ftp == efCPT ||
                 strcmp(fnm[i].opt, "-rerun") == 0)
             {
                 ftp = fn2ftp(fnm[i].fns[0]);

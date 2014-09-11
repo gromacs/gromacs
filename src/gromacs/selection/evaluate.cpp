@@ -50,23 +50,25 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include <string.h>
-
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/vec.h"
-
-#include "gromacs/math/utilities.h"
-#include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
-#include "gromacs/selection/selection.h"
-#include "gromacs/selection/selmethod.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
+#include "gmxpre.h"
 
 #include "evaluate.h"
+
+#include <string.h>
+
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "mempool.h"
+#include "poscalc.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
@@ -499,7 +501,16 @@ _gmx_sel_evaluate_static(gmx_sel_evaluate_t                      * /* data */,
                          const gmx::SelectionTreeElementPointer &sel,
                          gmx_ana_index_t                        *g)
 {
-    gmx_ana_index_intersection(sel->v.u.g, &sel->u.cgrp, g);
+    if (sel->flags & SEL_UNSORTED)
+    {
+        // This only works if g contains all the atoms, but that is currently
+        // the only supported case.
+        gmx_ana_index_copy(sel->v.u.g, &sel->u.cgrp, false);
+    }
+    else
+    {
+        gmx_ana_index_intersection(sel->v.u.g, &sel->u.cgrp, g);
+    }
 }
 
 

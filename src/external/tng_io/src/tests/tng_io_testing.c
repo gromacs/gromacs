@@ -1,9 +1,7 @@
 /* This code is part of the tng binary trajectory format.
  *
- *                      VERSION 1.0
- *
  * Written by Magnus Lundborg
- * Copyright (c) 2012-2013, The GROMACS development team.
+ * Copyright (c) 2012-2014, The GROMACS development team.
  * Check out http://www.gromacs.org for more information.
  *
  *
@@ -17,7 +15,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "../../include/tng_io.h"
+#include "tng/tng_io.h"
+#include "tng/version.h"
 
 static tng_function_status tng_test_setup_molecules(tng_trajectory_t traj)
 {
@@ -149,6 +148,9 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
     tng_medium_stride_length_set(*traj, 10);
     tng_long_stride_length_set(*traj, 100);
 
+    tng_first_user_name_set(*traj, "User1");
+    tng_first_program_name_set(*traj, "tng_testing");
+
     /* Create molecules */
     if(tng_test_setup_molecules(*traj) == TNG_CRITICAL)
     {
@@ -212,7 +214,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
     /* Generate a custom annotation data block */
     strcpy(annotation, "This trajectory was generated from tng_io_testing. "
                        "It is not a real MD trajectory.");
-    if(tng_data_block_add(*traj, 10100, "DETAILS", TNG_CHAR_DATA,
+    if(tng_data_block_add(*traj, TNG_TRAJ_GENERAL_COMMENTS, "COMMENTS", TNG_CHAR_DATA,
                           TNG_NON_TRAJECTORY_BLOCK, 1, 1, 1, TNG_UNCOMPRESSED,
                           annotation) != TNG_SUCCESS)
     {
@@ -569,11 +571,42 @@ tng_function_status tng_test_get_positions_data(tng_trajectory_t traj)
     return(TNG_SUCCESS);
 }
 
+
+tng_function_status tng_test_append(tng_trajectory_t traj)
+{
+    tng_function_status stat;
+
+    stat = tng_util_trajectory_open(TNG_EXAMPLE_FILES_DIR "tng_test.tng", 'a', &traj);
+    if(stat != TNG_SUCCESS)
+    {
+        return(stat);
+    }
+
+    tng_last_user_name_set(traj, "User2");
+    tng_last_program_name_set(traj, "tng_testing");
+    tng_file_headers_write(traj, TNG_USE_HASH);
+
+    stat = tng_util_trajectory_close(&traj);
+
+    return(stat);
+}
+
 int main()
 {
     tng_trajectory_t traj;
     tng_function_status stat;
     char time_str[TNG_MAX_DATE_STR_LEN];
+    char version_str[TNG_MAX_STR_LEN];
+
+    tng_version(traj, version_str, TNG_MAX_STR_LEN);
+    if(strncmp(TNG_VERSION, version_str, TNG_MAX_STR_LEN) == 0)
+    {
+        printf("Test version control: \t\t\t\tSucceeded.\n");
+    }
+    else
+    {
+        printf("Test version control: \t\t\t\tFailed.\n");
+    }
 
     if(tng_trajectory_init(&traj) != TNG_SUCCESS)
     {
@@ -681,6 +714,17 @@ int main()
     else
     {
         printf("Test Utility function close:\t\t\tSucceeded.\n");
+    }
+
+    if(tng_test_append(traj) != TNG_SUCCESS)
+    {
+        printf("Test Append:\t\t\t\t\tFailed. %s: %d.\n",
+               __FILE__, __LINE__);
+        exit(1);
+    }
+    else
+    {
+        printf("Test Append:\t\t\t\t\tSucceeded.\n");
     }
 
     printf("Tests finished\n");

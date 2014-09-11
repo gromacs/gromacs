@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,18 +39,22 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gromacs/selection/indexutil.h"
+#include "gmxpre.h"
 
+#include "indexutil.h"
+
+#include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/index.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/typedefs.h"
-
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 
 /********************************************************************
  * gmx_ana_indexgrps_t functions
@@ -246,7 +250,7 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
     int n = find_group(const_cast<char *>(name), src->nr,
                        const_cast<char **>(names));
     sfree(names);
-    if (n == NOTSET)
+    if (n < 0)
     {
         dest->isize = 0;
         return false;
@@ -266,7 +270,7 @@ gmx_ana_indexgrps_print(FILE *fp, gmx_ana_indexgrps_t *g, int maxn)
 {
     for (int i = 0; i < g->nr; ++i)
     {
-        fprintf(fp, " Group %2d \"%s\" ", i + 1, g->names[i].c_str());
+        fprintf(fp, " Group %2d \"%s\" ", i, g->names[i].c_str());
         gmx_ana_index_dump(fp, &g->g[i], maxn);
     }
 }
@@ -419,6 +423,19 @@ gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int maxn)
     fprintf(fp, "\n");
 }
 
+int
+gmx_ana_index_get_max_index(gmx_ana_index_t *g)
+{
+    if (g->isize == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return *std::max_element(g->index, g->index + g->isize);
+    }
+}
+
 /*!
  * \param[in]  g      Index group to check.
  * \returns    true if the index group is sorted and has no duplicates,
@@ -432,6 +449,19 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
     for (i = 0; i < g->isize-1; ++i)
     {
         if (g->index[i+1] <= g->index[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool
+gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms)
+{
+    for (int i = 0; i < g->isize; ++i)
+    {
+        if (g->index[i] < 0 || g->index[i] >= natoms)
         {
             return false;
         }
@@ -464,7 +494,7 @@ cmp_atomid(const void *a, const void *b)
 void
 gmx_ana_index_sort(gmx_ana_index_t *g)
 {
-    qsort(g->index, g->isize, sizeof(*g->index), cmp_atomid);
+    std::qsort(g->index, g->isize, sizeof(*g->index), cmp_atomid);
 }
 
 /*!
@@ -844,7 +874,7 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
                         break;
 
                     default: /* Should not be reached */
-                        gmx_bug("internal error");
+                        GMX_RELEASE_ASSERT(false, "Unreachable code was reached");
                         break;
                 }
             }

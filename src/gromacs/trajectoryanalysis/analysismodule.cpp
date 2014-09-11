@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gmxpre.h"
+
+#include "analysismodule.h"
 
 #include <utility>
 
@@ -293,7 +295,9 @@ void TrajectoryAnalysisModule::optionsFinished(
 }
 
 
-void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe & /*fr*/)
+void TrajectoryAnalysisModule::initAfterFirstFrame(
+        const TrajectoryAnalysisSettings & /*settings*/,
+        const t_trxframe                 & /*fr*/)
 {
 }
 

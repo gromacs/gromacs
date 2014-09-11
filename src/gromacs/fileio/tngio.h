@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,11 @@
 #ifndef GMX_FILEIO_TNGIO_H
 #define GMX_FILEIO_TNGIO_H
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "../../external/tng_io/include/tng_io_fwd.h"
+#include "tng/tng_io_fwd.h"
+
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +48,8 @@ extern "C" {
 #if 0
 }
 #endif
+
+struct gmx_mtop_t;
 
 /*! \brief Open a TNG trajectory file
  *
@@ -67,8 +72,8 @@ void gmx_tng_close(tng_trajectory_t *tng);
  * \param tng   Valid handle to a TNG trajectory
  * \param mtop  Pointer to a topology (can be NULL)
  */
-void gmx_tng_add_mtop(tng_trajectory_t  tng,
-                      const gmx_mtop_t *mtop);
+void gmx_tng_add_mtop(tng_trajectory_t         tng,
+                      const struct gmx_mtop_t *mtop);
 
 /*! \brief Do all TNG preparation for full-precision whole-system
  * trajectory writing during MD simulations.
@@ -77,9 +82,9 @@ void gmx_tng_add_mtop(tng_trajectory_t  tng,
  * \param mtop  Global topology
  * \param ir    Input settings (for writing frequencies)
  */
-void gmx_tng_prepare_md_writing(tng_trajectory_t  tng,
-                                const gmx_mtop_t *mtop,
-                                const t_inputrec *ir);
+void gmx_tng_prepare_md_writing(tng_trajectory_t         tng,
+                                const struct gmx_mtop_t *mtop,
+                                const t_inputrec        *ir);
 
 /*! \brief Set the default compression precision for TNG writing
  *
@@ -95,9 +100,9 @@ void gmx_tng_set_compression_precision(tng_trajectory_t tng,
  * \param mtop  Global topology
  * \param ir    Input settings (for writing frequencies)
  */
-void gmx_tng_prepare_low_prec_writing(tng_trajectory_t  tng,
-                                      const gmx_mtop_t *mtop,
-                                      const t_inputrec *ir);
+void gmx_tng_prepare_low_prec_writing(tng_trajectory_t         tng,
+                                      const struct gmx_mtop_t *mtop,
+                                      const t_inputrec        *ir);
 
 /*! \brief Write a frame to a TNG file
  *

@@ -39,13 +39,15 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
+
 #include "cmdlinetest.h"
 
 #include <cstdlib>
 #include <cstring>
-#include <sstream>
 
 #include <new>
+#include <sstream>
 #include <vector>
 
 #include "gromacs/commandline/cmdlineprogramcontext.h"

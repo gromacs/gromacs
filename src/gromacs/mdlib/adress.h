@@ -39,8 +39,15 @@
 #ifndef _adress_h_
 #define _adress_h_
 
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+struct t_pbc;
 
 /** \brief calculates the AdResS weight of a particle
  *
@@ -68,7 +75,7 @@ adress_weight(rvec                 x,
               real                 adressr,
               real                 adressw,
               rvec     *           ref,
-              t_pbc     *          pbc,
+              struct t_pbc     *   pbc,
               t_forcerec *         fr);
 
 /** \brief update the weight of all coarse-grained particles in several charge groups for com vsites
@@ -90,7 +97,7 @@ update_adress_weights_com(FILE *               fplog,
                           rvec                 x[],
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
-                          t_pbc *              pbc);
+                          struct t_pbc *       pbc);
 
 /** \brief update the weight of all coarse-grained particles for cog vsites
  *
@@ -107,7 +114,7 @@ update_adress_weights_cog(t_iparams            ip[],
                           rvec                 x[],
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
-                          t_pbc *              pbc);
+                          struct t_pbc *       pbc);
 
 /** \brief update the weight of all coarse-grained particles in several charge groups for atom vsites
  *
@@ -126,7 +133,7 @@ update_adress_weights_atom(int                  cg0,
                            rvec                 x[],
                            t_forcerec *         fr,
                            t_mdatoms *          mdatoms,
-                           t_pbc *              pbc);
+                           struct t_pbc *       pbc);
 
 /** \brief update the weight on per atom basis of all coarse-grained particles in several charge groups for atom vsites
  *
@@ -145,7 +152,7 @@ update_adress_weights_atom_per_atom(int                  cg0,
                                     rvec                 x[],
                                     t_forcerec *         fr,
                                     t_mdatoms *          mdatoms,
-                                    t_pbc *              pbc);
+                                    struct t_pbc *       pbc);
 
 /** \brief add AdResS IC thermodynamic force to f_novirsum
  *
@@ -166,7 +173,7 @@ adress_thermo_force(int                  cg0,
                     rvec                 f[],
                     t_forcerec *         fr,
                     t_mdatoms *          mdatoms,
-                    t_pbc *              pbc);
+                    struct t_pbc *       pbc);
 
 
 /** \brief checks weather a cpu calculates only coarse-grained or explicit interactions
@@ -191,4 +198,9 @@ gmx_bool egp_explicit(t_forcerec *   fr, int egp_nr);
  * \return boolean if coarse-grained or not
  */
 gmx_bool egp_coarsegrained(t_forcerec *   fr, int egp_nr);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

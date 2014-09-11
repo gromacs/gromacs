@@ -38,18 +38,23 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
-#include "index.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_residuetype_t;
+struct t_atoms;
+struct t_symtab;
+
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.
  */
 void rename_atoms(const char *xlfile, const char *ffdir,
-                  t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
-                  gmx_bool bResname, gmx_residuetype_t rt, gmx_bool bReorderNum,
+                  struct t_atoms *atoms, struct t_symtab *symtab, const t_restp *restp,
+                  gmx_bool bResname, struct gmx_residuetype_t *rt, gmx_bool bReorderNum,
                   gmx_bool bVerbose);
 
 #ifdef __cplusplus

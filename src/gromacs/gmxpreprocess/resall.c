@@ -34,25 +34,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "resall.h"
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "string2.h"
-#include "gromacs/fileio/futil.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "symtab.h"
-#include "macros.h"
-#include "resall.h"
-#include "pgutil.h"
-#include "fflibutil.h"
-
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
 {
@@ -79,20 +77,23 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
             /* Skip blank or comment-only lines */
             do
             {
-                fgets2(buf, STRLEN, in);
-                if (NULL != buf)
+                if (fgets2(buf, STRLEN, in) != NULL)
                 {
                     strip_comment(buf);
                     trim(buf);
                 }
             }
-            while (!feof(in) && NULL != buf && strlen(buf) == 0);
+            while (!feof(in) && strlen(buf) == 0);
 
-            if ((buf != NULL) && (sscanf(buf, "%s%lf", name, &m) == 2))
+            if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
                 add_atomtype(at, tab, a, name, nb, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 );
-                fprintf(stderr, "\rAtomtype %d", nratt+1);
+                fprintf(stderr, "\rAtomtype %d", ++nratt);
+            }
+            else
+            {
+                fprintf(stderr, "\nInvalid format: %s\n", buf);
             }
         }
         gmx_ffclose(in);
@@ -192,7 +193,7 @@ gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
         {
             if (sscanf(line+n, "%s%n", str, &ni) == 1)
             {
-                rtp->rb[bt].b[rtp->rb[bt].nb].a[j] = strdup(str);
+                rtp->rb[bt].b[rtp->rb[bt].nb].a[j] = gmx_strdup(str);
             }
             else
             {
@@ -209,7 +210,7 @@ gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
             n++;
         }
         rtrim(line+n);
-        rtp->rb[bt].b[rtp->rb[bt].nb].s = strdup(line+n);
+        rtp->rb[bt].b[rtp->rb[bt].nb].s = gmx_strdup(line+n);
         rtp->rb[bt].nb++;
     }
     /* give back unused memory */
@@ -449,8 +450,8 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
         {
             gmx_fatal(FARGS, "in .rtp file at line:\n%s\n", line);
         }
-        rrtp[nrtp].resname  = strdup(header);
-        rrtp[nrtp].filebase = strdup(filebase);
+        rrtp[nrtp].resname  = gmx_strdup(header);
+        rrtp[nrtp].filebase = gmx_strdup(filebase);
 
         get_a_line(in, line, STRLEN);
         bError       = FALSE;

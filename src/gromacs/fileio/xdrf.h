@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,9 @@
 #define GMX_FILEIO_XDRF_H
 
 #include <stdio.h>
-#include "../legacyheaders/typedefs.h"
+
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __PGI    /*Portland group compiler*/
 #define int64_t long long
@@ -47,7 +49,7 @@
 #include "config.h"
 
 #ifdef GMX_INTERNAL_XDR
-#include "gmx_system_xdr.h"
+#include "gromacs/fileio/gmx_system_xdr.h"
 #else
 #include <rpc/rpc.h>
 #include <rpc/xdr.h>

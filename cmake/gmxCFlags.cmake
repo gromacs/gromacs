@@ -64,7 +64,7 @@ function(gmx_set_cmake_compiler_flags)
         # be set up elsewhere and passed to this function, but it is
         # inconvenient in CMake to pass more than one list, and such a
         # list is only used here.
-        foreach(build_type RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL)
+        foreach(build_type RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
             set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
         endforeach()
         # Copy the flags that are only used by the real Release build
@@ -110,9 +110,12 @@ MACRO(gmx_c_flags)
         # Since 4.8 on by default. For previous version disabling is a no-op. Only disabling for Release because with assert
         # the warnings are OK.
         GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
+        if(CYGWIN)
+            GMX_TEST_CFLAG(CFLAGS_WARN_SUBSCRIPT "-Wno-char-subscripts" GMXC_CFLAGS)
+        endif()
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
-        GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
+        GMX_TEST_CFLAG(CFLAGS_COPT "-funroll-all-loops"
                        GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_NOINLINE "-fno-inline" GMXC_CFLAGS_DEBUG)
     endif()
@@ -128,7 +131,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
         # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
-        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
+        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-funroll-all-loops"
                          GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_NOINLINE "-fno-inline" GMXC_CXXFLAGS_DEBUG)
     endif()
@@ -195,12 +198,18 @@ MACRO(gmx_c_flags)
     endif()
 
     # xlc
+    # The suppressions below stop information messages about -O3
+    # causing non-strict IEEE compliance that changes the semantics of
+    # the program (duh; 1500-036), warnings about correct PBC-related use of
+    # maximum array indices of DIM-sized C arrays (1500-010).
     if (CMAKE_C_COMPILER_ID MATCHES "XL")
         GMX_TEST_CFLAG(CFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_LANG "-qlanglvl=extc99" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010" GMXC_CFLAGS)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
         GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010" GMXC_CXXFLAGS)
     endif()
 
     # msvc
@@ -214,8 +223,12 @@ MACRO(gmx_c_flags)
         #      unreferenced local variable (only C)
         #      conversion from 'size_t' to 'int', possible loss of data
         #      conversion from 'const char*' to 'void*', different 'const' qualifiers (only C)
-        GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267" GMXC_CXXFLAGS)
+        if(NOT CMAKE_CONFIGURATION_TYPES)
+            GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267" GMXC_CXXFLAGS)
+        else() #Projects only use the C++ flags
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CXXFLAGS)
+        endif()
     endif()
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -232,6 +245,19 @@ MACRO(gmx_c_flags)
         endif()
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
+    endif()
+
+    # Fujitsu compilers on PrimeHPC/Sparc64
+    if(${CMAKE_C_COMPILER_ID} MATCHES Fujitsu OR
+       (${CMAKE_C_COMPILER_ID} MATCHES unknown AND ${CMAKE_C_COMPILER} MATCHES ^fcc))
+        GMX_TEST_CFLAG(CFLAG_GNUCOMPAT "-Xg -w" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAG_OPT "-Kfast,reduction,swp,simd=2,uxsimd,fsimple -x100" GMXC_CFLAGS)
+    endif()
+
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES Fujitsu OR
+       (${CMAKE_CXX_COMPILER_ID} MATCHES unknown AND ${CMAKE_CXX_COMPILER} MATCHES ^FCC))
+        GMX_TEST_CXXFLAG(CXXFLAG_GNUCOMPAT "-Xg -w" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAG_OPT "-Kfast,reduction,swp,simd=2,uxsimd,fsimple -x100" GMXC_CXXFLAGS)
     endif()
 
     # now actually set the flags:

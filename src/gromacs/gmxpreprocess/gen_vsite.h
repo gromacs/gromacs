@@ -38,10 +38,10 @@
 #ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
 #define GMX_GMXPREPROCESS_GEN_VSITE_H
 
-#include "typedefs.h"
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
-#include "hackblock.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -51,7 +51,7 @@ extern "C"
 /* stuff for pdb2gmx */
 
 void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
-               t_atoms *at, t_symtab *symtab, rvec *x[],
+               t_atoms *at, struct t_symtab *symtab, rvec *x[],
                t_params plist[], int *dummy_type[], int *cgnr[],
                real mHmult, gmx_bool bVSiteAromatics,
                const char *ffdir);

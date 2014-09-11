@@ -39,8 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
+#include "gmxpre.h"
+
 #include "basicoptions.h"
-#include "basicoptionstorage.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -50,10 +51,11 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/string2.h"
-
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "basicoptionstorage.h"
 
 namespace
 {
@@ -139,9 +141,10 @@ bool BooleanOptionInfo::defaultValue() const
  * BooleanOption
  */
 
-AbstractOptionStoragePointer BooleanOption::createStorage() const
+AbstractOptionStorage *
+BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new BooleanOptionStorage(*this));
+    return new BooleanOptionStorage(*this);
 }
 
 
@@ -196,9 +199,10 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
  * IntegerOption
  */
 
-AbstractOptionStoragePointer IntegerOption::createStorage() const
+AbstractOptionStorage *
+IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new IntegerOptionStorage(*this));
+    return new IntegerOptionStorage(*this);
 }
 
 
@@ -243,9 +247,10 @@ Int64OptionInfo::Int64OptionInfo(Int64OptionStorage *option)
  * Int64Option
  */
 
-AbstractOptionStoragePointer Int64Option::createStorage() const
+AbstractOptionStorage *
+Int64Option::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new Int64OptionStorage(*this));
+    return new Int64OptionStorage(*this);
 }
 
 
@@ -344,9 +349,10 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStoragePointer DoubleOption::createStorage() const
+AbstractOptionStorage *
+DoubleOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new DoubleOptionStorage(*this));
+    return new DoubleOptionStorage(*this);
 }
 
 
@@ -377,7 +383,7 @@ void FloatOptionStorage::convertValue(const std::string &value)
     double      dval = std::strtod(ptr, &endptr);
     if (errno == ERANGE
         || dval * factor_ < -std::numeric_limits<float>::max()
-        || dval * factor_ > -std::numeric_limits<float>::max())
+        || dval * factor_ >  std::numeric_limits<float>::max())
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + value
                                     + "'; it causes an overflow/underflow"));
@@ -447,9 +453,10 @@ void FloatOptionInfo::setScaleFactor(double factor)
  * FloatOption
  */
 
-AbstractOptionStoragePointer FloatOption::createStorage() const
+AbstractOptionStorage *
+FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new FloatOptionStorage(*this));
+    return new FloatOptionStorage(*this);
 }
 
 
@@ -516,11 +523,6 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
                 GMX_THROW(APIError("Conflicting default values"));
             }
         }
-        // If there is no default value, match is still -1.
-        if (enumIndexStore_ != NULL)
-        {
-            *enumIndexStore_ = match;
-        }
     }
     if (settings.defaultEnumIndex_ >= 0)
     {
@@ -528,6 +530,12 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
         addValue(allowed_[settings.defaultEnumIndex_]);
         commitValues();
     }
+    // Somewhat subtly, this does not update the stored enum index if the
+    // caller has not provided store() or storeVector(), because values()
+    // will be empty in such a case.  This leads to (desired) behavior of
+    // preserving the existing value in the enum index store variable in such
+    // cases.
+    refreshEnumIndexStore();
 }
 
 std::string StringOptionStorage::formatExtraDescription() const
@@ -586,15 +594,27 @@ void StringOptionStorage::convertValue(const std::string &value)
 void StringOptionStorage::refreshValues()
 {
     MyBase::refreshValues();
+    refreshEnumIndexStore();
+}
+
+void StringOptionStorage::refreshEnumIndexStore()
+{
     if (enumIndexStore_ != NULL)
     {
         for (size_t i = 0; i < values().size(); ++i)
         {
-            ValueList::const_iterator match =
-                std::find(allowed_.begin(), allowed_.end(), values()[i]);
-            GMX_ASSERT(match != allowed_.end(),
-                       "Enum value not found (internal error)");
-            enumIndexStore_[i] = static_cast<int>(match - allowed_.begin());
+            if (values()[i].empty())
+            {
+                enumIndexStore_[i] = -1;
+            }
+            else
+            {
+                ValueList::const_iterator match =
+                    std::find(allowed_.begin(), allowed_.end(), values()[i]);
+                GMX_ASSERT(match != allowed_.end(),
+                           "Enum value not found (internal error)");
+                enumIndexStore_[i] = static_cast<int>(match - allowed_.begin());
+            }
         }
     }
 }
@@ -632,9 +652,10 @@ const std::vector<std::string> &StringOptionInfo::allowedValues() const
  * StringOption
  */
 
-AbstractOptionStoragePointer StringOption::createStorage() const
+AbstractOptionStorage *
+StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
-    return AbstractOptionStoragePointer(new StringOptionStorage(*this));
+    return new StringOptionStorage(*this);
 }
 
 } // namespace gmx

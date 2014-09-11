@@ -34,26 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <stdio.h>
-#include "typedefs.h"
+
 #include "gromacs/fileio/tpxio.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "main.h"
-#include "mvdata.h"
-#include "gmx_fatal.h"
-#include "symtab.h"
-#include "txtdump.h"
-#include "mdatoms.h"
-#include "mdrun.h"
-#include "names.h"
-#include "calcgrid.h"
-#include "update.h"
-#include "mdebin.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/mvdata.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define BUFSIZE 256
 

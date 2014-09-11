@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,23 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "gmxpre.h"
+
+#include "config.h"
+
+#include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h> // for fork()
 #endif
 
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "macros.h"
-#include "string2.h"
+#include "dialogs.h"
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "manager.h"
+#include "nmol.h"
 #include "x11.h"
 #include "xdlghi.h"
 #include "xmb.h"
-#include "dialogs.h"
-#include "names.h"
-#include "nmol.h"
-#include "manager.h"
-#include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 

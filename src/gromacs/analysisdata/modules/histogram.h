@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,11 @@
 #ifndef GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 #define GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 
-#include "../abstractdata.h"
-#include "../arraydata.h"
-#include "../datamodule.h"
-#include "../../utility/uniqueptr.h"
+#include <boost/shared_ptr.hpp>
+
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/arraydata.h"
+#include "gromacs/analysisdata/datamodule.h"
 
 namespace gmx
 {
@@ -246,7 +247,7 @@ class BasicHistogramImpl;
 class AbstractAverageHistogram;
 
 //! Smart pointer to manage an AbstractAverageHistogram object.
-typedef gmx_unique_ptr<AbstractAverageHistogram>::type
+typedef boost::shared_ptr<AbstractAverageHistogram>
     AverageHistogramPointer;
 
 /*! \brief

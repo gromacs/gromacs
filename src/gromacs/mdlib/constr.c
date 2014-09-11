@@ -34,33 +34,35 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "gromacs/fileio/confio.h"
-#include "types/commrec.h"
-#include "constr.h"
-#include "copyrite.h"
-#include "invblock.h"
-#include "main.h"
-#include "mdrun.h"
-#include "nrnb.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "physics.h"
-#include "names.h"
-#include "txtdump.h"
-#include "domdec.h"
-#include "gromacs/fileio/pdbio.h"
-#include "splitter.h"
-#include "mtop_util.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "macros.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/constr.h"
+
+#include <assert.h>
+#include <stdlib.h>
+
 #include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/splitter.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
-
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/invblock.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_constr {
     int                ncon_tot;       /* The total number of constraints    */
@@ -94,9 +96,13 @@ typedef struct {
     atom_id blocknr;
 } t_sortblock;
 
+/* delta_t should be used instead of ir->delta_t, to permit the time
+   step to be scaled by the calling code */
 static void *init_vetavars(t_vetavars *vars,
                            gmx_bool constr_deriv,
-                           real veta, real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal)
+                           real veta, real vetanew,
+                           t_inputrec *ir, real delta_t,
+                           gmx_ekindata_t *ekind, gmx_bool bPscal)
 {
     double g;
     int    i;
@@ -110,9 +116,9 @@ static void *init_vetavars(t_vetavars *vars,
     {
         vars->alpha = 1.0;
     }
-    g             = 0.5*veta*ir->delta_t;
+    g             = 0.5*veta*delta_t;
     vars->rscale  = exp(g)*series_sinhx(g);
-    g             = -0.25*vars->alpha*veta*ir->delta_t;
+    g             = -0.25*vars->alpha*veta*delta_t;
     vars->vscale  = exp(g)*series_sinhx(g);
     vars->rvscale = vars->vscale*vars->rscale;
     vars->veta    = vetanew;
@@ -196,6 +202,18 @@ int n_flexible_constraints(struct gmx_constr *constr)
     return nflexcon;
 }
 
+static void clear_constraint_quantity_nonlocal(gmx_domdec_t *dd, rvec *q)
+{
+    int nonlocal_at_start, nonlocal_at_end, at;
+
+    dd_get_constraint_range(dd, &nonlocal_at_start, &nonlocal_at_end);
+
+    for (at = nonlocal_at_start; at < nonlocal_at_end; at++)
+    {
+        clear_rvec(q[at]);
+    }
+}
+
 void too_many_constraint_warnings(int eConstrAlg, int warncount)
 {
     const char *abort = "- aborting to avoid logfile runaway.\n"
@@ -217,7 +235,7 @@ static void write_constr_pdb(const char *fn, const char *title,
                              int start, int homenr, t_commrec *cr,
                              rvec x[], matrix box)
 {
-    char          fname[STRLEN], format[STRLEN];
+    char          fname[STRLEN];
     FILE         *out;
     int           dd_ac0 = 0, dd_ac1 = 0, i, ii, resnr;
     gmx_domdec_t *dd;
@@ -240,7 +258,6 @@ static void write_constr_pdb(const char *fn, const char *title,
     {
         sprintf(fname, "%s.pdb", fn);
     }
-    sprintf(format, "%s\n", get_pdbformat());
 
     out = gmx_fio_fopen(fname, "w");
 
@@ -261,9 +278,8 @@ static void write_constr_pdb(const char *fn, const char *title,
             ii = i;
         }
         gmx_mtop_atominfo_global(mtop, ii, &anm, &resnr, &resnm);
-        fprintf(out, format, "ATOM", (ii+1)%100000,
-                anm, resnm, ' ', resnr%10000, ' ',
-                10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ]);
+        gmx_fprintf_pdb_atomline(out, epdbATOM, ii+1, anm, ' ', resnm, ' ', resnr, ' ',
+                                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 0.0, "");
     }
     fprintf(out, "TER\n");
 
@@ -313,6 +329,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    t_idef *idef, t_inputrec *ir, gmx_ekindata_t *ekind,
                    t_commrec *cr,
                    gmx_int64_t step, int delta_step,
+                   real step_scaling,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -327,6 +344,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     int         ncons, settle_error;
     tensor      vir_r_m_dr;
     rvec       *vstor;
+    real        scaled_delta_t;
     real        invdt, vir_fac, t;
     t_ilist    *settle;
     int         nsettle;
@@ -347,17 +365,21 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     homenr = md->homenr;
     nrend  = start+homenr;
 
+    scaled_delta_t = step_scaling * ir->delta_t;
+
     /* set constants for pressure control integration */
     init_vetavars(&vetavar, econq != econqCoord,
-                  veta, vetanew, ir, ekind, bPscal);
+                  veta, vetanew, ir, scaled_delta_t, ekind, bPscal);
 
+    /* Prepare time step for use in constraint implementations, and
+       avoid generating inf when ir->delta_t = 0. */
     if (ir->delta_t == 0)
     {
-        invdt = 0;
+        invdt = 0.0;
     }
     else
     {
-        invdt  = 1/ir->delta_t;
+        invdt = 1.0/scaled_delta_t;
     }
 
     if (ir->efep != efepNO && EI_DYNAMICS(ir->eI))
@@ -420,6 +442,15 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     if (cr->dd)
     {
         dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
+
+        if (v != NULL)
+        {
+            /* We need to initialize the non-local components of v.
+             * We never actually use these values, but we do increment them,
+             * so we should avoid uninitialized variables and overflows.
+             */
+            clear_constraint_quantity_nonlocal(cr->dd, v);
+        }
     }
 
     if (constr->lincsd != NULL)
@@ -606,6 +637,14 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (vir != NULL)
     {
+        /* The normal uses of constrain() pass step_scaling = 1.0.
+         * The call to constrain() for SD1 that passes step_scaling =
+         * 0.5 also passes vir = NULL, so cannot reach this
+         * assertion. This assertion should remain until someone knows
+         * that this path works for their intended purpose, and then
+         * they can use scaled_delta_t instead of ir->delta_t
+         * below. */
+        assert(gmx_within_tol(step_scaling, 1.0, GMX_REAL_EPS));
         switch (econq)
         {
             case econqCoord:
@@ -790,7 +829,7 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
                 j, constr->nblocks, ncons);
         for (i = 0; (i < ncons); i++)
         {
-            fprintf(stderr, "i: %5d  sb[i].blocknr: %5u\n", i, sb[i].blocknr);
+            fprintf(stderr, "i: %5d  sb[i].blocknr: %5d\n", i, sb[i].blocknr);
         }
         for (j = 0; (j <= constr->nblocks); j++)
         {

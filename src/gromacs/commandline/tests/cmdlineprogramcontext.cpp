@@ -39,19 +39,22 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
+#include "gmxpre.h"
+
+#include "gromacs/commandline/cmdlineprogramcontext.h"
+
+#include "config.h"
+
 #include <string>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
 #include <gtest/gtest.h>
 
-#include "gromacs/commandline/cmdlineprogramcontext.h"
-#include "gromacs/fileio/path.h"
 #include "gromacs/utility/common.h"
-#include "gromacs/utility/uniqueptr.h"
+#include "gromacs/utility/path.h"
 
 #include "testutils/cmdlinetest.h"
-
-#include "config.h"
 
 using gmx::test::CommandLine;
 using gmx::Path;
@@ -93,7 +96,7 @@ class TestExecutableEnvironment : public gmx::ExecutableEnvironmentInterface
 };
 
 //! Shorthand for a smart pointer to TestExecutableEnvironment.
-typedef gmx::gmx_unique_ptr<TestExecutableEnvironment>::type
+typedef boost::shared_ptr<TestExecutableEnvironment>
     TestExecutableEnvironmentPointer;
 
 class CommandLineProgramContextTest : public ::testing::Test
@@ -111,7 +114,7 @@ class CommandLineProgramContextTest : public ::testing::Test
         void testBinaryPathSearch(const char *argv0)
         {
             ASSERT_TRUE(env_.get() != NULL);
-            gmx::CommandLineProgramContext  info(1, &argv0, move(env_));
+            gmx::CommandLineProgramContext  info(1, &argv0, env_);
             EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
         }
         void testBinaryPathSearch(const std::string &argv0)

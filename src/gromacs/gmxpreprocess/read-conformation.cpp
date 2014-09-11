@@ -32,13 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "read-conformation.h"
 
 #include "gromacs/fileio/confio.h"
-#include "atomprop.h"
-#include "types/simple.h"
-#include "types/atoms.h"
-#include "smalloc.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
                              real defaultDistance, real scaleFactor)

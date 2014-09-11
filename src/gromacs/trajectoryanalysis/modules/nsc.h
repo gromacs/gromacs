@@ -34,7 +34,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "typedefs.h"
+#ifndef GMX_TRAJECTORYANALYSIS_NSC_H
+#define GMX_TRAJECTORYANALYSIS_NSC_H
+
+#include "gromacs/legacyheaders/types/simple.h"
 
 #define FLAG_DOTS       01
 #define FLAG_VOLUME     02
@@ -141,4 +144,6 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

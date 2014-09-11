@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,15 +50,19 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "../legacyheaders/typedefs.h"
+#include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/selection.h" // For gmx::SelectionList
+#include "gromacs/selection/selectioncollection.h"
+#include "gromacs/utility/uniqueptr.h"
 
-#include "../onlinehelp/helptopicinterface.h"
-#include "../utility/uniqueptr.h"
-#include "indexutil.h"
 #include "poscalc.h"
-#include "selection.h" // For gmx::SelectionList
-#include "selectioncollection.h"
 #include "selelem.h"
+
+struct gmx_sel_mempool_t;
+struct t_pbc;
+struct t_topology;
+struct t_trxframe;
 
 namespace gmx
 {
@@ -99,9 +103,9 @@ struct gmx_ana_selcollection_t
     /** Topology for the collection. */
     t_topology                                        *top;
     /** Index group that contains all the atoms. */
-    struct gmx_ana_index_t                             gall;
+    gmx_ana_index_t                                    gall;
     /** Memory pool used for selection evaluation. */
-    struct gmx_sel_mempool_t                          *mempool;
+    gmx_sel_mempool_t                                 *mempool;
     //! Parser symbol table.
     boost::scoped_ptr<gmx::SelectionParserSymbolTable> symtab;
     //! Root of help topic tree (NULL is no help yet requested).
@@ -157,6 +161,8 @@ class SelectionCollection::Impl
         std::string             rpost_;
         //! Default output position type for selections.
         std::string             spost_;
+        //! Largest atom index needed by the selections for evaluation.
+        int                     maxAtomIndex_;
         /*! \brief
          * Debugging level for the collection.
          *

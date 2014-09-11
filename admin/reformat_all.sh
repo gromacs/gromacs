@@ -35,12 +35,14 @@
 
 function usage() {
     echo "usage: reformat_all.sh [-f|--force]"
-    echo "           [--filter=(uncrustify|copyright)] [<action>]"
+    echo "           [--filter=(uncrustify|copyright)] [--pattern=<pattern>]"
+    echo "           [<action>]"
     echo "<action>: (list-files|uncrustify*|copyright) (*=default)"
 }
 
 filter=default
 force=
+patterns=()
 action=uncrustify
 for arg in "$@" ; do
     if [[ "$arg" == "list-files" || "$arg" == "uncrustify" ||
@@ -48,6 +50,8 @@ for arg in "$@" ; do
         action=$arg
     elif [[ "$arg" == --filter=* ]] ; then
         filter=${arg#--filter=}
+    elif [[ "$arg" == --pattern=* ]] ; then
+        patterns[${#patterns[@]}]=${arg#--pattern=}
     elif [[ "$arg" == "-f" || "$arg" == "--force" ]] ; then
         force=1
     else
@@ -111,7 +115,7 @@ esac
 
 cd `git rev-parse --show-toplevel`
 
-if ! git ls-tree -r --name-only HEAD | git check-attr --stdin filter | \
+if ! git ls-files "${patterns[@]}" | git check-attr --stdin filter | \
     sed -nEe "/${filter_re}$/ {s/:.*//;p;}" | $command ; then
     echo "The reformatting command failed! Please check the output."
     exit 1

@@ -34,33 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/ns.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "macros.h"
+
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/nsgrid.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
-#include "vec.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "nsgrid.h"
-#include "force.h"
-#include "nonbonded.h"
-#include "ns.h"
-#include "pbc.h"
-#include "names.h"
-#include "gmx_fatal.h"
-#include "nrnb.h"
-#include "txtdump.h"
-#include "mtop_util.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
-#include "domdec.h"
 #include "adress.h"
-
 
 /*
  *    E X C L U S I O N   H A N D L I N G
@@ -127,7 +127,8 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
                         int maxsr, int maxlr,
                         int ivdw, int ivdwmod,
                         int ielec, int ielecmod,
-                        int igeometry, int type)
+                        int igeometry, int type,
+                        gmx_bool bElecAndVdwSwitchDiffers)
 {
     t_nblist *nl;
     int       homenr;
@@ -160,7 +161,7 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
         }
 
         /* This will also set the simd_padding_width field */
-        gmx_nonbonded_set_kernel_pointers( (i == 0) ? log : NULL, nl);
+        gmx_nonbonded_set_kernel_pointers( (i == 0) ? log : NULL, nl, bElecAndVdwSwitchDiffers);
 
         /* maxnri is influenced by the number of shifts (maximum is 8)
          * and the number of energy groups.
@@ -197,10 +198,11 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
      * cache trashing.
      */
     int        maxsr, maxsr_wat, maxlr, maxlr_wat;
-    int        ielec, ielecf, ivdw, ielecmod, ielecmodf, ivdwmod, type;
+    int        ielec, ivdw, ielecmod, ivdwmod, type;
     int        solvent;
     int        igeometry_def, igeometry_w, igeometry_ww;
     int        i;
+    gmx_bool   bElecAndVdwSwitchDiffers;
     t_nblists *nbl;
 
     /* maxsr     = homenr-fr->nWatMol*3; */
@@ -227,11 +229,12 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     }
 
     /* Determine the values for ielec/ivdw. */
-    ielec    = fr->nbkernel_elec_interaction;
-    ivdw     = fr->nbkernel_vdw_interaction;
-    ielecmod = fr->nbkernel_elec_modifier;
-    ivdwmod  = fr->nbkernel_vdw_modifier;
-    type     = GMX_NBLIST_INTERACTION_STANDARD;
+    ielec                    = fr->nbkernel_elec_interaction;
+    ivdw                     = fr->nbkernel_vdw_interaction;
+    ielecmod                 = fr->nbkernel_elec_modifier;
+    ivdwmod                  = fr->nbkernel_vdw_modifier;
+    type                     = GMX_NBLIST_INTERACTION_STANDARD;
+    bElecAndVdwSwitchDiffers = ( (fr->rcoulomb_switch != fr->rvdw_switch) || (fr->rcoulomb != fr->rvdw));
 
     fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
     if (!fr->ns.bCGlist)
@@ -267,59 +270,48 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
             type = GMX_NBLIST_INTERACTION_ADRESS;
         }
         init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ], &nbl->nlist_lr[eNL_VDWQQ],
-                    maxsr, maxlr, ivdw, ivdwmod, ielec, ielecmod, igeometry_def, type);
+                    maxsr, maxlr, ivdw, ivdwmod, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_VDW], &nbl->nlist_lr[eNL_VDW],
-                    maxsr, maxlr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, igeometry_def, type);
+                    maxsr, maxlr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, igeometry_def, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_QQ], &nbl->nlist_lr[eNL_QQ],
-                    maxsr, maxlr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_def, type);
+                    maxsr, maxlr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_WATER], &nbl->nlist_lr[eNL_VDWQQ_WATER],
-                    maxsr_wat, maxlr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_w, type);
+                    maxsr_wat, maxlr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_QQ_WATER], &nbl->nlist_lr[eNL_QQ_WATER],
-                    maxsr_wat, maxlr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_w, type);
+                    maxsr_wat, maxlr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_WATERWATER], &nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
-                    maxsr_wat, maxlr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_ww, type);
+                    maxsr_wat, maxlr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_ww, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_QQ_WATERWATER], &nbl->nlist_lr[eNL_QQ_WATERWATER],
-                    maxsr_wat, maxlr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_ww, type);
+                    maxsr_wat, maxlr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_ww, type, bElecAndVdwSwitchDiffers);
 
         /* Did we get the solvent loops so we can use optimized water kernels? */
         if (nbl->nlist_sr[eNL_VDWQQ_WATER].kernelptr_vf == NULL
             || nbl->nlist_sr[eNL_QQ_WATER].kernelptr_vf == NULL
-#ifndef DISABLE_WATERWATER_NLIST
             || nbl->nlist_sr[eNL_VDWQQ_WATERWATER].kernelptr_vf == NULL
-            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL
-#endif
-            )
+            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL)
         {
             fr->solvent_opt = esolNO;
-            fprintf(log, "Note: The available nonbonded kernels do not support water optimization - disabling.\n");
+            if (log != NULL)
+            {
+                fprintf(log, "Note: The available nonbonded kernels do not support water optimization - disabling.\n");
+            }
         }
 
         if (fr->efep != efepNO)
         {
-            if ((fr->bEwald) && (fr->sc_alphacoul > 0)) /* need to handle long range differently if using softcore */
-            {
-                ielecf    = GMX_NBKERNEL_ELEC_EWALD;
-                ielecmodf = eintmodNONE;
-            }
-            else
-            {
-                ielecf    = ielec;
-                ielecmodf = ielecmod;
-            }
-
             init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_FREE], &nbl->nlist_lr[eNL_VDWQQ_FREE],
-                        maxsr, maxlr, ivdw, ivdwmod, ielecf, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
+                        maxsr, maxlr, ivdw, ivdwmod, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
             init_nblist(log, &nbl->nlist_sr[eNL_VDW_FREE], &nbl->nlist_lr[eNL_VDW_FREE],
-                        maxsr, maxlr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
+                        maxsr, maxlr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
             init_nblist(log, &nbl->nlist_sr[eNL_QQ_FREE], &nbl->nlist_lr[eNL_QQ_FREE],
-                        maxsr, maxlr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielecf, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
+                        maxsr, maxlr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
         }
     }
     /* QMMM MM list */
     if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
     {
         init_nblist(log, &fr->QMMMlist, NULL,
-                    maxsr, maxlr, 0, 0, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_STANDARD);
+                    maxsr, maxlr, 0, 0, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_STANDARD, bElecAndVdwSwitchDiffers);
     }
 
     if (log != NULL)
@@ -669,13 +661,11 @@ put_in_list_at(gmx_bool              bHaveVdW[],
 
     if (iwater != esolNO)
     {
-        vdwc = &nlist[eNL_VDWQQ_WATER];
-        vdw  = &nlist[eNL_VDW];
-        coul = &nlist[eNL_QQ_WATER];
-#ifndef DISABLE_WATERWATER_NLIST
+        vdwc    = &nlist[eNL_VDWQQ_WATER];
+        vdw     = &nlist[eNL_VDW];
+        coul    = &nlist[eNL_QQ_WATER];
         vdwc_ww = &nlist[eNL_VDWQQ_WATERWATER];
         coul_ww = &nlist[eNL_QQ_WATERWATER];
-#endif
     }
     else
     {
@@ -695,9 +685,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             if (bDoCoul && bDoVdW)
             {
                 new_i_nblist(vdwc, i_atom, shift, gid);
-#ifndef DISABLE_WATERWATER_NLIST
                 new_i_nblist(vdwc_ww, i_atom, shift, gid);
-#endif
             }
             if (bDoVdW)
             {
@@ -706,9 +694,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             if (bDoCoul)
             {
                 new_i_nblist(coul, i_atom, shift, gid);
-#ifndef DISABLE_WATERWATER_NLIST
                 new_i_nblist(coul_ww, i_atom, shift, gid);
-#endif
             }
             /* Loop over the j charge groups */
             for (j = 0; (j < nj); j++)
@@ -733,19 +719,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     }
                     else
                     {
-#ifdef DISABLE_WATERWATER_NLIST
-                        /* Add entries for the three atoms - only do VdW if we need to */
-                        if (!bDoVdW)
-                        {
-                            add_j_to_nblist(coul, jj0, bLR);
-                        }
-                        else
-                        {
-                            add_j_to_nblist(vdwc, jj0, bLR);
-                        }
-                        add_j_to_nblist(coul, jj0+1, bLR);
-                        add_j_to_nblist(coul, jj0+2, bLR);
-#else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
@@ -755,7 +728,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             add_j_to_nblist(vdwc_ww, jj0, bLR);
                         }
-#endif
                     }
                 }
                 else if (iwater == esolTIP4P && jwater == esolTIP4P)
@@ -768,16 +740,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     }
                     else
                     {
-#ifdef DISABLE_WATERWATER_NLIST
-                        /* Add entries for the four atoms - only do VdW if we need to */
-                        if (bDoVdW)
-                        {
-                            add_j_to_nblist(vdw, jj0, bLR);
-                        }
-                        add_j_to_nblist(coul, jj0+1, bLR);
-                        add_j_to_nblist(coul, jj0+2, bLR);
-                        add_j_to_nblist(coul, jj0+3, bLR);
-#else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
@@ -787,7 +749,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             add_j_to_nblist(vdwc_ww, jj0, bLR);
                         }
-#endif
                     }
                 }
                 else
@@ -848,10 +809,8 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             close_i_nblist(vdw);
             close_i_nblist(coul);
             close_i_nblist(vdwc);
-#ifndef DISABLE_WATERWATER_NLIST
             close_i_nblist(coul_ww);
             close_i_nblist(vdwc_ww);
-#endif
         }
         else
         {
@@ -2128,7 +2087,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     gmx_ns_t     *ns;
     atom_id     **nl_lr_ljc, **nl_lr_one, **nl_sr;
     int          *nlr_ljc, *nlr_one, *nsr;
-    gmx_domdec_t *dd     = NULL;
+    gmx_domdec_t *dd;
     t_block      *cgs    = &(top->cgs);
     int          *cginfo = fr->cginfo;
     /* atom_id *i_atoms,*cgsindex=cgs->index; */
@@ -2156,10 +2115,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     ns = &fr->ns;
 
     bDomDec = DOMAINDECOMP(cr);
-    if (bDomDec)
-    {
-        dd = cr->dd;
-    }
+    dd      = cr->dd;
 
     bTriclinicX = ((YY < grid->npbcdim &&
                     (!bDomDec || dd->nc[YY] == 1) && box[YY][XX] != 0) ||

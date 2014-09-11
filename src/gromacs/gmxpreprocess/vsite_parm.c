@@ -34,27 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdio.h>
-#include <math.h>
-#include <assert.h>
-#include <string.h>
 #include "vsite_parm.h"
-#include "smalloc.h"
-#include "resall.h"
-#include "add_par.h"
-#include "vec.h"
-#include "toputil.h"
-#include "physics.h"
-#include "index.h"
-#include "names.h"
-#include "gmx_fatal.h"
-#include "string2.h"
-#include "physics.h"
-#include "macros.h"
+
+#include <assert.h>
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     t_iatom a[4];

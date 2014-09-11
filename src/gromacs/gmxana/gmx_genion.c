@@ -34,32 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "string2.h"
-#include "smalloc.h"
-#include "sysstuff.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
-#include "pbc.h"
-#include "force.h"
-#include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/math/utilities.h"
-#include "macros.h"
-#include "vec.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "mdrun.h"
-#include "main.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
-#include "index.h"
-#include "mtop_util.h"
-#include "gmx_ana.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void insert_ion(int nsa, int *nwater,
                        gmx_bool bSet[], int repl[], atom_id index[],
@@ -126,7 +122,7 @@ static char *aname(const char *mname)
     char *str;
     int   i;
 
-    str = strdup(mname);
+    str = gmx_strdup(mname);
     i   = strlen(str)-1;
     while (i > 1 && (isdigit(str[i]) || (str[i] == '+') || (str[i] == '-')))
     {
@@ -180,14 +176,14 @@ void sort_ions(int nsa, int nw, int repl[], atom_id index[],
         if (np)
         {
             snew(pptr, 1);
-            pptr[0] = strdup(p_name);
+            pptr[0] = gmx_strdup(p_name);
             snew(paptr, 1);
             paptr[0] = aname(p_name);
         }
         if (nn)
         {
             snew(nptr, 1);
-            nptr[0] = strdup(n_name);
+            nptr[0] = gmx_strdup(n_name);
             snew(naptr, 1);
             naptr[0] = aname(n_name);
         }
@@ -294,7 +290,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
             }
             /* Store this molecules section line */
             srenew(mol_line, nmol_line+1);
-            mol_line[nmol_line] = strdup(buf);
+            mol_line[nmol_line] = gmx_strdup(buf);
             nmol_line++;
         }
     }
@@ -399,14 +395,14 @@ int gmx_genion(int argc, char *argv[])
     output_env_t       oenv;
     gmx_rng_t          rng;
     t_filenm           fnm[] = {
-        { efTPX, NULL,  NULL,      ffREAD  },
+        { efTPR, NULL,  NULL,      ffREAD  },
         { efNDX, NULL,  NULL,      ffOPTRD },
         { efSTO, "-o",  NULL,      ffWRITE },
         { efTOP, "-p",  "topol",   ffOPTRW }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
@@ -424,7 +420,7 @@ int gmx_genion(int argc, char *argv[])
     }
 
     /* Read atom positions and charges */
-    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, &x, &v, box, FALSE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), title, &top, &ePBC, &x, &v, box, FALSE);
     atoms = top.atoms;
 
     /* Compute total charge */
@@ -474,8 +470,7 @@ int gmx_genion(int argc, char *argv[])
 
     if ((p_num == 0) && (n_num == 0))
     {
-        fprintf(stderr, "No ions to add.\n");
-        exit(0);
+        fprintf(stderr, "No ions to add, will just copy input configuration.\n");
     }
     else
     {
@@ -510,52 +505,51 @@ int gmx_genion(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Not enough solvent for adding ions");
         }
-    }
 
-    if (opt2bSet("-p", NFILE, fnm))
-    {
-        update_topol(opt2fn("-p", NFILE, fnm), p_num, n_num, p_name, n_name, grpname);
-    }
+        if (opt2bSet("-p", NFILE, fnm))
+        {
+            update_topol(opt2fn("-p", NFILE, fnm), p_num, n_num, p_name, n_name, grpname);
+        }
 
-    snew(bSet, nw);
-    snew(repl, nw);
+        snew(bSet, nw);
+        snew(repl, nw);
 
-    snew(v, atoms.nr);
-    snew(atoms.pdbinfo, atoms.nr);
+        snew(v, atoms.nr);
+        snew(atoms.pdbinfo, atoms.nr);
 
-    set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, ePBC, box);
 
-    if (seed == 0)
-    {
-        rng = gmx_rng_init(gmx_rng_make_seed());
-    }
-    else
-    {
-        rng = gmx_rng_init(seed);
-    }
-    /* Now loop over the ions that have to be placed */
-    while (p_num-- > 0)
-    {
-        insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                   1, p_q, p_name, &atoms, rmin, rng);
-    }
-    while (n_num-- > 0)
-    {
-        insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                   -1, n_q, n_name, &atoms, rmin, rng);
-    }
-    gmx_rng_destroy(rng);
-    fprintf(stderr, "\n");
+        if (seed == 0)
+        {
+            rng = gmx_rng_init(gmx_rng_make_seed());
+        }
+        else
+        {
+            rng = gmx_rng_init(seed);
+        }
+        /* Now loop over the ions that have to be placed */
+        while (p_num-- > 0)
+        {
+            insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
+                       1, p_q, p_name, &atoms, rmin, rng);
+        }
+        while (n_num-- > 0)
+        {
+            insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
+                       -1, n_q, n_name, &atoms, rmin, rng);
+        }
+        gmx_rng_destroy(rng);
+        fprintf(stderr, "\n");
 
-    if (nw)
-    {
-        sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name);
-    }
+        if (nw)
+        {
+            sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name);
+        }
 
-    sfree(atoms.pdbinfo);
-    atoms.pdbinfo = NULL;
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, NULL, ePBC,
-                   box);
+        sfree(atoms.pdbinfo);
+        atoms.pdbinfo = NULL;
+    }
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, NULL, ePBC, box);
 
     return 0;
 }

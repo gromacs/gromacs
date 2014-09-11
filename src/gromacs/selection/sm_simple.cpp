@@ -39,13 +39,16 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include <cctype>
 
 #include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
+
+#include "selmethod.h"
 
 /** Evaluates the \p all selection keyword. */
 static void

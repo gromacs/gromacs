@@ -35,19 +35,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <string.h>
-#include "typedefs.h"
-#include "smalloc.h"
-#include "grompp-impl.h"
-#include "macros.h"
-#include "toputil.h"
-#include "hackblock.h"
-#include "string2.h"
-#include "gmx_fatal.h"
+
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void clear_atom_list(int i0, atom_id a[])
 {

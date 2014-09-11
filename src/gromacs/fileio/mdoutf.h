@@ -37,13 +37,21 @@
 #define GMX_FILEIO_MDOUTF_H
 
 #include <stdio.h>
-#include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/types/topology.h"
-#include "../legacyheaders/types/inputrec.h"
-#include "../legacyheaders/types/oenv.h"
-#include "../legacyheaders/network.h"
-#include "filenm.h"
-#include "enxio.h"
+
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct gmx_mtop_t;
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
@@ -58,8 +66,9 @@ gmx_mdoutf_t init_mdoutf(FILE              *fplog,
                          int                mdrun_flags,
                          const t_commrec   *cr,
                          const t_inputrec  *ir,
-                         gmx_mtop_t        *mtop,
-                         const output_env_t oenv);
+                         struct gmx_mtop_t *mtop,
+                         const output_env_t oenv,
+                         gmx_wallcycle_t    wcycle);
 
 /*! \brief Getter for file pointer */
 FILE *mdoutf_get_fp_field(gmx_mdoutf_t of);
@@ -69,6 +78,16 @@ ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 
 /*! \brief Getter for file pointer */
 FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
+
+/*! \brief Getter for wallcycle timer */
+gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
+
+/*! \brief Close TNG files if they are open.
+ *
+ * This also measures the time it takes to close the TNG
+ * files.
+ */
+void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
 void done_mdoutf(gmx_mdoutf_t of);
@@ -82,7 +101,7 @@ void done_mdoutf(gmx_mdoutf_t of);
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
-                                      gmx_mtop_t *top_global,
+                                      struct gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       rvec *f_local, rvec *f_global);
@@ -94,5 +113,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
 #define MDOF_CPT          (1<<4)
 #define MDOF_IMD          (1<<5)
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GMX_FILEIO_MDOUTF_H */

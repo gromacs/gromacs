@@ -39,12 +39,10 @@
 #define _ns_h
 
 #include <stdio.h>
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "pbc.h"
-#include "tgroup.h"
-#include "network.h"
 
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

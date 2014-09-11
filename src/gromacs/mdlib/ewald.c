@@ -34,23 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdio.h>
 #include <math.h>
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "vec.h"
-#include "smalloc.h"
-#include "gmx_fatal.h"
-#include "physics.h"
-#include "coulomb.h"
-#include "macros.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define TOL 2e-5
 

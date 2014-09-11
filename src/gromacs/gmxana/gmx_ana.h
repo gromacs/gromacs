@@ -148,9 +148,6 @@ int
 gmx_hydorder(int argc, char *argv[]);
 
 int
-gmx_kinetics(int argc, char *argv[]);
-
-int
 gmx_make_edi(int argc, char *argv[]);
 
 int

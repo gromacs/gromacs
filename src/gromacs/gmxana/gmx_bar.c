@@ -32,31 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <math.h>
-#include <string.h>
 #include <ctype.h>
-#include <math.h>
 #include <float.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "smalloc.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "macros.h"
 #include "gromacs/fileio/enxio.h"
-#include "physics.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "string2.h"
-#include "names.h"
-#include "mdebin.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 /* Structure for the names of lambda vector components */
@@ -234,7 +232,7 @@ static void lambda_components_add(lambda_components_t *lc,
     while (lc->N + 1 > lc->Nalloc)
     {
         lc->Nalloc = (lc->Nalloc == 0) ? 2 : 2*lc->Nalloc;
-        srealloc( lc->names, lc->Nalloc );
+        srenew(lc->names, lc->Nalloc);
     }
     snew(lc->names[lc->N], name_length+1);
     strncpy(lc->names[lc->N], name, name_length);
@@ -356,7 +354,7 @@ static void lambda_vec_print(const lambda_vec_t *lv, char *str, gmx_bool named)
         str += sprintf(str, "dH/dl");
         if (strlen(lv->lc->names[lv->dhdl]) > 0)
         {
-            str += sprintf(str, " (%s)", lv->lc->names[lv->dhdl]);
+            sprintf(str, " (%s)", lv->lc->names[lv->dhdl]);
         }
     }
 }
@@ -1132,6 +1130,31 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
     xvgrclose(fp);
 }
 
+static int
+snprint_lambda_vec(char *str, int sz, const char *label, lambda_vec_t *lambda)
+{
+    int n = 0;
+
+    n += snprintf(str+n, sz-n, "lambda vector [%s]: ", label);
+    if (lambda->index >= 0)
+    {
+        n += snprintf(str+n, sz-n, " init-lambda-state=%d", lambda->index);
+    }
+    if (lambda->dhdl >= 0)
+    {
+        n += snprintf(str+n, sz-n, " dhdl index=%d", lambda->dhdl);
+    }
+    else
+    {
+        int i;
+        for (i = 0; i < lambda->lc->N; i++)
+        {
+            n += snprintf(str+n, sz-n, " (%s) l=%g", lambda->lc->names[i], lambda->val[i]);
+        }
+    }
+    return n;
+}
+
 /* create a collection (array) of barres_t object given a ordered linked list
    of barlamda_t sample collections */
 static barres_t *barres_list_create(sim_data_t *sd, int *nres,
@@ -1187,17 +1210,27 @@ static barres_t *barres_list_create(sim_data_t *sd, int *nres,
         }
         else if (!scprev && !sc)
         {
-            gmx_fatal(FARGS, "There is no path from lambda=%f -> %f that is covered by foreign lambdas:\ncannot proceed with BAR.\nUse thermodynamic integration of dH/dl by calculating the averages of dH/dl\nwith g_analyze and integrating them.\nAlternatively, use the -extp option if (and only if) the Hamiltonian\ndepends linearly on lambda, which is NOT normally the case.\n", bl->prev->lambda, bl->lambda);
+            char descX[STRLEN], descY[STRLEN];
+            snprint_lambda_vec(descX, STRLEN, "X", bl->prev->lambda);
+            snprint_lambda_vec(descY, STRLEN, "Y", bl->lambda);
+
+            gmx_fatal(FARGS, "There is no path between the states X & Y below that is covered by foreign lambdas:\ncannot proceed with BAR.\nUse thermodynamic integration of dH/dl by calculating the averages of dH/dl\nwith g_analyze and integrating them.\nAlternatively, use the -extp option if (and only if) the Hamiltonian\ndepends linearly on lambda, which is NOT normally the case.\n\n%s\n%s\n", descX, descY);
         }
 
         /* normal delta H */
         if (!scprev)
         {
-            gmx_fatal(FARGS, "Could not find a set for foreign lambda = %f\nin the files for lambda = %f", bl->lambda, bl->prev->lambda);
+            char descX[STRLEN], descY[STRLEN];
+            snprint_lambda_vec(descX, STRLEN, "X", bl->lambda);
+            snprint_lambda_vec(descY, STRLEN, "Y", bl->prev->lambda);
+            gmx_fatal(FARGS, "Could not find a set for foreign lambda (state X below)\nin the files for main lambda (state Y below)\n\n%s\n%s\n", descX, descY);
         }
         if (!sc)
         {
-            gmx_fatal(FARGS, "Could not find a set for foreign lambda = %f\nin the files for lambda = %f", bl->prev->lambda, bl->lambda);
+            char descX[STRLEN], descY[STRLEN];
+            snprint_lambda_vec(descX, STRLEN, "X", bl->prev->lambda);
+            snprint_lambda_vec(descY, STRLEN, "Y", bl->lambda);
+            gmx_fatal(FARGS, "Could not find a set for foreign lambda (state X below)\nin the files for main lambda (state Y below)\n\n%s\n%s\n", descX, descY);
         }
         br->a = scprev;
         br->b = sc;

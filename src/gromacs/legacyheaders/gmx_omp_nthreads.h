@@ -33,11 +33,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_OMP_NTHREADS
-#define GMX_OMP_NTHREADS
+#ifndef GMX_OMP_NTHREADS_H
+#define GMX_OMP_NTHREADS_H
 
 #include <stdio.h>
-#include "typedefs.h"
+
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +47,9 @@ extern "C" {
 }
 #endif
 
-/*! Enum values corresponding to multithreaded algorithmic modules. */
+struct t_commrec;
+
+/** Enum values corresponding to multithreaded algorithmic modules. */
 typedef enum module_nth
 {
     /* Default is meant to be used in OMP regions outside the named
@@ -56,24 +59,31 @@ typedef enum module_nth
     emntNR
 } module_nth_t;
 
-/*! Initializes the per-module thread count. It is compatible with tMPI,
- *  thread-safety is ensured (for the features available with tMPI).
- *  This function should caled only once during the initialization of mdrun. */
-void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
+/*! \brief
+ * Initializes the per-module thread count.
+ *
+ * It is compatible with tMPI, thread-safety is ensured (for the features
+ * available with tMPI).
+ * This function should caled only once during the initialization of mdrun. */
+void gmx_omp_nthreads_init(FILE *fplog, struct t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
                            gmx_bool bCurrNodePMEOnly,
                            gmx_bool bFullOmpSupport);
 
-/*! Returns the number of threads to be used in the given module m. */
+/*! \brief
+ * Returns the number of threads to be used in the given module \p mod. */
 int gmx_omp_nthreads_get(int mod);
 
-/*! \brief Sets the number of threads to be used in module. Intended
- *  for use in testing. */
+/*! \brief Sets the number of threads to be used in module.
+ *
+ * Intended for use in testing. */
 void gmx_omp_nthreads_set(int mod, int nthreads);
 
-/*! Read the OMP_NUM_THREADS env. var. and check against the value set on the command line. */
+/*! \brief
+ * Read the OMP_NUM_THREADS env. var. and check against the value set on the
+ * command line. */
 void gmx_omp_nthreads_read_env(int     *nthreads_omp,
                                gmx_bool bIsSimMaster);
 
@@ -84,4 +94,4 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 }
 #endif
 
-#endif /* GMX_OMP_NTHREADS */
+#endif

@@ -34,17 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include "cmat.h"
-#include "smalloc.h"
-#include "macros.h"
-#include "vec.h"
-#include "xvgr.h"
+
 #include "gromacs/fileio/matio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 t_mat *init_mat(int n1, gmx_bool b1D)
 {

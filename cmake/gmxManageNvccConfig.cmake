@@ -125,13 +125,10 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         mark_as_advanced(CUDA_HOST_COMPILER CUDA_HOST_COMPILER_OPTIONS)
     endif()
 
-    # on Linux we need to add -fPIC when building shared gmx libs
-    # Note: will add -fPIC for any compiler that supports it as it shouldn't hurt
-    if(BUILD_SHARED_LIBS)
-        GMX_TEST_CXXFLAG(CXXFLAG_FPIC "-fPIC" _FPIC_NVCC_FLAG)
-        if(_FPIC_NVCC_FLAG)
-            set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}-Xcompiler;${_FPIC_NVCC_FLAG}")
-        endif()
+    if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "GNU")
+        # Some versions of gcc-4.8 and gcc-4.9 produce errors (in particular on OS X)
+        # if we do not use -D__STRICT_ANSI__. It is harmless, so we might as well add it for all versions.
+        set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}-D__STRICT_ANSI__;")
     endif()
 
     # the legacy CUDA kernels have been dropped, warn with CUDA 4.0

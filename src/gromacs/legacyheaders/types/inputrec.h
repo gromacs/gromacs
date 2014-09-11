@@ -37,11 +37,11 @@
 #ifndef _inputrec_h_
 #define _inputrec_h_
 
+#include <stdio.h>
 
-#include "simple.h"
-#include "enums.h"
-#include "../sysstuff.h"
-#include "../../swap/enums.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -151,7 +151,7 @@ typedef struct {
                                        valid value if positive)   */
     int      init_fep_state;        /* the initial number of the state                   */
     double   delta_lambda;          /* change of lambda per time step (fraction of (0.1) */
-    gmx_bool bPrintEnergy;          /* Whether to print the energy in the dhdl           */
+    int      edHdLPrintEnergy;      /* print no, total or potential energies in dhdl    */
     int      n_lambda;              /* The number of foreign lambda points               */
     double **all_lambda;            /* The array of all lambda values                    */
     int      lambda_neighbors;      /* The number of neighboring lambda states to
@@ -225,13 +225,15 @@ typedef struct {
     t_pull_coord  *coord;      /* the pull coordinates */
 
     /* Variables not present in mdp, but used at run time */
-    t_pull_group  *dyna;       /* dynamic groups for use with local constraints */
-    rvec          *rbuf;       /* COM calculation buffer */
-    dvec          *dbuf;       /* COM calculation buffer */
-    double        *dbuf_cyl;   /* cylinder ref. groups COM calculation buffer */
+    t_pull_group  *dyna;         /* dynamic groups for use with local constraints */
+    gmx_bool       bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
-    FILE          *out_x;      /* output file for pull data */
-    FILE          *out_f;      /* output file for pull data */
+    rvec          *rbuf;         /* COM calculation buffer */
+    dvec          *dbuf;         /* COM calculation buffer */
+    double        *dbuf_cyl;     /* cylinder ref. groups COM calculation buffer */
+
+    FILE          *out_x;        /* output file for pull data */
+    FILE          *out_f;        /* output file for pull data */
 } t_pull;
 
 
@@ -337,9 +339,8 @@ typedef struct {
     int             nstlist;                 /* number of steps before pairlist is generated	*/
     int             ndelta;                  /* number of cells per rlong			*/
     int             nstcomm;                 /* number of steps after which center of mass	*/
-    /* motion is removed				*/
+                                             /* motion is removed				*/
     int             comm_mode;               /* Center of mass motion removal algorithm      */
-    int             nstcheckpoint;           /* checkpointing frequency                      */
     int             nstlog;                  /* number of steps after which print to logfile	*/
     int             nstxout;                 /* number of steps after which X is output	*/
     int             nstvout;                 /* id. for V					*/
@@ -358,7 +359,6 @@ typedef struct {
     real            ewald_rtol_lj;           /* Real space tolerance for LJ-Ewald            */
     int             ewald_geometry;          /* normal/3d ewald, or pseudo-2d LR corrections */
     real            epsilon_surface;         /* Epsilon for PME dipole correction            */
-    gmx_bool        bOptFFT;                 /* optimize the fft plan at start               */
     int             ljpme_combination_rule;  /* Type of combination rule in LJ-PME          */
     int             ePBC;                    /* Type of periodic boundary conditions		*/
     int             bPeriodicMols;           /* Periodic molecules                           */
@@ -422,7 +422,6 @@ typedef struct {
     real            orires_fc;               /* force constant for orientational restraints  */
     real            orires_tau;              /* time constant for memory function in orires    */
     int             nstorireout;             /* frequency of writing tr(SD) to enx           */
-    real            dihre_fc;                /* force constant for dihedral restraints (obsolete)	*/
     real            em_stepsize;             /* The stepsize for updating			*/
     real            em_tol;                  /* The tolerance				*/
     int             niter;                   /* Number of iterations for convergence of      */

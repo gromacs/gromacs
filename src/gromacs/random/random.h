@@ -35,23 +35,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _GMX_RANDOM_H_
-#define _GMX_RANDOM_H_
+#ifndef GMX_RANDOM_RANDOM_H
+#define GMX_RANDOM_RANDOM_H
 
-#include <stdio.h>
-#include "types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*! Fixed random number seeds for different types of RNG */
-#define RND_SEED_UPDATE    1 /*!< For coordinate update (sd, bd, ..) */
-#define RND_SEED_REPLEX    2 /*!< For replica exchange */
-#define RND_SEED_VRESCALE  3 /*!< For V-rescale thermostat */
-#define RND_SEED_ANDERSEN  4 /*!< For Andersen thermostat */
-#define RND_SEED_TPI       5 /*!< For test particle insertion */
-#define RND_SEED_EXPANDED  6 /*!< For expanded emseble methods */
+#define RND_SEED_UPDATE    1 /**< For coordinate update (sd, bd, ..) */
+#define RND_SEED_REPLEX    2 /**< For replica exchange */
+#define RND_SEED_VRESCALE  3 /**< For V-rescale thermostat */
+#define RND_SEED_ANDERSEN  4 /**< For Andersen thermostat */
+#define RND_SEED_TPI       5 /**< For test particle insertion */
+#define RND_SEED_EXPANDED  6 /**< For expanded emseble methods */
 
 /*! \brief Abstract datatype for a random number generator
  *
@@ -322,4 +322,4 @@ gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
 }
 #endif
 
-#endif /* _GMX_RANDOM_H_ */
+#endif

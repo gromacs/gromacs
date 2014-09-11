@@ -45,33 +45,36 @@
  *
  * \ingroup module_imd
  */
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include "gmxpre.h"
 
 #include "imd.h"
-#include "imdsocket.h"
-#include "smalloc.h"
-#include "network.h"
-#include "mdrun.h"
-#include "sighandler.h"
-#include "gmx_ga2la.h"
-#include "xvgr.h"
-#include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/fileio/confio.h"
-#include "mtop_util.h"
-#include "names.h"
-#include "gromacs/timing/wallcycle.h"
 
+#include "config.h"
+
+#include <errno.h>
 #include <string.h>
 
 #ifdef GMX_NATIVE_WINDOWS
-#include <Windows.h>
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif
+
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/imd/imdsocket.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/sighandler.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /*! \brief How long shall we wait in seconds until we check for a connection again? */
 #define IMDLOOPWAIT 1

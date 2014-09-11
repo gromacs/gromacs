@@ -47,11 +47,13 @@
 #include <string>
 #include <vector>
 
-#include "../legacyheaders/typedefs.h"
+#include <boost/shared_ptr.hpp>
 
-#include "../selection/selection.h" // For gmx::SelectionList
-#include "../utility/common.h"
-#include "../utility/uniqueptr.h"
+#include "gromacs/selection/selection.h" // For gmx::SelectionList
+#include "gromacs/utility/common.h"
+
+struct t_pbc;
+struct t_trxframe;
 
 namespace gmx
 {
@@ -176,7 +178,7 @@ class TrajectoryAnalysisModuleData
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
-typedef gmx_unique_ptr<TrajectoryAnalysisModuleData>::type
+typedef boost::shared_ptr<TrajectoryAnalysisModuleData>
     TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
@@ -293,7 +295,8 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual void initAfterFirstFrame(const t_trxframe &fr);
+        virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
+                                         const t_trxframe                 &fr);
 
         /*! \brief
          * Starts the analysis of frames.
@@ -495,7 +498,7 @@ class TrajectoryAnalysisModule
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
-typedef gmx_unique_ptr<TrajectoryAnalysisModule>::type
+typedef boost::shared_ptr<TrajectoryAnalysisModule>
     TrajectoryAnalysisModulePointer;
 
 } // namespace gmx

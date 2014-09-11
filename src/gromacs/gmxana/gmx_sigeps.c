@@ -34,27 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdio.h>
 #include <math.h>
-#include "typedefs.h"
+#include <stdio.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "gmx_fatal.h"
-#include "xvgr.h"
-#include "gromacs/fileio/pdbio.h"
-#include "macros.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "pbc.h"
-#include "physics.h"
-#include "names.h"
-#include "txtdump.h"
-#include "gromacs/fileio/trnio.h"
-#include "symtab.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 real pot(real x, real qq, real c6, real cn, int npow)
 {

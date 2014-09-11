@@ -34,27 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <ctype.h>
 #include <string.h>
 
-#include "sysstuff.h"
-#include "gromacs/fileio/futil.h"
-#include "macros.h"
-#include "string2.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "typedefs.h"
-#include "index.h"
-#include "smalloc.h"
-#include "vec.h"
-#include "index.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
-#define MAXNAMES 30
-#define NAME_LEN 30
+/* It's not nice to have size limits, but we should not spend more time
+ * on this ancient tool, but instead use the new selection library.
+ */
+#define MAXNAMES 1024
+#define NAME_LEN 1024
 
 gmx_bool bCase = FALSE;
 
@@ -276,7 +277,7 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
     {
         c = (*string)[0];
         (*string)++;
-        s  = strdup((*string));
+        s  = gmx_strdup((*string));
         sp = strchr(s, c);
         if (sp != NULL)
         {
@@ -745,7 +746,7 @@ static void remove_group(int nr, int nr2, t_blocka *block, char ***gn)
             {
                 block->index[i] = block->index[i+1]-shift;
             }
-            name = strdup((*gn)[nr]);
+            name = gmx_strdup((*gn)[nr]);
             sfree((*gn)[nr]);
             for (i = nr; i < block->nr-1; i++)
             {
@@ -794,7 +795,7 @@ static void split_group(t_atoms *atoms, int sel_nr, t_blocka *block, char ***gn,
             {
                 sprintf(buf, "%s_%s_%d", (*gn)[sel_nr], name, atoms->resinfo[resind].nr);
             }
-            (*gn)[block->nr-1] = strdup(buf);
+            (*gn)[block->nr-1] = gmx_strdup(buf);
         }
         block->a[block->nra] = a;
         block->nra++;
@@ -845,8 +846,12 @@ static int split_chain(t_atoms *atoms, rvec *x,
                 {
                     rvec_sub(x[ca_end], x[i], vec);
                 }
+                else
+                {
+                    break;
+                }
             }
-            while ((i < natoms) && (norm(vec) < 0.45));
+            while (norm(vec) < 0.45);
 
             end[nchain] = ca_end;
             while ((end[nchain]+1 < natoms) &&
@@ -881,7 +886,7 @@ static int split_chain(t_atoms *atoms, rvec *x,
             srenew(block->index, block->nr+1);
             srenew(*gn, block->nr);
             sprintf(buf, "%s_chain%d", (*gn)[sel_nr], j+1);
-            (*gn)[block->nr-1] = strdup(buf);
+            (*gn)[block->nr-1] = gmx_strdup(buf);
             for (i = block->index[sel_nr]; i < block->index[sel_nr+1]; i++)
             {
                 a = block->a[i];
@@ -1324,7 +1329,7 @@ static void edit_index(int natoms, t_atoms *atoms, rvec *x, t_blocka *block, cha
                 {
                     sscanf(string, "%s", gname);
                     sfree((*gn)[sel_nr]);
-                    (*gn)[sel_nr] = strdup(gname);
+                    (*gn)[sel_nr] = gmx_strdup(gname);
                 }
             }
         }
@@ -1442,7 +1447,7 @@ static void edit_index(int natoms, t_atoms *atoms, rvec *x, t_blocka *block, cha
                 copy2block(nr, index, block);
                 srenew(*gn, block->nr);
                 newgroup        = block->nr-1;
-                (*gn)[newgroup] = strdup(gname);
+                (*gn)[newgroup] = gmx_strdup(gname);
             }
             else
             {

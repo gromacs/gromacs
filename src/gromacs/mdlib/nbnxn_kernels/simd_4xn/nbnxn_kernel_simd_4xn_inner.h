@@ -53,7 +53,7 @@
  * this can be faster when we have defined gmx_simd_blendv_r, i.e. an instruction
  * that selects from two SIMD registers based on the contents of a third.
  */
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_SIMD_HAVE_BLENDV
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES || defined LJ_EWALD_GEOM) && defined GMX_SIMD_HAVE_BLENDV
 /* With RF and tabulated Coulomb we replace cmp+and with sub+blendv.
  * With gcc this is slower, except for RF on Sandy Bridge.
  * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
@@ -1014,11 +1014,12 @@
 #endif
 #endif
 
-        cr2_S0        = gmx_simd_mul_r(lje_c2_S, rsq_S0);
-        cr2_S1        = gmx_simd_mul_r(lje_c2_S, rsq_S1);
+        /* Mask for the cut-off to avoid overflow of cr2^2 */
+        cr2_S0        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S0, wco_vdw_S0));
+        cr2_S1        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S1, wco_vdw_S1));
 #ifndef HALF_LJ
-        cr2_S2        = gmx_simd_mul_r(lje_c2_S, rsq_S2);
-        cr2_S3        = gmx_simd_mul_r(lje_c2_S, rsq_S3);
+        cr2_S2        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S2, wco_vdw_S2));
+        cr2_S3        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S3, wco_vdw_S3));
 #endif
         expmcr2_S0    = gmx_simd_exp_r(gmx_simd_mul_r(mone_S, cr2_S0));
         expmcr2_S1    = gmx_simd_exp_r(gmx_simd_mul_r(mone_S, cr2_S1));

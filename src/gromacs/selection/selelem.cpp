@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,21 +39,23 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "selelem.h"
+
 #include <cstring>
 
-#include "gromacs/legacyheaders/smalloc.h"
-
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "keywords.h"
 #include "mempool.h"
-#include "selelem.h"
+#include "poscalc.h"
+#include "selmethod.h"
 
 /*!
  * \param[in] sel Selection for which the string is requested
@@ -66,19 +68,22 @@
 const char *
 _gmx_selelem_type_str(const gmx::SelectionTreeElement &sel)
 {
+    const char *p = NULL;
     switch (sel.type)
     {
-        case SEL_CONST:      return "CONST";
-        case SEL_EXPRESSION: return "EXPR";
-        case SEL_BOOLEAN:    return "BOOL";
-        case SEL_ARITHMETIC: return "ARITH";
-        case SEL_ROOT:       return "ROOT";
-        case SEL_SUBEXPR:    return "SUBEXPR";
-        case SEL_SUBEXPRREF: return "REF";
-        case SEL_GROUPREF:   return "GROUPREF";
-        case SEL_MODIFIER:   return "MODIFIER";
+        case SEL_CONST:      p = "CONST";    break;
+        case SEL_EXPRESSION: p = "EXPR";     break;
+        case SEL_BOOLEAN:    p = "BOOL";     break;
+        case SEL_ARITHMETIC: p = "ARITH";    break;
+        case SEL_ROOT:       p = "ROOT";     break;
+        case SEL_SUBEXPR:    p = "SUBEXPR";  break;
+        case SEL_SUBEXPRREF: p = "REF";      break;
+        case SEL_GROUPREF:   p = "GROUPREF"; break;
+        case SEL_MODIFIER:   p = "MODIFIER"; break;
+            // No default clause so we intentionally get compiler errors
+            // if new selection choices are added later.
     }
-    return NULL;
+    return p;
 }
 
 /*!
@@ -91,30 +96,36 @@ _gmx_selelem_type_str(const gmx::SelectionTreeElement &sel)
 const char *
 _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val)
 {
+    const char *p = NULL;
     switch (val->type)
     {
-        case NO_VALUE:       return "NONE";
-        case INT_VALUE:      return "INT";
-        case REAL_VALUE:     return "REAL";
-        case STR_VALUE:      return "STR";
-        case POS_VALUE:      return "VEC";
-        case GROUP_VALUE:    return "GROUP";
+        case NO_VALUE:       p = "NONE";  break;
+        case INT_VALUE:      p = "INT";   break;
+        case REAL_VALUE:     p = "REAL";  break;
+        case STR_VALUE:      p = "STR";   break;
+        case POS_VALUE:      p = "VEC";   break;
+        case GROUP_VALUE:    p = "GROUP"; break;
+            // No default clause so we intentionally get compiler errors
+            // if new selection choices are added later.
     }
-    return NULL;
+    return p;
 }
 
 /*! \copydoc _gmx_selelem_type_str() */
 const char *
 _gmx_selelem_boolean_type_str(const gmx::SelectionTreeElement &sel)
 {
+    const char *p = NULL;
     switch (sel.u.boolt)
     {
-        case BOOL_NOT:  return "NOT"; break;
-        case BOOL_AND:  return "AND"; break;
-        case BOOL_OR:   return "OR";  break;
-        case BOOL_XOR:  return "XOR"; break;
+        case BOOL_NOT:  p = "NOT"; break;
+        case BOOL_AND:  p = "AND"; break;
+        case BOOL_OR:   p = "OR";  break;
+        case BOOL_XOR:  p = "XOR"; break;
+            // No default clause so we intentionally get compiler errors
+            // if new selection choices are added later.
     }
-    return NULL;
+    return p;
 }
 
 
@@ -329,7 +340,45 @@ void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
     }
 }
 
-void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
+void SelectionTreeElement::checkUnsortedAtoms(
+        bool bUnsortedAllowed, ExceptionInitializer *errors) const
+{
+    const bool bUnsortedSupported
+        = (type == SEL_CONST && v.type == GROUP_VALUE)
+            || type == SEL_ROOT || type == SEL_SUBEXPR || type == SEL_SUBEXPRREF
+            // TODO: Consolidate.
+            || type == SEL_MODIFIER
+            || (type == SEL_EXPRESSION && (u.expr.method->flags & SMETH_ALLOW_UNSORTED));
+
+    // TODO: For some complicated selections, this may result in the same
+    // index group reference being flagged as an error multiple times for the
+    // same selection.
+    SelectionTreeElementPointer child = this->child;
+    while (child)
+    {
+        child->checkUnsortedAtoms(bUnsortedAllowed && bUnsortedSupported,
+                                  errors);
+        child = child->next;
+    }
+
+    // The logic here is simplified by the fact that only constant groups can
+    // currently be the root cause of SEL_UNSORTED being set, so only those
+    // need to be considered in triggering the error.
+    if (!bUnsortedAllowed && (flags & SEL_UNSORTED)
+        && type == SEL_CONST && v.type == GROUP_VALUE)
+    {
+        std::string message = formatString(
+                    "Group '%s' cannot be used in selections except "
+                    "as a full value of the selection, "
+                    "because atom indices in it are not sorted and/or "
+                    "it contains duplicate atoms.",
+                    name().c_str());
+        errors->addNested(InconsistentInputError(message));
+    }
+}
+
+void SelectionTreeElement::resolveIndexGroupReference(
+        gmx_ana_indexgrps_t *grps, int natoms)
 {
     GMX_RELEASE_ASSERT(type == SEL_GROUPREF,
                        "Should only be called for index group reference elements");
@@ -366,13 +415,7 @@ void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
 
     if (!gmx_ana_index_check_sorted(&foundGroup))
     {
-        gmx_ana_index_deinit(&foundGroup);
-        std::string message = formatString(
-                    "Group '%s' ('%s') cannot be used in selections, "
-                    "because atom indices in it are not sorted and/or "
-                    "it contains duplicate atoms.",
-                    foundName.c_str(), name().c_str());
-        GMX_THROW(InconsistentInputError(message));
+        flags |= SEL_UNSORTED;
     }
 
     sfree(u.gref.name);
@@ -380,6 +423,26 @@ void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
     gmx_ana_index_set(&u.cgrp, foundGroup.isize, foundGroup.index,
                       foundGroup.nalloc_index);
     setName(foundName);
+
+    if (natoms > 0)
+    {
+        checkIndexGroup(natoms);
+    }
+}
+
+void SelectionTreeElement::checkIndexGroup(int natoms)
+{
+    GMX_RELEASE_ASSERT(type == SEL_CONST && v.type == GROUP_VALUE,
+                       "Should only be called for index group elements");
+    if (!gmx_ana_index_check_range(&u.cgrp, natoms))
+    {
+        std::string message = formatString(
+                    "Group '%s' cannot be used in selections, because it "
+                    "contains negative atom indices and/or references atoms "
+                    "not present (largest allowed atom index is %d).",
+                    name().c_str(), natoms);
+        GMX_THROW(InconsistentInputError(message));
+    }
 }
 
 } // namespace gmx
