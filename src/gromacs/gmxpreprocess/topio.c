@@ -996,7 +996,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
                         }
                         default:
-                            fprintf (stderr, "case: %d\n", d);
+                            fprintf (stderr, "case: %u\n", d);
                             gmx_incons("unknown directive");
                     }
                 }

@@ -377,7 +377,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             {
                 if (debug)
                 {
-                    fprintf(debug, "\nShifting position of residue %d (atoms %u-%u) "
+                    fprintf(debug, "\nShifting position of residue %d (atoms %d-%d) "
                             "by %g,%g,%g\n", atom[res_start].resind+1,
                             res_start+1, res_end+1, shift[XX], shift[YY], shift[ZZ]);
                 }

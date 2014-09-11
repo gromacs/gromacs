@@ -1130,7 +1130,6 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
             }
         }
     }
-    return -1;
 }
 
 
@@ -1171,7 +1170,6 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
             return -1;
         }
     }
-    return -1;
 }
 
 
@@ -1219,7 +1217,6 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
             }
         }
     }
-    return -1;
 }
 
 /* Currently not used, just for completeness */
@@ -1269,7 +1266,6 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
             }
         }
     }
-    return -1;
 }
 
 
@@ -1302,7 +1298,6 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
             return -1;
         }
     }
-    return -1;
 }
 
 

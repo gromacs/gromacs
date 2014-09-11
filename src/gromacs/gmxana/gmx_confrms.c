@@ -612,12 +612,12 @@ int gmx_confrms(int argc, char *argv[])
             fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1);
             for (i = 0; i < isize1; i++)
             {
-                fprintf(fp, "%4u%s", index1[i]+1, (i%15 == 14 || i == isize1-1) ? "\n" : " ");
+                fprintf(fp, "%4d%s", index1[i]+1, (i%15 == 14 || i == isize1-1) ? "\n" : " ");
             }
             fprintf(fp, "[ Match_%s_%s ]\n", conf2file, groupnames2);
             for (i = 0; i < isize2; i++)
             {
-                fprintf(fp, "%4u%s", index2[i]+1, (i%15 == 14 || i == isize2-1) ? "\n" : " ");
+                fprintf(fp, "%4d%s", index2[i]+1, (i%15 == 14 || i == isize2-1) ? "\n" : " ");
             }
         }
     }
@@ -637,7 +637,7 @@ int gmx_confrms(int argc, char *argv[])
             if (warn < 20)
             {
                 fprintf(stderr,
-                        "Warning: atomnames at index %d don't match: %u %s, %u %s\n",
+                        "Warning: atomnames at index %d don't match: %d %s, %d %s\n",
                         i+1, index1[i]+1, name1, index2[i]+1, name2);
             }
             warn++;

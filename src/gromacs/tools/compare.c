@@ -85,11 +85,11 @@ static void cmp_us(FILE *fp, const char *s, int index, unsigned short i1, unsign
     {
         if (index != -1)
         {
-            fprintf(fp, "%s[%d] (%u - %u)\n", s, index, i1, i2);
+            fprintf(fp, "%s[%d] (%hu - %hu)\n", s, index, i1, i2);
         }
         else
         {
-            fprintf(fp, "%s (%u - %u)\n", s, i1, i2);
+            fprintf(fp, "%s (%hu - %hu)\n", s, i1, i2);
         }
     }
 }

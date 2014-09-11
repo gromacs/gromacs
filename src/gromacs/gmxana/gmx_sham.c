@@ -756,7 +756,7 @@ static void do_sham(const char *fn, const char *ndx,
                     index   = index3(ibox, i, j, k);
                     if (P[index] > 0)
                     {
-                        fprintf(fp, "%-6s%5u  %-4.4s%3.3s  %4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                        fprintf(fp, "%-6s%5d  %-4.4s%3.3s  %4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                                 "ATOM", (index+1) %10000, "H", "H", (index+1)%10000,
                                 xxx[XX], xxx[YY], xxx[ZZ], 1.0, W[index]);
                     }
