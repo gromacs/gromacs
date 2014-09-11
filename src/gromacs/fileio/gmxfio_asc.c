@@ -327,7 +327,11 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
             }
             break;
         case eioUCHAR:
+#ifdef GMX_NATIVE_WINDOWS
             res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%c", &uc);
+#else
+            res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%hhu", &uc);
+#endif
             if (item)
             {
                 *((unsigned char *) item) = uc;
