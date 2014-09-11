@@ -125,9 +125,9 @@ void settle_proj(gmx_settledata_t settled, int econq,
  * of coordinates working on settle type constraint.
  */
 
-void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
-            real dist2[], real xp[], real rij[], real m2[], real omega,
-            real invmass[], real tt[], real lagr[], int *nerror);
+void cshake(const atom_id iatom[], int ncon, int *nnit, int maxnit,
+            const real dist2[], real xp[], const real rij[], const real m2[], real omega,
+            const real invmass[], const real tt[], real lagr[], int *nerror);
 /* Regular iterative shake */
 
 void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
