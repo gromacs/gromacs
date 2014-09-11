@@ -1443,14 +1443,23 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
+            float cycles_tmp;
+
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_cuda_wait_gpu(nbv->cu_nbv,
                                 nbv->grp[eintLocal].nbat,
                                 flags, eatLocal,
                                 enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                 fr->fshift);
-            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-
+            cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            cycles_wait_gpu += cycles_tmp;
+            /* Even though this is after dd_move_f, the actual task we are
+             * waiting for runs asynchronously with dd_move_f and we usually
+             * have nothing to balance it with, so we can and should add
+             * the time to the force time for load balancing.
+             */
+            cycles_force    += cycles_tmp;
+            
             /* now clear the GPU outputs while we finish the step on the CPU */
 
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
