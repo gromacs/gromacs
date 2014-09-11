@@ -36,8 +36,9 @@
 #include "gmxpre.h"
 
 #include <assert.h>
-#include <cmath>
 #include <stdio.h>
+
+#include <cmath>
 
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/names.h"

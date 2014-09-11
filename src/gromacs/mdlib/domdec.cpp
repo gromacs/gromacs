@@ -39,14 +39,14 @@
 
 #include "config.h"
 
-#include <algorithm>
-
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include <algorithm>
 
 #include "gromacs/bonded/bonded.h"
 #include "gromacs/fileio/gmxfio.h"
