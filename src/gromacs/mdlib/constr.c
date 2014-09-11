@@ -78,7 +78,7 @@ typedef struct gmx_constr {
     int                nblocks;        /* The number of SHAKE blocks         */
     int               *sblock;         /* The SHAKE blocks                   */
     int                sblock_nalloc;  /* The allocation size of sblock      */
-    real              *lagr;           /* Lagrange multipliers for SHAKE     */
+    real              *lagr;           /* -2 times the Lagrange multipliers for SHAKE */
     int                lagr_nalloc;    /* The allocation size of lagr        */
     int                maxwarn;        /* The maximum number of warnings     */
     int                warncount_lincs;
