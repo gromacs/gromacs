@@ -10,7 +10,7 @@ struct t_struct {
     //! Angle parameters.
     double alpha, beta;
 };
-
+   
 
 // This does not produce any brief documentation.
 // An explicit \brief is required, or //! (C++) or /** */ (C) should be used.
