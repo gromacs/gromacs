@@ -1810,27 +1810,42 @@ after taking the derivative, we {\em can} insert \ve{p} = m\ve{v}, such that:
 
 \subsubsection{Constraints}
 \label{subsubsec:constraints}
-\newcommand{\clam}{C_{\lambda}}
 The constraints are formally part of the Hamiltonian, and therefore
 they give a contribution to the free energy. In {\gromacs} this can be
 calculated using the \normindex{LINCS} or the \normindex{SHAKE} algorithm.
-If we have a number of constraint equations $g_k$:
+If we have $k = 1 \ldots K$ constraint equations $g_k$ for LINCS, then
 \beq
-g_k     =       \ve{r}_{k} - d_{k}
+g_k     =       |\ve{r}_{k}| - d_{k}
 \eeq
-where $\ve{r}_k$ is the distance vector between two particles and 
-$d_k$ is the constraint distance between the two particles, we can write
-this using a $\LAM$-dependent distance as
+where $\ve{r}_k$ is the displacement vector between two particles and 
+$d_k$ is the constraint distance between the two particles. We can express
+the fact that the constraint distance has a $\LAM$ dependency by
 \beq
-g_k     =       \ve{r}_{k} - \left(\LL d_{k}^A + \LAM d_k^B\right)
+d_k     =       \LL d_{k}^A + \LAM d_k^B
 \eeq
-the contribution $\clam$ 
-to the Hamiltonian using Lagrange multipliers $\lambda$:
+
+Thus the $\LAM$-dependent constraint equation is
+\beq
+g_k     =       |\ve{r}_{k}| - \left(\LL d_{k}^A + \LAM d_k^B\right).
+\eeq
+
+The (zero) contribution $G$ to the Hamiltonian from the constraints
+(using Lagrange multipliers $\lambda_k$, which are logically distinct
+from the free-energy $\LAM$) is
 \bea
-\clam           &=&     \sum_k \lambda_k g_k    \\
-\dvdl{\clam}    &=&     \sum_k \lambda_k \left(d_k^B-d_k^A\right)
+G           &=&     \sum^K_k \lambda_k g_k    \\
+\dvdl{G}    &=&     \frac{\partial G}{\partial d_k} \dvdl{d_k} \\
+            &=&     - \sum^K_k \lambda_k \left(d_k^B-d_k^A\right)
 \eea
 
+For SHAKE, the constraint equations are
+\beq
+g_k     =       \ve{r}_{k}^2 - d_{k}^2
+\eeq
+with $d_k$ as before, so
+\bea
+\dvdl{G}    &=&     -2 \sum^K_k \lambda_k \left(d_k^B-d_k^A\right)
+\eea
 
 \subsection{Soft-core interactions\index{soft-core interactions}}
 \begin{figure}
