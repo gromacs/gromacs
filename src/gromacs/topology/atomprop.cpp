@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
 #include "atomprop.h"
 
 #include <ctype.h>
@@ -396,8 +397,9 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
     }
     if (isdigit(atomnm[0]))
     {
+        int i;
         /* put digit after atomname */
-        for (i = 1; (i < min(MAXQ-1, strlen(atomnm))); i++)
+        for (i = 1; (i < std::min((int)(MAXQ-1), (int)strlen(atomnm))); i++)
         {
             atomname[i-1] = atomnm[i];
         }
