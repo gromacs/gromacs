@@ -148,9 +148,7 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CFLAG(CFLAGS_PRAGMA "-wd161" GMXC_CFLAGS)
                 endif()
             endif()
-# 111: statement is unreachable
-# 177: function ".." was declared but never referenced
-# 181: argument of type ".." is incompatible with format "..", expecting argument of type ".."
+# 177: function/variable ".." was declared but never referenced
 # 193: zero used for undefined preprocessing identifier ".."
 # 271: trailing comma is nonstandard
 # 304: access control not specified ("public" by default)
@@ -171,7 +169,7 @@ MACRO(gmx_c_flags)
 #2557: comparison between signed and unsigned operands
 #3280: declaration hides member ".."
 #3346: dynamic exception specifications are deprecated
-            GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd111 -wd177 -wd181 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CFLAGS_RELEASE)
             #documented to be default but not set for ICC15. Gives remarks that inlining is not possible because of max-size setting
@@ -184,7 +182,7 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd161" GMXC_CFLAGS)
                 endif()
             endif()
-            GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd111 /wd177 /wd181 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
     endif()
@@ -201,7 +199,7 @@ MACRO(gmx_c_flags)
 #All but the following warnings are identical for the C-compiler (see above)
 #1782: #pragma once is obsolete
 #2282: unrecognized GCC pragma
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd111 -wd177 -wd181 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd1782 -wd2282" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd1782 -wd2282" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_INLINE "-no-inline-max-size -no-inline-max-total-size" GMXC_CXXFLAGS)
         else()
@@ -212,7 +210,7 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd161" GMXC_CXXFLAGS)
                 endif()
             endif()
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd111 /wd177 /wd181 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782 /wd2282" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782 /wd2282" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
     endif()

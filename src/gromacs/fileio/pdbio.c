@@ -392,7 +392,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
         if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
         {
-            fprintf(out, "ANISOU%5u  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
+            fprintf(out, "ANISOU%5d  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
                     (i+1)%100000, nm, resnm, ch, resnr,
                     (resic == '\0') ? ' ' : resic,
                     atoms->pdbinfo[i].uij[0], atoms->pdbinfo[i].uij[1],

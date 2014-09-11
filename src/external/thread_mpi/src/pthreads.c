@@ -372,8 +372,9 @@ int tMPI_Thread_setaffinity_single(tMPI_Thread_t tmpi_unused thread,
     CPU_ZERO(&set);
     CPU_SET(nr, &set);
     return pthread_setaffinity_np(thread->th, sizeof(set), &set);
-#endif
+#else
     return 0;
+#endif
 }
 
 
