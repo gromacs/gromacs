@@ -175,7 +175,7 @@ void p_graph(FILE *log, const char *title, t_graph *g)
                     g->nedge[i]);
             for (j = 0; (j < g->nedge[i]); j++)
             {
-                fprintf(log, " %5u", g->edge[i][j]+1);
+                fprintf(log, " %5d", g->edge[i][j]+1);
             }
             fprintf(log, "\n");
         }
