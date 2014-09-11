@@ -48,9 +48,9 @@
 typedef struct gmx_shakedata
 {
     rvec *rij;
-    real *M2;
-    real *tt;
-    real *dist2;
+    real *half_of_reduced_mass;
+    real *distance_squared_tolerance;
+    real *constrained_distance_squared;
     int   nalloc;
     /* SOR stuff */
     real  delta;
@@ -66,9 +66,9 @@ gmx_shakedata_t shake_init()
 
     d->nalloc = 0;
     d->rij    = NULL;
-    d->M2     = NULL;
-    d->tt     = NULL;
-    d->dist2  = NULL;
+    d->half_of_reduced_mass = NULL;
+    d->distance_squared_tolerance  = NULL;
+    d->constrained_distance_squared  = NULL;
 
     /* SOR initialization */
     d->delta = 0.1;
@@ -91,27 +91,54 @@ static void pv(FILE *log, char *s, rvec x)
     fflush(log);
 }
 
-void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
-            real dist2[], real xp[], real rij[], real m2[], real omega,
-            real invmass[], real tt[], real lagr[], int *nerror)
+/*! \brief Inner kernel for SHAKE constraints
+ *
+ * Original implementation from R.C. van Schaik and W.F. van Gunsteren
+ * (ETH Zuerich, June 1992), adapted for GROMACS by David van der
+ * Spoel November 1992.
+ *
+ * The algorithm here is based section five of Ryckaert, Ciccotti and
+ * Berendsen, J Comp Phys, 23, 327, 1977.
+ *
+ * \param[in]    iatom   Mini-topology of triples of constraint type (unused in this
+                       function) and indices of the two atoms involved
+ * \param[in]    ncon    Number of constraints
+ * \param[out]   nnit    Number of iterations performed
+ * \param[in]    maxnit  Maximum number of iterations permitted
+ * \param[in]    constrained_distance_squared  The objective value for each constraint
+ * \param[inout] positions                     The initial (and final) values of the positions of all atoms
+ * \param[in]    initial_displacements         The initial displacements of each constraint
+ * \param[in]    half_of_reduced_mass          Half of the reduced mass for each constraint
+ * \param[in]    omega                         SHAKE over-relaxation factor (set non-1.0 by
+                                               using shake-sor=yes in the .mdp, but there is no documentation anywhere)
+ * \param[in]    invmass                       Inverse mass of each atom
+ * \param[in]    distance_squared_tolerance    Multiplicative tolerance on the difference in the
+                                               square of the constrained distance (see code)
+ * \param[out]   g                             Lagrangian for each constraint (actually -2 * eta from p. 336
+                                               of the paper, divided by the constraint distance)
+ * \param[out]   nerror                        Zero upon success, returns one more than the index of the
+                                               problematic constraint if the input was malformed
+ */
+void cshake(const atom_id iatom[], int ncon, int *nnit, int maxnit,
+            const real constrained_distance_squared[], real positions[],
+            const real initial_displacements[], const real half_of_reduced_mass[], real omega,
+            const real invmass[], const real distance_squared_tolerance[], real g[], int *nerror)
 {
-    /*
-     *     r.c. van schaik and w.f. van gunsteren
-     *     eth zuerich
-     *     june 1992
-     *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
-     */
     /* default should be increased! MRS 8/4/2009 */
-    const   real mytol = 1e-10;
+    const real mytol = 1e-10;
 
-    int          ll, i, j, i3, j3, l3;
-    int          ix, iy, iz, jx, jy, jz;
-    real         toler, rpij2, rrpr, tx, ty, tz, diff, acor, im, jm;
-    real         xh, yh, zh, rijx, rijy, rijz;
-    real         tix, tiy, tiz;
-    real         tjx, tjy, tjz;
-    int          nit, error, nconv;
-    real         iconvf;
+    int        ll, i, j, i3, j3, l3;
+    int        ix, iy, iz, jx, jy, jz;
+    real       r_dot_r_prime;
+    real       constrained_distance_squared_ll;
+    real       r_prime_squared;
+    real       g_ll;
+    real       r_prime_x, r_prime_y, r_prime_z, diff, im, jm;
+    real       xh, yh, zh, rijx, rijy, rijz;
+    real       tix, tiy, tiz;
+    real       tjx, tjy, tjz;
+    int        nit, error, nconv;
+    real       iconvf;
 
     error = 0;
     nconv = 1;
@@ -121,9 +148,9 @@ void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
         for (ll = 0; (ll < ncon) && (error == 0); ll++)
         {
             l3    = 3*ll;
-            rijx  = rij[l3+XX];
-            rijy  = rij[l3+YY];
-            rijz  = rij[l3+ZZ];
+            rijx  = initial_displacements[l3+XX];
+            rijy  = initial_displacements[l3+YY];
+            rijz  = initial_displacements[l3+ZZ];
             i     = iatom[l3+1];
             j     = iatom[l3+2];
             i3    = 3*i;
@@ -135,42 +162,48 @@ void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
             jy    = j3+YY;
             jz    = j3+ZZ;
 
-            tx      = xp[ix]-xp[jx];
-            ty      = xp[iy]-xp[jy];
-            tz      = xp[iz]-xp[jz];
-            rpij2   = tx*tx+ty*ty+tz*tz;
-            toler   = dist2[ll];
-            diff    = toler-rpij2;
+            /* Compute r prime between atoms i and j, which is the
+               displacement *before* this update stage */
+            r_prime_x      = positions[ix]-positions[jx];
+            r_prime_y      = positions[iy]-positions[jy];
+            r_prime_z      = positions[iz]-positions[jz];
+            r_prime_squared = (r_prime_x * r_prime_x +
+                               r_prime_y * r_prime_y +
+                               r_prime_z * r_prime_z);
+            constrained_distance_squared_ll = constrained_distance_squared[ll];
+            diff    = constrained_distance_squared_ll - r_prime_squared;
 
             /* iconvf is less than 1 when the error is smaller than a bound */
-            /* But if tt is too big, then it will result in looping in iconv */
+            iconvf = fabs(diff) * distance_squared_tolerance[ll];
 
-            iconvf = fabs(diff)*tt[ll];
-
-            if (iconvf > 1)
+            if (iconvf > 1.0)
             {
                 nconv   = iconvf;
-                rrpr    = rijx*tx+rijy*ty+rijz*tz;
+                r_dot_r_prime = (rijx * r_prime_x +
+                                 rijy * r_prime_y +
+                                 rijz * r_prime_z);
 
-                if (rrpr < toler*mytol)
+                if (r_dot_r_prime < constrained_distance_squared_ll * mytol)
                 {
                     error = ll+1;
                 }
                 else
                 {
-                    acor      = omega*diff*m2[ll]/rrpr;
-                    lagr[ll] += acor;
-                    xh        = rijx*acor;
-                    yh        = rijy*acor;
-                    zh        = rijz*acor;
-                    im        = invmass[i];
-                    jm        = invmass[j];
-                    xp[ix]   += xh*im;
-                    xp[iy]   += yh*im;
-                    xp[iz]   += zh*im;
-                    xp[jx]   -= xh*jm;
-                    xp[jy]   -= yh*jm;
-                    xp[jz]   -= zh*jm;
+                    /* The next line solves equation 5.6 (neglecting
+                       the term in g^2), for g */
+                    g_ll    = omega*diff*half_of_reduced_mass[ll]/r_dot_r_prime;
+                    g[ll]  += g_ll;
+                    xh      = rijx * g_ll;
+                    yh      = rijy * g_ll;
+                    zh      = rijz * g_ll;
+                    im      = invmass[i];
+                    jm      = invmass[j];
+                    positions[ix] += xh*im;
+                    positions[iy] += yh*im;
+                    positions[iz] += zh*im;
+                    positions[jx] -= xh*jm;
+                    positions[jy] -= yh*jm;
+                    positions[jz] -= zh*jm;
                 }
             }
         }
@@ -183,36 +216,36 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
                real invmass[], int ncon,
                t_iparams ip[], t_iatom *iatom,
                real tol, rvec x[], rvec prime[], real omega,
-               gmx_bool bFEP, real lambda, real lagr[],
+               gmx_bool bFEP, real lambda, real g[],
                real invdt, rvec *v,
                gmx_bool bCalcVir, tensor vir_r_m_dr, int econq,
                t_vetavars *vetavar)
 {
     rvec    *rij;
-    real    *M2, *tt, *dist2;
+    real    *half_of_reduced_mass, *distance_squared_tolerance, *constrained_distance_squared;
     int      maxnit = 1000;
-    int      nit    = 0, ll, i, j, type;
+    int      nit    = 0, ll, i, j, d, d2, type;
     t_iatom *ia;
-    real     L1, tol2, toler;
+    real     L1;
     real     mm    = 0., tmp;
     int      error = 0;
-    real     g, vscale, rscale, rvscale;
+    real     vscale, rscale, rvscale;
+    real     constrained_distance;
 
     if (ncon > shaked->nalloc)
     {
         shaked->nalloc = over_alloc_dd(ncon);
         srenew(shaked->rij, shaked->nalloc);
-        srenew(shaked->M2, shaked->nalloc);
-        srenew(shaked->tt, shaked->nalloc);
-        srenew(shaked->dist2, shaked->nalloc);
+        srenew(shaked->half_of_reduced_mass, shaked->nalloc);
+        srenew(shaked->distance_squared_tolerance, shaked->nalloc);
+        srenew(shaked->constrained_distance_squared, shaked->nalloc);
     }
     rij   = shaked->rij;
-    M2    = shaked->M2;
-    tt    = shaked->tt;
-    dist2 = shaked->dist2;
+    half_of_reduced_mass = shaked->half_of_reduced_mass;
+    distance_squared_tolerance  = shaked->distance_squared_tolerance;
+    constrained_distance_squared = shaked->constrained_distance_squared;
 
     L1   = 1.0-lambda;
-    tol2 = 2.0*tol;
     ia   = iatom;
     for (ll = 0; (ll < ncon); ll++, ia += 3)
     {
@@ -220,30 +253,30 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         i     = ia[1];
         j     = ia[2];
 
-        mm          = 2*(invmass[i]+invmass[j]);
+        mm          = 2.0*(invmass[i]+invmass[j]);
         rij[ll][XX] = x[i][XX]-x[j][XX];
         rij[ll][YY] = x[i][YY]-x[j][YY];
         rij[ll][ZZ] = x[i][ZZ]-x[j][ZZ];
-        M2[ll]      = 1.0/mm;
+        half_of_reduced_mass[ll] = 1.0/mm;
         if (bFEP)
         {
-            toler = sqr(L1*ip[type].constr.dA + lambda*ip[type].constr.dB);
+            constrained_distance = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
         }
         else
         {
-            toler = sqr(ip[type].constr.dA);
+            constrained_distance = ip[type].constr.dA;
         }
-        dist2[ll] = toler;
-        tt[ll]    = 1.0/(toler*tol2);
+        constrained_distance_squared[ll] = sqr(constrained_distance);
+        distance_squared_tolerance[ll] = 0.5/(constrained_distance_squared[ll]*tol);
     }
 
     switch (econq)
     {
         case econqCoord:
-            cshake(iatom, ncon, &nit, maxnit, dist2, prime[0], rij[0], M2, omega, invmass, tt, lagr, &error);
+            cshake(iatom, ncon, &nit, maxnit, constrained_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, g, &error);
             break;
         case econqVeloc:
-            crattle(iatom, ncon, &nit, maxnit, dist2, prime[0], rij[0], M2, omega, invmass, tt, lagr, &error, invdt, vetavar);
+            crattle(iatom, ncon, &nit, maxnit, constrained_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, g, &error, invdt, vetavar);
             break;
     }
 
@@ -270,25 +303,28 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         nit = 0;
     }
 
-    /* Constraint virial and correct the lagrange multipliers for the length */
+    /* Constraint virial and correct the Lagrange multipliers for the length */
 
     ia = iatom;
 
     for (ll = 0; (ll < ncon); ll++, ia += 3)
     {
+        type  = ia[0];
+        i     = ia[1];
+        j     = ia[2];
 
         if ((econq == econqCoord) && v != NULL)
         {
             /* Correct the velocities */
-            mm = lagr[ll]*invmass[ia[1]]*invdt/vetavar->rscale;
-            for (i = 0; i < DIM; i++)
+            mm = g[ll]*invmass[i]*invdt/vetavar->rscale;
+            for (d = 0; d < DIM; d++)
             {
-                v[ia[1]][i] += mm*rij[ll][i];
+                v[ia[1]][d] += mm*rij[ll][d];
             }
-            mm = lagr[ll]*invmass[ia[2]]*invdt/vetavar->rscale;
-            for (i = 0; i < DIM; i++)
+            mm = g[ll]*invmass[j]*invdt/vetavar->rscale;
+            for (d = 0; d < DIM; d++)
             {
-                v[ia[2]][i] -= mm*rij[ll][i];
+                v[ia[2]][d] -= mm*rij[ll][d];
             }
             /* 16 flops */
         }
@@ -298,36 +334,34 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         {
             if (econq == econqCoord)
             {
-                mm = lagr[ll]/vetavar->rvscale;
+                mm = g[ll]/vetavar->rvscale;
             }
             if (econq == econqVeloc)
             {
-                mm = lagr[ll]/(vetavar->vscale*vetavar->vscale_nhc[0]);
+                mm = g[ll]/(vetavar->vscale*vetavar->vscale_nhc[0]);
             }
-            for (i = 0; i < DIM; i++)
+            for (d = 0; d < DIM; d++)
             {
-                tmp = mm*rij[ll][i];
-                for (j = 0; j < DIM; j++)
+                tmp = mm*rij[ll][d];
+                for (d2 = 0; d2 < DIM; d2++)
                 {
-                    vir_r_m_dr[i][j] -= tmp*rij[ll][j];
+                    vir_r_m_dr[d][d2] -= tmp*rij[ll][d2];
                 }
             }
             /* 21 flops */
         }
 
-        /* Correct the lagrange multipliers for the length  */
-        /* (more details would be useful here . . . )*/
-
-        type  = ia[0];
+        /* cshake and crattle produce Lagrange multipliers scaled down
+           by the constraint length, so fix that */
         if (bFEP)
         {
-            toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
+            constrained_distance = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
         }
         else
         {
-            toler     = ip[type].constr.dA;
-            lagr[ll] *= toler;
+            constrained_distance = ip[type].constr.dA;
         }
+        g[ll] *= constrained_distance;
     }
 
     return nit;
@@ -378,35 +412,34 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
 gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                  real invmass[], int nblocks, int sblock[],
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
-                 t_nrnb *nrnb, real *lagr, real lambda, real *dvdlambda,
+                 t_nrnb *nrnb, real *g, real lambda, real *dvdlambda,
                  real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
                  gmx_bool bDumpOnError, int econq, t_vetavars *vetavar)
 {
     t_iatom *iatoms;
-    real    *lam, dt_2, dvdl;
-    int      i, n0, ncons, blen, type;
+    real     dt_2, dvdl;
+    int      i, n0, ncon, blen, type, ll;
     int      tnit = 0, trij = 0;
 
 #ifdef DEBUG
     fprintf(log, "nblocks=%d, sblock[0]=%d\n", nblocks, sblock[0]);
 #endif
 
-    ncons = idef->il[F_CONSTR].nr/3;
+    ncon = idef->il[F_CONSTR].nr/3;
 
-    for (i = 0; i < ncons; i++)
+    for (ll = 0; ll < ncon; ll++)
     {
-        lagr[i] = 0;
+        g[ll] = 0;
     }
 
     iatoms = &(idef->il[F_CONSTR].iatoms[sblock[0]]);
-    lam    = lagr;
     for (i = 0; (i < nblocks); )
     {
         blen  = (sblock[i+1]-sblock[i]);
         blen /= 3;
         n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
-                           ir->efep != efepNO, lambda, lam, invdt, v, bCalcVir, vir_r_m_dr,
+                           ir->efep != efepNO, lambda, g, invdt, v, bCalcVir, vir_r_m_dr,
                            econq, vetavar);
 
 #ifdef DEBUGSHAKE
@@ -426,7 +459,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         tnit   += n0*blen;
         trij   += blen;
         iatoms += 3*blen; /* Increment pointer! */
-        lam    += blen;
+        g      += blen;
         i++;
     }
     /* only for position part? */
@@ -435,27 +468,20 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         if (ir->efep != efepNO)
         {
             real bondA, bondB;
+            /* TODO This should probably use invdt, so that sd integrator scaling works properly */
             dt_2 = 1/sqr(ir->delta_t);
             dvdl = 0;
-            for (i = 0; i < ncons; i++)
+            for (ll = 0; ll < ncon; ll++)
             {
-                type  = idef->il[F_CONSTR].iatoms[3*i];
+                type  = idef->il[F_CONSTR].iatoms[3*ll];
 
-                /* dh/dl contribution from constraint force is  dh/dr (constraint force) dot dr/dl */
-                /* constraint force is -\sum_i lagr_i* d(constraint)/dr, with constrant = r^2-d^2  */
-                /* constraint force is -\sum_i lagr_i* 2 r  */
-                /* so dh/dl = -\sum_i lagr_i* 2 r * dr/dl */
-                /* However, by comparison with lincs and with
-                   comparison with a full thermodynamics cycle (see
-                   redmine issue #1255), this is off by a factor of
-                   two -- the 2r should apparently just be r.  Further
-                   investigation should be done at some point to
-                   understand why and see if there is something deeper
-                   we are missing */
-
+                /* Per equations in the manual, dv/dl = -2 \sum_ll lagrangian_ll * r_ll * (d_B - d_A) */
+                /* The vector g[ll] contains the value -2 r_ll eta_ll (eta_ll is the
+                   estimate of the Langrangian, definition on page 336 of Ryckaert et al 1977),
+                   so the pre-factors are already present. */
                 bondA = idef->iparams[type].constr.dA;
                 bondB = idef->iparams[type].constr.dB;
-                dvdl += lagr[i] * dt_2 * ((1.0-lambda)*bondA + lambda*bondB) * (bondB-bondA);
+                dvdl += g[ll] * dt_2 * (bondB - bondA);
             }
             *dvdlambda += dvdl;
         }
@@ -487,8 +513,8 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
 }
 
 void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
-             real dist2[], real vp[], real rij[], real m2[], real omega,
-             real invmass[], real tt[], real lagr[], int *nerror, real invdt, t_vetavars *vetavar)
+             real constrained_distance_squared[], real vp[], real rij[], real m2[], real omega,
+             real invmass[], real distance_squared_tolerance[], real g[], int *nerror, real invdt, t_vetavars *vetavar)
 {
     /*
      *     r.c. van schaik and w.f. van gunsteren
@@ -503,7 +529,8 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
 
     int          ll, i, j, i3, j3, l3, ii;
     int          ix, iy, iz, jx, jy, jz;
-    real         toler, rijd, vpijd, vx, vy, vz, diff, acor, xdotd, fac, im, jm, imdt, jmdt;
+    real         constrained_distance_squared_ll;
+    real         rijd, vpijd, vx, vy, vz, diff, acor, xdotd, fac, im, jm, imdt, jmdt;
     real         xh, yh, zh, rijx, rijy, rijz;
     real         tix, tiy, tiz;
     real         tjx, tjy, tjz;
@@ -539,19 +566,19 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
             vz      = vp[iz]-vp[jz];
 
             vpijd   = vx*rijx+vy*rijy+vz*rijz;
-            toler   = dist2[ll];
+            constrained_distance_squared_ll = constrained_distance_squared[ll];
             /* this is r(t+dt) \dotproduct \dot{r}(t+dt) */
-            xdotd   = vpijd*vscale_nhc + veta*toler;
+            xdotd   = vpijd*vscale_nhc + veta*constrained_distance_squared_ll;
 
             /* iconv is zero when the error is smaller than a bound */
-            iconvf   = fabs(xdotd)*(tt[ll]/invdt);
+            iconvf   = fabs(xdotd)*(distance_squared_tolerance[ll]/invdt);
 
             if (iconvf > 1)
             {
                 nconv     = iconvf;
-                fac       = omega*2.0*m2[ll]/toler;
+                fac       = omega*2.0*m2[ll]/constrained_distance_squared_ll;
                 acor      = -fac*xdotd;
-                lagr[ll] += acor;
+                g[ll] += acor;
 
                 xh        = rijx*acor;
                 yh        = rijy*acor;
