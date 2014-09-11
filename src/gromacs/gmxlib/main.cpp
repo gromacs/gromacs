@@ -46,16 +46,6 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef GMX_NATIVE_WINDOWS
-#include <process.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -70,6 +60,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
@@ -243,15 +234,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
 
     time(&t);
 
-#ifndef NO_GETPID
-#   ifdef GMX_NATIVE_WINDOWS
-    pid = _getpid();
-#   else
-    pid = getpid();
-#   endif
-#else
-    pid = 0;
-#endif
+    pid = gmx_getpid();
 
     if (bAppendFiles)
     {
