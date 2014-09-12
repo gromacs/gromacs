@@ -40,8 +40,10 @@ It allows (in most cases) automatically sorting includes and formatting
 the paths to use either relative paths or paths relative to src/.
 It groups includes in groups of related headers, sorts the headers
 alphabetically within each block, and inserts empty lines in between.
-The script requires an up-to-date list of installed headers and Doxygen XML
-documentation to be present in the build tree.
+It can be run as a standalone script, in which case it requires an up-to-date
+list of installed headers and Doxygen XML documentation to be present in the
+build tree.  It can also be imported as a module to be embedded in other
+scripts.  In the latter case, the IncludeSorter provides the main interface.
 
 The sorting assumes some conventions (e.g., that system headers are included
 with angle brackets instead of quotes).  Generally, these conventions are
@@ -108,7 +110,7 @@ class GroupedSorter(object):
             'regex', 'set', 'sstream', 'stdexcept', 'streambuf', 'string', 'strstream',
             'typeinfo', 'vector', 'utility']
 
-    def __init__(self, style, absolute):
+    def __init__(self, style='pub-priv', absolute=False):
         """Initialize a sorted with the given style."""
         if style == 'single-group':
             self._local_group = 'none'
@@ -210,7 +212,7 @@ class GroupedSorter(object):
             path = self._get_path(included_file, group, including_file)
         return (group, os.path.split(path), include)
 
-    def format_include(self, obj, prev, lines):
+    def format_include(self, obj, prev):
         """Format an #include directive after sorting."""
         result = []
         if prev:
@@ -221,7 +223,7 @@ class GroupedSorter(object):
                 # Skip duplicates
                 return result
         include = obj[2]
-        line = lines[include.get_line_number()-1]
+        line = include.get_full_line()
         include_re = r'^(?P<head>\s*#\s*include\s+)["<][^">]*[">](?P<tail>.*)$'
         match = re.match(include_re, line)
         assert match
@@ -241,8 +243,10 @@ class IncludeSorter(object):
     (see GroupedSorter) to keep things separated.
     """
 
-    def __init__(self, sortmethod, quiet):
+    def __init__(self, sortmethod=None, quiet=True):
         """Initialize the include sorter with the given sorter and options."""
+        if not sortmethod:
+            sortmethod = GroupedSorter()
         self._sortmethod = sortmethod
         self._quiet = quiet
         self._changed = False
@@ -259,7 +263,7 @@ class IncludeSorter(object):
         prev = None
         current_line_number = block.get_first_line()-1
         for include in includes:
-            newlines = self._sortmethod.format_include(include, prev, lines)
+            newlines = self._sortmethod.format_include(include, prev)
             result.extend(newlines)
             if not self._changed:
                 for offset, newline in enumerate(newlines):
@@ -291,6 +295,15 @@ class IncludeSorter(object):
             newlines.extend(lines[prev:])
             with open(fileobj.get_abspath(), 'w') as fp:
                 fp.write(''.join(newlines))
+
+    def check_sorted(self, fileobj):
+        """Check that includes within a file are sorted."""
+        # TODO: Make the checking work without full contents of the file
+        lines = fileobj.get_contents()
+        self._changed = False
+        for block in fileobj.get_include_blocks():
+            self._sort_include_block(block, lines)
+        return not self._changed
 
 def main():
     """Run the include sorter script."""

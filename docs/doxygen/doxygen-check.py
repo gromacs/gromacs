@@ -57,6 +57,7 @@ from optparse import OptionParser
 
 import gmxtree
 from gmxtree import GromacsTree, DocType
+from includesorter import IncludeSorter
 from reporter import Reporter
 
 def check_file(fileobj, reporter):
@@ -336,6 +337,27 @@ class ModuleDependencyGraph(object):
         summary = 'module-level cyclic dependency: ' + modulelist
         reporter.cyclic_issue(summary)
 
+def check_all(tree, reporter, check_ignored):
+    """Do all checks for the GROMACS tree."""
+    includesorter = IncludeSorter()
+    for fileobj in tree.get_files():
+        if isinstance(fileobj, gmxtree.GeneratorSourceFile):
+            continue
+        check_file(fileobj, reporter)
+        for includedfile in fileobj.get_includes():
+            check_include(fileobj, includedfile, reporter)
+        if fileobj.should_includes_be_sorted() \
+                and not includesorter.check_sorted(fileobj):
+            reporter.code_issue(fileobj, "include order is not consistent")
+
+    for classobj in tree.get_classes():
+        check_class(classobj, reporter)
+
+    for memberobj in tree.get_members():
+        check_member(memberobj, reporter, check_ignored)
+
+    check_cycles(ModuleDependencyGraph(tree), reporter)
+
 def main():
     """Run the checking script."""
     parser = OptionParser()
@@ -364,10 +386,12 @@ def main():
     if not options.quiet:
         sys.stderr.write('Scanning source tree...\n')
     tree = GromacsTree(options.source_root, options.build_root, reporter)
+    tree.load_git_attributes()
     tree.load_installed_file_list()
     if not options.quiet:
         sys.stderr.write('Reading source files...\n')
-    tree.scan_files()
+    # TODO: The checking should be possible without storing everything in memory
+    tree.scan_files(keep_contents=True)
     if options.ignore_cycles:
         tree.load_cycle_suppression_list(options.ignore_cycles)
     if not options.quiet:
@@ -379,20 +403,7 @@ def main():
     if not options.quiet:
         sys.stderr.write('Checking...\n')
 
-    for fileobj in tree.get_files():
-        if isinstance(fileobj, gmxtree.GeneratorSourceFile):
-            continue
-        check_file(fileobj, reporter)
-        for includedfile in fileobj.get_includes():
-            check_include(fileobj, includedfile, reporter)
-
-    for classobj in tree.get_classes():
-        check_class(classobj, reporter)
-
-    for memberobj in tree.get_members():
-        check_member(memberobj, reporter, options.check_ignored)
-
-    check_cycles(ModuleDependencyGraph(tree), reporter)
+    check_all(tree, reporter, options.check_ignored)
 
     reporter.write_pending()
     reporter.report_unused_filters()
