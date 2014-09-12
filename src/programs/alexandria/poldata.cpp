@@ -1944,7 +1944,6 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
     gmx_poldata             *pold = (gmx_poldata *) pd;
     t_eemprops              *eep;
     std::vector<std::string> sz, sq, sr;
-    int                      n;
 
     eep = get_eep(pold, eqg_model, name);
     if (NULL == eep)
@@ -1963,7 +1962,8 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
     strncpy(eep->qstr, q, EEMBUFSIZE-1);
     strncpy(eep->rowstr, row, EEMBUFSIZE-1);
     unsigned int nn = std::min(sz.size(), std::min(sq.size(), sr.size()));
-    for (unsigned int n = 0; (n < nn); n++)
+    unsigned int n;
+    for (n = 0; (n < nn); n++)
     {
         if (n < MAXZETA)
         {
