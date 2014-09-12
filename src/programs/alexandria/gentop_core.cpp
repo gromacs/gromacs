@@ -21,11 +21,9 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include "gmxpre.h"
 #include <ctype.h>
+#include <stdlib.h>
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/bonded/bonded.h"
