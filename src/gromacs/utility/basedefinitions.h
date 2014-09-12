@@ -46,10 +46,8 @@
 
 /* Information about integer data type sizes */
 #include <limits.h>
-#define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #ifndef _MSC_VER
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #endif
 
