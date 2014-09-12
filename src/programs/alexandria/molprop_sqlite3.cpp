@@ -21,12 +21,12 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include "gmxpre.h"
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #ifdef HAVE_LIBSQLITE3
 #include <sqlite3.h>
 #endif

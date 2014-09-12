@@ -32,6 +32,7 @@
  * \inpublicapi
  * \ingroup module_alexandria
  */
+#include "gmxpre.h"
 #include "composition.h"
 
 namespace alexandria

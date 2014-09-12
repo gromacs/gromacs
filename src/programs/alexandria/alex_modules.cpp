@@ -21,6 +21,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "gmxpre.h"
 #include "alex_modules.h"
 
 #include <cstdio>
@@ -42,11 +43,11 @@ int alex_mp2csv(int argc, char *argv[]);
 int alex_gen_ff(int argc, char *argv[]);
 int alex_molprop_test(int argc, char *argv[]);
 /*
-extern "C" {
-int alex_mkice(int argc, char *argv[]);
-int alex_mkyaw(int argc, char *argv[]);
-}
-*/
+   extern "C" {
+   int alex_mkice(int argc, char *argv[]);
+   int alex_mkyaw(int argc, char *argv[]);
+   }
+ */
 
 /*! \brief
  * Convenience function for creating and registering a module.
@@ -97,7 +98,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Generate an ice structure file");
     registerModule(manager, &alex_mkyaw, "mkyaw",
                    "Manipulate water files");
-*/
+ */
 
     {
         gmx::CommandLineModuleGroup group =
@@ -127,7 +128,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Testing stuff and funky utilities");
         group.addModule("poldata_test");
         group.addModule("molprop_test");
-      /*  group.addModule("mkice");
-        group.addModule("mkyaw"); */
+        /*  group.addModule("mkice");
+           group.addModule("mkyaw"); */
     }
 }

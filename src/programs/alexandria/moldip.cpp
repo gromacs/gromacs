@@ -21,6 +21,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "gmxpre.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/nrnb.h"

@@ -32,6 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ */
+#include "gmxpre.h"
 #include <string>
 #include <sstream>
 #include <stdio.h>

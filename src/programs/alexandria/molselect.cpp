@@ -21,6 +21,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "gmxpre.h"
 #include <string.h>
 #include <stdlib.h>
 #include "gromacs/utility/cstringutil.h"

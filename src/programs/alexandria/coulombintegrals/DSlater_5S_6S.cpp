@@ -1,2410 +1,2460 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+#include "gmxpre.h"
 #include "slater_low.h"
 
-cl_R DSlater_5S_6S(cl_R r,cl_R xi,cl_R xj)
+cl_R DSlater_5S_6S(cl_R r, cl_R xi, cl_R xj)
 {
-  cl_R S,rxi,rxj;
+    cl_R S, rxi, rxj;
 
-  rxi = rxj = S = ZERO;
-  rxi = r*xi;
-  rxj = r*xj;
-  if (xi == xj) {
-        if (r == 0LL) {  S = 0LL
+    rxi = rxj = S = ZERO;
+    rxi = r*xi;
+    rxj = r*xj;
+    if (xi == xj)
+    {
+        if (r == 0LL)
+        {
+            S = 0LL
 
-    ; } else {  S = -(-(1e9*cl_float(283601367,precision)+780029361562LL)*xi + (1e9*cl_float(306545653,precision)+30256640000LL)*exp(2LL*r*xi)*xi - 
+            ;
+        }
+        else
+        {
+            S = -(-(1e9*cl_float(283601367, precision)+780029361562LL)*xi + (1e9*cl_float(306545653, precision)+30256640000LL)*exp(2LL*r*xi)*xi -
 
-          (1e9*cl_float(521314165,precision)+59604166250LL)*r*Power(xi,2LL) - 
+                  (1e9*cl_float(521314165, precision)+59604166250LL)*r*Power(xi, 2LL) -
 
-          (1e9*cl_float(475834779,precision)+713452221562LL)*Power(r,2LL)*Power(xi,3LL) - 
+                  (1e9*cl_float(475834779, precision)+713452221562LL)*Power(r, 2LL)*Power(xi, 3LL) -
 
-          (1e9*cl_float(287449176,precision)+450603667500LL)*Power(r,3LL)*Power(xi,4LL) - 
+                  (1e9*cl_float(287449176, precision)+450603667500LL)*Power(r, 3LL)*Power(xi, 4LL) -
 
-          (1e9*cl_float(129241025,precision)+417554800750LL)*Power(r,4LL)*Power(xi,5LL) - 
+                  (1e9*cl_float(129241025, precision)+417554800750LL)*Power(r, 4LL)*Power(xi, 5LL) -
 
-          (1e9*cl_float(461120284,precision)+6963318800LL)*Power(r,5LL)*Power(xi,6LL) - 
+                  (1e9*cl_float(461120284, precision)+6963318800LL)*Power(r, 5LL)*Power(xi, 6LL) -
 
-          (1e9*cl_float(135925896,precision)+63380527800LL)*Power(r,6LL)*Power(xi,7LL) - 
+                  (1e9*cl_float(135925896, precision)+63380527800LL)*Power(r, 6LL)*Power(xi, 7LL) -
 
-          (1e9*cl_float(340254650,precision)+7763603200LL)*Power(r,7LL)*Power(xi,8LL) - 
+                  (1e9*cl_float(340254650, precision)+7763603200LL)*Power(r, 7LL)*Power(xi, 8LL) -
 
-          (1e9*cl_float(737703089,precision)+712388800LL)*Power(r,8LL)*Power(xi,9LL) - 
+                  (1e9*cl_float(737703089, precision)+712388800LL)*Power(r, 8LL)*Power(xi, 9LL) -
 
-          (1e9*cl_float(140553592,precision)+289510400LL)*Power(r,9LL)*Power(xi,10LL) - 
+                  (1e9*cl_float(140553592, precision)+289510400LL)*Power(r, 9LL)*Power(xi, 10LL) -
 
-          237880232087097600LL*Power(r,10LL)*Power(xi,11LL) - 
+                  237880232087097600LL*Power(r, 10LL)*Power(xi, 11LL) -
 
-          36042992713728000LL*Power(r,11LL)*Power(xi,12LL) - 
+                  36042992713728000LL*Power(r, 11LL)*Power(xi, 12LL) -
 
-          4914953551872000LL*Power(r,12LL)*Power(xi,13LL) - 
+                  4914953551872000LL*Power(r, 12LL)*Power(xi, 13LL) -
 
-          604917360230400LL*Power(r,13LL)*Power(xi,14LL) - 
+                  604917360230400LL*Power(r, 13LL)*Power(xi, 14LL) -
 
-          67213040025600LL*Power(r,14LL)*Power(xi,15LL) - 
+                  67213040025600LL*Power(r, 14LL)*Power(xi, 15LL) -
 
-          6721304002560LL*Power(r,15LL)*Power(xi,16LL) - 
+                  6721304002560LL*Power(r, 15LL)*Power(xi, 16LL) -
 
-          600116428800LL*Power(r,16LL)*Power(xi,17LL) - 
+                  600116428800LL*Power(r, 16LL)*Power(xi, 17LL) -
 
-          47067955200LL*Power(r,17LL)*Power(xi,18LL) - 
+                  47067955200LL*Power(r, 17LL)*Power(xi, 18LL) -
 
-          3137863680LL*Power(r,18LL)*Power(xi,19LL) - 
+                  3137863680LL*Power(r, 18LL)*Power(xi, 19LL) -
 
-          165150720LL*Power(r,19LL)*Power(xi,20LL) - 5505024LL*Power(r,20LL)*Power(xi,21LL))/
+                  165150720LL*Power(r, 19LL)*Power(xi, 20LL) - 5505024LL*Power(r, 20LL)*Power(xi, 21LL))/
 
-       (1.5327282651512832e21*exp(2LL*r*xi)*r) + 
+                (1.5327282651512832e21*exp(2LL*r*xi)*r) +
 
-      (-(1e9*cl_float(153272826,precision)+515128320000LL) + (1e9*cl_float(153272826,precision)+515128320000LL)*exp(2LL*r*xi) - 
+                (-(1e9*cl_float(153272826, precision)+515128320000LL) + (1e9*cl_float(153272826, precision)+515128320000LL)*exp(2LL*r*xi) -
 
-         (1e9*cl_float(283601367,precision)+780029361562LL)*r*xi - 
+                 (1e9*cl_float(283601367, precision)+780029361562LL)*r*xi -
 
-         (1e9*cl_float(260657082,precision)+529802083125LL)*Power(r,2LL)*Power(xi,2LL) - 
+                 (1e9*cl_float(260657082, precision)+529802083125LL)*Power(r, 2LL)*Power(xi, 2LL) -
 
-         (1e9*cl_float(158611593,precision)+237817407187LL)*Power(r,3LL)*Power(xi,3LL) - 
+                 (1e9*cl_float(158611593, precision)+237817407187LL)*Power(r, 3LL)*Power(xi, 3LL) -
 
-         (1e9*cl_float(718622941,precision)+12650916875LL)*Power(r,4LL)*Power(xi,4LL) - 
+                 (1e9*cl_float(718622941, precision)+12650916875LL)*Power(r, 4LL)*Power(xi, 4LL) -
 
-         (1e9*cl_float(258482050,precision)+83510960150LL)*Power(r,5LL)*Power(xi,5LL) - 
+                 (1e9*cl_float(258482050, precision)+83510960150LL)*Power(r, 5LL)*Power(xi, 5LL) -
 
-         (1e9*cl_float(768533806,precision)+7827219800LL)*Power(r,6LL)*Power(xi,6LL) - 
+                 (1e9*cl_float(768533806, precision)+7827219800LL)*Power(r, 6LL)*Power(xi, 6LL) -
 
-         (1e9*cl_float(194179852,precision)+3340075400LL)*Power(r,7LL)*Power(xi,7LL) - 
+                 (1e9*cl_float(194179852, precision)+3340075400LL)*Power(r, 7LL)*Power(xi, 7LL) -
 
-         (1e9*cl_float(425318313,precision)+470450400LL)*Power(r,8LL)*Power(xi,8LL) - 
+                 (1e9*cl_float(425318313, precision)+470450400LL)*Power(r, 8LL)*Power(xi, 8LL) -
 
-         819670099680432000LL*Power(r,9LL)*Power(xi,9LL) - 
+                 819670099680432000LL*Power(r, 9LL)*Power(xi, 9LL) -
 
-         140553592289510400LL*Power(r,10LL)*Power(xi,10LL) - 
+                 140553592289510400LL*Power(r, 10LL)*Power(xi, 10LL) -
 
-         21625475644281600LL*Power(r,11LL)*Power(xi,11LL) - 
+                 21625475644281600LL*Power(r, 11LL)*Power(xi, 11LL) -
 
-         3003582726144000LL*Power(r,12LL)*Power(xi,12LL) - 
+                 3003582726144000LL*Power(r, 12LL)*Power(xi, 12LL) -
 
-         378073350144000LL*Power(r,13LL)*Power(xi,13LL) - 
+                 378073350144000LL*Power(r, 13LL)*Power(xi, 13LL) -
 
-         43208382873600LL*Power(r,14LL)*Power(xi,14LL) - 
+                 43208382873600LL*Power(r, 14LL)*Power(xi, 14LL) -
 
-         4480869335040LL*Power(r,15LL)*Power(xi,15LL) - 
+                 4480869335040LL*Power(r, 15LL)*Power(xi, 15LL) -
 
-         420081500160LL*Power(r,16LL)*Power(xi,16LL) - 
+                 420081500160LL*Power(r, 16LL)*Power(xi, 16LL) -
 
-         35300966400LL*Power(r,17LL)*Power(xi,17LL) - 
+                 35300966400LL*Power(r, 17LL)*Power(xi, 17LL) -
 
-         2614886400LL*Power(r,18LL)*Power(xi,18LL) - 
+                 2614886400LL*Power(r, 18LL)*Power(xi, 18LL) -
 
-         165150720LL*Power(r,19LL)*Power(xi,19LL) - 
+                 165150720LL*Power(r, 19LL)*Power(xi, 19LL) -
 
-         8257536LL*Power(r,20LL)*Power(xi,20LL) - 262144LL*Power(r,21LL)*Power(xi,21LL))/
+                 8257536LL*Power(r, 20LL)*Power(xi, 20LL) - 262144LL*Power(r, 21LL)*Power(xi, 21LL))/
 
-       (1.5327282651512832e21*exp(2LL*r*xi)*Power(r,2LL)) + 
+                (1.5327282651512832e21*exp(2LL*r*xi)*Power(r, 2LL)) +
 
-      (xi*(-(1e9*cl_float(153272826,precision)+515128320000LL) + (1e9*cl_float(153272826,precision)+515128320000LL)*exp(2LL*r*xi) - 
+                (xi*(-(1e9*cl_float(153272826, precision)+515128320000LL) + (1e9*cl_float(153272826, precision)+515128320000LL)*exp(2LL*r*xi) -
 
-           (1e9*cl_float(283601367,precision)+780029361562LL)*r*xi - 
+                     (1e9*cl_float(283601367, precision)+780029361562LL)*r*xi -
 
-           (1e9*cl_float(260657082,precision)+529802083125LL)*Power(r,2LL)*Power(xi,2LL) - 
+                     (1e9*cl_float(260657082, precision)+529802083125LL)*Power(r, 2LL)*Power(xi, 2LL) -
 
-           (1e9*cl_float(158611593,precision)+237817407187LL)*Power(r,3LL)*Power(xi,3LL) - 
+                     (1e9*cl_float(158611593, precision)+237817407187LL)*Power(r, 3LL)*Power(xi, 3LL) -
 
-           (1e9*cl_float(718622941,precision)+12650916875LL)*Power(r,4LL)*Power(xi,4LL) - 
+                     (1e9*cl_float(718622941, precision)+12650916875LL)*Power(r, 4LL)*Power(xi, 4LL) -
 
-           (1e9*cl_float(258482050,precision)+83510960150LL)*Power(r,5LL)*Power(xi,5LL) - 
+                     (1e9*cl_float(258482050, precision)+83510960150LL)*Power(r, 5LL)*Power(xi, 5LL) -
 
-           (1e9*cl_float(768533806,precision)+7827219800LL)*Power(r,6LL)*Power(xi,6LL) - 
+                     (1e9*cl_float(768533806, precision)+7827219800LL)*Power(r, 6LL)*Power(xi, 6LL) -
 
-           (1e9*cl_float(194179852,precision)+3340075400LL)*Power(r,7LL)*Power(xi,7LL) - 
+                     (1e9*cl_float(194179852, precision)+3340075400LL)*Power(r, 7LL)*Power(xi, 7LL) -
 
-           (1e9*cl_float(425318313,precision)+470450400LL)*Power(r,8LL)*Power(xi,8LL) - 
+                     (1e9*cl_float(425318313, precision)+470450400LL)*Power(r, 8LL)*Power(xi, 8LL) -
 
-           819670099680432000LL*Power(r,9LL)*Power(xi,9LL) - 
+                     819670099680432000LL*Power(r, 9LL)*Power(xi, 9LL) -
 
-           140553592289510400LL*Power(r,10LL)*Power(xi,10LL) - 
+                     140553592289510400LL*Power(r, 10LL)*Power(xi, 10LL) -
 
-           21625475644281600LL*Power(r,11LL)*Power(xi,11LL) - 
+                     21625475644281600LL*Power(r, 11LL)*Power(xi, 11LL) -
 
-           3003582726144000LL*Power(r,12LL)*Power(xi,12LL) - 
+                     3003582726144000LL*Power(r, 12LL)*Power(xi, 12LL) -
 
-           378073350144000LL*Power(r,13LL)*Power(xi,13LL) - 
+                     378073350144000LL*Power(r, 13LL)*Power(xi, 13LL) -
 
-           43208382873600LL*Power(r,14LL)*Power(xi,14LL) - 
+                     43208382873600LL*Power(r, 14LL)*Power(xi, 14LL) -
 
-           4480869335040LL*Power(r,15LL)*Power(xi,15LL) - 
+                     4480869335040LL*Power(r, 15LL)*Power(xi, 15LL) -
 
-           420081500160LL*Power(r,16LL)*Power(xi,16LL) - 
+                     420081500160LL*Power(r, 16LL)*Power(xi, 16LL) -
 
-           35300966400LL*Power(r,17LL)*Power(xi,17LL) - 
+                     35300966400LL*Power(r, 17LL)*Power(xi, 17LL) -
 
-           2614886400LL*Power(r,18LL)*Power(xi,18LL) - 
+                     2614886400LL*Power(r, 18LL)*Power(xi, 18LL) -
 
-           165150720LL*Power(r,19LL)*Power(xi,19LL) - 
+                     165150720LL*Power(r, 19LL)*Power(xi, 19LL) -
 
-           8257536LL*Power(r,20LL)*Power(xi,20LL) - 262144LL*Power(r,21LL)*Power(xi,21LL)))/
+                     8257536LL*Power(r, 20LL)*Power(xi, 20LL) - 262144LL*Power(r, 21LL)*Power(xi, 21LL)))/
 
-       (7.663641325756416e20*exp(2LL*r*xi)*r)
+                (7.663641325756416e20*exp(2LL*r*xi)*r)
 
-    ; }
- 
-  }
-  else {
-      if (r == 0LL) {  S = 0LL
+            ;
+        }
 
-    ; } else {  S = (4677750LL*exp(2LL*r*(xi + xj))*Power(Power(xi,2LL) - Power(xj,2LL),21LL) + 
+    }
+    else
+    {
+        if (r == 0LL)
+        {
+            S = 0LL
 
-         110LL*exp(2LL*r*xj)*Power(xj,14LL)*
+            ;
+        }
+        else
+        {
+            S = (4677750LL*exp(2LL*r*(xi + xj))*Power(Power(xi, 2LL) - Power(xj, 2LL), 21LL) +
 
-          (-432LL*Power(r,8LL)*Power(xi,36LL) - 6LL*Power(r,9LL)*Power(xi,37LL) + 
+                 110LL*exp(2LL*r*xj)*Power(xj, 14LL)*
 
-            42525LL*Power(xj,28LL) + 76545LL*r*xi*Power(xj,28LL) + 
+                 (-432LL*Power(r, 8LL)*Power(xi, 36LL) - 6LL*Power(r, 9LL)*Power(xi, 37LL) +
 
-            19845LL*r*Power(xi,3LL)*Power(xj,26LL)*
+                  42525LL*Power(xj, 28LL) + 76545LL*r*xi*Power(xj, 28LL) +
 
-             (-81LL + 2LL*Power(r,2LL)*Power(xj,2LL)) - 
+                  19845LL*r*Power(xi, 3LL)*Power(xj, 26LL)*
 
-            1134LL*Power(r,6LL)*Power(xi,34LL)*(272LL + 5LL*Power(r,2LL)*Power(xj,2LL)) - 
+                  (-81LL + 2LL*Power(r, 2LL)*Power(xj, 2LL)) -
 
-            8LL*Power(r,7LL)*Power(xi,35LL)*(1836LL + 7LL*Power(r,2LL)*Power(xj,2LL)) + 
+                  1134LL*Power(r, 6LL)*Power(xi, 34LL)*(272LL + 5LL*Power(r, 2LL)*Power(xj, 2LL)) -
 
-            8505LL*Power(xi,2LL)*Power(xj,26LL)*(-105LL + 8LL*Power(r,2LL)*Power(xj,2LL)) + 
+                  8LL*Power(r, 7LL)*Power(xi, 35LL)*(1836LL + 7LL*Power(r, 2LL)*Power(xj, 2LL)) +
 
-            378LL*Power(r,5LL)*Power(xi,33LL)*
+                  8505LL*Power(xi, 2LL)*Power(xj, 26LL)*(-105LL + 8LL*Power(r, 2LL)*Power(xj, 2LL)) +
 
-             (-11628LL - 666LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                  378LL*Power(r, 5LL)*Power(xi, 33LL)*
 
-            5670LL*r*Power(xi,5LL)*Power(xj,24LL)*
+                  (-11628LL - 666LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (2835LL - 147LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                  5670LL*r*Power(xi, 5LL)*Power(xj, 24LL)*
 
-            17010LL*Power(xi,4LL)*Power(xj,24LL)*
+                  (2835LL - 147LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (525LL - 84LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                  17010LL*Power(xi, 4LL)*Power(xj, 24LL)*
 
-            378LL*Power(r,4LL)*Power(xi,32LL)*
+                  (525LL - 84LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (-116280LL - 17444LL*Power(r,2LL)*Power(xj,2LL) + 
+                  378LL*Power(r, 4LL)*Power(xi, 32LL)*
 
-               59LL*Power(r,4LL)*Power(xj,4LL)) + 
+                  (-116280LL - 17444LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-            162LL*r*Power(xi,7LL)*Power(xj,22LL)*
+            59LL*Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (-628425LL + 51450LL*Power(r,2LL)*Power(xj,2LL) - 
+                  162LL*r*Power(xi, 7LL)*Power(xj, 22LL)*
 
-               735LL*Power(r,4LL)*Power(xj,4LL) + 2LL*Power(r,6LL)*Power(xj,6LL)) + 
+                  (-628425LL + 51450LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            378LL*Power(xi,6LL)*Power(xj,22LL)*
+            735LL*Power(r, 4LL)*Power(xj, 4LL) + 2LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-149625LL + 37800LL*Power(r,2LL)*Power(xj,2LL) - 
+                  378LL*Power(xi, 6LL)*Power(xj, 22LL)*
 
-               945LL*Power(r,4LL)*Power(xj,4LL) + 4LL*Power(r,6LL)*Power(xj,6LL)) - 
+                  (-149625LL + 37800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            18LL*Power(r,3LL)*Power(xi,31LL)*
+            945LL*Power(r, 4LL)*Power(xj, 4LL) + 4LL*Power(r, 6LL)*Power(xj, 6LL)) -
 
-             (17093160LL + 6309387LL*Power(r,2LL)*Power(xj,2LL) - 
+                  18LL*Power(r, 3LL)*Power(xi, 31LL)*
 
-               23562LL*Power(r,4LL)*Power(xj,4LL) + 16LL*Power(r,6LL)*Power(xj,6LL)) + 
+                  (17093160LL + 6309387LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            54LL*Power(r,2LL)*Power(xi,30LL)*
+            23562LL*Power(r, 4LL)*Power(xj, 4LL) + 16LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-26860680LL - 24843735LL*Power(r,2LL)*Power(xj,2LL) - 
+                  54LL*Power(r, 2LL)*Power(xi, 30LL)*
 
-               40180LL*Power(r,4LL)*Power(xj,4LL) + 578LL*Power(r,6LL)*Power(xj,6LL)) + 
+                  (-26860680LL - 24843735LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            378LL*r*Power(xi,23LL)*Power(xj,6LL)*
+            40180LL*Power(r, 4LL)*Power(xj, 4LL) + 578LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-14625683325LL + 704051250LL*Power(r,2LL)*Power(xj,2LL) - 
+                  378LL*r*Power(xi, 23LL)*Power(xj, 6LL)*
 
-               10752861LL*Power(r,4LL)*Power(xj,4LL) + 33478LL*Power(r,6LL)*Power(xj,6LL)) 
+                  (-14625683325LL + 704051250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-    + 3LL*r*Power(xi,9LL)*Power(xj,20LL)*
+            10752861LL*Power(r, 4LL)*Power(xj, 4LL) + 33478LL*Power(r, 6LL)*Power(xj, 6LL))
 
-             (152707275LL - 17595900LL*Power(r,2LL)*Power(xj,2LL) + 
+                  + 3LL*r*Power(xi, 9LL)*Power(xj, 20LL)*
 
-               396900LL*Power(r,4LL)*Power(xj,4LL) - 2268LL*Power(r,6LL)*Power(xj,6LL) + 
+                  (152707275LL - 17595900LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) + 
+            396900LL*Power(r, 4LL)*Power(xj, 4LL) - 2268LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            27LL*Power(xi,8LL)*Power(xj,20LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (9426375LL - 3351600LL*Power(r,2LL)*Power(xj,2LL) + 
+                  27LL*Power(xi, 8LL)*Power(xj, 20LL)*
 
-               132300LL*Power(r,4LL)*Power(xj,4LL) - 1176LL*Power(r,6LL)*Power(xj,6LL) + 
+                  (9426375LL - 3351600LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) - 
+            132300LL*Power(r, 4LL)*Power(xj, 4LL) - 1176LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            567LL*Power(xi,10LL)*Power(xj,18LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (1526175LL - 718200LL*Power(r,2LL)*Power(xj,2LL) + 
+                  567LL*Power(xi, 10LL)*Power(xj, 18LL)*
 
-               39900LL*Power(r,4LL)*Power(xj,4LL) - 560LL*Power(r,6LL)*Power(xj,6LL) + 
+                  (1526175LL - 718200LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) - 
+            39900LL*Power(r, 4LL)*Power(xj, 4LL) - 560LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            54LL*r*Power(xi,13LL)*Power(xj,16LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (-1356769575LL - 127011675LL*Power(r,2LL)*Power(xj,2LL) - 
+                  54LL*r*Power(xi, 13LL)*Power(xj, 16LL)*
 
-               3867843LL*Power(r,4LL)*Power(xj,4LL) - 8556LL*Power(r,6LL)*Power(xj,6LL) + 
+                  (-1356769575LL - 127011675LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               7LL*Power(r,8LL)*Power(xj,8LL)) + 
+            3867843LL*Power(r, 4LL)*Power(xj, 4LL) - 8556LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            7LL*r*Power(xi,11LL)*Power(xj,18LL)*
+            7LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-151091325LL + 45272250LL*Power(r,2LL)*Power(xj,2LL) - 
+                  7LL*r*Power(xi, 11LL)*Power(xj, 18LL)*
 
-               647676LL*Power(r,4LL)*Power(xj,4LL) + 15336LL*Power(r,6LL)*Power(xj,6LL) + 
+                  (-151091325LL + 45272250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               8LL*Power(r,8LL)*Power(xj,8LL)) + 
+            647676LL*Power(r, 4LL)*Power(xj, 4LL) + 15336LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            18LL*r*Power(xi,15LL)*Power(xj,14LL)*
+            8LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (63046289250LL + 3917182500LL*Power(r,2LL)*Power(xj,2LL) + 
+                  18LL*r*Power(xi, 15LL)*Power(xj, 14LL)*
 
-               10158435LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (63046289250LL + 3917182500LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               178842LL*Power(r,6LL)*Power(xj,6LL) + 16LL*Power(r,8LL)*Power(xj,8LL)) + 
+            10158435LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*r*Power(xi,21LL)*Power(xj,8LL)*
+            178842LL*Power(r, 6LL)*Power(xj, 6LL) + 16LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-8559820125LL + 17573325LL*Power(r,2LL)*Power(xj,2LL) + 
+                  378LL*r*Power(xi, 21LL)*Power(xj, 8LL)*
 
-               7421001LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (-8559820125LL + 17573325LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               49096LL*Power(r,6LL)*Power(xj,6LL) + 19LL*Power(r,8LL)*Power(xj,8LL)) - 
+            7421001LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*Power(xi,12LL)*Power(xj,16LL)*
+            49096LL*Power(r, 6LL)*Power(xj, 6LL) + 19LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (17296650LL + 14244300LL*Power(r,2LL)*Power(xj,2LL) + 
+                  378LL*Power(xi, 12LL)*Power(xj, 16LL)*
 
-               360525LL*Power(r,4LL)*Power(xj,4LL) + 15928LL*Power(r,6LL)*Power(xj,6LL) + 
+                  (17296650LL + 14244300LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               22LL*Power(r,8LL)*Power(xj,8LL)) - 
+            360525LL*Power(r, 4LL)*Power(xj, 4LL) + 15928LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            189LL*r*Power(xi,25LL)*Power(xj,4LL)*
+            22LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (9994948425LL + 63821700LL*Power(r,2LL)*Power(xj,2LL) - 
+                  189LL*r*Power(xi, 25LL)*Power(xj, 4LL)*
 
-               1458540LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (9994948425LL + 63821700LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               18756LL*Power(r,6LL)*Power(xj,6LL) + 38LL*Power(r,8LL)*Power(xj,8LL)) - 
+            1458540LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            189LL*Power(xi,24LL)*Power(xj,4LL)*
+            18756LL*Power(r, 6LL)*Power(xj, 6LL) + 38LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (17962854525LL + 4036942800LL*Power(r,2LL)*Power(xj,2LL) - 
+                  189LL*Power(xi, 24LL)*Power(xj, 4LL)*
 
-               126472500LL*Power(r,4LL)*Power(xj,4LL) + 
+                  (17962854525LL + 4036942800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               765464LL*Power(r,6LL)*Power(xj,6LL) + 190LL*Power(r,8LL)*Power(xj,8LL)) - 
+            126472500LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            21LL*r*Power(xi,19LL)*Power(xj,10LL)*
+            765464LL*Power(r, 6LL)*Power(xj, 6LL) + 190LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (-228066210225LL + 13487616450LL*Power(r,2LL)*Power(xj,2LL) - 
+                  21LL*r*Power(xi, 19LL)*Power(xj, 10LL)*
 
-               85465800LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (-228066210225LL + 13487616450LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               320112LL*Power(r,6LL)*Power(xj,6LL) + 328LL*Power(r,8LL)*Power(xj,8LL)) - 
+            85465800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            189LL*Power(xi,18LL)*Power(xj,10LL)*
+            320112LL*Power(r, 6LL)*Power(xj, 6LL) + 328LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (86069971575LL + 2157712200LL*Power(r,2LL)*Power(xj,2LL) - 
+                  189LL*Power(xi, 18LL)*Power(xj, 10LL)*
 
-               158179560LL*Power(r,4LL)*Power(xj,4LL) + 
+                  (86069971575LL + 2157712200LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               578816LL*Power(r,6LL)*Power(xj,6LL) + 978LL*Power(r,8LL)*Power(xj,8LL)) - 
+            158179560LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            2LL*r*Power(xi,29LL)*(2085060285LL + 
+            578816LL*Power(r, 6LL)*Power(xj, 6LL) + 978LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-               5450330025LL*Power(r,2LL)*Power(xj,2LL) + 
+                  2LL*r*Power(xi, 29LL)*(2085060285LL +
 
-               127424745LL*Power(r,4LL)*Power(xj,4LL) - 
+                                         5450330025LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1398276LL*Power(r,6LL)*Power(xj,6LL) + 1159LL*Power(r,8LL)*Power(xj,8LL)) - 
+                                         127424745LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*Power(xi,22LL)*Power(xj,6LL)*
+                                         1398276LL*Power(r, 6LL)*Power(xj, 6LL) + 1159LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (37244490525LL - 2411839800LL*Power(r,2LL)*Power(xj,2LL) + 
+                  378LL*Power(xi, 22LL)*Power(xj, 6LL)*
 
-               92951775LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (37244490525LL - 2411839800LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               942172LL*Power(r,6LL)*Power(xj,6LL) + 1292LL*Power(r,8LL)*Power(xj,8LL)) - 
+            92951775LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            27LL*Power(xi,16LL)*Power(xj,12LL)*
+            942172LL*Power(r, 6LL)*Power(xj, 6LL) + 1292LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (164245367475LL + 26909517600LL*Power(r,2LL)*Power(xj,2LL) + 
+                  27LL*Power(xi, 16LL)*Power(xj, 12LL)*
 
-               62674920LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (164245367475LL + 26909517600LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               3885112LL*Power(r,6LL)*Power(xj,6LL) + 2122LL*Power(r,8LL)*Power(xj,8LL)) + 
+            62674920LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            3LL*r*Power(xi,27LL)*Power(xj,2LL)*
+            3885112LL*Power(r, 6LL)*Power(xj, 6LL) + 2122LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-63819198135LL - 21841975890LL*Power(r,2LL)*Power(xj,2LL) + 
+                  3LL*r*Power(xi, 27LL)*Power(xj, 2LL)*
 
-               442430100LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (-63819198135LL - 21841975890LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2756664LL*Power(r,6LL)*Power(xj,6LL) + 2296LL*Power(r,8LL)*Power(xj,8LL)) + 
+            442430100LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            r*Power(xi,17LL)*Power(xj,12LL)*
+            2756664LL*Power(r, 6LL)*Power(xj, 6LL) + 2296LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (4851990871875LL + 21622847400LL*Power(r,2LL)*Power(xj,2LL) - 
+                  r*Power(xi, 17LL)*Power(xj, 12LL)*
 
-               2153738160LL*Power(r,4LL)*Power(xj,4LL) + 
+                  (4851990871875LL + 21622847400LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               3608388LL*Power(r,6LL)*Power(xj,6LL) + 2318LL*Power(r,8LL)*Power(xj,8LL)) + 
+            2153738160LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            18LL*Power(xi,14LL)*Power(xj,14LL)*
+            3608388LL*Power(r, 6LL)*Power(xj, 6LL) + 2318LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-23418646650LL - 6922729800LL*Power(r,2LL)*Power(xj,2LL) - 
+                  18LL*Power(xi, 14LL)*Power(xj, 14LL)*
 
-               259958475LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (-23418646650LL - 6922729800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               697732LL*Power(r,6LL)*Power(xj,6LL) + 3030LL*Power(r,8LL)*Power(xj,8LL)) + 
+            259958475LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            126LL*Power(xi,20LL)*Power(xj,8LL)*
+            697732LL*Power(r, 6LL)*Power(xj, 6LL) + 3030LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-186637212225LL + 13028280300LL*Power(r,2LL)*Power(xj,2LL) - 
+                  126LL*Power(xi, 20LL)*Power(xj, 8LL)*
 
-               116198775LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (-186637212225LL + 13028280300LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               1266160LL*Power(r,6LL)*Power(xj,6LL) + 4332LL*Power(r,8LL)*Power(xj,8LL)) - 
+            116198775LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            54LL*Power(xi,28LL)*(102965940LL + 1089437580LL*Power(r,2LL)*Power(xj,2LL) + 
+            1266160LL*Power(r, 6LL)*Power(xj, 6LL) + 4332LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-               102508245LL*Power(r,4LL)*Power(xj,4LL) - 
+                  54LL*Power(xi, 28LL)*(102965940LL + 1089437580LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1593144LL*Power(r,6LL)*Power(xj,6LL) + 4538LL*Power(r,8LL)*Power(xj,8LL)) + 
+                                        102508245LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            63LL*Power(xi,26LL)*Power(xj,2LL)*
+                                        1593144LL*Power(r, 6LL)*Power(xj, 6LL) + 4538LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-4544129205LL - 7396000920LL*Power(r,2LL)*Power(xj,2LL) + 
+                  63LL*Power(xi, 26LL)*Power(xj, 2LL)*
 
-               149614020LL*Power(r,4LL)*Power(xj,4LL) - 
+                  (-4544129205LL - 7396000920LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1684112LL*Power(r,6LL)*Power(xj,6LL) + 5922LL*Power(r,8LL)*Power(xj,8LL))) + 
+            149614020LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-         exp(2LL*r*xi)*Power(xi,12LL)*
+            1684112LL*Power(r, 6LL)*Power(xj, 6LL) + 5922LL*Power(r, 8LL)*Power(xj, 8LL))) +
 
-          (6LL*Power(xi,24LL)*Power(xj,6LL)*
+                 exp(2LL*r*xi)*Power(xi, 12LL)*
 
-             (1036901250LL + 1900985625LL*r*xj + 
+                 (6LL*Power(xi, 24LL)*Power(xj, 6LL)*
 
-               1728168750LL*Power(r,2LL)*Power(xj,2LL) + 
+                  (1036901250LL + 1900985625LL*r*xj +
 
-               1036901250LL*Power(r,3LL)*Power(xj,3LL) + 
+            1728168750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               460845000LL*Power(r,4LL)*Power(xj,4LL) + 
+            1036901250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               161295750LL*Power(r,5LL)*Power(xj,5LL) + 
+            460845000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               46084500LL*Power(r,6LL)*Power(xj,6LL) + 
+            161295750LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               9084900LL*Power(r,7LL)*Power(xj,7LL) + 
+            46084500LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               4082100LL*Power(r,8LL)*Power(xj,8LL) + 
+            9084900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               121935LL*Power(r,9LL)*Power(xj,9LL) - 
+            4082100LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               21494LL*Power(r,10LL)*Power(xj,10LL) - 766LL*Power(r,11LL)*Power(xj,11LL)) + 
+            121935LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            5LL*Power(xi,28LL)*Power(xj,2LL)*
+            21494LL*Power(r, 10LL)*Power(xj, 10LL) - 766LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (19646550LL + 36018675LL*r*xj + 32744250LL*Power(r,2LL)*Power(xj,2LL) + 
+                  5LL*Power(xi, 28LL)*Power(xj, 2LL)*
 
-               19646550LL*Power(r,3LL)*Power(xj,3LL) + 
+                  (19646550LL + 36018675LL*r*xj + 32744250LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               8731800LL*Power(r,4LL)*Power(xj,4LL) + 
+            19646550LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               3056130LL*Power(r,5LL)*Power(xj,5LL) + 
+            8731800LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               873180LL*Power(r,6LL)*Power(xj,6LL) + 207900LL*Power(r,7LL)*Power(xj,7LL) + 
+            3056130LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               41580LL*Power(r,8LL)*Power(xj,8LL) + 6930LL*Power(r,9LL)*Power(xj,9LL) + 
+            873180LL*Power(r, 6LL)*Power(xj, 6LL) + 207900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               924LL*Power(r,10LL)*Power(xj,10LL) - 4LL*Power(r,11LL)*Power(xj,11LL)) + 
+            41580LL*Power(r, 8LL)*Power(xj, 8LL) + 6930LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            26334LL*Power(xi,16LL)*Power(xj,14LL)*
+            924LL*Power(r, 10LL)*Power(xj, 10LL) - 4LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (43880400LL - 186686775LL*r*xj + 576771750LL*Power(r,2LL)*Power(xj,2LL) - 
+                  26334LL*Power(xi, 16LL)*Power(xj, 14LL)*
 
-               398603250LL*Power(r,3LL)*Power(xj,3LL) + 
+                  (43880400LL - 186686775LL*r*xj + 576771750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               72552600LL*Power(r,4LL)*Power(xj,4LL) + 
+            398603250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               27903120LL*Power(r,5LL)*Power(xj,5LL) - 
+            72552600LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               342720LL*Power(r,6LL)*Power(xj,6LL) - 574800LL*Power(r,7LL)*Power(xj,7LL) - 
+            27903120LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               50800LL*Power(r,8LL)*Power(xj,8LL) - 945LL*Power(r,9LL)*Power(xj,9LL) + 
+            342720LL*Power(r, 6LL)*Power(xj, 6LL) - 574800LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               58LL*Power(r,10LL)*Power(xj,10LL) + 2LL*Power(r,11LL)*Power(xj,11LL)) + 
+            50800LL*Power(r, 8LL)*Power(xj, 8LL) - 945LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            10LL*Power(xj,30LL)*(97302813300LL + 89194245525LL*r*xj + 
+            58LL*Power(r, 10LL)*Power(xj, 10LL) + 2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-               38780106750LL*Power(r,2LL)*Power(xj,2LL) + 
+                  10LL*Power(xj, 30LL)*(97302813300LL + 89194245525LL*r*xj +
 
-               10576392750LL*Power(r,3LL)*Power(xj,3LL) + 
+                                        38780106750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2014551000LL*Power(r,4LL)*Power(xj,4LL) + 
+                                        10576392750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               282037140LL*Power(r,5LL)*Power(xj,5LL) + 
+                                        2014551000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               29688120LL*Power(r,6LL)*Power(xj,6LL) + 
+                                        282037140LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               2356200LL*Power(r,7LL)*Power(xj,7LL) + 
+                                        29688120LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               138600LL*Power(r,8LL)*Power(xj,8LL) + 5775LL*Power(r,9LL)*Power(xj,9LL) + 
+                                        2356200LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               154LL*Power(r,10LL)*Power(xj,10LL) + 2LL*Power(r,11LL)*Power(xj,11LL)) + 
+                                        138600LL*Power(r, 8LL)*Power(xj, 8LL) + 5775LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            10LL*Power(xi,2LL)*Power(xj,28LL)*
+                                        154LL*Power(r, 10LL)*Power(xj, 10LL) + 2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (4582499159700LL + 3733416276975LL*r*xj + 
+                  10LL*Power(xi, 2LL)*Power(xj, 28LL)*
 
-               1428215931450LL*Power(r,2LL)*Power(xj,2LL) + 
+                  (4582499159700LL + 3733416276975LL*r*xj +
 
-               338545295550LL*Power(r,3LL)*Power(xj,3LL) + 
+            1428215931450LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               55198697400LL*Power(r,4LL)*Power(xj,4LL) + 
+            338545295550LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               6486854220LL*Power(r,5LL)*Power(xj,5LL) + 
+            55198697400LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               558419400LL*Power(r,6LL)*Power(xj,6LL) + 
+            6486854220LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               34939080LL*Power(r,7LL)*Power(xj,7LL) + 
+            558419400LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               1532520LL*Power(r,8LL)*Power(xj,8LL) + 43285LL*Power(r,9LL)*Power(xj,9LL) + 
+            34939080LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               638LL*Power(r,10LL)*Power(xj,10LL) + 2LL*Power(r,11LL)*Power(xj,11LL)) - 
+            1532520LL*Power(r, 8LL)*Power(xj, 8LL) + 43285LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            110LL*Power(xi,10LL)*Power(xj,20LL)*
+            638LL*Power(r, 10LL)*Power(xj, 10LL) + 2LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-14063418170550LL + 6795156458475LL*r*xj + 
+                  110LL*Power(xi, 10LL)*Power(xj, 20LL)*
 
-               2067471236250LL*Power(r,2LL)*Power(xj,2LL) - 
+                  (-14063418170550LL + 6795156458475LL*r*xj +
 
-               214664924250LL*Power(r,3LL)*Power(xj,3LL) - 
+            2067471236250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               124416469800LL*Power(r,4LL)*Power(xj,4LL) - 
+            214664924250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               14935545450LL*Power(r,5LL)*Power(xj,5LL) - 
+            124416469800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               256688460LL*Power(r,6LL)*Power(xj,6LL) + 
+            14935545450LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               105750900LL*Power(r,7LL)*Power(xj,7LL) + 
+            256688460LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               11502180LL*Power(r,8LL)*Power(xj,8LL) + 
+            105750900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               518085LL*Power(r,9LL)*Power(xj,9LL) + 9294LL*Power(r,10LL)*Power(xj,10LL) + 
+            11502180LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               2LL*Power(r,11LL)*Power(xj,11LL)) + 
+            518085LL*Power(r, 9LL)*Power(xj, 9LL) + 9294LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            55LL*Power(xi,20LL)*Power(xj,10LL)*
+            2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (1730682450LL + 3172917825LL*r*xj + 
+                  55LL*Power(xi, 20LL)*Power(xj, 10LL)*
 
-               2884470750LL*Power(r,2LL)*Power(xj,2LL) + 
+                  (1730682450LL + 3172917825LL*r*xj +
 
-               1571960250LL*Power(r,3LL)*Power(xj,3LL) + 
+            2884470750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1404081000LL*Power(r,4LL)*Power(xj,4LL) - 
+            1571960250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               426654270LL*Power(r,5LL)*Power(xj,5LL) + 
+            1404081000LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               283536540LL*Power(r,6LL)*Power(xj,6LL) + 
+            426654270LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               39116700LL*Power(r,7LL)*Power(xj,7LL) - 
+            283536540LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               2659860LL*Power(r,8LL)*Power(xj,8LL) - 
+            39116700LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               528850LL*Power(r,9LL)*Power(xj,9LL) - 
+            2659860LL*Power(r, 8LL)*Power(xj, 8LL) -
 
-               18236LL*Power(r,10LL)*Power(xj,10LL) + 4LL*Power(r,11LL)*Power(xj,11LL)) - 
+            528850LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            5LL*Power(xi,30LL)*(935550LL + 1715175LL*r*xj + 
+            18236LL*Power(r, 10LL)*Power(xj, 10LL) + 4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-               1559250LL*Power(r,2LL)*Power(xj,2LL) + 
+                  5LL*Power(xi, 30LL)*(935550LL + 1715175LL*r*xj +
 
-               935550LL*Power(r,3LL)*Power(xj,3LL) + 415800LL*Power(r,4LL)*Power(xj,4LL) + 
+                                       1559250LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               145530LL*Power(r,5LL)*Power(xj,5LL) + 41580LL*Power(r,6LL)*Power(xj,6LL) + 
+                                       935550LL*Power(r, 3LL)*Power(xj, 3LL) + 415800LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               9900LL*Power(r,7LL)*Power(xj,7LL) + 1980LL*Power(r,8LL)*Power(xj,8LL) + 
+                                       145530LL*Power(r, 5LL)*Power(xj, 5LL) + 41580LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               330LL*Power(r,9LL)*Power(xj,9LL) + 44LL*Power(r,10LL)*Power(xj,10LL) + 
+                                       9900LL*Power(r, 7LL)*Power(xj, 7LL) + 1980LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               4LL*Power(r,11LL)*Power(xj,11LL)) - 
+                                       330LL*Power(r, 9LL)*Power(xj, 9LL) + 44LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            13167LL*Power(xi,14LL)*Power(xj,16LL)*
+                                       4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-2319354450LL + 8540029575LL*r*xj - 
+                  13167LL*Power(xi, 14LL)*Power(xj, 16LL)*
 
-               7335672750LL*Power(r,2LL)*Power(xj,2LL) + 
+                  (-2319354450LL + 8540029575LL*r*xj -
 
-               1133154750LL*Power(r,3LL)*Power(xj,3LL) + 
+            7335672750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               575014200LL*Power(r,4LL)*Power(xj,4LL) - 
+            1133154750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               913710LL*Power(r,5LL)*Power(xj,5LL) - 
+            575014200LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               14863940LL*Power(r,6LL)*Power(xj,6LL) - 
+            913710LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               1687300LL*Power(r,7LL)*Power(xj,7LL) - 46900LL*Power(r,8LL)*Power(xj,8LL) + 
+            14863940LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               3210LL*Power(r,9LL)*Power(xj,9LL) + 236LL*Power(r,10LL)*Power(xj,10LL) + 
+            1687300LL*Power(r, 7LL)*Power(xj, 7LL) - 46900LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               4LL*Power(r,11LL)*Power(xj,11LL)) - 
+            3210LL*Power(r, 9LL)*Power(xj, 9LL) + 236LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            770LL*Power(xi,18LL)*Power(xj,12LL)*
+            4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (329653800LL + 654729075LL*r*xj + 45785250LL*Power(r,2LL)*Power(xj,2LL) + 
+                  770LL*Power(xi, 18LL)*Power(xj, 12LL)*
 
-               1602483750LL*Power(r,3LL)*Power(xj,3LL) - 
+                  (329653800LL + 654729075LL*r*xj + 45785250LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               915705000LL*Power(r,4LL)*Power(xj,4LL) + 
+            1602483750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               266036400LL*Power(r,5LL)*Power(xj,5LL) + 
+            915705000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               63745920LL*Power(r,6LL)*Power(xj,6LL) - 
+            266036400LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               2304000LL*Power(r,7LL)*Power(xj,7LL) - 
+            63745920LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               1074240LL*Power(r,8LL)*Power(xj,8LL) - 64635LL*Power(r,9LL)*Power(xj,9LL) - 
+            2304000LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               514LL*Power(r,10LL)*Power(xj,10LL) + 34LL*Power(r,11LL)*Power(xj,11LL)) + 
+            1074240LL*Power(r, 8LL)*Power(xj, 8LL) - 64635LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            385LL*Power(xi,12LL)*Power(xj,18LL)*
+            514LL*Power(r, 10LL)*Power(xj, 10LL) + 34LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (973565393850LL - 1429122323475LL*r*xj + 
+                  385LL*Power(xi, 12LL)*Power(xj, 18LL)*
 
-               298281831750LL*Power(r,2LL)*Power(xj,2LL) + 
+                  (973565393850LL - 1429122323475LL*r*xj +
 
-               138841148250LL*Power(r,3LL)*Power(xj,3LL) - 
+            298281831750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2454240600LL*Power(r,4LL)*Power(xj,4LL) - 
+            138841148250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               4925394810LL*Power(r,5LL)*Power(xj,5LL) - 
+            2454240600LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               623832300LL*Power(r,6LL)*Power(xj,6LL) - 
+            4925394810LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               19098540LL*Power(r,7LL)*Power(xj,7LL) + 
+            623832300LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               2083140LL*Power(r,8LL)*Power(xj,8LL) + 
+            19098540LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               212430LL*Power(r,9LL)*Power(xj,9LL) + 7012LL*Power(r,10LL)*Power(xj,10LL) + 
+            2083140LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               68LL*Power(r,11LL)*Power(xj,11LL)) + 
+            212430LL*Power(r, 9LL)*Power(xj, 9LL) + 7012LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            14LL*Power(xi,26LL)*Power(xj,4LL)*
+            68LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (-70166250LL - 128638125LL*r*xj - 116943750LL*Power(r,2LL)*Power(xj,2LL) - 
+                  14LL*Power(xi, 26LL)*Power(xj, 4LL)*
 
-               70166250LL*Power(r,3LL)*Power(xj,3LL) - 
+                  (-70166250LL - 128638125LL*r*xj - 116943750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               31185000LL*Power(r,4LL)*Power(xj,4LL) - 
+            70166250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               10914750LL*Power(r,5LL)*Power(xj,5LL) - 
+            31185000LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               3118500LL*Power(r,6LL)*Power(xj,6LL) - 
+            10914750LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               742500LL*Power(r,7LL)*Power(xj,7LL) - 148500LL*Power(r,8LL)*Power(xj,8LL) - 
+            3118500LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               32615LL*Power(r,9LL)*Power(xj,9LL) - 154LL*Power(r,10LL)*Power(xj,10LL) + 
+            742500LL*Power(r, 7LL)*Power(xj, 7LL) - 148500LL*Power(r, 8LL)*Power(xj, 8LL) -
 
-               74LL*Power(r,11LL)*Power(xj,11LL)) - 
+            32615LL*Power(r, 9LL)*Power(xj, 9LL) - 154LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            7LL*Power(xi,4LL)*Power(xj,26LL)*
+            74LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-69822945249750LL - 46669577290875LL*r*xj - 
+                  7LL*Power(xi, 4LL)*Power(xj, 26LL)*
 
-               14025037430250LL*Power(r,2LL)*Power(xj,2LL) - 
+                  (-69822945249750LL - 46669577290875LL*r*xj -
 
-               2430881664750LL*Power(r,3LL)*Power(xj,3LL) - 
+            14025037430250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               251629270200LL*Power(r,4LL)*Power(xj,4LL) - 
+            2430881664750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               12434519790LL*Power(r,5LL)*Power(xj,5LL) + 
+            251629270200LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               452930940LL*Power(r,6LL)*Power(xj,6LL) + 
+            12434519790LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               131125500LL*Power(r,7LL)*Power(xj,7LL) + 
+            452930940LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               11018700LL*Power(r,8LL)*Power(xj,8LL) + 
+            131125500LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               514470LL*Power(r,9LL)*Power(xj,9LL) + 
+            11018700LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               13332LL*Power(r,10LL)*Power(xj,10LL) + 148LL*Power(r,11LL)*Power(xj,11LL)) - 
+            514470LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            50LL*Power(xi,8LL)*Power(xj,22LL)*
+            13332LL*Power(r, 10LL)*Power(xj, 10LL) + 148LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-51768833574150LL - 5003280391725LL*r*xj + 
+                  50LL*Power(xi, 8LL)*Power(xj, 22LL)*
 
-               4493439477450LL*Power(r,2LL)*Power(xj,2LL) + 
+                  (-51768833574150LL - 5003280391725LL*r*xj +
 
-               1286866176750LL*Power(r,3LL)*Power(xj,3LL) + 
+            4493439477450LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               111437476920LL*Power(r,4LL)*Power(xj,4LL) - 
+            1286866176750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               6620313546LL*Power(r,5LL)*Power(xj,5LL) - 
+            111437476920LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               2406603276LL*Power(r,6LL)*Power(xj,6LL) - 
+            6620313546LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               242686620LL*Power(r,7LL)*Power(xj,7LL) - 
+            2406603276LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               12228876LL*Power(r,8LL)*Power(xj,8LL) - 
+            242686620LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               256223LL*Power(r,9LL)*Power(xj,9LL) + 2486LL*Power(r,10LL)*Power(xj,10LL) + 
+            12228876LL*Power(r, 8LL)*Power(xj, 8LL) -
 
-               158LL*Power(r,11LL)*Power(xj,11LL)) + 
+            256223LL*Power(r, 9LL)*Power(xj, 9LL) + 2486LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            25LL*Power(xi,22LL)*Power(xj,8LL)*
+            158LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (-1119853350LL - 2053064475LL*r*xj - 
+                  25LL*Power(xi, 22LL)*Power(xj, 8LL)*
 
-               1866422250LL*Power(r,2LL)*Power(xj,2LL) - 
+                  (-1119853350LL - 2053064475LL*r*xj -
 
-               1119853350LL*Power(r,3LL)*Power(xj,3LL) - 
+            1866422250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               497712600LL*Power(r,4LL)*Power(xj,4LL) - 
+            1119853350LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               194415606LL*Power(r,5LL)*Power(xj,5LL) - 
+            497712600LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               9338868LL*Power(r,6LL)*Power(xj,6LL) - 
+            194415606LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               31217076LL*Power(r,7LL)*Power(xj,7LL) - 
+            9338868LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               2256804LL*Power(r,8LL)*Power(xj,8LL) + 
+            31217076LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               246774LL*Power(r,9LL)*Power(xj,9LL) + 
+            2256804LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               22836LL*Power(r,10LL)*Power(xj,10LL) + 316LL*Power(r,11LL)*Power(xj,11LL)) + 
+            246774LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            3LL*Power(xi,6LL)*Power(xj,24LL)*
+            22836LL*Power(r, 10LL)*Power(xj, 10LL) + 316LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (596006592662250LL + 266778699697125LL*r*xj + 
+                  3LL*Power(xi, 6LL)*Power(xj, 24LL)*
 
-               37515651153750LL*Power(r,2LL)*Power(xj,2LL) - 
+                  (596006592662250LL + 266778699697125LL*r*xj +
 
-               2214626163750LL*Power(r,3LL)*Power(xj,3LL) - 
+            37515651153750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               1538075107800LL*Power(r,4LL)*Power(xj,4LL) - 
+            2214626163750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               248955308910LL*Power(r,5LL)*Power(xj,5LL) - 
+            1538075107800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               21434337540LL*Power(r,6LL)*Power(xj,6LL) - 
+            248955308910LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               957980100LL*Power(r,7LL)*Power(xj,7LL) - 
+            21434337540LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               4874100LL*Power(r,8LL)*Power(xj,8LL) + 
+            957980100LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               1831830LL*Power(r,9LL)*Power(xj,9LL) + 
+            4874100LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               91828LL*Power(r,10LL)*Power(xj,10LL) + 1532LL*Power(r,11LL)*Power(xj,11LL))))/
+            1831830LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-       (4.67775e6*exp(2LL*r*(xi + xj))*Power(r,2LL)*Power(xi - xj,21LL)*
+            91828LL*Power(r, 10LL)*Power(xj, 10LL) + 1532LL*Power(r, 11LL)*Power(xj, 11LL))))/
 
-         Power(xi + xj,21LL)) + (4677750LL*exp(2LL*r*(xi + xj))*
+                (4.67775e6*exp(2LL*r*(xi + xj))*Power(r, 2LL)*Power(xi - xj, 21LL)*
 
-          Power(Power(xi,2LL) - Power(xj,2LL),21LL) + 
+                 Power(xi + xj, 21LL)) + (4677750LL*exp(2LL*r*(xi + xj))*
 
-         110LL*exp(2LL*r*xj)*Power(xj,14LL)*
+                                          Power(Power(xi, 2LL) - Power(xj, 2LL), 21LL) +
 
-          (-432LL*Power(r,8LL)*Power(xi,36LL) - 6LL*Power(r,9LL)*Power(xi,37LL) + 
+                                          110LL*exp(2LL*r*xj)*Power(xj, 14LL)*
 
-            42525LL*Power(xj,28LL) + 76545LL*r*xi*Power(xj,28LL) + 
+                                          (-432LL*Power(r, 8LL)*Power(xi, 36LL) - 6LL*Power(r, 9LL)*Power(xi, 37LL) +
 
-            19845LL*r*Power(xi,3LL)*Power(xj,26LL)*
+                                  42525LL*Power(xj, 28LL) + 76545LL*r*xi*Power(xj, 28LL) +
 
-             (-81LL + 2LL*Power(r,2LL)*Power(xj,2LL)) - 
+                                  19845LL*r*Power(xi, 3LL)*Power(xj, 26LL)*
 
-            1134LL*Power(r,6LL)*Power(xi,34LL)*(272LL + 5LL*Power(r,2LL)*Power(xj,2LL)) - 
+                                  (-81LL + 2LL*Power(r, 2LL)*Power(xj, 2LL)) -
 
-            8LL*Power(r,7LL)*Power(xi,35LL)*(1836LL + 7LL*Power(r,2LL)*Power(xj,2LL)) + 
+                                  1134LL*Power(r, 6LL)*Power(xi, 34LL)*(272LL + 5LL*Power(r, 2LL)*Power(xj, 2LL)) -
 
-            8505LL*Power(xi,2LL)*Power(xj,26LL)*(-105LL + 8LL*Power(r,2LL)*Power(xj,2LL)) + 
+                                  8LL*Power(r, 7LL)*Power(xi, 35LL)*(1836LL + 7LL*Power(r, 2LL)*Power(xj, 2LL)) +
 
-            378LL*Power(r,5LL)*Power(xi,33LL)*
+                                  8505LL*Power(xi, 2LL)*Power(xj, 26LL)*(-105LL + 8LL*Power(r, 2LL)*Power(xj, 2LL)) +
 
-             (-11628LL - 666LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                                  378LL*Power(r, 5LL)*Power(xi, 33LL)*
 
-            5670LL*r*Power(xi,5LL)*Power(xj,24LL)*
+                                  (-11628LL - 666LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (2835LL - 147LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                                  5670LL*r*Power(xi, 5LL)*Power(xj, 24LL)*
 
-            17010LL*Power(xi,4LL)*Power(xj,24LL)*
+                                  (2835LL - 147LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (525LL - 84LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                                  17010LL*Power(xi, 4LL)*Power(xj, 24LL)*
 
-            378LL*Power(r,4LL)*Power(xi,32LL)*
+                                  (525LL - 84LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (-116280LL - 17444LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  378LL*Power(r, 4LL)*Power(xi, 32LL)*
 
-               59LL*Power(r,4LL)*Power(xj,4LL)) + 
+                                  (-116280LL - 17444LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-            162LL*r*Power(xi,7LL)*Power(xj,22LL)*
+            59LL*Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (-628425LL + 51450LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  162LL*r*Power(xi, 7LL)*Power(xj, 22LL)*
 
-               735LL*Power(r,4LL)*Power(xj,4LL) + 2LL*Power(r,6LL)*Power(xj,6LL)) + 
+                                  (-628425LL + 51450LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            378LL*Power(xi,6LL)*Power(xj,22LL)*
+            735LL*Power(r, 4LL)*Power(xj, 4LL) + 2LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-149625LL + 37800LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  378LL*Power(xi, 6LL)*Power(xj, 22LL)*
 
-               945LL*Power(r,4LL)*Power(xj,4LL) + 4LL*Power(r,6LL)*Power(xj,6LL)) - 
+                                  (-149625LL + 37800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            18LL*Power(r,3LL)*Power(xi,31LL)*
+            945LL*Power(r, 4LL)*Power(xj, 4LL) + 4LL*Power(r, 6LL)*Power(xj, 6LL)) -
 
-             (17093160LL + 6309387LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  18LL*Power(r, 3LL)*Power(xi, 31LL)*
 
-               23562LL*Power(r,4LL)*Power(xj,4LL) + 16LL*Power(r,6LL)*Power(xj,6LL)) + 
+                                  (17093160LL + 6309387LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            54LL*Power(r,2LL)*Power(xi,30LL)*
+            23562LL*Power(r, 4LL)*Power(xj, 4LL) + 16LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-26860680LL - 24843735LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  54LL*Power(r, 2LL)*Power(xi, 30LL)*
 
-               40180LL*Power(r,4LL)*Power(xj,4LL) + 578LL*Power(r,6LL)*Power(xj,6LL)) + 
+                                  (-26860680LL - 24843735LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            378LL*r*Power(xi,23LL)*Power(xj,6LL)*
+            40180LL*Power(r, 4LL)*Power(xj, 4LL) + 578LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-14625683325LL + 704051250LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  378LL*r*Power(xi, 23LL)*Power(xj, 6LL)*
 
-               10752861LL*Power(r,4LL)*Power(xj,4LL) + 33478LL*Power(r,6LL)*Power(xj,6LL)) 
+                                  (-14625683325LL + 704051250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-    + 3LL*r*Power(xi,9LL)*Power(xj,20LL)*
+            10752861LL*Power(r, 4LL)*Power(xj, 4LL) + 33478LL*Power(r, 6LL)*Power(xj, 6LL))
 
-             (152707275LL - 17595900LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  + 3LL*r*Power(xi, 9LL)*Power(xj, 20LL)*
 
-               396900LL*Power(r,4LL)*Power(xj,4LL) - 2268LL*Power(r,6LL)*Power(xj,6LL) + 
+                                  (152707275LL - 17595900LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) + 
+            396900LL*Power(r, 4LL)*Power(xj, 4LL) - 2268LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            27LL*Power(xi,8LL)*Power(xj,20LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (9426375LL - 3351600LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  27LL*Power(xi, 8LL)*Power(xj, 20LL)*
 
-               132300LL*Power(r,4LL)*Power(xj,4LL) - 1176LL*Power(r,6LL)*Power(xj,6LL) + 
+                                  (9426375LL - 3351600LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) - 
+            132300LL*Power(r, 4LL)*Power(xj, 4LL) - 1176LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            567LL*Power(xi,10LL)*Power(xj,18LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (1526175LL - 718200LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  567LL*Power(xi, 10LL)*Power(xj, 18LL)*
 
-               39900LL*Power(r,4LL)*Power(xj,4LL) - 560LL*Power(r,6LL)*Power(xj,6LL) + 
+                                  (1526175LL - 718200LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) - 
+            39900LL*Power(r, 4LL)*Power(xj, 4LL) - 560LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            54LL*r*Power(xi,13LL)*Power(xj,16LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (-1356769575LL - 127011675LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  54LL*r*Power(xi, 13LL)*Power(xj, 16LL)*
 
-               3867843LL*Power(r,4LL)*Power(xj,4LL) - 8556LL*Power(r,6LL)*Power(xj,6LL) + 
+                                  (-1356769575LL - 127011675LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               7LL*Power(r,8LL)*Power(xj,8LL)) + 
+            3867843LL*Power(r, 4LL)*Power(xj, 4LL) - 8556LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            7LL*r*Power(xi,11LL)*Power(xj,18LL)*
+            7LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-151091325LL + 45272250LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  7LL*r*Power(xi, 11LL)*Power(xj, 18LL)*
 
-               647676LL*Power(r,4LL)*Power(xj,4LL) + 15336LL*Power(r,6LL)*Power(xj,6LL) + 
+                                  (-151091325LL + 45272250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               8LL*Power(r,8LL)*Power(xj,8LL)) + 
+            647676LL*Power(r, 4LL)*Power(xj, 4LL) + 15336LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            18LL*r*Power(xi,15LL)*Power(xj,14LL)*
+            8LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (63046289250LL + 3917182500LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  18LL*r*Power(xi, 15LL)*Power(xj, 14LL)*
 
-               10158435LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (63046289250LL + 3917182500LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               178842LL*Power(r,6LL)*Power(xj,6LL) + 16LL*Power(r,8LL)*Power(xj,8LL)) + 
+            10158435LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*r*Power(xi,21LL)*Power(xj,8LL)*
+            178842LL*Power(r, 6LL)*Power(xj, 6LL) + 16LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-8559820125LL + 17573325LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  378LL*r*Power(xi, 21LL)*Power(xj, 8LL)*
 
-               7421001LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (-8559820125LL + 17573325LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               49096LL*Power(r,6LL)*Power(xj,6LL) + 19LL*Power(r,8LL)*Power(xj,8LL)) - 
+            7421001LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*Power(xi,12LL)*Power(xj,16LL)*
+            49096LL*Power(r, 6LL)*Power(xj, 6LL) + 19LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (17296650LL + 14244300LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  378LL*Power(xi, 12LL)*Power(xj, 16LL)*
 
-               360525LL*Power(r,4LL)*Power(xj,4LL) + 15928LL*Power(r,6LL)*Power(xj,6LL) + 
+                                  (17296650LL + 14244300LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               22LL*Power(r,8LL)*Power(xj,8LL)) - 
+            360525LL*Power(r, 4LL)*Power(xj, 4LL) + 15928LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            189LL*r*Power(xi,25LL)*Power(xj,4LL)*
+            22LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (9994948425LL + 63821700LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  189LL*r*Power(xi, 25LL)*Power(xj, 4LL)*
 
-               1458540LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (9994948425LL + 63821700LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               18756LL*Power(r,6LL)*Power(xj,6LL) + 38LL*Power(r,8LL)*Power(xj,8LL)) - 
+            1458540LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            189LL*Power(xi,24LL)*Power(xj,4LL)*
+            18756LL*Power(r, 6LL)*Power(xj, 6LL) + 38LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (17962854525LL + 4036942800LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  189LL*Power(xi, 24LL)*Power(xj, 4LL)*
 
-               126472500LL*Power(r,4LL)*Power(xj,4LL) + 
+                                  (17962854525LL + 4036942800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               765464LL*Power(r,6LL)*Power(xj,6LL) + 190LL*Power(r,8LL)*Power(xj,8LL)) - 
+            126472500LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            21LL*r*Power(xi,19LL)*Power(xj,10LL)*
+            765464LL*Power(r, 6LL)*Power(xj, 6LL) + 190LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (-228066210225LL + 13487616450LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  21LL*r*Power(xi, 19LL)*Power(xj, 10LL)*
 
-               85465800LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (-228066210225LL + 13487616450LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               320112LL*Power(r,6LL)*Power(xj,6LL) + 328LL*Power(r,8LL)*Power(xj,8LL)) - 
+            85465800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            189LL*Power(xi,18LL)*Power(xj,10LL)*
+            320112LL*Power(r, 6LL)*Power(xj, 6LL) + 328LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (86069971575LL + 2157712200LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  189LL*Power(xi, 18LL)*Power(xj, 10LL)*
 
-               158179560LL*Power(r,4LL)*Power(xj,4LL) + 
+                                  (86069971575LL + 2157712200LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               578816LL*Power(r,6LL)*Power(xj,6LL) + 978LL*Power(r,8LL)*Power(xj,8LL)) - 
+            158179560LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            2LL*r*Power(xi,29LL)*(2085060285LL + 
+            578816LL*Power(r, 6LL)*Power(xj, 6LL) + 978LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-               5450330025LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  2LL*r*Power(xi, 29LL)*(2085060285LL +
 
-               127424745LL*Power(r,4LL)*Power(xj,4LL) - 
+                                                         5450330025LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1398276LL*Power(r,6LL)*Power(xj,6LL) + 1159LL*Power(r,8LL)*Power(xj,8LL)) - 
+                                                         127424745LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*Power(xi,22LL)*Power(xj,6LL)*
+                                                         1398276LL*Power(r, 6LL)*Power(xj, 6LL) + 1159LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (37244490525LL - 2411839800LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  378LL*Power(xi, 22LL)*Power(xj, 6LL)*
 
-               92951775LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (37244490525LL - 2411839800LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               942172LL*Power(r,6LL)*Power(xj,6LL) + 1292LL*Power(r,8LL)*Power(xj,8LL)) - 
+            92951775LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            27LL*Power(xi,16LL)*Power(xj,12LL)*
+            942172LL*Power(r, 6LL)*Power(xj, 6LL) + 1292LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (164245367475LL + 26909517600LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  27LL*Power(xi, 16LL)*Power(xj, 12LL)*
 
-               62674920LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (164245367475LL + 26909517600LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               3885112LL*Power(r,6LL)*Power(xj,6LL) + 2122LL*Power(r,8LL)*Power(xj,8LL)) + 
+            62674920LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            3LL*r*Power(xi,27LL)*Power(xj,2LL)*
+            3885112LL*Power(r, 6LL)*Power(xj, 6LL) + 2122LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-63819198135LL - 21841975890LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  3LL*r*Power(xi, 27LL)*Power(xj, 2LL)*
 
-               442430100LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (-63819198135LL - 21841975890LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2756664LL*Power(r,6LL)*Power(xj,6LL) + 2296LL*Power(r,8LL)*Power(xj,8LL)) + 
+            442430100LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            r*Power(xi,17LL)*Power(xj,12LL)*
+            2756664LL*Power(r, 6LL)*Power(xj, 6LL) + 2296LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (4851990871875LL + 21622847400LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  r*Power(xi, 17LL)*Power(xj, 12LL)*
 
-               2153738160LL*Power(r,4LL)*Power(xj,4LL) + 
+                                  (4851990871875LL + 21622847400LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               3608388LL*Power(r,6LL)*Power(xj,6LL) + 2318LL*Power(r,8LL)*Power(xj,8LL)) + 
+            2153738160LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            18LL*Power(xi,14LL)*Power(xj,14LL)*
+            3608388LL*Power(r, 6LL)*Power(xj, 6LL) + 2318LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-23418646650LL - 6922729800LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  18LL*Power(xi, 14LL)*Power(xj, 14LL)*
 
-               259958475LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (-23418646650LL - 6922729800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               697732LL*Power(r,6LL)*Power(xj,6LL) + 3030LL*Power(r,8LL)*Power(xj,8LL)) + 
+            259958475LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            126LL*Power(xi,20LL)*Power(xj,8LL)*
+            697732LL*Power(r, 6LL)*Power(xj, 6LL) + 3030LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-186637212225LL + 13028280300LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  126LL*Power(xi, 20LL)*Power(xj, 8LL)*
 
-               116198775LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (-186637212225LL + 13028280300LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               1266160LL*Power(r,6LL)*Power(xj,6LL) + 4332LL*Power(r,8LL)*Power(xj,8LL)) - 
+            116198775LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            54LL*Power(xi,28LL)*(102965940LL + 1089437580LL*Power(r,2LL)*Power(xj,2LL) + 
+            1266160LL*Power(r, 6LL)*Power(xj, 6LL) + 4332LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-               102508245LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  54LL*Power(xi, 28LL)*(102965940LL + 1089437580LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1593144LL*Power(r,6LL)*Power(xj,6LL) + 4538LL*Power(r,8LL)*Power(xj,8LL)) + 
+                                                        102508245LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            63LL*Power(xi,26LL)*Power(xj,2LL)*
+                                                        1593144LL*Power(r, 6LL)*Power(xj, 6LL) + 4538LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-4544129205LL - 7396000920LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  63LL*Power(xi, 26LL)*Power(xj, 2LL)*
 
-               149614020LL*Power(r,4LL)*Power(xj,4LL) - 
+                                  (-4544129205LL - 7396000920LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1684112LL*Power(r,6LL)*Power(xj,6LL) + 5922LL*Power(r,8LL)*Power(xj,8LL))) + 
+            149614020LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-         exp(2LL*r*xi)*Power(xi,12LL)*
+            1684112LL*Power(r, 6LL)*Power(xj, 6LL) + 5922LL*Power(r, 8LL)*Power(xj, 8LL))) +
 
-          (6LL*Power(xi,24LL)*Power(xj,6LL)*
+                                          exp(2LL*r*xi)*Power(xi, 12LL)*
 
-             (1036901250LL + 1900985625LL*r*xj + 
+                                          (6LL*Power(xi, 24LL)*Power(xj, 6LL)*
 
-               1728168750LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  (1036901250LL + 1900985625LL*r*xj +
 
-               1036901250LL*Power(r,3LL)*Power(xj,3LL) + 
+            1728168750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               460845000LL*Power(r,4LL)*Power(xj,4LL) + 
+            1036901250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               161295750LL*Power(r,5LL)*Power(xj,5LL) + 
+            460845000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               46084500LL*Power(r,6LL)*Power(xj,6LL) + 
+            161295750LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               9084900LL*Power(r,7LL)*Power(xj,7LL) + 
+            46084500LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               4082100LL*Power(r,8LL)*Power(xj,8LL) + 
+            9084900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               121935LL*Power(r,9LL)*Power(xj,9LL) - 
+            4082100LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               21494LL*Power(r,10LL)*Power(xj,10LL) - 766LL*Power(r,11LL)*Power(xj,11LL)) + 
+            121935LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            5LL*Power(xi,28LL)*Power(xj,2LL)*
+            21494LL*Power(r, 10LL)*Power(xj, 10LL) - 766LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (19646550LL + 36018675LL*r*xj + 32744250LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  5LL*Power(xi, 28LL)*Power(xj, 2LL)*
 
-               19646550LL*Power(r,3LL)*Power(xj,3LL) + 
+                                  (19646550LL + 36018675LL*r*xj + 32744250LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               8731800LL*Power(r,4LL)*Power(xj,4LL) + 
+            19646550LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               3056130LL*Power(r,5LL)*Power(xj,5LL) + 
+            8731800LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               873180LL*Power(r,6LL)*Power(xj,6LL) + 207900LL*Power(r,7LL)*Power(xj,7LL) + 
+            3056130LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               41580LL*Power(r,8LL)*Power(xj,8LL) + 6930LL*Power(r,9LL)*Power(xj,9LL) + 
+            873180LL*Power(r, 6LL)*Power(xj, 6LL) + 207900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               924LL*Power(r,10LL)*Power(xj,10LL) - 4LL*Power(r,11LL)*Power(xj,11LL)) + 
+            41580LL*Power(r, 8LL)*Power(xj, 8LL) + 6930LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            26334LL*Power(xi,16LL)*Power(xj,14LL)*
+            924LL*Power(r, 10LL)*Power(xj, 10LL) - 4LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (43880400LL - 186686775LL*r*xj + 576771750LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  26334LL*Power(xi, 16LL)*Power(xj, 14LL)*
 
-               398603250LL*Power(r,3LL)*Power(xj,3LL) + 
+                                  (43880400LL - 186686775LL*r*xj + 576771750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               72552600LL*Power(r,4LL)*Power(xj,4LL) + 
+            398603250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               27903120LL*Power(r,5LL)*Power(xj,5LL) - 
+            72552600LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               342720LL*Power(r,6LL)*Power(xj,6LL) - 574800LL*Power(r,7LL)*Power(xj,7LL) - 
+            27903120LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               50800LL*Power(r,8LL)*Power(xj,8LL) - 945LL*Power(r,9LL)*Power(xj,9LL) + 
+            342720LL*Power(r, 6LL)*Power(xj, 6LL) - 574800LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               58LL*Power(r,10LL)*Power(xj,10LL) + 2LL*Power(r,11LL)*Power(xj,11LL)) + 
+            50800LL*Power(r, 8LL)*Power(xj, 8LL) - 945LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            10LL*Power(xj,30LL)*(97302813300LL + 89194245525LL*r*xj + 
+            58LL*Power(r, 10LL)*Power(xj, 10LL) + 2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-               38780106750LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  10LL*Power(xj, 30LL)*(97302813300LL + 89194245525LL*r*xj +
 
-               10576392750LL*Power(r,3LL)*Power(xj,3LL) + 
+                                                        38780106750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2014551000LL*Power(r,4LL)*Power(xj,4LL) + 
+                                                        10576392750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               282037140LL*Power(r,5LL)*Power(xj,5LL) + 
+                                                        2014551000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               29688120LL*Power(r,6LL)*Power(xj,6LL) + 
+                                                        282037140LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               2356200LL*Power(r,7LL)*Power(xj,7LL) + 
+                                                        29688120LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               138600LL*Power(r,8LL)*Power(xj,8LL) + 5775LL*Power(r,9LL)*Power(xj,9LL) + 
+                                                        2356200LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               154LL*Power(r,10LL)*Power(xj,10LL) + 2LL*Power(r,11LL)*Power(xj,11LL)) + 
+                                                        138600LL*Power(r, 8LL)*Power(xj, 8LL) + 5775LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            10LL*Power(xi,2LL)*Power(xj,28LL)*
+                                                        154LL*Power(r, 10LL)*Power(xj, 10LL) + 2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (4582499159700LL + 3733416276975LL*r*xj + 
+                                  10LL*Power(xi, 2LL)*Power(xj, 28LL)*
 
-               1428215931450LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  (4582499159700LL + 3733416276975LL*r*xj +
 
-               338545295550LL*Power(r,3LL)*Power(xj,3LL) + 
+            1428215931450LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               55198697400LL*Power(r,4LL)*Power(xj,4LL) + 
+            338545295550LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               6486854220LL*Power(r,5LL)*Power(xj,5LL) + 
+            55198697400LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               558419400LL*Power(r,6LL)*Power(xj,6LL) + 
+            6486854220LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               34939080LL*Power(r,7LL)*Power(xj,7LL) + 
+            558419400LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               1532520LL*Power(r,8LL)*Power(xj,8LL) + 43285LL*Power(r,9LL)*Power(xj,9LL) + 
+            34939080LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               638LL*Power(r,10LL)*Power(xj,10LL) + 2LL*Power(r,11LL)*Power(xj,11LL)) - 
+            1532520LL*Power(r, 8LL)*Power(xj, 8LL) + 43285LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            110LL*Power(xi,10LL)*Power(xj,20LL)*
+            638LL*Power(r, 10LL)*Power(xj, 10LL) + 2LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-14063418170550LL + 6795156458475LL*r*xj + 
+                                  110LL*Power(xi, 10LL)*Power(xj, 20LL)*
 
-               2067471236250LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  (-14063418170550LL + 6795156458475LL*r*xj +
 
-               214664924250LL*Power(r,3LL)*Power(xj,3LL) - 
+            2067471236250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               124416469800LL*Power(r,4LL)*Power(xj,4LL) - 
+            214664924250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               14935545450LL*Power(r,5LL)*Power(xj,5LL) - 
+            124416469800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               256688460LL*Power(r,6LL)*Power(xj,6LL) + 
+            14935545450LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               105750900LL*Power(r,7LL)*Power(xj,7LL) + 
+            256688460LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               11502180LL*Power(r,8LL)*Power(xj,8LL) + 
+            105750900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               518085LL*Power(r,9LL)*Power(xj,9LL) + 9294LL*Power(r,10LL)*Power(xj,10LL) + 
+            11502180LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               2LL*Power(r,11LL)*Power(xj,11LL)) + 
+            518085LL*Power(r, 9LL)*Power(xj, 9LL) + 9294LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            55LL*Power(xi,20LL)*Power(xj,10LL)*
+            2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (1730682450LL + 3172917825LL*r*xj + 
+                                  55LL*Power(xi, 20LL)*Power(xj, 10LL)*
 
-               2884470750LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  (1730682450LL + 3172917825LL*r*xj +
 
-               1571960250LL*Power(r,3LL)*Power(xj,3LL) + 
+            2884470750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1404081000LL*Power(r,4LL)*Power(xj,4LL) - 
+            1571960250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               426654270LL*Power(r,5LL)*Power(xj,5LL) + 
+            1404081000LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               283536540LL*Power(r,6LL)*Power(xj,6LL) + 
+            426654270LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               39116700LL*Power(r,7LL)*Power(xj,7LL) - 
+            283536540LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               2659860LL*Power(r,8LL)*Power(xj,8LL) - 
+            39116700LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               528850LL*Power(r,9LL)*Power(xj,9LL) - 
+            2659860LL*Power(r, 8LL)*Power(xj, 8LL) -
 
-               18236LL*Power(r,10LL)*Power(xj,10LL) + 4LL*Power(r,11LL)*Power(xj,11LL)) - 
+            528850LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            5LL*Power(xi,30LL)*(935550LL + 1715175LL*r*xj + 
+            18236LL*Power(r, 10LL)*Power(xj, 10LL) + 4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-               1559250LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  5LL*Power(xi, 30LL)*(935550LL + 1715175LL*r*xj +
 
-               935550LL*Power(r,3LL)*Power(xj,3LL) + 415800LL*Power(r,4LL)*Power(xj,4LL) + 
+                                                       1559250LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               145530LL*Power(r,5LL)*Power(xj,5LL) + 41580LL*Power(r,6LL)*Power(xj,6LL) + 
+                                                       935550LL*Power(r, 3LL)*Power(xj, 3LL) + 415800LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               9900LL*Power(r,7LL)*Power(xj,7LL) + 1980LL*Power(r,8LL)*Power(xj,8LL) + 
+                                                       145530LL*Power(r, 5LL)*Power(xj, 5LL) + 41580LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               330LL*Power(r,9LL)*Power(xj,9LL) + 44LL*Power(r,10LL)*Power(xj,10LL) + 
+                                                       9900LL*Power(r, 7LL)*Power(xj, 7LL) + 1980LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               4LL*Power(r,11LL)*Power(xj,11LL)) - 
+                                                       330LL*Power(r, 9LL)*Power(xj, 9LL) + 44LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            13167LL*Power(xi,14LL)*Power(xj,16LL)*
+                                                       4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-2319354450LL + 8540029575LL*r*xj - 
+                                  13167LL*Power(xi, 14LL)*Power(xj, 16LL)*
 
-               7335672750LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  (-2319354450LL + 8540029575LL*r*xj -
 
-               1133154750LL*Power(r,3LL)*Power(xj,3LL) + 
+            7335672750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               575014200LL*Power(r,4LL)*Power(xj,4LL) - 
+            1133154750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               913710LL*Power(r,5LL)*Power(xj,5LL) - 
+            575014200LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               14863940LL*Power(r,6LL)*Power(xj,6LL) - 
+            913710LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               1687300LL*Power(r,7LL)*Power(xj,7LL) - 46900LL*Power(r,8LL)*Power(xj,8LL) + 
+            14863940LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               3210LL*Power(r,9LL)*Power(xj,9LL) + 236LL*Power(r,10LL)*Power(xj,10LL) + 
+            1687300LL*Power(r, 7LL)*Power(xj, 7LL) - 46900LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               4LL*Power(r,11LL)*Power(xj,11LL)) - 
+            3210LL*Power(r, 9LL)*Power(xj, 9LL) + 236LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            770LL*Power(xi,18LL)*Power(xj,12LL)*
+            4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (329653800LL + 654729075LL*r*xj + 45785250LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  770LL*Power(xi, 18LL)*Power(xj, 12LL)*
 
-               1602483750LL*Power(r,3LL)*Power(xj,3LL) - 
+                                  (329653800LL + 654729075LL*r*xj + 45785250LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               915705000LL*Power(r,4LL)*Power(xj,4LL) + 
+            1602483750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               266036400LL*Power(r,5LL)*Power(xj,5LL) + 
+            915705000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               63745920LL*Power(r,6LL)*Power(xj,6LL) - 
+            266036400LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               2304000LL*Power(r,7LL)*Power(xj,7LL) - 
+            63745920LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               1074240LL*Power(r,8LL)*Power(xj,8LL) - 64635LL*Power(r,9LL)*Power(xj,9LL) - 
+            2304000LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               514LL*Power(r,10LL)*Power(xj,10LL) + 34LL*Power(r,11LL)*Power(xj,11LL)) + 
+            1074240LL*Power(r, 8LL)*Power(xj, 8LL) - 64635LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            385LL*Power(xi,12LL)*Power(xj,18LL)*
+            514LL*Power(r, 10LL)*Power(xj, 10LL) + 34LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (973565393850LL - 1429122323475LL*r*xj + 
+                                  385LL*Power(xi, 12LL)*Power(xj, 18LL)*
 
-               298281831750LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  (973565393850LL - 1429122323475LL*r*xj +
 
-               138841148250LL*Power(r,3LL)*Power(xj,3LL) - 
+            298281831750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2454240600LL*Power(r,4LL)*Power(xj,4LL) - 
+            138841148250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               4925394810LL*Power(r,5LL)*Power(xj,5LL) - 
+            2454240600LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               623832300LL*Power(r,6LL)*Power(xj,6LL) - 
+            4925394810LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               19098540LL*Power(r,7LL)*Power(xj,7LL) + 
+            623832300LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               2083140LL*Power(r,8LL)*Power(xj,8LL) + 
+            19098540LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               212430LL*Power(r,9LL)*Power(xj,9LL) + 7012LL*Power(r,10LL)*Power(xj,10LL) + 
+            2083140LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               68LL*Power(r,11LL)*Power(xj,11LL)) + 
+            212430LL*Power(r, 9LL)*Power(xj, 9LL) + 7012LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            14LL*Power(xi,26LL)*Power(xj,4LL)*
+            68LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (-70166250LL - 128638125LL*r*xj - 116943750LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  14LL*Power(xi, 26LL)*Power(xj, 4LL)*
 
-               70166250LL*Power(r,3LL)*Power(xj,3LL) - 
+                                  (-70166250LL - 128638125LL*r*xj - 116943750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               31185000LL*Power(r,4LL)*Power(xj,4LL) - 
+            70166250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               10914750LL*Power(r,5LL)*Power(xj,5LL) - 
+            31185000LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               3118500LL*Power(r,6LL)*Power(xj,6LL) - 
+            10914750LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               742500LL*Power(r,7LL)*Power(xj,7LL) - 148500LL*Power(r,8LL)*Power(xj,8LL) - 
+            3118500LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               32615LL*Power(r,9LL)*Power(xj,9LL) - 154LL*Power(r,10LL)*Power(xj,10LL) + 
+            742500LL*Power(r, 7LL)*Power(xj, 7LL) - 148500LL*Power(r, 8LL)*Power(xj, 8LL) -
 
-               74LL*Power(r,11LL)*Power(xj,11LL)) - 
+            32615LL*Power(r, 9LL)*Power(xj, 9LL) - 154LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            7LL*Power(xi,4LL)*Power(xj,26LL)*
+            74LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-69822945249750LL - 46669577290875LL*r*xj - 
+                                  7LL*Power(xi, 4LL)*Power(xj, 26LL)*
 
-               14025037430250LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  (-69822945249750LL - 46669577290875LL*r*xj -
 
-               2430881664750LL*Power(r,3LL)*Power(xj,3LL) - 
+            14025037430250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               251629270200LL*Power(r,4LL)*Power(xj,4LL) - 
+            2430881664750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               12434519790LL*Power(r,5LL)*Power(xj,5LL) + 
+            251629270200LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               452930940LL*Power(r,6LL)*Power(xj,6LL) + 
+            12434519790LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               131125500LL*Power(r,7LL)*Power(xj,7LL) + 
+            452930940LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               11018700LL*Power(r,8LL)*Power(xj,8LL) + 
+            131125500LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               514470LL*Power(r,9LL)*Power(xj,9LL) + 
+            11018700LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               13332LL*Power(r,10LL)*Power(xj,10LL) + 148LL*Power(r,11LL)*Power(xj,11LL)) - 
+            514470LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            50LL*Power(xi,8LL)*Power(xj,22LL)*
+            13332LL*Power(r, 10LL)*Power(xj, 10LL) + 148LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-51768833574150LL - 5003280391725LL*r*xj + 
+                                  50LL*Power(xi, 8LL)*Power(xj, 22LL)*
 
-               4493439477450LL*Power(r,2LL)*Power(xj,2LL) + 
+                                  (-51768833574150LL - 5003280391725LL*r*xj +
 
-               1286866176750LL*Power(r,3LL)*Power(xj,3LL) + 
+            4493439477450LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               111437476920LL*Power(r,4LL)*Power(xj,4LL) - 
+            1286866176750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               6620313546LL*Power(r,5LL)*Power(xj,5LL) - 
+            111437476920LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               2406603276LL*Power(r,6LL)*Power(xj,6LL) - 
+            6620313546LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               242686620LL*Power(r,7LL)*Power(xj,7LL) - 
+            2406603276LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               12228876LL*Power(r,8LL)*Power(xj,8LL) - 
+            242686620LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               256223LL*Power(r,9LL)*Power(xj,9LL) + 2486LL*Power(r,10LL)*Power(xj,10LL) + 
+            12228876LL*Power(r, 8LL)*Power(xj, 8LL) -
 
-               158LL*Power(r,11LL)*Power(xj,11LL)) + 
+            256223LL*Power(r, 9LL)*Power(xj, 9LL) + 2486LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            25LL*Power(xi,22LL)*Power(xj,8LL)*
+            158LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (-1119853350LL - 2053064475LL*r*xj - 
+                                  25LL*Power(xi, 22LL)*Power(xj, 8LL)*
 
-               1866422250LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  (-1119853350LL - 2053064475LL*r*xj -
 
-               1119853350LL*Power(r,3LL)*Power(xj,3LL) - 
+            1866422250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               497712600LL*Power(r,4LL)*Power(xj,4LL) - 
+            1119853350LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               194415606LL*Power(r,5LL)*Power(xj,5LL) - 
+            497712600LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               9338868LL*Power(r,6LL)*Power(xj,6LL) - 
+            194415606LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               31217076LL*Power(r,7LL)*Power(xj,7LL) - 
+            9338868LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               2256804LL*Power(r,8LL)*Power(xj,8LL) + 
+            31217076LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               246774LL*Power(r,9LL)*Power(xj,9LL) + 
+            2256804LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               22836LL*Power(r,10LL)*Power(xj,10LL) + 316LL*Power(r,11LL)*Power(xj,11LL)) + 
+            246774LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            3LL*Power(xi,6LL)*Power(xj,24LL)*
+            22836LL*Power(r, 10LL)*Power(xj, 10LL) + 316LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (596006592662250LL + 266778699697125LL*r*xj + 
+                                  3LL*Power(xi, 6LL)*Power(xj, 24LL)*
 
-               37515651153750LL*Power(r,2LL)*Power(xj,2LL) - 
+                                  (596006592662250LL + 266778699697125LL*r*xj +
 
-               2214626163750LL*Power(r,3LL)*Power(xj,3LL) - 
+            37515651153750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               1538075107800LL*Power(r,4LL)*Power(xj,4LL) - 
+            2214626163750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               248955308910LL*Power(r,5LL)*Power(xj,5LL) - 
+            1538075107800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               21434337540LL*Power(r,6LL)*Power(xj,6LL) - 
+            248955308910LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               957980100LL*Power(r,7LL)*Power(xj,7LL) - 
+            21434337540LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               4874100LL*Power(r,8LL)*Power(xj,8LL) + 
+            957980100LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               1831830LL*Power(r,9LL)*Power(xj,9LL) + 
+            4874100LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               91828LL*Power(r,10LL)*Power(xj,10LL) + 1532LL*Power(r,11LL)*Power(xj,11LL))))/
+            1831830LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-       (2.338875e6*exp(2LL*r*(xi + xj))*r*Power(xi - xj,21LL)*Power(xi + xj,20LL)) 
+            91828LL*Power(r, 10LL)*Power(xj, 10LL) + 1532LL*Power(r, 11LL)*Power(xj, 11LL))))/
 
-    - (9355500LL*exp(2LL*r*(xi + xj))*(xi + xj)*
+                (2.338875e6*exp(2LL*r*(xi + xj))*r*Power(xi - xj, 21LL)*Power(xi + xj, 20LL))
 
-          Power(Power(xi,2LL) - Power(xj,2LL),21LL) + 
+                - (9355500LL*exp(2LL*r*(xi + xj))*(xi + xj)*
 
-         110LL*exp(2LL*r*xj)*Power(xj,14LL)*
+                   Power(Power(xi, 2LL) - Power(xj, 2LL), 21LL) +
 
-          (-3456LL*Power(r,7LL)*Power(xi,36LL) - 54LL*Power(r,8LL)*Power(xi,37LL) - 
+                   110LL*exp(2LL*r*xj)*Power(xj, 14LL)*
 
-            11340LL*Power(r,7LL)*Power(xi,34LL)*Power(xj,2LL) - 
+                   (-3456LL*Power(r, 7LL)*Power(xi, 36LL) - 54LL*Power(r, 8LL)*Power(xi, 37LL) -
 
-            112LL*Power(r,8LL)*Power(xi,35LL)*Power(xj,2LL) + 76545LL*xi*Power(xj,28LL) + 
+                    11340LL*Power(r, 7LL)*Power(xi, 34LL)*Power(xj, 2LL) -
 
-            136080LL*r*Power(xi,2LL)*Power(xj,28LL) + 
+                    112LL*Power(r, 8LL)*Power(xi, 35LL)*Power(xj, 2LL) + 76545LL*xi*Power(xj, 28LL) +
 
-            79380LL*Power(r,2LL)*Power(xi,3LL)*Power(xj,28LL) + 
+                    136080LL*r*Power(xi, 2LL)*Power(xj, 28LL) +
 
-            19845LL*Power(xi,3LL)*Power(xj,26LL)*(-81LL + 2LL*Power(r,2LL)*Power(xj,2LL)) - 
+                    79380LL*Power(r, 2LL)*Power(xi, 3LL)*Power(xj, 28LL) +
 
-            6804LL*Power(r,5LL)*Power(xi,34LL)*(272LL + 5LL*Power(r,2LL)*Power(xj,2LL)) - 
+                    19845LL*Power(xi, 3LL)*Power(xj, 26LL)*(-81LL + 2LL*Power(r, 2LL)*Power(xj, 2LL)) -
 
-            56LL*Power(r,6LL)*Power(xi,35LL)*(1836LL + 7LL*Power(r,2LL)*Power(xj,2LL)) + 
+                    6804LL*Power(r, 5LL)*Power(xi, 34LL)*(272LL + 5LL*Power(r, 2LL)*Power(xj, 2LL)) -
 
-            378LL*Power(r,5LL)*Power(xi,33LL)*
+                    56LL*Power(r, 6LL)*Power(xi, 35LL)*(1836LL + 7LL*Power(r, 2LL)*Power(xj, 2LL)) +
 
-             (-1332LL*r*Power(xj,2LL) + 4LL*Power(r,3LL)*Power(xj,4LL)) + 
+                    378LL*Power(r, 5LL)*Power(xi, 33LL)*
 
-            5670LL*r*Power(xi,5LL)*Power(xj,24LL)*
+                    (-1332LL*r*Power(xj, 2LL) + 4LL*Power(r, 3LL)*Power(xj, 4LL)) +
 
-             (-294LL*r*Power(xj,2LL) + 4LL*Power(r,3LL)*Power(xj,4LL)) + 
+                    5670LL*r*Power(xi, 5LL)*Power(xj, 24LL)*
 
-            17010LL*Power(xi,4LL)*Power(xj,24LL)*
+                    (-294LL*r*Power(xj, 2LL) + 4LL*Power(r, 3LL)*Power(xj, 4LL)) +
 
-             (-168LL*r*Power(xj,2LL) + 4LL*Power(r,3LL)*Power(xj,4LL)) + 
+                    17010LL*Power(xi, 4LL)*Power(xj, 24LL)*
 
-            378LL*Power(r,4LL)*Power(xi,32LL)*
+                    (-168LL*r*Power(xj, 2LL) + 4LL*Power(r, 3LL)*Power(xj, 4LL)) +
 
-             (-34888LL*r*Power(xj,2LL) + 236LL*Power(r,3LL)*Power(xj,4LL)) + 
+                    378LL*Power(r, 4LL)*Power(xi, 32LL)*
 
-            1890LL*Power(r,4LL)*Power(xi,33LL)*
+                    (-34888LL*r*Power(xj, 2LL) + 236LL*Power(r, 3LL)*Power(xj, 4LL)) +
 
-             (-11628LL - 666LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                    1890LL*Power(r, 4LL)*Power(xi, 33LL)*
 
-            5670LL*Power(xi,5LL)*Power(xj,24LL)*
+                    (-11628LL - 666LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (2835LL - 147LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                    5670LL*Power(xi, 5LL)*Power(xj, 24LL)*
 
-            1512LL*Power(r,3LL)*Power(xi,32LL)*
+                    (2835LL - 147LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (-116280LL - 17444LL*Power(r,2LL)*Power(xj,2LL) + 
+                    1512LL*Power(r, 3LL)*Power(xi, 32LL)*
 
-               59LL*Power(r,4LL)*Power(xj,4LL)) + 
+                    (-116280LL - 17444LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-            162LL*r*Power(xi,7LL)*Power(xj,22LL)*
+            59LL*Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (102900LL*r*Power(xj,2LL) - 2940LL*Power(r,3LL)*Power(xj,4LL) + 
+                    162LL*r*Power(xi, 7LL)*Power(xj, 22LL)*
 
-               12LL*Power(r,5LL)*Power(xj,6LL)) + 
+                    (102900LL*r*Power(xj, 2LL) - 2940LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            378LL*Power(xi,6LL)*Power(xj,22LL)*
+            12LL*Power(r, 5LL)*Power(xj, 6LL)) +
 
-             (75600LL*r*Power(xj,2LL) - 3780LL*Power(r,3LL)*Power(xj,4LL) + 
+                    378LL*Power(xi, 6LL)*Power(xj, 22LL)*
 
-               24LL*Power(r,5LL)*Power(xj,6LL)) - 
+                    (75600LL*r*Power(xj, 2LL) - 3780LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            18LL*Power(r,3LL)*Power(xi,31LL)*
+            24LL*Power(r, 5LL)*Power(xj, 6LL)) -
 
-             (12618774LL*r*Power(xj,2LL) - 94248LL*Power(r,3LL)*Power(xj,4LL) + 
+                    18LL*Power(r, 3LL)*Power(xi, 31LL)*
 
-               96LL*Power(r,5LL)*Power(xj,6LL)) + 
+                    (12618774LL*r*Power(xj, 2LL) - 94248LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            54LL*Power(r,2LL)*Power(xi,30LL)*
+            96LL*Power(r, 5LL)*Power(xj, 6LL)) +
 
-             (-49687470LL*r*Power(xj,2LL) - 160720LL*Power(r,3LL)*Power(xj,4LL) + 
+                    54LL*Power(r, 2LL)*Power(xi, 30LL)*
 
-               3468LL*Power(r,5LL)*Power(xj,6LL)) + 
+                    (-49687470LL*r*Power(xj, 2LL) - 160720LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            378LL*r*Power(xi,23LL)*Power(xj,6LL)*
+            3468LL*Power(r, 5LL)*Power(xj, 6LL)) +
 
-             (1408102500LL*r*Power(xj,2LL) - 43011444LL*Power(r,3LL)*Power(xj,4LL) + 
+                    378LL*r*Power(xi, 23LL)*Power(xj, 6LL)*
 
-               200868LL*Power(r,5LL)*Power(xj,6LL)) + 
+                    (1408102500LL*r*Power(xj, 2LL) - 43011444LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            162LL*Power(xi,7LL)*Power(xj,22LL)*
+            200868LL*Power(r, 5LL)*Power(xj, 6LL)) +
 
-             (-628425LL + 51450LL*Power(r,2LL)*Power(xj,2LL) - 
+                    162LL*Power(xi, 7LL)*Power(xj, 22LL)*
 
-               735LL*Power(r,4LL)*Power(xj,4LL) + 2LL*Power(r,6LL)*Power(xj,6LL)) - 
+                    (-628425LL + 51450LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            54LL*Power(r,2LL)*Power(xi,31LL)*
+            735LL*Power(r, 4LL)*Power(xj, 4LL) + 2LL*Power(r, 6LL)*Power(xj, 6LL)) -
 
-             (17093160LL + 6309387LL*Power(r,2LL)*Power(xj,2LL) - 
+                    54LL*Power(r, 2LL)*Power(xi, 31LL)*
 
-               23562LL*Power(r,4LL)*Power(xj,4LL) + 16LL*Power(r,6LL)*Power(xj,6LL)) + 
+                    (17093160LL + 6309387LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            108LL*r*Power(xi,30LL)*(-26860680LL - 24843735LL*Power(r,2LL)*Power(xj,2LL) - 
+            23562LL*Power(r, 4LL)*Power(xj, 4LL) + 16LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-               40180LL*Power(r,4LL)*Power(xj,4LL) + 578LL*Power(r,6LL)*Power(xj,6LL)) + 
+                    108LL*r*Power(xi, 30LL)*(-26860680LL - 24843735LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            378LL*Power(xi,23LL)*Power(xj,6LL)*
+                                             40180LL*Power(r, 4LL)*Power(xj, 4LL) + 578LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-14625683325LL + 704051250LL*Power(r,2LL)*Power(xj,2LL) - 
+                    378LL*Power(xi, 23LL)*Power(xj, 6LL)*
 
-               10752861LL*Power(r,4LL)*Power(xj,4LL) + 33478LL*Power(r,6LL)*Power(xj,6LL)) 
+                    (-14625683325LL + 704051250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-    + 3LL*r*Power(xi,9LL)*Power(xj,20LL)*
+            10752861LL*Power(r, 4LL)*Power(xj, 4LL) + 33478LL*Power(r, 6LL)*Power(xj, 6LL))
 
-             (-35191800LL*r*Power(xj,2LL) + 1587600LL*Power(r,3LL)*Power(xj,4LL) - 
+                    + 3LL*r*Power(xi, 9LL)*Power(xj, 20LL)*
 
-               13608LL*Power(r,5LL)*Power(xj,6LL) + 16LL*Power(r,7LL)*Power(xj,8LL)) + 
+                    (-35191800LL*r*Power(xj, 2LL) + 1587600LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            27LL*Power(xi,8LL)*Power(xj,20LL)*
+            13608LL*Power(r, 5LL)*Power(xj, 6LL) + 16LL*Power(r, 7LL)*Power(xj, 8LL)) +
 
-             (-6703200LL*r*Power(xj,2LL) + 529200LL*Power(r,3LL)*Power(xj,4LL) - 
+                    27LL*Power(xi, 8LL)*Power(xj, 20LL)*
 
-               7056LL*Power(r,5LL)*Power(xj,6LL) + 16LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (-6703200LL*r*Power(xj, 2LL) + 529200LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            567LL*Power(xi,10LL)*Power(xj,18LL)*
+            7056LL*Power(r, 5LL)*Power(xj, 6LL) + 16LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (-1436400LL*r*Power(xj,2LL) + 159600LL*Power(r,3LL)*Power(xj,4LL) - 
+                    567LL*Power(xi, 10LL)*Power(xj, 18LL)*
 
-               3360LL*Power(r,5LL)*Power(xj,6LL) + 16LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (-1436400LL*r*Power(xj, 2LL) + 159600LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            54LL*r*Power(xi,13LL)*Power(xj,16LL)*
+            3360LL*Power(r, 5LL)*Power(xj, 6LL) + 16LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (-254023350LL*r*Power(xj,2LL) - 15471372LL*Power(r,3LL)*Power(xj,4LL) - 
+                    54LL*r*Power(xi, 13LL)*Power(xj, 16LL)*
 
-               51336LL*Power(r,5LL)*Power(xj,6LL) + 56LL*Power(r,7LL)*Power(xj,8LL)) + 
+                    (-254023350LL*r*Power(xj, 2LL) - 15471372LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            7LL*r*Power(xi,11LL)*Power(xj,18LL)*
+            51336LL*Power(r, 5LL)*Power(xj, 6LL) + 56LL*Power(r, 7LL)*Power(xj, 8LL)) +
 
-             (90544500LL*r*Power(xj,2LL) - 2590704LL*Power(r,3LL)*Power(xj,4LL) + 
+                    7LL*r*Power(xi, 11LL)*Power(xj, 18LL)*
 
-               92016LL*Power(r,5LL)*Power(xj,6LL) + 64LL*Power(r,7LL)*Power(xj,8LL)) + 
+                    (90544500LL*r*Power(xj, 2LL) - 2590704LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            18LL*r*Power(xi,15LL)*Power(xj,14LL)*
+            92016LL*Power(r, 5LL)*Power(xj, 6LL) + 64LL*Power(r, 7LL)*Power(xj, 8LL)) +
 
-             (7834365000LL*r*Power(xj,2LL) + 40633740LL*Power(r,3LL)*Power(xj,4LL) - 
+                    18LL*r*Power(xi, 15LL)*Power(xj, 14LL)*
 
-               1073052LL*Power(r,5LL)*Power(xj,6LL) + 128LL*Power(r,7LL)*Power(xj,8LL)) + 
+                    (7834365000LL*r*Power(xj, 2LL) + 40633740LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            378LL*r*Power(xi,21LL)*Power(xj,8LL)*
+            1073052LL*Power(r, 5LL)*Power(xj, 6LL) + 128LL*Power(r, 7LL)*Power(xj, 8LL)) +
 
-             (35146650LL*r*Power(xj,2LL) + 29684004LL*Power(r,3LL)*Power(xj,4LL) - 
+                    378LL*r*Power(xi, 21LL)*Power(xj, 8LL)*
 
-               294576LL*Power(r,5LL)*Power(xj,6LL) + 152LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (35146650LL*r*Power(xj, 2LL) + 29684004LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            378LL*Power(xi,12LL)*Power(xj,16LL)*
+            294576LL*Power(r, 5LL)*Power(xj, 6LL) + 152LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (28488600LL*r*Power(xj,2LL) + 1442100LL*Power(r,3LL)*Power(xj,4LL) + 
+                    378LL*Power(xi, 12LL)*Power(xj, 16LL)*
 
-               95568LL*Power(r,5LL)*Power(xj,6LL) + 176LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (28488600LL*r*Power(xj, 2LL) + 1442100LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            189LL*r*Power(xi,25LL)*Power(xj,4LL)*
+            95568LL*Power(r, 5LL)*Power(xj, 6LL) + 176LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (127643400LL*r*Power(xj,2LL) - 5834160LL*Power(r,3LL)*Power(xj,4LL) - 
+                    189LL*r*Power(xi, 25LL)*Power(xj, 4LL)*
 
-               112536LL*Power(r,5LL)*Power(xj,6LL) + 304LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (127643400LL*r*Power(xj, 2LL) - 5834160LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            189LL*Power(xi,24LL)*Power(xj,4LL)*
+            112536LL*Power(r, 5LL)*Power(xj, 6LL) + 304LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (8073885600LL*r*Power(xj,2LL) - 505890000LL*Power(r,3LL)*Power(xj,4LL) + 
+                    189LL*Power(xi, 24LL)*Power(xj, 4LL)*
 
-               4592784LL*Power(r,5LL)*Power(xj,6LL) + 1520LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (8073885600LL*r*Power(xj, 2LL) - 505890000LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            21LL*r*Power(xi,19LL)*Power(xj,10LL)*
+            4592784LL*Power(r, 5LL)*Power(xj, 6LL) + 1520LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (26975232900LL*r*Power(xj,2LL) - 341863200LL*Power(r,3LL)*Power(xj,4LL) - 
+                    21LL*r*Power(xi, 19LL)*Power(xj, 10LL)*
 
-               1920672LL*Power(r,5LL)*Power(xj,6LL) + 2624LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (26975232900LL*r*Power(xj, 2LL) - 341863200LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            189LL*Power(xi,18LL)*Power(xj,10LL)*
+            1920672LL*Power(r, 5LL)*Power(xj, 6LL) + 2624LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (4315424400LL*r*Power(xj,2LL) - 632718240LL*Power(r,3LL)*Power(xj,4LL) + 
+                    189LL*Power(xi, 18LL)*Power(xj, 10LL)*
 
-               3472896LL*Power(r,5LL)*Power(xj,6LL) + 7824LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (4315424400LL*r*Power(xj, 2LL) - 632718240LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-            2LL*r*Power(xi,29LL)*(10900660050LL*r*Power(xj,2LL) + 
+            3472896LL*Power(r, 5LL)*Power(xj, 6LL) + 7824LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-               509698980LL*Power(r,3LL)*Power(xj,4LL) - 
+                    2LL*r*Power(xi, 29LL)*(10900660050LL*r*Power(xj, 2LL) +
 
-               8389656LL*Power(r,5LL)*Power(xj,6LL) + 9272LL*Power(r,7LL)*Power(xj,8LL)) - 
+                                           509698980LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            378LL*Power(xi,22LL)*Power(xj,6LL)*
+                                           8389656LL*Power(r, 5LL)*Power(xj, 6LL) + 9272LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (-4823679600LL*r*Power(xj,2LL) + 371807100LL*Power(r,3LL)*Power(xj,4LL) - 
+                    378LL*Power(xi, 22LL)*Power(xj, 6LL)*
 
-               5653032LL*Power(r,5LL)*Power(xj,6LL) + 10336LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (-4823679600LL*r*Power(xj, 2LL) + 371807100LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            27LL*Power(xi,16LL)*Power(xj,12LL)*
+            5653032LL*Power(r, 5LL)*Power(xj, 6LL) + 10336LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-             (53819035200LL*r*Power(xj,2LL) + 250699680LL*Power(r,3LL)*Power(xj,4LL) - 
+                    27LL*Power(xi, 16LL)*Power(xj, 12LL)*
 
-               23310672LL*Power(r,5LL)*Power(xj,6LL) + 16976LL*Power(r,7LL)*Power(xj,8LL)) 
+                    (53819035200LL*r*Power(xj, 2LL) + 250699680LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-    + 3LL*r*Power(xi,27LL)*Power(xj,2LL)*
+            23310672LL*Power(r, 5LL)*Power(xj, 6LL) + 16976LL*Power(r, 7LL)*Power(xj, 8LL))
 
-             (-43683951780LL*r*Power(xj,2LL) + 1769720400LL*Power(r,3LL)*Power(xj,4LL) - 
+                    + 3LL*r*Power(xi, 27LL)*Power(xj, 2LL)*
 
-               16539984LL*Power(r,5LL)*Power(xj,6LL) + 18368LL*Power(r,7LL)*Power(xj,8LL)) 
+                    (-43683951780LL*r*Power(xj, 2LL) + 1769720400LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-    + r*Power(xi,17LL)*Power(xj,12LL)*(43245694800LL*r*Power(xj,2LL) - 
+            16539984LL*Power(r, 5LL)*Power(xj, 6LL) + 18368LL*Power(r, 7LL)*Power(xj, 8LL))
 
-               8614952640LL*Power(r,3LL)*Power(xj,4LL) + 
+                    + r*Power(xi, 17LL)*Power(xj, 12LL)*(43245694800LL*r*Power(xj, 2LL) -
 
-               21650328LL*Power(r,5LL)*Power(xj,6LL) + 18544LL*Power(r,7LL)*Power(xj,8LL)) 
+                                                         8614952640LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-    + 18LL*Power(xi,14LL)*Power(xj,14LL)*
+                                                         21650328LL*Power(r, 5LL)*Power(xj, 6LL) + 18544LL*Power(r, 7LL)*Power(xj, 8LL))
 
-             (-13845459600LL*r*Power(xj,2LL) - 1039833900LL*Power(r,3LL)*Power(xj,4LL) - 
+                    + 18LL*Power(xi, 14LL)*Power(xj, 14LL)*
 
-               4186392LL*Power(r,5LL)*Power(xj,6LL) + 24240LL*Power(r,7LL)*Power(xj,8LL)) + 
+                    (-13845459600LL*r*Power(xj, 2LL) - 1039833900LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            126LL*Power(xi,20LL)*Power(xj,8LL)*
+            4186392LL*Power(r, 5LL)*Power(xj, 6LL) + 24240LL*Power(r, 7LL)*Power(xj, 8LL)) +
 
-             (26056560600LL*r*Power(xj,2LL) - 464795100LL*Power(r,3LL)*Power(xj,4LL) - 
+                    126LL*Power(xi, 20LL)*Power(xj, 8LL)*
 
-               7596960LL*Power(r,5LL)*Power(xj,6LL) + 34656LL*Power(r,7LL)*Power(xj,8LL)) - 
+                    (26056560600LL*r*Power(xj, 2LL) - 464795100LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            54LL*Power(xi,28LL)*(2178875160LL*r*Power(xj,2LL) + 
+            7596960LL*Power(r, 5LL)*Power(xj, 6LL) + 34656LL*Power(r, 7LL)*Power(xj, 8LL)) -
 
-               410032980LL*Power(r,3LL)*Power(xj,4LL) - 
+                    54LL*Power(xi, 28LL)*(2178875160LL*r*Power(xj, 2LL) +
 
-               9558864LL*Power(r,5LL)*Power(xj,6LL) + 36304LL*Power(r,7LL)*Power(xj,8LL)) + 
+                                          410032980LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-            63LL*Power(xi,26LL)*Power(xj,2LL)*
+                                          9558864LL*Power(r, 5LL)*Power(xj, 6LL) + 36304LL*Power(r, 7LL)*Power(xj, 8LL)) +
 
-             (-14792001840LL*r*Power(xj,2LL) + 598456080LL*Power(r,3LL)*Power(xj,4LL) - 
+                    63LL*Power(xi, 26LL)*Power(xj, 2LL)*
 
-               10104672LL*Power(r,5LL)*Power(xj,6LL) + 47376LL*Power(r,7LL)*Power(xj,8LL)) 
+                    (-14792001840LL*r*Power(xj, 2LL) + 598456080LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-    + 3LL*Power(xi,9LL)*Power(xj,20LL)*(152707275LL - 
+            10104672LL*Power(r, 5LL)*Power(xj, 6LL) + 47376LL*Power(r, 7LL)*Power(xj, 8LL))
 
-               17595900LL*Power(r,2LL)*Power(xj,2LL) + 
+                    + 3LL*Power(xi, 9LL)*Power(xj, 20LL)*(152707275LL -
 
-               396900LL*Power(r,4LL)*Power(xj,4LL) - 2268LL*Power(r,6LL)*Power(xj,6LL) + 
+                                                          17595900LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) - 
+                                                          396900LL*Power(r, 4LL)*Power(xj, 4LL) - 2268LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            54LL*Power(xi,13LL)*Power(xj,16LL)*
+                                                          2LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (-1356769575LL - 127011675LL*Power(r,2LL)*Power(xj,2LL) - 
+                    54LL*Power(xi, 13LL)*Power(xj, 16LL)*
 
-               3867843LL*Power(r,4LL)*Power(xj,4LL) - 8556LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (-1356769575LL - 127011675LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               7LL*Power(r,8LL)*Power(xj,8LL)) + 
+            3867843LL*Power(r, 4LL)*Power(xj, 4LL) - 8556LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            7LL*Power(xi,11LL)*Power(xj,18LL)*
+            7LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-151091325LL + 45272250LL*Power(r,2LL)*Power(xj,2LL) - 
+                    7LL*Power(xi, 11LL)*Power(xj, 18LL)*
 
-               647676LL*Power(r,4LL)*Power(xj,4LL) + 15336LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (-151091325LL + 45272250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               8LL*Power(r,8LL)*Power(xj,8LL)) + 
+            647676LL*Power(r, 4LL)*Power(xj, 4LL) + 15336LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            18LL*Power(xi,15LL)*Power(xj,14LL)*
+            8LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (63046289250LL + 3917182500LL*Power(r,2LL)*Power(xj,2LL) + 
+                    18LL*Power(xi, 15LL)*Power(xj, 14LL)*
 
-               10158435LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (63046289250LL + 3917182500LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               178842LL*Power(r,6LL)*Power(xj,6LL) + 16LL*Power(r,8LL)*Power(xj,8LL)) + 
+            10158435LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*Power(xi,21LL)*Power(xj,8LL)*
+            178842LL*Power(r, 6LL)*Power(xj, 6LL) + 16LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-8559820125LL + 17573325LL*Power(r,2LL)*Power(xj,2LL) + 
+                    378LL*Power(xi, 21LL)*Power(xj, 8LL)*
 
-               7421001LL*Power(r,4LL)*Power(xj,4LL) - 49096LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (-8559820125LL + 17573325LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               19LL*Power(r,8LL)*Power(xj,8LL)) - 
+            7421001LL*Power(r, 4LL)*Power(xj, 4LL) - 49096LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            189LL*Power(xi,25LL)*Power(xj,4LL)*
+            19LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (9994948425LL + 63821700LL*Power(r,2LL)*Power(xj,2LL) - 
+                    189LL*Power(xi, 25LL)*Power(xj, 4LL)*
 
-               1458540LL*Power(r,4LL)*Power(xj,4LL) - 18756LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (9994948425LL + 63821700LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               38LL*Power(r,8LL)*Power(xj,8LL)) - 
+            1458540LL*Power(r, 4LL)*Power(xj, 4LL) - 18756LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            21LL*Power(xi,19LL)*Power(xj,10LL)*
+            38LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (-228066210225LL + 13487616450LL*Power(r,2LL)*Power(xj,2LL) - 
+                    21LL*Power(xi, 19LL)*Power(xj, 10LL)*
 
-               85465800LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (-228066210225LL + 13487616450LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               320112LL*Power(r,6LL)*Power(xj,6LL) + 328LL*Power(r,8LL)*Power(xj,8LL)) - 
+            85465800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            2LL*Power(xi,29LL)*(2085060285LL + 5450330025LL*Power(r,2LL)*Power(xj,2LL) + 
+            320112LL*Power(r, 6LL)*Power(xj, 6LL) + 328LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-               127424745LL*Power(r,4LL)*Power(xj,4LL) - 
+                    2LL*Power(xi, 29LL)*(2085060285LL + 5450330025LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1398276LL*Power(r,6LL)*Power(xj,6LL) + 1159LL*Power(r,8LL)*Power(xj,8LL)) + 
+                                         127424745LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            3LL*Power(xi,27LL)*Power(xj,2LL)*
+                                         1398276LL*Power(r, 6LL)*Power(xj, 6LL) + 1159LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-63819198135LL - 21841975890LL*Power(r,2LL)*Power(xj,2LL) + 
+                    3LL*Power(xi, 27LL)*Power(xj, 2LL)*
 
-               442430100LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (-63819198135LL - 21841975890LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2756664LL*Power(r,6LL)*Power(xj,6LL) + 2296LL*Power(r,8LL)*Power(xj,8LL)) + 
+            442430100LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            Power(xi,17LL)*Power(xj,12LL)*
+            2756664LL*Power(r, 6LL)*Power(xj, 6LL) + 2296LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (4851990871875LL + 21622847400LL*Power(r,2LL)*Power(xj,2LL) - 
+                    Power(xi, 17LL)*Power(xj, 12LL)*
 
-               2153738160LL*Power(r,4LL)*Power(xj,4LL) + 
+                    (4851990871875LL + 21622847400LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               3608388LL*Power(r,6LL)*Power(xj,6LL) + 2318LL*Power(r,8LL)*Power(xj,8LL))) + 
+            2153738160LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-         220LL*exp(2LL*r*xj)*Power(xj,15LL)*
+            3608388LL*Power(r, 6LL)*Power(xj, 6LL) + 2318LL*Power(r, 8LL)*Power(xj, 8LL))) +
 
-          (-432LL*Power(r,8LL)*Power(xi,36LL) - 6LL*Power(r,9LL)*Power(xi,37LL) + 
+                   220LL*exp(2LL*r*xj)*Power(xj, 15LL)*
 
-            42525LL*Power(xj,28LL) + 76545LL*r*xi*Power(xj,28LL) + 
+                   (-432LL*Power(r, 8LL)*Power(xi, 36LL) - 6LL*Power(r, 9LL)*Power(xi, 37LL) +
 
-            19845LL*r*Power(xi,3LL)*Power(xj,26LL)*(-81LL + 2LL*Power(r,2LL)*Power(xj,2LL)) - 
+                    42525LL*Power(xj, 28LL) + 76545LL*r*xi*Power(xj, 28LL) +
 
-            1134LL*Power(r,6LL)*Power(xi,34LL)*(272LL + 5LL*Power(r,2LL)*Power(xj,2LL)) - 
+                    19845LL*r*Power(xi, 3LL)*Power(xj, 26LL)*(-81LL + 2LL*Power(r, 2LL)*Power(xj, 2LL)) -
 
-            8LL*Power(r,7LL)*Power(xi,35LL)*(1836LL + 7LL*Power(r,2LL)*Power(xj,2LL)) + 
+                    1134LL*Power(r, 6LL)*Power(xi, 34LL)*(272LL + 5LL*Power(r, 2LL)*Power(xj, 2LL)) -
 
-            8505LL*Power(xi,2LL)*Power(xj,26LL)*(-105LL + 8LL*Power(r,2LL)*Power(xj,2LL)) + 
+                    8LL*Power(r, 7LL)*Power(xi, 35LL)*(1836LL + 7LL*Power(r, 2LL)*Power(xj, 2LL)) +
 
-            378LL*Power(r,5LL)*Power(xi,33LL)*
+                    8505LL*Power(xi, 2LL)*Power(xj, 26LL)*(-105LL + 8LL*Power(r, 2LL)*Power(xj, 2LL)) +
 
-             (-11628LL - 666LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                    378LL*Power(r, 5LL)*Power(xi, 33LL)*
 
-            5670LL*r*Power(xi,5LL)*Power(xj,24LL)*
+                    (-11628LL - 666LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (2835LL - 147LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                    5670LL*r*Power(xi, 5LL)*Power(xj, 24LL)*
 
-            17010LL*Power(xi,4LL)*Power(xj,24LL)*
+                    (2835LL - 147LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (525LL - 84LL*Power(r,2LL)*Power(xj,2LL) + Power(r,4LL)*Power(xj,4LL)) + 
+                    17010LL*Power(xi, 4LL)*Power(xj, 24LL)*
 
-            378LL*Power(r,4LL)*Power(xi,32LL)*
+                    (525LL - 84LL*Power(r, 2LL)*Power(xj, 2LL) + Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (-116280LL - 17444LL*Power(r,2LL)*Power(xj,2LL) + 
+                    378LL*Power(r, 4LL)*Power(xi, 32LL)*
 
-               59LL*Power(r,4LL)*Power(xj,4LL)) + 
+                    (-116280LL - 17444LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-            162LL*r*Power(xi,7LL)*Power(xj,22LL)*
+            59LL*Power(r, 4LL)*Power(xj, 4LL)) +
 
-             (-628425LL + 51450LL*Power(r,2LL)*Power(xj,2LL) - 
+                    162LL*r*Power(xi, 7LL)*Power(xj, 22LL)*
 
-               735LL*Power(r,4LL)*Power(xj,4LL) + 2LL*Power(r,6LL)*Power(xj,6LL)) + 
+                    (-628425LL + 51450LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            378LL*Power(xi,6LL)*Power(xj,22LL)*
+            735LL*Power(r, 4LL)*Power(xj, 4LL) + 2LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-149625LL + 37800LL*Power(r,2LL)*Power(xj,2LL) - 
+                    378LL*Power(xi, 6LL)*Power(xj, 22LL)*
 
-               945LL*Power(r,4LL)*Power(xj,4LL) + 4LL*Power(r,6LL)*Power(xj,6LL)) - 
+                    (-149625LL + 37800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            18LL*Power(r,3LL)*Power(xi,31LL)*
+            945LL*Power(r, 4LL)*Power(xj, 4LL) + 4LL*Power(r, 6LL)*Power(xj, 6LL)) -
 
-             (17093160LL + 6309387LL*Power(r,2LL)*Power(xj,2LL) - 
+                    18LL*Power(r, 3LL)*Power(xi, 31LL)*
 
-               23562LL*Power(r,4LL)*Power(xj,4LL) + 16LL*Power(r,6LL)*Power(xj,6LL)) + 
+                    (17093160LL + 6309387LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            54LL*Power(r,2LL)*Power(xi,30LL)*
+            23562LL*Power(r, 4LL)*Power(xj, 4LL) + 16LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-26860680LL - 24843735LL*Power(r,2LL)*Power(xj,2LL) - 
+                    54LL*Power(r, 2LL)*Power(xi, 30LL)*
 
-               40180LL*Power(r,4LL)*Power(xj,4LL) + 578LL*Power(r,6LL)*Power(xj,6LL)) + 
+                    (-26860680LL - 24843735LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-            378LL*r*Power(xi,23LL)*Power(xj,6LL)*
+            40180LL*Power(r, 4LL)*Power(xj, 4LL) + 578LL*Power(r, 6LL)*Power(xj, 6LL)) +
 
-             (-14625683325LL + 704051250LL*Power(r,2LL)*Power(xj,2LL) - 
+                    378LL*r*Power(xi, 23LL)*Power(xj, 6LL)*
 
-               10752861LL*Power(r,4LL)*Power(xj,4LL) + 33478LL*Power(r,6LL)*Power(xj,6LL)) 
+                    (-14625683325LL + 704051250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-    + 3LL*r*Power(xi,9LL)*Power(xj,20LL)*
+            10752861LL*Power(r, 4LL)*Power(xj, 4LL) + 33478LL*Power(r, 6LL)*Power(xj, 6LL))
 
-             (152707275LL - 17595900LL*Power(r,2LL)*Power(xj,2LL) + 
+                    + 3LL*r*Power(xi, 9LL)*Power(xj, 20LL)*
 
-               396900LL*Power(r,4LL)*Power(xj,4LL) - 2268LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (152707275LL - 17595900LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) + 
+            396900LL*Power(r, 4LL)*Power(xj, 4LL) - 2268LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            27LL*Power(xi,8LL)*Power(xj,20LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (9426375LL - 3351600LL*Power(r,2LL)*Power(xj,2LL) + 
+                    27LL*Power(xi, 8LL)*Power(xj, 20LL)*
 
-               132300LL*Power(r,4LL)*Power(xj,4LL) - 1176LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (9426375LL - 3351600LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) - 
+            132300LL*Power(r, 4LL)*Power(xj, 4LL) - 1176LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            567LL*Power(xi,10LL)*Power(xj,18LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (1526175LL - 718200LL*Power(r,2LL)*Power(xj,2LL) + 
+                    567LL*Power(xi, 10LL)*Power(xj, 18LL)*
 
-               39900LL*Power(r,4LL)*Power(xj,4LL) - 560LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (1526175LL - 718200LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2LL*Power(r,8LL)*Power(xj,8LL)) - 
+            39900LL*Power(r, 4LL)*Power(xj, 4LL) - 560LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            54LL*r*Power(xi,13LL)*Power(xj,16LL)*
+            2LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (-1356769575LL - 127011675LL*Power(r,2LL)*Power(xj,2LL) - 
+                    54LL*r*Power(xi, 13LL)*Power(xj, 16LL)*
 
-               3867843LL*Power(r,4LL)*Power(xj,4LL) - 8556LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (-1356769575LL - 127011675LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               7LL*Power(r,8LL)*Power(xj,8LL)) + 
+            3867843LL*Power(r, 4LL)*Power(xj, 4LL) - 8556LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            7LL*r*Power(xi,11LL)*Power(xj,18LL)*
+            7LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-151091325LL + 45272250LL*Power(r,2LL)*Power(xj,2LL) - 
+                    7LL*r*Power(xi, 11LL)*Power(xj, 18LL)*
 
-               647676LL*Power(r,4LL)*Power(xj,4LL) + 15336LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (-151091325LL + 45272250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               8LL*Power(r,8LL)*Power(xj,8LL)) + 
+            647676LL*Power(r, 4LL)*Power(xj, 4LL) + 15336LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            18LL*r*Power(xi,15LL)*Power(xj,14LL)*
+            8LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (63046289250LL + 3917182500LL*Power(r,2LL)*Power(xj,2LL) + 
+                    18LL*r*Power(xi, 15LL)*Power(xj, 14LL)*
 
-               10158435LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (63046289250LL + 3917182500LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               178842LL*Power(r,6LL)*Power(xj,6LL) + 16LL*Power(r,8LL)*Power(xj,8LL)) + 
+            10158435LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*r*Power(xi,21LL)*Power(xj,8LL)*
+            178842LL*Power(r, 6LL)*Power(xj, 6LL) + 16LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-8559820125LL + 17573325LL*Power(r,2LL)*Power(xj,2LL) + 
+                    378LL*r*Power(xi, 21LL)*Power(xj, 8LL)*
 
-               7421001LL*Power(r,4LL)*Power(xj,4LL) - 49096LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (-8559820125LL + 17573325LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               19LL*Power(r,8LL)*Power(xj,8LL)) - 
+            7421001LL*Power(r, 4LL)*Power(xj, 4LL) - 49096LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            378LL*Power(xi,12LL)*Power(xj,16LL)*
+            19LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (17296650LL + 14244300LL*Power(r,2LL)*Power(xj,2LL) + 
+                    378LL*Power(xi, 12LL)*Power(xj, 16LL)*
 
-               360525LL*Power(r,4LL)*Power(xj,4LL) + 15928LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (17296650LL + 14244300LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               22LL*Power(r,8LL)*Power(xj,8LL)) - 
+            360525LL*Power(r, 4LL)*Power(xj, 4LL) + 15928LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            189LL*r*Power(xi,25LL)*Power(xj,4LL)*
+            22LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (9994948425LL + 63821700LL*Power(r,2LL)*Power(xj,2LL) - 
+                    189LL*r*Power(xi, 25LL)*Power(xj, 4LL)*
 
-               1458540LL*Power(r,4LL)*Power(xj,4LL) - 18756LL*Power(r,6LL)*Power(xj,6LL) + 
+                    (9994948425LL + 63821700LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               38LL*Power(r,8LL)*Power(xj,8LL)) - 
+            1458540LL*Power(r, 4LL)*Power(xj, 4LL) - 18756LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-            189LL*Power(xi,24LL)*Power(xj,4LL)*
+            38LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (17962854525LL + 4036942800LL*Power(r,2LL)*Power(xj,2LL) - 
+                    189LL*Power(xi, 24LL)*Power(xj, 4LL)*
 
-               126472500LL*Power(r,4LL)*Power(xj,4LL) + 
+                    (17962854525LL + 4036942800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               765464LL*Power(r,6LL)*Power(xj,6LL) + 190LL*Power(r,8LL)*Power(xj,8LL)) - 
+            126472500LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            21LL*r*Power(xi,19LL)*Power(xj,10LL)*
+            765464LL*Power(r, 6LL)*Power(xj, 6LL) + 190LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (-228066210225LL + 13487616450LL*Power(r,2LL)*Power(xj,2LL) - 
+                    21LL*r*Power(xi, 19LL)*Power(xj, 10LL)*
 
-               85465800LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (-228066210225LL + 13487616450LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               320112LL*Power(r,6LL)*Power(xj,6LL) + 328LL*Power(r,8LL)*Power(xj,8LL)) - 
+            85465800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            189LL*Power(xi,18LL)*Power(xj,10LL)*
+            320112LL*Power(r, 6LL)*Power(xj, 6LL) + 328LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (86069971575LL + 2157712200LL*Power(r,2LL)*Power(xj,2LL) - 
+                    189LL*Power(xi, 18LL)*Power(xj, 10LL)*
 
-               158179560LL*Power(r,4LL)*Power(xj,4LL) + 
+                    (86069971575LL + 2157712200LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               578816LL*Power(r,6LL)*Power(xj,6LL) + 978LL*Power(r,8LL)*Power(xj,8LL)) - 
+            158179560LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            2LL*r*Power(xi,29LL)*(2085060285LL + 5450330025LL*Power(r,2LL)*Power(xj,2LL) + 
+            578816LL*Power(r, 6LL)*Power(xj, 6LL) + 978LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-               127424745LL*Power(r,4LL)*Power(xj,4LL) - 
+                    2LL*r*Power(xi, 29LL)*(2085060285LL + 5450330025LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1398276LL*Power(r,6LL)*Power(xj,6LL) + 1159LL*Power(r,8LL)*Power(xj,8LL)) - 
+                                           127424745LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            378LL*Power(xi,22LL)*Power(xj,6LL)*
+                                           1398276LL*Power(r, 6LL)*Power(xj, 6LL) + 1159LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (37244490525LL - 2411839800LL*Power(r,2LL)*Power(xj,2LL) + 
+                    378LL*Power(xi, 22LL)*Power(xj, 6LL)*
 
-               92951775LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (37244490525LL - 2411839800LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               942172LL*Power(r,6LL)*Power(xj,6LL) + 1292LL*Power(r,8LL)*Power(xj,8LL)) - 
+            92951775LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            27LL*Power(xi,16LL)*Power(xj,12LL)*
+            942172LL*Power(r, 6LL)*Power(xj, 6LL) + 1292LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-             (164245367475LL + 26909517600LL*Power(r,2LL)*Power(xj,2LL) + 
+                    27LL*Power(xi, 16LL)*Power(xj, 12LL)*
 
-               62674920LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (164245367475LL + 26909517600LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               3885112LL*Power(r,6LL)*Power(xj,6LL) + 2122LL*Power(r,8LL)*Power(xj,8LL)) + 
+            62674920LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            3LL*r*Power(xi,27LL)*Power(xj,2LL)*
+            3885112LL*Power(r, 6LL)*Power(xj, 6LL) + 2122LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-63819198135LL - 21841975890LL*Power(r,2LL)*Power(xj,2LL) + 
+                    3LL*r*Power(xi, 27LL)*Power(xj, 2LL)*
 
-               442430100LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (-63819198135LL - 21841975890LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2756664LL*Power(r,6LL)*Power(xj,6LL) + 2296LL*Power(r,8LL)*Power(xj,8LL)) + 
+            442430100LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            r*Power(xi,17LL)*Power(xj,12LL)*
+            2756664LL*Power(r, 6LL)*Power(xj, 6LL) + 2296LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (4851990871875LL + 21622847400LL*Power(r,2LL)*Power(xj,2LL) - 
+                    r*Power(xi, 17LL)*Power(xj, 12LL)*
 
-               2153738160LL*Power(r,4LL)*Power(xj,4LL) + 
+                    (4851990871875LL + 21622847400LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               3608388LL*Power(r,6LL)*Power(xj,6LL) + 2318LL*Power(r,8LL)*Power(xj,8LL)) + 
+            2153738160LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-            18LL*Power(xi,14LL)*Power(xj,14LL)*
+            3608388LL*Power(r, 6LL)*Power(xj, 6LL) + 2318LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-23418646650LL - 6922729800LL*Power(r,2LL)*Power(xj,2LL) - 
+                    18LL*Power(xi, 14LL)*Power(xj, 14LL)*
 
-               259958475LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (-23418646650LL - 6922729800LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               697732LL*Power(r,6LL)*Power(xj,6LL) + 3030LL*Power(r,8LL)*Power(xj,8LL)) + 
+            259958475LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            126LL*Power(xi,20LL)*Power(xj,8LL)*
+            697732LL*Power(r, 6LL)*Power(xj, 6LL) + 3030LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-186637212225LL + 13028280300LL*Power(r,2LL)*Power(xj,2LL) - 
+                    126LL*Power(xi, 20LL)*Power(xj, 8LL)*
 
-               116198775LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (-186637212225LL + 13028280300LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               1266160LL*Power(r,6LL)*Power(xj,6LL) + 4332LL*Power(r,8LL)*Power(xj,8LL)) - 
+            116198775LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            54LL*Power(xi,28LL)*(102965940LL + 1089437580LL*Power(r,2LL)*Power(xj,2LL) + 
+            1266160LL*Power(r, 6LL)*Power(xj, 6LL) + 4332LL*Power(r, 8LL)*Power(xj, 8LL)) -
 
-               102508245LL*Power(r,4LL)*Power(xj,4LL) - 
+                    54LL*Power(xi, 28LL)*(102965940LL + 1089437580LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1593144LL*Power(r,6LL)*Power(xj,6LL) + 4538LL*Power(r,8LL)*Power(xj,8LL)) + 
+                                          102508245LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-            63LL*Power(xi,26LL)*Power(xj,2LL)*
+                                          1593144LL*Power(r, 6LL)*Power(xj, 6LL) + 4538LL*Power(r, 8LL)*Power(xj, 8LL)) +
 
-             (-4544129205LL - 7396000920LL*Power(r,2LL)*Power(xj,2LL) + 
+                    63LL*Power(xi, 26LL)*Power(xj, 2LL)*
 
-               149614020LL*Power(r,4LL)*Power(xj,4LL) - 
+                    (-4544129205LL - 7396000920LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1684112LL*Power(r,6LL)*Power(xj,6LL) + 5922LL*Power(r,8LL)*Power(xj,8LL))) + 
+            149614020LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-         exp(2LL*r*xi)*Power(xi,12LL)*
+            1684112LL*Power(r, 6LL)*Power(xj, 6LL) + 5922LL*Power(r, 8LL)*Power(xj, 8LL))) +
 
-          (6LL*Power(xi,24LL)*Power(xj,6LL)*
+                   exp(2LL*r*xi)*Power(xi, 12LL)*
 
-             (1900985625LL*xj + 3456337500LL*r*Power(xj,2LL) + 
+                   (6LL*Power(xi, 24LL)*Power(xj, 6LL)*
 
-               3110703750LL*Power(r,2LL)*Power(xj,3LL) + 
+                    (1900985625LL*xj + 3456337500LL*r*Power(xj, 2LL) +
 
-               1843380000LL*Power(r,3LL)*Power(xj,4LL) + 
+            3110703750LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               806478750LL*Power(r,4LL)*Power(xj,5LL) + 
+            1843380000LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-               276507000LL*Power(r,5LL)*Power(xj,6LL) + 
+            806478750LL*Power(r, 4LL)*Power(xj, 5LL) +
 
-               63594300LL*Power(r,6LL)*Power(xj,7LL) + 
+            276507000LL*Power(r, 5LL)*Power(xj, 6LL) +
 
-               32656800LL*Power(r,7LL)*Power(xj,8LL) + 
+            63594300LL*Power(r, 6LL)*Power(xj, 7LL) +
 
-               1097415LL*Power(r,8LL)*Power(xj,9LL) - 
+            32656800LL*Power(r, 7LL)*Power(xj, 8LL) +
 
-               214940LL*Power(r,9LL)*Power(xj,10LL) - 8426LL*Power(r,10LL)*Power(xj,11LL)) 
+            1097415LL*Power(r, 8LL)*Power(xj, 9LL) -
 
-    + 5LL*Power(xi,28LL)*Power(xj,2LL)*(36018675LL*xj + 65488500LL*r*Power(xj,2LL) + 
+            214940LL*Power(r, 9LL)*Power(xj, 10LL) - 8426LL*Power(r, 10LL)*Power(xj, 11LL))
 
-               58939650LL*Power(r,2LL)*Power(xj,3LL) + 
+                    + 5LL*Power(xi, 28LL)*Power(xj, 2LL)*(36018675LL*xj + 65488500LL*r*Power(xj, 2LL) +
 
-               34927200LL*Power(r,3LL)*Power(xj,4LL) + 
+                                                          58939650LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               15280650LL*Power(r,4LL)*Power(xj,5LL) + 
+                                                          34927200LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-               5239080LL*Power(r,5LL)*Power(xj,6LL) + 
+                                                          15280650LL*Power(r, 4LL)*Power(xj, 5LL) +
 
-               1455300LL*Power(r,6LL)*Power(xj,7LL) + 
+                                                          5239080LL*Power(r, 5LL)*Power(xj, 6LL) +
 
-               332640LL*Power(r,7LL)*Power(xj,8LL) + 62370LL*Power(r,8LL)*Power(xj,9LL) + 
+                                                          1455300LL*Power(r, 6LL)*Power(xj, 7LL) +
 
-               9240LL*Power(r,9LL)*Power(xj,10LL) - 44LL*Power(r,10LL)*Power(xj,11LL)) + 
+                                                          332640LL*Power(r, 7LL)*Power(xj, 8LL) + 62370LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-            26334LL*Power(xi,16LL)*Power(xj,14LL)*
+                                                          9240LL*Power(r, 9LL)*Power(xj, 10LL) - 44LL*Power(r, 10LL)*Power(xj, 11LL)) +
 
-             (-186686775LL*xj + 1153543500LL*r*Power(xj,2LL) - 
+                    26334LL*Power(xi, 16LL)*Power(xj, 14LL)*
 
-               1195809750LL*Power(r,2LL)*Power(xj,3LL) + 
+                    (-186686775LL*xj + 1153543500LL*r*Power(xj, 2LL) -
 
-               290210400LL*Power(r,3LL)*Power(xj,4LL) + 
+            1195809750LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               139515600LL*Power(r,4LL)*Power(xj,5LL) - 
+            290210400LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-               2056320LL*Power(r,5LL)*Power(xj,6LL) - 
+            139515600LL*Power(r, 4LL)*Power(xj, 5LL) -
 
-               4023600LL*Power(r,6LL)*Power(xj,7LL) - 
+            2056320LL*Power(r, 5LL)*Power(xj, 6LL) -
 
-               406400LL*Power(r,7LL)*Power(xj,8LL) - 8505LL*Power(r,8LL)*Power(xj,9LL) + 
+            4023600LL*Power(r, 6LL)*Power(xj, 7LL) -
 
-               580LL*Power(r,9LL)*Power(xj,10LL) + 22LL*Power(r,10LL)*Power(xj,11LL)) + 
+            406400LL*Power(r, 7LL)*Power(xj, 8LL) - 8505LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-            10LL*Power(xj,30LL)*(89194245525LL*xj + 77560213500LL*r*Power(xj,2LL) + 
+            580LL*Power(r, 9LL)*Power(xj, 10LL) + 22LL*Power(r, 10LL)*Power(xj, 11LL)) +
 
-               31729178250LL*Power(r,2LL)*Power(xj,3LL) + 
+                    10LL*Power(xj, 30LL)*(89194245525LL*xj + 77560213500LL*r*Power(xj, 2LL) +
 
-               8058204000LL*Power(r,3LL)*Power(xj,4LL) + 
+                                          31729178250LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               1410185700LL*Power(r,4LL)*Power(xj,5LL) + 
+                                          8058204000LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-               178128720LL*Power(r,5LL)*Power(xj,6LL) + 
+                                          1410185700LL*Power(r, 4LL)*Power(xj, 5LL) +
 
-               16493400LL*Power(r,6LL)*Power(xj,7LL) + 
+                                          178128720LL*Power(r, 5LL)*Power(xj, 6LL) +
 
-               1108800LL*Power(r,7LL)*Power(xj,8LL) + 51975LL*Power(r,8LL)*Power(xj,9LL) + 
+                                          16493400LL*Power(r, 6LL)*Power(xj, 7LL) +
 
-               1540LL*Power(r,9LL)*Power(xj,10LL) + 22LL*Power(r,10LL)*Power(xj,11LL)) + 
+                                          1108800LL*Power(r, 7LL)*Power(xj, 8LL) + 51975LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-            10LL*Power(xi,2LL)*Power(xj,28LL)*
+                                          1540LL*Power(r, 9LL)*Power(xj, 10LL) + 22LL*Power(r, 10LL)*Power(xj, 11LL)) +
 
-             (3733416276975LL*xj + 2856431862900LL*r*Power(xj,2LL) + 
+                    10LL*Power(xi, 2LL)*Power(xj, 28LL)*
 
-               1015635886650LL*Power(r,2LL)*Power(xj,3LL) + 
+                    (3733416276975LL*xj + 2856431862900LL*r*Power(xj, 2LL) +
 
-               220794789600LL*Power(r,3LL)*Power(xj,4LL) + 
+            1015635886650LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               32434271100LL*Power(r,4LL)*Power(xj,5LL) + 
+            220794789600LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-               3350516400LL*Power(r,5LL)*Power(xj,6LL) + 
+            32434271100LL*Power(r, 4LL)*Power(xj, 5LL) +
 
-               244573560LL*Power(r,6LL)*Power(xj,7LL) + 
+            3350516400LL*Power(r, 5LL)*Power(xj, 6LL) +
 
-               12260160LL*Power(r,7LL)*Power(xj,8LL) + 
+            244573560LL*Power(r, 6LL)*Power(xj, 7LL) +
 
-               389565LL*Power(r,8LL)*Power(xj,9LL) + 6380LL*Power(r,9LL)*Power(xj,10LL) + 
+            12260160LL*Power(r, 7LL)*Power(xj, 8LL) +
 
-               22LL*Power(r,10LL)*Power(xj,11LL)) - 
+            389565LL*Power(r, 8LL)*Power(xj, 9LL) + 6380LL*Power(r, 9LL)*Power(xj, 10LL) +
 
-            110LL*Power(xi,10LL)*Power(xj,20LL)*
+            22LL*Power(r, 10LL)*Power(xj, 11LL)) -
 
-             (6795156458475LL*xj + 4134942472500LL*r*Power(xj,2LL) - 
+                    110LL*Power(xi, 10LL)*Power(xj, 20LL)*
 
-               643994772750LL*Power(r,2LL)*Power(xj,3LL) - 
+                    (6795156458475LL*xj + 4134942472500LL*r*Power(xj, 2LL) -
 
-               497665879200LL*Power(r,3LL)*Power(xj,4LL) - 
+            643994772750LL*Power(r, 2LL)*Power(xj, 3LL) -
 
-               74677727250LL*Power(r,4LL)*Power(xj,5LL) - 
+            497665879200LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               1540130760LL*Power(r,5LL)*Power(xj,6LL) + 
+            74677727250LL*Power(r, 4LL)*Power(xj, 5LL) -
 
-               740256300LL*Power(r,6LL)*Power(xj,7LL) + 
+            1540130760LL*Power(r, 5LL)*Power(xj, 6LL) +
 
-               92017440LL*Power(r,7LL)*Power(xj,8LL) + 
+            740256300LL*Power(r, 6LL)*Power(xj, 7LL) +
 
-               4662765LL*Power(r,8LL)*Power(xj,9LL) + 
+            92017440LL*Power(r, 7LL)*Power(xj, 8LL) +
 
-               92940LL*Power(r,9LL)*Power(xj,10LL) + 22LL*Power(r,10LL)*Power(xj,11LL)) + 
+            4662765LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-            55LL*Power(xi,20LL)*Power(xj,10LL)*
+            92940LL*Power(r, 9LL)*Power(xj, 10LL) + 22LL*Power(r, 10LL)*Power(xj, 11LL)) +
 
-             (3172917825LL*xj + 5768941500LL*r*Power(xj,2LL) + 
+                    55LL*Power(xi, 20LL)*Power(xj, 10LL)*
 
-               4715880750LL*Power(r,2LL)*Power(xj,3LL) + 
+                    (3172917825LL*xj + 5768941500LL*r*Power(xj, 2LL) +
 
-               5616324000LL*Power(r,3LL)*Power(xj,4LL) - 
+            4715880750LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               2133271350LL*Power(r,4LL)*Power(xj,5LL) + 
+            5616324000LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               1701219240LL*Power(r,5LL)*Power(xj,6LL) + 
+            2133271350LL*Power(r, 4LL)*Power(xj, 5LL) +
 
-               273816900LL*Power(r,6LL)*Power(xj,7LL) - 
+            1701219240LL*Power(r, 5LL)*Power(xj, 6LL) +
 
-               21278880LL*Power(r,7LL)*Power(xj,8LL) - 
+            273816900LL*Power(r, 6LL)*Power(xj, 7LL) -
 
-               4759650LL*Power(r,8LL)*Power(xj,9LL) - 
+            21278880LL*Power(r, 7LL)*Power(xj, 8LL) -
 
-               182360LL*Power(r,9LL)*Power(xj,10LL) + 44LL*Power(r,10LL)*Power(xj,11LL)) - 
+            4759650LL*Power(r, 8LL)*Power(xj, 9LL) -
 
-            5LL*Power(xi,30LL)*(1715175LL*xj + 3118500LL*r*Power(xj,2LL) + 
+            182360LL*Power(r, 9LL)*Power(xj, 10LL) + 44LL*Power(r, 10LL)*Power(xj, 11LL)) -
 
-               2806650LL*Power(r,2LL)*Power(xj,3LL) + 
+                    5LL*Power(xi, 30LL)*(1715175LL*xj + 3118500LL*r*Power(xj, 2LL) +
 
-               1663200LL*Power(r,3LL)*Power(xj,4LL) + 
+                                         2806650LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               727650LL*Power(r,4LL)*Power(xj,5LL) + 249480LL*Power(r,5LL)*Power(xj,6LL) + 
+                                         1663200LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-               69300LL*Power(r,6LL)*Power(xj,7LL) + 15840LL*Power(r,7LL)*Power(xj,8LL) + 
+                                         727650LL*Power(r, 4LL)*Power(xj, 5LL) + 249480LL*Power(r, 5LL)*Power(xj, 6LL) +
 
-               2970LL*Power(r,8LL)*Power(xj,9LL) + 440LL*Power(r,9LL)*Power(xj,10LL) + 
+                                         69300LL*Power(r, 6LL)*Power(xj, 7LL) + 15840LL*Power(r, 7LL)*Power(xj, 8LL) +
 
-               44LL*Power(r,10LL)*Power(xj,11LL)) - 
+                                         2970LL*Power(r, 8LL)*Power(xj, 9LL) + 440LL*Power(r, 9LL)*Power(xj, 10LL) +
 
-            13167LL*Power(xi,14LL)*Power(xj,16LL)*
+                                         44LL*Power(r, 10LL)*Power(xj, 11LL)) -
 
-             (8540029575LL*xj - 14671345500LL*r*Power(xj,2LL) + 
+                    13167LL*Power(xi, 14LL)*Power(xj, 16LL)*
 
-               3399464250LL*Power(r,2LL)*Power(xj,3LL) + 
+                    (8540029575LL*xj - 14671345500LL*r*Power(xj, 2LL) +
 
-               2300056800LL*Power(r,3LL)*Power(xj,4LL) - 
+            3399464250LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               4568550LL*Power(r,4LL)*Power(xj,5LL) - 
+            2300056800LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               89183640LL*Power(r,5LL)*Power(xj,6LL) - 
+            4568550LL*Power(r, 4LL)*Power(xj, 5LL) -
 
-               11811100LL*Power(r,6LL)*Power(xj,7LL) - 
+            89183640LL*Power(r, 5LL)*Power(xj, 6LL) -
 
-               375200LL*Power(r,7LL)*Power(xj,8LL) + 28890LL*Power(r,8LL)*Power(xj,9LL) + 
+            11811100LL*Power(r, 6LL)*Power(xj, 7LL) -
 
-               2360LL*Power(r,9LL)*Power(xj,10LL) + 44LL*Power(r,10LL)*Power(xj,11LL)) - 
+            375200LL*Power(r, 7LL)*Power(xj, 8LL) + 28890LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-            770LL*Power(xi,18LL)*Power(xj,12LL)*
+            2360LL*Power(r, 9LL)*Power(xj, 10LL) + 44LL*Power(r, 10LL)*Power(xj, 11LL)) -
 
-             (654729075LL*xj + 91570500LL*r*Power(xj,2LL) + 
+                    770LL*Power(xi, 18LL)*Power(xj, 12LL)*
 
-               4807451250LL*Power(r,2LL)*Power(xj,3LL) - 
+                    (654729075LL*xj + 91570500LL*r*Power(xj, 2LL) +
 
-               3662820000LL*Power(r,3LL)*Power(xj,4LL) + 
+            4807451250LL*Power(r, 2LL)*Power(xj, 3LL) -
 
-               1330182000LL*Power(r,4LL)*Power(xj,5LL) + 
+            3662820000LL*Power(r, 3LL)*Power(xj, 4LL) +
 
-               382475520LL*Power(r,5LL)*Power(xj,6LL) - 
+            1330182000LL*Power(r, 4LL)*Power(xj, 5LL) +
 
-               16128000LL*Power(r,6LL)*Power(xj,7LL) - 
+            382475520LL*Power(r, 5LL)*Power(xj, 6LL) -
 
-               8593920LL*Power(r,7LL)*Power(xj,8LL) - 
+            16128000LL*Power(r, 6LL)*Power(xj, 7LL) -
 
-               581715LL*Power(r,8LL)*Power(xj,9LL) - 5140LL*Power(r,9LL)*Power(xj,10LL) + 
+            8593920LL*Power(r, 7LL)*Power(xj, 8LL) -
 
-               374LL*Power(r,10LL)*Power(xj,11LL)) + 
+            581715LL*Power(r, 8LL)*Power(xj, 9LL) - 5140LL*Power(r, 9LL)*Power(xj, 10LL) +
 
-            385LL*Power(xi,12LL)*Power(xj,18LL)*
+            374LL*Power(r, 10LL)*Power(xj, 11LL)) +
 
-             (-1429122323475LL*xj + 596563663500LL*r*Power(xj,2LL) + 
+                    385LL*Power(xi, 12LL)*Power(xj, 18LL)*
 
-               416523444750LL*Power(r,2LL)*Power(xj,3LL) - 
+                    (-1429122323475LL*xj + 596563663500LL*r*Power(xj, 2LL) +
 
-               9816962400LL*Power(r,3LL)*Power(xj,4LL) - 
+            416523444750LL*Power(r, 2LL)*Power(xj, 3LL) -
 
-               24626974050LL*Power(r,4LL)*Power(xj,5LL) - 
+            9816962400LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               3742993800LL*Power(r,5LL)*Power(xj,6LL) - 
+            24626974050LL*Power(r, 4LL)*Power(xj, 5LL) -
 
-               133689780LL*Power(r,6LL)*Power(xj,7LL) + 
+            3742993800LL*Power(r, 5LL)*Power(xj, 6LL) -
 
-               16665120LL*Power(r,7LL)*Power(xj,8LL) + 
+            133689780LL*Power(r, 6LL)*Power(xj, 7LL) +
 
-               1911870LL*Power(r,8LL)*Power(xj,9LL) + 
+            16665120LL*Power(r, 7LL)*Power(xj, 8LL) +
 
-               70120LL*Power(r,9LL)*Power(xj,10LL) + 748LL*Power(r,10LL)*Power(xj,11LL)) + 
+            1911870LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-            14LL*Power(xi,26LL)*Power(xj,4LL)*
+            70120LL*Power(r, 9LL)*Power(xj, 10LL) + 748LL*Power(r, 10LL)*Power(xj, 11LL)) +
 
-             (-128638125LL*xj - 233887500LL*r*Power(xj,2LL) - 
+                    14LL*Power(xi, 26LL)*Power(xj, 4LL)*
 
-               210498750LL*Power(r,2LL)*Power(xj,3LL) - 
+                    (-128638125LL*xj - 233887500LL*r*Power(xj, 2LL) -
 
-               124740000LL*Power(r,3LL)*Power(xj,4LL) - 
+            210498750LL*Power(r, 2LL)*Power(xj, 3LL) -
 
-               54573750LL*Power(r,4LL)*Power(xj,5LL) - 
+            124740000LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               18711000LL*Power(r,5LL)*Power(xj,6LL) - 
+            54573750LL*Power(r, 4LL)*Power(xj, 5LL) -
 
-               5197500LL*Power(r,6LL)*Power(xj,7LL) - 
+            18711000LL*Power(r, 5LL)*Power(xj, 6LL) -
 
-               1188000LL*Power(r,7LL)*Power(xj,8LL) - 
+            5197500LL*Power(r, 6LL)*Power(xj, 7LL) -
 
-               293535LL*Power(r,8LL)*Power(xj,9LL) - 1540LL*Power(r,9LL)*Power(xj,10LL) + 
+            1188000LL*Power(r, 7LL)*Power(xj, 8LL) -
 
-               814LL*Power(r,10LL)*Power(xj,11LL)) - 
+            293535LL*Power(r, 8LL)*Power(xj, 9LL) - 1540LL*Power(r, 9LL)*Power(xj, 10LL) +
 
-            7LL*Power(xi,4LL)*Power(xj,26LL)*
+            814LL*Power(r, 10LL)*Power(xj, 11LL)) -
 
-             (-46669577290875LL*xj - 28050074860500LL*r*Power(xj,2LL) - 
+                    7LL*Power(xi, 4LL)*Power(xj, 26LL)*
 
-               7292644994250LL*Power(r,2LL)*Power(xj,3LL) - 
+                    (-46669577290875LL*xj - 28050074860500LL*r*Power(xj, 2LL) -
 
-               1006517080800LL*Power(r,3LL)*Power(xj,4LL) - 
+            7292644994250LL*Power(r, 2LL)*Power(xj, 3LL) -
 
-               62172598950LL*Power(r,4LL)*Power(xj,5LL) + 
+            1006517080800LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               2717585640LL*Power(r,5LL)*Power(xj,6LL) + 
+            62172598950LL*Power(r, 4LL)*Power(xj, 5LL) +
 
-               917878500LL*Power(r,6LL)*Power(xj,7LL) + 
+            2717585640LL*Power(r, 5LL)*Power(xj, 6LL) +
 
-               88149600LL*Power(r,7LL)*Power(xj,8LL) + 
+            917878500LL*Power(r, 6LL)*Power(xj, 7LL) +
 
-               4630230LL*Power(r,8LL)*Power(xj,9LL) + 
+            88149600LL*Power(r, 7LL)*Power(xj, 8LL) +
 
-               133320LL*Power(r,9LL)*Power(xj,10LL) + 1628LL*Power(r,10LL)*Power(xj,11LL)) 
+            4630230LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-    - 50LL*Power(xi,8LL)*Power(xj,22LL)*(-5003280391725LL*xj + 
+            133320LL*Power(r, 9LL)*Power(xj, 10LL) + 1628LL*Power(r, 10LL)*Power(xj, 11LL))
 
-               8986878954900LL*r*Power(xj,2LL) + 
+                    - 50LL*Power(xi, 8LL)*Power(xj, 22LL)*(-5003280391725LL*xj +
 
-               3860598530250LL*Power(r,2LL)*Power(xj,3LL) + 
+                                                           8986878954900LL*r*Power(xj, 2LL) +
 
-               445749907680LL*Power(r,3LL)*Power(xj,4LL) - 
+                                                           3860598530250LL*Power(r, 2LL)*Power(xj, 3LL) +
 
-               33101567730LL*Power(r,4LL)*Power(xj,5LL) - 
+                                                           445749907680LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               14439619656LL*Power(r,5LL)*Power(xj,6LL) - 
+                                                           33101567730LL*Power(r, 4LL)*Power(xj, 5LL) -
 
-               1698806340LL*Power(r,6LL)*Power(xj,7LL) - 
+                                                           14439619656LL*Power(r, 5LL)*Power(xj, 6LL) -
 
-               97831008LL*Power(r,7LL)*Power(xj,8LL) - 
+                                                           1698806340LL*Power(r, 6LL)*Power(xj, 7LL) -
 
-               2306007LL*Power(r,8LL)*Power(xj,9LL) + 
+                                                           97831008LL*Power(r, 7LL)*Power(xj, 8LL) -
 
-               24860LL*Power(r,9LL)*Power(xj,10LL) + 1738LL*Power(r,10LL)*Power(xj,11LL)) + 
+                                                           2306007LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-            25LL*Power(xi,22LL)*Power(xj,8LL)*
+                                                           24860LL*Power(r, 9LL)*Power(xj, 10LL) + 1738LL*Power(r, 10LL)*Power(xj, 11LL)) +
 
-             (-2053064475LL*xj - 3732844500LL*r*Power(xj,2LL) - 
+                    25LL*Power(xi, 22LL)*Power(xj, 8LL)*
 
-               3359560050LL*Power(r,2LL)*Power(xj,3LL) - 
+                    (-2053064475LL*xj - 3732844500LL*r*Power(xj, 2LL) -
 
-               1990850400LL*Power(r,3LL)*Power(xj,4LL) - 
+            3359560050LL*Power(r, 2LL)*Power(xj, 3LL) -
 
-               972078030LL*Power(r,4LL)*Power(xj,5LL) - 
+            1990850400LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               56033208LL*Power(r,5LL)*Power(xj,6LL) - 
+            972078030LL*Power(r, 4LL)*Power(xj, 5LL) -
 
-               218519532LL*Power(r,6LL)*Power(xj,7LL) - 
+            56033208LL*Power(r, 5LL)*Power(xj, 6LL) -
 
-               18054432LL*Power(r,7LL)*Power(xj,8LL) + 
+            218519532LL*Power(r, 6LL)*Power(xj, 7LL) -
 
-               2220966LL*Power(r,8LL)*Power(xj,9LL) + 
+            18054432LL*Power(r, 7LL)*Power(xj, 8LL) +
 
-               228360LL*Power(r,9LL)*Power(xj,10LL) + 3476LL*Power(r,10LL)*Power(xj,11LL)) 
+            2220966LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-    + 3LL*Power(xi,6LL)*Power(xj,24LL)*(266778699697125LL*xj + 
+            228360LL*Power(r, 9LL)*Power(xj, 10LL) + 3476LL*Power(r, 10LL)*Power(xj, 11LL))
 
-               75031302307500LL*r*Power(xj,2LL) - 
+                    + 3LL*Power(xi, 6LL)*Power(xj, 24LL)*(266778699697125LL*xj +
 
-               6643878491250LL*Power(r,2LL)*Power(xj,3LL) - 
+                                                          75031302307500LL*r*Power(xj, 2LL) -
 
-               6152300431200LL*Power(r,3LL)*Power(xj,4LL) - 
+                                                          6643878491250LL*Power(r, 2LL)*Power(xj, 3LL) -
 
-               1244776544550LL*Power(r,4LL)*Power(xj,5LL) - 
+                                                          6152300431200LL*Power(r, 3LL)*Power(xj, 4LL) -
 
-               128606025240LL*Power(r,5LL)*Power(xj,6LL) - 
+                                                          1244776544550LL*Power(r, 4LL)*Power(xj, 5LL) -
 
-               6705860700LL*Power(r,6LL)*Power(xj,7LL) - 
+                                                          128606025240LL*Power(r, 5LL)*Power(xj, 6LL) -
 
-               38992800LL*Power(r,7LL)*Power(xj,8LL) + 
+                                                          6705860700LL*Power(r, 6LL)*Power(xj, 7LL) -
 
-               16486470LL*Power(r,8LL)*Power(xj,9LL) + 
+                                                          38992800LL*Power(r, 7LL)*Power(xj, 8LL) +
 
-               918280LL*Power(r,9LL)*Power(xj,10LL) + 16852LL*Power(r,10LL)*Power(xj,11LL))) 
+                                                          16486470LL*Power(r, 8LL)*Power(xj, 9LL) +
 
-    + 2LL*exp(2LL*r*xi)*Power(xi,13LL)*
+                                                          918280LL*Power(r, 9LL)*Power(xj, 10LL) + 16852LL*Power(r, 10LL)*Power(xj, 11LL)))
 
-          (6LL*Power(xi,24LL)*Power(xj,6LL)*
+                   + 2LL*exp(2LL*r*xi)*Power(xi, 13LL)*
 
-             (1036901250LL + 1900985625LL*r*xj + 
+                   (6LL*Power(xi, 24LL)*Power(xj, 6LL)*
 
-               1728168750LL*Power(r,2LL)*Power(xj,2LL) + 
+                    (1036901250LL + 1900985625LL*r*xj +
 
-               1036901250LL*Power(r,3LL)*Power(xj,3LL) + 
+            1728168750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               460845000LL*Power(r,4LL)*Power(xj,4LL) + 
+            1036901250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               161295750LL*Power(r,5LL)*Power(xj,5LL) + 
+            460845000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               46084500LL*Power(r,6LL)*Power(xj,6LL) + 
+            161295750LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               9084900LL*Power(r,7LL)*Power(xj,7LL) + 
+            46084500LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               4082100LL*Power(r,8LL)*Power(xj,8LL) + 121935LL*Power(r,9LL)*Power(xj,9LL) - 
+            9084900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               21494LL*Power(r,10LL)*Power(xj,10LL) - 766LL*Power(r,11LL)*Power(xj,11LL)) + 
+            4082100LL*Power(r, 8LL)*Power(xj, 8LL) + 121935LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            5LL*Power(xi,28LL)*Power(xj,2LL)*
+            21494LL*Power(r, 10LL)*Power(xj, 10LL) - 766LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (19646550LL + 36018675LL*r*xj + 32744250LL*Power(r,2LL)*Power(xj,2LL) + 
+                    5LL*Power(xi, 28LL)*Power(xj, 2LL)*
 
-               19646550LL*Power(r,3LL)*Power(xj,3LL) + 
+                    (19646550LL + 36018675LL*r*xj + 32744250LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               8731800LL*Power(r,4LL)*Power(xj,4LL) + 
+            19646550LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               3056130LL*Power(r,5LL)*Power(xj,5LL) + 873180LL*Power(r,6LL)*Power(xj,6LL) + 
+            8731800LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               207900LL*Power(r,7LL)*Power(xj,7LL) + 41580LL*Power(r,8LL)*Power(xj,8LL) + 
+            3056130LL*Power(r, 5LL)*Power(xj, 5LL) + 873180LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               6930LL*Power(r,9LL)*Power(xj,9LL) + 924LL*Power(r,10LL)*Power(xj,10LL) - 
+            207900LL*Power(r, 7LL)*Power(xj, 7LL) + 41580LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               4LL*Power(r,11LL)*Power(xj,11LL)) + 
+            6930LL*Power(r, 9LL)*Power(xj, 9LL) + 924LL*Power(r, 10LL)*Power(xj, 10LL) -
 
-            26334LL*Power(xi,16LL)*Power(xj,14LL)*
+            4LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (43880400LL - 186686775LL*r*xj + 576771750LL*Power(r,2LL)*Power(xj,2LL) - 
+                    26334LL*Power(xi, 16LL)*Power(xj, 14LL)*
 
-               398603250LL*Power(r,3LL)*Power(xj,3LL) + 
+                    (43880400LL - 186686775LL*r*xj + 576771750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               72552600LL*Power(r,4LL)*Power(xj,4LL) + 
+            398603250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               27903120LL*Power(r,5LL)*Power(xj,5LL) - 
+            72552600LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               342720LL*Power(r,6LL)*Power(xj,6LL) - 574800LL*Power(r,7LL)*Power(xj,7LL) - 
+            27903120LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               50800LL*Power(r,8LL)*Power(xj,8LL) - 945LL*Power(r,9LL)*Power(xj,9LL) + 
+            342720LL*Power(r, 6LL)*Power(xj, 6LL) - 574800LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               58LL*Power(r,10LL)*Power(xj,10LL) + 2LL*Power(r,11LL)*Power(xj,11LL)) + 
+            50800LL*Power(r, 8LL)*Power(xj, 8LL) - 945LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            10LL*Power(xj,30LL)*(97302813300LL + 89194245525LL*r*xj + 
+            58LL*Power(r, 10LL)*Power(xj, 10LL) + 2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-               38780106750LL*Power(r,2LL)*Power(xj,2LL) + 
+                    10LL*Power(xj, 30LL)*(97302813300LL + 89194245525LL*r*xj +
 
-               10576392750LL*Power(r,3LL)*Power(xj,3LL) + 
+                                          38780106750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2014551000LL*Power(r,4LL)*Power(xj,4LL) + 
+                                          10576392750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               282037140LL*Power(r,5LL)*Power(xj,5LL) + 
+                                          2014551000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               29688120LL*Power(r,6LL)*Power(xj,6LL) + 
+                                          282037140LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               2356200LL*Power(r,7LL)*Power(xj,7LL) + 138600LL*Power(r,8LL)*Power(xj,8LL) + 
+                                          29688120LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               5775LL*Power(r,9LL)*Power(xj,9LL) + 154LL*Power(r,10LL)*Power(xj,10LL) + 
+                                          2356200LL*Power(r, 7LL)*Power(xj, 7LL) + 138600LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               2LL*Power(r,11LL)*Power(xj,11LL)) + 
+                                          5775LL*Power(r, 9LL)*Power(xj, 9LL) + 154LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            10LL*Power(xi,2LL)*Power(xj,28LL)*
+                                          2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (4582499159700LL + 3733416276975LL*r*xj + 
+                    10LL*Power(xi, 2LL)*Power(xj, 28LL)*
 
-               1428215931450LL*Power(r,2LL)*Power(xj,2LL) + 
+                    (4582499159700LL + 3733416276975LL*r*xj +
 
-               338545295550LL*Power(r,3LL)*Power(xj,3LL) + 
+            1428215931450LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               55198697400LL*Power(r,4LL)*Power(xj,4LL) + 
+            338545295550LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               6486854220LL*Power(r,5LL)*Power(xj,5LL) + 
+            55198697400LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               558419400LL*Power(r,6LL)*Power(xj,6LL) + 
+            6486854220LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               34939080LL*Power(r,7LL)*Power(xj,7LL) + 
+            558419400LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               1532520LL*Power(r,8LL)*Power(xj,8LL) + 43285LL*Power(r,9LL)*Power(xj,9LL) + 
+            34939080LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               638LL*Power(r,10LL)*Power(xj,10LL) + 2LL*Power(r,11LL)*Power(xj,11LL)) - 
+            1532520LL*Power(r, 8LL)*Power(xj, 8LL) + 43285LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            110LL*Power(xi,10LL)*Power(xj,20LL)*
+            638LL*Power(r, 10LL)*Power(xj, 10LL) + 2LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-14063418170550LL + 6795156458475LL*r*xj + 
+                    110LL*Power(xi, 10LL)*Power(xj, 20LL)*
 
-               2067471236250LL*Power(r,2LL)*Power(xj,2LL) - 
+                    (-14063418170550LL + 6795156458475LL*r*xj +
 
-               214664924250LL*Power(r,3LL)*Power(xj,3LL) - 
+            2067471236250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               124416469800LL*Power(r,4LL)*Power(xj,4LL) - 
+            214664924250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               14935545450LL*Power(r,5LL)*Power(xj,5LL) - 
+            124416469800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               256688460LL*Power(r,6LL)*Power(xj,6LL) + 
+            14935545450LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               105750900LL*Power(r,7LL)*Power(xj,7LL) + 
+            256688460LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               11502180LL*Power(r,8LL)*Power(xj,8LL) + 
+            105750900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               518085LL*Power(r,9LL)*Power(xj,9LL) + 9294LL*Power(r,10LL)*Power(xj,10LL) + 
+            11502180LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               2LL*Power(r,11LL)*Power(xj,11LL)) + 
+            518085LL*Power(r, 9LL)*Power(xj, 9LL) + 9294LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            55LL*Power(xi,20LL)*Power(xj,10LL)*
+            2LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (1730682450LL + 3172917825LL*r*xj + 
+                    55LL*Power(xi, 20LL)*Power(xj, 10LL)*
 
-               2884470750LL*Power(r,2LL)*Power(xj,2LL) + 
+                    (1730682450LL + 3172917825LL*r*xj +
 
-               1571960250LL*Power(r,3LL)*Power(xj,3LL) + 
+            2884470750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               1404081000LL*Power(r,4LL)*Power(xj,4LL) - 
+            1571960250LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               426654270LL*Power(r,5LL)*Power(xj,5LL) + 
+            1404081000LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               283536540LL*Power(r,6LL)*Power(xj,6LL) + 
+            426654270LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               39116700LL*Power(r,7LL)*Power(xj,7LL) - 
+            283536540LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               2659860LL*Power(r,8LL)*Power(xj,8LL) - 528850LL*Power(r,9LL)*Power(xj,9LL) - 
+            39116700LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               18236LL*Power(r,10LL)*Power(xj,10LL) + 4LL*Power(r,11LL)*Power(xj,11LL)) - 
+            2659860LL*Power(r, 8LL)*Power(xj, 8LL) - 528850LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            5LL*Power(xi,30LL)*(935550LL + 1715175LL*r*xj + 
+            18236LL*Power(r, 10LL)*Power(xj, 10LL) + 4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-               1559250LL*Power(r,2LL)*Power(xj,2LL) + 935550LL*Power(r,3LL)*Power(xj,3LL) + 
+                    5LL*Power(xi, 30LL)*(935550LL + 1715175LL*r*xj +
 
-               415800LL*Power(r,4LL)*Power(xj,4LL) + 145530LL*Power(r,5LL)*Power(xj,5LL) + 
+                                         1559250LL*Power(r, 2LL)*Power(xj, 2LL) + 935550LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               41580LL*Power(r,6LL)*Power(xj,6LL) + 9900LL*Power(r,7LL)*Power(xj,7LL) + 
+                                         415800LL*Power(r, 4LL)*Power(xj, 4LL) + 145530LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               1980LL*Power(r,8LL)*Power(xj,8LL) + 330LL*Power(r,9LL)*Power(xj,9LL) + 
+                                         41580LL*Power(r, 6LL)*Power(xj, 6LL) + 9900LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               44LL*Power(r,10LL)*Power(xj,10LL) + 4LL*Power(r,11LL)*Power(xj,11LL)) - 
+                                         1980LL*Power(r, 8LL)*Power(xj, 8LL) + 330LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            13167LL*Power(xi,14LL)*Power(xj,16LL)*
+                                         44LL*Power(r, 10LL)*Power(xj, 10LL) + 4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-2319354450LL + 8540029575LL*r*xj - 
+                    13167LL*Power(xi, 14LL)*Power(xj, 16LL)*
 
-               7335672750LL*Power(r,2LL)*Power(xj,2LL) + 
+                    (-2319354450LL + 8540029575LL*r*xj -
 
-               1133154750LL*Power(r,3LL)*Power(xj,3LL) + 
+            7335672750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               575014200LL*Power(r,4LL)*Power(xj,4LL) - 
+            1133154750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               913710LL*Power(r,5LL)*Power(xj,5LL) - 
+            575014200LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               14863940LL*Power(r,6LL)*Power(xj,6LL) - 
+            913710LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               1687300LL*Power(r,7LL)*Power(xj,7LL) - 46900LL*Power(r,8LL)*Power(xj,8LL) + 
+            14863940LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               3210LL*Power(r,9LL)*Power(xj,9LL) + 236LL*Power(r,10LL)*Power(xj,10LL) + 
+            1687300LL*Power(r, 7LL)*Power(xj, 7LL) - 46900LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               4LL*Power(r,11LL)*Power(xj,11LL)) - 
+            3210LL*Power(r, 9LL)*Power(xj, 9LL) + 236LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            770LL*Power(xi,18LL)*Power(xj,12LL)*
+            4LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (329653800LL + 654729075LL*r*xj + 45785250LL*Power(r,2LL)*Power(xj,2LL) + 
+                    770LL*Power(xi, 18LL)*Power(xj, 12LL)*
 
-               1602483750LL*Power(r,3LL)*Power(xj,3LL) - 
+                    (329653800LL + 654729075LL*r*xj + 45785250LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               915705000LL*Power(r,4LL)*Power(xj,4LL) + 
+            1602483750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               266036400LL*Power(r,5LL)*Power(xj,5LL) + 
+            915705000LL*Power(r, 4LL)*Power(xj, 4LL) +
 
-               63745920LL*Power(r,6LL)*Power(xj,6LL) - 
+            266036400LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               2304000LL*Power(r,7LL)*Power(xj,7LL) - 
+            63745920LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               1074240LL*Power(r,8LL)*Power(xj,8LL) - 64635LL*Power(r,9LL)*Power(xj,9LL) - 
+            2304000LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               514LL*Power(r,10LL)*Power(xj,10LL) + 34LL*Power(r,11LL)*Power(xj,11LL)) + 
+            1074240LL*Power(r, 8LL)*Power(xj, 8LL) - 64635LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            385LL*Power(xi,12LL)*Power(xj,18LL)*
+            514LL*Power(r, 10LL)*Power(xj, 10LL) + 34LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (973565393850LL - 1429122323475LL*r*xj + 
+                    385LL*Power(xi, 12LL)*Power(xj, 18LL)*
 
-               298281831750LL*Power(r,2LL)*Power(xj,2LL) + 
+                    (973565393850LL - 1429122323475LL*r*xj +
 
-               138841148250LL*Power(r,3LL)*Power(xj,3LL) - 
+            298281831750LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               2454240600LL*Power(r,4LL)*Power(xj,4LL) - 
+            138841148250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               4925394810LL*Power(r,5LL)*Power(xj,5LL) - 
+            2454240600LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               623832300LL*Power(r,6LL)*Power(xj,6LL) - 
+            4925394810LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               19098540LL*Power(r,7LL)*Power(xj,7LL) + 
+            623832300LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               2083140LL*Power(r,8LL)*Power(xj,8LL) + 212430LL*Power(r,9LL)*Power(xj,9LL) + 
+            19098540LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               7012LL*Power(r,10LL)*Power(xj,10LL) + 68LL*Power(r,11LL)*Power(xj,11LL)) + 
+            2083140LL*Power(r, 8LL)*Power(xj, 8LL) + 212430LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            14LL*Power(xi,26LL)*Power(xj,4LL)*
+            7012LL*Power(r, 10LL)*Power(xj, 10LL) + 68LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (-70166250LL - 128638125LL*r*xj - 116943750LL*Power(r,2LL)*Power(xj,2LL) - 
+                    14LL*Power(xi, 26LL)*Power(xj, 4LL)*
 
-               70166250LL*Power(r,3LL)*Power(xj,3LL) - 
+                    (-70166250LL - 128638125LL*r*xj - 116943750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               31185000LL*Power(r,4LL)*Power(xj,4LL) - 
+            70166250LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               10914750LL*Power(r,5LL)*Power(xj,5LL) - 
+            31185000LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               3118500LL*Power(r,6LL)*Power(xj,6LL) - 742500LL*Power(r,7LL)*Power(xj,7LL) - 
+            10914750LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               148500LL*Power(r,8LL)*Power(xj,8LL) - 32615LL*Power(r,9LL)*Power(xj,9LL) - 
+            3118500LL*Power(r, 6LL)*Power(xj, 6LL) - 742500LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               154LL*Power(r,10LL)*Power(xj,10LL) + 74LL*Power(r,11LL)*Power(xj,11LL)) - 
+            148500LL*Power(r, 8LL)*Power(xj, 8LL) - 32615LL*Power(r, 9LL)*Power(xj, 9LL) -
 
-            7LL*Power(xi,4LL)*Power(xj,26LL)*
+            154LL*Power(r, 10LL)*Power(xj, 10LL) + 74LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-69822945249750LL - 46669577290875LL*r*xj - 
+                    7LL*Power(xi, 4LL)*Power(xj, 26LL)*
 
-               14025037430250LL*Power(r,2LL)*Power(xj,2LL) - 
+                    (-69822945249750LL - 46669577290875LL*r*xj -
 
-               2430881664750LL*Power(r,3LL)*Power(xj,3LL) - 
+            14025037430250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               251629270200LL*Power(r,4LL)*Power(xj,4LL) - 
+            2430881664750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               12434519790LL*Power(r,5LL)*Power(xj,5LL) + 
+            251629270200LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               452930940LL*Power(r,6LL)*Power(xj,6LL) + 
+            12434519790LL*Power(r, 5LL)*Power(xj, 5LL) +
 
-               131125500LL*Power(r,7LL)*Power(xj,7LL) + 
+            452930940LL*Power(r, 6LL)*Power(xj, 6LL) +
 
-               11018700LL*Power(r,8LL)*Power(xj,8LL) + 
+            131125500LL*Power(r, 7LL)*Power(xj, 7LL) +
 
-               514470LL*Power(r,9LL)*Power(xj,9LL) + 13332LL*Power(r,10LL)*Power(xj,10LL) + 
+            11018700LL*Power(r, 8LL)*Power(xj, 8LL) +
 
-               148LL*Power(r,11LL)*Power(xj,11LL)) - 
+            514470LL*Power(r, 9LL)*Power(xj, 9LL) + 13332LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            50LL*Power(xi,8LL)*Power(xj,22LL)*
+            148LL*Power(r, 11LL)*Power(xj, 11LL)) -
 
-             (-51768833574150LL - 5003280391725LL*r*xj + 
+                    50LL*Power(xi, 8LL)*Power(xj, 22LL)*
 
-               4493439477450LL*Power(r,2LL)*Power(xj,2LL) + 
+                    (-51768833574150LL - 5003280391725LL*r*xj +
 
-               1286866176750LL*Power(r,3LL)*Power(xj,3LL) + 
+            4493439477450LL*Power(r, 2LL)*Power(xj, 2LL) +
 
-               111437476920LL*Power(r,4LL)*Power(xj,4LL) - 
+            1286866176750LL*Power(r, 3LL)*Power(xj, 3LL) +
 
-               6620313546LL*Power(r,5LL)*Power(xj,5LL) - 
+            111437476920LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               2406603276LL*Power(r,6LL)*Power(xj,6LL) - 
+            6620313546LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               242686620LL*Power(r,7LL)*Power(xj,7LL) - 
+            2406603276LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               12228876LL*Power(r,8LL)*Power(xj,8LL) - 
+            242686620LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               256223LL*Power(r,9LL)*Power(xj,9LL) + 2486LL*Power(r,10LL)*Power(xj,10LL) + 
+            12228876LL*Power(r, 8LL)*Power(xj, 8LL) -
 
-               158LL*Power(r,11LL)*Power(xj,11LL)) + 
+            256223LL*Power(r, 9LL)*Power(xj, 9LL) + 2486LL*Power(r, 10LL)*Power(xj, 10LL) +
 
-            25LL*Power(xi,22LL)*Power(xj,8LL)*
+            158LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (-1119853350LL - 2053064475LL*r*xj - 
+                    25LL*Power(xi, 22LL)*Power(xj, 8LL)*
 
-               1866422250LL*Power(r,2LL)*Power(xj,2LL) - 
+                    (-1119853350LL - 2053064475LL*r*xj -
 
-               1119853350LL*Power(r,3LL)*Power(xj,3LL) - 
+            1866422250LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               497712600LL*Power(r,4LL)*Power(xj,4LL) - 
+            1119853350LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               194415606LL*Power(r,5LL)*Power(xj,5LL) - 
+            497712600LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               9338868LL*Power(r,6LL)*Power(xj,6LL) - 
+            194415606LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               31217076LL*Power(r,7LL)*Power(xj,7LL) - 
+            9338868LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               2256804LL*Power(r,8LL)*Power(xj,8LL) + 246774LL*Power(r,9LL)*Power(xj,9LL) + 
+            31217076LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               22836LL*Power(r,10LL)*Power(xj,10LL) + 316LL*Power(r,11LL)*Power(xj,11LL)) + 
+            2256804LL*Power(r, 8LL)*Power(xj, 8LL) + 246774LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-            3LL*Power(xi,6LL)*Power(xj,24LL)*
+            22836LL*Power(r, 10LL)*Power(xj, 10LL) + 316LL*Power(r, 11LL)*Power(xj, 11LL)) +
 
-             (596006592662250LL + 266778699697125LL*r*xj + 
+                    3LL*Power(xi, 6LL)*Power(xj, 24LL)*
 
-               37515651153750LL*Power(r,2LL)*Power(xj,2LL) - 
+                    (596006592662250LL + 266778699697125LL*r*xj +
 
-               2214626163750LL*Power(r,3LL)*Power(xj,3LL) - 
+            37515651153750LL*Power(r, 2LL)*Power(xj, 2LL) -
 
-               1538075107800LL*Power(r,4LL)*Power(xj,4LL) - 
+            2214626163750LL*Power(r, 3LL)*Power(xj, 3LL) -
 
-               248955308910LL*Power(r,5LL)*Power(xj,5LL) - 
+            1538075107800LL*Power(r, 4LL)*Power(xj, 4LL) -
 
-               21434337540LL*Power(r,6LL)*Power(xj,6LL) - 
+            248955308910LL*Power(r, 5LL)*Power(xj, 5LL) -
 
-               957980100LL*Power(r,7LL)*Power(xj,7LL) - 
+            21434337540LL*Power(r, 6LL)*Power(xj, 6LL) -
 
-               4874100LL*Power(r,8LL)*Power(xj,8LL) + 1831830LL*Power(r,9LL)*Power(xj,9LL) + 
+            957980100LL*Power(r, 7LL)*Power(xj, 7LL) -
 
-               91828LL*Power(r,10LL)*Power(xj,10LL) + 1532LL*Power(r,11LL)*Power(xj,11LL))))/
+            4874100LL*Power(r, 8LL)*Power(xj, 8LL) + 1831830LL*Power(r, 9LL)*Power(xj, 9LL) +
 
-       (4.67775e6*exp(2LL*r*(xi + xj))*r*Power(xi - xj,21LL)*Power(xi + xj,21LL))
+            91828LL*Power(r, 10LL)*Power(xj, 10LL) + 1532LL*Power(r, 11LL)*Power(xj, 11LL))))/
 
-    ; }
-   
-  }
-  return S;
+                (4.67775e6*exp(2LL*r*(xi + xj))*r*Power(xi - xj, 21LL)*Power(xi + xj, 21LL))
+
+            ;
+        }
+
+    }
+    return S;
 }
 
 
-cl_R DSlater_6S_5S(cl_R r,cl_R xi,cl_R xj)
+cl_R DSlater_6S_5S(cl_R r, cl_R xi, cl_R xj)
 {
-  return DSlater_5S_6S(r,xj,xi);
+    return DSlater_5S_6S(r, xj, xi);
 }
-

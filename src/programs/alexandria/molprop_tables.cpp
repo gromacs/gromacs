@@ -22,7 +22,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

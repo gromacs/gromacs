@@ -24,6 +24,7 @@
  * Implements the alexandria wrapper binary.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "gmxpre.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/selection/selhelp.h"
