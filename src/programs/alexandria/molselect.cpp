@@ -22,6 +22,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <string.h>
+#include <stdlib.h>
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
