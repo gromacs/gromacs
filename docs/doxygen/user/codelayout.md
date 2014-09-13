@@ -38,6 +38,9 @@ not compile.  It is not included in the build.
 </dd>
 \endif
 </dl>
+\if libapi
+\subpage page_modulegraph
+\endif
 
 Organization under `src/gromacs/`
 ---------------------------------

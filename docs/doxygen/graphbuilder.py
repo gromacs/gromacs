@@ -124,6 +124,7 @@ class Edge(object):
 
     def format(self):
         """Format this edge for 'dot'."""
+        # If you change these styles, update also the legend in modulegraph.md
         if self._fromnode.is_file_node() and self._tonode.is_file_node():
             properties = ''
         elif self._edgetype == EdgeType.intramodule:
@@ -409,6 +410,7 @@ class GraphBuilder(object):
         return edges
 
     def _get_module_color(self, modulegroup):
+        # If you change these styles, update also the legend in modulegraph.md
         if modulegroup == 'legacy':
             return 'fillcolor=grey75'
         elif modulegroup == 'analysismodules':
@@ -424,7 +426,8 @@ class GraphBuilder(object):
         style = []
         properties = []
         properties.append('shape=ellipse')
-        properties.append('URL="\\ref module_{0}"'.format(module.get_name()))
+        if module.is_documented():
+            properties.append('URL="\\ref {0}"'.format(module.get_name()))
         if not module.is_documented():
             fillcolor = self._get_module_color('legacy')
         else:
@@ -463,21 +466,6 @@ class GraphBuilder(object):
                     edges.append(edge)
         return edges
 
-
-    def _create_legend_node(self, label, modulegroup):
-        if modulegroup:
-            nodename = 'legend_' + modulegroup
-            fillcolor = self._get_module_color(modulegroup)
-        else:
-            nodename = 'legend_' + label
-            fillcolor = None
-        style = []
-        properties = []
-        if fillcolor:
-            style.append('filled')
-            properties.append(fillcolor)
-        return Node(nodename, label, style, properties)
-
     def create_modules_graph(self):
         """Create module dependency graph."""
         nodes = []
@@ -492,15 +480,6 @@ class GraphBuilder(object):
                 nodes.append(node)
             modulenodes[moduleobj] = node
         edges = self._create_module_edges(modulenodes)
-        # TODO: Consider adding invisible edges to order the nodes better.
-        # TODO: Consider adding legend for the edge types as well.
-        legendnode = Node('legend', 'legend')
-        legendnode.add_child(self._create_legend_node('legacy', 'legacy'))
-        legendnode.add_child(self._create_legend_node('analysis', 'analysismodules'))
-        legendnode.add_child(self._create_legend_node('utility', 'utilitymodules'))
-        legendnode.add_child(self._create_legend_node('mdrun', 'mdrun'))
-        legendnode.add_child(Node('legend_installed', 'installed', properties=['color=".66 .5 1"', 'penwidth=3']))
-        nodes.append(legendnode)
         graph = Graph(nodes, edges)
         graph.set_options(concentrate=False)
         return graph

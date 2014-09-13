@@ -2,7 +2,7 @@
 
 PREDEFINED            += F77_FUNC(name,NAME)=name
 
-ENABLED_SECTIONS      += libapi internal
+ENABLED_SECTIONS      += libapi internal xml
 INTERNAL_DOCS          = YES
 EXTRACT_LOCAL_CLASSES  = YES
 EXTRACT_ANON_NSPACES   = YES
