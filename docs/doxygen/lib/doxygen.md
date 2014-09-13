@@ -461,10 +461,11 @@ placed in the page hierarchy by making it a subpage of another page, i.e., it
 should be referenced once using \c \\subpage.  `mainpage.md` is the root of the
 hierarchy.
 
-If you need to exclude a page from the public API docs, you need to add it to
-an exclude list in `Doxyfile-user.cmakein`, and ensure that there are no
-references to the page from public API documentation.  \c \\if `libapi` can be
-used to add references in content that is otherwise public.
+There are two subdirectories, `user/` and `lib/`, determining the highest
+documentation level where the page appears.  If you add pages to `lib/`, ensure
+that there are no references to the page from public API documentation.
+\c \\if `libapi` can be used to add references in content that is otherwise
+public.
 Generally, the pages should be on a high enough level and provide overview
 content that is useful enough such that it is not necessary to exclude them
 from the library API documentation.
