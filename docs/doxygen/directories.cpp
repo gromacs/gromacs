@@ -6,9 +6,12 @@ Doxygen documentation file for directories in the source tree.
 \author Teemu Murtola <teemu.murtola@gmail.com>
 */
 
-/*!
-\libinternal
-\dir doxygen
+/*! \libinternal
+\dir docs
+\brief Build system and source code for various documentation items.
+ */
+/*! \libinternal
+\dir docs/doxygen
 \brief Doxygen build system and general documentation content.
  */
 
@@ -149,7 +152,6 @@ Doxygen documentation file for directories in the source tree.
 
 \ingroup module_testutils
  */
-
 /*!
 \libinternal
 \dir src/testutils/tests
@@ -165,18 +167,4 @@ Doxygen documentation file for directories in the source tree.
 /*!
 \dir share/template
 \brief Template code for writing analysis programs.
- */
-
-/*!
-\file share/template/template.cpp
-\brief Template code for writing analysis programs.
-
-See \ref page_analysistemplate for more information.
- */
-
-/*!
-\example template.cpp
-\brief Template code for writing analysis programs.
-
-See \ref page_analysistemplate for more information.
  */

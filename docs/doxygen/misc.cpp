@@ -36,7 +36,7 @@ A separate page describes the responsibilities of these modules:
 \ref page_analysisframework
 */
 
-/*!
+/*! \libinternal
 \defgroup group_mdrun Modules for simulation functionality
 \brief
 Modules used in running simulations with mdrun
@@ -59,3 +59,17 @@ This namespace is used to contain some implementation-specific functions and
 classes.  These are not meant for direct user access, but typically reside
 in public headers because of implementation reasons.
 */
+
+/*!
+\file share/template/template.cpp
+\brief Template code for writing analysis programs.
+
+See \ref page_analysistemplate for more information.
+ */
+
+/*!
+\example template.cpp
+\brief Template code for writing analysis programs.
+
+See \ref page_analysistemplate for more information.
+ */
