@@ -89,6 +89,7 @@ if (DOXYGEN_FOUND)
         SET(NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN
             "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${NB_KERNEL_DIR}")
     endforeach()
+    set(DEPGRAPH_DIR ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
     set(DOXYGEN_SECTIONS "")
     set(DOXYGEN_EXTRA_SETTINGS "")
     if (GMX_COMPACT_DOXYGEN)
@@ -106,17 +107,27 @@ if (DOXYGEN_FOUND)
 
     function (add_doxygen_target TARGET TYPE COMMENT)
         add_custom_target(${TARGET}
-            ${CMAKE_COMMAND} -DDOCTYPE=${TYPE} -P RunDoxygen.cmake
+            # Ensure the directory exists to avoid spurious warnings
+            ${CMAKE_COMMAND} -E make_directory ${DEPGRAPH_DIR}
+            COMMAND ${CMAKE_COMMAND} -DDOCTYPE=${TYPE} -P RunDoxygen.cmake
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             COMMENT "${COMMENT}" VERBATIM)
         add_dependencies(${TARGET} doxygen-version)
     endfunction()
-    add_doxygen_target(doc-full full "Generating full documentation with Doxygen")
-    add_doxygen_target(doc-lib lib "Generating library documentation with Doxygen")
-    add_doxygen_target(doc-user user "Generating public API documentation with Doxygen")
-    add_doxygen_target(doc-xml xml "Extracting Doxygen documentation to XML")
+    # The targets ending with -fast do the same thing as the target without the
+    # suffix, but assume that time-consuming dependencies have already been
+    # built, making it faster and more convenient to test a single part of the
+    # system.
+    add_doxygen_target(doc-full      full "Generating full documentation with Doxygen")
+    add_doxygen_target(doc-full-fast full "Generating full documentation with Doxygen")
+    add_doxygen_target(doc-lib       lib  "Generating library documentation with Doxygen")
+    add_doxygen_target(doc-lib-fast  lib  "Generating library documentation with Doxygen")
+    add_doxygen_target(doc-user      user "Generating public API documentation with Doxygen")
+    add_doxygen_target(doc-xml       xml  "Extracting Doxygen documentation to XML")
     add_custom_target(doc-all)
+    add_custom_target(doc-all-fast)
     add_dependencies(doc-all doc-full doc-lib doc-user)
+    add_dependencies(doc-all-fast doc-full-fast doc-lib-fast doc-user)
 
     if (USE_PYTHON_SCRIPTS)
         # TODO: Consider whether this is the best name and location for this
@@ -132,34 +143,39 @@ if (DOXYGEN_FOUND)
         add_custom_target(doc-check COMMAND ${doc_check_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
         add_dependencies(doc-check doc-xml find-installed-headers)
+        add_custom_target(doc-check-fast COMMAND ${doc_check_command}
+            COMMENT "Checking Doxygen documentation" VERBATIM)
+        add_dependencies(doc-check-fast find-installed-headers)
 
-        set(graphdir ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
         set(dep_graphs_command_python
             ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
             --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
-            -o ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
+            -o ${DEPGRAPH_DIR})
         set(dep_graphs_command_dot
-            ${CMAKE_COMMAND} -DGRAPHDIR=${graphdir}
+            ${CMAKE_COMMAND} -DGRAPHDIR=${DEPGRAPH_DIR}
             -DDOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/generateGraphs.cmake)
+        add_custom_target(dep-graphs-dot
+            COMMAND ${dep_graphs_command_python}
+            COMMENT "Generating include dependency graphs for dot" VERBATIM)
         add_custom_target(dep-graphs
-            COMMAND ${dep_graphs_command_python}
             COMMAND ${dep_graphs_command_dot}
-            COMMENT "Generating include dependency graphs" VERBATIM)
-        add_dependencies(dep-graphs doc-xml find-installed-headers)
+            COMMENT "Generating PNG include dependency graphs" VERBATIM)
+        add_dependencies(dep-graphs-dot doc-xml find-installed-headers)
+        add_dependencies(dep-graphs dep-graphs-dot)
+        add_dependencies(doc-full dep-graphs-dot)
+        add_dependencies(doc-lib dep-graphs-dot)
 
-        # These targets are the same as above, but they don't rerun Doxygen
-        # each time, making it faster and more convenient for testing.
-        add_custom_target(doc-check-fast COMMAND ${doc_check_command}
-            COMMENT "Checking Doxygen documentation" VERBATIM)
-        add_custom_target(dep-graphs-fast
+        add_custom_target(dep-graphs-dot-fast
             COMMAND ${dep_graphs_command_python}
+            COMMENT "Generating include dependency graphs for dot" VERBATIM)
+        add_custom_target(dep-graphs-fast
             COMMAND ${dep_graphs_command_dot}
-            COMMENT "Generating include dependency graphs" VERBATIM)
+            COMMENT "Generating PNG include dependency graphs" VERBATIM)
         # Finding the installed headers doesn't actually run again if nothing
         # has changed, so that can be safely added as a dependency.
-        add_dependencies(doc-check-fast find-installed-headers)
-        add_dependencies(dep-graphs-fast find-installed-headers)
+        add_dependencies(dep-graphs-dot-fast find-installed-headers)
+        add_dependencies(dep-graphs-fast dep-graphs-dot-fast)
     endif()
 endif()

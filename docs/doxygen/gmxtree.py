@@ -325,6 +325,10 @@ class GeneratedFile(File):
         File.__init__(self, abspath, relpath, directory)
         self._generator_source_file = None
 
+    def scan_contents(self, sourcetree, keep_contents):
+        if os.path.exists(self.get_abspath()):
+            File.scan_contents(self, sourcetree, keep_contents)
+
     def set_generator_source(self, sourcefile):
         self._generator_source_file = sourcefile
 
