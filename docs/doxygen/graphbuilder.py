@@ -424,7 +424,8 @@ class GraphBuilder(object):
         style = []
         properties = []
         properties.append('shape=ellipse')
-        properties.append('URL="\\ref module_{0}"'.format(module.get_name()))
+        if module.is_documented():
+            properties.append('URL="\\ref {0}"'.format(module.get_name()))
         if not module.is_documented():
             fillcolor = self._get_module_color('legacy')
         else:

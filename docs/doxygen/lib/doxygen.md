@@ -375,7 +375,7 @@ their include dependencies.  Additionally, a file-level graph is produced for
 each module, showing the include dependencies within that module.  Currently,
 these are mostly for eye candy, but they can also be used for analyzing
 problematic dependencies to clean up the architecture.
-The output is put in `doxygen/depgraphs/` in the build tree.
+The output is put in `docs/doxygen/depgraphs/` in the build tree.
 
 As with `doc-check`, Python 2.7 is required (other versions may work, but have
 not been tested).  To get `.png` versions of the graphs, `graphviz` is
@@ -383,41 +383,9 @@ additionally required.
 
 ### Module graph ###
 
-The graph is written into `module-deps.dot.png`.
-
-Node colors:
-<dl>
-<dt>gray background</dt>
-<dd>undocumented module</dd>
-<dt>orange background</dt>
-<dd>documented utility modules</dd>
-<dt>red background</dt>
-<dd>documented analysis modules</dd>
-<dt>violet background</dt>
-<dd>documented MD execution modules</dd>
-<dt>light blue border</dt>
-<dd>module contains public API (installed) headers</dd>
-</dl>
-
-Edge colors (an edge with a certain color indicates that types above it in the
-list are not present):
-<dl>
-<dt>red</dt>
-<dd>invalid dependency</dd>
-<dt>gray</dt>
-<dd>legacy dependency
-(dependency on undocumented file, or to undocumented directories)</dd>
-<dt>solid black</dt>
-<dd>public header depends on the other module</dd>
-<dt>solid blue</dt>
-<dd>library header depends on the other module</dd>
-<dt>dashed blue</dt>
-<dd>source file depends on library header in the other module</dd>
-<dt>dashed black</dt>
-<dd>source file depends on public header in the other module</dd>
-<dt>dashed green</dt>
-<dd>test file depends on the other module</dd>
-</dl>
+The graph is written into `module-deps.dot.png`, and embedded into the Doxygen
+documentation: \ref page_modulegraph.  The embedded version contains a legend
+explaining the graph.
 
 ### File graph ###
 
