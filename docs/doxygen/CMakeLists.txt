@@ -38,7 +38,7 @@ find_package(Doxygen QUIET)
 if (DOXYGEN_FOUND)
     # This logic closely follows that found in FindDoxygen.cmake for dot,
     # except that the PATH variable is not cached.
-    FIND_PROGRAM(DOXYGEN_MSCGEN_EXECUTABLE
+    find_program(DOXYGEN_MSCGEN_EXECUTABLE
         NAMES mscgen
         DOC "Message sequence chart renderer tool (http://www.mcternan.me.uk/mscgen/)")
     if (DOXYGEN_MSCGEN_EXECUTABLE)
@@ -61,63 +61,62 @@ if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
     set(USE_PYTHON_SCRIPTS ON)
 endif()
 
-add_custom_target(find-installed-headers
+# Create a stamp file whenever cmake is run, as the list of installed files may
+# have changed.
+set(CONFIGURE_STAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/cmake-stamp.txt)
+file(WRITE ${CONFIGURE_STAMP_FILE} "Stamp for configuration")
+# Note that if you relocate this file, you also need to change gmxtree.py.
+set(INSTALLED_HEADERS_FILE ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt)
+add_custom_command(OUTPUT ${INSTALLED_HEADERS_FILE}
     COMMAND ${CMAKE_COMMAND}
         -D SRCDIR=${CMAKE_SOURCE_DIR}
         -D BUILDDIR=${CMAKE_BINARY_DIR}
-        -D OUTFILE=${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
+        -D OUTFILE=${INSTALLED_HEADERS_FILE}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/getInstalledHeaders.cmake
+    DEPENDS ${CONFIGURE_STAMP_FILE}
     COMMENT "Generating installed headers list" VERBATIM)
+add_custom_target(find-installed-headers DEPENDS ${INSTALLED_HEADERS_FILE})
 
 ########################################################################
 # Doxygen configuration
 ########################################################################
 if (DOXYGEN_FOUND)
-    FILE(GLOB NB_KERNEL_DIRS
+    file(GLOB NB_KERNEL_DIRS
          ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/nonbonded/nb_kernel_*/)
-    LIST(REMOVE_ITEM NB_KERNEL_DIRS
+    list(REMOVE_ITEM NB_KERNEL_DIRS
          ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/nonbonded/nb_kernel_c)
-    FOREACH(NB_KERNEL_DIR ${NB_KERNEL_DIRS})
+    foreach (NB_KERNEL_DIR ${NB_KERNEL_DIRS})
         SET(NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN
             "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${NB_KERNEL_DIR}")
-    ENDFOREACH(NB_KERNEL_DIR)
+    endforeach()
     set(DOXYGEN_SECTIONS "")
-    CONFIGURE_FILE(Doxyfile-common.cmakein Doxyfile-common)
-    CONFIGURE_FILE(Doxyfile-full.cmakein Doxyfile-full)
-    CONFIGURE_FILE(Doxyfile-lib.cmakein Doxyfile-lib)
-    CONFIGURE_FILE(Doxyfile-user.cmakein Doxyfile-user)
-    CONFIGURE_FILE(Doxyfile-xml.cmakein Doxyfile-xml)
-
+    set(DOXYGEN_EXTRA_SETTINGS "")
     if (GMX_COMPACT_DOXYGEN)
-        FILE(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
-             "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact\n")
+        set(DOXYGEN_EXTRA_SETTINGS "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact")
     endif()
+    configure_file(Doxyfile-common.cmakein Doxyfile-common)
+    configure_file(Doxyfile-full.cmakein Doxyfile-full)
+    configure_file(Doxyfile-lib.cmakein Doxyfile-lib)
+    configure_file(Doxyfile-user.cmakein Doxyfile-user)
+    configure_file(Doxyfile-xml.cmakein Doxyfile-xml)
 
     configure_file(RunDoxygen.cmake.cmakein RunDoxygen.cmake @ONLY)
     gmx_configure_version_file(Doxyfile-version.cmakein Doxyfile-version
                                TARGET doxygen-version)
-    add_custom_target(doc-full
-        ${CMAKE_COMMAND} -DDOCTYPE=full -P RunDoxygen.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating full documentation with Doxygen" VERBATIM)
-    add_custom_target(doc-lib
-        ${CMAKE_COMMAND} -DDOCTYPE=lib -P RunDoxygen.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating library documentation with Doxygen" VERBATIM)
-    add_custom_target(doc-user
-        ${CMAKE_COMMAND} -DDOCTYPE=user -P RunDoxygen.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating public API documentation with Doxygen" VERBATIM)
-    add_custom_target(doc-xml
-        ${CMAKE_COMMAND} -DDOCTYPE=xml -P RunDoxygen.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Extracting Doxygen documentation to XML" VERBATIM)
+
+    function (add_doxygen_target TARGET TYPE COMMENT)
+        add_custom_target(${TARGET}
+            ${CMAKE_COMMAND} -DDOCTYPE=${TYPE} -P RunDoxygen.cmake
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "${COMMENT}" VERBATIM)
+        add_dependencies(${TARGET} doxygen-version)
+    endfunction()
+    add_doxygen_target(doc-full full "Generating full documentation with Doxygen")
+    add_doxygen_target(doc-lib lib "Generating library documentation with Doxygen")
+    add_doxygen_target(doc-user user "Generating public API documentation with Doxygen")
+    add_doxygen_target(doc-xml xml "Extracting Doxygen documentation to XML")
     add_custom_target(doc-all)
     add_dependencies(doc-all doc-full doc-lib doc-user)
-    add_dependencies(doc-full doxygen-version)
-    add_dependencies(doc-lib  doxygen-version)
-    add_dependencies(doc-user doxygen-version)
-    add_dependencies(doc-xml  doxygen-version)
 
     if (USE_PYTHON_SCRIPTS)
         # TODO: Consider whether this is the best name and location for this
@@ -150,14 +149,17 @@ if (DOXYGEN_FOUND)
             COMMENT "Generating include dependency graphs" VERBATIM)
         add_dependencies(dep-graphs doc-xml find-installed-headers)
 
-        # These targets are the same as above, but they don't rerun the
-        # dependencies each time, making it faster and more convenient for
-        # testing.
+        # These targets are the same as above, but they don't rerun Doxygen
+        # each time, making it faster and more convenient for testing.
         add_custom_target(doc-check-fast COMMAND ${doc_check_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
         add_custom_target(dep-graphs-fast
             COMMAND ${dep_graphs_command_python}
             COMMAND ${dep_graphs_command_dot}
             COMMENT "Generating include dependency graphs" VERBATIM)
+        # Finding the installed headers doesn't actually run again if nothing
+        # has changed, so that can be safely added as a dependency.
+        add_dependencies(doc-check-fast find-installed-headers)
+        add_dependencies(dep-graphs-fast find-installed-headers)
     endif()
 endif()
