@@ -41,9 +41,9 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"

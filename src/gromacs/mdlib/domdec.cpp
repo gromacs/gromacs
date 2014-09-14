@@ -48,7 +48,6 @@
 
 #include <algorithm>
 
-#include "gromacs/bonded/bonded.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/imd/imd.h"
@@ -70,6 +69,7 @@
 #include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_search.h"

@@ -34,6 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file defines functions necessary for mdrun and tools to
+ * compute energies and forces for bonded interactions.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *
+ * \ingroup module_listed-forces
+ */
 #include "gmxpre.h"
 
 #include "bonded.h"
@@ -46,7 +55,6 @@
 
 #include <algorithm>
 
-#include "gromacs/bonded/restcbt.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -67,7 +75,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Find a better place for this? */
+#include "restcbt.h"
+
+/*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {
     1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4,
     0, 0,  0,  0, 0, 0,  0,  0,  3,  0, -9,  6, -2,  0,  6, -4,
@@ -107,7 +117,9 @@ int glatnr(int *global_atom_index, int i)
     return atnr;
 }
 
-/* TODO This kind of code appears in many places. Consolidate it */
+/*! \brief Compute dx = xi - xj, modulo PBC if non-NULL
+ *
+ * \todo This kind of code appears in many places. Consolidate it */
 static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
     if (pbc)
@@ -136,7 +148,7 @@ typedef struct {
     gmx_simd_real_t bxx;
 } pbc_simd_t;
 
-/* Set the SIMD pbc data from a normal t_pbc struct */
+/*! \brief Set the SIMD pbc data from a normal t_pbc struct */
 static void set_pbc_simd(const t_pbc *pbc, pbc_simd_t *pbc_simd)
 {
     rvec inv_bdiag;
@@ -176,7 +188,7 @@ static void set_pbc_simd(const t_pbc *pbc, pbc_simd_t *pbc_simd)
     }
 }
 
-/* Correct distance vector *dx,*dy,*dz for PBC using SIMD */
+/*! \brief Correct distance vector *dx,*dy,*dz for PBC using SIMD */
 static gmx_inline void
 pbc_dx_simd(gmx_simd_real_t *dx, gmx_simd_real_t *dy, gmx_simd_real_t *dz,
             const pbc_simd_t *pbc)
@@ -198,10 +210,9 @@ pbc_dx_simd(gmx_simd_real_t *dx, gmx_simd_real_t *dy, gmx_simd_real_t *dz,
 
 #endif /* GMX_SIMD_HAVE_REAL */
 
-/*
- * Morse potential bond by Frank Everdij
+/*! \brief Morse potential bond
  *
- * Three parameters needed:
+ * By Frank Everdij. Three parameters needed:
  *
  * b0 = equilibrium distance in nm
  * be = beta in nm^-1 (actually, it's nu_e*Sqrt(2*pi*pi*mu/D_e))
@@ -210,7 +221,6 @@ pbc_dx_simd(gmx_simd_real_t *dx, gmx_simd_real_t *dy, gmx_simd_real_t *dz,
  * Note: the potential is referenced to be +cb at infinite separation
  *       and zero at the equilibrium distance!
  */
-
 real morse_bonds(int nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
                  const rvec x[], rvec f[], rvec fshift[],
@@ -285,6 +295,7 @@ real morse_bonds(int nbonds,
     return vtot;
 }
 
+//! \cond
 real cubic_bonds(int nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
                  const rvec x[], rvec f[], rvec fshift[],
@@ -1912,6 +1923,7 @@ real pdihs(int nbonds,
     return vtot;
 }
 
+/*! \brief Make a dihedral fall in the range (-pi,pi) */
 void make_dp_periodic(real *dp)  /* 1 flop? */
 {
     /* dp cannot be outside (-pi,pi) */
@@ -3140,7 +3152,11 @@ real rbdihs(int nbonds,
     return vtot;
 }
 
-int cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *ipp2)
+//! \endcond
+
+/*! \brief Mysterious undocumented function */
+static int
+cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *ipp2)
 {
     int im1, ip1, ip2;
 
@@ -3179,14 +3195,16 @@ int cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *i
 
 }
 
-real cmap_dihs(int nbonds,
-               const t_iatom forceatoms[], const t_iparams forceparams[],
-               const gmx_cmap_t *cmap_grid,
-               const rvec x[], rvec f[], rvec fshift[],
-               const t_pbc *pbc, const t_graph *g,
-               real gmx_unused lambda, real gmx_unused *dvdlambda,
-               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-               int  gmx_unused *global_atom_index)
+/*! \brief Compute CMAP dihedral energies and forces */
+static real
+cmap_dihs(int nbonds,
+          const t_iatom forceatoms[], const t_iparams forceparams[],
+          const gmx_cmap_t *cmap_grid,
+          const rvec x[], rvec f[], rvec fshift[],
+          const t_pbc *pbc, const t_graph *g,
+          real gmx_unused lambda, real gmx_unused *dvdlambda,
+          const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+          int  gmx_unused *global_atom_index)
 {
     int         i, j, k, n, idx;
     int         ai, aj, ak, al, am;
@@ -3576,7 +3594,7 @@ real cmap_dihs(int nbonds,
 }
 
 
-
+//! \cond
 /***********************************************************
  *
  *   G R O M O S  9 6   F U N C T I O N S
@@ -4143,9 +4161,10 @@ real tab_dihs(int nbonds,
     return vtot;
 }
 
-/* TODO This function could go away when idef is not a big bucket of
-   everything. */
-gmx_bool ftype_is_bonded_potential(int ftype)
+//! \endcond
+
+gmx_bool
+ftype_is_bonded_potential(int ftype)
 {
     return
         (interaction_function[ftype].flags & IF_BOND) &&
@@ -4153,6 +4172,7 @@ gmx_bool ftype_is_bonded_potential(int ftype)
         (ftype < F_GB12 || ftype > F_GB14);
 }
 
+/*! \brief Zero thread-local force-output buffers */
 static void zero_thread_forces(f_thread_t *f_t, int n,
                                int nblock, int blocksize)
 {
@@ -4200,15 +4220,16 @@ static void zero_thread_forces(f_thread_t *f_t, int n,
     }
 }
 
+/*! \brief The max thread number is arbitrary, we used a fixed number
+ * to avoid memory management.  Using more than 16 threads is probably
+ * never useful performance wise. */
+#define MAX_BONDED_THREADS 256
+
+/*! \brief Reduce thread-local force buffers */
 static void reduce_thread_force_buffer(int n, rvec *f,
                                        int nthreads, f_thread_t *f_t,
                                        int nblock, int block_size)
 {
-    /* The max thread number is arbitrary,
-     * we used a fixed number to avoid memory management.
-     * Using more than 16 threads is probably never useful performance wise.
-     */
-#define MAX_BONDED_THREADS 256
     int b;
 
     if (nthreads > MAX_BONDED_THREADS)
@@ -4253,6 +4274,7 @@ static void reduce_thread_force_buffer(int n, rvec *f,
     }
 }
 
+/*! \brief Reduce thread-local forces */
 static void reduce_thread_forces(int n, rvec *f, rvec *fshift,
                                  real *ener, gmx_grppairener_t *grpp, real *dvdl,
                                  int nthreads, f_thread_t *f_t,
@@ -4310,6 +4332,8 @@ static void reduce_thread_forces(int n, rvec *f, rvec *fshift,
     }
 }
 
+/*! \brief Calculate one element of the list of bonded interactions
+    for this thread */
 static real calc_one_bond(int thread,
                           int ftype, const t_idef *idef,
                           const rvec x[], rvec f[], rvec fshift[],
@@ -4409,7 +4433,7 @@ void calc_bonds(const gmx_multisim_t *ms,
                 const t_idef *idef,
                 const rvec x[], history_t *hist,
                 rvec f[], t_forcerec *fr,
-                const t_pbc *pbc, const t_graph *g,
+                const struct t_pbc *pbc, const struct t_graph *g,
                 gmx_enerdata_t *enerd, t_nrnb *nrnb,
                 real *lambda,
                 const t_mdatoms *md,
@@ -4541,7 +4565,7 @@ void calc_bonds(const gmx_multisim_t *ms,
 void calc_bonds_lambda(const t_idef *idef,
                        const rvec x[],
                        t_forcerec *fr,
-                       const t_pbc *pbc, const t_graph *g,
+                       const struct t_pbc *pbc, const struct t_graph *g,
                        gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                        real *lambda,
                        const t_mdatoms *md,

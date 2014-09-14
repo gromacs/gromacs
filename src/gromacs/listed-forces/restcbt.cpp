@@ -32,6 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief
+ * This file contains function definitions necessary
+ * for computations of forces due to restricted angle, restricted dihedral and
+ * combined bending-torsion potentials.
+ *
+ * \author Nicolae Goga
+ *
+ * \ingroup module_listed-forces
+ */
 #include "gmxpre.h"
 
 #include "restcbt.h"

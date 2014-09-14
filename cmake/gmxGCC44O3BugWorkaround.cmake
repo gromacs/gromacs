@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Due to a bug, gcc 4.4.x crashes when compiling bonded/bonded.cpp with -O3 and
+# Due to a bug, gcc 4.4.x crashes when compiling listed-forces/bonded.cpp with -O3 and
 # -fopenmp, but strangely it does not crash with -O2 + all additional options.
 # -O3 uses. Therefore, for the affected files, when compiling in release mode,
 # we override -O3 with -O2 and add the additional option.
