@@ -1,0 +1,2 @@
+doxygen/DoxygenLayout.xml gmx-doxygen
+doxygen/**/*.md           gmx-doxygen
