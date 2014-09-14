@@ -35,15 +35,17 @@
 /*! \defgroup module_listed-forces Interactions between lists of particles
  * \ingroup group_mdrun
  *
- * \brief Computes energies and forces for interactions between a
- * small number of particles, e.g bonds, position restraints and
- * listed non-bonded interactions (e.g. 1-4).
+ * \brief Handles computing energies and forces for listed
+ * interactions.
  *
- * As well as code to compute those quantites, high-level functions
- * for use by mdrun to compute a set of such quantities are also
- * located here.
- *
- * More functionality will move into this module shortly.
+ * Located here is the the code for
+ * - computing energies and forces for interactions between a small
+     number of particles, e.g bonds, position restraints and listed
+     non-bonded interactions (e.g. 1-4).
+ * - high-level functions used by mdrun for computing a set of such
+     quantities
+ * - managing thread-wise decomposition, thread-local buffer output,
+     and reduction of output data across threads.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
