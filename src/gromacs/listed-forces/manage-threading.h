@@ -34,20 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ * \brief Declares functions for managing threading of listed forces
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inpublicapi
+ * \ingroup module_listed-forces
+ */
+#ifndef GMX_LISTED_FORCES_MANAGE_THREADING_H
+#define GMX_LISTED_FORCES_MANAGE_THREADING_H
 
-#ifndef GMX_LEGACYHEADERS_BONDED_THREADING_H
-#define GMX_LEGACYHEADERS_BONDED_THREADING_H
-
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/topology/idef.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Divided the bonded interactions over the threads, count=fr->nthreads
- * and set up the bonded thread-force buffer reduction.
- * This should be called each time the bonded setup changes;
- * i.e. at start-up without domain decomposition and at DD.
+/*! \brief Divide the listed interactions over the threads
+ *
+ * Uses fr->nthreads for the number of threads, and sets up the
+ * thread-force buffer reduction. This should be called each time the
+ * bonded setup changes; i.e. at start-up without domain decomposition
+ * and at DD.
  */
 void setup_bonded_threading(t_forcerec *fr, t_idef *idef);
 
