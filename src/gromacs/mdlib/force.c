@@ -44,7 +44,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
@@ -60,6 +59,7 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -298,10 +298,10 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     /* MRS: Eventually, many need to include free energy contribution here! */
     if (ir->implicit_solvent)
     {
-        wallcycle_sub_start(wcycle, ewcsBONDED);
+        wallcycle_sub_start(wcycle, ewcsLISTED);
         calc_gb_forces(cr, md, born, top, x, f, fr, idef,
                        ir->gb_algorithm, ir->sa_algorithm, nrnb, &pbc, graph, enerd);
-        wallcycle_sub_stop(wcycle, ewcsBONDED);
+        wallcycle_sub_stop(wcycle, ewcsLISTED);
     }
 
 #ifdef GMX_MPI
@@ -341,9 +341,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         pr_rvecs(debug, 0, "fshift after SR", fr->fshift, SHIFTS);
     }
 
-    /* Shift the coordinates. Must be done before bonded forces and PPPM,
+    /* Shift the coordinates. Must be done before listed forces and PPPM,
      * but is also necessary for SHAKE and update, therefore it can NOT
-     * go when no bonded forces have to be evaluated.
+     * go when no listed forces have to be evaluated.
      */
 
     /* Here sometimes we would not need to shift with NBFonly,
@@ -361,9 +361,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             inc_nrnb(nrnb, eNR_SHIFTX, graph->nnodes);
         }
     }
-    /* Check whether we need to do bondeds or correct for exclusions */
+    /* Check whether we need to do listed interactions or correct for exclusions */
     if (fr->bMolPBC &&
-        ((flags & GMX_FORCE_BONDED)
+        ((flags & GMX_FORCE_LISTED)
          || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)))
     {
         /* Since all atoms are in the rectangular or triclinic unit-cell,
@@ -373,9 +373,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     }
     debug_gmx();
 
-    if (flags & GMX_FORCE_BONDED)
+    if (flags & GMX_FORCE_LISTED)
     {
-        wallcycle_sub_start(wcycle, ewcsBONDED);
+        wallcycle_sub_start(wcycle, ewcsLISTED);
         calc_bonds(cr->ms,
                    idef, (const rvec *) x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
@@ -406,7 +406,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         }
         debug_gmx();
 
-        wallcycle_sub_stop(wcycle, ewcsBONDED);
+        wallcycle_sub_stop(wcycle, ewcsLISTED);
     }
 
     where();

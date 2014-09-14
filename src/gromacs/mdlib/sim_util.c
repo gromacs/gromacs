@@ -49,7 +49,6 @@
 #include <sys/time.h>
 #endif
 
-#include "gromacs/bonded/bonded.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
@@ -76,6 +75,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -1236,10 +1236,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
-     * We do this before calling do_force_lowlevel, as in there bondeds
-     * forces are calculated before PME, which does communication.
-     * With this order, non-bonded and bonded force calculation imbalance
-     * can be balanced out by the domain decomposition load balancing.
+     * We do this before calling do_force_lowlevel, because in that
+     * function, the listed forces are calculated before PME, which
+     * does communication.  With this order, non-bonded and listed
+     * force calculation imbalance can be balanced out by the domain
+     * decomposition load balancing.
      */
 
     if (!bUseOrEmulGPU)
@@ -1319,13 +1320,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         update_QMMMrec(cr, fr, x, mdatoms, box, top);
     }
 
-    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
+    if ((flags & GMX_FORCE_LISTED) && top->idef.il[F_POSRES].nr > 0)
     {
         posres_wrapper(flags, inputrec, nrnb, top, box, x,
                        enerd, lambda, fr);
     }
 
-    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_FBPOSRES].nr > 0)
+    if ((flags & GMX_FORCE_LISTED) && top->idef.il[F_FBPOSRES].nr > 0)
     {
         fbposres_wrapper(inputrec, nrnb, top, box, x, enerd, fr);
     }
@@ -1868,13 +1869,13 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         update_QMMMrec(cr, fr, x, mdatoms, box, top);
     }
 
-    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
+    if ((flags & GMX_FORCE_LISTED) && top->idef.il[F_POSRES].nr > 0)
     {
         posres_wrapper(flags, inputrec, nrnb, top, box, x,
                        enerd, lambda, fr);
     }
 
-    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_FBPOSRES].nr > 0)
+    if ((flags & GMX_FORCE_LISTED) && top->idef.il[F_FBPOSRES].nr > 0)
     {
         fbposres_wrapper(inputrec, nrnb, top, box, x, enerd, fr);
     }
