@@ -41,7 +41,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "gromacs/bonded/bonded.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
