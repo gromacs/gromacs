@@ -34,9 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief This file defines functions for managing threading of listed
+ * interactions.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_listed-forces
+ */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/bonded-threading.h"
+#include "manage-threading.h"
 
 #include <assert.h>
 
@@ -46,6 +53,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+//! Divides listed interactions over threads
 static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
 {
     int ftype;
@@ -101,6 +109,7 @@ static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
     }
 }
 
+//! Construct a reduction mask for which interaction was computed on which thread
 static unsigned
 calc_bonded_reduction_mask(const t_idef *idef,
                            int shift,
@@ -140,9 +149,14 @@ calc_bonded_reduction_mask(const t_idef *idef,
     return mask;
 }
 
+
+/*! \brief We divide the force array in a maximum of 32 blocks.
+ * Minimum force block reduction size is thus 2^6=64.
+ */
+const int maxBlockBits = 32;
+
 void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
 {
-#define MAX_BLOCK_BITS 32
     int t;
     int ctot, c, b;
 
@@ -158,11 +172,8 @@ void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
         return;
     }
 
-    /* We divide the force array in a maximum of 32 blocks.
-     * Minimum force block reduction size is 2^6=64.
-     */
     fr->red_ashift = 6;
-    while (fr->natoms_force > (int)(MAX_BLOCK_BITS*(1U<<fr->red_ashift)))
+    while (fr->natoms_force > (int)(maxBlockBits*(1U<<fr->red_ashift)))
     {
         fr->red_ashift++;
     }
@@ -188,7 +199,7 @@ void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
     for (t = 0; t < fr->nthreads; t++)
     {
         c = 0;
-        for (b = 0; b < MAX_BLOCK_BITS; b++)
+        for (b = 0; b < maxBlockBits; b++)
         {
             if (fr->f_t[t].red_mask & (1U<<b))
             {
