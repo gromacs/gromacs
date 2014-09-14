@@ -33,7 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-
 /*! \libinternal \file
  *
  *
@@ -41,24 +40,18 @@
  * This file contains function declarations necessary
    for computations of forces due to restricted angle, restricted dihedral and
    combined bending-torsion potentials.
-
  *
  * \author Nicolae Goga
  *
- * \inlibraryapi
+ * \ingroup module_listed-forces
  */
 
-#ifndef GMX_BONDED_RESTCBT_H
-#define GMX_BONDED_RESTCBT_H
+#ifndef GMX_LISTED_FORCES_RESTCBT_H
+#define GMX_LISTED_FORCES_RESTCBT_H
 
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/idef.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /*! \brief This function computes factors needed for restricted angle potentials.
  *
@@ -177,10 +170,5 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
                              rvec f_theta_ante_ai, rvec f_theta_ante_aj, rvec f_theta_ante_ak,
                              rvec f_theta_post_aj, rvec f_theta_post_ak, rvec f_theta_post_al,
                              real * v);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
