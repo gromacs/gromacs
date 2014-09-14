@@ -74,7 +74,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         -I src
         -I src/external/thread_mpi/include
         -I src/external/tng_io/include
-        -I ${CMAKE_BINARY_DIR}/src -I ${CMAKE_BINARY_DIR}/src/gromacs/utility
+        -I ${CMAKE_BINARY_DIR}/src
         --quiet
         --inline-suppr
         ${_outputopt})
