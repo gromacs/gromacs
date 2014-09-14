@@ -38,6 +38,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} PARENT_SCO
 set(LISTED_FORCES_PUBLIC_HEADERS
     bonded.h
     listed-forces.h
+    manage-threading.h
     position-restraints.h)
 
 gmx_install_headers(listed-forces ${LISTED_FORCES_PUBLIC_HEADERS})

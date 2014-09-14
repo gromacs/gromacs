@@ -34,9 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief This file defines functions for managing threading of listed
+ * interactions.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_listed-forces
+ */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/bonded-threading.h"
+#include "manage-threading.h"
 
 #include <assert.h>
 
