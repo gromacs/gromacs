@@ -34,23 +34,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_listed-forces Interactions between lists of particles
- * \ingroup group_mdrun
- *
- * \brief Computes energies and forces for interactions between a
- * small number of particles, e.g bonds.
- *
- * More functionality will move into this module shortly.
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- *
- */
-
 /*! \file
  *
- * \brief
- * This file contains function declarations necessary for mdrun and tools
- * to compute energies and forces for bonded interactions.
+ * \brief This file contains declarations necessary for low-level
+ * functions for computing energies and forces for bonded interactions.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inpublicapi
@@ -62,13 +49,21 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_wallcycle;
 struct t_graph;
 struct t_pbc;
 
@@ -80,43 +75,6 @@ struct t_pbc;
  * everything. */
 gmx_bool
 ftype_is_bonded_potential(int ftype);
-
-/*! \brief Calculates all bonded force interactions. */
-void calc_bonds(const gmx_multisim_t *ms,
-                const t_idef *idef,
-                const rvec x[], history_t *hist,
-                rvec f[], t_forcerec *fr,
-                const struct t_pbc *pbc, const struct t_graph *g,
-                gmx_enerdata_t *enerd, t_nrnb *nrnb, real *lambda,
-                const t_mdatoms *md,
-                t_fcdata *fcd, int *ddgatindex,
-                int force_flags);
-
-/*! \brief As calc_bonds, but only determines the potential energy
- * for the perturbed interactions.
- * The shift forces in fr are not affected. */
-void calc_bonds_lambda(const t_idef *idef,
-                       const rvec x[],
-                       t_forcerec *fr,
-                       const struct t_pbc *pbc, const struct t_graph *g,
-                       gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
-                       real *lambda,
-                       const t_mdatoms *md,
-                       t_fcdata *fcd, int *global_atom_index);
-
-/*! \brief Position restraints require a different pbc treatment from other bondeds */
-real posres(int nbonds,
-            const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f[], rvec vir_diag,
-            struct t_pbc *pbc,
-            real lambda, real *dvdlambda,
-            int refcoord_scaling, int ePBC, rvec comA, rvec comB);
-
-/*! \brief Flat-bottom posres. Same PBC treatment as in normal position restraints */
-real fbposres(int nbonds,
-              const t_iatom forceatoms[], const t_iparams forceparams[],
-              const rvec x[], rvec f[], rvec vir_diag,
-              struct t_pbc *pbc, int refcoord_scaling, int ePBC, rvec com);
 
 /*! \brief Calculate bond-angle. No PBC is taken into account (use mol-shift) */
 real bond_angle(const rvec xi, const rvec xj, const rvec xk,
@@ -141,6 +99,17 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
 /*! \brief Make a dihedral fall in the range (-pi,pi) */
 void make_dp_periodic(real *dp);
 
+/*! \brief Compute CMAP dihedral energies and forces */
+real
+    cmap_dihs(int nbonds,
+              const t_iatom forceatoms[], const t_iparams forceparams[],
+              const gmx_cmap_t *cmap_grid,
+              const rvec x[], rvec f[], rvec fshift[],
+              const struct t_pbc *pbc, const struct t_graph *g,
+              real gmx_unused lambda, real gmx_unused *dvdlambda,
+              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+              int  gmx_unused *global_atom_index);
+
 //! \cond
 /*************************************************************************
  *
@@ -154,6 +123,17 @@ t_ifunc pdihs, idihs, rbdihs;
 t_ifunc restrdihs, cbtdihs;
 t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
+
+/* As pdihs above, but without calculating energies and shift forces */
+void
+    pdihs_noener(int nbonds,
+                 const t_iatom forceatoms[], const t_iparams forceparams[],
+                 const rvec x[], rvec f[],
+                 const struct t_pbc gmx_unused *pbc,
+                 const struct t_graph gmx_unused *g,
+                 real lambda,
+                 const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                 int gmx_unused *global_atom_index);
 //! \endcond
 
 #ifdef __cplusplus
