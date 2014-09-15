@@ -16,6 +16,8 @@
 
 * [Reference manual](manual-@PROJECT_VERSION@.pdf) (PDF format)
 
+* [Doxygen public API documentation](doxygen/html-user/index.xhtml)
+
 * Answers to [Frequently Asked Questions](http://www.gromacs.org/Documentation/FAQs)
 
 * Coping with [GROMACS errors](http://www.gromacs.org/Documentation/Errors)
@@ -24,8 +26,10 @@
 
 # Documentation for developers
 
-* [Doxygen code documentation](doxygen/html-lib/index.xhtml)
+* [Doxygen code documentation](doxygen/html-lib/index.xhtml)  
+  This contains the public API documentation as a subset, but also has more
+  details on the internal implementation of GROMACS.
 
-* Developer Guide - coming soon (in master branch)!
-
-[/b/]: # (TODO in master branch: consolidate much of the wiki material into a proper developer guide, and link to it here)
+* [Developer Guide](doxygen/html-lib/page_devmanual.xhtml)--
+  Resources for developers, e.g., related to guidelines and tools used during
+  development.
