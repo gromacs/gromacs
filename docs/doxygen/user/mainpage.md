@@ -59,11 +59,9 @@ give an overview of some of the topics that are documented:
    Provides general guidance for writing software that uses the \Gromacs
    library.
 \if libapi
- - \subpage page_doxygen <br/>
-   Provides an overview and some instructions for using Doxygen to document the
-   source code.
- - \subpage page_unittesting <br/>
-   Provides an overview of unit testing in \Gromacs.
+ - \subpage page_devmanual <br/>
+   Contains resources and documentation for development-time tools and
+   guidelines.
  - \subpage page_wrapperbinary <br/>
    Provides an overview of how the `gmx` wrapper binary is implemented.
  - \subpage page_simd <br/>
