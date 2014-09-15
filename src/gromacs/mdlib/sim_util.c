@@ -314,73 +314,6 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
     }
 }
 
-static void posres_wrapper(int flags,
-                           t_inputrec *ir,
-                           t_nrnb *nrnb,
-                           gmx_localtop_t *top,
-                           matrix box, rvec x[],
-                           gmx_enerdata_t *enerd,
-                           real *lambda,
-                           t_forcerec *fr)
-{
-    t_pbc pbc;
-    real  v, dvdl;
-    int   i;
-
-    /* Position restraints always require full pbc */
-    set_pbc(&pbc, ir->ePBC, box);
-    dvdl = 0;
-    v    = posres(top->idef.il[F_POSRES].nr, top->idef.il[F_POSRES].iatoms,
-                  top->idef.iparams_posres,
-                  (const rvec*)x, fr->f_novirsum, fr->vir_diag_posres,
-                  ir->ePBC == epbcNONE ? NULL : &pbc,
-                  lambda[efptRESTRAINT], &dvdl,
-                  fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
-    enerd->term[F_POSRES] += v;
-    /* If just the force constant changes, the FEP term is linear,
-     * but if k changes, it is not.
-     */
-    enerd->dvdl_nonlin[efptRESTRAINT] += dvdl;
-    inc_nrnb(nrnb, eNR_POSRES, top->idef.il[F_POSRES].nr/2);
-
-    if ((ir->fepvals->n_lambda > 0) && (flags & GMX_FORCE_DHDL))
-    {
-        for (i = 0; i < enerd->n_lambda; i++)
-        {
-            real dvdl_dum, lambda_dum;
-
-            lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : ir->fepvals->all_lambda[efptRESTRAINT][i-1]);
-            v          = posres(top->idef.il[F_POSRES].nr, top->idef.il[F_POSRES].iatoms,
-                                top->idef.iparams_posres,
-                                (const rvec*)x, NULL, NULL,
-                                ir->ePBC == epbcNONE ? NULL : &pbc, lambda_dum, &dvdl,
-                                fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
-            enerd->enerpart_lambda[i] += v;
-        }
-    }
-}
-
-static void fbposres_wrapper(t_inputrec *ir,
-                             t_nrnb *nrnb,
-                             gmx_localtop_t *top,
-                             matrix box, rvec x[],
-                             gmx_enerdata_t *enerd,
-                             t_forcerec *fr)
-{
-    t_pbc pbc;
-    real  v;
-
-    /* Flat-bottomed position restraints always require full pbc */
-    set_pbc(&pbc, ir->ePBC, box);
-    v = fbposres(top->idef.il[F_FBPOSRES].nr, top->idef.il[F_FBPOSRES].iatoms,
-                 top->idef.iparams_fbposres,
-                 (const rvec*)x, fr->f_novirsum, fr->vir_diag_posres,
-                 ir->ePBC == epbcNONE ? NULL : &pbc,
-                 fr->rc_scaling, fr->ePBC, fr->posres_com);
-    enerd->term[F_FBPOSRES] += v;
-    inc_nrnb(nrnb, eNR_FBPOSRES, top->idef.il[F_FBPOSRES].nr/2);
-}
-
 static void pull_potential_wrapper(t_commrec *cr,
                                    t_inputrec *ir,
                                    matrix box, rvec x[],
@@ -1320,17 +1253,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         update_QMMMrec(cr, fr, x, mdatoms, box, top);
     }
 
-    if ((flags & GMX_FORCE_LISTED) && top->idef.il[F_POSRES].nr > 0)
-    {
-        posres_wrapper(flags, inputrec, nrnb, top, box, x,
-                       enerd, lambda, fr);
-    }
-
-    if ((flags & GMX_FORCE_LISTED) && top->idef.il[F_FBPOSRES].nr > 0)
-    {
-        fbposres_wrapper(inputrec, nrnb, top, box, x, enerd, fr);
-    }
-
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
@@ -1908,17 +1830,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     if (fr->bQMMM)
     {
         update_QMMMrec(cr, fr, x, mdatoms, box, top);
-    }
-
-    if ((flags & GMX_FORCE_LISTED) && top->idef.il[F_POSRES].nr > 0)
-    {
-        posres_wrapper(flags, inputrec, nrnb, top, box, x,
-                       enerd, lambda, fr);
-    }
-
-    if ((flags & GMX_FORCE_LISTED) && top->idef.il[F_FBPOSRES].nr > 0)
-    {
-        fbposres_wrapper(inputrec, nrnb, top, box, x, enerd, fr);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */

@@ -59,7 +59,7 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -170,9 +170,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     rvec        box_size;
     t_pbc       pbc;
     char        buf[22];
-    double      clam_i, vlam_i;
-    real        dvdl_dum[efptNR], dvdl_nb[efptNR], lam_i[efptNR];
-    real        dvdl_q, dvdl_lj;
+    real        dvdl_dum[efptNR], dvdl_nb[efptNR];
 
 #ifdef GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
@@ -278,6 +276,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         {
             for (i = 0; i < enerd->n_lambda; i++)
             {
+                real lam_i[efptNR];
+
                 for (j = 0; j < efptNR; j++)
                 {
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
@@ -375,41 +375,11 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     }
     debug_gmx();
 
-    if (flags & GMX_FORCE_LISTED)
-    {
-        wallcycle_sub_start(wcycle, ewcsLISTED);
-        calc_bonds(cr->ms,
-                   idef, (const rvec *) x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
-                   flags);
-
-        /* Check if we have to determine energy differences
-         * at foreign lambda's.
-         */
-        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) &&
-            idef->ilsort != ilsortNO_FE)
-        {
-            if (idef->ilsort != ilsortFE_SORTED)
-            {
-                gmx_incons("The bonded interactions are not sorted for free energy");
-            }
-            for (i = 0; i < enerd->n_lambda; i++)
-            {
-                reset_foreign_enerdata(enerd);
-                for (j = 0; j < efptNR; j++)
-                {
-                    lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
-                }
-                calc_bonds_lambda(idef, (const rvec *) x, fr, &pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
-                                  fcd, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
-                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-            }
-        }
-        debug_gmx();
-
-        wallcycle_sub_stop(wcycle, ewcsLISTED);
-    }
+    do_force_listed(wcycle, box, ir->fepvals, cr->ms,
+                    idef, (const rvec *) x, hist, f, fr,
+                    &pbc, graph, enerd, nrnb, lambda, md, fcd,
+                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+                    flags);
 
     where();
 
