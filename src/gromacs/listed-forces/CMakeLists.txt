@@ -37,7 +37,8 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} PARENT_SCO
 
 gmx_install_headers(
     bonded.h
-    )
+    listed-forces.h
+    position-restraints.h)
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)
