@@ -42,6 +42,7 @@ extern "C" {
 #endif
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 typedef real rvec5[5];
 
