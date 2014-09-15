@@ -37,13 +37,13 @@
 #ifndef _fcdata_h
 #define _fcdata_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef real rvec5[5];
 

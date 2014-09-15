@@ -1757,9 +1757,10 @@ void update_constraints(FILE             *fplog,
         }
         else
         {
+#ifndef __clang_analyzer__
             // cppcheck-suppress unreadVariable
             nth = gmx_omp_nthreads_get(emntUpdate);
-
+#endif
 #pragma omp parallel for num_threads(nth) schedule(static)
             for (i = start; i < nrend; i++)
             {
