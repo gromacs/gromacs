@@ -48,13 +48,12 @@
 #include <cmath>
 
 #include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/listed-forces/listed-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
-
-#include "listed-impl.h"
 
 namespace
 {
