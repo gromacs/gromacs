@@ -22,6 +22,7 @@ individual Doxygen commands, you should first look at Doxygen documentation
 
 Documentation flavors
 =====================
+
 The \Gromacs source tree is set up to produce three different levels of Doxygen
 documentation:
 
@@ -111,7 +112,7 @@ documentation without these tools, but you will see some errors and the related
 figures will be missing from the documentation.
 
 
-General guidelines for Doxygen markup
+General guidelines for Doxygen markup {#section_doxygen_guidelines}
 =====================================
 
 Doxygen provides quite a few different alternative styles for documenting the
@@ -181,6 +182,9 @@ The general guidelines on the style of Doxygen comments were given above.
 This section introduces \Gromacs specific constructs currently used in Doxygen
 documentation, as well as how \Gromacs uses Doxygen groups to organize the
 documentation.
+
+Some consistency checks are done automatically using custom scripts.
+See \ref page_dev_gmxtree for details.
 
 Controlling documentation visibility
 ------------------------------------
@@ -258,155 +262,6 @@ Note that functions, enumerations, and other entities that do not have a
 separate page in the generated documentation can only belong to one group;
 in such a case, the module group is preferred over the API group.
 
-Automatic dependency checking
------------------------------
-
-The build system provides a `doc-check` target that automatically checks some
-aspects of the documentation, as well as checking that header files are
-actually used according to their API specifications (i.e., an internal headers
-are not included from other modules).  The checks depend on correct usage of
-the commands listed above, in particular the visibility and API definitions in
-file-level comments.  These checks also provide some level of enforcement for
-rules about dependencies between the modules, but currently the checks are not
-run automatically.
-
-The checker currently checks for a few different types of issues:
-* For all Doxygen documentation (currently does not apply for members that do
-  not appear in the documentation):
-   * If a member has documentation, it should have a brief description.
-   * A note is issued for in-body documentation for functions, since this is
-     ignored by our current settings.
-   * If a class has documentation, it should have public documentation only if
-     it appears in an installed header.
-   * If a class and its containing file has documentation, the class
-     documentation should not be visible if the file documentation is not.
-* For all files:
-   * Consistent usage of
-
-         #include "..." // This should be used for Gromacs headers
-
-     and
-
-         #include <...> // This should be used for system and external headers
-
-   * Installed headers must not include non-installed headers, and must include
-     all other \Gromacs headers using relative paths so that they resolve
-     correctly also when installed.
-* For documented files:
-   * Installed headers should have public documentation, and other files should
-     not.
-   * The API level specified for a file should not be higher than where its
-     documentation is visible.  For example, only publicly documented headers
-     should be specified as part of the public API.
-   * If an \c \\ingroup module_foo exists, it should match the subdirectory
-     that the file is actually part of in the file system.
-   * If a \c \\defgroup module_foo exists for the subdirectory where the file is,
-     the file should contain \c \\ingroup module_foo.
-   * Files should not include other files whose documentation visibility is
-     lower (if the included file is not documented, the check is skipped).
-* For files that are part of documented modules
-  (\c \\defgroup module_foo exists for the subdirectory):
-   * Such files should not be included from outside their module if they are
-     undocumented or are not specified as part of library or public API.
-* For all modules:
-   * There should not be cyclic include dependencies between modules.
-
-The checker is based on extracting the Doxygen documentation in XML format.
-This information is then read using a Python script, and combined with
-information extracted from the file system and knowledge about the \Gromacs
-source tree layout.  The Python scripts are in the `doxygen/` folder.
-In addition to printing the issues, they are also written into
-`doxygen/doxygen-check.log` for later inspection.
-
-The script is not currently perfect (either because of unfinished
-implementation, or because Doxygen bugs or incompleteness of the Doxygen XML
-output), and the current code also contains issues that the script detects, but
-the authors have not fixed.  To allow the script to still be used,
-`doxygen/suppressions.txt` contains a list of issues that are filtered out from
-the report.  The syntax is simple:
-
-    <file>: <text>
-
-where `<file>` is a path to the file that reports the message, and `<text>` is
-the text reported.  Both support `*` as a wildcard.  If `<file>` is empty, the
-suppression matches only messages that do not have an associated file.
-`<file>` is matched against the trailing portion of the file name to make it
-work even though the script reports absolute paths.
-Empty lines and lines starting with `#` are ignored.
-
-To add suppression for an issue, the line that reports the issue can be copied
-into `suppressions.txt`, and the line number (if any) removed.  If the
-issue does not have a file name (or a pseudo-file) associated, a leading `:`
-must be added.  To cover many similar issues, parts of the line can then be
-replaced with wildcards.
-
-A separate suppression mechanism is in place for cyclic dependencies: to
-suppress a cycle between moduleA and moduleB, add a line with format
-
-    moduleA -> moduleB
-
-into `doxygen/cycle-suppressions.txt`.  This suppresses all cycles that contain
-the mentioned edge.  Since a cycle contains multiple edges, the suppression
-should be made for the edge that is determined to be an incorrect dependency.
-This also affects the layout of the include dependency graphs (see below): the
-suppressed edge is not considered when determining the dependency order, and is
-shown as invalid in the graph.
-
-For some false positives from the script, the suppression mechanism is the
-easiest way to silence the script, but otherwise the goal would be to minimize
-the number of suppressions.
-
-As a side effect, the XML extraction makes Doxygen parse all comments in the
-code, even if they do not appear in the documentation.  This can reveal latent
-issues in the comments, like invalid Doxygen syntax.  The messages from the XML
-parsing are stored in `docs/doxygen/doxygen-xml.log` in the build tree, similar to
-other Doxygen runs.
-
-The `doc-check` target requires Python 2.7 (other versions may work, but have
-not been tested).
-
-Include dependency graphs
--------------------------
-
-The build system also provides an `dep-graphs` target that generates include
-dependency graphs with some additional annotations.
-One graph is produced that shows all the modules under `src/gromacs/`, and
-their include dependencies.  Additionally, a file-level graph is produced for
-each module, showing the include dependencies within that module.  Currently,
-these are mostly for eye candy, but they can also be used for analyzing
-problematic dependencies to clean up the architecture.
-The output is put in `docs/doxygen/depgraphs/` in the build tree.
-
-As with `doc-check`, Python 2.7 is required (other versions may work, but have
-not been tested).  To get `.png` versions of the graphs, `graphviz` is
-additionally required.
-
-### Module graph ###
-
-The graph is written into `module-deps.dot.png`, and embedded into the Doxygen
-documentation: \ref page_modulegraph.  The embedded version contains a legend
-explaining the graph.
-
-### File graph ###
-
-The graphs are written to <em>module_name</em>`-deps.dot.png`.
-
-Node colors:
-<dl>
-<dt>light blue</dt>
-<dd>public API (installed) headers</dd>
-<dt>dark blue</dt>
-<dd>library API headers</dd>
-<dt>gray</dt>
-<dd>source files</dd>
-<dt>light green</dt>
-<dd>test files</dd>
-<dt>white</dt>
-<dd>other files</dd>
-</dl>
-
-Each edge signifies an include dependency; there is no additional information
-currently included.
 
 Documenting specific code constructs
 ====================================
