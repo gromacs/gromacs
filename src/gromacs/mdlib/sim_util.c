@@ -53,6 +53,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_data_init.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/calcmu.h"
 #include "gromacs/legacyheaders/chargegroup.h"
@@ -68,7 +69,7 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/print_nrnb.h"
 #include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/qmmm.h"
@@ -688,12 +689,12 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
                              t_nrnb               *nrnb,
                              gmx_wallcycle_t       wcycle)
 {
-    int              donb_flags;
-    nb_kernel_data_t kernel_data;
-    real             lam_i[efptNR];
-    real             dvdl_nb[efptNR];
-    int              th;
-    int              i, j;
+    int                     donb_flags;
+    struct nb_kernel_data_t kernel_data;
+    real                    lam_i[efptNR];
+    real                    dvdl_nb[efptNR];
+    int                     th;
+    int                     i, j;
 
     donb_flags = 0;
     /* Add short-range interactions */
@@ -717,9 +718,8 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
         donb_flags |= GMX_NONBONDED_DO_LR;
     }
 
-    kernel_data.flags  = donb_flags;
-    kernel_data.lambda = lambda;
-    kernel_data.dvdl   = dvdl_nb;
+    init_group_kernel_data(&kernel_data, fr, mdatoms, NULL,
+                           lambda, dvdl_nb, donb_flags);
 
     kernel_data.energygrp_elec = enerd->grpp.ener[egCOULSR];
     kernel_data.energygrp_vdw  = enerd->grpp.ener[egLJSR];
@@ -737,7 +737,7 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
     for (th = 0; th < nbl_lists->nnbl; th++)
     {
         gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
-                                  x, f, fr, mdatoms, &kernel_data, nrnb);
+                                  x, f, &kernel_data, nrnb);
     }
 
     if (fepvals->sc_alpha != 0)
@@ -773,7 +773,7 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
             for (th = 0; th < nbl_lists->nnbl; th++)
             {
                 gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
-                                          x, f, fr, mdatoms, &kernel_data, nrnb);
+                                          x, f, &kernel_data, nrnb);
             }
 
             sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);

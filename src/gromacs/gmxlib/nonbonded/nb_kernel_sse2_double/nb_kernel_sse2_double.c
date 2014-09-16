@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "../nb_kernel.h"
 
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_sse2_double;
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_sse2_double;

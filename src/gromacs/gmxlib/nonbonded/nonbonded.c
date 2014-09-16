@@ -163,7 +163,7 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 
 
 void
-gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwSwitchDiffers)
+gmx_nonbonded_set_kernel_pointers(FILE *log, struct t_nblist *nl, gmx_bool bElecAndVdwSwitchDiffers)
 {
     const char *     elec;
     const char *     elec_mod;
@@ -325,29 +325,70 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     return;
 }
 
+void
+init_group_kernel_data(struct nb_kernel_data_t *kernel_data,
+                       const t_forcerec        *fr,
+                       const t_mdatoms         *mdatoms,
+                       const t_blocka          *excl,
+                       const real              *lambda,
+                       real                    *dvdl,
+                       int                      flags)
+{
+    kernel_data->flags                   = flags;
+    kernel_data->exclusions              = excl;
+    kernel_data->lambda                  = lambda;
+    kernel_data->dvdl                    = dvdl;
+
+    kernel_data->shift_vec             = fr->shift_vec[0];
+    kernel_data->fshift                = fr->fshift[0];
+    kernel_data->chargeA               = mdatoms->chargeA;
+    kernel_data->chargeB               = mdatoms->chargeB;
+    kernel_data->ic                    = fr->ic;
+    kernel_data->cutoff_scheme         = fr->cutoff_scheme;
+    kernel_data->rcoulomb_switch       = fr->rcoulomb_switch;
+    kernel_data->ntype                 = fr->ntype;
+    kernel_data->nbfp                  = fr->nbfp;
+    kernel_data->typeA                 = mdatoms->typeA;
+    kernel_data->typeB                 = mdatoms->typeB;
+    kernel_data->ljpme_c6grid          = fr->ljpme_c6grid;
+    kernel_data->invsqrta              = fr->invsqrta;
+    kernel_data->dvda                  = fr->dvda;
+    kernel_data->gbtabscale            = fr->gbtab.scale;
+    kernel_data->gbtabdata             = fr->gbtab.data;
+    kernel_data->gb_epsilon_solvent    = fr->gb_epsilon_solvent;
+    kernel_data->sc_alphacoul          = fr->sc_alphacoul;
+    kernel_data->sc_alphavdw           = fr->sc_alphavdw;
+    kernel_data->sc_power              = fr->sc_power;
+    kernel_data->sc_r_power            = fr->sc_r_power;
+    kernel_data->sc_sigma6_def         = fr->sc_sigma6_def;
+    kernel_data->sc_sigma6_min         = fr->sc_sigma6_min;
+    kernel_data->adress_ex_forcecap    = fr->adress_ex_forcecap;
+    kernel_data->adress_group_explicit = fr->adress_group_explicit;
+    kernel_data->adress_wf             = mdatoms->wf;
+    kernel_data->cENER                 = mdatoms->cENER;
+}
+
 void do_nonbonded(t_forcerec *fr,
                   rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *mdatoms, t_blocka *excl,
                   gmx_grppairener_t *grppener,
                   t_nrnb *nrnb, real *lambda, real *dvdl,
                   int nls, int eNL, int flags)
 {
-    t_nblist *        nlist;
-    int               n, n0, n1, i, i0, i1, sz, range;
-    t_nblists *       nblists;
-    nb_kernel_data_t  kernel_data;
-    nb_kernel_t *     kernelptr = NULL;
-    rvec *            f;
-
-    kernel_data.flags                   = flags;
-    kernel_data.exclusions              = excl;
-    kernel_data.lambda                  = lambda;
-    kernel_data.dvdl                    = dvdl;
+    struct t_nblist        *nlist;
+    int                     n, n0, n1, i, i0, i1, sz, range;
+    t_nblists              *nblists;
+    struct nb_kernel_data_t kernel_data;
+    nb_kernel_t            *kernelptr = NULL;
+    rvec                   *f;
 
     if (fr->bAllvsAll)
     {
         gmx_incons("All-vs-all kernels have not been implemented in version 4.6");
         return;
     }
+
+    init_group_kernel_data(&kernel_data, fr, mdatoms, excl,
+                           lambda, dvdl, flags);
 
     if (eNL >= 0)
     {
@@ -432,7 +473,7 @@ void do_nonbonded(t_forcerec *fr,
                     /* Neighborlists whose kernelptr==NULL will always be empty */
                     if (kernelptr != NULL)
                     {
-                        (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                        (*kernelptr)(&(nlist[i]), x, f, &kernel_data, nrnb);
                     }
                     else
                     {

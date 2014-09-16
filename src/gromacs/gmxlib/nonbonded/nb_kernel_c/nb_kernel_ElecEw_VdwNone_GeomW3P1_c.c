@@ -55,13 +55,11 @@
  */
 void
 nb_kernel_ElecEw_VdwNone_GeomW3P1_VF_c
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
@@ -95,14 +93,14 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_VF_c
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
-    charge           = mdatoms->chargeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = kernel_data->ic->epsfac;
+    charge           = kernel_data->chargeA;
 
-    sh_ewald         = fr->ic->sh_ewald;
-    ewtab            = fr->ic->tabq_coul_FDV0;
-    ewtabscale       = fr->ic->tabq_scale;
+    sh_ewald         = kernel_data->ic->sh_ewald;
+    ewtab            = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale       = kernel_data->ic->tabq_scale;
     ewtabhalfspace   = 0.5/ewtabscale;
 
     /* Setup water-specific parameters */
@@ -358,13 +356,11 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_VF_c
  */
 void
 nb_kernel_ElecEw_VdwNone_GeomW3P1_F_c
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
@@ -398,14 +394,14 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_F_c
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
-    charge           = mdatoms->chargeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = kernel_data->ic->epsfac;
+    charge           = kernel_data->chargeA;
 
-    sh_ewald         = fr->ic->sh_ewald;
-    ewtab            = fr->ic->tabq_coul_F;
-    ewtabscale       = fr->ic->tabq_scale;
+    sh_ewald         = kernel_data->ic->sh_ewald;
+    ewtab            = kernel_data->ic->tabq_coul_F;
+    ewtabscale       = kernel_data->ic->tabq_scale;
     ewtabhalfspace   = 0.5/ewtabscale;
 
     /* Setup water-specific parameters */
