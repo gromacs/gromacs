@@ -43,19 +43,16 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
 void
-gmx_nb_generic_cg_kernel(t_nblist *                nlist,
-                         rvec *                    xx,
-                         rvec *                    ff,
-                         t_forcerec *              fr,
-                         t_mdatoms *               mdatoms,
-                         nb_kernel_data_t *        kernel_data,
-                         t_nrnb *                  nrnb)
+gmx_nb_generic_cg_kernel(const struct t_nblist       *  nlist,
+                         rvec       *                   xx,
+                         rvec       *                   ff,
+                         const struct nb_kernel_data_t *kernel_data,
+                         t_nrnb       *                 nrnb)
 {
     int           nri, ntype, table_nelements, ielec, ivdw;
     real          facel, gbtabscale;
@@ -95,7 +92,7 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
     ielec               = nlist->ielec;
     ivdw                = nlist->ivdw;
 
-    fshift              = fr->fshift[0];
+    fshift              = kernel_data->fshift;
     Vc                  = kernel_data->energygrp_elec;
     Vvdw                = kernel_data->energygrp_vdw;
     tabscale            = kernel_data->table_elec_vdw->scale;
@@ -112,12 +109,12 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
     table_nelements     = (ielec == 3) ? 4 : 0;
     table_nelements    += (ivdw == 3) ? 8 : 0;
 
-    charge              = mdatoms->chargeA;
-    type                = mdatoms->typeA;
-    facel               = fr->epsfac;
-    shiftvec            = fr->shift_vec[0];
-    vdwparam            = fr->nbfp;
-    ntype               = fr->ntype;
+    charge              = kernel_data->chargeA;
+    type                = kernel_data->typeA;
+    facel               = kernel_data->ic->epsfac;
+    shiftvec            = kernel_data->shift_vec;
+    vdwparam            = kernel_data->nbfp;
+    ntype               = kernel_data->ntype;
 
     for (n = 0; (n < nlist->nri); n++)
     {
@@ -201,8 +198,8 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
 
                             case 2:
                                 /* Reaction-field */
-                                krsq             = fr->k_rf*rsq;
-                                vcoul            = qq*(rinv+krsq-fr->c_rf);
+                                krsq             = kernel_data->ic->k_rf*rsq;
+                                vcoul            = qq*(rinv+krsq-kernel_data->ic->c_rf);
                                 fscal            = qq*(rinv-2.0*krsq)*rinvsq;
                                 break;
 

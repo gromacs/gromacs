@@ -793,7 +793,7 @@ void update_QMMMrec(t_commrec      *cr,
        *mm_j_particles = NULL, *qm_i_particles = NULL;
     t_QMMMrec
        *qr;
-    t_nblist
+    struct t_nblist
         QMMMlist;
     rvec
         dx, crd;

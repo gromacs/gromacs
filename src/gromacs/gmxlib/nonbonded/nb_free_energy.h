@@ -39,16 +39,10 @@
 #define _nb_free_energy_h_
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/math/vec.h"
 
-void
-gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
-                          rvec * gmx_restrict              xx,
-                          rvec * gmx_restrict              ff,
-                          t_forcerec * gmx_restrict        fr,
-                          const t_mdatoms * gmx_restrict   mdatoms,
-                          nb_kernel_data_t * gmx_restrict  kernel_data,
-                          t_nrnb * gmx_restrict            nrnb);
+nb_kernel_t gmx_nb_free_energy_kernel;
 
 real
     nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,

@@ -325,7 +325,7 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 }
 
 /* Initializes a single nbnxn_pairlist_t data structure */
-static void nbnxn_init_pairlist_fep(t_nblist *nl)
+static void nbnxn_init_pairlist_fep(struct t_nblist *nl)
 {
     nl->type        = GMX_NBLIST_INTERACTION_FREE_ENERGY;
     nl->igeometry   = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
@@ -3271,7 +3271,7 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
 }
 
 /* Add a new i-entry to the FEP list and copy the i-properties */
-static gmx_inline void fep_list_new_nri_copy(t_nblist *nlist)
+static gmx_inline void fep_list_new_nri_copy(struct t_nblist *nlist)
 {
     /* Add a new i-entry */
     nlist->nri++;
@@ -3306,7 +3306,7 @@ static void make_fep_list(const nbnxn_search_t    nbs,
                           nbnxn_ci_t             *nbl_ci,
                           const nbnxn_grid_t     *gridi,
                           const nbnxn_grid_t     *gridj,
-                          t_nblist               *nlist)
+                          struct t_nblist        *nlist)
 {
     int      ci, cj_ind_start, cj_ind_end, cj_ind, cja, cjr;
     int      nri_max;
@@ -3511,7 +3511,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                                    real                    rlist_fep2,
                                    const nbnxn_grid_t     *gridi,
                                    const nbnxn_grid_t     *gridj,
-                                   t_nblist               *nlist)
+                                   struct t_nblist        *nlist)
 {
     int                sci, cj4_ind_start, cj4_ind_end, cj4_ind, gcj, cjr;
     int                nri_max;
@@ -4084,7 +4084,7 @@ static void clear_pairlist(nbnxn_pairlist_t *nbl)
 }
 
 /* Clears a group scheme pair list */
-static void clear_pairlist_fep(t_nblist *nl)
+static void clear_pairlist_fep(struct t_nblist *nl)
 {
     nl->nri = 0;
     nl->nrj = 0;
@@ -4571,10 +4571,10 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
 static void balance_fep_lists(const nbnxn_search_t  nbs,
                               nbnxn_pairlist_set_t *nbl_lists)
 {
-    int       nnbl, th;
-    int       nri_tot, nrj_tot, nrj_target;
-    int       th_dest;
-    t_nblist *nbld;
+    int              nnbl, th;
+    int              nri_tot, nrj_tot, nrj_target;
+    int              th_dest;
+    struct t_nblist *nbld;
 
     nnbl = nbl_lists->nnbl;
 
@@ -4600,7 +4600,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
 #pragma omp parallel for schedule(static) num_threads(nnbl)
     for (th = 0; th < nnbl; th++)
     {
-        t_nblist *nbl;
+        struct t_nblist *nbl;
 
         nbl = nbs->work[th].nbl_fep;
 
@@ -4627,8 +4627,8 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
     nbld    = nbs->work[th_dest].nbl_fep;
     for (th = 0; th < nnbl; th++)
     {
-        t_nblist *nbls;
-        int       i, j;
+        struct t_nblist *nbls;
+        int              i, j;
 
         nbls = nbl_lists->nbl_fep[th];
 
@@ -4667,7 +4667,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
     /* Swap the list pointers */
     for (th = 0; th < nnbl; th++)
     {
-        t_nblist *nbl_tmp;
+        struct t_nblist *nbl_tmp;
 
         nbl_tmp                = nbl_lists->nbl_fep[th];
         nbl_lists->nbl_fep[th] = nbs->work[th].nbl_fep;
@@ -4813,7 +4813,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      int min_ci_balanced,
                                      int th, int nth,
                                      nbnxn_pairlist_t *nbl,
-                                     t_nblist *nbl_fep)
+                                     struct t_nblist *nbl_fep)
 {
     int               na_cj_2log;
     matrix            box;

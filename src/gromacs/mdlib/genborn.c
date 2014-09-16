@@ -103,7 +103,7 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
     }
 }
 
-static int init_gb_nblist(int natoms, t_nblist *nl)
+static int init_gb_nblist(int natoms, struct t_nblist *nl)
 {
     nl->maxnri      = natoms*4;
     nl->maxnrj      = 0;
@@ -372,7 +372,7 @@ int init_gb(gmx_genborn_t **p_born,
 
 static int
 calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
-                  rvec x[], t_nblist *nl,
+                  rvec x[], struct t_nblist *nl,
                   gmx_genborn_t *born, t_mdatoms *md)
 {
     int  i, k, n, nj0, nj1, ai, aj, type;
@@ -500,7 +500,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
 static int
 calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
-                rvec x[], t_nblist *nl,
+                rvec x[], struct t_nblist *nl,
                 gmx_genborn_t *born, t_mdatoms *md)
 {
     int   i, k, n, ai, aj, nj0, nj1, at0, at1;
@@ -716,7 +716,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
 static int
 calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
-                rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
+                rvec x[], struct t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
     int   i, k, ai, aj, nj0, nj1, n, at0, at1;
     int   shift;
@@ -938,7 +938,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
 
 int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top,
-                rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb)
+                rvec x[], struct t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb)
 {
     real *p;
     int   cnt;
@@ -1371,7 +1371,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *
 
 
 
-real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[], rvec t[], rvec fshift[],
+real calc_gb_chainrule(int natoms, struct t_nblist *nl, real *dadx, real *dvda, rvec x[], rvec t[], rvec fshift[],
                        rvec shift_vec[], int gb_algorithm, gmx_genborn_t *born)
 {
     int          i, k, n, ai, aj, nj0, nj1, n0, n1;
@@ -1692,7 +1692,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
 {
     int               i, l, ii, j, k, n, nj0, nj1, ai, aj, at0, at1, found, shift, s;
     int               apa;
-    t_nblist         *nblist;
+    struct t_nblist  *nblist;
     t_pbc             pbc;
 
     struct gbtmpnbls *nls;

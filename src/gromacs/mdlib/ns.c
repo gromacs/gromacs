@@ -105,7 +105,7 @@ round_up_to_simd_width(int length, int simd_width)
  *
  ************************************************/
 
-void reallocate_nblist(t_nblist *nl)
+void reallocate_nblist(struct t_nblist *nl)
 {
     if (gmx_debug_at)
     {
@@ -123,16 +123,16 @@ void reallocate_nblist(t_nblist *nl)
 }
 
 
-static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
+static void init_nblist(FILE *log, struct t_nblist *nl_sr, struct t_nblist *nl_lr,
                         int maxsr, int maxlr,
                         int ivdw, int ivdwmod,
                         int ielec, int ielecmod,
                         int igeometry, int type,
                         gmx_bool bElecAndVdwSwitchDiffers)
 {
-    t_nblist *nl;
-    int       homenr;
-    int       i, nn;
+    struct t_nblist *nl;
+    int              homenr;
+    int              i, nn;
 
     for (i = 0; (i < 2); i++)
     {
@@ -322,7 +322,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     fr->ns.nblist_initialized = TRUE;
 }
 
-static void reset_nblist(t_nblist *nl)
+static void reset_nblist(struct t_nblist *nl)
 {
     nl->nri       = -1;
     nl->nrj       = 0;
@@ -361,7 +361,7 @@ static void reset_neighbor_lists(t_forcerec *fr, gmx_bool bResetSR, gmx_bool bRe
 
 
 
-static gmx_inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int gid)
+static gmx_inline void new_i_nblist(struct t_nblist *nlist, atom_id i_atom, int shift, int gid)
 {
     int    i, k, nri, nshift;
 
@@ -408,7 +408,7 @@ static gmx_inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, 
     }
 }
 
-static gmx_inline void close_i_nblist(t_nblist *nlist)
+static gmx_inline void close_i_nblist(struct t_nblist *nlist)
 {
     int nri = nlist->nri;
     int len;
@@ -430,7 +430,7 @@ static gmx_inline void close_i_nblist(t_nblist *nlist)
     }
 }
 
-static gmx_inline void close_nblist(t_nblist *nlist)
+static gmx_inline void close_nblist(struct t_nblist *nlist)
 {
     /* Only close this nblist when it has been initialized.
      * Avoid the creation of i-lists with no j-particles.
@@ -472,7 +472,7 @@ static gmx_inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnb
 }
 
 
-static gmx_inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool bLR)
+static gmx_inline void add_j_to_nblist(struct t_nblist *nlist, atom_id j_atom, gmx_bool bLR)
 {
     int nrj = nlist->nrj;
 
@@ -493,7 +493,7 @@ static gmx_inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool
     nlist->nrj++;
 }
 
-static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
+static gmx_inline void add_j_to_nblist_cg(struct t_nblist *nlist,
                                           atom_id j_start, int j_end,
                                           t_excl *bexcl, gmx_bool i_is_j,
                                           gmx_bool bLR)
@@ -577,27 +577,27 @@ put_in_list_at(gmx_bool              bHaveVdW[],
     /* The a[] index has been removed,
      * to put it back in i_atom should be a[i0] and jj should be a[jj].
      */
-    t_nblist  *   vdwc;
-    t_nblist  *   vdw;
-    t_nblist  *   coul;
-    t_nblist  *   vdwc_free  = NULL;
-    t_nblist  *   vdw_free   = NULL;
-    t_nblist  *   coul_free  = NULL;
-    t_nblist  *   vdwc_ww    = NULL;
-    t_nblist  *   coul_ww    = NULL;
+    struct t_nblist     *vdwc;
+    struct t_nblist     *vdw;
+    struct t_nblist     *coul;
+    struct t_nblist     *vdwc_free  = NULL;
+    struct t_nblist     *vdw_free   = NULL;
+    struct t_nblist     *coul_free  = NULL;
+    struct t_nblist     *vdwc_ww    = NULL;
+    struct t_nblist     *coul_ww    = NULL;
 
-    int           i, j, jcg, igid, gid, nbl_ind, ind_ij;
-    atom_id       jj, jj0, jj1, i_atom;
-    int           i0, nicg, len;
+    int                  i, j, jcg, igid, gid, nbl_ind, ind_ij;
+    atom_id              jj, jj0, jj1, i_atom;
+    int                  i0, nicg, len;
 
-    int          *cginfo;
-    int          *type, *typeB;
-    real         *charge, *chargeB;
-    real          qi, qiB, qq, rlj;
-    gmx_bool      bFreeEnergy, bFree, bFreeJ, bNotEx, *bPert;
-    gmx_bool      bDoVdW_i, bDoCoul_i, bDoCoul_i_sol;
-    int           iwater, jwater;
-    t_nblist     *nlist;
+    int                 *cginfo;
+    int                 *type, *typeB;
+    real                *charge, *chargeB;
+    real                 qi, qiB, qq, rlj;
+    gmx_bool             bFreeEnergy, bFree, bFreeJ, bNotEx, *bPert;
+    gmx_bool             bDoVdW_i, bDoCoul_i, bDoCoul_i_sol;
+    int                  iwater, jwater;
+    struct t_nblist     *nlist;
 
     /* Copy some pointers */
     cginfo  = fr->cginfo;
@@ -1091,31 +1091,31 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
     /* The a[] index has been removed,
      * to put it back in i_atom should be a[i0] and jj should be a[jj].
      */
-    t_nblist  *   vdwc;
-    t_nblist  *   vdw;
-    t_nblist  *   coul;
-    t_nblist  *   vdwc_adress  = NULL;
-    t_nblist  *   vdw_adress   = NULL;
-    t_nblist  *   coul_adress  = NULL;
-    t_nblist  *   vdwc_ww      = NULL;
-    t_nblist  *   coul_ww      = NULL;
+    struct t_nblist     *vdwc;
+    struct t_nblist     *vdw;
+    struct t_nblist     *coul;
+    struct t_nblist     *vdwc_adress  = NULL;
+    struct t_nblist     *vdw_adress   = NULL;
+    struct t_nblist     *coul_adress  = NULL;
+    struct t_nblist     *vdwc_ww      = NULL;
+    struct t_nblist     *coul_ww      = NULL;
 
-    int           i, j, jcg, igid, gid, nbl_ind, nbl_ind_adress;
-    atom_id       jj, jj0, jj1, i_atom;
-    int           i0, nicg, len;
+    int                  i, j, jcg, igid, gid, nbl_ind, nbl_ind_adress;
+    atom_id              jj, jj0, jj1, i_atom;
+    int                  i0, nicg, len;
 
-    int          *cginfo;
-    int          *type, *typeB;
-    real         *charge, *chargeB;
-    real         *wf;
-    real          qi, qiB, qq, rlj;
-    gmx_bool      bFreeEnergy, bFree, bFreeJ, bNotEx, *bPert;
-    gmx_bool      bDoVdW_i, bDoCoul_i, bDoCoul_i_sol;
-    gmx_bool      b_hybrid;
-    gmx_bool      j_all_atom;
-    int           iwater, jwater;
-    t_nblist     *nlist, *nlist_adress;
-    gmx_bool      bEnergyGroupCG;
+    int                 *cginfo;
+    int                 *type, *typeB;
+    real                *charge, *chargeB;
+    real                *wf;
+    real                 qi, qiB, qq, rlj;
+    gmx_bool             bFreeEnergy, bFree, bFreeJ, bNotEx, *bPert;
+    gmx_bool             bDoVdW_i, bDoCoul_i, bDoCoul_i_sol;
+    gmx_bool             b_hybrid;
+    gmx_bool             j_all_atom;
+    int                  iwater, jwater;
+    struct t_nblist     *nlist, *nlist_adress;
+    gmx_bool             bEnergyGroupCG;
 
     /* Copy some pointers */
     cginfo  = fr->cginfo;
@@ -1354,11 +1354,11 @@ put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
                  gmx_bool  gmx_unused             bDoCoul,
                  int       gmx_unused             solvent_opt)
 {
-    t_nblist  *   coul;
-    int           i, j, jcg, igid, gid;
-    atom_id       jj, jj0, jj1, i_atom;
-    int           i0, nicg;
-    gmx_bool      bNotEx;
+    struct t_nblist *coul;
+    int              i, j, jcg, igid, gid;
+    atom_id          jj, jj0, jj1, i_atom;
+    int              i0, nicg;
+    gmx_bool         bNotEx;
 
     /* Get atom range */
     i0     = index[icg];
@@ -1419,10 +1419,10 @@ put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
                gmx_bool   gmx_unused            bDoCoul,
                int        gmx_unused            solvent_opt)
 {
-    int          cginfo;
-    int          igid, gid, nbl_ind;
-    t_nblist *   vdwc;
-    int          j, jcg;
+    int              cginfo;
+    int              igid, gid, nbl_ind;
+    struct t_nblist *vdwc;
+    int              j, jcg;
 
     cginfo = fr->cginfo[icg];
 

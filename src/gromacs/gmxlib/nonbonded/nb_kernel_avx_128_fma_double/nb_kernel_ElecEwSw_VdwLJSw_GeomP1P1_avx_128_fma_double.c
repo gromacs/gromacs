@@ -58,13 +58,11 @@
  */
 void
 nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -110,25 +108,25 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
-    charge           = mdatoms->chargeA;
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = _mm_set1_pd(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
-    sh_ewald         = _mm_set1_pd(fr->ic->sh_ewald);
-    ewtab            = fr->ic->tabq_coul_FDV0;
-    ewtabscale       = _mm_set1_pd(fr->ic->tabq_scale);
-    ewtabhalfspace   = _mm_set1_pd(0.5/fr->ic->tabq_scale);
+    sh_ewald         = _mm_set1_pd(kernel_data->ic->sh_ewald);
+    ewtab            = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale       = _mm_set1_pd(kernel_data->ic->tabq_scale);
+    ewtabhalfspace   = _mm_set1_pd(0.5/kernel_data->ic->tabq_scale);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = kernel_data->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch_scalar   = kernel_data->rcoulomb_switch;
     rswitch          = _mm_set1_pd(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
@@ -439,13 +437,11 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
  */
 void
 nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_avx_128_fma_double
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -491,25 +487,25 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_avx_128_fma_double
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
-    charge           = mdatoms->chargeA;
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = _mm_set1_pd(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
-    sh_ewald         = _mm_set1_pd(fr->ic->sh_ewald);
-    ewtab            = fr->ic->tabq_coul_FDV0;
-    ewtabscale       = _mm_set1_pd(fr->ic->tabq_scale);
-    ewtabhalfspace   = _mm_set1_pd(0.5/fr->ic->tabq_scale);
+    sh_ewald         = _mm_set1_pd(kernel_data->ic->sh_ewald);
+    ewtab            = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale       = _mm_set1_pd(kernel_data->ic->tabq_scale);
+    ewtabhalfspace   = _mm_set1_pd(0.5/kernel_data->ic->tabq_scale);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = kernel_data->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch_scalar   = kernel_data->rcoulomb_switch;
     rswitch          = _mm_set1_pd(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
