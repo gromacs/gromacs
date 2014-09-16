@@ -37,6 +37,9 @@
 #ifndef _nblist_h
 #define _nblist_h
 
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/math/vec.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -54,7 +57,18 @@ typedef unsigned long t_excl;
  */
 #define MAX_CGCGSIZE 32
 
-typedef struct
+struct t_nblist;
+struct nb_kernel_data_t;
+
+typedef void
+    nb_kernel_t (const struct t_nblist         *nlist,
+                 rvec                          *x,
+                 rvec                          *f,
+                 const struct nb_kernel_data_t *kernel_data,
+                 t_nrnb                        *nrnb);
+
+
+struct t_nblist
 {
     int             igeometry;    /* The type of list (atom, water, etc.)  */
     int             ielec;        /* Coulomb loop type index for kernels   */
@@ -79,9 +93,9 @@ typedef struct
     /* We use separate pointers for kernels that compute both potential
      * and force (vf suffix), only potential (v) or only force (f)
      */
-    void *          kernelptr_vf;
-    void *          kernelptr_v;
-    void *          kernelptr_f;
+    nb_kernel_t *   kernelptr_vf;
+    nb_kernel_t *   kernelptr_v;
+    nb_kernel_t *   kernelptr_f;
 
     /* Pad the list of neighbors for each i atom with "-1" entries up to the
      * simd_padding_width, if it is larger than 0. This is necessary for many
@@ -90,7 +104,7 @@ typedef struct
      */
     int             simd_padding_width;
 
-} t_nblist;
+};
 
 
 /* For atom I =  nblist->iinr[N] (0 <= N < nblist->nri) there can be

@@ -58,13 +58,11 @@
  */
 void
 nb_kernel_ElecRF_VdwNone_GeomW3W3_VF_sse2_double
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -115,13 +113,13 @@ nb_kernel_ElecRF_VdwNone_GeomW3W3_VF_sse2_double
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
-    charge           = mdatoms->chargeA;
-    krf              = _mm_set1_pd(fr->ic->k_rf);
-    krf2             = _mm_set1_pd(fr->ic->k_rf*2.0);
-    crf              = _mm_set1_pd(fr->ic->c_rf);
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = _mm_set1_pd(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
+    krf              = _mm_set1_pd(kernel_data->ic->k_rf);
+    krf2             = _mm_set1_pd(kernel_data->ic->k_rf*2.0);
+    crf              = _mm_set1_pd(kernel_data->ic->c_rf);
 
     /* Setup water-specific parameters */
     inr              = nlist->iinr[0];
@@ -899,13 +897,11 @@ nb_kernel_ElecRF_VdwNone_GeomW3W3_VF_sse2_double
  */
 void
 nb_kernel_ElecRF_VdwNone_GeomW3W3_F_sse2_double
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -956,13 +952,13 @@ nb_kernel_ElecRF_VdwNone_GeomW3W3_F_sse2_double
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
-    charge           = mdatoms->chargeA;
-    krf              = _mm_set1_pd(fr->ic->k_rf);
-    krf2             = _mm_set1_pd(fr->ic->k_rf*2.0);
-    crf              = _mm_set1_pd(fr->ic->c_rf);
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = _mm_set1_pd(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
+    krf              = _mm_set1_pd(kernel_data->ic->k_rf);
+    krf2             = _mm_set1_pd(kernel_data->ic->k_rf*2.0);
+    crf              = _mm_set1_pd(kernel_data->ic->c_rf);
 
     /* Setup water-specific parameters */
     inr              = nlist->iinr[0];

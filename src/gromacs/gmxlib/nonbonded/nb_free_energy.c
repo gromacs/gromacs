@@ -44,18 +44,16 @@
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
 void
-gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
-                          rvec * gmx_restrict              xx,
-                          rvec * gmx_restrict              ff,
-                          t_forcerec * gmx_restrict        fr,
-                          const t_mdatoms * gmx_restrict   mdatoms,
-                          nb_kernel_data_t * gmx_restrict  kernel_data,
-                          t_nrnb * gmx_restrict            nrnb)
+gmx_nb_free_energy_kernel(const struct t_nblist *         nlist,
+                          rvec *                          xx,
+                          rvec *                          ff,
+                          const struct nb_kernel_data_t * kernel_data,
+                          t_nrnb *                        nrnb)
 {
 
 #define  STATE_A  0
@@ -127,17 +125,17 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     int           ewitab;
     real          ewrt, eweps, ewtabscale, ewtabhalfspace, sh_ewald;
 
-    sh_ewald            = fr->ic->sh_ewald;
-    ewtab               = fr->ic->tabq_coul_FDV0;
-    ewtabscale          = fr->ic->tabq_scale;
+    sh_ewald            = kernel_data->ic->sh_ewald;
+    ewtab               = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale          = kernel_data->ic->tabq_scale;
     ewtabhalfspace      = 0.5/ewtabscale;
-    tab_ewald_F_lj      = fr->ic->tabq_vdw_F;
-    tab_ewald_V_lj      = fr->ic->tabq_vdw_V;
+    tab_ewald_F_lj      = kernel_data->ic->tabq_vdw_F;
+    tab_ewald_V_lj      = kernel_data->ic->tabq_vdw_V;
 
     x                   = xx[0];
     f                   = ff[0];
 
-    fshift              = fr->fshift[0];
+    fshift              = kernel_data->fshift;
 
     nri                 = nlist->nri;
     iinr                = nlist->iinr;
@@ -148,44 +146,44 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     shift               = nlist->shift;
     gid                 = nlist->gid;
 
-    shiftvec            = fr->shift_vec[0];
-    chargeA             = mdatoms->chargeA;
-    chargeB             = mdatoms->chargeB;
-    facel               = fr->epsfac;
-    krf                 = fr->k_rf;
-    crf                 = fr->c_rf;
-    ewc_lj              = fr->ewaldcoeff_lj;
+    shiftvec            = kernel_data->shift_vec;
+    chargeA             = kernel_data->chargeA;
+    chargeB             = kernel_data->chargeB;
+    facel               = kernel_data->ic->epsfac;
+    krf                 = kernel_data->ic->k_rf;
+    crf                 = kernel_data->ic->c_rf;
+    ewc_lj              = kernel_data->ic->ewaldcoeff_lj;
     Vc                  = kernel_data->energygrp_elec;
-    typeA               = mdatoms->typeA;
-    typeB               = mdatoms->typeB;
-    ntype               = fr->ntype;
-    nbfp                = fr->nbfp;
-    nbfp_grid           = fr->ljpme_c6grid;
+    typeA               = kernel_data->typeA;
+    typeB               = kernel_data->typeB;
+    ntype               = kernel_data->ntype;
+    nbfp                = kernel_data->nbfp;
+    nbfp_grid           = kernel_data->ljpme_c6grid;
     Vv                  = kernel_data->energygrp_vdw;
     lambda_coul         = kernel_data->lambda[efptCOUL];
     lambda_vdw          = kernel_data->lambda[efptVDW];
     dvdl                = kernel_data->dvdl;
-    alpha_coul          = fr->sc_alphacoul;
-    alpha_vdw           = fr->sc_alphavdw;
-    lam_power           = fr->sc_power;
-    sc_r_power          = fr->sc_r_power;
-    sigma6_def          = fr->sc_sigma6_def;
-    sigma6_min          = fr->sc_sigma6_min;
+    alpha_coul          = kernel_data->sc_alphacoul;
+    alpha_vdw           = kernel_data->sc_alphavdw;
+    lam_power           = kernel_data->sc_power;
+    sc_r_power          = kernel_data->sc_r_power;
+    sigma6_def          = kernel_data->sc_sigma6_def;
+    sigma6_min          = kernel_data->sc_sigma6_min;
     bDoForces           = kernel_data->flags & GMX_NONBONDED_DO_FORCE;
     bDoShiftForces      = kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE;
     bDoPotential        = kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL;
 
-    rcoulomb            = fr->rcoulomb;
-    rvdw                = fr->rvdw;
-    sh_invrc6           = fr->ic->sh_invrc6;
-    sh_lj_ewald         = fr->ic->sh_lj_ewald;
-    ewclj               = fr->ewaldcoeff_lj;
+    rcoulomb            = kernel_data->ic->rcoulomb;
+    rvdw                = kernel_data->ic->rvdw;
+    sh_invrc6           = kernel_data->ic->sh_invrc6;
+    sh_lj_ewald         = kernel_data->ic->sh_lj_ewald;
+    ewclj               = kernel_data->ic->ewaldcoeff_lj;
     ewclj2              = ewclj*ewclj;
     ewclj6              = ewclj2*ewclj2*ewclj2;
 
-    if (fr->coulomb_modifier == eintmodPOTSWITCH)
+    if (kernel_data->ic->coulomb_modifier == eintmodPOTSWITCH)
     {
-        d               = fr->rcoulomb-fr->rcoulomb_switch;
+        d               = kernel_data->ic->rcoulomb-kernel_data->rcoulomb_switch;
         elec_swV3       = -10.0/(d*d*d);
         elec_swV4       =  15.0/(d*d*d*d);
         elec_swV5       =  -6.0/(d*d*d*d*d);
@@ -199,9 +197,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         elec_swV3 = elec_swV4 = elec_swV5 = elec_swF2 = elec_swF3 = elec_swF4 = 0.0;
     }
 
-    if (fr->vdw_modifier == eintmodPOTSWITCH)
+    if (kernel_data->ic->vdw_modifier == eintmodPOTSWITCH)
     {
-        d               = fr->rvdw-fr->rvdw_switch;
+        d               = kernel_data->ic->rvdw-kernel_data->ic->rvdw_switch;
         vdw_swV3        = -10.0/(d*d*d);
         vdw_swV4        =  15.0/(d*d*d*d);
         vdw_swV5        =  -6.0/(d*d*d*d*d);
@@ -215,11 +213,11 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         vdw_swV3 = vdw_swV4 = vdw_swV5 = vdw_swF2 = vdw_swF3 = vdw_swF4 = 0.0;
     }
 
-    if (fr->cutoff_scheme == ecutsVERLET)
+    if (kernel_data->cutoff_scheme == ecutsVERLET)
     {
         const interaction_const_t *ic;
 
-        ic = fr->ic;
+        ic = kernel_data->ic;
         if (EVDW_PME(ic->vdwtype))
         {
             ivdw         = GMX_NBKERNEL_VDW_LJEWALD;
@@ -247,12 +245,12 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     }
     else
     {
-        bExactElecCutoff = (fr->coulomb_modifier != eintmodNONE) || fr->eeltype == eelRF_ZERO;
-        bExactVdwCutoff  = (fr->vdw_modifier != eintmodNONE);
+        bExactElecCutoff = (kernel_data->ic->coulomb_modifier != eintmodNONE) || kernel_data->ic->eeltype == eelRF_ZERO;
+        bExactVdwCutoff  = (kernel_data->ic->vdw_modifier != eintmodNONE);
     }
 
     bExactCutoffAll = (bExactElecCutoff && bExactVdwCutoff);
-    rcutoff_max2    = max(fr->rcoulomb, fr->rvdw);
+    rcutoff_max2    = max(kernel_data->ic->rcoulomb, kernel_data->ic->rvdw);
     rcutoff_max2    = rcutoff_max2*rcutoff_max2;
 
     bEwald          = (icoul == GMX_NBKERNEL_ELEC_EWALD);
@@ -271,14 +269,14 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
      * things (1/r rather than short-range Ewald). For these settings, we just
      * use the traditional short-range Ewald interaction in that case.
      */
-    bConvertEwaldToCoulomb = (bEwald && (fr->coulomb_modifier != eintmodPOTSWITCH));
+    bConvertEwaldToCoulomb = (bEwald && (kernel_data->ic->coulomb_modifier != eintmodPOTSWITCH));
     /* For now the below will always be true (since LJ-PME only works with Shift in Gromacs-5.0),
      * but writing it this way means we stay in sync with coulomb, and it avoids future bugs.
      */
-    bConvertLJEwaldToLJ6   = (bEwaldLJ && (fr->vdw_modifier   != eintmodPOTSWITCH));
+    bConvertLJEwaldToLJ6   = (bEwaldLJ && (kernel_data->ic->vdw_modifier   != eintmodPOTSWITCH));
 
     /* We currently don't implement exclusion correction, needed with the Verlet cut-off scheme, without conversion */
-    if (fr->cutoff_scheme == ecutsVERLET &&
+    if (kernel_data->cutoff_scheme == ecutsVERLET &&
         ((bEwald   && !bConvertEwaldToCoulomb) ||
          (bEwaldLJ && !bConvertLJEwaldToLJ6)))
     {
@@ -528,7 +526,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     /* The shift for the Coulomb potential is stored in
                                      * the RF parameter c_rf, which is 0 without shift.
                                      */
-                                    Vcoul[i]  -= qq[i]*fr->ic->c_rf;
+                                    Vcoul[i]  -= qq[i]*kernel_data->ic->c_rf;
                                     break;
 
                                 case GMX_NBKERNEL_ELEC_REACTIONFIELD:
@@ -585,9 +583,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     break;
                             }
 
-                            if (fr->coulomb_modifier == eintmodPOTSWITCH)
+                            if (kernel_data->ic->coulomb_modifier == eintmodPOTSWITCH)
                             {
-                                d                = rC-fr->rcoulomb_switch;
+                                d                = rC-kernel_data->rcoulomb_switch;
                                 d                = (d > 0.0) ? d : 0.0;
                                 d2               = d*d;
                                 sw               = 1.0+d2*d*(elec_swV3+d*(elec_swV4+d*elec_swV5));
@@ -707,9 +705,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     break;
                             }
 
-                            if (fr->vdw_modifier == eintmodPOTSWITCH)
+                            if (kernel_data->ic->vdw_modifier == eintmodPOTSWITCH)
                             {
-                                d                = rV-fr->rvdw_switch;
+                                d                = rV-kernel_data->ic->rvdw_switch;
                                 d                = (d > 0.0) ? d : 0.0;
                                 d2               = d*d;
                                 sw               = 1.0+d2*d*(vdw_swV3+d*(vdw_swV4+d*vdw_swV5));

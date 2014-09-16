@@ -58,13 +58,11 @@
  */
 void
 nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_avx_256_single
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or 
      * just 0 for non-waters.
@@ -115,22 +113,22 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_avx_256_single
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
-    vdwgridparam     = fr->ljpme_c6grid;
-    sh_lj_ewald	     = _mm256_set1_ps(fr->ic->sh_lj_ewald);
-    ewclj            = _mm256_set1_ps(fr->ewaldcoeff_lj);
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
+    vdwgridparam     = kernel_data->ljpme_c6grid;
+    sh_lj_ewald	     = _mm256_set1_ps(kernel_data->ic->sh_lj_ewald);
+    ewclj            = _mm256_set1_ps(kernel_data->ic->ewaldcoeff_lj);
     ewclj2           = _mm256_mul_ps(minus_one,_mm256_mul_ps(ewclj,ewclj));
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = kernel_data->ic->rvdw;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 
-    sh_vdw_invrcut6  = _mm256_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm256_set1_ps(fr->rvdw);
+    sh_vdw_invrcut6  = _mm256_set1_ps(kernel_data->ic->sh_invrc6);
+    rvdw             = _mm256_set1_ps(kernel_data->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;
@@ -488,13 +486,11 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_avx_256_single
  */
 void
 nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_avx_256_single
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or 
      * just 0 for non-waters.
@@ -545,22 +541,22 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_avx_256_single
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
-    vdwgridparam     = fr->ljpme_c6grid;
-    sh_lj_ewald	     = _mm256_set1_ps(fr->ic->sh_lj_ewald);
-    ewclj            = _mm256_set1_ps(fr->ewaldcoeff_lj);
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
+    vdwgridparam     = kernel_data->ljpme_c6grid;
+    sh_lj_ewald	     = _mm256_set1_ps(kernel_data->ic->sh_lj_ewald);
+    ewclj            = _mm256_set1_ps(kernel_data->ic->ewaldcoeff_lj);
     ewclj2           = _mm256_mul_ps(minus_one,_mm256_mul_ps(ewclj,ewclj));
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = kernel_data->ic->rvdw;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 
-    sh_vdw_invrcut6  = _mm256_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm256_set1_ps(fr->rvdw);
+    sh_vdw_invrcut6  = _mm256_set1_ps(kernel_data->ic->sh_invrc6);
+    rvdw             = _mm256_set1_ps(kernel_data->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;

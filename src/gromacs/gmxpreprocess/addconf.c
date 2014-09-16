@@ -344,17 +344,17 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
               t_atoms *atoms_solvt, rvec *x_solvt, rvec *v_solvt, real *r_solvt,
               gmx_bool bVerbose, real rshell, int max_sol, const output_env_t oenv)
 {
-    t_nblist       *nlist;
-    t_atoms        *atoms_all;
-    real            max_vdw, *r_prot, *r_all, n2, r2, ib1, ib2;
-    int             natoms_prot, natoms_solvt;
-    int             i, j, jj, m, j0, j1, jjj, jnres, jnr, inr, iprot, is1, is2;
-    int             prev, resnr, nresadd, d, k, ncells, maxincell;
-    int             dx0, dx1, dy0, dy1, dz0, dz1;
-    int             ntest, nremove, nkeep;
-    rvec            dx, xi, xj, xpp, *x_all, *v_all;
-    gmx_bool       *remove, *keep;
-    int             bSolSol;
+    struct t_nblist *nlist;
+    t_atoms         *atoms_all;
+    real             max_vdw, *r_prot, *r_all, n2, r2, ib1, ib2;
+    int              natoms_prot, natoms_solvt;
+    int              i, j, jj, m, j0, j1, jjj, jnres, jnr, inr, iprot, is1, is2;
+    int              prev, resnr, nresadd, d, k, ncells, maxincell;
+    int              dx0, dx1, dy0, dy1, dz0, dz1;
+    int              ntest, nremove, nkeep;
+    rvec             dx, xi, xj, xpp, *x_all, *v_all;
+    gmx_bool        *remove, *keep;
+    int              bSolSol;
 
     natoms_prot  = atoms->nr;
     natoms_solvt = atoms_solvt->nr;
