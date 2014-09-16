@@ -65,7 +65,7 @@ int init_gb(gmx_genborn_t **p_born,
 
 
 /* Born radii calculations, both with and without SSE acceleration */
-int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
+int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top, rvec x[], struct t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
 
 
 

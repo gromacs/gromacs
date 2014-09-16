@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,23 +34,41 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _NB_KERNEL_ALLVSALL_H
-#define _NB_KERNEL_ALLVSALL_H
 
-#include "config.h"
+#ifndef GMX_LEGACYHEADERS_PRINT_NRNB_H
+#define GMX_LEGACYHEADERS_PRINT_NRNB_H
 
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include <stdio.h>
+
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
 
-void
-nb_kernel_allvsall(t_nblist *                nlist,
-                   rvec *                    x,
-                   rvec *                    f,
-                   t_forcerec *              fr,
-                   t_mdatoms *               mdatoms,
-                   nb_kernel_data_t *        kernel_data,
-                   t_nrnb *                  nrnb);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void print_nrnb(FILE *out, t_nrnb *nrnb);
+
+void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop);
+/* Calculates the non-bonded forces and flop count.
+ * When out!=NULL also prints the full count table.
+ */
+
+void print_perf(FILE *out, double nodetime, double realtime,
+                gmx_int64_t nsteps, real delta_t,
+                double nbfs, double mflop);
+/* Prints the performance, nbfs and mflop come from print_flop */
+
+void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[]);
+/* Print detailed load balancing info */
+
+int cost_nrnb(int enr);
+/* Cost in i860 cycles of this component of MD */
+
+const char *nrnb_str(int enr);
+/* Name of this component */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

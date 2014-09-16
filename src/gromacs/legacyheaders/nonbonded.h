@@ -63,9 +63,9 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 
 
 void
-gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
-                                  t_nblist *   nl,
-                                  gmx_bool     bElecAndVdwSwitchDiffers);
+gmx_nonbonded_set_kernel_pointers(FILE            *fplog,
+                                  struct t_nblist *nl,
+                                  gmx_bool         bElecAndVdwSwitchDiffers);
 
 
 

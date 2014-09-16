@@ -53,7 +53,7 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/print_nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/qmmm.h"

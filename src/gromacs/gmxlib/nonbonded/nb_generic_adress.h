@@ -39,16 +39,15 @@
 #define _nb_generic_adress_h_
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/math/vec.h"
 
 void
-gmx_nb_generic_adress_kernel(t_nblist *                nlist,
-                             rvec *                    xx,
-                             rvec *                    ff,
-                             t_forcerec *              fr,
-                             t_mdatoms *               mdatoms,
-                             nb_kernel_data_t *        kernel_data,
-                             t_nrnb *                  nrnb);
+gmx_nb_generic_adress_kernel(const struct t_nblist *        nlist,
+                             rvec        *                  xx,
+                             rvec        *                  ff,
+                             const struct nb_kernel_data_t *kernel_data,
+                             t_nrnb        *                nrnb);
 
 #endif

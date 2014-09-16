@@ -57,13 +57,11 @@
  */
 void
 nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_sparc64_hpc_ace_double
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -126,21 +124,21 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_sparc64_hpc_ace_double
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
-    charge           = mdatoms->chargeA;
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = gmx_fjsp_set1_v2r8(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
     vftab            = kernel_data->table_vdw->data;
     vftabscale       = gmx_fjsp_set1_v2r8(kernel_data->table_vdw->scale);
 
-    sh_ewald         = gmx_fjsp_set1_v2r8(fr->ic->sh_ewald);
-    ewtab            = fr->ic->tabq_coul_FDV0;
-    ewtabscale       = gmx_fjsp_set1_v2r8(fr->ic->tabq_scale);
-    ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/fr->ic->tabq_scale);
+    sh_ewald         = gmx_fjsp_set1_v2r8(kernel_data->ic->sh_ewald);
+    ewtab            = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale       = gmx_fjsp_set1_v2r8(kernel_data->ic->tabq_scale);
+    ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/kernel_data->ic->tabq_scale);
 
     /* Setup water-specific parameters */
     inr              = nlist->iinr[0];
@@ -1219,13 +1217,11 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_sparc64_hpc_ace_double
  */
 void
 nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_sparc64_hpc_ace_double
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -1288,21 +1284,21 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_sparc64_hpc_ace_double
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
-    charge           = mdatoms->chargeA;
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = gmx_fjsp_set1_v2r8(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
     vftab            = kernel_data->table_vdw->data;
     vftabscale       = gmx_fjsp_set1_v2r8(kernel_data->table_vdw->scale);
 
-    sh_ewald         = gmx_fjsp_set1_v2r8(fr->ic->sh_ewald);
-    ewtab            = fr->ic->tabq_coul_F;
-    ewtabscale       = gmx_fjsp_set1_v2r8(fr->ic->tabq_scale);
-    ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/fr->ic->tabq_scale);
+    sh_ewald         = gmx_fjsp_set1_v2r8(kernel_data->ic->sh_ewald);
+    ewtab            = kernel_data->ic->tabq_coul_F;
+    ewtabscale       = gmx_fjsp_set1_v2r8(kernel_data->ic->tabq_scale);
+    ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/kernel_data->ic->tabq_scale);
 
     /* Setup water-specific parameters */
     inr              = nlist->iinr[0];
