@@ -58,13 +58,11 @@
  */
 void
 nb_kernel_ElecEwSh_VdwNone_GeomW3P1_VF_avx_256_single
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or 
      * just 0 for non-waters.
@@ -116,19 +114,19 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_VF_avx_256_single
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
-    charge           = mdatoms->chargeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = _mm256_set1_ps(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
 
-    sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
+    sh_ewald         = _mm256_set1_ps(kernel_data->ic->sh_ewald);
+    beta             = _mm256_set1_ps(kernel_data->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 
-    ewtab            = fr->ic->tabq_coul_FDV0;
-    ewtabscale       = _mm256_set1_ps(fr->ic->tabq_scale);
-    ewtabhalfspace   = _mm256_set1_ps(0.5/fr->ic->tabq_scale);
+    ewtab            = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale       = _mm256_set1_ps(kernel_data->ic->tabq_scale);
+    ewtabhalfspace   = _mm256_set1_ps(0.5/kernel_data->ic->tabq_scale);
 
     /* Setup water-specific parameters */
     inr              = nlist->iinr[0];
@@ -137,7 +135,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_VF_avx_256_single
     iq2              = _mm256_mul_ps(facel,_mm256_set1_ps(charge[inr+2]));
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = kernel_data->ic->rcoulomb;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 
@@ -708,13 +706,11 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_VF_avx_256_single
  */
 void
 nb_kernel_ElecEwSh_VdwNone_GeomW3P1_F_avx_256_single
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or 
      * just 0 for non-waters.
@@ -766,19 +762,19 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_F_avx_256_single
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
-    charge           = mdatoms->chargeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = _mm256_set1_ps(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
 
-    sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
+    sh_ewald         = _mm256_set1_ps(kernel_data->ic->sh_ewald);
+    beta             = _mm256_set1_ps(kernel_data->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 
-    ewtab            = fr->ic->tabq_coul_F;
-    ewtabscale       = _mm256_set1_ps(fr->ic->tabq_scale);
-    ewtabhalfspace   = _mm256_set1_ps(0.5/fr->ic->tabq_scale);
+    ewtab            = kernel_data->ic->tabq_coul_F;
+    ewtabscale       = _mm256_set1_ps(kernel_data->ic->tabq_scale);
+    ewtabhalfspace   = _mm256_set1_ps(0.5/kernel_data->ic->tabq_scale);
 
     /* Setup water-specific parameters */
     inr              = nlist->iinr[0];
@@ -787,7 +783,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_F_avx_256_single
     iq2              = _mm256_mul_ps(facel,_mm256_set1_ps(charge[inr+2]));
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = kernel_data->ic->rcoulomb;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 

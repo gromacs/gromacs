@@ -93,13 +93,11 @@
  */
 void
 {KERNEL_NAME}
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* ## Not all variables are used for all kernels, but any optimizing compiler fixes that, */
     /* ## so there is no point in going to extremes to exclude variables that are not needed. */
@@ -185,26 +183,26 @@ void
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
     /* #if KERNEL_ELEC != 'None' */
-    facel            = _mm_set1_ps(fr->epsfac);
-    charge           = mdatoms->chargeA;
+    facel            = _mm_set1_ps(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
     /*     #if 'ReactionField' in KERNEL_ELEC */
-    krf              = _mm_set1_ps(fr->ic->k_rf);
-    krf2             = _mm_set1_ps(fr->ic->k_rf*2.0);
-    crf              = _mm_set1_ps(fr->ic->c_rf);
+    krf              = _mm_set1_ps(kernel_data->ic->k_rf);
+    krf2             = _mm_set1_ps(kernel_data->ic->k_rf*2.0);
+    crf              = _mm_set1_ps(kernel_data->ic->c_rf);
     /*     #endif */
     /* #endif */
     /* #if KERNEL_VDW != 'None' */
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
     /* #endif */
     /* #if 'LJEwald' in KERNEL_VDW */
-    vdwgridparam     = fr->ljpme_c6grid;
-    sh_lj_ewald      = _mm_set1_ps(fr->ic->sh_lj_ewald);
-    ewclj            = _mm_set1_ps(fr->ewaldcoeff_lj);
+    vdwgridparam     = kernel_data->ljpme_c6grid;
+    sh_lj_ewald      = _mm_set1_ps(kernel_data->ic->sh_lj_ewald);
+    ewclj            = _mm_set1_ps(kernel_data->ic->ewaldcoeff_lj);
     ewclj2           = _mm_mul_ps(minus_one,_mm_mul_ps(ewclj,ewclj));
     /* #endif */
 
@@ -220,24 +218,24 @@ void
     /* #endif */
 
     /* #if 'Ewald' in KERNEL_ELEC */
-    sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
+    sh_ewald         = _mm_set1_ps(kernel_data->ic->sh_ewald);
     /*     #if KERNEL_VF=='Force' and KERNEL_MOD_ELEC!='PotentialSwitch' */
-    ewtab            = fr->ic->tabq_coul_F;
-    ewtabscale       = _mm_set1_ps(fr->ic->tabq_scale);
-    ewtabhalfspace   = _mm_set1_ps(0.5/fr->ic->tabq_scale);
+    ewtab            = kernel_data->ic->tabq_coul_F;
+    ewtabscale       = _mm_set1_ps(kernel_data->ic->tabq_scale);
+    ewtabhalfspace   = _mm_set1_ps(0.5/kernel_data->ic->tabq_scale);
     /*     #else */
-    ewtab            = fr->ic->tabq_coul_FDV0;
-    ewtabscale       = _mm_set1_ps(fr->ic->tabq_scale);
-    ewtabhalfspace   = _mm_set1_ps(0.5/fr->ic->tabq_scale);
+    ewtab            = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale       = _mm_set1_ps(kernel_data->ic->tabq_scale);
+    ewtabhalfspace   = _mm_set1_ps(0.5/kernel_data->ic->tabq_scale);
      /*     #endif */
     /* #endif */
 
     /* #if KERNEL_ELEC=='GeneralizedBorn' */
-    invsqrta         = fr->invsqrta;
-    dvda             = fr->dvda;
-    gbtabscale       = _mm_set1_ps(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
-    gbinvepsdiff     = _mm_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    invsqrta         = kernel_data->invsqrta;
+    dvda             = kernel_data->dvda;
+    gbtabscale       = _mm_set1_ps(kernel_data->gbtabscale);
+    gbtab            = kernel_data->gbtabdata;
+    gbinvepsdiff     = _mm_set1_ps((1.0/kernel_data->ic->epsilon_r) - (1.0/kernel_data->gb_epsilon_solvent));
     /* #endif */
 
     /* #if 'Water' in GEOMETRY_I */
@@ -278,25 +276,25 @@ void
     /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
     /*     #if KERNEL_ELEC!='None' */
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = kernel_data->ic->rcoulomb;
     /*     #else */
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = kernel_data->ic->rvdw;
     /*     #endif */
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
     /* #endif */
 
     /* #if KERNEL_MOD_VDW=='PotentialShift' */
-    sh_vdw_invrcut6  = _mm_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_ps(fr->rvdw);
+    sh_vdw_invrcut6  = _mm_set1_ps(kernel_data->ic->sh_invrc6);
+    rvdw             = _mm_set1_ps(kernel_data->ic->rvdw);
     /* #endif */
 
     /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
     /*     #if KERNEL_MOD_ELEC=='PotentialSwitch'  */
-    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch_scalar   = kernel_data->rcoulomb_switch;
     rswitch          = _mm_set1_ps(rswitch_scalar);
     /*     #else */
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = kernel_data->ic->rvdw_switch;
     rswitch          = _mm_set1_ps(rswitch_scalar);
     /*     #endif */
     /* Setup switch parameters */

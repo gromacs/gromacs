@@ -35,10 +35,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _nrnb_h
-#define _nrnb_h
+#ifndef GMX_LEGACYHEADERS_NRNB_H
+#define GMX_LEGACYHEADERS_NRNB_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,8 +50,6 @@ void cp_nrnb(t_nrnb *dest, t_nrnb *src);
 
 void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2);
 
-void print_nrnb(FILE *out, t_nrnb *nrnb);
-
 void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char *file, int line);
 
 #if DEBUG_NRNB
@@ -59,26 +57,6 @@ void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char *file, int line);
 #else
 #define inc_nrnb(nrnb, enr, inc) (nrnb)->n[enr] += inc
 #endif
-
-
-void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop);
-/* Calculates the non-bonded forces and flop count.
- * When out!=NULL also prints the full count table.
- */
-
-void print_perf(FILE *out, double nodetime, double realtime,
-                gmx_int64_t nsteps, real delta_t,
-                double nbfs, double mflop);
-/* Prints the performance, nbfs and mflop come from print_flop */
-
-void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[]);
-/* Print detailed load balancing info */
-
-int cost_nrnb(int enr);
-/* Cost in i860 cycles of this component of MD */
-
-const char *nrnb_str(int enr);
-/* Name of this component */
 
 #ifdef __cplusplus
 }
