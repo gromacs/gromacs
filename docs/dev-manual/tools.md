@@ -100,11 +100,20 @@ that this script has something to complain.</dd>
 `uncrustify.sh` automatically before every commit to check for formatting
 issues.</dd>
 
-<dt>include directive checker</dt>
-<dd></dd>
+<dt>`docs/doxygen/includesorter.py`</dt>
+<dd>This Python script sorts and reformats \#include directives according to
+the guidelines at \ref page_devstyle_includes.  Details are documented on a
+separate page (with the whole suite of Python scripts used for source code
+checks): \ref section_dev_includesorter.</dd>
 
-<dt>include sorting</dt>
-<dd></dd>
+<dt>include directive checker</dt>
+<dd>In its present form, the above include sorter script cannot be conveniently
+applied in `uncrustify.sh`.  To check for issues, it is instead integrated into
+a `doc-check` build target.  When this target is built, it also checks for
+include formatting issues.  Internally, it uses the sorter script.  This check
+is run in Jenkins as part of the Documentation job.
+Details for the checking mechanism are on a separate page (common for several
+checkers): \subpage page_dev_gmxtree.</dd>
 
 <dt>`admin/reformat_all.sh`</dt>
 <dd>This `bash` script runs uncrustify/`copyright.py`/include sorter
@@ -150,9 +159,20 @@ and missing graphs.</dd>
 <dd>Doxygen produces warnings about some incorrect uses and wrong
 documentation, but there are many common mistakes that it does not detect.
 \Gromacs uses an additional, custom Python script to check for such issues.
+This is most easily invoked through a `doc-check` target in the build system.
 The script also checks that documentation for a header matches its use in the
 source code (e.g., that a header documented as internal to a module is not
-actually used from outside the module).</dd>
+actually used from outside the module).  These checks are run in Jenkins as
+part of the Documentation job.  Details for the custom checker are on a
+separate page (common for several checkers): \subpage page_dev_gmxtree.</dd>
+
+<dt>module dependency graphs</dt>
+<dd>\Gromacs uses a custom Python script to generate an annotated dependency
+graph for the code, showing \#include dependencies between modules.
+The generated graph is embedded into the Doxygen documentation:
+\ref page_modulegraph.
+This script shares most of its implementation with the custom checkers, and is
+documented on the same page: \subpage page_dev_gmxtree.</dd>
 
 <dt>Pandoc</dt>
 <dd>Pandoc (<http://johnmacfarlane.net/pandoc/>) is used for building some
