@@ -58,13 +58,11 @@
  */
 void
 nb_kernel_ElecRF_VdwLJ_GeomP1P1_VF_avx_256_single
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or 
      * just 0 for non-waters.
@@ -111,16 +109,16 @@ nb_kernel_ElecRF_VdwLJ_GeomP1P1_VF_avx_256_single
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
-    charge           = mdatoms->chargeA;
-    krf              = _mm256_set1_ps(fr->ic->k_rf);
-    krf2             = _mm256_set1_ps(fr->ic->k_rf*2.0);
-    crf              = _mm256_set1_ps(fr->ic->c_rf);
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = _mm256_set1_ps(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
+    krf              = _mm256_set1_ps(kernel_data->ic->k_rf);
+    krf2             = _mm256_set1_ps(kernel_data->ic->k_rf*2.0);
+    crf              = _mm256_set1_ps(kernel_data->ic->c_rf);
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;
@@ -444,13 +442,11 @@ nb_kernel_ElecRF_VdwLJ_GeomP1P1_VF_avx_256_single
  */
 void
 nb_kernel_ElecRF_VdwLJ_GeomP1P1_F_avx_256_single
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or 
      * just 0 for non-waters.
@@ -497,16 +493,16 @@ nb_kernel_ElecRF_VdwLJ_GeomP1P1_F_avx_256_single
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
-    charge           = mdatoms->chargeA;
-    krf              = _mm256_set1_ps(fr->ic->k_rf);
-    krf2             = _mm256_set1_ps(fr->ic->k_rf*2.0);
-    crf              = _mm256_set1_ps(fr->ic->c_rf);
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    facel            = _mm256_set1_ps(kernel_data->ic->epsfac);
+    charge           = kernel_data->chargeA;
+    krf              = _mm256_set1_ps(kernel_data->ic->k_rf);
+    krf2             = _mm256_set1_ps(kernel_data->ic->k_rf*2.0);
+    crf              = _mm256_set1_ps(kernel_data->ic->c_rf);
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;

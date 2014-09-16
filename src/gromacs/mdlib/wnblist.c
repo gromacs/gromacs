@@ -54,7 +54,7 @@
 
 #define header "Neighborlist:"
 
-static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL)
+static void write_nblist(FILE *out, gmx_domdec_t *dd, struct t_nblist *nblist, int nDNL)
 {
     int                 i, nii, ii, j, zi, zj0, zj1, aj, zj, nj;
     int                 ca1[DD_MAXZONE], np[DD_MAXZONE];

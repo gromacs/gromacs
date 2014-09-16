@@ -44,12 +44,10 @@
 #include "gromacs/legacyheaders/types/simple.h"
 
 void
-gmx_nb_generic_cg_kernel(t_nblist *                nlist,
-                         rvec *                    x,
-                         rvec *                    f,
-                         t_forcerec *              fr,
-                         t_mdatoms *               mdatoms,
-                         nb_kernel_data_t *        kernel_data,
-                         t_nrnb *                  nrnb);
+gmx_nb_generic_cg_kernel(const struct t_nblist  *       nlist,
+                         rvec      *                    x,
+                         rvec      *                    f,
+                         const struct nb_kernel_data_t *kernel_data,
+                         t_nrnb      *                  nrnb);
 
 #endif

@@ -42,19 +42,52 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+#include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcetable.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/topology/block.h"
 
-/* Structure to collect kernel data not available in forcerec or mdatoms structures.
+/* Structure to collect all data used in group-scheme kernels.
  * This is only used inside the nonbonded module.
  */
-typedef struct
+struct nb_kernel_data_t
 {
-    int                flags;
-    t_blocka *         exclusions;
-    real *             lambda;
-    real *             dvdl;
+    int                  flags;
+    const t_blocka      *exclusions;
+    const real          *lambda;
+    real                *dvdl;
+
+    interaction_const_t *ic;
+    int                  cutoff_scheme;
+    real                 rcoulomb_switch;
+    real                *shift_vec;
+    real                *fshift;
+    real                *chargeA;
+    real                *chargeB;
+    int                  ntype;
+    real                *nbfp;
+    int                 *typeA;
+    int                 *typeB;
+    real                *ljpme_c6grid;
+    real                *invsqrta;
+    real                *dvda;
+    real                 gbtabscale;
+    real                *gbtabdata;
+    real                 gb_epsilon_solvent;
+    real                 sc_alphacoul;
+    real                 sc_alphavdw;
+    real                 sc_power;
+    real                 sc_r_power;
+    real                 sc_sigma6_def;
+    real                 sc_sigma6_min;
+    real                 adress_ex_forcecap;
+    int                 *adress_group_explicit;
+    real                *adress_wf;
+    unsigned short      *cENER;
 
     /* pointers to tables */
     t_forcetable *     table_elec;
@@ -65,18 +98,7 @@ typedef struct
     real *             energygrp_elec;
     real *             energygrp_vdw;
     real *             energygrp_polarization;
-}
-nb_kernel_data_t;
-
-
-typedef void
-    nb_kernel_t (t_nblist *                nlist,
-                 rvec *                    x,
-                 rvec *                    f,
-                 t_forcerec *              fr,
-                 t_mdatoms *               mdatoms,
-                 nb_kernel_data_t *        kernel_data,
-                 t_nrnb *                  nrnb);
+};
 
 
 /* Structure with a kernel pointer and settings. This cannot be abstract

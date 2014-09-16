@@ -55,13 +55,11 @@
  */
 void
 nb_kernel_ElecNone_VdwBhamSw_GeomP1P1_VF_c
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
@@ -89,16 +87,16 @@ nb_kernel_ElecNone_VdwBhamSw_GeomP1P1_VF_c
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
-    rcutoff          = fr->rvdw;
+    rcutoff          = kernel_data->ic->rvdw;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rvdw_switch;
+    rswitch          = kernel_data->ic->rvdw_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);
@@ -264,13 +262,11 @@ nb_kernel_ElecNone_VdwBhamSw_GeomP1P1_VF_c
  */
 void
 nb_kernel_ElecNone_VdwBhamSw_GeomP1P1_F_c
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
@@ -298,16 +294,16 @@ nb_kernel_ElecNone_VdwBhamSw_GeomP1P1_F_c
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
-    rcutoff          = fr->rvdw;
+    rcutoff          = kernel_data->ic->rvdw;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rvdw_switch;
+    rswitch          = kernel_data->ic->rvdw_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);

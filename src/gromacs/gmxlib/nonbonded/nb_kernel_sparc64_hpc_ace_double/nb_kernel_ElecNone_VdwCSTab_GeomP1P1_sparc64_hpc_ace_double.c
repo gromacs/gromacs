@@ -57,13 +57,11 @@
  */
 void
 nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_sparc64_hpc_ace_double
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -106,11 +104,11 @@ nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_sparc64_hpc_ace_double
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
     vftab            = kernel_data->table_vdw->data;
     vftabscale       = gmx_fjsp_set1_v2r8(kernel_data->table_vdw->scale);
@@ -361,13 +359,11 @@ nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_sparc64_hpc_ace_double
  */
 void
 nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_sparc64_hpc_ace_double
-                    (t_nblist                    * gmx_restrict       nlist,
-                     rvec                        * gmx_restrict          xx,
-                     rvec                        * gmx_restrict          ff,
-                     t_forcerec                  * gmx_restrict          fr,
-                     t_mdatoms                   * gmx_restrict     mdatoms,
-                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
-                     t_nrnb                      * gmx_restrict        nrnb)
+                    (const struct t_nblist         * gmx_restrict       nlist,
+                     rvec                          * gmx_restrict          xx,
+                     rvec                          * gmx_restrict          ff,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
+                     t_nrnb                        * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -410,11 +406,11 @@ nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_sparc64_hpc_ace_double
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
 
     vftab            = kernel_data->table_vdw->data;
     vftabscale       = gmx_fjsp_set1_v2r8(kernel_data->table_vdw->scale);

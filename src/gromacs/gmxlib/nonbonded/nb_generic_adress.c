@@ -51,13 +51,11 @@
 #define ALMOST_ZERO 1e-30
 #define ALMOST_ONE 1-(1e-30)
 void
-gmx_nb_generic_adress_kernel(t_nblist *                nlist,
-                             rvec *                    xx,
-                             rvec *                    ff,
-                             t_forcerec *              fr,
-                             t_mdatoms *               mdatoms,
-                             nb_kernel_data_t *        kernel_data,
-                             t_nrnb *                  nrnb)
+gmx_nb_generic_adress_kernel(const struct t_nblist *        nlist,
+                             rvec      *                    xx,
+                             rvec      *                    ff,
+                             const struct nb_kernel_data_t *kernel_data,
+                             t_nrnb      *                  nrnb)
 {
     int           nri, ntype, table_nelements, ielec, ivdw;
     real          facel, gbtabscale;
@@ -108,35 +106,35 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
     gmx_bool      bCG;
     int           egp_nr;
 
-    wf                  = mdatoms->wf;
+    wf                  = kernel_data->adress_wf;
 
-    force_cap           = fr->adress_ex_forcecap;
+    force_cap           = kernel_data->adress_ex_forcecap;
 
     x                   = xx[0];
     f                   = ff[0];
     ielec               = nlist->ielec;
     ivdw                = nlist->ivdw;
 
-    fshift              = fr->fshift[0];
+    fshift              = kernel_data->fshift;
     velecgrp            = kernel_data->energygrp_elec;
     vvdwgrp             = kernel_data->energygrp_vdw;
     tabscale            = kernel_data->table_elec_vdw->scale;
     VFtab               = kernel_data->table_elec_vdw->data;
 
-    sh_ewald            = fr->ic->sh_ewald;
-    ewtab               = fr->ic->tabq_coul_FDV0;
-    ewtabscale          = fr->ic->tabq_scale;
+    sh_ewald            = kernel_data->ic->sh_ewald;
+    ewtab               = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale          = kernel_data->ic->tabq_scale;
     ewtabhalfspace      = 0.5/ewtabscale;
 
-    rcoulomb2           = fr->rcoulomb*fr->rcoulomb;
-    rvdw                = fr->rvdw;
+    rcoulomb2           = kernel_data->ic->rcoulomb*kernel_data->ic->rcoulomb;
+    rvdw                = kernel_data->ic->rvdw;
     rvdw2               = rvdw*rvdw;
-    sh_dispersion       = fr->ic->dispersion_shift.cpot;
-    sh_repulsion        = fr->ic->repulsion_shift.cpot;
+    sh_dispersion       = kernel_data->ic->dispersion_shift.cpot;
+    sh_repulsion        = kernel_data->ic->repulsion_shift.cpot;
 
-    if (fr->coulomb_modifier == eintmodPOTSWITCH)
+    if (kernel_data->ic->coulomb_modifier == eintmodPOTSWITCH)
     {
-        d               = fr->rcoulomb-fr->rcoulomb_switch;
+        d               = kernel_data->ic->rcoulomb-kernel_data->rcoulomb_switch;
         elec_swV3       = -10.0/(d*d*d);
         elec_swV4       =  15.0/(d*d*d*d);
         elec_swV5       =  -6.0/(d*d*d*d*d);
@@ -149,9 +147,9 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
         /* Avoid warnings from stupid compilers (looking at you, Clang!) */
         elec_swV3 = elec_swV4 = elec_swV5 = elec_swF2 = elec_swF3 = elec_swF4 = 0.0;
     }
-    if (fr->vdw_modifier == eintmodPOTSWITCH)
+    if (kernel_data->ic->vdw_modifier == eintmodPOTSWITCH)
     {
-        d               = fr->rvdw-fr->rvdw_switch;
+        d               = rvdw-kernel_data->ic->rvdw_switch;
         vdw_swV3        = -10.0/(d*d*d);
         vdw_swV4        =  15.0/(d*d*d*d);
         vdw_swV5        =  -6.0/(d*d*d*d*d);
@@ -165,13 +163,13 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
         vdw_swV3 = vdw_swV4 = vdw_swV5 = vdw_swF2 = vdw_swF3 = vdw_swF4 = 0.0;
     }
 
-    bExactElecCutoff    = (fr->coulomb_modifier != eintmodNONE) || fr->eeltype == eelRF_ZERO;
-    bExactVdwCutoff     = (fr->vdw_modifier != eintmodNONE);
+    bExactElecCutoff    = (kernel_data->ic->coulomb_modifier != eintmodNONE) || kernel_data->ic->eeltype == eelRF_ZERO;
+    bExactVdwCutoff     = (kernel_data->ic->vdw_modifier != eintmodNONE);
     bExactCutoff        = bExactElecCutoff || bExactVdwCutoff;
 
     if (bExactCutoff)
     {
-        rcutoff  = ( fr->rcoulomb > fr->rvdw ) ? fr->rcoulomb : fr->rvdw;
+        rcutoff  = ( kernel_data->ic->rcoulomb > rvdw ) ? kernel_data->ic->rcoulomb : rvdw;
         rcutoff2 = rcutoff*rcutoff;
     }
     else
@@ -189,12 +187,12 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
     nvdwparam           = (ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM) ? 3 : 2;
     table_nelements     = 12;
 
-    charge              = mdatoms->chargeA;
-    type                = mdatoms->typeA;
-    facel               = fr->epsfac;
-    shiftvec            = fr->shift_vec[0];
-    vdwparam            = fr->nbfp;
-    ntype               = fr->ntype;
+    charge              = kernel_data->chargeA;
+    type                = kernel_data->typeA;
+    facel               = kernel_data->ic->epsfac;
+    shiftvec            = kernel_data->shift_vec;
+    vdwparam            = kernel_data->nbfp;
+    ntype               = kernel_data->ntype;
 
     for (n = 0; (n < nlist->nri); n++)
     {
@@ -219,8 +217,8 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
 
         /* We need to find out if this i atom is part of an
            all-atom or CG energy group  */
-        egp_nr = mdatoms->cENER[ii];
-        bCG    = !fr->adress_group_explicit[egp_nr];
+        egp_nr = kernel_data->cENER[ii];
+        bCG    = !kernel_data->adress_group_explicit[egp_nr];
 
         weight_cg1       = wf[ii];
 
@@ -319,8 +317,8 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
 
                     case GMX_NBKERNEL_ELEC_REACTIONFIELD:
                         /* Reaction-field */
-                        velec            = qq*(rinv+fr->k_rf*rsq-fr->c_rf);
-                        felec            = qq*(rinv*rinvsq-2.0*fr->k_rf);
+                        velec            = qq*(rinv+kernel_data->ic->k_rf*rsq-kernel_data->ic->c_rf);
+                        felec            = qq*(rinv*rinvsq-2.0*kernel_data->ic->k_rf);
                         break;
 
                     case GMX_NBKERNEL_ELEC_CUBICSPLINETABLE:
@@ -347,7 +345,7 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
                         eweps            = ewrt-ewitab;
                         ewitab           = 4*ewitab;
                         felec            = ewtab[ewitab]+eweps*ewtab[ewitab+1];
-                        rinvcorr         = (fr->coulomb_modifier == eintmodPOTSHIFT) ? rinv-fr->ic->sh_ewald : rinv;
+                        rinvcorr         = (kernel_data->ic->coulomb_modifier == eintmodPOTSHIFT) ? rinv-kernel_data->ic->sh_ewald : rinv;
                         velec            = qq*(rinvcorr-(ewtab[ewitab+2]-ewtabhalfspace*eweps*(ewtab[ewitab]+felec)));
                         felec            = qq*rinv*(rinvsq-felec);
                         break;
@@ -356,9 +354,9 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
                         gmx_fatal(FARGS, "Death & horror! No generic coulomb interaction for ielec=%d.\n", ielec);
                         break;
                 }
-                if (fr->coulomb_modifier == eintmodPOTSWITCH)
+                if (kernel_data->ic->coulomb_modifier == eintmodPOTSWITCH)
                 {
-                    d                = rsq*rinv-fr->rcoulomb_switch;
+                    d                = rsq*rinv-kernel_data->rcoulomb_switch;
                     d                = (d > 0.0) ? d : 0.0;
                     d2               = d*d;
                     sw               = 1.0+d2*d*(elec_swV3+d*(elec_swV4+d*elec_swV5));
@@ -398,7 +396,7 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
                         vvdw_disp        = c6*rinvsix;
                         vvdw_rep         = c12*rinvsix*rinvsix;
                         fvdw             = (vvdw_rep-vvdw_disp)*rinvsq;
-                        if (fr->vdw_modifier == eintmodPOTSHIFT)
+                        if (kernel_data->ic->vdw_modifier == eintmodPOTSHIFT)
                         {
                             vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion)/6.0;
                         }
@@ -419,7 +417,7 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
                         br               = cexp2*rsq*rinv;
                         vvdw_rep         = cexp1*exp(-br);
                         fvdw             = (br*vvdw_rep-vvdw_disp)*rinvsq;
-                        if (fr->vdw_modifier == eintmodPOTSHIFT)
+                        if (kernel_data->ic->vdw_modifier == eintmodPOTSHIFT)
                         {
                             vvdw             = (vvdw_rep-cexp1*exp(-cexp2*rvdw)) - (vvdw_disp + c6*sh_dispersion)/6.0;
                         }
@@ -459,9 +457,9 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
                         gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
                         break;
                 }
-                if (fr->vdw_modifier == eintmodPOTSWITCH)
+                if (kernel_data->ic->vdw_modifier == eintmodPOTSWITCH)
                 {
-                    d                = rsq*rinv-fr->rvdw_switch;
+                    d                = rsq*rinv-kernel_data->ic->rvdw_switch;
                     d                = (d > 0.0) ? d : 0.0;
                     d2               = d*d;
                     sw               = 1.0+d2*d*(vdw_swV3+d*(vdw_swV4+d*vdw_swV5));

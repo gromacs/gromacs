@@ -98,7 +98,7 @@ int natoms_beyond_ns_buffer(t_inputrec *ir, t_forcerec *fr, t_block *cgs,
                             matrix scale_tot, rvec *x);
 /* Returns the number of atoms that moved beyond the ns buffer */
 
-void reallocate_nblist(t_nblist *nl);
+void reallocate_nblist(struct t_nblist *nl);
 /* List reallocation, only exported for Verlet scheme use with FEP */
 
 #ifdef __cplusplus

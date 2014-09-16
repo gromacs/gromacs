@@ -118,12 +118,10 @@
  */
 void
 {KERNEL_NAME}
-                    (t_nblist * gmx_restrict                nlist,
+                    (const struct t_nblist * gmx_restrict nlist,
                      rvec * gmx_restrict                    xx,
                      rvec * gmx_restrict                    ff,
-                     t_forcerec * gmx_restrict              fr,
-                     t_mdatoms * gmx_restrict               mdatoms,
-                     nb_kernel_data_t * gmx_restrict        kernel_data,
+                     const struct nb_kernel_data_t * gmx_restrict kernel_data,
                      t_nrnb * gmx_restrict                  nrnb)
 {
     /* ## Not all variables are used for all kernels, but any optimizing compiler fixes that, */
@@ -182,9 +180,9 @@ void
     gmx_bool   bHybrid; /*Are we in the hybrid zone ?*/
     real       force_cap;
 
-    wf               = mdatoms->wf;
+    wf               = kernel_data->wf;
 
-    force_cap        = fr->adress_ex_forcecap;
+    force_cap        = kernel_data->adress_ex_forcecap;
 
     x                = xx[0];
     f                = ff[0];
@@ -195,21 +193,21 @@ void
     jjnr             = nlist->jjnr;
     shiftidx         = nlist->shift;
     gid              = nlist->gid;
-    shiftvec         = fr->shift_vec[0];
-    fshift           = fr->fshift[0];
+    shiftvec         = kernel_data->shift_vec;
+    fshift           = kernel_data->fshift;
     /* #if KERNEL_ELEC != 'None' */
-    facel            = fr->epsfac;
-    charge           = mdatoms->chargeA;
+    facel            = kernel_data->ic->epsfac;
+    charge           = kernel_data->chargeA;
     /*     #if 'ReactionField' in KERNEL_ELEC */
-    krf              = fr->ic->k_rf;
+    krf              = kernel_data->ic->k_rf;
     krf2             = krf*2.0;
-    crf              = fr->ic->c_rf;
+    crf              = kernel_data->ic->c_rf;
     /*     #endif */
     /* #endif */
     /* #if KERNEL_VDW != 'None' */
-    nvdwtype         = fr->ntype;
-    vdwparam         = fr->nbfp;
-    vdwtype          = mdatoms->typeA;
+    nvdwtype         = kernel_data->ntype;
+    vdwparam         = kernel_data->nbfp;
+    vdwtype          = kernel_data->typeA;
     /* #endif */
 
     /* #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW */
@@ -224,24 +222,24 @@ void
     /* #endif */
 
     /* #if 'Ewald' in KERNEL_ELEC */
-    sh_ewald         = fr->ic->sh_ewald;
+    sh_ewald         = kernel_data->ic->sh_ewald;
     /*     #if KERNEL_VF=='Force' and KERNEL_MOD_ELEC!='PotentialSwitch' */
-    ewtab            = fr->ic->tabq_coul_F;
-    ewtabscale       = fr->ic->tabq_scale;
+    ewtab            = kernel_data->ic->tabq_coul_F;
+    ewtabscale       = kernel_data->ic->tabq_scale;
     ewtabhalfspace   = 0.5/ewtabscale;
     /*     #else */
-    ewtab            = fr->ic->tabq_coul_FDV0;
-    ewtabscale       = fr->ic->tabq_scale;
+    ewtab            = kernel_data->ic->tabq_coul_FDV0;
+    ewtabscale       = kernel_data->ic->tabq_scale;
     ewtabhalfspace   = 0.5/ewtabscale;
      /*     #endif */
     /* #endif */
 
     /* #if KERNEL_ELEC=='GeneralizedBorn' */
-    invsqrta         = fr->invsqrta;
-    dvda             = fr->dvda;
-    gbtabscale       = fr->gbtab.scale;
-    gbtab            = fr->gbtab.data;
-    gbinvepsdiff     = (1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
+    invsqrta         = kernel_data->invsqrta;
+    dvda             = kernel_data->dvda;
+    gbtabscale       = kernel_data->gbtabscale;
+    gbtab            = kernel_data->gbtabdata;
+    gbinvepsdiff     = (1.0/kernel_data->ic->epsilon_r) - (1.0/kernel_data->gb_epsilon_solvent);
     /* #endif */
 
     /* #if 'Water' in GEOMETRY_I */
@@ -282,23 +280,23 @@ void
     /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
     /*     #if KERNEL_ELEC!='None' */
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = kernel_data->ic->rcoulomb;
     /*     #else */
-    rcutoff          = fr->rvdw;
+    rcutoff          = kernel_data->ic->rvdw;
     /*     #endif */
     rcutoff2         = rcutoff*rcutoff;
     /* #endif */
 
     /* #if KERNEL_MOD_VDW=='PotentialShift' */
-    sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    sh_vdw_invrcut6  = kernel_data->ic->sh_invrc6;
+    rvdw             = kernel_data->ic->rvdw;
     /* #endif */
 
     /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
     /*     #if KERNEL_MOD_ELEC=='PotentialSwitch'  */
-    rswitch          = fr->rcoulomb_switch;
+    rswitch          = kernel_data->rcoulomb_switch;
     /*     #else */
-    rswitch          = fr->rvdw_switch;
+    rswitch          = kernel_data->ic->rvdw_switch;
     /*     #endif */
     /* Setup switch parameters */
     d                = rcutoff-rswitch;

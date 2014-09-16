@@ -232,7 +232,7 @@ typedef struct {
 
     int                  ndistc;       /* Number of distance checks for flop counting */
 
-    t_nblist            *nbl_fep;      /* Temporary FEP list for load balancing */
+    struct t_nblist     *nbl_fep;      /* Temporary FEP list for load balancing */
 
     nbnxn_cycle_t        cc[enbsCCnr];
 
