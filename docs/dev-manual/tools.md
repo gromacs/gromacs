@@ -101,10 +101,14 @@ that this script has something to complain.</dd>
 issues.</dd>
 
 <dt>include directive checker</dt>
-<dd></dd>
+<dd>Custom Python script is provided to check that code follows the guidelines
+from \ref page_devstyle_includes.  These checks run as part of the `doc-check`
+target provided by the build system.  Details for the custom checker are
+on a separate page (common for several checkers): \subpage page_dev_gmxtree.
 
-<dt>include sorting</dt>
-<dd></dd>
+The Python script can also be invoked to apply changes to \#include directives
+to sort and reformat them according to the guidelines.  See the page above for
+details.</dd>
 
 <dt>`admin/reformat_all.sh`</dt>
 <dd>This `bash` script runs uncrustify/`copyright.py`/include sorter
@@ -150,9 +154,19 @@ and missing graphs.</dd>
 <dd>Doxygen produces warnings about some incorrect uses and wrong
 documentation, but there are many common mistakes that it does not detect.
 \Gromacs uses an additional, custom Python script to check for such issues.
+This is most easily invoked through a `doc-check` target in the build system.
 The script also checks that documentation for a header matches its use in the
 source code (e.g., that a header documented as internal to a module is not
-actually used from outside the module).</dd>
+actually used from outside the module).  Details for the custom checker are
+on a separate page (common for several checkers): \subpage page_dev_gmxtree.</dd>
+
+<dt>module dependency graphs</dt>
+<dd>\Gromacs uses a custom Python script to generate an annotated dependency
+graph for the code, showing \#include dependencies between modules.
+The generated graph is embedded into the Doxygen documentation:
+\ref page_modulegraph.
+This script shares most of its implementation with the custom checkers, and is
+documented on the same page: \subpage page_dev_gmxtree.</dd>
 
 <dt>Pandoc</dt>
 <dd>Pandoc (<http://johnmacfarlane.net/pandoc/>) is used for building some
