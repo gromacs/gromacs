@@ -163,6 +163,14 @@
 }
 
 {
+   printf
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:vfprintf_l
+}
+
+{
    strtof
    Memcheck:Leak
    fun:malloc
