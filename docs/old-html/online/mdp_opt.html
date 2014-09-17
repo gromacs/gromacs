@@ -25,7 +25,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, coulomb-modifier, rcoulomb-switch, rcoulomb, epsilon-r, epsilon-rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, vdw-modifier, rvdw-switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp-table)
-<li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier-nx, fourier-ny, fourier-nz, pme-order, ewald-rtol, ewald-geometry, epsilon-surface, optimize-fft)
+<li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier-nx, fourier-ny, fourier-nz, pme-order, ewald-rtol, ewald-geometry, epsilon-surface)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, nsttcouple, tc-grps, tau-t, ref-t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype,
   nstpcouple, tau-p, compressibility, ref-p, refcoord-scaling)
@@ -905,17 +905,6 @@ default value of zero means it is turned off. Turn it on by setting it to the va
 of the relative permittivity of the imaginary surface around your infinite system. Be
 careful - you shouldn't use this if you have free mobile charges in your system. 
 This value does not affect the slab 3DC variant of the long range corrections.</dd>
-
-
-<dt><b>optimize-fft:</b></dt>
-<dd><dl compact>
-<dt><b>no</b></dt>
-<dd>Don't calculate the optimal FFT plan for the grid at startup.</dd>
-<dt><b>yes</b></dt>
-<dd>Calculate the optimal FFT plan for the grid at startup. This saves a
-few percent for long simulations, but takes a couple of minutes
-at start.</dd>
-</dl></dd>
 
 </dl>
 
@@ -2137,7 +2126,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#expanded">nst-transition-matrix</A><br>
 <A HREF="#nl">ns-type</A><br>
 <A HREF="#wall">nwall</A><br>
-<A HREF="#ewald">optimize-fft</A><br>
 <A HREF="#nmr2">orire</A><br>
 <A HREF="#nmr2">orire-fc</A><br>
 <A HREF="#nmr2">orire-tau</A><br>
