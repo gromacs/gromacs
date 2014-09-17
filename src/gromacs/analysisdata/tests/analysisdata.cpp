@@ -154,7 +154,7 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
 #else
@@ -181,7 +181,7 @@ class DataSetsInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static DataSetsInputData singleton;
             return singleton.data_;
 #else
@@ -216,7 +216,7 @@ class MultipointInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static MultipointInputData singleton;
             return singleton.data_;
 #else
@@ -253,7 +253,7 @@ class MultipointDataSetsInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static MultipointDataSetsInputData singleton;
             return singleton.data_;
 #else
