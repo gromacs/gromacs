@@ -35,10 +35,9 @@
 file(GLOB LISTED_FORCES_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} PARENT_SCOPE)
 
-set(LISTED_FORCES_PUBLIC_HEADERS
-    bonded.h)
-
-gmx_install_headers(listed-forces ${LISTED_FORCES_PUBLIC_HEADERS})
+gmx_install_headers(
+    bonded.h
+    )
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

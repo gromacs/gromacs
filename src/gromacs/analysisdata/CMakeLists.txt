@@ -35,13 +35,13 @@
 file(GLOB ANALYSISDATA_SOURCES *.cpp modules/*.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ANALYSISDATA_SOURCES} PARENT_SCOPE)
 
-set(ANALYSISDATA_PUBLIC_HEADERS
+gmx_install_headers(
     abstractdata.h
     analysisdata.h
     arraydata.h
     dataframe.h
-    datamodule.h)
-gmx_install_headers(analysisdata ${ANALYSISDATA_PUBLIC_HEADERS})
+    datamodule.h
+    )
 
 add_subdirectory(modules)
 
