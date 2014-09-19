@@ -35,10 +35,9 @@
 file(GLOB BONDED_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${BONDED_SOURCES} PARENT_SCOPE)
 
-set(BONDED_PUBLIC_HEADERS
-    bonded.h)
-
-gmx_install_headers(bonded ${BONDED_PUBLIC_HEADERS})
+gmx_install_headers(
+    bonded.h
+    )
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

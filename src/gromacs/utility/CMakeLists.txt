@@ -35,7 +35,7 @@
 file(GLOB UTILITY_SOURCES *.c *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
-set(UTILITY_PUBLIC_HEADERS
+gmx_install_headers(
     arrayref.h
     basedefinitions.h
     cstringutil.h
@@ -54,7 +54,6 @@ set(UTILITY_PUBLIC_HEADERS
     smalloc.h
     stringutil.h
     )
-gmx_install_headers(utility ${UTILITY_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

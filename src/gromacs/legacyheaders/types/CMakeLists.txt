@@ -32,22 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-function (generate_installed_file_list SRCDIR BUILDDIR OUTFILE)
-    file(GLOB_RECURSE INSTALL_FILE_LIST "${BUILDDIR}/cmake_install.cmake")
-    set(MATCH_REGEX "(${SRCDIR}|${BUILDDIR})/.*\\.h")
-    set(HEADER_LIST)
-    foreach (INSTALL_FILE ${INSTALL_FILE_LIST})
-        file(STRINGS ${INSTALL_FILE} HEADER_LINES REGEX "${MATCH_REGEX}")
-        foreach (HEADER_LINE ${HEADER_LINES})
-            string (REGEX MATCH "${MATCH_REGEX}" HEADER "${HEADER_LINE}")
-            list(APPEND HEADER_LIST "${HEADER}")
-        endforeach ()
-    endforeach ()
-    string(REPLACE ";" "\n" HEADER_LIST "${HEADER_LIST}")
-    file(WRITE ${OUTFILE} "${HEADER_LIST}")
-endfunction ()
-
-if (NOT DEFINED SRCDIR OR NOT DEFINED BUILDDIR OR NOT DEFINED OUTFILE)
-    message(FATAL_ERROR "Required input variable (SRCDIR, BUILDDIR, OUTFILE) not set")
-endif ()
-generate_installed_file_list(${SRCDIR} ${BUILDDIR} ${OUTFILE})
+# includes: Nothing to build, just installation
+file(GLOB HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
+list(REMOVE_ITEM HEADERS commrec.h)
+gmx_install_headers(${HEADERS})

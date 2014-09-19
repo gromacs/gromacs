@@ -34,16 +34,31 @@
 
 set(LIBGROMACS_SOURCES)
 
-function (gmx_install_headers DESTINATION)
+set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
+
+function (gmx_install_headers)
     if (NOT GMX_BUILD_MDRUN_ONLY)
-        if (DESTINATION)
-            set(DESTINATION ${INCL_INSTALL_DIR}/gromacs/${DESTINATION})
-        else()
-            set(DESTINATION ${INCL_INSTALL_DIR}/gromacs)
-        endif()
-        install(FILES ${ARGN} DESTINATION ${DESTINATION} COMPONENT development)
+        file(RELATIVE_PATH _dest ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_LIST_DIR})
+        install(FILES       ${ARGN}
+                DESTINATION "${INCL_INSTALL_DIR}/${_dest}"
+                COMPONENT   development)
     endif()
+    foreach (_file ${ARGN})
+        if (IS_ABSOLUTE "${_file}")
+            set_property(GLOBAL APPEND PROPERTY GMX_INSTALLED_HEADERS ${_file})
+        else()
+            set_property(GLOBAL APPEND PROPERTY GMX_INSTALLED_HEADERS
+                         ${CMAKE_CURRENT_LIST_DIR}/${_file})
+        endif()
+    endforeach()
 endfunction ()
+
+function (gmx_write_installed_header_list)
+    get_property(_list GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
+    string(REPLACE ";" "\n" _list "${_list}")
+    # TODO: Make this only update the file timestamp if the contents actually change.
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt "${_list}")
+endfunction()
 
 if(GMX_USE_TNG)
     option(GMX_EXTERNAL_TNG "Use external TNG instead of compiling the version shipped with GROMACS."
@@ -117,16 +132,16 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
 tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
 list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
 
-set(LIBGROMACS_HEADERS
+configure_file(version.h.cmakein version.h)
+gmx_install_headers(
     analysisdata.h
     commandline.h
     options.h
     selection.h
     trajectoryanalysis.h
-    utility.h)
-configure_file(version.h.cmakein version.h)
-gmx_install_headers("" ${LIBGROMACS_HEADERS})
-gmx_install_headers("" ${CMAKE_CURRENT_BINARY_DIR}/version.h)
+    utility.h
+    ${CMAKE_CURRENT_BINARY_DIR}/version.h
+    )
 
 # This code is here instead of utility/CMakeLists.txt, because CMake
 # custom commands and source file properties can only be set in the directory
@@ -190,6 +205,8 @@ set_target_properties(libgromacs PROPERTIES
                       SOVERSION ${LIBRARY_SOVERSION}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+gmx_write_installed_header_list()
 
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary

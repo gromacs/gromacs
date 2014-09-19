@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2013, by the GROMACS development team, led by
+# Copyright (c) 2010,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,10 +32,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(ANALYSISDATA_MODULES_PUBLIC_HEADERS
+gmx_install_headers(
     average.h
     displacement.h
     histogram.h
     lifetime.h
-    plot.h)
-gmx_install_headers(analysisdata/modules ${ANALYSISDATA_MODULES_PUBLIC_HEADERS})
+    plot.h
+    )
