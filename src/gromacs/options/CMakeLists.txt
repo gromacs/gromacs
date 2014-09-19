@@ -35,7 +35,7 @@
 file(GLOB OPTIONS_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${OPTIONS_SOURCES} PARENT_SCOPE)
 
-set(OPTIONS_PUBLIC_HEADERS
+gmx_install_headers(
     abstractoption.h
     basicoptions.h
     filenameoption.h
@@ -43,8 +43,8 @@ set(OPTIONS_PUBLIC_HEADERS
     optionfiletype.h
     optionflags.h
     options.h
-    timeunitmanager.h)
-gmx_install_headers(options ${OPTIONS_PUBLIC_HEADERS})
+    timeunitmanager.h
+    )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

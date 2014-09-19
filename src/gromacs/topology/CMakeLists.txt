@@ -35,7 +35,7 @@
 file(GLOB TOPOLOGY_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOPOLOGY_SOURCES} PARENT_SCOPE)
 
-set(TOPOLOGY_PUBLIC_HEADERS
+gmx_install_headers(
     atomprop.h
     atoms.h
     block.h
@@ -43,9 +43,8 @@ set(TOPOLOGY_PUBLIC_HEADERS
     index.h
     mtop_util.h
     symtab.h
-    topology.h)
-
-gmx_install_headers(topology ${TOPOLOGY_PUBLIC_HEADERS})
+    topology.h
+    )
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

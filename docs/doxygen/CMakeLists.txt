@@ -62,21 +62,10 @@ if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
     set(USE_PYTHON_SCRIPTS ON)
 endif()
 
-# Create a stamp file whenever cmake is run, as the list of installed files may
-# have changed.
-gmx_get_stamp_filename(configure_stamp_file cmake-configure)
-file(WRITE ${configure_stamp_file} "Timestamp for configuration")
 # Note that if you relocate this file, you also need to change gmxtree.py.
-set(INSTALLED_HEADERS_FILE ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt)
-gmx_add_custom_output_target(find-installed-headers
-    OUTPUT ${INSTALLED_HEADERS_FILE}
-    COMMAND ${CMAKE_COMMAND}
-        -D SRCDIR=${CMAKE_SOURCE_DIR}
-        -D BUILDDIR=${CMAKE_BINARY_DIR}
-        -D OUTFILE=${INSTALLED_HEADERS_FILE}
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/getInstalledHeaders.cmake
-    DEPENDS ${configure_stamp_file}
-    COMMENT "Generating installed headers list")
+# TODO: Try to find a solution where this would be hard-coded here, completely
+# separate from the logic that generates it.
+set(INSTALLED_HEADERS_FILE ${PROJECT_BINARY_DIR}/src/gromacs/installed-headers.txt)
 
 ########################################################################
 # Doxygen configuration
@@ -178,13 +167,12 @@ if (DOXYGEN_FOUND)
                 -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
                 --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
                 -o ${DEPGRAPH_DIR}
-            DEPENDS doc-xml find-installed-headers
+            DEPENDS doc-xml ${INSTALLED_HEADER_FILE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/doxygenxml.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/gmxtree.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
             COMMENT "Generating include dependency graphs for dot")
-        add_dependencies(dep-graphs-dot-fast find-installed-headers)
 
         # Add separate targets for converting the .dot files to .png.
         # These are not needed by the Doxygen targets, but are useful for
@@ -227,7 +215,6 @@ if (DOXYGEN_FOUND)
             COMMENT "Checking Doxygen documentation" VERBATIM)
         add_custom_target(doc-check-fast COMMAND ${doc_check_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
-        add_dependencies(doc-check      doc-xml find-installed-headers)
-        add_dependencies(doc-check-fast find-installed-headers)
+        add_dependencies(doc-check      doc-xml)
     endif()
 endif()
