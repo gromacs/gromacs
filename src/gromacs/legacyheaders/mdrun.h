@@ -163,6 +163,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *deviceOptions, int imdport, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
+void bcast_state(const struct t_commrec *cr, t_state *state);
+/* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
+ */
+
 #ifdef __cplusplus
 }
 #endif
