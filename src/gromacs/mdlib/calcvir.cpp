@@ -37,6 +37,8 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vectypes.h"
@@ -238,8 +240,8 @@ void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
         /* Calculate virial for bonded forces only when they belong to
          * this node.
          */
-        start = max(i0, g->at_start);
-        end   = min(i1, g->at_end);
+        start = std::max(i0, g->at_start);
+        end   = std::min(i1, g->at_end);
 #ifdef SAFE
         lo_fcv2(start, end, x, f, vir, g->ishift, box, TRICLINIC(box));
 #else
