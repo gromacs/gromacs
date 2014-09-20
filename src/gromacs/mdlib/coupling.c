@@ -1236,7 +1236,8 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
 
 real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 {
-    int     i, j, nd, ndj, bmass, qmass, ngtcall;
+    int     i, j, bmass, qmass, ngtcall;
+    real    nd, ndj;
     real    ener_npt, reft, eta, kT, tau;
     double *ivxi, *ixi;
     double *iQinv;
@@ -1319,7 +1320,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
             reft = max(ir->opts.ref_t[i], 0);
             kT   = BOLTZ * reft;
 
-            if (nd > 0)
+            if (nd > 0.0)
             {
                 if (IR_NVT_TROTTER(ir))
                 {
@@ -1336,7 +1337,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
                             }
                             else
                             {
-                                ndj = 1;
+                                ndj = 1.0;
                             }
                             ener_npt += ndj*ixi[j]*kT;
                         }
