@@ -79,7 +79,6 @@ void ns(FILE              *fp,
         gmx_bool           bFillGrid,
         gmx_bool           bDoLongRangeNS)
 {
-    char   *ptr;
     int     nsearch;
 
 
@@ -162,15 +161,12 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 {
     int         i, j;
     int         donb_flags;
-    gmx_bool    bDoEpot, bSB;
+    gmx_bool    bSB;
     int         pme_flags;
     matrix      boxs;
     rvec        box_size;
     t_pbc       pbc;
-    char        buf[22];
-    double      clam_i, vlam_i;
     real        dvdl_dum[efptNR], dvdl_nb[efptNR], lam_i[efptNR];
-    real        dvdl_q, dvdl_lj;
 
 #ifdef GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
@@ -420,8 +416,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
      */
     if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
-        real Vlr               = 0, Vcorr = 0;
-        real dvdl_long_range   = 0;
         int  status            = 0;
         real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
         real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
@@ -463,7 +457,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 #pragma omp parallel for num_threads(nthreads) schedule(static)
                 for (t = 0; t < nthreads; t++)
                 {
-                    int     s, e, i;
+                    int     i;
                     rvec   *fnv;
                     tensor *vir_q, *vir_lj;
                     real   *Vcorrt_q, *Vcorrt_lj, *dvdlt_q, *dvdlt_lj;
@@ -674,6 +668,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         fr->t_wait += t3-t2;
         if (fr->timesteps == 11)
         {
+            char buf[22];
             fprintf(stderr, "* PP load balancing info: rank %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
                     cr->nodeid, gmx_step_str(fr->timesteps, buf),
                     100*fr->t_wait/(fr->t_wait+fr->t_fnbf),

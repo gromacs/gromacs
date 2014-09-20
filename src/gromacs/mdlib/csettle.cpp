@@ -185,9 +185,8 @@ void settle_proj(gmx_settledata_t settled, int econq,
     matrix         invmat;
     int            i, m, m2, ow1, hw2, hw3;
     rvec           roh2, roh3, rhh, dc, fc, fcv;
-    rvec           derm[3], derpm[3];
-    real           invvscale, vscale_nhc, veta;
-    real           kfacOH, kfacHH;
+    rvec           derm[3];
+    real           vscale_nhc, veta;
 
     calcvir_atom_end *= DIM;
 
