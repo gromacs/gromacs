@@ -363,7 +363,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
                       gmx_bool bCalcVir, tensor rmdf)
 {
     int      b0, b1, b, i, j, k, n;
-    real     tmp0, tmp1, tmp2, im1, im2, mvb, rlen, len, wfac, lam;
+    real     tmp0, tmp1, tmp2, mvb;
     rvec     dx;
     int     *bla, *blnr, *blbnb;
     rvec    *r;
@@ -504,7 +504,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                      gmx_bool bCalcVir, tensor vir_r_m_dr)
 {
     int      b0, b1, b, i, j, k, n, iter;
-    real     tmp0, tmp1, tmp2, im1, im2, mvb, rlen, len, len2, dlen2, wfac;
+    real     tmp0, tmp1, tmp2, mvb, rlen, len, len2, dlen2, wfac;
     rvec     dx;
     int     *bla, *blnr, *blbnb;
     rvec    *r;
@@ -784,7 +784,7 @@ void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
                             li->triangle[li->ntriangle] = i;
                             li->tri_bits[li->ntriangle] = 0;
                             li->ntriangle++;
-                            if (li->blnr[i+1] - li->blnr[i] > sizeof(li->tri_bits[0])*8 - 1)
+                            if (li->blnr[i+1] - li->blnr[i] > static_cast<int>(sizeof(li->tri_bits[0])*8 - 1))
                             {
                                 gmx_fatal(FARGS, "A constraint is connected to %d constraints, this is more than the %d allowed for constraints participating in triangles",
                                           li->blnr[i+1] - li->blnr[i],
@@ -1043,7 +1043,7 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
         li_th->b0 = (li->nc* th   )/li->nth;
         li_th->b1 = (li->nc*(th+1))/li->nth;
 
-        if (th < sizeof(*atf)*8)
+        if (th < static_cast<int>(sizeof(*atf)*8))
         {
             /* For each atom set a flag for constraints from each */
             for (b = li_th->b0; b < li_th->b1; b++)
@@ -1070,7 +1070,7 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
             srenew(li_th->ind_r, li_th->ind_nalloc);
         }
 
-        if (th < sizeof(*atf)*8)
+        if (th < static_cast<int>(sizeof(*atf)*8))
         {
             mask = (1U<<th) - 1U;
 
@@ -1153,7 +1153,6 @@ void set_lincs(t_idef *idef, t_mdatoms *md,
     int          i, k, ncc_alloc, ni, con, nconnect, concon;
     int          type, a1, a2;
     real         lenA = 0, lenB;
-    gmx_bool     bLocal;
 
     li->nc  = 0;
     li->ncc = 0;
@@ -1242,7 +1241,6 @@ void set_lincs(t_idef *idef, t_mdatoms *md,
     li->blnr[con] = nconnect;
     for (i = 0; i < ni; i++)
     {
-        bLocal = TRUE;
         type   = iatom[3*i];
         a1     = iatom[3*i+1];
         a2     = iatom[3*i+2];
@@ -1473,7 +1471,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          int maxwarn, int *warncount)
 {
     char      buf[STRLEN], buf2[22], buf3[STRLEN];
-    int       i, warn, p_imax, error;
+    int       i, warn, p_imax;
     real      ncons_loc, p_ssd, p_max = 0;
     rvec      dx;
     gmx_bool  bOK;
