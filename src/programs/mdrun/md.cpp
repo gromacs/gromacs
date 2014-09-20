@@ -113,7 +113,10 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     md_print_warn(cr, fplog, "step %s: resetting all time and cycle counters\n",
                   gmx_step_str(step, sbuf));
 
-    nbnxn_cuda_reset_timings(nbv);
+    if (use_GPU(nbv))
+    {
+        nbnxn_cuda_reset_timings(nbv);
+    }
 
     wallcycle_stop(wcycle, ewcRUN);
     wallcycle_reset_all(wcycle);
@@ -1921,7 +1924,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
-                               use_GPU(fr->nbv) ? fr->nbv : NULL);
+                               fr->nbv);
             wcycle_set_reset_counters(wcycle, -1);
             if (!(cr->duty & DUTY_PME))
             {
