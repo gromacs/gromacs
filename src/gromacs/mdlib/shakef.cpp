@@ -136,11 +136,11 @@ void cshake(const atom_id iatom[], int ncon, int *nnit, int maxnit,
     real       g_ll;
     real       r_prime_x, r_prime_y, r_prime_z, diff, im, jm;
     real       xh, yh, zh, rijx, rijy, rijz;
-    real       tix, tiy, tiz;
-    real       tjx, tjy, tjz;
     int        nit, error, nconv;
     real       iconvf;
 
+    // TODO nconv is used solely as a boolean, so we should write the
+    // code like that
     error = 0;
     nconv = 1;
     for (nit = 0; (nit < maxnit) && (nconv != 0) && (error == 0); nit++)
@@ -179,7 +179,7 @@ void cshake(const atom_id iatom[], int ncon, int *nnit, int maxnit,
 
             if (iconvf > 1.0)
             {
-                nconv         = iconvf;
+                nconv         = static_cast<int>(iconvf);
                 r_dot_r_prime = (rijx * r_prime_x +
                                  rijy * r_prime_y +
                                  rijz * r_prime_z);
@@ -230,7 +230,6 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
     real     L1;
     real     mm    = 0., tmp;
     int      error = 0;
-    real     vscale, rscale, rvscale;
     real     constrained_distance;
 
     if (ncon > shaked->nalloc)
@@ -526,21 +525,19 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
      *     second part of rattle algorithm
      */
 
-    const   real mytol = 1e-10;
-
-    int          ll, i, j, i3, j3, l3, ii;
+    int          ll, i, j, i3, j3, l3;
     int          ix, iy, iz, jx, jy, jz;
     real         constrained_distance_squared_ll;
-    real         rijd, vpijd, vx, vy, vz, diff, acor, xdotd, fac, im, jm, imdt, jmdt;
+    real         vpijd, vx, vy, vz, acor, xdotd, fac, im, jm;
     real         xh, yh, zh, rijx, rijy, rijz;
-    real         tix, tiy, tiz;
-    real         tjx, tjy, tjz;
     int          nit, error, nconv;
     real         veta, vscale_nhc, iconvf;
 
     veta       = vetavar->veta;
     vscale_nhc = vetavar->vscale_nhc[0];  /* for now, just use the first state */
 
+    // TODO nconv is used solely as a boolean, so we should write the
+    // code like that
     error = 0;
     nconv = 1;
     for (nit = 0; (nit < maxnit) && (nconv != 0) && (error == 0); nit++)
@@ -576,7 +573,7 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
 
             if (iconvf > 1)
             {
-                nconv     = iconvf;
+                nconv     = static_cast<int>(iconvf);
                 fac       = omega*2.0*m2[ll]/constrained_distance_squared_ll;
                 acor      = -fac*xdotd;
                 g[ll]    += acor;
