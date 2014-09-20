@@ -34,34 +34,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
+
 #include <math.h>
 
-/*#define HAVE_NN_LOOPS*/
-
 #include "gromacs/commandline/pargs.h"
-#include "copyrite.h"
-#include "txtdump.h"
-#include "gromacs/math/units.h"
-#include "macros.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gstat.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "correl.h"
-#include "gmx_ana.h"
-#include "geminate.h"
-
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/correl.h"
+#include "gromacs/gmxana/geminate.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
+
+/*#define HAVE_NN_LOOPS*/
 
 typedef short int t_E;
 typedef int t_EEst;
@@ -3635,7 +3637,7 @@ int gmx_hbond(int argc, char *argv[])
     };
     t_filenm    fnm[] = {
         { efTRX, "-f",   NULL,     ffREAD  },
-        { efTPX, NULL,   NULL,     ffREAD  },
+        { efTPR, NULL,   NULL,     ffREAD  },
         { efNDX, NULL,   NULL,     ffOPTRD },
         /*    { efNDX, "-sel", "select", ffOPTRD },*/
         { efXVG, "-num", "hbnum",  ffWRITE },
@@ -3707,7 +3709,7 @@ int gmx_hbond(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, npargs,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, npargs,
                            ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
@@ -3820,7 +3822,7 @@ int gmx_hbond(int argc, char *argv[])
     hb = mk_hbdata(bHBmap, opt2bSet("-dan", NFILE, fnm), bMerge || bContact, bGem, gemmode);
 
     /* get topology */
-    read_tpx_top(ftp2fn(efTPX, NFILE, fnm), &ir, box, &natoms, NULL, NULL, NULL, &top);
+    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), &ir, box, &natoms, NULL, NULL, NULL, &top);
 
     snew(grpnames, grNR);
     snew(index, grNR);

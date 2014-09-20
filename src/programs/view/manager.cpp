@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <ctype.h>
@@ -44,12 +46,13 @@
 #include <unistd.h> // for usleep()
 #endif
 
-#include "typedefs.h"
-#include "macros.h"
-#include "names.h"
-#include "copyrite.h"
+#include "manager.h"
 
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -59,7 +62,6 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "3dview.h"
-#include "manager.h"
 #include "nmol.h"
 
 static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)

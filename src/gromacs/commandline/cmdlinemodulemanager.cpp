@@ -39,22 +39,27 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
+#include "gmxpre.h"
+
 #include "cmdlinemodulemanager.h"
+
+#include "config.h"
 
 #include <cstdio>
 
 #include <string>
 #include <utility>
 
-#include "gromacs/legacyheaders/copyrite.h"
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/commandline/cmdlinehelpmodule.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodule.h"
-#include "gromacs/commandline/cmdlinemodulemanager-impl.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
@@ -63,8 +68,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-// For GMX_BINARY_SUFFIX
-#include "config.h"
+#include "cmdlinehelpmodule.h"
+#include "cmdlinemodulemanager-impl.h"
 
 namespace gmx
 {
@@ -115,26 +120,22 @@ class CMainCommandLineModule : public CommandLineModuleInterface
             return shortDescription_;
         }
 
+        virtual void init(CommandLineModuleSettings * /*settings*/)
+        {
+        }
         virtual int run(int argc, char *argv[])
         {
             return mainFunction_(argc, argv);
         }
         virtual void writeHelp(const CommandLineHelpContext &context) const
         {
-            char *argv[2];
-            int   argc = 1;
-            // TODO: The constness should not be cast away.
-            argv[0] = const_cast<char *>(name_);
-            argv[1] = NULL;
-            GlobalCommandLineHelpContext global(context);
-            mainFunction_(argc, argv);
+            writeCommandLineHelpCMain(context, name_, mainFunction_);
         }
 
     private:
         const char             *name_;
         const char             *shortDescription_;
         CMainFunction           mainFunction_;
-
 };
 
 //! \}
@@ -147,7 +148,8 @@ class CMainCommandLineModule : public CommandLineModuleInterface
 
 CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
     : options_(NULL, NULL), bHelp_(false), bHidden_(false),
-      bQuiet_(false), bVersion_(false), bCopyright_(true), debugLevel_(0)
+      bQuiet_(false), bVersion_(false), bCopyright_(true),
+      niceLevel_(19), debugLevel_(0)
 {
     binaryInfoSettings_.copyright(true);
 }
@@ -169,6 +171,8 @@ void CommandLineCommonOptionsHolder::initOptions()
                            .description("Print extended version information and quit"));
     options_.addOption(BooleanOption("copyright").store(&bCopyright_)
                            .description("Print copyright information on startup"));
+    options_.addOption(IntegerOption("nice").store(&niceLevel_)
+                           .description("Set the nicelevel (default depends on command)"));
     options_.addOption(IntegerOption("debug").store(&debugLevel_)
                            .hidden().defaultValueIfSet(1)
                            .description("Write file with debug information, "
@@ -183,6 +187,15 @@ bool CommandLineCommonOptionsHolder::finishOptions()
     // -quiet -version.
     binaryInfoSettings_.copyright(bCopyright_ && !bQuiet_);
     return !bVersion_;
+}
+
+void CommandLineCommonOptionsHolder::adjustFromSettings(
+        const CommandLineModuleSettings &settings)
+{
+    if (!options_.isSet("nice"))
+    {
+        niceLevel_ = settings.defaultNiceLevel();
+    }
 }
 
 /********************************************************************
@@ -547,7 +560,12 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     {
         return 0;
     }
-    /* Open the debug file */
+
+    CommandLineModuleSettings settings;
+    module->init(&settings);
+    optionsHolder.adjustFromSettings(settings);
+
+    // Open the debug file.
     if (optionsHolder.debugLevel() > 0)
     {
         std::string filename(impl_->programContext_.programName());
@@ -560,6 +578,22 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         fprintf(stderr, "Will write debug log file: %s\n", filename.c_str());
         gmx_init_debug(optionsHolder.debugLevel(), filename.c_str());
     }
+#if defined(HAVE_UNISTD_H) && !defined(GMX_NO_NICE) && !defined(__MINGW32__)
+    // Set the nice level unless disabled in the configuration.
+    if (optionsHolder.niceLevel() != 0)
+    {
+        static bool bNiceSet = false; // Only set it once.
+        if (!bNiceSet)
+        {
+            if (nice(optionsHolder.niceLevel()) == -1)
+            {
+                // Do nothing, but use the return value to avoid warnings.
+            }
+            bNiceSet = true;
+        }
+    }
+#endif
+
     int rc = 0;
     if (!(module == impl_->helpModule_ && !bMaster))
     {

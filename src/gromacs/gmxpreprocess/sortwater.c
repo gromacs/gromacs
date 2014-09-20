@@ -34,14 +34,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "sortwater.h"
 
 #include <stdlib.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "sortwater.h"
-
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 

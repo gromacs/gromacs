@@ -34,9 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "xtcio.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "xtcio.h"
 
 #include <string.h>
 

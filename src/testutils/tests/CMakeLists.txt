@@ -33,5 +33,5 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(TestUtilsUnitTests testutils-test
-                  refdata.cpp
-                  testasserts.cpp)
+                  refdata_tests.cpp
+                  testasserts_tests.cpp)

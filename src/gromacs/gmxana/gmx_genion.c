@@ -34,28 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "force.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/math/utilities.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "mdrun.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/index.h"
-#include "gmx_ana.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void insert_ion(int nsa, int *nwater,
                        gmx_bool bSet[], int repl[], atom_id index[],
@@ -395,14 +395,14 @@ int gmx_genion(int argc, char *argv[])
     output_env_t       oenv;
     gmx_rng_t          rng;
     t_filenm           fnm[] = {
-        { efTPX, NULL,  NULL,      ffREAD  },
+        { efTPR, NULL,  NULL,      ffREAD  },
         { efNDX, NULL,  NULL,      ffOPTRD },
         { efSTO, "-o",  NULL,      ffWRITE },
         { efTOP, "-p",  "topol",   ffOPTRW }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
@@ -420,7 +420,7 @@ int gmx_genion(int argc, char *argv[])
     }
 
     /* Read atom positions and charges */
-    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, &x, &v, box, FALSE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), title, &top, &ePBC, &x, &v, box, FALSE);
     atoms = top.atoms;
 
     /* Compute total charge */

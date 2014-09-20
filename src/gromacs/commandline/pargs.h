@@ -44,11 +44,11 @@
 #ifndef GMX_COMMANDLINE_PARGS_H
 #define GMX_COMMANDLINE_PARGS_H
 
-#include "../legacyheaders/oenv.h"
-#include "../fileio/filenm.h"
-#include "../math/vectypes.h"
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -230,8 +230,6 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 #define PCA_CAN_SET_DEFFNM (1<<10)
 /** Do not raise a fatal error when invalid options are encountered. */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
-/** Default to low priority. */
-#define PCA_BE_NICE        (1<<13)
 /** Is this node not reading: for parallel all nodes but the master */
 #define PCA_NOT_READ_NODE  (1<<16)
 /** Don't do any special processing for ffREAD files */

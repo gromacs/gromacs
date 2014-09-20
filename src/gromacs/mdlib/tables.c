@@ -34,23 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/tables.h"
 
 #include <math.h>
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "typedefs.h"
-#include "names.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/vec.h"
-#include "network.h"
-#include "gromacs/math/units.h"
-#include "force.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "macros.h"
-#include "tables.h"
+#include "gromacs/utility/smalloc.h"
 
 /* All the possible (implemented) table functions */
 enum {

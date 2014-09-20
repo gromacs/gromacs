@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gmxpre.h"
+
+#include "analysismodule.h"
 
 #include <utility>
 

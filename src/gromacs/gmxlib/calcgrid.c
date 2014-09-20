@@ -34,14 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/calcgrid.h"
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "calcgrid.h"
+#include "gromacs/utility/smalloc.h"
 
 /* The grid sizes below are based on timing of a 3D cubic grid in fftw
  * compiled with SSE using 4 threads in fft5d.c.

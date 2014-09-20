@@ -33,21 +33,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
 #include "config.h"
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "macros.h"
-#include "network.h"
-#include "copyrite.h"
-#include "gmx_omp_nthreads.h"
-#include "md_logging.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
@@ -145,9 +147,9 @@ static void pick_module_nthreads(FILE *fplog, int m,
          * OMP_NUM_THREADS also has to be set */
         if (bFullOmpSupport && getenv("OMP_NUM_THREADS") == NULL)
         {
-            gmx_fatal(FARGS, "%s=%d is set, the default number of threads also "
-                      "needs to be set with OMP_NUM_THREADS!",
-                      modth_env_var[m], nth);
+            gmx_warning("%s=%d is set, the default number of threads also "
+                        "needs to be set with OMP_NUM_THREADS!",
+                        modth_env_var[m], nth);
         }
 
         /* with the group scheme warn if any env var except PME is set */

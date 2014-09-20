@@ -33,6 +33,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <errno.h>
@@ -40,7 +42,10 @@
 
 #include <fftw3.h>
 
+#include "thread_mpi/mutex.h"
+
 #include "gromacs/fft/fft.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
 #ifdef GMX_DOUBLE
@@ -48,9 +53,6 @@
 #else
 #define FFTWPREFIX(name) fftwf_ ## name
 #endif
-
-#include "thread_mpi/mutex.h"
-#include "gromacs/utility/exceptions.h"
 
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */

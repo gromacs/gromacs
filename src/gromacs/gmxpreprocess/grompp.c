@@ -34,57 +34,56 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "grompp.h"
 
-#include "config.h"
-
-#include <sys/types.h>
-#include <math.h>
-#include <string.h>
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
-#include <assert.h>
+#include <math.h>
+#include <string.h>
 
-#include "macros.h"
-#include "readir.h"
-#include "toputil.h"
-#include "topio.h"
-#include "gromacs/fileio/confio.h"
-#include "readir.h"
-#include "names.h"
-#include "grompp-impl.h"
-#include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "splitter.h"
-#include "gromacs/gmxpreprocess/sortwater.h"
-#include "convparm.h"
-#include "warninp.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "vsite_parm.h"
-#include "txtdump.h"
-#include "calcgrid.h"
-#include "add_par.h"
-#include "gromacs/fileio/enxio.h"
-#include "perf_est.h"
-#include "compute_io.h"
-#include "gpp_atomtype.h"
-#include "gromacs/topology/mtop_util.h"
-#include "genborn.h"
-#include "calc_verletbuf.h"
-#include "tomorse.h"
-#include "gromacs/imd/imd.h"
-#include "gromacs/utility/cstringutil.h"
+#include <sys/types.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/calc_verletbuf.h"
+#include "gromacs/gmxpreprocess/compute_io.h"
+#include "gromacs/gmxpreprocess/convparm.h"
+#include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/gmxpreprocess/sortwater.h"
+#include "gromacs/gmxpreprocess/tomorse.h"
+#include "gromacs/gmxpreprocess/topio.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/vsite_parm.h"
+#include "gromacs/imd/imd.h"
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/perf_est.h"
+#include "gromacs/legacyheaders/splitter.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
@@ -1534,7 +1533,7 @@ int gmx_grompp(int argc, char *argv[])
         { efNDX, NULL,  NULL,        ffOPTRD },
         { efTOP, NULL,  NULL,        ffREAD  },
         { efTOP, "-pp", "processed", ffOPTWR },
-        { efTPX, "-o",  NULL,        ffWRITE },
+        { efTPR, "-o",  NULL,        ffWRITE },
         { efTRN, "-t",  NULL,        ffOPTRD },
         { efEDR, "-e",  NULL,        ffOPTRD },
         /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
@@ -2083,7 +2082,7 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     done_warning(wi, FARGS);
-    write_tpx_state(ftp2fn(efTPX, NFILE, fnm), ir, &state, sys);
+    write_tpx_state(ftp2fn(efTPR, NFILE, fnm), ir, &state, sys);
 
     /* Output IMD group, if bIMD is TRUE */
     write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);

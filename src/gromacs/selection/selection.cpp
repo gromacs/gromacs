@@ -39,12 +39,14 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include "selection.h"
 
+#include "gromacs/selection/nbsearch.h"
+#include "gromacs/selection/position.h"
 #include "gromacs/topology/topology.h"
 
-#include "nbsearch.h"
-#include "position.h"
 #include "selelem.h"
 #include "selvalue.h"
 
@@ -357,8 +359,8 @@ SelectionPosition::operator AnalysisNeighborhoodPositions() const
     if (sel_->hasOnlyAtoms())
     {
         // TODO: Move atomIndices() such that it can be reused here as well.
-        pos.exclusionIds(ConstArrayRef<int>(sel_->rawPositions_.m.mapb.a,
-                                            sel_->rawPositions_.m.mapb.nra));
+        pos.exclusionIds(constArrayRefFromArray<int>(sel_->rawPositions_.m.mapb.a,
+                                                     sel_->rawPositions_.m.mapb.nra));
     }
     return pos.selectSingleFromArray(i_);
 }

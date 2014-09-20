@@ -34,22 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "macros.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/utility/futil.h"
-#include "gstat.h"
-#include "names.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/gmxana/correl.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "correl.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MODE(x) ((mode & (x)) == (x))
 

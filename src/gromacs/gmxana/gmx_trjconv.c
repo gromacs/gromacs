@@ -34,42 +34,43 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "copyrite.h"
-#include "macros.h"
-#include "typedefs.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xtcio.h"
-#include "viewit.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/do_fit.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 enum {
     euSel, euRect, euTric, euCompact, euNR
@@ -468,7 +469,7 @@ static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
 
 void check_trn(const char *fn)
 {
-    if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
+    if (fn2ftp(fn) != efTRR)
     {
         gmx_fatal(FARGS, "%s is not a trajectory file, exiting\n", fn);
     }
@@ -491,7 +492,7 @@ void do_trunc(const char *fn, real t0)
         gmx_fatal(FARGS, "You forgot to set the truncation time");
     }
 
-    /* Check whether this is a .trj file */
+    /* Check whether this is a .trr file */
     check_trn(fn);
 
     in   = open_trn(fn, "r");
@@ -614,18 +615,18 @@ int gmx_trjconv(int argc, char *argv[])
         "[PAR]",
 
         "The following formats are supported for input and output:",
-        "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].g96[tt]",
+        "[TT].xtc[tt], [TT].trr[tt], [TT].gro[tt], [TT].g96[tt]",
         "and [TT].pdb[tt].",
         "The file formats are detected from the file extension.",
         "The precision of [TT].xtc[tt] and [TT].gro[tt] output is taken from the",
         "input file for [TT].xtc[tt], [TT].gro[tt] and [TT].pdb[tt],",
         "and from the [TT]-ndec[tt] option for other input formats. The precision",
         "is always taken from [TT]-ndec[tt], when this option is set.",
-        "All other formats have fixed precision. [TT].trr[tt] and [TT].trj[tt]",
+        "All other formats have fixed precision. [TT].trr[tt]",
         "output can be single or double precision, depending on the precision",
         "of the [THISMODULE] binary.",
         "Note that velocities are only supported in",
-        "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
+        "[TT].trr[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
 
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
         "[TT].gro, .g96[tt] or [TT].pdb[tt] file. By default, all frames all written to one file.",
@@ -713,7 +714,7 @@ int gmx_trjconv(int argc, char *argv[])
         "can reduce the number of frames while using low-pass frequency",
         "filtering, this reduces aliasing of high frequency motions.[PAR]",
 
-        "Using [TT]-trunc[tt] [THISMODULE] can truncate [TT].trj[tt] in place, i.e.",
+        "Using [TT]-trunc[tt] [THISMODULE] can truncate [TT].trr[tt] in place, i.e.",
         "without copying the file. This is useful when a run has crashed",
         "during disk I/O (i.e. full disk), or when two contiguous",
         "trajectories must be concatenated without having double frames.[PAR]",
@@ -924,7 +925,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW |
-                           PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_TIME_UNIT,
                            NFILE, fnm, NPA, pa, asize(desc), desc,
                            0, NULL, &oenv))
     {
@@ -1031,9 +1032,9 @@ int gmx_trjconv(int argc, char *argv[])
         {
             /* check if velocities are possible in input and output files */
             ftpin = fn2ftp(in_file);
-            bVels = (ftp == efTRR || ftp == efTRJ || ftp == efGRO ||
+            bVels = (ftp == efTRR || ftp == efGRO ||
                      ftp == efG96 || ftp == efTNG)
-                && (ftpin == efTRR || ftpin == efTRJ || ftpin == efGRO ||
+                && (ftpin == efTRR || ftpin == efGRO ||
                     ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
@@ -1267,7 +1268,7 @@ int gmx_trjconv(int argc, char *argv[])
             useatoms.nr = nout;
         }
         /* select what to read */
-        if (ftp == efTRR || ftp == efTRJ)
+        if (ftp == efTRR)
         {
             flags = TRX_READ_X;
         }
@@ -1351,7 +1352,6 @@ int gmx_trjconv(int argc, char *argv[])
                     break;
                 case efXTC:
                 case efTRR:
-                case efTRJ:
                     out = NULL;
                     if (!bSplit && !bSubTraj)
                     {
@@ -1746,7 +1746,6 @@ int gmx_trjconv(int argc, char *argv[])
                                 write_tng_frame(trxout, &frout);
                                 // TODO when trjconv behaves better: work how to read and write lambda
                                 break;
-                            case efTRJ:
                             case efTRR:
                             case efXTC:
                                 if (bSplitHere)

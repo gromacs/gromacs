@@ -78,10 +78,10 @@
 #ifndef GMX_COMMANDLINE_H
 #define GMX_COMMANDLINE_H
 
-#include "commandline/cmdlinehelpwriter.h"
-#include "commandline/cmdlineinit.h"
-#include "commandline/cmdlinemodule.h"
-#include "commandline/cmdlineparser.h"
-#include "commandline/pargs.h"
+#include "gromacs/commandline/cmdlinehelpwriter.h"
+#include "gromacs/commandline/cmdlineinit.h"
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/commandline/pargs.h"
 
 #endif

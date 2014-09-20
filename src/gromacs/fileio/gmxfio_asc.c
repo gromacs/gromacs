@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+#include "gmxpre.h"
 
 #include "config.h"
 
@@ -42,20 +42,20 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
 
-#include "gromacs/utility/fatalerror.h"
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio_int.h"
+#include "gromacs/fileio/md5.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gmxfio.h"
-#include "md5.h"
-
-#include "gmxfio_int.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 /* This is the part that reads dummy and ascii files.  */

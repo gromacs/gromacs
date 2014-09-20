@@ -34,33 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/ns.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/nsgrid.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "nsgrid.h"
-#include "force.h"
-#include "nonbonded.h"
-#include "ns.h"
-#include "names.h"
-#include "nrnb.h"
-#include "txtdump.h"
-#include "gromacs/topology/mtop_util.h"
-
-#include "domdec.h"
-#include "adress.h"
-
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "adress.h"
 
 /*
  *    E X C L U S I O N   H A N D L I N G
@@ -287,11 +287,8 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
         /* Did we get the solvent loops so we can use optimized water kernels? */
         if (nbl->nlist_sr[eNL_VDWQQ_WATER].kernelptr_vf == NULL
             || nbl->nlist_sr[eNL_QQ_WATER].kernelptr_vf == NULL
-#ifndef DISABLE_WATERWATER_NLIST
             || nbl->nlist_sr[eNL_VDWQQ_WATERWATER].kernelptr_vf == NULL
-            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL
-#endif
-            )
+            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL)
         {
             fr->solvent_opt = esolNO;
             if (log != NULL)
@@ -664,13 +661,11 @@ put_in_list_at(gmx_bool              bHaveVdW[],
 
     if (iwater != esolNO)
     {
-        vdwc = &nlist[eNL_VDWQQ_WATER];
-        vdw  = &nlist[eNL_VDW];
-        coul = &nlist[eNL_QQ_WATER];
-#ifndef DISABLE_WATERWATER_NLIST
+        vdwc    = &nlist[eNL_VDWQQ_WATER];
+        vdw     = &nlist[eNL_VDW];
+        coul    = &nlist[eNL_QQ_WATER];
         vdwc_ww = &nlist[eNL_VDWQQ_WATERWATER];
         coul_ww = &nlist[eNL_QQ_WATERWATER];
-#endif
     }
     else
     {
@@ -690,9 +685,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             if (bDoCoul && bDoVdW)
             {
                 new_i_nblist(vdwc, i_atom, shift, gid);
-#ifndef DISABLE_WATERWATER_NLIST
                 new_i_nblist(vdwc_ww, i_atom, shift, gid);
-#endif
             }
             if (bDoVdW)
             {
@@ -701,9 +694,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             if (bDoCoul)
             {
                 new_i_nblist(coul, i_atom, shift, gid);
-#ifndef DISABLE_WATERWATER_NLIST
                 new_i_nblist(coul_ww, i_atom, shift, gid);
-#endif
             }
             /* Loop over the j charge groups */
             for (j = 0; (j < nj); j++)
@@ -728,19 +719,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     }
                     else
                     {
-#ifdef DISABLE_WATERWATER_NLIST
-                        /* Add entries for the three atoms - only do VdW if we need to */
-                        if (!bDoVdW)
-                        {
-                            add_j_to_nblist(coul, jj0, bLR);
-                        }
-                        else
-                        {
-                            add_j_to_nblist(vdwc, jj0, bLR);
-                        }
-                        add_j_to_nblist(coul, jj0+1, bLR);
-                        add_j_to_nblist(coul, jj0+2, bLR);
-#else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
@@ -750,7 +728,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             add_j_to_nblist(vdwc_ww, jj0, bLR);
                         }
-#endif
                     }
                 }
                 else if (iwater == esolTIP4P && jwater == esolTIP4P)
@@ -763,16 +740,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     }
                     else
                     {
-#ifdef DISABLE_WATERWATER_NLIST
-                        /* Add entries for the four atoms - only do VdW if we need to */
-                        if (bDoVdW)
-                        {
-                            add_j_to_nblist(vdw, jj0, bLR);
-                        }
-                        add_j_to_nblist(coul, jj0+1, bLR);
-                        add_j_to_nblist(coul, jj0+2, bLR);
-                        add_j_to_nblist(coul, jj0+3, bLR);
-#else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
@@ -782,7 +749,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             add_j_to_nblist(vdwc_ww, jj0, bLR);
                         }
-#endif
                     }
                 }
                 else
@@ -843,10 +809,8 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             close_i_nblist(vdw);
             close_i_nblist(coul);
             close_i_nblist(vdwc);
-#ifndef DISABLE_WATERWATER_NLIST
             close_i_nblist(coul_ww);
             close_i_nblist(vdwc_ww);
-#endif
         }
         else
         {

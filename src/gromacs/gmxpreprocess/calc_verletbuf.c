@@ -32,7 +32,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "calc_verletbuf.h"
 
 #include <assert.h>
 #include <math.h>
@@ -40,14 +42,12 @@
 
 #include <sys/types.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
-#include "macros.h"
 #include "gromacs/math/vec.h"
-#include "coulomb.h"
-#include "calc_verletbuf.h"
-#include "../mdlib/nbnxn_consts.h"
-
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -266,6 +266,8 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                             inv_mass += coeff*coeff/m_aj;
                         }
                         vsite_m[a1] = 1/inv_mass;
+                        /* Correct for loop increment of i */
+                        i += j - 1 - NRAL(ft);
                         break;
                     default:
                         /* Use the mass of the lightest constructing atom.

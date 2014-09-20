@@ -34,9 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/fileio/timecontrol.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "timecontrol.h"
 
 #include "thread_mpi/threads.h"
 

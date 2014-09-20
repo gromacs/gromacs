@@ -39,15 +39,17 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include <cmath>
 
 #include "gromacs/legacyheaders/macros.h"
-
 #include "gromacs/math/utilities.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "selmethod.h"
 
 /** Defines the comparison operator for comparison expressions. */
 typedef enum
@@ -197,17 +199,20 @@ comparison_type(char *str)
 static const char *
 comparison_type_str(e_comparison_t cmpt)
 {
+    const char *p = NULL;
     switch (cmpt)
     {
-        case CMP_INVALID: return "INVALID"; break;
-        case CMP_LESS:    return "<";  break;
-        case CMP_LEQ:     return "<="; break;
-        case CMP_GTR:     return ">";  break;
-        case CMP_GEQ:     return ">="; break;
-        case CMP_EQUAL:   return "=="; break;
-        case CMP_NEQ:     return "!="; break;
+        case CMP_INVALID: p = "INVALID"; break;
+        case CMP_LESS:    p = "<";       break;
+        case CMP_LEQ:     p = "<=";      break;
+        case CMP_GTR:     p = ">";       break;
+        case CMP_GEQ:     p = ">=";      break;
+        case CMP_EQUAL:   p = "==";      break;
+        case CMP_NEQ:     p = "!=";      break;
+            // No default clause so we intentionally get compiler errors
+            // if new selection choices are added later.
     }
-    return NULL;
+    return p;
 }
 
 /*!

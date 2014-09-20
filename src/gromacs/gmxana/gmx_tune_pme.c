@@ -32,32 +32,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <stdlib.h>
 #include <time.h>
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/utility/cstringutil.h"
-#include "readinp.h"
-#include "calcgrid.h"
-#include "checkpoint.h"
-#include "macros.h"
-#include "gmx_ana.h"
-#include "names.h"
-#include "perf_est.h"
-#include "inputrec.h"
-#include "gromacs/timing/walltime_accounting.h"
-#include "gromacs/math/utilities.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/inputrec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/perf_est.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -785,6 +787,11 @@ static void modify_PMEsettings(
     sfree(ir);
 }
 
+static gmx_bool can_scale_rvdw(int vdwtype)
+{
+    return (evdwCUT == vdwtype ||
+            evdwPME == vdwtype);
+}
 
 #define EPME_SWITCHED(e) ((e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
 
@@ -934,7 +941,7 @@ static void make_benchmark_tprs(
     fprintf(fp, " No.   scaling  rcoulomb");
     fprintf(fp, "  nkx  nky  nkz");
     fprintf(fp, "   spacing");
-    if (evdwCUT == ir->vdwtype)
+    if (can_scale_rvdw(ir->vdwtype))
     {
         fprintf(fp, "      rvdw");
     }
@@ -991,11 +998,14 @@ static void make_benchmark_tprs(
                 ir->rlist = ir->rcoulomb + nlist_buffer;
             }
 
-            if (bScaleRvdw && evdwCUT == ir->vdwtype)
+            if (bScaleRvdw && can_scale_rvdw(ir->vdwtype))
             {
-                if (ecutsVERLET == ir->cutoff_scheme)
+                if (ecutsVERLET == ir->cutoff_scheme ||
+                    evdwPME == ir->vdwtype)
                 {
-                    /* With Verlet, the van der Waals radius must always equal the Coulomb radius */
+                    /* With either the Verlet cutoff-scheme or LJ-PME,
+                       the van der Waals radius must always equal the
+                       Coulomb radius */
                     ir->rvdw = ir->rcoulomb;
                 }
                 else
@@ -1043,7 +1053,7 @@ static void make_benchmark_tprs(
         fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);
         fprintf(fp, "%5d%5d%5d", ir->nkx, ir->nky, ir->nkz);
         fprintf(fp, " %9f ", info->fsx[j]);
-        if (evdwCUT == ir->vdwtype)
+        if (can_scale_rvdw(ir->vdwtype))
         {
             fprintf(fp, "%10f", ir->rvdw);
         }
@@ -2082,9 +2092,9 @@ int gmx_tune_pme(int argc, char *argv[])
         /* g_tune_pme */
         { efOUT, "-p",      "perf",     ffWRITE },
         { efLOG, "-err",    "bencherr", ffWRITE },
-        { efTPX, "-so",     "tuned",    ffWRITE },
+        { efTPR, "-so",     "tuned",    ffWRITE },
         /* mdrun: */
-        { efTPX, NULL,      NULL,       ffREAD },
+        { efTPR, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
         { efCOMPRESSED, "-x", NULL,     ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },

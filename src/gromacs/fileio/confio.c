@@ -34,33 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "confio.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "confio.h"
 
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gromacs/utility/futil.h"
-#include "xdrf.h"
-#include "filenm.h"
-#include "pdbio.h"
-#include "tpxio.h"
-#include "trxio.h"
-#include "copyrite.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gmxfio.h"
-
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define CHAR_SHIFT 24
@@ -1484,8 +1483,6 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             gmx_fio_fclose(out);
             break;
         case efTPR:
-        case efTPB:
-        case efTPA:
             gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
             break;
         default:
@@ -1539,8 +1536,6 @@ void write_sto_conf(const char *outfile, const char *title, t_atoms *atoms,
             gmx_fio_fclose(out);
             break;
         case efTPR:
-        case efTPB:
-        case efTPA:
             gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
             break;
         default:
@@ -1612,8 +1607,6 @@ void get_stx_coordnum(const char *infile, int *natoms)
         case efESP:
             *natoms = get_espresso_coordnum(infile);
             break;
-        case efTPA:
-        case efTPB:
         case efTPR:
         {
             t_tpxheader tpx;
@@ -1682,8 +1675,6 @@ void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
             read_espresso_conf(infile, atoms, x, v, box);
             break;
         case efTPR:
-        case efTPB:
-        case efTPA:
             snew(mtop, 1);
             i = read_tpx(infile, NULL, box, &natoms, x, v, NULL, mtop);
             if (ePBC)

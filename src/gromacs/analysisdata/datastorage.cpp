@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
 #include "datastorage.h"
 
 #include <algorithm>
@@ -635,7 +637,7 @@ AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
     AnalysisDataPointSetInfo pointSetInfo(0, valueCount,
                                           dataSetIndex, firstColumn);
     AnalysisDataPointSetRef  pointSet(header(), pointSetInfo,
-                                      AnalysisDataValuesRef(begin, end));
+                                      constArrayRefFromVector<AnalysisDataValue>(begin, end));
     storageImpl().modules_->notifyParallelPointsAdd(pointSet);
     if (storageImpl().shouldNotifyImmediately())
     {
@@ -684,7 +686,7 @@ AnalysisDataStorageFrameData::pointSet(int index) const
                "Invalid point set index");
     return AnalysisDataPointSetRef(
             header_, pointSets_[index],
-            AnalysisDataValuesRef(values_.begin(), values_.end()));
+            constArrayRefFromVector<AnalysisDataValue>(values_.begin(), values_.end()));
 }
 
 }   // namespace internal
@@ -868,7 +870,7 @@ AnalysisDataStorage::startParallelDataStorage(
         AnalysisDataModuleManager         *modules,
         const AnalysisDataParallelOptions &options)
 {
-    const int pendingLimit = 2 * options.parallelizationFactor() - 1;
+    const int pendingLimit = options.parallelizationFactor();
     impl_->pendingLimit_   = pendingLimit;
     modules->notifyParallelDataStart(data, options);
     // Data needs to be set before calling extendBuffer()

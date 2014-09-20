@@ -39,11 +39,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "stringutil.h"
 
 #include <cctype>
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 
 #include <algorithm>

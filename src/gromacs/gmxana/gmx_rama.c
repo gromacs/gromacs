@@ -34,22 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gromacs/math/units.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "nrama.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/nrama.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static void plot_rama(FILE *out, t_xrama *xr)
@@ -80,12 +80,12 @@ int gmx_rama(int argc, char *argv[])
     output_env_t oenv;
     t_filenm     fnm[] = {
         { efTRX, "-f", NULL,  ffREAD },
-        { efTPX, NULL, NULL,  ffREAD },
+        { efTPR, NULL, NULL,  ffREAD },
         { efXVG, NULL, "rama", ffWRITE }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, 0, NULL, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -93,7 +93,7 @@ int gmx_rama(int argc, char *argv[])
 
 
     snew(xr, 1);
-    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPX, NFILE, fnm), xr, 3);
+    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPR, NFILE, fnm), xr, 3);
 
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Ramachandran Plot", "Phi", "Psi", oenv);
     xvgr_line_props(out, 0, elNone, ecFrank, oenv);

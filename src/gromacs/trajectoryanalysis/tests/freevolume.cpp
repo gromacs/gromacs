@@ -39,9 +39,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_trajectoryanalysis
  */
-#include <gtest/gtest.h>
+#include "gmxpre.h"
 
 #include "gromacs/trajectoryanalysis/modules/freevolume.h"
+
+#include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
 

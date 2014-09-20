@@ -34,24 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "macros.h"
-#include "gromacs/topology/index.h"
+#include "sfactor.h"
+
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "typedefs.h"
-#include "oenv.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "names.h"
-#include "sfactor.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 typedef struct gmx_structurefactors {

@@ -34,7 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "network.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/network.h"
 
 #include "config.h"
 
@@ -43,10 +45,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "types/commrec.h"
-#include "copyrite.h"
-#include "macros.h"
-
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

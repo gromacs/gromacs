@@ -34,17 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "xlate.h"
 
 #include <ctype.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "fflibutil.h"
-#include "hackblock.h"
-#include "xlate.h"
-
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"

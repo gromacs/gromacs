@@ -35,24 +35,24 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/md_support.h"
+
 #include <algorithm>
 
-#include "config.h"
-
-#include "typedefs.h"
-#include "mdrun.h"
-#include "domdec.h"
-#include "gromacs/topology/mtop_util.h"
-#include "vcm.h"
-#include "nrnb.h"
-#include "macros.h"
-#include "md_logging.h"
-#include "md_support.h"
-#include "names.h"
-
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -463,7 +463,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     if (bEner || bPres || bConstrain)
     {
-        calc_dispcorr(fplog, ir, fr, 0, top_global->natoms, box, state->lambda[efptVDW],
+        calc_dispcorr(ir, fr, top_global->natoms, box, state->lambda[efptVDW],
                       corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
     }
 

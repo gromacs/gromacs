@@ -38,10 +38,10 @@
 #ifndef _nonbonded_h
 #define _nonbonded_h
 
-#include "typedefs.h"
-#include "network.h"
-#include "tgroup.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,7 +78,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 
 void
 do_nonbonded(t_forcerec *fr,
-             rvec x[], rvec f_shortrange[], rvec f_longrange[], 
+             rvec x[], rvec f_shortrange[], rvec f_longrange[],
              rvec A[], real phi[],
              t_mdatoms *md, t_blocka *excl,
              gmx_grppairener_t *grppener,

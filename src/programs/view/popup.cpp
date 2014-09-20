@@ -34,19 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "popup.h"
 
 #include <math.h>
 #include <string.h>
 
 #include <algorithm>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "x11.h"
 #include "xutil.h"
-#include "popup.h"
 
 bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {

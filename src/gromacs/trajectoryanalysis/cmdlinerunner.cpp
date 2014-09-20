@@ -39,9 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "cmdlinerunner.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "cmdlinerunner.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
@@ -57,10 +57,11 @@
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
-#include "gromacs/trajectoryanalysis/runnercommon.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "runnercommon.h"
 
 namespace gmx
 {
@@ -305,6 +306,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
         virtual const char *name() const { return name_; }
         virtual const char *shortDescription() const { return description_; };
 
+        virtual void init(CommandLineModuleSettings *settings);
         virtual int run(int argc, char *argv[]);
         virtual void writeHelp(const CommandLineHelpContext &context) const;
 
@@ -315,6 +317,11 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RunnerCommandLineModule);
 };
+
+void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::init(
+        CommandLineModuleSettings * /*settings*/)
+{
+}
 
 int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
         int argc, char *argv[])

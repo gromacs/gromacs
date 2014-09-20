@@ -33,11 +33,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/pmalloc_cuda.h"
+
 #include <stdlib.h>
 
-#include "cudautils.cuh"
-#include "pmalloc_cuda.h"
-
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/utility/cstringutil.h"
 
 /*! Allocates nbytes of page-locked memory.

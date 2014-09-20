@@ -37,8 +37,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-#include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gmxpre.h"
+
 #include "gromacs/commandline/cmdlineinit.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"

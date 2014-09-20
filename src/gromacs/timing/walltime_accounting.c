@@ -33,11 +33,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/timing/walltime_accounting.h"
+#include "gmxpre.h"
+
+#include "walltime_accounting.h"
 
 #include "config.h"
 
 #include <time.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

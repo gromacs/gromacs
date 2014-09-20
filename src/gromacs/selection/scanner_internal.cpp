@@ -51,6 +51,10 @@
  * \ingroup module_selection
  * \endcond
  */
+#include "gmxpre.h"
+
+#include "scanner_internal.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -63,15 +67,13 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "parser.h"
 #include "parsetree.h"
+#include "scanner.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
-
-#include "parser.h"
-#include "scanner.h"
-#include "scanner_internal.h"
 
 /*! \brief
  * Step in which the allocated memory for pretty-printed input is incremented.
@@ -322,8 +324,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                 GMX_THROW(gmx::InternalError("Unsupported variable type"));
                 return INVALID;
         }
-        delete yylval->sel;
-        return INVALID; /* Should not be reached. */
+        /* This position should not be reached. */
     }
     /* For method symbols, return the correct type */
     if (symtype == gmx::SelectionParserSymbol::MethodSymbol)

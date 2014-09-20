@@ -46,12 +46,11 @@
 #include <string>
 #include <vector>
 
-#include "../utility/arrayref.h"
-#include "../utility/common.h"
-#include "../utility/gmxassert.h"
-
-#include "position.h"
-#include "selectionenums.h"
+#include "gromacs/selection/position.h"
+#include "gromacs/selection/selectionenums.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/gmxassert.h"
 
 struct t_topology;
 
@@ -336,8 +335,8 @@ class Selection
         //! Returns atom indices of all atoms in the selection.
         ConstArrayRef<int> atomIndices() const
         {
-            return ConstArrayRef<int>(sel_->rawPositions_.m.mapb.a,
-                                      sel_->rawPositions_.m.mapb.nra);
+            return constArrayRefFromArray(sel_->rawPositions_.m.mapb.a,
+                                          sel_->rawPositions_.m.mapb.nra);
         }
         //! Number of positions in the selection.
         int posCount() const { return data().posCount(); }
@@ -346,7 +345,7 @@ class Selection
         //! Returns coordinates for this selection as a continuous array.
         ConstArrayRef<rvec> coordinates() const
         {
-            return ConstArrayRef<rvec>(data().rawPositions_.x, posCount());
+            return constArrayRefFromArray(data().rawPositions_.x, posCount());
         }
         //! Returns whether velocities are available for this selection.
         bool hasVelocities() const { return data().rawPositions_.v != NULL; }
@@ -358,7 +357,7 @@ class Selection
         ConstArrayRef<rvec> velocities() const
         {
             GMX_ASSERT(hasVelocities(), "Velocities accessed, but unavailable");
-            return ConstArrayRef<rvec>(data().rawPositions_.v, posCount());
+            return constArrayRefFromArray(data().rawPositions_.v, posCount());
         }
         //! Returns whether forces are available for this selection.
         bool hasForces() const { return sel_->rawPositions_.f != NULL; }
@@ -370,7 +369,7 @@ class Selection
         ConstArrayRef<rvec> forces() const
         {
             GMX_ASSERT(hasForces(), "Forces accessed, but unavailable");
-            return ConstArrayRef<rvec>(data().rawPositions_.f, posCount());
+            return constArrayRefFromArray(data().rawPositions_.f, posCount());
         }
         //! Returns masses for this selection as a continuous array.
         ConstArrayRef<real> masses() const
@@ -380,8 +379,8 @@ class Selection
             // (and thus the masses and charges are fixed).
             GMX_ASSERT(data().posMass_.size() >= static_cast<size_t>(posCount()),
                        "Internal inconsistency");
-            return ConstArrayRef<real>(data().posMass_.begin(),
-                                       data().posMass_.begin() + posCount());
+            return constArrayRefFromVector<real>(data().posMass_.begin(),
+                                                 data().posMass_.begin() + posCount());
         }
         //! Returns charges for this selection as a continuous array.
         ConstArrayRef<real> charges() const
@@ -391,8 +390,8 @@ class Selection
             // (and thus the masses and charges are fixed).
             GMX_ASSERT(data().posCharge_.size() >= static_cast<size_t>(posCount()),
                        "Internal inconsistency");
-            return ConstArrayRef<real>(data().posCharge_.begin(),
-                                       data().posCharge_.begin() + posCount());
+            return constArrayRefFromVector<real>(data().posCharge_.begin(),
+                                                 data().posCharge_.begin() + posCount());
         }
         /*! \brief
          * Returns reference IDs for this selection as a continuous array.
@@ -401,7 +400,7 @@ class Selection
          */
         ConstArrayRef<int> refIds() const
         {
-            return ConstArrayRef<int>(data().rawPositions_.m.refid, posCount());
+            return constArrayRefFromArray(data().rawPositions_.m.refid, posCount());
         }
         /*! \brief
          * Returns mapped IDs for this selection as a continuous array.
@@ -410,7 +409,7 @@ class Selection
          */
         ConstArrayRef<int> mappedIds() const
         {
-            return ConstArrayRef<int>(data().rawPositions_.m.mapid, posCount());
+            return constArrayRefFromArray(data().rawPositions_.m.mapid, posCount());
         }
 
         //! Returns whether the covered fraction can change between frames.
@@ -657,7 +656,7 @@ class SelectionPosition
                 return ConstArrayRef<int>();
             }
             const int first = sel_->rawPositions_.m.mapb.index[i_];
-            return ConstArrayRef<int>(&atoms[first], atomCount());
+            return constArrayRefFromArray(&atoms[first], atomCount());
         }
         /*! \brief
          * Returns whether this position is selected in the current frame.

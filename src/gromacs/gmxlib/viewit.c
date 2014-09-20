@@ -35,16 +35,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "viewit.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/viewit.h"
 
 #include "config.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "oenv.h"
-#include "macros.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 

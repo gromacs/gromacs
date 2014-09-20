@@ -34,18 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "genborn_allvsall.h"
 
 #include <math.h>
-#include "types/simple.h"
 
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "network.h"
-#include "gromacs/math/units.h"
-#include "genborn.h"
-#include "genborn_allvsall.h"
 
 
 typedef struct

@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <math.h>
@@ -45,26 +47,25 @@
 #endif
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "txtdump.h"
 #include "gromacs/fileio/matio.h"
-#include "eigio.h"
-#include "gmx_ana.h"
-#include "gromacs/utility/cstringutil.h"
+#include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_covar(int argc, char *argv[])
 {
@@ -115,7 +116,7 @@ int gmx_covar(int argc, char *argv[])
         { "-pbc",  FALSE,  etBOOL, {&bPBC},
           "Apply corrections for periodic boundary conditions" }
     };
-    FILE           *out;
+    FILE           *out = NULL; /* initialization makes all compilers happy */
     t_trxstatus    *status;
     t_trxstatus    *trjout;
     t_topology      top;
@@ -159,7 +160,7 @@ int gmx_covar(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -544,18 +545,7 @@ int gmx_covar(int argc, char *argv[])
         fprintf(stderr, "\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
     }
 
-    fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile);
-
-    sprintf(str, "(%snm\\S2\\N)", bM ? "u " : "");
-    out = xvgropen(eigvalfile,
-                   "Eigenvalues of the covariance matrix",
-                   "Eigenvector index", str, oenv);
-    for (i = 0; (i < end); i++)
-    {
-        fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
-    }
-    gmx_ffclose(out);
-
+    /* Set 'end', the maximum eigenvector and -value index used for output */
     if (end == -1)
     {
         if (nframes-1 < ndim)
@@ -570,6 +560,19 @@ int gmx_covar(int argc, char *argv[])
             end = ndim;
         }
     }
+
+    fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile);
+
+    sprintf(str, "(%snm\\S2\\N)", bM ? "u " : "");
+    out = xvgropen(eigvalfile,
+                   "Eigenvalues of the covariance matrix",
+                   "Eigenvector index", str, oenv);
+    for (i = 0; (i < end); i++)
+    {
+        fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
+    }
+    gmx_ffclose(out);
+
     if (bFit)
     {
         /* misuse lambda: 0/1 mass weighted analysis no/yes */

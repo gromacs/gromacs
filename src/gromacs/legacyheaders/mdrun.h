@@ -40,19 +40,19 @@
 
 #include <stdio.h>
 #include <time.h>
-#include "typedefs.h"
-#include "network.h"
-#include "sim_util.h"
-#include "tgroup.h"
-#include "mdebin.h"
-#include "vcm.h"
-#include "vsite.h"
-#include "update.h"
-#include "types/membedt.h"
-#include "types/globsig.h"
 
-#include "../fileio/filenm.h"
-#include "../timing/wallcycle.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/globsig.h"
+#include "gromacs/legacyheaders/types/membedt.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,7 +61,6 @@ extern "C" {
 #define MD_POLARISE       (1<<2)
 #define MD_RERUN          (1<<4)
 #define MD_RERUN_VSITE    (1<<5)
-#define MD_SEPPOT         (1<<7)
 #define MD_DDBONDCHECK    (1<<10)
 #define MD_DDBONDCOMM     (1<<11)
 #define MD_CONFOUT        (1<<12)

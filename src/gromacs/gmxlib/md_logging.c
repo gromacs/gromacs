@@ -34,12 +34,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include <stdio.h>
+#include "gromacs/legacyheaders/md_logging.h"
+
 #include <stdarg.h>
-#include "types/commrec.h"
-#include "md_logging.h"
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/types/commrec.h"
 
 
 void md_print_info(const t_commrec *cr, FILE *fplog,

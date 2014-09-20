@@ -39,17 +39,18 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include <stdlib.h>
 
 #include "gromacs/legacyheaders/macros.h"
-
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
 #include "parsetree.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 /*! \internal
  * \brief

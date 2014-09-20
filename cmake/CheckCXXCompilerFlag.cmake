@@ -61,12 +61,17 @@ MACRO (CHECK_CXX_COMPILER_FLAG _FLAG _RESULT)
      FAIL_REGEX "option.*not supported"                     # Intel
      FAIL_REGEX "invalid argument .*option"                 # Intel
      FAIL_REGEX "ignoring option .*argument required"       # Intel
+     FAIL_REGEX "ignoring option .*argument is of wrong type" # Intel
      FAIL_REGEX "[Uu]nknown option"                         # HP
      FAIL_REGEX "[Ww]arning: [Oo]ption"                     # SunPro
      FAIL_REGEX "command option .* is not recognized"       # XL
-     FAIL_REGEX "not supported in this configuration. ignored"       # AIX
+     FAIL_REGEX "command option .* contains an incorrect subargument" # XL
+     FAIL_REGEX "not supported in this configuration. ignored" # AIX
      FAIL_REGEX "File with unknown suffix passed to linker" # PGI
      FAIL_REGEX "WARNING: unknown flag:"                    # Open64
+     FAIL_REGEX "Incorrect command line option:"            # Borland
+     FAIL_REGEX "Warning: illegal option"                   # SunStudio 12
+     FAIL_REGEX "[Ww]arning: Invalid"                       # Fujitsu
      )
    SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 ENDMACRO (CHECK_CXX_COMPILER_FLAG)

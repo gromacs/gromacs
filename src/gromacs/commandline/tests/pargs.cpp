@@ -42,6 +42,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
+#include "gmxpre.h"
+
 #include "gromacs/commandline/pargs.h"
 
 #include <string>
@@ -376,6 +378,23 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaultFileName)
     done_filenms(nfile(), fnm);
 }
 
+TEST_F(ParseCommonArgsTest, ParseFileArgsWithCustomDefaultExtension)
+{
+    t_filenm          fnm[] = {
+        { efTRX, "-o1", "conf1.gro", ffWRITE },
+        { efTRX, "-o2", "conf2.pdb", ffWRITE },
+        { efTRX, "-o3", "conf3.gro", ffWRITE }
+    };
+    const char *const cmdline[] = {
+        "test", "-o2", "-o3", "test"
+    };
+    parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, gmx::EmptyArrayRef());
+    EXPECT_STREQ("conf1.gro", opt2fn("-o1", nfile(), fnm));
+    EXPECT_STREQ("conf2.pdb", opt2fn("-o2", nfile(), fnm));
+    EXPECT_STREQ("test.gro", opt2fn("-o3", nfile(), fnm));
+    done_filenms(nfile(), fnm);
+}
+
 /********************************************************************
  * Tests for file name options (input files, dependent on file system contents)
  */
@@ -476,13 +495,13 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
 {
     t_filenm          fnm[] = {
         { efTRX, "-f1", NULL,  ffREAD },
-        { efTPX, "-f2", "foo", ffREAD },
+        { efSTO, "-f2", "foo", ffREAD },
         { efTRX, "-f3", NULL,  ffREAD },
         { efSTX, "-f4", NULL,  ffREAD }
     };
     args_.append("test");
     std::string       expected1 = addFileArg("-f1", "1.trr", efNoExtension);
-    std::string       expected2 = addFileArg("-f2", ".tpa", efEmptyValue);
+    std::string       expected2 = addFileArg("-f2", ".pdb", efEmptyValue);
     std::string       expected3 = addFileArg("-f3", ".trr", efEmptyValue);
     std::string       expected4 = addFileArg(NULL, ".pdb", efEmptyValue);
     std::string       deffnm    = gmx::Path::stripExtension(expected3);

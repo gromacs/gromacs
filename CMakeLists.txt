@@ -83,6 +83,7 @@ if(CMAKE_CONFIGURATION_TYPES)
 endif()
 set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
 
+set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 set(CPACK_PACKAGE_NAME "gromacs")
 set(CPACK_PACKAGE_VERSION_MAJOR ${GMX_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${GMX_VERSION_MINOR})
@@ -101,7 +102,7 @@ set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
 # This variable is a list of pairs of names of source and destination
 # directories. Most of these are used for content GROMACS generates as
 # part of the configuration or build.
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/share/man/man1;share/man/man1;${CMAKE_BINARY_DIR}/share/man/man7;share/man/man7;${CMAKE_BINARY_DIR}/share/html/final;share/html/final;${CMAKE_BINARY_DIR}/install-guide/final;/")
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/docs/man/man1;docs/man/man1;${CMAKE_BINARY_DIR}/docs/man/man7;docs/man/man7;${CMAKE_BINARY_DIR}/docs/old-html/final;docs/old-html/final;${CMAKE_BINARY_DIR}/docs/install-guide/final;/")
 set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 set(CPACK_GMX_BUILD_HELP "${GMX_BUILD_HELP}") #Works even though GMX_BUILD_HELP is defined later because it is off by default.
 
@@ -139,13 +140,32 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
+# Detect architecture before setting options so we can alter defaults
+########################################################################
+# Detect the architecture the compiler is targetting, detect
+# SIMD instructions possibilities on that hardware, suggest SIMD instruction set
+# to use if none is specified, and populate the cache option for CPU
+# SIMD.
+include(gmxDetectTargetArchitecture)
+gmx_detect_target_architecture()
+
+########################################################################
 # User input options                                                   #
 ########################################################################
 include(gmxOptionUtilities)
 
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
+if(GMX_TARGET_FUJITSU_SPARC64)
+    # Fujitsu only has SIMD in double precision, so this will be faster
+    set(GMX_DOUBLE_DEFAULT ON)
+else()
+    set(GMX_DOUBLE_DEFAULT OFF)
+endif()
+option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
+option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
+mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
+
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
 gmx_dependent_option(
@@ -173,13 +193,6 @@ endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 include(gmxManageGPU)
 
-# Detect the architecture the compiler is targetting, detect
-# SIMD instructions possibilities on that hardware, suggest SIMD instruction set
-# to use if none is specified, and populate the cache option for CPU
-# SIMD.
-include(gmxDetectTargetArchitecture)
-gmx_detect_target_architecture()
-
 if(GMX_CPU_ACCELERATION)
     # Stay compatible with old Jenkins command line options for specific SIMD acceleration
     set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
@@ -198,7 +211,7 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_SIMD}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 IBM_QPX Sparc64_HPC_ACE Reference)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
@@ -255,6 +268,10 @@ option(GMX_BUILD_FOR_COVERAGE
        OFF)
 mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
+option(GMX_DEVELOPER_BUILD
+    "Enable Developer convenience features: always build unit-tests"
+    OFF)
+mark_as_advanced(GMX_DEVELOPER_BUILD)
 
 ######################################################################
 # Detect OpenMP support
@@ -270,13 +287,19 @@ include(gmxManageOpenMP)
 #####################################################################
 
 # The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
-# are used with permission from CMake v2.8.9 so that GROMACS can detect
-# invalid options with the Intel Compilers.
+# are used with permission from CMake v3.0.0 so that GROMACS can detect
+# invalid options with the Intel Compilers, and we have added a line
+# to detect warnings with the Fujitsu compilers on K computer and ICC.
+# CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
+# a semicolon. Since this is also used as a separator in lists inside CMake,
+# that string ends up being split into two separate patterns, and the last
+# part is just a single word that also matches other messages. We solved this
+# by replacing the semicolon with a period that matches any character.
+#
 # These files should be removed from the source tree when a CMake version that
 # includes the features in question becomes required for building GROMACS.
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-
 
 include(gmxCFlags)
 gmx_c_flags()
@@ -305,21 +328,17 @@ endif()
 if(GMX_DOUBLE)
     add_definitions(-DGMX_DOUBLE)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE")
+    if(GMX_RELAXED_DOUBLE_PRECISION)
+        add_definitions(-DGMX_RELAXED_DOUBLE_PRECISION)
+    endif()
 endif()
 if(GMX_SOFTWARE_INVSQRT)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
 endif()
 
 if(WIN32 AND NOT CYGWIN)
-    set(GMX_WSOCKLIB_PATH CACHE PATH "Path to winsock (wsock32.lib) library.")
-    mark_as_advanced(GMX_WSOCKLIB_PATH)
-    find_library(WSOCK32_LIBRARY NAMES wsock32 PATHS ${GMX_WSOCKLIB_PATH})
-    if(WSOCK32_LIBRARY)
-        list(APPEND GMX_EXTRA_LIBRARIES ${WSOCK32_LIBRARY})
-        add_definitions(-DGMX_HAVE_WINSOCK)
-    else()
-        message(STATUS "No winsock found. Cannot use interactive molecular dynamics (IMD).")
-    endif(WSOCK32_LIBRARY)
+    list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
+    add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
 
 
@@ -353,8 +372,6 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(sigaction         HAVE_SIGACTION)
 check_function_exists(sysconf           HAVE_SYSCONF)
-check_function_exists(sched_setaffinity HAVE_SCHED_SETAFFINITY)
-check_function_exists(sched_getaffinity HAVE_SCHED_GETAFFINITY)
 check_function_exists(rsqrt             HAVE_RSQRT)
 check_function_exists(rsqrtf            HAVE_RSQRTF)
 check_function_exists(sqrtf             HAVE_SQRTF)
@@ -362,6 +379,9 @@ check_function_exists(sqrtf             HAVE_SQRTF)
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
+
+include(TestSchedAffinity)
+test_sched_affinity(HAVE_SCHED_AFFINITY)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
@@ -375,6 +395,10 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 # things can be sorted out now, before the detection takes place.
 if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
     include(gmxManageBlueGene)
+endif()
+
+if(GMX_TARGET_FUJITSU_SPARC64)
+    include(gmxManageFujitsuSparc64)
 endif()
 
 ########################################################################
@@ -509,6 +533,13 @@ if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
         "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
 endif()
 
+if(GMX_USE_TNG AND NOT GMX_EXTERNAL_TNG)
+    # TNG wants zlib if it is available
+    find_package(ZLIB QUIET)
+    include(gmxTestZLib)
+    gmx_test_zlib(HAVE_ZLIB)
+endif()
+
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
@@ -518,10 +549,13 @@ include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
+#<<<<<<< HEAD
 # Required for now to make old code compile
-include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
+#include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 # LPW: Required for now for new QMMM
 # include_directories(${CMAKE_SOURCE_DIR}/src/gromacs)
+#=======
+#>>>>>>> master
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
@@ -636,10 +670,7 @@ if(GMX_LOAD_PLUGINS)
   # so, should we use plug-ins?
   if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
     if(NOT VMD_QUIETLY)
-      MESSAGE(STATUS
-          "Found the ability to use plug-ins when building shared libaries, "
-          "so will compile to use plug-ins (e.g. to read VMD-supported file "
-          "formats).")
+      MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
     endif()
     if(NOT GMX_VMD_PLUGIN_PATH)
       find_package(VMD)
@@ -837,8 +868,7 @@ if (BUILD_TESTING)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    add_subdirectory(doxygen)
-    add_subdirectory(install-guide)
+    add_subdirectory(docs)
     add_subdirectory(share)
     add_subdirectory(scripts)
 endif()
@@ -868,15 +898,3 @@ ADD_CUSTOM_TARGET(uninstall
 ###########################
 set_directory_properties(PROPERTIES
             ADDITIONAL_MAKE_CLEAN_FILES "install_manifest.txt")
-
-########################################################################
-# Manual                                                               #
-########################################################################
-
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_MANUAL)
-if(GMX_BUILD_MANUAL)
-    # Make sure we only do detection of manual-building dependencies
-    # when the user opted in for that.
-    add_subdirectory(manual)
-endif()

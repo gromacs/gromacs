@@ -39,12 +39,14 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "selmethod.h"
+
 #include <ctype.h>
 #include <stdarg.h>
 
 #include "gromacs/legacyheaders/macros.h"
-
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 

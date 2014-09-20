@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "fatalerror.h"
 
 #include "config.h"
@@ -204,7 +206,7 @@ static void call_error_handler(const char *key, const char *file, int line, cons
     gmx_error_handler(buf);
 }
 
-GMX_ATTRIBUTE_NORETURN static void do_exit(bool bMaster, bool bFinalize)
+gmx_noreturn static void do_exit(bool bMaster, bool bFinalize)
 {
     if (debug)
     {

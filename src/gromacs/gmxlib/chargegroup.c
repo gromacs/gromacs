@@ -34,15 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/chargegroup.h"
 
 #include <math.h>
-#include "typedefs.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "chargegroup.h"
+#include "gromacs/utility/smalloc.h"
 
 
 void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,

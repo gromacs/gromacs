@@ -34,31 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "genborn.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "names.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
-#include "domdec.h"
-#include "network.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
-#include "genborn.h"
-
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Only compile this file if SSE2 intrinsics are available */
 #if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
-#include <gmx_sse2_double.h>
-#include <emmintrin.h>
-
 #include "genborn_sse2_double.h"
+
+#include <emmintrin.h>
+#include <gmx_sse2_double.h>
 
 int
 calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,

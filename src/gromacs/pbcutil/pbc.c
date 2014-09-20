@@ -34,20 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/pbcutil/pbc.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "pbc.h"
 
 #include <assert.h>
 #include <math.h>
 
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
-#include "types/commrec.h"
-#include "txtdump.h"
-#include "names.h"
-#include "macros.h"
-#include "gmx_omp_nthreads.h"
-
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"

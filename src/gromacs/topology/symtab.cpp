@@ -34,9 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "symtab.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "symtab.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -44,7 +44,6 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/txtdump.h"
-
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

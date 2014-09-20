@@ -34,31 +34,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/enxio.h"
 #include "gromacs/commandline/pargs.h"
-#include "names.h"
-#include "copyrite.h"
-#include "macros.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gstat.h"
-#include "gromacs/math/units.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "viewit.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gmx_ana.h"
-#include "mdebin.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static real       minthird = -1.0/3.0, minsixth = -1.0/6.0;
 
@@ -2027,7 +2027,7 @@ int gmx_energy(int argc, char *argv[])
     t_filenm           fnm[] = {
         { efEDR, "-f",    NULL,      ffREAD  },
         { efEDR, "-f2",   NULL,      ffOPTRD },
-        { efTPX, "-s",    NULL,      ffOPTRD },
+        { efTPR, "-s",    NULL,      ffOPTRD },
         { efXVG, "-o",    "energy",  ffWRITE },
         { efXVG, "-viol", "violaver", ffOPTWR },
         { efXVG, "-pairs", "pairs",   ffOPTWR },
@@ -2049,7 +2049,7 @@ int gmx_energy(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -2172,7 +2172,7 @@ int gmx_energy(int argc, char *argv[])
 
         if (bORIRE || bOTEN)
         {
-            get_orires_parms(ftp2fn(efTPX, NFILE, fnm), &nor, &nex, &or_label, &oobs);
+            get_orires_parms(ftp2fn(efTPR, NFILE, fnm), &nor, &nex, &or_label, &oobs);
         }
 
         if (bORIRE)
@@ -2297,7 +2297,7 @@ int gmx_energy(int argc, char *argv[])
     }
     else if (bDisRe)
     {
-        nbounds = get_bounds(ftp2fn(efTPX, NFILE, fnm), &bounds, &index, &pair, &npairs,
+        nbounds = get_bounds(ftp2fn(efTPR, NFILE, fnm), &bounds, &index, &pair, &npairs,
                              &mtop, &top, &ir);
         snew(violaver, npairs);
         out = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations",
@@ -2316,7 +2316,7 @@ int gmx_energy(int argc, char *argv[])
     }
     else if (bDHDL)
     {
-        get_dhdl_parms(ftp2fn(efTPX, NFILE, fnm), &ir);
+        get_dhdl_parms(ftp2fn(efTPR, NFILE, fnm), &ir);
     }
 
     /* Initiate energies and set them to zero */

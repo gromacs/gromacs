@@ -39,9 +39,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include "errorformat.h"
+
+#include "config.h"
 
 #include <cctype>
 #include <cstdio>

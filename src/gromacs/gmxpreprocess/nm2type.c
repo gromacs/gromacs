@@ -35,29 +35,27 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
-
-#include <string.h>
-
-#include "gromacs/math/utilities.h"
-#include "macros.h"
-#include "bondf.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/math/vec.h"
-#include "txtdump.h"
-#include "readinp.h"
-#include "names.h"
-#include "toppush.h"
-#include "pdb2top.h"
-#include "gpp_nextnb.h"
-#include "gpp_atomtype.h"
-#include "fflibutil.h"
+#include "gmxpre.h"
 
 #include "nm2type.h"
 
+#include <string.h>
+
+#include "gromacs/fileio/confio.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 {

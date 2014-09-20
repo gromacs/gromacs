@@ -34,18 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "nrama.h"
 
 #include <math.h>
 #include <stdlib.h>
 
-#include "nrama.h"
-#include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
-#include "bondf.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 #define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))

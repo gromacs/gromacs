@@ -34,26 +34,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
-#include <string.h>
-#include <math.h>
+#include "gmxpre.h"
 
-#include "gromacs/utility/cstringutil.h"
-#include "typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/enxio.h"
+#include <math.h>
+#include <string.h>
+
 #include "gromacs/commandline/pargs.h"
-#include "names.h"
-#include "macros.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gstat.h"
-#include "gromacs/math/units.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/strdb.h"
-#include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static int search_str2(int nstr, char **str, char *key)
@@ -171,14 +172,14 @@ int gmx_enemat(int argc, char *argv[])
 
     t_filenm       fnm[] = {
         { efEDR, "-f", NULL, ffOPTRD },
-        { efDAT, "-groups", "groups.dat", ffREAD },
-        { efDAT, "-eref",   "eref.dat", ffOPTRD },
-        { efXPM, "-emat",   "emat", ffWRITE },
+        { efDAT, "-groups", "groups", ffREAD },
+        { efDAT, "-eref",   "eref",   ffOPTRD },
+        { efXPM, "-emat",   "emat",   ffWRITE },
         { efXVG, "-etot",   "energy", ffWRITE }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

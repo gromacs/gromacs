@@ -34,29 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
-#include "gromacs/topology/index.h"
-#include "macros.h"
-#include "names.h"
-#include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/topology/mtop_util.h"
-#include "checkpoint.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/enxio.h"
-#include "gromacs/utility/futil.h"
-
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
@@ -374,11 +373,11 @@ int gmx_convert_tpr(int argc, char *argv[])
     char              buf[200], buf2[200];
     output_env_t      oenv;
     t_filenm          fnm[] = {
-        { efTPX, NULL,  NULL,    ffREAD  },
+        { efTPR, NULL,  NULL,    ffREAD  },
         { efTRN, "-f",  NULL,    ffOPTRD },
         { efEDR, "-e",  NULL,    ffOPTRD },
         { efNDX, NULL,  NULL,    ffOPTRD },
-        { efTPX, "-o",  "tpxout", ffWRITE }
+        { efTPR, "-o",  "tprout", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -423,7 +422,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     bTime      = opt2parg_bSet("-time", asize(pa), pa);
     bTraj      = (opt2bSet("-f", NFILE, fnm) || bTime);
 
-    top_fn = ftp2fn(efTPX, NFILE, fnm);
+    top_fn = ftp2fn(efTPR, NFILE, fnm);
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
     snew(ir, 1);

@@ -35,21 +35,22 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <stdio.h>
 #include <string.h>
-#include "force.h"
-#include "gromacs/utility/smalloc.h"
-#include "types/commrec.h"
-#include "ns.h"
-#include "nrnb.h"
-#include "gromacs/utility/fatalerror.h"
-#include "macros.h"
-#include "gromacs/utility/futil.h"
-#include "names.h"
-#include "domdec.h"
+
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define header "Neighborlist:"
 

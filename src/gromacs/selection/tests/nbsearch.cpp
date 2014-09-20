@@ -44,9 +44,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gromacs/selection/nbsearch.h"
+#include "gmxpre.h"
 
-#include <gtest/gtest.h>
+#include "gromacs/selection/nbsearch.h"
 
 #include <cmath>
 
@@ -55,11 +55,14 @@
 #include <numeric>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"
 
@@ -98,10 +101,6 @@ class NeighborhoodSearchTestData
 
         struct TestPosition
         {
-            TestPosition() : refMinDist(0.0), refNearestPoint(-1)
-            {
-                clear_rvec(x);
-            }
             explicit TestPosition(const rvec x)
                 : refMinDist(0.0), refNearestPoint(-1)
             {
@@ -304,13 +303,13 @@ class ExclusionsHelper
 
         gmx::ConstArrayRef<int> refPosIds() const
         {
-            return gmx::ConstArrayRef<int>(exclusionIds_.begin(),
-                                           exclusionIds_.begin() + refPosCount_);
+            return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
+                                                     exclusionIds_.begin() + refPosCount_);
         }
         gmx::ConstArrayRef<int> testPosIds() const
         {
-            return gmx::ConstArrayRef<int>(exclusionIds_.begin(),
-                                           exclusionIds_.begin() + testPosCount_);
+            return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
+                                                     exclusionIds_.begin() + testPosCount_);
         }
 
     private:
@@ -456,21 +455,39 @@ void NeighborhoodSearchTest::testNearestPoint(
     }
 }
 
+//! Helper function for formatting test failure messages.
+std::string formatVector(const rvec x)
+{
+    return gmx::formatString("[%.3f, %.3f, %.3f]", x[XX], x[YY], x[ZZ]);
+}
+
 /*! \brief
  * Helper function to check that all expected pairs were found.
  */
-static void checkAllPairsFound(const RefPairList &refPairs)
+void checkAllPairsFound(const RefPairList &refPairs, const rvec refPos[],
+                        int testPosIndex, const rvec testPos)
 {
     // This could be elegantly expressed with Google Mock matchers, but that
     // has a significant effect on the runtime of the tests...
+    int                         count = 0;
+    RefPairList::const_iterator first;
     for (RefPairList::const_iterator i = refPairs.begin(); i != refPairs.end(); ++i)
     {
         if (!i->bFound)
         {
-            ADD_FAILURE()
-            << "Some pairs within the cutoff were not found.";
-            break;
+            ++count;
+            first = i;
         }
+    }
+    if (count > 0)
+    {
+        ADD_FAILURE()
+        << "Some pairs (" << count << "/" << refPairs.size() << ") "
+        << "within the cutoff were not found. First pair:\n"
+        << " Ref: " << first->refIndex << " at "
+        << formatVector(refPos[first->refIndex]) << "\n"
+        << "Test: " << testPosIndex << " at " << formatVector(testPos) << "\n"
+        << "Dist: " << first->distance;
     }
 }
 
@@ -507,7 +524,8 @@ void NeighborhoodSearchTest::testPairSearchFull(
         {
             if (prevTestPos != -1)
             {
-                checkAllPairsFound(refPairs);
+                checkAllPairsFound(refPairs, data.refPos_, prevTestPos,
+                                   data.testPositions_[prevTestPos].x);
             }
             const int testIndex = pair.testIndex();
             if (remainingTestPositions.count(testIndex) == 0)
@@ -558,7 +576,8 @@ void NeighborhoodSearchTest::testPairSearchFull(
             << "Distance computed by the neighborhood search does not match.";
         }
     }
-    checkAllPairsFound(refPairs);
+    checkAllPairsFound(refPairs, data.refPos_, prevTestPos,
+                       data.testPositions_[prevTestPos].x);
     for (std::set<int>::const_iterator i = remainingTestPositions.begin();
          i != remainingTestPositions.end(); ++i)
     {

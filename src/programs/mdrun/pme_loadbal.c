@@ -32,21 +32,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "types/commrec.h"
-#include "network.h"
-#include "calcgrid.h"
-#include "pme.h"
-#include "domdec.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
-#include "force.h"
-#include "macros.h"
-#include "md_logging.h"
 #include "pme_loadbal.h"
 
-#include "gromacs/math/vec.h"
+#include "config.h"
+
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"

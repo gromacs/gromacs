@@ -35,23 +35,24 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
 #include "config.h"
 
-
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "pme.h"
-#include "network.h"
-#include "domdec.h"
-#include "sighandler.h"
 
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/sighandler.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 enum {
     eCommType_ChargeA, eCommType_ChargeB, eCommType_SQRTC6A, eCommType_SQRTC6B,
@@ -188,9 +189,11 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, int flags,
 
     if (debug)
     {
-        fprintf(debug, "PP rank %d sending to PME rank %d: %d%s%s\n",
+        fprintf(debug, "PP rank %d sending to PME rank %d: %d%s%s%s%s\n",
                 cr->sim_nodeid, dd->pme_nodeid, n,
                 flags & PP_PME_CHARGE ? " charges" : "",
+                flags & PP_PME_SQRTC6 ? " sqrtC6" : "",
+                flags & PP_PME_SIGMA  ? " sigma" : "",
                 flags & PP_PME_COORD  ? " coordinates" : "");
     }
 
@@ -293,6 +296,7 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, int flags,
 }
 
 void gmx_pme_send_parameters(t_commrec *cr,
+                             const interaction_const_t *ic,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
                              real *sqrt_c6A, real *sqrt_c6B,
@@ -301,15 +305,14 @@ void gmx_pme_send_parameters(t_commrec *cr,
 {
     int flags;
 
-    /* We always send the charges, even with only LJ- and no Coulomb-PME */
-    flags = PP_PME_CHARGE;
-    if (sqrt_c6A != NULL)
+    flags = 0;
+    if (EEL_PME(ic->eeltype))
     {
-        flags |= PP_PME_SQRTC6;
+        flags |= PP_PME_CHARGE;
     }
-    if (sigmaA != NULL)
+    if (EVDW_PME(ic->vdwtype))
     {
-        flags |= PP_PME_SIGMA;
+        flags |= (PP_PME_SQRTC6 | PP_PME_SIGMA);
     }
     if (bFreeEnergy_q || bFreeEnergy_lj)
     {
@@ -559,9 +562,10 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
                         nat += pme_pp->nat[sender];
                         if (debug)
                         {
-                            fprintf(debug, "Received from PP rank %d: %d "
-                                    "charges\n",
-                                    pme_pp->node[sender], pme_pp->nat[sender]);
+                            fprintf(debug, "Received from PP rank %d: %d %s\n",
+                                    pme_pp->node[sender], pme_pp->nat[sender],
+                                    (q == eCommType_ChargeA ||
+                                     q == eCommType_ChargeB) ? "charges" : "params");
                         }
                     }
                 }

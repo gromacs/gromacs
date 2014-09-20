@@ -33,15 +33,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/gpu_utils.h"
+
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
-#include "types/hw_info.h"
-
-#include "gpu_utils.h"
-#include "../cuda_tools/cudautils.cuh"
-
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 

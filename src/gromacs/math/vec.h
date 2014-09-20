@@ -110,18 +110,17 @@
    HAVE_*SQRT*. This is no problem with public headers because
    it is OK if user code uses a different rsqrt implementation */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <math.h>
 
-#include "units.h"
-#include "utilities.h"
-#include "vectypes.h"
-
-#include "../utility/basedefinitions.h"
-#include "../utility/fatalerror.h"
-#include "../utility/real.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

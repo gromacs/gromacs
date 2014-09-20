@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "exceptions.h"
 
 #include "config.h"
@@ -49,8 +51,8 @@
 #include <stdexcept>
 #include <typeinfo>
 
-#include <boost/exception/get_error_info.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/exception/get_error_info.hpp>
 
 #include "thread_mpi/system_error.h"
 

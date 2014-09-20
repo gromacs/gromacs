@@ -35,13 +35,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "typedefs.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"

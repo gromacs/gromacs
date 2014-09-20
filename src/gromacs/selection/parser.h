@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 2.6.2.  */
+/* A Bison parser, made by GNU Bison 2.7.12-4996.  */
 
 /* Bison interface for Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989-1990, 2000-2012 Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,8 +30,8 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef _GMX_SEL_YY_PARSER_H
-# define _GMX_SEL_YY_PARSER_H
+#ifndef YY__GMX_SEL_YY_PARSER_H_INCLUDED
+# define YY__GMX_SEL_YY_PARSER_H_INCLUDED
 /* Enabling traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 1
@@ -40,7 +40,7 @@
 extern int _gmx_sel_yydebug;
 #endif
 /* "%code requires" blocks.  */
-/* Line 2049 of yacc.c  */
+/* Line 2053 of yacc.c  */
 #line 1 "parser.y"
 
 /*
@@ -78,14 +78,14 @@ extern int _gmx_sel_yydebug;
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* Line 2049 of yacc.c  */
-#line 73 "parser.y"
+/* Line 2053 of yacc.c  */
+#line 76 "parser.y"
 
 #include "parsetree.h"
 #include "selelem.h"
 
 
-/* Line 2049 of yacc.c  */
+/* Line 2053 of yacc.c  */
 #line 90 "parser.h"
 
 /* Tokens.  */
@@ -132,8 +132,8 @@ extern int _gmx_sel_yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
 {
-/* Line 2049 of yacc.c  */
-#line 78 "parser.y"
+/* Line 2053 of yacc.c  */
+#line 81 "parser.y"
 
     int                         i;
     real                        r;
@@ -149,7 +149,7 @@ typedef union YYSTYPE
     gmx::SelectionParserParameterListPointer    *plist;
 
 
-/* Line 2049 of yacc.c  */
+/* Line 2053 of yacc.c  */
 #line 154 "parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
@@ -182,4 +182,4 @@ void _gmx_sel_yypstate_delete (_gmx_sel_yypstate *ps);
 void _gmx_sel_yypstate_delete ();
 #endif
 
-#endif /* !_GMX_SEL_YY_PARSER_H  */
+#endif /* !YY__GMX_SEL_YY_PARSER_H_INCLUDED  */

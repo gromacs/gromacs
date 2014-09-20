@@ -34,13 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "mdrun_main.h"
+#include "gmxpre.h"
 
 #include "config.h"
 
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -50,10 +52,9 @@
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "mdrun_main.h"
 
 static bool is_multisim_option_set(int argc, const char *const argv[])
 {
@@ -82,8 +83,7 @@ int gmx_mdrun(int argc, char *argv[])
         "The [TT]mdrun[tt] program reads the run input file ([TT]-s[tt])",
         "and distributes the topology over ranks if needed.",
         "[TT]mdrun[tt] produces at least four output files.",
-        "A single log file ([TT]-g[tt]) is written, unless the option",
-        "[TT]-seppot[tt] is used, in which case each rank writes a log file.",
+        "A single log file ([TT]-g[tt]) is written.",
         "The trajectory file ([TT]-o[tt]), contains coordinates, velocities and",
         "optionally forces.",
         "The structure file ([TT]-c[tt]) contains the coordinates and",
@@ -409,7 +409,7 @@ int gmx_mdrun(int argc, char *argv[])
     };
     t_commrec    *cr;
     t_filenm      fnm[] = {
-        { efTPX, NULL,      NULL,       ffREAD },
+        { efTPR, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
         { efCOMPRESSED, "-x", NULL,     ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },
@@ -454,7 +454,6 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bTestVerlet   = FALSE;
     gmx_bool        bVerbose      = FALSE;
     gmx_bool        bCompact      = TRUE;
-    gmx_bool        bSepPot       = FALSE;
     gmx_bool        bRerunVSite   = FALSE;
     gmx_bool        bConfout      = TRUE;
     gmx_bool        bReproducible = FALSE;
@@ -518,9 +517,9 @@ int gmx_mdrun(int argc, char *argv[])
         { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
           "Number of OpenMP threads per MPI rank to start (0 is -ntomp)" },
         { "-pin",     FALSE, etENUM, {thread_aff_opt},
-          "Set thread affinities" },
+          "Whether mdrun should try to set thread affinities" },
         { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
-          "The starting logical core number for pinning to cores; used to avoid pinning threads from different mdrun instances to the same core" },
+          "The lowest logical core number to which mdrun should pin the first thread" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
         { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_opt.gpu_id},
@@ -564,8 +563,6 @@ int gmx_mdrun(int argc, char *argv[])
           "Be loud and noisy" },
         { "-compact", FALSE, etBOOL, {&bCompact},
           "Write a compact log file" },
-        { "-seppot",  FALSE, etBOOL, {&bSepPot},
-          "Write separate V and dVdl terms for each interaction type and rank to the log file(s)" },
         { "-pforce",  FALSE, etREAL, {&pforce},
           "Print all forces larger than this (kJ/mol nm)" },
         { "-reprod",  FALSE, etBOOL, {&bReproducible},
@@ -697,11 +694,6 @@ int gmx_mdrun(int argc, char *argv[])
     sim_part_fn = sim_part;
     if (opt2bSet("-cpi", NFILE, fnm))
     {
-        if (bSepPot && bAppendFiles)
-        {
-            gmx_fatal(FARGS, "Output file appending is not supported with -seppot");
-        }
-
         bAppendFiles =
             read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
                                                           fnm, cr),
@@ -756,7 +748,6 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
-    Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
     Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
@@ -776,18 +767,14 @@ int gmx_mdrun(int argc, char *argv[])
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
        there instead.  */
-    if ((MASTER(cr) || bSepPot) && !bAppendFiles)
+    if (MASTER(cr) && !bAppendFiles)
     {
         gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
-                     !bSepPot, Flags & MD_APPENDFILES, &fplog);
+                     Flags & MD_APPENDFILES, &fplog);
         please_cite(fplog, "Hess2008b");
         please_cite(fplog, "Spoel2005a");
         please_cite(fplog, "Lindahl2001a");
         please_cite(fplog, "Berendsen95a");
-    }
-    else if (!MASTER(cr) && bSepPot)
-    {
-        gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr, !bSepPot, Flags, &fplog);
     }
     else
     {

@@ -34,49 +34,46 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "pdb2gmx.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "pdb2gmx.h"
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "copyrite.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "toputil.h"
-#include "h_db.h"
-#include "pgutil.h"
-#include "resall.h"
-#include "pdb2top.h"
-#include "ter_db.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
-#include "genhydro.h"
-#include "readinp.h"
-#include "gromacs/topology/index.h"
-#include "fflibutil.h"
-#include "macros.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/genhydro.h"
+#include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/hizzie.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/specbond.h"
+#include "gromacs/gmxpreprocess/ter_db.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/xlate.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "hizzie.h"
-#include "specbond.h"
-#include "xlate.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     char gmx[6];

@@ -51,6 +51,8 @@
 #ifndef GMX_IMD_IMDSOCKET_H
 #define GMX_IMD_IMDSOCKET_H
 
+#include "config.h"
+
 /* Check if we can/should use winsock or standard UNIX sockets. */
 #ifdef GMX_NATIVE_WINDOWS
   #ifdef GMX_HAVE_WINSOCK
@@ -58,8 +60,8 @@
   #define GMX_IMD
   #endif
 #else
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #define GMX_IMD
 #endif
 

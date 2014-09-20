@@ -39,11 +39,12 @@
 #define _pme_h
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "../math/gmxcomplex.h"
-#include "../timing/wallcycle.h"
-#include "../timing/walltime_accounting.h"
-#include "../legacyheaders/network.h"
+
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -153,6 +154,7 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 /* Initialize the PME-only side of the PME <-> PP communication */
 
 void gmx_pme_send_parameters(t_commrec *cr,
+                             const interaction_const_t *ic,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
                              real *sqrt_c6A, real *sqrt_c6B,

@@ -34,38 +34,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
-#include <string.h>
+#include "gmxpre.h"
+
 #include <math.h>
+#include <string.h>
 
 #include <algorithm>
 
-#include "macros.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "bondf.h"
-#include "gromacs/utility/futil.h"
-#include "viewit.h"
-#include "txtdump.h"
-#include "gromacs/statistics/statistics.h"
-#include "gstat.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/random/random.h"
-#include "names.h"
-#include "gromacs/math/units.h"
-#include "calcmu.h"
-#include "gromacs/fileio/enxio.h"
-#include "gmx_ana.h"
-#include "copyrite.h"
-#include "gromacs/fileio/trxio.h"
-
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/calcmu.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/random/random.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
@@ -1589,7 +1589,7 @@ int gmx_dipoles(int argc, char *argv[])
     t_filenm       fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
-        { efTPX, NULL, NULL,           ffREAD },
+        { efTPR, NULL, NULL,           ffREAD },
         { efNDX, NULL, NULL,           ffOPTRD },
         { efXVG, "-o",   "Mtot",       ffWRITE },
         { efXVG, "-eps", "epsilon",    ffWRITE },
@@ -1613,7 +1613,7 @@ int gmx_dipoles(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -1663,7 +1663,7 @@ int gmx_dipoles(int argc, char *argv[])
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPX, NFILE, fnm), NULL, box,
+    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), NULL, box,
                         &natoms, NULL, NULL, NULL, top);
 
     snew(gnx, ncos);

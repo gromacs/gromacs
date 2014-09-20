@@ -43,12 +43,12 @@
 #ifndef GMX_UTILITY_CSTRINGUTIL_H
 #define GMX_UTILITY_CSTRINGUTIL_H
 
+#include "gromacs/utility/gmx_header_config.h"
+
 #include <stdio.h>
 #include <time.h>
 
-#include "basedefinitions.h"
-
-#include "gmx_header_config.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

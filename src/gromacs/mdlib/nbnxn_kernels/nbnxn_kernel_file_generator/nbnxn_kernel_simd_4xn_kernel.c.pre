@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
  * {0}, so that this file reduces to a stub
  * function definition when the kernel will never be called.
  */
+#include "gmxpre.h"
+
 #define GMX_SIMD_J_UNROLL_SIZE {7}
 #include "{4}"
 
@@ -46,7 +48,7 @@
 {3}
 
 #ifdef {0}
-#include "nbnxn_kernel_simd_4xn_common.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h"
 #endif /* {0} */
 
 #ifdef CALC_ENERGIES
@@ -69,7 +71,7 @@ void
 {6}real                      gmx_unused *fshift)
 #endif /* CALC_ENERGIES */
 #ifdef {0}
-#include "nbnxn_kernel_simd_4xn_outer.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h"
 #else /* {0} */
 {{
 /* No need to call gmx_incons() here, because the only function

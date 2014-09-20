@@ -35,14 +35,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "hackblock.h"
 
 #include <string.h>
-#include "hackblock.h"
+
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "names.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };

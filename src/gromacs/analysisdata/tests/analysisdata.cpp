@@ -45,10 +45,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
+#include "gromacs/analysisdata/analysisdata.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -139,6 +142,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultipointModules)
     EXPECT_NO_THROW_GMX(data.addModule(mod2));
 }
 
+#if GTEST_HAS_TYPED_TEST
 
 /********************************************************************
  * Input data for tests below.
@@ -150,7 +154,7 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
 #else
@@ -177,7 +181,7 @@ class DataSetsInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static DataSetsInputData singleton;
             return singleton.data_;
 #else
@@ -212,7 +216,7 @@ class MultipointInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static MultipointInputData singleton;
             return singleton.data_;
 #else
@@ -249,7 +253,7 @@ class MultipointDataSetsInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static MultipointDataSetsInputData singleton;
             return singleton.data_;
 #else
@@ -445,5 +449,20 @@ TYPED_TEST(AnalysisDataCommonTest, LimitedStorageWorks)
     ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticStorageCheckerModule(1));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
 }
+
+#else
+
+/* A dummy test that at least signals that something is missing if one runs the
+ * unit test executable itself.
+ */
+TEST(DISABLED_AnalysisDataCommonTest, GenericTests)
+{
+    ADD_FAILURE()
+    << "Tests for generic AnalysisData functionality require support for "
+    << "Google Test typed tests, which was not available when the tests "
+    << "were compiled.";
+}
+
+#endif
 
 } // namespace

@@ -39,6 +39,8 @@
  * \author Roland Schulz <roland@utk.edu>
  * \ingroup module_random
  */
+#include "gmxpre.h"
+
 #include <vector>
 
 #include <gtest/gtest.h>

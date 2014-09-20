@@ -36,10 +36,9 @@
 #ifndef GMX_GMXPREPROCESS_FFLIBUTIL_H
 #define GMX_GMXPREPROCESS_FFLIBUTIL_H
 
-#include "config.h"
-
 #include <stdio.h>
-#include "typedefs.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -37,13 +37,14 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
+#include "gmxpre.h"
+
 #include "legacymodules.h"
 
 #include <cstdio>
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -86,6 +87,9 @@ class ObsoleteToolModule : public gmx::CommandLineModuleInterface
             return NULL;
         }
 
+        virtual void init(gmx::CommandLineModuleSettings * /*settings*/)
+        {
+        }
         virtual int run(int /*argc*/, char * /*argv*/[])
         {
             printMessage();
@@ -107,7 +111,58 @@ class ObsoleteToolModule : public gmx::CommandLineModuleInterface
         }
 
         const char             *name_;
+};
 
+// TODO: Consider removing duplication with CMainCommandLineModule from
+// cmdlinemodulemanager.cpp.
+class NoNiceModule : public gmx::CommandLineModuleInterface
+{
+    public:
+        //! \copydoc gmx::CommandLineModuleManager::CMainFunction
+        typedef gmx::CommandLineModuleManager::CMainFunction CMainFunction;
+
+        /*! \brief
+         * Creates a wrapper module for the given main function.
+         *
+         * \param[in] name             Name for the module.
+         * \param[in] shortDescription One-line description for the module.
+         * \param[in] mainFunction     Main function to wrap.
+         *
+         * Does not throw.
+         */
+        NoNiceModule(const char *name, const char *shortDescription,
+                     CMainFunction mainFunction)
+            : name_(name), shortDescription_(shortDescription),
+              mainFunction_(mainFunction)
+        {
+        }
+
+        virtual const char *name() const
+        {
+            return name_;
+        }
+        virtual const char *shortDescription() const
+        {
+            return shortDescription_;
+        }
+
+        virtual void init(gmx::CommandLineModuleSettings *settings)
+        {
+            settings->setDefaultNiceLevel(0);
+        }
+        virtual int run(int argc, char *argv[])
+        {
+            return mainFunction_(argc, argv);
+        }
+        virtual void writeHelp(const gmx::CommandLineHelpContext &context) const
+        {
+            writeCommandLineHelpCMain(context, name_, mainFunction_);
+        }
+
+    private:
+        const char             *name_;
+        const char             *shortDescription_;
+        CMainFunction           mainFunction_;
 };
 
 /*! \brief
@@ -123,6 +178,24 @@ void registerModule(gmx::CommandLineModuleManager                *manager,
                     const char *name, const char *shortDescription)
 {
     manager->addModuleCMain(name, shortDescription, mainFunction);
+}
+
+/*! \brief
+ * Convenience function for creating and registering a module that defaults to
+ * -nice 0.
+ *
+ * \param[in] manager          Module manager to which to register the module.
+ * \param[in] mainFunction     Main function to wrap.
+ * \param[in] name             Name for the new module.
+ * \param[in] shortDescription One-line description for the new module.
+ */
+void registerModuleNoNice(gmx::CommandLineModuleManager                *manager,
+                          gmx::CommandLineModuleManager::CMainFunction  mainFunction,
+                          const char *name, const char *shortDescription)
+{
+    gmx::CommandLineModulePointer module(
+            new NoNiceModule(name, shortDescription, mainFunction));
+    manager->addModule(move(module));
 }
 
 /*! \brief
@@ -160,8 +233,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_x2top, "x2top",
                    "Generate a primitive topology from coordinates");
 
-    registerModule(manager, &gmx_mdrun, "mdrun",
-                   "Perform a simulation, do a normal mode analysis or an energy minimization");
+    registerModuleNoNice(manager, &gmx_mdrun, "mdrun",
+                         "Perform a simulation, do a normal mode analysis or an energy minimization");
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
@@ -332,8 +405,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Perform weighted histogram analysis after umbrella sampling");
     registerModule(manager, &gmx_wheel, "wheel",
                    "Plot helical wheels");
-    registerModule(manager, &gmx_view, "view",
-                   "View a trajectory on an X-Windows terminal");
+    registerModuleNoNice(manager, &gmx_view, "view",
+                         "View a trajectory on an X-Windows terminal");
 
     {
         gmx::CommandLineModuleGroup group =

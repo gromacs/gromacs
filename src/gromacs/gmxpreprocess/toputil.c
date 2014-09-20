@@ -34,16 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
+#include "toputil.h"
+
+#include <assert.h>
 #include <math.h>
 #include <string.h>
 
-#include "macros.h"
-#include "topdirs.h"
-#include "toputil.h"
-#include "gpp_atomtype.h"
-
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
@@ -85,12 +86,7 @@ void pr_alloc (int extra, t_params *pr)
     {
         return;
     }
-    if ((pr->nr == 0) && (pr->param != NULL))
-    {
-        fprintf(stderr, "Warning: dangling pointer at %lx\n",
-                (unsigned long)pr->param);
-        pr->param = NULL;
-    }
+    assert(!((pr->nr == 0) && (pr->param != NULL)));
     if (pr->nr+extra > pr->maxnr)
     {
         pr->maxnr = max(1.2*pr->maxnr, pr->maxnr + extra);

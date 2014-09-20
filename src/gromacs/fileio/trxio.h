@@ -38,12 +38,11 @@
 #ifndef GMX_FILEIO_TRXIO_H
 #define GMX_FILEIO_TRXIO_H
 
-#include "../legacyheaders/readinp.h"
-#include "../legacyheaders/oenv.h"
-
-#include "filenm.h"
-#include "gmxfio.h"
-#include "pdbio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/readinp.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -138,7 +137,7 @@ void write_tng_frame(t_trxstatus        *status,
                      struct t_trxframe  *fr);
 
 void close_trx(t_trxstatus *status);
-/* Close trj file as opened with read_first_x, read_frist_frame
+/* Close trajectory file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trj.
  */
 
@@ -234,12 +233,12 @@ gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t, rvec
  */
 
 void close_trj(t_trxstatus *status);
-/* Close trj file as opened with read_first_x, read_frist_frame
+/* Close trajectory file as opened with read_first_x, read_first_frame
  * or open_trx. Identical to close_trx.
  */
 
 void rewind_trj(t_trxstatus *status);
-/* Rewind trj file as opened with read_first_x */
+/* Rewind trajectory file as opened with read_first_x */
 
 struct t_topology *read_top(const char *fn, int *ePBC);
 /* Extract a topology data structure from a topology file.

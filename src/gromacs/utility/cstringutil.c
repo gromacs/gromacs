@@ -35,6 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
+#include "gmxpre.h"
+
 #include "cstringutil.h"
 
 #include "config.h"
@@ -47,6 +49,7 @@
 #include <time.h>
 
 #include <sys/types.h>
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -190,20 +193,22 @@ void trim (char *str)
 char *
 gmx_ctime_r(const time_t *clock, char *buf, int n)
 {
-    char tmpbuf[STRLEN];
-
-#ifdef GMX_NATIVE_WINDOWS
+#ifdef _MSC_VER
     /* Windows */
-    ctime_s( tmpbuf, STRLEN, clock );
-#elif (defined(__sun))
-    /*Solaris*/
-    ctime_r(clock, tmpbuf, n);
-#else
-    ctime_r(clock, tmpbuf);
-#endif
+    ctime_s( buf, n, clock );
+#elif defined(GMX_NATIVE_WINDOWS)
+    char *tmpbuf = ctime( clock );
     strncpy(buf, tmpbuf, n-1);
     buf[n-1] = '\0';
-
+#elif (defined(__sun))
+    /*Solaris*/
+    ctime_r(clock, buf, n);
+#else
+    char tmpbuf[STRLEN];
+    ctime_r(clock, tmpbuf);
+    strncpy(buf, tmpbuf, n-1);
+    buf[n-1] = '\0';
+#endif
     return buf;
 }
 

@@ -33,15 +33,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/timing/cyclecounter.h"
+#include "gmxpre.h"
+
+#include "cyclecounter.h"
 
 #include "config.h"
 
 #include <time.h>
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
 #ifdef _MSC_VER
 #include <windows.h>
 #endif

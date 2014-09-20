@@ -39,13 +39,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include <algorithm>
 #include <string>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
-#include "gromacs/selection/selparam.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -54,9 +54,10 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "parsetree.h"
-#include "position.h"
 #include "scanner.h"
 #include "selelem.h"
+#include "selmethod.h"
+#include "selparam.h"
 
 using gmx::SelectionParserValue;
 using gmx::SelectionParserValueList;

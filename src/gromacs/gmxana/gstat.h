@@ -37,10 +37,10 @@
 #ifndef GMX_GMXANA_GSTAT_H
 #define GMX_GMXANA_GSTAT_H
 
-#include "../legacyheaders/typedefs.h"
-#include "../legacyheaders/oenv.h"
-#include "../commandline/pargs.h"
-#include "../topology/index.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/index.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -300,7 +300,6 @@ void read_ang_dih(const char *trj_fn,
  * Read a trajectory and calculate angles and dihedrals.
  *
  * trj_fn      file name of trajectory
- * tpb_fn      file name of tpb file
  * bAngles     do we have to read angles or dihedrals
  * bSaveAll    do we have to store all in the dih array
  * bRb         do we have Ryckaert-Bellemans dihedrals (trans = 0)

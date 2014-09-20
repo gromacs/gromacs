@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -45,6 +45,7 @@
 
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/network.h"
+#include "gromacs/pbcutil/mshift.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,33 +63,34 @@ typedef struct {
     int      a_fmax;
 } em_state_t;
 
-    em_state_t *init_em_state();
-    
-    void init_em(FILE *fplog, const char *title,
-                 t_commrec *cr, t_inputrec *ir,
-                 t_state *state_global, gmx_mtop_t *top_global,
-                 em_state_t *ems, gmx_localtop_t **top,
-                 rvec **f, rvec **f_global,
-                 t_nrnb *nrnb, rvec mu_tot,
-                 t_forcerec *fr, gmx_enerdata_t **enerd,
-                 t_graph **graph, t_mdatoms *mdatoms, gmx_global_stat_t *gstat,
-                 gmx_vsite_t *vsite, gmx_constr_t constr,
-                 int nfile, const t_filenm fnm[],
-                 gmx_mdoutf_t *outf, t_mdebin **mdebin,
-                 int imdport, unsigned long gmx_unused Flags);
+em_state_t *init_em_state();
 
-    void evaluate_energy(FILE *fplog, t_commrec *cr,
-                         gmx_mtop_t *top_global,
-                         em_state_t *ems, gmx_localtop_t *top,
-                         t_inputrec *inputrec,
-                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                         gmx_global_stat_t gstat,
-                         gmx_vsite_t *vsite, gmx_constr_t constr,
-                         t_fcdata *fcd,
-                         t_graph *graph, t_mdatoms *mdatoms,
-                         t_forcerec *fr, rvec mu_tot,
-                         gmx_enerdata_t *enerd, tensor vir, tensor pres,
-                         gmx_int64_t count, gmx_bool bFirst);
+void init_em(FILE *fplog, const char *title,
+             t_commrec *cr, t_inputrec *ir,
+             t_state *state_global, gmx_mtop_t *top_global,
+             em_state_t *ems, gmx_localtop_t **top,
+             rvec **f, rvec **f_global,
+             t_nrnb *nrnb, rvec mu_tot,
+             t_forcerec *fr, gmx_enerdata_t **enerd,
+             t_graph **graph, t_mdatoms *mdatoms, gmx_global_stat_t *gstat,
+             gmx_vsite_t *vsite, gmx_constr_t constr,
+             int nfile, const t_filenm fnm[],
+             gmx_mdoutf_t *outf, t_mdebin **mdebin,
+             int imdport, unsigned long gmx_unused Flags,
+             gmx_wallcycle_t wcycle);
+
+void evaluate_energy(FILE *fplog, t_commrec *cr,
+                     gmx_mtop_t *top_global,
+                     em_state_t *ems, gmx_localtop_t *top,
+                     t_inputrec *inputrec,
+                     t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     gmx_global_stat_t gstat,
+                     gmx_vsite_t *vsite, gmx_constr_t constr,
+                     t_fcdata *fcd,
+                     t_graph *graph, t_mdatoms *mdatoms,
+                     t_forcerec *fr, rvec mu_tot,
+                     gmx_enerdata_t *enerd, tensor vir, tensor pres,
+                     gmx_int64_t count, gmx_bool bFirst);
 
 
 

@@ -32,15 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "base.h"
 
 #include <math.h>
 
-#include "testutils/testoptions.h"
-#include "gromacs/options/options.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 
-#include "base.h"
+#include "testutils/testoptions.h"
 
 namespace gmx
 {

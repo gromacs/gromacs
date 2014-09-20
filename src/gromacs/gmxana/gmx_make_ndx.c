@@ -34,22 +34,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <ctype.h>
 #include <string.h>
 
-#include "gromacs/utility/futil.h"
-#include "macros.h"
-#include "gromacs/fileio/confio.h"
-#include "typedefs.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/math/vec.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 /* It's not nice to have size limits, but we should not spend more time

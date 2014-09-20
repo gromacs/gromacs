@@ -32,19 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "tngio_for_tools.h"
 
 #include "config.h"
 
 #include <math.h>
 
-#include "tngio.h"
-#include "trx.h"
-
 #ifdef GMX_USE_TNG
 #include "tng/tng_io.h"
 #endif
 
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/fatalerror.h"
@@ -74,6 +75,18 @@ void gmx_prepare_tng_writing(const char              *filename,
         "FORCES", "LAMBDAS"
     };
 
+    typedef tng_function_status (*set_writing_interval_func_pointer)(tng_trajectory_t,
+                                                                     const gmx_int64_t,
+                                                                     const gmx_int64_t,
+                                                                     const gmx_int64_t,
+                                                                     const char*,
+                                                                     const char,
+                                                                     const char);
+#ifdef GMX_DOUBLE
+    set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_double_set;
+#else
+    set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_set;
+#endif
 
     gmx_tng_open(filename, mode, output);
 
@@ -111,24 +124,24 @@ void gmx_prepare_tng_writing(const char              *filename,
                 {
                     case TNG_TRAJ_POSITIONS:
                     case TNG_TRAJ_VELOCITIES:
-                        tng_util_generic_write_interval_set(*output, interval, 3, fallbackIds[i],
-                                                            fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
-                                                            compression_type);
+                        set_writing_interval(*output, interval, 3, fallbackIds[i],
+                                             fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
+                                             compression_type);
                         break;
                     case TNG_TRAJ_FORCES:
-                        tng_util_generic_write_interval_set(*output, interval, 3, fallbackIds[i],
-                                                            fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
-                                                            TNG_GZIP_COMPRESSION);
+                        set_writing_interval(*output, interval, 3, fallbackIds[i],
+                                             fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
+                                             TNG_GZIP_COMPRESSION);
                         break;
                     case TNG_TRAJ_BOX_SHAPE:
-                        tng_util_generic_write_interval_set(*output, interval, 9, fallbackIds[i],
-                                                            fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
-                                                            TNG_GZIP_COMPRESSION);
+                        set_writing_interval(*output, interval, 9, fallbackIds[i],
+                                             fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
+                                             TNG_GZIP_COMPRESSION);
                         break;
                     case TNG_GMX_LAMBDA:
-                        tng_util_generic_write_interval_set(*output, interval, 1, fallbackIds[i],
-                                                            fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
-                                                            TNG_GZIP_COMPRESSION);
+                        set_writing_interval(*output, interval, 1, fallbackIds[i],
+                                             fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
+                                             TNG_GZIP_COMPRESSION);
                     default:
                         continue;
                 }

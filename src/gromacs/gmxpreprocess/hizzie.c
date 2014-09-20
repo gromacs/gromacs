@@ -35,20 +35,20 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <stdio.h>
 #include <string.h>
-#include "typedefs.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/units.h"
-#include "toputil.h"
-#include "pdb2top.h"
-#include "gromacs/utility/cstringutil.h"
-#include "macros.h"
 
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

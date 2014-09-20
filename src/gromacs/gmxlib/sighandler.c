@@ -34,13 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/sighandler.h"
+
 #include "config.h"
 
 #include <stdlib.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "sighandler.h"
 
 const char *gmx_stop_cond_name[] =
 {

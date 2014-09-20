@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "basenetwork.h"
 
 #include "config.h"
@@ -61,7 +63,7 @@ int gmx_gethostname(char *name, size_t len)
     {
         gmx_incons("gmx_gethostname called with len<8");
     }
-#if defined(HAVE_UNISTD_H) && !defined(__native_client__)
+#if defined(HAVE_UNISTD_H) && !defined(__native_client__) && !defined(__MINGW32__)
     if (gethostname(name, len-1) != 0)
     {
         std::strncpy(name, "unknown", 8);
@@ -155,6 +157,15 @@ static int mpi_hostname_hash(void)
 }
 
 #if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
+#ifdef __clang__
+/* IBM's declaration of this function in
+ * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/process.h
+ * erroneously fails to specify __INLINE__, despite
+ * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/cnk/process_impl.h
+ * specifiying __INLINE__, so bgclang thinks they are different enough
+ * to complain about. */
+static uint64_t Kernel_GetJobID();
+#endif
 #include <spi/include/kernel/location.h>
 
 static int bgq_nodenum(void)

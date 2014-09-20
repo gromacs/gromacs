@@ -35,15 +35,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
 
-
-#include "typedefs.h"
-#include "bondf.h"
-#include "disre.h"
-#include "orires.h"
-#include "genborn.h"
-
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \
     {str, lstr, (nra), (nrpa), (nrpb), IF_BOND,                        (ind), (func)}

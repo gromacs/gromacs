@@ -40,8 +40,8 @@
 
 #include <string.h>
 
-#include "../utility/basedefinitions.h"
-#include "warninp.h"
+#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

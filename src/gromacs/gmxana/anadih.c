@@ -34,25 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "gromacs/math/units.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "txtdump.h"
-#include "bondf.h"
-#include "gromacs/fileio/xvgr.h"
-#include "typedefs.h"
-#include "gromacs/math/vec.h"
-#include "gstat.h"
+
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void print_one(const output_env_t oenv, const char *base, const char *name,
                const char *title, const char *ylabel, int nf, real time[],
@@ -675,7 +675,7 @@ void calc_distribution_props(int nh, int histo[], real start,
     *S2 = tdc*tdc+tds*tds;
 }
 
-static void calc_angles(t_pbc *pbc,
+static void calc_angles(struct t_pbc *pbc,
                         int n3, atom_id index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2;
@@ -729,7 +729,7 @@ static real calc_fraction(real angles[], int nangles)
     }
 }
 
-static void calc_dihs(t_pbc *pbc,
+static void calc_dihs(struct t_pbc *pbc,
                       int n4, atom_id index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
@@ -817,15 +817,15 @@ void read_ang_dih(const char *trj_fn,
                   real *dih[],
                   const output_env_t oenv)
 {
-    t_pbc       *pbc;
-    t_trxstatus *status;
-    int          i, angind, natoms, total, teller;
-    int          nangles, n_alloc;
-    real         t, fraction, pifac, aa, angle;
-    real        *angles[2];
-    matrix       box;
-    rvec        *x;
-    int          cur = 0;
+    struct t_pbc *pbc;
+    t_trxstatus  *status;
+    int           i, angind, natoms, total, teller;
+    int           nangles, n_alloc;
+    real          t, fraction, pifac, aa, angle;
+    real         *angles[2];
+    matrix        box;
+    rvec         *x;
+    int           cur = 0;
 #define prev (1-cur)
 
     snew(pbc, 1);

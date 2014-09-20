@@ -35,6 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
+#include "gmxpre.h"
+
 #include "gromacs/math/vec.h"
 
 /** Exponential lookup table - 256 floats */

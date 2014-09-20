@@ -35,29 +35,28 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "viewit.h"
-#include "gromacs/utility/futil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/topology/index.h"
-#include "nrnb.h"
-#include "coulomb.h"
-#include "gstat.h"
-#include "gmx_ana.h"
-#include "names.h"
-
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 static void check_box_c(matrix box)
@@ -902,7 +901,7 @@ int gmx_rdf(int argc, char *argv[])
         { efXVG, "-hq", "hq",     ffOPTWR },
     };
 #define NFILE asize(fnm)
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

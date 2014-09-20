@@ -34,36 +34,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "macros.h"
-#include "txtdump.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/units.h"
-#include "gromacs/topology/index.h"
-#include "names.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/xtcio.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/trxio.h"
-
-#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/tools/compare.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "compare.h"
 
 typedef struct {
     int bStep;
@@ -708,8 +706,8 @@ void chk_enx(const char *fn)
 int gmx_check(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[THISMODULE] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
-        "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
+        "[THISMODULE] reads a trajectory ([TT].tng[tt], [TT].trr[tt] or ",
+        "[TT].xtc[tt]), an energy file ([TT].edr[tt])",
         "or an index file ([TT].ndx[tt])",
         "and prints out useful information about them.[PAR]",
         "Option [TT]-c[tt] checks for presence of coordinates,",
@@ -725,8 +723,8 @@ int gmx_check(int argc, char *argv[])
         "file are indeed correct in the trajectory. If not you may have",
         "non-matching files due to e.g. deshuffling or due to problems with",
         "virtual sites. With these flags, [TT]gmx check[tt] provides a quick check for such problems.[PAR]",
-        "The program can compare two run input ([TT].tpr[tt], [TT].tpb[tt] or",
-        "[TT].tpa[tt]) files",
+        "The program can compare two run input ([TT].tpr[tt])",
+        "files",
         "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
         "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
         "option), or a pair of energy files (using the [TT]-e2[tt] option).[PAR]",
@@ -738,8 +736,8 @@ int gmx_check(int argc, char *argv[])
     t_filenm        fnm[] = {
         { efTRX, "-f",  NULL, ffOPTRD },
         { efTRX, "-f2",  NULL, ffOPTRD },
-        { efTPX, "-s1", "top1", ffOPTRD },
-        { efTPX, "-s2", "top2", ffOPTRD },
+        { efTPR, "-s1", "top1", ffOPTRD },
+        { efTPR, "-s2", "top2", ffOPTRD },
         { efTPS, "-c",  NULL, ffOPTRD },
         { efEDR, "-e",  NULL, ffOPTRD },
         { efEDR, "-e2", "ener2", ffOPTRD },
@@ -796,7 +794,7 @@ int gmx_check(int argc, char *argv[])
     }
     else if (fn2)
     {
-        fprintf(stderr, "Please give me TWO trajectory (.xtc/.trr/.trj) files!\n");
+        fprintf(stderr, "Please give me TWO trajectory (.xtc/.trr/.tng) files!\n");
     }
 
     fn1 = opt2fn_null("-s1", NFILE, fnm);
@@ -819,7 +817,7 @@ int gmx_check(int argc, char *argv[])
     }
     else if ((fn1 && !opt2fn_null("-f", NFILE, fnm)) || (!fn1 && fn2))
     {
-        fprintf(stderr, "Please give me TWO run input (.tpr/.tpa/.tpb) files\n"
+        fprintf(stderr, "Please give me TWO run input (.tpr) files\n"
                 "or specify the -m flag to generate a methods.tex file\n");
     }
 

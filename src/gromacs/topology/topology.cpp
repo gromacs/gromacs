@@ -34,7 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/topology/topology.h"
+#include "gmxpre.h"
+
+#include "topology.h"
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"

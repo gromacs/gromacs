@@ -34,11 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <signal.h>
 #include <stdlib.h>
-#include "typedefs.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
 
 static int div_nsteps(int nsteps, int nst)
 {

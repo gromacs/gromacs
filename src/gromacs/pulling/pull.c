@@ -34,30 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "pull.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/futil.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "pull.h"
-#include "names.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/mtop_util.h"
-#include "mdrun.h"
-#include "gmx_ga2la.h"
-#include "copyrite.h"
-#include "macros.h"
-
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 static void pull_print_group_x(FILE *out, ivec dim, const t_pull_group *pgrp)
@@ -499,6 +499,11 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
                 r_ij[c][m] = a*pull->coord[c].vec[m];
             }
         }
+
+        if (dnorm2(r_ij[c]) == 0)
+        {
+            gmx_fatal(FARGS, "Distance for pull coordinate %d is zero with constraint pulling, which is not allowed.", c + 1);
+        }
     }
 
     bConverged_all = FALSE;
@@ -738,6 +743,7 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
             double f_invr;
 
             /* Add the pull contribution to the virial */
+            /* We have already checked above that r_ij[c] != 0 */
             f_invr = pcrd->f_scal/dnorm(r_ij[c]);
 
             for (j = 0; j < DIM; j++)
@@ -782,7 +788,19 @@ static void do_pull_pot(int ePull,
         {
             case epullgDIST:
                 ndr   = dnorm(pcrd->dr);
-                invdr = 1/ndr;
+                if (ndr > 0)
+                {
+                    invdr = 1/ndr;
+                }
+                else
+                {
+                    /* With an harmonic umbrella, the force is 0 at r=0,
+                     * so we can set invdr to any value.
+                     * With a constant force, the force at r=0 is not defined,
+                     * so we zero it (this is anyhow a very rare event).
+                     */
+                    invdr = 0;
+                }
                 if (ePull == epullUMBRELLA)
                 {
                     pcrd->f_scal  =       -k*dev;
@@ -929,6 +947,9 @@ void dd_make_local_pull_groups(gmx_domdec_t *dd, t_pull *pull, t_mdatoms *md)
         make_local_pull_group(ga2la, &pull->group[g],
                               0, md->homenr);
     }
+
+    /* Since the PBC of atoms might have changed, we need to update the PBC */
+    pull->bSetPBCatoms = TRUE;
 }
 
 static void init_pull_group_index(FILE *fplog, t_commrec *cr,
@@ -1239,6 +1260,9 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
 
         snew(pull->dyna, pull->ncoord);
     }
+
+    /* We still need to initialize the PBC reference coordinates */
+    pull->bSetPBCatoms = TRUE;
 
     /* Only do I/O when we are doing dynamics and if we are the MASTER */
     pull->out_x = NULL;

@@ -34,29 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "typedefs.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/utility/futil.h"
-#include "princ.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/fileio/confio.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/princ.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static real find_pdb_bfac(t_atoms *atoms, t_resinfo *ri, char *atomnm)
 {
@@ -277,7 +276,7 @@ int gmx_rmsf(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, NULL,
                            &oenv))
     {

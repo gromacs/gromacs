@@ -34,47 +34,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "network.h"
-#include "gromacs/utility/smalloc.h"
-#include "nrnb.h"
-#include "chargegroup.h"
-#include "force.h"
-#include "macros.h"
-#include "names.h"
-#include "gromacs/utility/fatalerror.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "update.h"
-#include "constr.h"
-#include "gromacs/math/vec.h"
-#include "tgroup.h"
-#include "mdebin.h"
-#include "vsite.h"
-#include "force.h"
-#include "mdrun.h"
-#include "domdec.h"
-#include "gromacs/random/random.h"
-#include "gromacs/math/units.h"
-#include "gromacs/fileio/xvgr.h"
-#include "mdatoms.h"
-#include "ns.h"
-#include "gromacs/topology/mtop_util.h"
-#include "pme.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
-
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/legacyheaders/chargegroup.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void global_max(t_commrec *cr, int *n)
 {
@@ -165,6 +163,11 @@ double do_tpi(FILE *fplog, t_commrec *cr,
      */
     real bU_bin_limit      = 50;
     real bU_logV_bin_limit = bU_bin_limit + 10;
+
+    if (inputrec->cutoff_scheme == ecutsVERLET)
+    {
+        gmx_fatal(FARGS, "TPI does not work (yet) with the Verlet cut-off scheme");
+    }
 
     nnodes = cr->nnodes;
 
@@ -654,7 +657,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             bNS           = FALSE;
 
             /* Calculate long range corrections to pressure and energy */
-            calc_dispcorr(fplog, inputrec, fr, step, top_global->natoms, state->box,
+            calc_dispcorr(inputrec, fr, top_global->natoms, state->box,
                           lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
             /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
             enerd->term[F_DISPCORR]  = enercorr;

@@ -34,49 +34,49 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <math.h>
 #include <string.h>
 #include <time.h>
 
-#include "network.h"
-#include "nrnb.h"
-#include "force.h"
-#include "macros.h"
-#include "names.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "update.h"
-#include "constr.h"
-#include "tgroup.h"
-#include "mdebin.h"
-#include "vsite.h"
-#include "force.h"
-#include "mdrun.h"
-#include "md_support.h"
-#include "sim_util.h"
-#include "domdec.h"
-#include "mdatoms.h"
-#include "ns.h"
-#include "gromacs/topology/mtop_util.h"
-#include "pme.h"
-#include "bondf.h"
-#include "gmx_omp_nthreads.h"
-#include "md_logging.h"
-
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/fileio/trajectory_writing.h"
 #include "gromacs/imd/imd.h"
+#include "gromacs/legacyheaders/bonded-threading.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/md_support.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/minimize.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
-#include "gromacs/mdlib/minimize.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -303,7 +303,8 @@ void init_em(FILE *fplog, const char *title,
              gmx_vsite_t *vsite, gmx_constr_t constr,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
-             int imdport, unsigned long gmx_unused Flags)
+             int imdport, unsigned long gmx_unused Flags,
+             gmx_wallcycle_t wcycle)
 {
     int  i;
     real dvdl_constr;
@@ -420,7 +421,7 @@ void init_em(FILE *fplog, const char *title,
         *gstat = global_stat_init(ir);
     }
 
-    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, ir, top_global, NULL);
+    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, ir, top_global, NULL, wcycle);
 
     snew(*enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
@@ -763,7 +764,7 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
     }
 
     /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(fplog, inputrec, fr, count, top_global->natoms, ems->s.box, ems->s.lambda[efptVDW],
+    calc_dispcorr(inputrec, fr, top_global->natoms, ems->s.box, ems->s.lambda[efptVDW],
                   pres, force_vir, &prescorr, &enercorr, &dvdlcorr);
     enerd->term[F_DISPCORR] = enercorr;
     enerd->term[F_EPOT]    += enercorr;
@@ -782,10 +783,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
                   ems->s.x, ems->f, ems->f, fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
                   NULL, &shake_vir, nrnb, econqForceDispl, FALSE, 0, 0);
-        if (fr->bSepDVDL && fplog)
-        {
-            gmx_print_sepdvdl(fplog, "Constraints", t, dvdl_constr);
-        }
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);
@@ -993,7 +990,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     init_em(fplog, CG, cr, inputrec,
             state_global, top_global, s_min, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin, imdport, Flags);
+            nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1665,7 +1662,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     init_em(fplog, LBFGS, cr, inputrec,
             state, top_global, &ems, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin, imdport, Flags);
+            nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
     /* Do_lbfgs is not completely updated like do_steep and do_cg,
      * so we free some memory again.
      */
@@ -2409,7 +2406,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     init_em(fplog, SD, cr, inputrec,
             state_global, top_global, s_try, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin, imdport, Flags);
+            nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
@@ -2661,7 +2658,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
             state_global, top_global, state_work, &top,
             &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, NULL, imdport, Flags);
+            nfile, fnm, &outf, NULL, imdport, Flags, wcycle);
 
     natoms = top_global->natoms;
     snew(fneg, natoms);

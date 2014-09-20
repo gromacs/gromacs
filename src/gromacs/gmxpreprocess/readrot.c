@@ -34,17 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
-#include "readir.h"
-#include "names.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/trnio.h"
-#include "txtdump.h"
-
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static char *RotStr = {"Enforced rotation:"};
 

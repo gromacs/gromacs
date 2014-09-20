@@ -35,12 +35,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "ns.h"
-#include "genborn.h"
-#include "qmmmrec.h"
-#include "../../topology/idef.h"
-#include "interaction_const.h"
-#include "hw_info.h"
+#ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
+#define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
+
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/genborn.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/ns.h"
+#include "gromacs/legacyheaders/types/qmmmrec.h"
+#include "gromacs/topology/idef.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -293,7 +297,6 @@ typedef struct {
     real     sc_r_power;
     real     sc_sigma6_def;
     real     sc_sigma6_min;
-    gmx_bool bSepDVDL;
 
     /* NS Stuff */
     int  eeltype;
@@ -496,4 +499,5 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
 #endif

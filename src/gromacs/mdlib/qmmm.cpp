@@ -34,6 +34,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/qmmm.h"
+
 #include "config.h"
 
 #include <math.h>
@@ -41,26 +45,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "macros.h"
-#include "gromacs/math/units.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "force.h"
 #include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "network.h"
-#include "ns.h"
-#include "nrnb.h"
-#include "bondf.h"
-#include "txtdump.h"
-#include "qmmm.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/qmmmxx.h"
-
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/qmmmxx.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -611,7 +611,7 @@ void init_QMMMrec(t_commrec  *cr,
 
             /* LPW */
             //new QMSystem(j,qm_nr,qm_arr,mtop,ir);
-      
+
             /* we now store the LJ C6 and C12 parameters in QM rec in case
              * we need to do an optimization
              */
@@ -1108,7 +1108,7 @@ real calculate_QMMM(t_commrec *cr,
     *forces2 = NULL, *fshift2 = NULL; /* needed for multilayer ONIOM */
     int
         i, j, k;
-        
+
     if (fr->qr->QMMMscheme == eQMMMschemeslave)
     {
         return 0;

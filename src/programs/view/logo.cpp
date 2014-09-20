@@ -34,18 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "logo.h"
 
 #include <stdlib.h>
 
-#include "macros.h"
-#include "xutil.h"
-#include "Xstuff.h"
-#include "copyrite.h"
-#include "logo.h"
-
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "Xstuff.h"
+#include "xutil.h"
 
 typedef struct {
     int            x, y, rad;

@@ -36,7 +36,10 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 
+#include "config.h"
+
 #include <math.h>
+
 #include <immintrin.h>
 #include <x86intrin.h>
 
@@ -104,8 +107,8 @@
 #define gmx_simd4_or_d                   _mm256_or_pd
 #define gmx_simd4_xor_d                  _mm256_xor_pd
 #define gmx_simd4_rsqrt_d(x)             _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)))
-#define gmx_simd4_fabs_d(x)              _mm256_andnot_pd(_mm256_set1_pd(-0.0), x)
-#define gmx_simd4_fneg_d(x)              _mm256_xor_pd(x, _mm256_set1_pd(-0.0))
+#define gmx_simd4_fabs_d(x)              _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x)
+#define gmx_simd4_fneg_d(x)              _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
 #define gmx_simd4_max_d                  _mm256_max_pd
 #define gmx_simd4_min_d                  _mm256_min_pd
 #define gmx_simd4_round_d(x)             _mm256_round_pd(x, _MM_FROUND_NINT)
@@ -127,7 +130,7 @@
 #define gmx_simd4_cvt_f2d                _mm256_cvtps_pd
 #define gmx_simd4_cvt_d2f                _mm256_cvtpd_ps
 
-static gmx_inline double
+static gmx_inline double gmx_simdcall
 gmx_simd4_reduce_d_avx_128_fma(__m256d a)
 {
     double  f;
@@ -140,7 +143,7 @@ gmx_simd4_reduce_d_avx_128_fma(__m256d a)
     return f;
 }
 
-static gmx_inline double
+static gmx_inline double gmx_simdcall
 gmx_simd4_dotproduct3_d_avx_128_fma(__m256d a, __m256d b)
 {
     double  d;

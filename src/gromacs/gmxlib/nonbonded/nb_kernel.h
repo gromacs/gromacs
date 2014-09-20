@@ -35,9 +35,6 @@
 #ifndef _nb_kernel_h_
 #define _nb_kernel_h_
 
-#include "config.h"
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,8 +43,8 @@ extern "C" {
 #endif
 
 
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.

@@ -34,27 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "solvate.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "solvate.h"
 
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/fileio/confio.h"
-#include "macros.h"
-#include "gromacs/utility/futil.h"
-#include "names.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
-#include "addconf.h"
-#include "read-conformation.h"
-#include "gromacs/fileio/pdbio.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/gmxpreprocess/addconf.h"
+#include "gromacs/gmxpreprocess/read-conformation.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef DEBUG
@@ -720,7 +719,7 @@ int gmx_solvate(int argc, char *argv[])
           "Keep velocities from input solute and solvent" },
     };
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;

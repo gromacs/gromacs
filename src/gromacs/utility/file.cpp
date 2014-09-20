@@ -39,7 +39,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "file.h"
+
+#include "config.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -49,9 +53,8 @@
 #include <string>
 #include <vector>
 
-#include "config.h"
-
 #include <sys/stat.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

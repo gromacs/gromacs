@@ -34,33 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/constr.h"
 
 #include <assert.h>
 #include <stdlib.h>
 
-#include "gromacs/fileio/confio.h"
-#include "types/commrec.h"
-#include "constr.h"
-#include "copyrite.h"
-#include "mdrun.h"
-#include "nrnb.h"
-#include "gromacs/math/vec.h"
-#include "names.h"
-#include "txtdump.h"
-#include "domdec.h"
-#include "gromacs/fileio/pdbio.h"
-#include "splitter.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "macros.h"
-#include "gmx_omp_nthreads.h"
 #include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/pulling/pull.h"
-
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/splitter.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/pull.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -200,6 +200,18 @@ int n_flexible_constraints(struct gmx_constr *constr)
     }
 
     return nflexcon;
+}
+
+static void clear_constraint_quantity_nonlocal(gmx_domdec_t *dd, rvec *q)
+{
+    int nonlocal_at_start, nonlocal_at_end, at;
+
+    dd_get_constraint_range(dd, &nonlocal_at_start, &nonlocal_at_end);
+
+    for (at = nonlocal_at_start; at < nonlocal_at_end; at++)
+    {
+        clear_rvec(q[at]);
+    }
 }
 
 void too_many_constraint_warnings(int eConstrAlg, int warncount)
@@ -430,6 +442,15 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     if (cr->dd)
     {
         dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
+
+        if (v != NULL)
+        {
+            /* We need to initialize the non-local components of v.
+             * We never actually use these values, but we do increment them,
+             * so we should avoid uninitialized variables and overflows.
+             */
+            clear_constraint_quantity_nonlocal(cr->dd, v);
+        }
     }
 
     if (constr->lincsd != NULL)

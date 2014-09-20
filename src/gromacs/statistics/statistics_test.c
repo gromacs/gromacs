@@ -34,14 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "statistics.h"
-
-#include "config.h"
+#include "gmxpre.h"
 
 #include <stdio.h>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 

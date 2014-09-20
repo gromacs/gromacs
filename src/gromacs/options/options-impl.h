@@ -45,9 +45,9 @@
 #include <string>
 #include <vector>
 
-#include "abstractoption.h"
-#include "optionmanagercontainer.h"
-#include "options.h"
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/optionmanagercontainer.h"
+#include "gromacs/options/options.h"
 #include "gromacs/utility/uniqueptr.h"
 
 namespace gmx

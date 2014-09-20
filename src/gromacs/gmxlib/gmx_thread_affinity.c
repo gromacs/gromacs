@@ -32,28 +32,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/gmx_thread_affinity.h"
+
 #include "config.h"
-#if defined(HAVE_SCHED_H) && defined(HAVE_SCHED_GETAFFINITY)
-#define _GNU_SOURCE
-#include <sched.h>
-#include <sys/syscall.h>
-#endif
-#include <string.h>
-#include <errno.h>
+
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
+
+#ifdef HAVE_SCHED_AFFINITY
+#  include <sched.h>
+#  include <sys/syscall.h>
+#endif
 
 #include "thread_mpi/threads.h"
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "types/hw_info.h"
-#include "copyrite.h"
-#include "gmx_cpuid.h"
-#include "gmx_omp_nthreads.h"
-#include "md_logging.h"
-#include "gmx_thread_affinity.h"
-
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_cpuid.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -376,7 +379,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
                               int  gmx_unused  nthreads_hw_avail,
                               gmx_bool         bAfterOpenmpInit)
 {
-#ifdef HAVE_SCHED_GETAFFINITY
+#ifdef HAVE_SCHED_AFFINITY
     cpu_set_t mask_current;
     int       i, ret, cpu_count, cpu_set;
     gmx_bool  bAllSet;
@@ -495,5 +498,5 @@ gmx_check_thread_affinity_set(FILE            *fplog,
             fprintf(debug, "Default affinity mask found\n");
         }
     }
-#endif /* HAVE_SCHED_GETAFFINITY */
+#endif /* HAVE_SCHED_AFFINITY */
 }

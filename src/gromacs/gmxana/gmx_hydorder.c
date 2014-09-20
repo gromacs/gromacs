@@ -33,28 +33,27 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gstat.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "binsearch.h"
-#include "powerspect.h"
-
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/binsearch.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/powerspect.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 /* Print name of first atom in all groups in index file */
@@ -628,7 +627,7 @@ int gmx_hydorder(int argc, char *argv[])
     t_filenm           fnm[] = {                      /* files for g_order    */
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
-        { efTPX, "-s", NULL,  ffREAD },               /* topology file                */
+        { efTPR, "-s", NULL,  ffREAD },               /* topology file                */
         { efXPM, "-o", "intf",  ffWRMULT},            /* XPM- surface maps	*/
         { efOUT, "-or", "raw", ffOPTWRMULT },         /* xvgr output file           */
         { efOUT, "-Spect", "intfspect", ffOPTWRMULT}, /* Fourier spectrum interfaces */
@@ -641,7 +640,7 @@ int gmx_hydorder(int argc, char *argv[])
     int          nfspect, nfxpm, nfraw;
     output_env_t oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -655,7 +654,7 @@ int gmx_hydorder(int argc, char *argv[])
     }
 
     ndxfnm = ftp2fn(efNDX, NFILE, fnm);
-    tpsfnm = ftp2fn(efTPX, NFILE, fnm);
+    tpsfnm = ftp2fn(efTPR, NFILE, fnm);
     trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */

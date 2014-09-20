@@ -34,23 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 /* This file is completely threadsafe - keep it that way! */
+
+#include "tpxio.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "names.h"
-#include "gromacs/utility/futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
-#include "tpxio.h"
-#include "txtdump.h"
-#include "confio.h"
-#include "copyrite.h"
-
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
@@ -59,6 +58,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define TPX_TAG_RELEASE  "release"
@@ -224,50 +224,6 @@ static const t_ftupd ftupd[] = {
 
 /* Needed for backward compatibility */
 #define MAXNODES 256
-
-static void _do_section(t_fileio *fio, int key, gmx_bool bRead, const char *src,
-                        int line)
-{
-    char     buf[STRLEN];
-    gmx_bool bDbg;
-
-    if (gmx_fio_getftp(fio) == efTPA)
-    {
-        if (!bRead)
-        {
-            gmx_fio_write_string(fio, itemstr[key]);
-            bDbg       = gmx_fio_getdebug(fio);
-            gmx_fio_setdebug(fio, FALSE);
-            gmx_fio_write_string(fio, comment_str[key]);
-            gmx_fio_setdebug(fio, bDbg);
-        }
-        else
-        {
-            if (gmx_fio_getdebug(fio))
-            {
-                fprintf(stderr, "Looking for section %s (%s, %d)",
-                        itemstr[key], src, line);
-            }
-
-            do
-            {
-                gmx_fio_do_string(fio, buf);
-            }
-            while ((gmx_strcasecmp(buf, itemstr[key]) != 0));
-
-            if (gmx_strcasecmp(buf, itemstr[key]) != 0)
-            {
-                gmx_fatal(FARGS, "\nCould not find section heading %s", itemstr[key]);
-            }
-            else if (gmx_fio_getdebug(fio))
-            {
-                fprintf(stderr, " and found it\n");
-            }
-        }
-    }
-}
-
-#define do_section(fio, key, bRead) _do_section(fio, key, bRead, __FILE__, __LINE__)
 
 /**************************************************************
  *
@@ -3200,7 +3156,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     gmx_fio_checktype(fio);
     gmx_fio_setdebug(fio, bDebugMode());
 
-    /* NEW! XDR tpb file */
+    /* XDR binary topology file */
     precision = sizeof(real);
     if (bRead)
     {
@@ -3305,7 +3261,6 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
                   gmx_fio_getname(fio), fver, tpx_version);
     }
 
-    do_section(fio, eitemHEADER, bRead);
     gmx_fio_do_int(fio, tpx->natoms);
     if (fver >= 28)
     {
@@ -3400,7 +3355,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 #define do_test(fio, b, p) if (bRead && (p != NULL) && !b) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))
 
     do_test(fio, tpx.bBox, state->box);
-    do_section(fio, eitemBOX, bRead);
     if (tpx.bBox)
     {
         gmx_fio_ndo_rvec(fio, state->box, DIM);
@@ -3447,7 +3401,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (file_version < 26)
     {
         do_test(fio, tpx.bIr, ir);
-        do_section(fio, eitemIR, bRead);
         if (tpx.bIr)
         {
             if (ir)
@@ -3474,7 +3427,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     }
 
     do_test(fio, tpx.bTop, mtop);
-    do_section(fio, eitemTOP, bRead);
     if (tpx.bTop)
     {
         if (mtop)
@@ -3488,7 +3440,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
     }
     do_test(fio, tpx.bX, state->x);
-    do_section(fio, eitemX, bRead);
     if (tpx.bX)
     {
         if (bRead)
@@ -3499,7 +3450,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     }
 
     do_test(fio, tpx.bV, state->v);
-    do_section(fio, eitemV, bRead);
     if (tpx.bV)
     {
         if (bRead)
@@ -3510,7 +3460,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     }
 
     do_test(fio, tpx.bF, f);
-    do_section(fio, eitemF, bRead);
     if (tpx.bF)
     {
         gmx_fio_ndo_rvec(fio, f, state->natoms);
@@ -3528,7 +3477,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (file_version >= 26)
     {
         do_test(fio, tpx.bIr, ir);
-        do_section(fio, eitemIR, bRead);
         if (tpx.bIr)
         {
             if (file_version >= 53)
@@ -3712,15 +3660,7 @@ int read_tpx_top(const char *fn,
 
 gmx_bool fn2bTPX(const char *file)
 {
-    switch (fn2ftp(file))
-    {
-        case efTPR:
-        case efTPB:
-        case efTPA:
-            return TRUE;
-        default:
-            return FALSE;
-    }
+    return (efTPR == fn2ftp(file));
 }
 
 static void done_gmx_groups_t(gmx_groups_t *g)

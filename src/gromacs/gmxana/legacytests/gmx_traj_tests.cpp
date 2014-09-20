@@ -39,10 +39,15 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 
+#include "gmxpre.h"
+
+#include "config.h"
+
 #include "gromacs/gmxana/gmx_ana.h"
-#include "testutils/integrationtests.h"
-#include "testutils/cmdlinetest.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/integrationtests.h"
 
 namespace
 {

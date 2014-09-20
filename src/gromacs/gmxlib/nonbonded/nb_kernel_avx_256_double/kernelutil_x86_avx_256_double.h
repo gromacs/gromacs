@@ -35,6 +35,8 @@
 #ifndef _kernelutil_x86_avx_256_double_h_
 #define _kernelutil_x86_avx_256_double_h_
 
+#include "config.h"
+
 #define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 
 #define _GMX_MM_BLEND256D(b3, b2, b1, b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
@@ -56,37 +58,37 @@
 
 #define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32((x), (imm))
 
-static __m256d
+static gmx_inline __m256d gmx_simdcall
 gmx_mm256_unpack128lo_pd(__m256d xmm1, __m256d xmm2)
 {
     return _mm256_permute2f128_pd(xmm1, xmm2, 0x20);
 }
 
-static __m256d
+static gmx_inline __m256d gmx_simdcall
 gmx_mm256_unpack128hi_pd(__m256d xmm1, __m256d xmm2)
 {
     return _mm256_permute2f128_pd(xmm1, xmm2, 0x31);
 }
 
-static __m256d
+static gmx_inline __m256d gmx_simdcall
 gmx_mm256_set_m128d(__m128d hi, __m128d lo)
 {
     return _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), hi, 0x1);
 }
 
-static gmx_inline __m256
+static gmx_inline __m256 gmx_simdcall
 gmx_mm256_set_m128(__m128 hi, __m128 lo)
 {
     return _mm256_insertf128_ps(_mm256_castps128_ps256(lo), hi, 0x1);
 }
 
-static int
+static gmx_inline int gmx_simdcall
 gmx_mm256_any_lt(__m256d a, __m256d b)
 {
     return _mm256_movemask_pd(_mm256_cmp_pd(a, b, _CMP_LT_OQ));
 }
 
-static gmx_inline __m256d
+static gmx_inline __m256d gmx_simdcall
 gmx_mm256_calc_rsq_pd(__m256d dx, __m256d dy, __m256d dz)
 {
     return _mm256_add_pd( _mm256_add_pd( _mm256_mul_pd(dx, dx), _mm256_mul_pd(dy, dy) ), _mm256_mul_pd(dz, dz) );
@@ -97,13 +99,13 @@ gmx_mm256_calc_rsq_pd(__m256d dx, __m256d dy, __m256d dz)
 
 
 /* Load a single value from 1-4 places, merge into xmm register */
-static __m256d
+static gmx_inline __m256d gmx_simdcall
 gmx_mm256_load_1real_pd(const double * gmx_restrict ptrA)
 {
     return _mm256_castpd128_pd256(_mm_load_sd(ptrA));
 }
 
-static __m256d
+static gmx_inline __m256d gmx_simdcall
 gmx_mm256_load_2real_swizzle_pd(const double * gmx_restrict ptrA,
                                 const double * gmx_restrict ptrB)
 {
@@ -116,7 +118,7 @@ gmx_mm256_load_2real_swizzle_pd(const double * gmx_restrict ptrA,
 }
 
 
-static __m256d
+static gmx_inline __m256d gmx_simdcall
 gmx_mm256_load_4real_swizzle_pd(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
                                 const double * gmx_restrict ptrC, const double * gmx_restrict ptrD)
 {
@@ -129,14 +131,14 @@ gmx_mm256_load_4real_swizzle_pd(const double * gmx_restrict ptrA, const double *
 
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_store_1real_pd(double * gmx_restrict ptrA, __m256d xmm1)
 {
     _mm_store_sd(ptrA, _mm256_castpd256_pd128(xmm1));
 }
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_store_2real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB, __m256d xmm1)
 {
     __m256d t2;
@@ -149,7 +151,7 @@ gmx_mm256_store_2real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restri
 
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_store_4real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
                                  double * gmx_restrict ptrC, double * gmx_restrict ptrD, __m256d xmm1)
 {
@@ -168,7 +170,7 @@ gmx_mm256_store_4real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restri
 
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_increment_1real_pd(double * gmx_restrict ptrA, __m256d xmm1)
 {
     __m128d t1;
@@ -180,7 +182,7 @@ gmx_mm256_increment_1real_pd(double * gmx_restrict ptrA, __m256d xmm1)
 }
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_increment_2real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB, __m256d xmm1)
 {
     __m128d t1, t2;
@@ -196,7 +198,7 @@ gmx_mm256_increment_2real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_re
 }
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_increment_4real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
                                      double * gmx_restrict ptrC, double * gmx_restrict ptrD, __m256d xmm1)
 {
@@ -220,7 +222,7 @@ gmx_mm256_increment_4real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_re
 
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_1pair_swizzle_pd(const double * gmx_restrict p1, __m256d *c6, __m256d *c12)
 {
     *c6     = _mm256_castpd128_pd256(_mm_load_sd(p1));
@@ -228,7 +230,7 @@ gmx_mm256_load_1pair_swizzle_pd(const double * gmx_restrict p1, __m256d *c6, __m
 }
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_2pair_swizzle_pd(const double * gmx_restrict p1, const double * gmx_restrict p2, __m256d *c6, __m256d *c12)
 {
     __m128d t1, t2, t3;
@@ -241,7 +243,7 @@ gmx_mm256_load_2pair_swizzle_pd(const double * gmx_restrict p1, const double * g
 
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_4pair_swizzle_pd(const double * gmx_restrict p1, const double * gmx_restrict p2,
                                 const double * gmx_restrict p3, const double * gmx_restrict p4,
                                 __m256d * gmx_restrict c6, __m256d * gmx_restrict c12)
@@ -256,7 +258,7 @@ gmx_mm256_load_4pair_swizzle_pd(const double * gmx_restrict p1, const double * g
 }
 
 
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_shift_and_1rvec_broadcast_pd(const double * gmx_restrict xyz_shift,
                                             const double * gmx_restrict xyz,
                                             __m256d * gmx_restrict      x1,
@@ -283,7 +285,7 @@ gmx_mm256_load_shift_and_1rvec_broadcast_pd(const double * gmx_restrict xyz_shif
 }
 
 
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_shift_and_3rvec_broadcast_pd(const double * gmx_restrict xyz_shift,
                                             const double * gmx_restrict xyz,
                                             __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
@@ -330,7 +332,7 @@ gmx_mm256_load_shift_and_3rvec_broadcast_pd(const double * gmx_restrict xyz_shif
 }
 
 
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_shift_and_4rvec_broadcast_pd(const double * gmx_restrict xyz_shift,
                                             const double * gmx_restrict xyz,
                                             __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
@@ -386,7 +388,7 @@ gmx_mm256_load_shift_and_4rvec_broadcast_pd(const double * gmx_restrict xyz_shif
 }
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_1rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
                                      __m256d * gmx_restrict x, __m256d * gmx_restrict y, __m256d * gmx_restrict z)
 {
@@ -399,7 +401,7 @@ gmx_mm256_load_1rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
 }
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_3rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
                                      __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
                                      __m256d * gmx_restrict x2, __m256d * gmx_restrict y2, __m256d * gmx_restrict z2,
@@ -422,7 +424,7 @@ gmx_mm256_load_3rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
     *z3           = _mm256_castpd128_pd256(_mm_load_sd(p1+8));
 }
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_4rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
                                      __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
                                      __m256d * gmx_restrict x2, __m256d * gmx_restrict y2, __m256d * gmx_restrict z2,
@@ -455,7 +457,7 @@ gmx_mm256_load_4rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
 }
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_1rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
                                      const double * gmx_restrict ptrC, const double * gmx_restrict ptrD,
                                      __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1)
@@ -479,7 +481,7 @@ gmx_mm256_load_1rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const dou
 
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_3rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
                                      const double * gmx_restrict ptrC, const double * gmx_restrict ptrD,
                                      __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
@@ -527,7 +529,7 @@ gmx_mm256_load_3rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const dou
 
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_load_4rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
                                      const double * gmx_restrict ptrC, const double * gmx_restrict ptrD,
                                      __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
@@ -581,7 +583,7 @@ gmx_mm256_load_4rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const dou
 
 
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_decrement_1rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
                                           double * gmx_restrict ptrC, double * gmx_restrict ptrD,
                                           __m256d x1, __m256d y1, __m256d z1)
@@ -619,70 +621,8 @@ gmx_mm256_decrement_1rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * g
 
 
 
-#if defined (_MSC_VER) && defined(_M_IX86)
-/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
-#define gmx_mm256_decrement_3rvec_4ptr_swizzle_pd(ptrA, ptrB, ptrC, ptrD, \
-                                                  _x1, _y1, _z1, _x2, _y2, _z2, _x3, _y3, _z3) \
-    { \
-        __m256d _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9, _t10; \
-        __m128d _tA, _tB, _tC, _tD, _tE; \
-        _t1          = _mm256_loadu_pd(ptrA); \
-        _t2          = _mm256_loadu_pd(ptrB); \
-        _t3          = _mm256_loadu_pd(ptrC); \
-        _t4          = _mm256_loadu_pd(ptrD); \
-        _t5          = _mm256_loadu_pd(ptrA+4); \
-        _t6          = _mm256_loadu_pd(ptrB+4); \
-        _t7          = _mm256_loadu_pd(ptrC+4); \
-        _t8          = _mm256_loadu_pd(ptrD+4); \
-        _tA          = _mm_load_sd(ptrA+8); \
-        _tB          = _mm_load_sd(ptrB+8); \
-        _tC          = _mm_load_sd(ptrC+8); \
-        _tD          = _mm_load_sd(ptrD+8); \
-        _t9          = _mm256_unpacklo_pd(_x1, _y1); \
-        _x1          = _mm256_unpackhi_pd(_x1, _y1); \
-        _y1          = _mm256_unpacklo_pd(_z1, _x2); \
-        _z1          = _mm256_unpackhi_pd(_z1, _x2); \
-        _x2          = _mm256_unpacklo_pd(_y2, _z2); \
-        _y2          = _mm256_unpackhi_pd(_y2, _z2); \
-        _z2          = _mm256_unpacklo_pd(_x3, _y3); \
-        _x3          = _mm256_unpackhi_pd(_x3, _y3); \
-        _t10         = gmx_mm256_unpack128lo_pd(_t9, _y1); \
-        _y3          = gmx_mm256_unpack128hi_pd(_t9, _y1); \
-        _t9          = gmx_mm256_unpack128lo_pd(_x1, _z1); \
-        _y1          = gmx_mm256_unpack128hi_pd(_x1, _z1); \
-        _x1          = gmx_mm256_unpack128lo_pd(_x2, _z2); \
-        _z1          = gmx_mm256_unpack128hi_pd(_x2, _z2); \
-        _x2          = gmx_mm256_unpack128lo_pd(_y2, _x3); \
-        _z2          = gmx_mm256_unpack128hi_pd(_y2, _x3); \
-        _t1          = _mm256_sub_pd(_t1, _t10); \
-        _t2          = _mm256_sub_pd(_t2, _t9); \
-        _t3          = _mm256_sub_pd(_t3, _y3); \
-        _t4          = _mm256_sub_pd(_t4, _y1); \
-        _t5          = _mm256_sub_pd(_t5, _x1); \
-        _t6          = _mm256_sub_pd(_t6, _x2); \
-        _t7          = _mm256_sub_pd(_t7, _z1); \
-        _t8          = _mm256_sub_pd(_t8, _z2); \
-        _tA          = _mm_sub_sd(_tA, _mm256_castpd256_pd128(_z3)); \
-        _tB          = _mm_sub_sd(_tB, _mm_permute_pd(_mm256_castpd256_pd128(_z3), _GMX_MM_PERMUTE128D(1, 1))); \
-        _tE          = _mm256_extractf128_pd(_z3, 0x1); \
-        _tC          = _mm_sub_sd(_tC, _tE); \
-        _tD          = _mm_sub_sd(_tD, _mm_permute_pd(_tE, _GMX_MM_PERMUTE128D(1, 1))); \
-        _mm256_storeu_pd(ptrA, _t1); \
-        _mm256_storeu_pd(ptrB, _t2); \
-        _mm256_storeu_pd(ptrC, _t3); \
-        _mm256_storeu_pd(ptrD, _t4); \
-        _mm256_storeu_pd(ptrA+4, _t5); \
-        _mm256_storeu_pd(ptrB+4, _t6); \
-        _mm256_storeu_pd(ptrC+4, _t7); \
-        _mm256_storeu_pd(ptrD+4, _t8); \
-        _mm_store_sd(ptrA+8, _tA); \
-        _mm_store_sd(ptrB+8, _tB); \
-        _mm_store_sd(ptrC+8, _tC); \
-        _mm_store_sd(ptrD+8, _tD); \
-    }
-#else
-/* Real function for sane compilers */
-static void
+
+static gmx_inline void gmx_simdcall
 gmx_mm256_decrement_3rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
                                           double * gmx_restrict ptrC, double * gmx_restrict ptrD,
                                           __m256d x1, __m256d y1, __m256d z1,
@@ -758,79 +698,9 @@ gmx_mm256_decrement_3rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * g
     _mm_store_sd(ptrC+8, tC);
     _mm_store_sd(ptrD+8, tD);
 }
-#endif
 
-#if defined (_MSC_VER) && defined(_M_IX86)
-/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
-#define gmx_mm256_decrement_4rvec_4ptr_swizzle_pd(ptrA, ptrB, ptrC, ptrD, \
-                                                  _x1, _y1, _z1, _x2, _y2, _z2, _x3, _y3, _z3, _x4, _y4, _z4) \
-    { \
-        __m256d _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9, _t10, _t11, _t12, _t13, _t14; \
-        __m128d _tA, _tB, _tC, _tD, _tE; \
-        _t1          = _mm256_loadu_pd(ptrA); \
-        _t2          = _mm256_loadu_pd(ptrB); \
-        _t3          = _mm256_loadu_pd(ptrC); \
-        _t4          = _mm256_loadu_pd(ptrD); \
-        _t5          = _mm256_loadu_pd(ptrA+4); \
-        _t6          = _mm256_loadu_pd(ptrB+4); \
-        _t7          = _mm256_loadu_pd(ptrC+4); \
-        _t8          = _mm256_loadu_pd(ptrD+4); \
-        _t9          = _mm256_loadu_pd(ptrA+8); \
-        _t10         = _mm256_loadu_pd(ptrB+8); \
-        _t11         = _mm256_loadu_pd(ptrC+8); \
-        _t12         = _mm256_loadu_pd(ptrD+8); \
-        _t13         = _mm256_unpacklo_pd(_x1, _y1); \
-        _x1          = _mm256_unpackhi_pd(_x1, _y1); \
-        _y1          = _mm256_unpacklo_pd(_z1, _x2); \
-        _z1          = _mm256_unpackhi_pd(_z1, _x2); \
-        _x2          = _mm256_unpacklo_pd(_y2, _z2); \
-        _y2          = _mm256_unpackhi_pd(_y2, _z2); \
-        _z2          = _mm256_unpacklo_pd(_x3, _y3); \
-        _x3          = _mm256_unpackhi_pd(_x3, _y3); \
-        _y3          = _mm256_unpacklo_pd(_z3, _x4); \
-        _z3          = _mm256_unpackhi_pd(_z3, _x4); \
-        _x4          = _mm256_unpacklo_pd(_y4, _z4); \
-        _y4          = _mm256_unpackhi_pd(_y4, _z4); \
-        _z4          = gmx_mm256_unpack128lo_pd(_t13, _y1); \
-        _t13         = gmx_mm256_unpack128hi_pd(_t13, _y1); \
-        _y1          = gmx_mm256_unpack128lo_pd(_x1, _z1); \
-        _x1          = gmx_mm256_unpack128hi_pd(_x1, _z1); \
-        _z1          = gmx_mm256_unpack128lo_pd(_x2, _z2); \
-        _x2          = gmx_mm256_unpack128hi_pd(_x2, _z2); \
-        _z2          = gmx_mm256_unpack128lo_pd(_y2, _x3); \
-        _y2          = gmx_mm256_unpack128hi_pd(_y2, _x3); \
-        _x3          = gmx_mm256_unpack128lo_pd(_y3, _x4); \
-        _y3          = gmx_mm256_unpack128hi_pd(_y3, _x4); \
-        _x4          = gmx_mm256_unpack128lo_pd(_z3, _y4); \
-        _z3          = gmx_mm256_unpack128hi_pd(_z3, _y4); \
-        _t1          = _mm256_sub_pd(_t1, _z4); \
-        _t2          = _mm256_sub_pd(_t2, _y1); \
-        _t3          = _mm256_sub_pd(_t3, _t13); \
-        _t4          = _mm256_sub_pd(_t4, _x1); \
-        _t5          = _mm256_sub_pd(_t5, _z1); \
-        _t6          = _mm256_sub_pd(_t6, _z2); \
-        _t7          = _mm256_sub_pd(_t7, _x2); \
-        _t8          = _mm256_sub_pd(_t8, _y2); \
-        _t9          = _mm256_sub_pd(_t9, _x3); \
-        _t10         = _mm256_sub_pd(_t10, _x4); \
-        _t11         = _mm256_sub_pd(_t11, _y3); \
-        _t12         = _mm256_sub_pd(_t12, _z3); \
-        _mm256_storeu_pd(ptrA, _t1); \
-        _mm256_storeu_pd(ptrB, _t2); \
-        _mm256_storeu_pd(ptrC, _t3); \
-        _mm256_storeu_pd(ptrD, _t4); \
-        _mm256_storeu_pd(ptrA+4, _t5); \
-        _mm256_storeu_pd(ptrB+4, _t6); \
-        _mm256_storeu_pd(ptrC+4, _t7); \
-        _mm256_storeu_pd(ptrD+4, _t8); \
-        _mm256_storeu_pd(ptrA+8, _t9); \
-        _mm256_storeu_pd(ptrB+8, _t10); \
-        _mm256_storeu_pd(ptrC+8, _t11); \
-        _mm256_storeu_pd(ptrD+8, _t12); \
-    }
-#else
-/* Real function for sane compilers */
-static void
+
+static gmx_inline void gmx_simdcall
 gmx_mm256_decrement_4rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
                                           double * gmx_restrict ptrC, double * gmx_restrict ptrD,
                                           __m256d x1, __m256d y1, __m256d z1,
@@ -907,13 +777,10 @@ gmx_mm256_decrement_4rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * g
     _mm256_storeu_pd(ptrC+8, t11);
     _mm256_storeu_pd(ptrD+8, t12);
 }
-#endif
 
 
 
-
-
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_mm256_update_iforce_1atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz1,
                                          double * gmx_restrict fptr,
                                          double * gmx_restrict fshiftptr)
@@ -941,52 +808,8 @@ gmx_mm256_update_iforce_1atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz
 
 
 
-#if defined (_MSC_VER) && defined(_M_IX86)
-/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
-#define gmx_mm256_update_iforce_3atom_swizzle_pd(fix1, fiy1, fiz1, fix2, fiy2, fiz2, fix3, fiy3, fiz3, \
-                                                 fptr, fshiftptr) \
-    { \
-        __m256d _t1, _t2, _t3, _t4; \
-        __m128d _tz3, _tA, _tB, _tC, _tD; \
-        fix1  = _mm256_hadd_pd(fix1, fiy1); \
-        fiz1  = _mm256_hadd_pd(fiz1, fix2); \
-        fiy2  = _mm256_hadd_pd(fiy2, fiz2); \
-        fix3  = _mm256_hadd_pd(fix3, fiy3); \
-        fiz3  = _mm256_hadd_pd(fiz3, _mm256_setzero_pd()); \
-        _t1   = gmx_mm256_unpack128lo_pd(fix1, fiz1); \
-        _t2   = gmx_mm256_unpack128hi_pd(fix1, fiz1); \
-        _t1   = _mm256_add_pd(_t1, _t2); \
-        _t3   = gmx_mm256_unpack128lo_pd(fiy2, fix3); \
-        _t4   = gmx_mm256_unpack128hi_pd(fiy2, fix3); \
-        _t3   = _mm256_add_pd(_t3, _t4); \
-        _tz3  = _mm_add_pd(_mm256_castpd256_pd128(fiz3), _mm256_extractf128_pd(fiz3, 0x1)); \
-        _t2   = _mm256_loadu_pd(fptr); \
-        _t4   = _mm256_loadu_pd(fptr+4); \
-        _tA   = _mm_load_sd(fptr+8); \
-        _t2   = _mm256_add_pd(_t2, _t1); \
-        _t4   = _mm256_add_pd(_t4, _t3); \
-        _tA   = _mm_add_sd(_tA, _tz3); \
-        _mm256_storeu_pd(fptr, _t2); \
-        _mm256_storeu_pd(fptr+4, _t4); \
-        _mm_store_sd(fptr+8, _tA); \
-        _tB   = _mm256_extractf128_pd(_t1, 0x1); \
-        _tC   = _mm256_extractf128_pd(_t3, 0x1); \
-        _tz3  = _mm_add_sd(_tz3, _tB); \
-        _tD   = _mm_permute_pd(_mm256_castpd256_pd128(_t3), _GMX_MM_PERMUTE128D(1, 1)); \
-        _tz3  = _mm_add_sd(_tz3, _tD); \
-        _tC   = _mm_add_pd(_tC, _mm256_castpd256_pd128(_t1)); \
-        _tD   = _mm_shuffle_pd(_tB, _mm256_castpd256_pd128(_t3), _MM_SHUFFLE2(0, 1)); \
-        _tC   = _mm_add_pd(_tC, _tD); \
-        _tA   = _mm_loadu_pd(fshiftptr); \
-        _tB   = _mm_load_sd(fshiftptr+2); \
-        _tA   = _mm_add_pd(_tA, _tC); \
-        _tB   = _mm_add_sd(_tB, _tz3); \
-        _mm_storeu_pd(fshiftptr, _tA); \
-        _mm_store_sd(fshiftptr+2, _tB); \
-    }
-#else
-/* Real function for sane compilers */
-static gmx_inline void
+
+static gmx_inline void gmx_simdcall
 gmx_mm256_update_iforce_3atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz1,
                                          __m256d fix2, __m256d fiy2, __m256d fiz2,
                                          __m256d fix3, __m256d fiy3, __m256d fiz3,
@@ -1049,60 +872,9 @@ gmx_mm256_update_iforce_3atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz
     _mm_storeu_pd(fshiftptr, tA);
     _mm_store_sd(fshiftptr+2, tB);
 }
-#endif
 
 
-#if defined (_MSC_VER) && defined(_M_IX86)
-/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
-#define gmx_mm256_update_iforce_4atom_swizzle_pd(fix1, fiy1, fiz1, fix2, fiy2, fiz2, fix3, fiy3, fiz3, fix4, fiy4, fiz4, \
-                                                 fptr, fshiftptr) \
-    { \
-        __m256d _t1, _t2, _t3, _t4, _t5, _t6; \
-        __m128d _tA, _tB, _tC, _tD; \
-        fix1  = _mm256_hadd_pd(fix1, fiy1); \
-        fiz1  = _mm256_hadd_pd(fiz1, fix2); \
-        fiy2  = _mm256_hadd_pd(fiy2, fiz2); \
-        fix3  = _mm256_hadd_pd(fix3, fiy3); \
-        fiz3  = _mm256_hadd_pd(fiz3, fix4); \
-        fiy4  = _mm256_hadd_pd(fiy4, fiz4); \
-        _t1   = gmx_mm256_unpack128lo_pd(fix1, fiz1); \
-        _t2   = gmx_mm256_unpack128hi_pd(fix1, fiz1); \
-        _t1   = _mm256_add_pd(_t1, _t2); \
-        _t3   = gmx_mm256_unpack128lo_pd(fiy2, fix3); \
-        _t4   = gmx_mm256_unpack128hi_pd(fiy2, fix3); \
-        _t3   = _mm256_add_pd(_t3, _t4); \
-        _t5   = gmx_mm256_unpack128lo_pd(fiz3, fiy4); \
-        _t6   = gmx_mm256_unpack128hi_pd(fiz3, fiy4); \
-        _t5   = _mm256_add_pd(_t5, _t6); \
-        _t2   = _mm256_loadu_pd(fptr); \
-        _t4   = _mm256_loadu_pd(fptr+4); \
-        _t6   = _mm256_loadu_pd(fptr+8); \
-        _t2   = _mm256_add_pd(_t2, _t1); \
-        _t4   = _mm256_add_pd(_t4, _t3); \
-        _t6   = _mm256_add_pd(_t6, _t5); \
-        _mm256_storeu_pd(fptr, _t2); \
-        _mm256_storeu_pd(fptr+4, _t4); \
-        _mm256_storeu_pd(fptr+8, _t6); \
-        _tA   = _mm256_extractf128_pd(_t1, 0x1); \
-        _tB   = _mm256_extractf128_pd(_t3, 0x1); \
-        _tC   = _mm256_extractf128_pd(_t5, 0x1); \
-        _tB   = _mm_add_pd(_tB, _mm256_castpd256_pd128(_t1)); \
-        _tA   = _mm_add_pd(_tA, _mm256_castpd256_pd128(_t5)); \
-        _tC   = _mm_add_pd(_tC, _mm256_castpd256_pd128(_t3)); \
-        _tD   = _mm_shuffle_pd(_tA, _tC, _MM_SHUFFLE2(0, 1)); \
-        _tB   = _mm_add_pd(_tB, _tD); \
-        _tC   = _mm_permute_pd(_tC, _GMX_MM_PERMUTE128D(1, 1)); \
-        _tC   = _mm_add_sd(_tC, _tA); \
-        _tA   = _mm_loadu_pd(fshiftptr); \
-        _tD   = _mm_load_sd(fshiftptr+2); \
-        _tA   = _mm_add_pd(_tA, _tB); \
-        _tD   = _mm_add_sd(_tD, _tC); \
-        _mm_storeu_pd(fshiftptr, _tA); \
-        _mm_store_sd(fshiftptr+2, _tD); \
-    }
-#else
-/* Real function for sane compilers */
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_mm256_update_iforce_4atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz1,
                                          __m256d fix2, __m256d fiy2, __m256d fiz2,
                                          __m256d fix3, __m256d fiy3, __m256d fiz3,
@@ -1171,11 +943,9 @@ gmx_mm256_update_iforce_4atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz
     _mm_storeu_pd(fshiftptr, tA);
     _mm_store_sd(fshiftptr+2, tD);
 }
-#endif
 
 
-
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_update_1pot_pd(__m256d pot1, double * gmx_restrict ptrA)
 {
     __m128d t1;
@@ -1187,7 +957,7 @@ gmx_mm256_update_1pot_pd(__m256d pot1, double * gmx_restrict ptrA)
     _mm_store_sd(ptrA, _mm_add_sd(_mm_load_sd(ptrA), t1));
 }
 
-static void
+static gmx_inline void gmx_simdcall
 gmx_mm256_update_2pot_pd(__m256d pot1, double * gmx_restrict ptrA,
                          __m256d pot2, double * gmx_restrict ptrB)
 {

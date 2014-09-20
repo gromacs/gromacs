@@ -34,18 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "nb_free_energy.h"
 
 #include <math.h>
 
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "typedefs.h"
-#include "nonbonded.h"
-#include "nb_kernel.h"
-#include "nrnb.h"
-#include "macros.h"
-#include "nb_free_energy.h"
-
 #include "gromacs/utility/fatalerror.h"
 
 void
@@ -63,8 +63,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 #define  NSTATES  2
     int           i, j, n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid;
     real          shX, shY, shZ;
-    real          Fscal, FscalC[NSTATES], FscalV[NSTATES], tx, ty, tz;
-    real          Vcoul[NSTATES], Vvdw[NSTATES];
+    real          tx, ty, tz, Fscal;
+    double        FscalC[NSTATES], FscalV[NSTATES];  /* Needs double for sc_power==48 */
+    double        Vcoul[NSTATES], Vvdw[NSTATES];     /* Needs double for sc_power==48 */
     real          rinv6, r, rt, rtC, rtV;
     real          iqA, iqB;
     real          qq[NSTATES], vctot, krsq;
@@ -77,7 +78,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     double        dvdl_coul, dvdl_vdw;
     real          lfac_coul[NSTATES], dlfac_coul[NSTATES], lfac_vdw[NSTATES], dlfac_vdw[NSTATES];
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
-    real          rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV;
+    double        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
     real          sigma2[NSTATES], sigma_pow[NSTATES], sigma_powm2[NSTATES], rs, rs2;
     int           do_tab, tab_elemsize;
     int           n0, n1C, n1V, nnn;
@@ -126,10 +127,19 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     int           ewitab;
     real          ewrt, eweps, ewtabscale, ewtabhalfspace, sh_ewald;
 
+    const real    onetwelfth  = 1.0/12.0;
+    const real    onesixth    = 1.0/6.0;
+    const real    zero        = 0.0;
+    const real    half        = 0.5;
+    const real    one         = 1.0;
+    const real    two         = 2.0;
+    const real    six         = 6.0;
+    const real    fourtyeight = 48.0;
+
     sh_ewald            = fr->ic->sh_ewald;
     ewtab               = fr->ic->tabq_coul_FDV0;
     ewtabscale          = fr->ic->tabq_scale;
-    ewtabhalfspace      = 0.5/ewtabscale;
+    ewtabhalfspace      = half/ewtabscale;
     tab_ewald_F_lj      = fr->ic->tabq_vdw_F;
     tab_ewald_V_lj      = fr->ic->tabq_vdw_V;
 
@@ -294,8 +304,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     dvdl_vdw   = 0;
 
     /* Lambda factor for state A, 1-lambda*/
-    LFC[STATE_A] = 1.0 - lambda_coul;
-    LFV[STATE_A] = 1.0 - lambda_vdw;
+    LFC[STATE_A] = one - lambda_coul;
+    LFV[STATE_A] = one - lambda_vdw;
 
     /* Lambda factor for state B, lambda*/
     LFC[STATE_B] = lambda_coul;
@@ -390,12 +400,12 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 r            = 0;
             }
 
-            if (sc_r_power == 6.0)
+            if (sc_r_power == six)
             {
                 rpm2             = rsq*rsq;  /* r4 */
                 rp               = rpm2*rsq; /* r6 */
             }
-            else if (sc_r_power == 48.0)
+            else if (sc_r_power == fourtyeight)
             {
                 rp               = rsq*rsq*rsq; /* r6 */
                 rp               = rp*rp;       /* r12 */
@@ -428,7 +438,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     if ((c6[i] > 0) && (c12[i] > 0))
                     {
                         /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
-                        sigma6[i]       = 0.5*c12[i]/c6[i];
+                        sigma6[i]       = half*c12[i]/c6[i];
                         sigma2[i]       = pow(sigma6[i], 1.0/3.0);
                         /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                            what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
@@ -443,12 +453,12 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                         sigma6[i]       = sigma6_def;
                         sigma2[i]       = sigma2_def;
                     }
-                    if (sc_r_power == 6.0)
+                    if (sc_r_power == six)
                     {
                         sigma_pow[i]    = sigma6[i];
                         sigma_powm2[i]  = sigma6[i]/sigma2[i];
                     }
-                    else if (sc_r_power == 48.0)
+                    else if (sc_r_power == fourtyeight)
                     {
                         sigma_pow[i]    = sigma6[i]*sigma6[i];       /* sigma^12 */
                         sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
@@ -485,13 +495,13 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     if ( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
                     {
                         /* this section has to be inside the loop because of the dependence on sigma_pow */
-                        rpinvC         = 1.0/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
-                        rinvC          = pow(rpinvC, 1.0/sc_r_power);
-                        rC             = 1.0/rinvC;
+                        rpinvC         = one/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
+                        rinvC          = pow(rpinvC, one/sc_r_power);
+                        rC             = one/rinvC;
 
-                        rpinvV         = 1.0/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
-                        rinvV          = pow(rpinvV, 1.0/sc_r_power);
-                        rV             = 1.0/rinvV;
+                        rpinvV         = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
+                        rinvV          = pow(rpinvV, one/sc_r_power);
+                        rV             = one/rinvV;
 
                         if (do_tab)
                         {
@@ -533,7 +543,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                 case GMX_NBKERNEL_ELEC_REACTIONFIELD:
                                     /* reaction-field */
                                     Vcoul[i]   = qq[i]*(rinvC + krf*rC*rC-crf);
-                                    FscalC[i]  = qq[i]*(rinvC - 2.0*krf*rC*rC);
+                                    FscalC[i]  = qq[i]*(rinvC - two*krf*rC*rC);
                                     break;
 
                                 case GMX_NBKERNEL_ELEC_CUBICSPLINETABLE:
@@ -545,7 +555,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     Heps2      = eps2C*VFtab[nnn+3];
                                     Fp         = F+Geps+Heps2;
                                     VV         = Y+epsC*Fp;
-                                    FF         = Fp+Geps+2.0*Heps2;
+                                    FF         = Fp+Geps+two*Heps2;
                                     Vcoul[i]   = qq[i]*VV;
                                     FscalC[i]  = -qq[i]*tabscale*FF*rC;
                                     break;
@@ -575,8 +585,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     break;
 
                                 case GMX_NBKERNEL_ELEC_NONE:
-                                    FscalC[i]  = 0.0;
-                                    Vcoul[i]   = 0.0;
+                                    FscalC[i]  = zero;
+                                    Vcoul[i]   = zero;
                                     break;
 
                                 default:
@@ -587,16 +597,16 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             if (fr->coulomb_modifier == eintmodPOTSWITCH)
                             {
                                 d                = rC-fr->rcoulomb_switch;
-                                d                = (d > 0.0) ? d : 0.0;
+                                d                = (d > zero) ? d : zero;
                                 d2               = d*d;
-                                sw               = 1.0+d2*d*(elec_swV3+d*(elec_swV4+d*elec_swV5));
+                                sw               = one+d2*d*(elec_swV3+d*(elec_swV4+d*elec_swV5));
                                 dsw              = d2*(elec_swF2+d*(elec_swF3+d*elec_swF4));
 
                                 FscalC[i]        = FscalC[i]*sw - rC*Vcoul[i]*dsw;
                                 Vcoul[i]        *= sw;
 
-                                FscalC[i]        = (rC < rcoulomb) ? FscalC[i] : 0.0;
-                                Vcoul[i]         = (rC < rcoulomb) ? Vcoul[i] : 0.0;
+                                FscalC[i]        = (rC < rcoulomb) ? FscalC[i] : zero;
+                                Vcoul[i]         = (rC < rcoulomb) ? Vcoul[i] : zero;
                             }
                         }
 
@@ -614,7 +624,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             {
                                 case GMX_NBKERNEL_VDW_LENNARDJONES:
                                     /* cutoff LJ */
-                                    if (sc_r_power == 6.0)
+                                    if (sc_r_power == six)
                                     {
                                         rinv6            = rpinvV;
                                     }
@@ -626,8 +636,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     Vvdw6            = c6[i]*rinv6;
                                     Vvdw12           = c12[i]*rinv6*rinv6;
 
-                                    Vvdw[i]          = ( (Vvdw12 - c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
-                                                         - (Vvdw6 - c6[i]*sh_invrc6)*(1.0/6.0));
+                                    Vvdw[i]          = ( (Vvdw12 - c12[i]*sh_invrc6*sh_invrc6)*onetwelfth
+                                                         - (Vvdw6 - c6[i]*sh_invrc6)*onesixth);
                                     FscalV[i]        = Vvdw12 - Vvdw6;
                                     break;
 
@@ -645,7 +655,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     Heps2      = eps2V*VFtab[nnn+3];
                                     Fp         = F+Geps+Heps2;
                                     VV         = Y+epsV*Fp;
-                                    FF         = Fp+Geps+2.0*Heps2;
+                                    FF         = Fp+Geps+two*Heps2;
                                     Vvdw[i]   += c6[i]*VV;
                                     FscalV[i] -= c6[i]*tabscale*FF*rV;
 
@@ -656,13 +666,13 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     Heps2      = eps2V*VFtab[nnn+7];
                                     Fp         = F+Geps+Heps2;
                                     VV         = Y+epsV*Fp;
-                                    FF         = Fp+Geps+2.0*Heps2;
+                                    FF         = Fp+Geps+two*Heps2;
                                     Vvdw[i]   += c12[i]*VV;
                                     FscalV[i] -= c12[i]*tabscale*FF*rV;
                                     break;
 
                                 case GMX_NBKERNEL_VDW_LJEWALD:
-                                    if (sc_r_power == 6.0)
+                                    if (sc_r_power == six)
                                     {
                                         rinv6            = rpinvV;
                                     }
@@ -679,8 +689,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                         Vvdw6            = c6[i]*rinv6;
                                         Vvdw12           = c12[i]*rinv6*rinv6;
 
-                                        Vvdw[i]          = ( (Vvdw12 - c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
-                                                             - (Vvdw6 - c6[i]*sh_invrc6 - c6grid*sh_lj_ewald)*(1.0/6.0));
+                                        Vvdw[i]          = ( (Vvdw12 - c12[i]*sh_invrc6*sh_invrc6)*onetwelfth
+                                                             - (Vvdw6 - c6[i]*sh_invrc6 - c6grid*sh_lj_ewald)*onesixth);
                                         FscalV[i]        = Vvdw12 - Vvdw6;
                                     }
                                     else
@@ -688,17 +698,17 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                         /* Normal LJ-PME */
                                         ewcljrsq         = ewclj2*rV*rV;
                                         exponent         = exp(-ewcljrsq);
-                                        poly             = exponent*(1.0 + ewcljrsq + ewcljrsq*ewcljrsq*0.5);
-                                        vvdw_disp        = (c6[i]-c6grid*(1.0-poly))*rinv6;
+                                        poly             = exponent*(one + ewcljrsq + ewcljrsq*ewcljrsq*half);
+                                        vvdw_disp        = (c6[i]-c6grid*(one-poly))*rinv6;
                                         vvdw_rep         = c12[i]*rinv6*rinv6;
-                                        FscalV[i]        = vvdw_rep - vvdw_disp - c6grid*(1.0/6.0)*exponent*ewclj6;
-                                        Vvdw[i]          = (vvdw_rep - c12[i]*sh_invrc6*sh_invrc6)/12.0 - (vvdw_disp - c6[i]*sh_invrc6 - c6grid*sh_lj_ewald)/6.0;
+                                        FscalV[i]        = vvdw_rep - vvdw_disp - c6grid*onesixth*exponent*ewclj6;
+                                        Vvdw[i]          = (vvdw_rep - c12[i]*sh_invrc6*sh_invrc6)*onetwelfth - (vvdw_disp - c6[i]*sh_invrc6 - c6grid*sh_lj_ewald)/six;
                                     }
                                     break;
 
                                 case GMX_NBKERNEL_VDW_NONE:
-                                    Vvdw[i]    = 0.0;
-                                    FscalV[i]  = 0.0;
+                                    Vvdw[i]    = zero;
+                                    FscalV[i]  = zero;
                                     break;
 
                                 default:
@@ -709,16 +719,16 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             if (fr->vdw_modifier == eintmodPOTSWITCH)
                             {
                                 d                = rV-fr->rvdw_switch;
-                                d                = (d > 0.0) ? d : 0.0;
+                                d                = (d > zero) ? d : zero;
                                 d2               = d*d;
-                                sw               = 1.0+d2*d*(vdw_swV3+d*(vdw_swV4+d*vdw_swV5));
+                                sw               = one+d2*d*(vdw_swV3+d*(vdw_swV4+d*vdw_swV5));
                                 dsw              = d2*(vdw_swF2+d*(vdw_swF3+d*vdw_swF4));
 
                                 FscalV[i]        = FscalV[i]*sw - rV*Vvdw[i]*dsw;
                                 Vvdw[i]         *= sw;
 
-                                FscalV[i]  = (rV < rvdw) ? FscalV[i] : 0.0;
-                                Vvdw[i]    = (rV < rvdw) ? Vvdw[i] : 0.0;
+                                FscalV[i]  = (rV < rvdw) ? FscalV[i] : zero;
+                                Vvdw[i]    = (rV < rvdw) ? Vvdw[i] : zero;
                             }
                         }
 
@@ -753,11 +763,11 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                  * As there is no singularity, there is no need for soft-core.
                  */
                 VV = krf*rsq - crf;
-                FF = -2.0*krf;
+                FF = -two*krf;
 
                 if (ii == jnr)
                 {
-                    VV *= 0.5;
+                    VV *= half;
                 }
 
                 for (i = 0; i < NSTATES; i++)
@@ -799,7 +809,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                      * scheme, and corresponds to a self-interaction that will
                      * occur twice. Scale it down by 50% to only include it once.
                      */
-                    v_lr *= 0.5;
+                    v_lr *= half;
                 }
 
                 for (i = 0; i < NSTATES; i++)
@@ -834,8 +844,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 /* TODO: Currently the Ewald LJ table does not contain
                  * the factor 1/6, we should add this.
                  */
-                FF     = f_lr*rinv/6.0;
-                VV     = (tab_ewald_V_lj[ri] - ewtabhalfspace*frac*(tab_ewald_F_lj[ri] + f_lr))/6.0;
+                FF     = f_lr*rinv/six;
+                VV     = (tab_ewald_V_lj[ri] - ewtabhalfspace*frac*(tab_ewald_F_lj[ri] + f_lr))/six;
 
                 if (ii == jnr)
                 {
@@ -844,7 +854,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                      * scheme, and corresponds to a self-interaction that will
                      * occur twice. Scale it down by 50% to only include it once.
                      */
-                    VV *= 0.5;
+                    VV *= half;
                 }
 
                 for (i = 0; i < NSTATES; i++)
@@ -943,6 +953,12 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
     real       velec[2], vvdw[2];
     int        i, ntab;
 
+    const real half        = 0.5;
+    const real one         = 1.0;
+    const real two         = 2.0;
+    const real six         = 6.0;
+    const real fourtyeight = 48.0;
+
     qq[0]    = qqA;
     qq[1]    = qqB;
     c6[0]    = c6A;
@@ -950,12 +966,12 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
     c12[0]   = c12A;
     c12[1]   = c12B;
 
-    if (sc_r_power == 6.0)
+    if (sc_r_power == six)
     {
         rpm2             = r2*r2;   /* r4 */
         rp               = rpm2*r2; /* r6 */
     }
-    else if (sc_r_power == 48.0)
+    else if (sc_r_power == fourtyeight)
     {
         rp               = r2*r2*r2; /* r6 */
         rp               = rp*rp;    /* r12 */
@@ -965,7 +981,7 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
     }
     else
     {
-        rp             = pow(r2, 0.5*sc_r_power);  /* not currently supported as input, but can handle it */
+        rp             = pow(r2, half*sc_r_power);  /* not currently supported as input, but can handle it */
         rpm2           = rp/r2;
     }
 
@@ -977,8 +993,8 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
             /* The c6 & c12 coefficients now contain the constants 6.0 and 12.0, respectively.
              * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
              */
-            sigma6[i]       = 0.5*c12[i]/c6[i];
-            sigma2[i]       = pow(0.5*c12[i]/c6[i], 1.0/3.0);
+            sigma6[i]       = half*c12[i]/c6[i];
+            sigma2[i]       = pow(half*c12[i]/c6[i], 1.0/3.0);
             /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                what data to store externally.  Can't be fixed without larger scale changes, so not 5.0 */
             if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
@@ -992,12 +1008,12 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
             sigma6[i]       = sigma6_def;
             sigma2[i]       = sigma2_def;
         }
-        if (sc_r_power == 6.0)
+        if (sc_r_power == six)
         {
             sigma_pow[i]    = sigma6[i];
             sigma_powm2[i]  = sigma6[i]/sigma2[i];
         }
-        else if (sc_r_power == 48.0)
+        else if (sc_r_power == fourtyeight)
         {
             sigma_pow[i]    = sigma6[i]*sigma6[i];       /* sigma^12 */
             sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
@@ -1035,8 +1051,8 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
         if ( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
         {
             /* Coulomb */
-            rpinv            = 1.0/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
-            r_coul           = pow(rpinv, -1.0/sc_r_power);
+            rpinv            = one/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
+            r_coul           = pow(rpinv, -one/sc_r_power);
 
             /* Electrostatics table lookup data */
             rtab             = r_coul*tabscale;
@@ -1051,13 +1067,13 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
             Heps2            = eps2*vftab[ntab+3];
             Fp               = F+Geps+Heps2;
             VV               = Y+eps*Fp;
-            FF               = Fp+Geps+2.0*Heps2;
+            FF               = Fp+Geps+two*Heps2;
             velec[i]         = qq[i]*VV;
             fscal_elec[i]    = -qq[i]*FF*r_coul*rpinv*tabscale;
 
             /* Vdw */
-            rpinv            = 1.0/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
-            r_vdw            = pow(rpinv, -1.0/sc_r_power);
+            rpinv            = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
+            r_vdw            = pow(rpinv, -one/sc_r_power);
             /* Vdw table lookup data */
             rtab             = r_vdw*tabscale;
             ntab             = rtab;
@@ -1071,7 +1087,7 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
             Heps2            = eps2*vftab[ntab+7];
             Fp               = F+Geps+Heps2;
             VV               = Y+eps*Fp;
-            FF               = Fp+Geps+2.0*Heps2;
+            FF               = Fp+Geps+two*Heps2;
             vvdw[i]          = c6[i]*VV;
             fscal_vdw[i]     = -c6[i]*FF;
 
@@ -1082,7 +1098,7 @@ nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul, real a
             Heps2            = eps2*vftab[ntab+11];
             Fp               = F+Geps+Heps2;
             VV               = Y+eps*Fp;
-            FF               = Fp+Geps+2.0*Heps2;
+            FF               = Fp+Geps+two*Heps2;
             vvdw[i]         += c12[i]*VV;
             fscal_vdw[i]    -= c12[i]*FF;
             fscal_vdw[i]    *= r_vdw*rpinv*tabscale;

@@ -35,19 +35,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "force.h"
-#include "nrnb.h"
-#include "gromacs/math/vec.h"
-
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 

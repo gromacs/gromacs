@@ -32,19 +32,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "sim_util.h"
-#include "mdrun.h"
-#include "confio.h"
 #include "trajectory_writing.h"
-#include "mdoutf.h"
 
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/mdoutf.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/smalloc.h"
 
 void
 do_md_trajectory_writing(FILE           *fplog,
@@ -64,7 +64,6 @@ do_md_trajectory_writing(FILE           *fplog,
                          gmx_ekindata_t *ekind,
                          rvec           *f,
                          rvec           *f_global,
-                         gmx_wallcycle_t wcycle,
                          int            *nchkpt,
                          gmx_bool        bCPT,
                          gmx_bool        bRerunMD,
@@ -124,7 +123,7 @@ do_md_trajectory_writing(FILE           *fplog,
 
     if (mdof_flags != 0)
     {
-        wallcycle_start(wcycle, ewcTRAJ);
+        wallcycle_start(mdoutf_get_wcycle(outf), ewcTRAJ);
         if (bCPT)
         {
             if (MASTER(cr))
@@ -168,6 +167,6 @@ do_md_trajectory_writing(FILE           *fplog,
                                 ir->ePBC, state->box);
             debug_gmx();
         }
-        wallcycle_stop(wcycle, ewcTRAJ);
+        wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
     }
 }

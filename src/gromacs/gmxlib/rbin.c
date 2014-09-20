@@ -35,11 +35,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "network.h"
-#include "rbin.h"
+#include "gromacs/legacyheaders/rbin.h"
+
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 
 t_bin *mk_bin(void)

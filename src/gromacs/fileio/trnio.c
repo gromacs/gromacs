@@ -34,16 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "trnio.h"
 
 #include <string.h>
-#include "gromacs/utility/smalloc.h"
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/utility/fatalerror.h"
-#include "txtdump.h"
-#include "names.h"
 #include "gromacs/utility/futil.h"
-#include "trnio.h"
-#include "gmxfio.h"
+#include "gromacs/utility/smalloc.h"
 
 #define BUFSIZE     128
 #define GROMACS_MAGIC   1993

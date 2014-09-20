@@ -34,18 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/perf_est.h"
 
 #include <math.h>
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "perf_est.h"
-#include "types/commrec.h"
-#include "nbnxn_search.h"
-#include "nbnxn_consts.h"
 
 /* Computational cost of bonded, non-bonded and PME calculations.
  * This will be machine dependent.
@@ -99,6 +99,9 @@ int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
      */
     ndx      = 0;
     ndx_excl = 0;
+#if __ICC == 1400 || __ICL == 1400
+#pragma novector /* Work-around for incorrect vectorization */
+#endif
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];

@@ -34,11 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "macros.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 /*
  * This program is needed to create the files:
@@ -85,7 +85,7 @@ gmx_options(int argc, char *argv[])
 
         "All GROMACS programs can read compressed or g-zipped files. There "
         "might be a problem with reading compressed [TT].xtc[tt], "
-        "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "
+        "[TT].trr[tt] files, but these will not compress "
         "very well anyway.",
 
         "Most GROMACS programs can process a trajectory with fewer atoms than "

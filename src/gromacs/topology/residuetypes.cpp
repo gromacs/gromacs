@@ -32,7 +32,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/topology/residuetypes.h"
+#include "gmxpre.h"
+
+#include "residuetypes.h"
 
 #include <cassert>
 #include <cstdio>

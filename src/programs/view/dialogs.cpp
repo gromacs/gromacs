@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
 #include <stdlib.h>
@@ -41,19 +43,20 @@
 #include <unistd.h> // for fork()
 #endif
 
-#include "macros.h"
-#include "x11.h"
-#include "xdlghi.h"
-#include "xmb.h"
 #include "dialogs.h"
-#include "names.h"
-#include "nmol.h"
-#include "manager.h"
 
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "manager.h"
+#include "nmol.h"
+#include "x11.h"
+#include "xdlghi.h"
+#include "xmb.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 

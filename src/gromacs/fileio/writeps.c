@@ -34,17 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "writeps.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "writeps.h"
 
 #include <stdio.h>
 
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
-
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 const char *fontnm[efontNR] = {
     "Times-Roman", "Times-Italic",     "Times-Bold",    "Times-BoldItalic",

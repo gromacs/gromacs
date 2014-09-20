@@ -41,6 +41,8 @@
 #include <qpxmath.h>
 #endif
 
+#include "config.h"
+
 /* IBM QPX SIMD instruction wrappers
  *
  * Please see documentation in gromacs/simd/simd.h for the available
@@ -238,13 +240,13 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
 /****************************************************
  * IMPLEMENTATION HELPER FUNCTIONS                  *
  ****************************************************/
-static __attribute__((always_inline)) vector4double
+static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_setzero_ibm_qpx(void)
 {
     return vec_splats(0.0);
 }
 
-static __attribute__((always_inline)) vector4double
+static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_get_exponent_ibm_qpx(vector4double x)
 {
     const gmx_int64_t    expmask   = 0x7ff0000000000000LL;
@@ -262,7 +264,7 @@ gmx_simd_get_exponent_ibm_qpx(vector4double x)
     return vec_cfid(vec_ld(0, idata));
 }
 
-static __attribute__((always_inline)) vector4double
+static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_get_mantissa_ibm_qpx(vector4double x)
 {
     const gmx_int64_t    exp_and_sign_mask = 0xfff0000000000000LL;
@@ -280,7 +282,7 @@ gmx_simd_get_mantissa_ibm_qpx(vector4double x)
     return vec_ld(0, idata);
 }
 
-static __attribute__((always_inline)) vector4double
+static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_set_exponent_ibm_qpx(vector4double x)
 {
     const gmx_int64_t    expbase = 1023;
@@ -301,7 +303,7 @@ gmx_simd_set_exponent_ibm_qpx(vector4double x)
     return vec_ld(0, idata);
 }
 
-static __attribute__((always_inline)) double
+static __attribute__((always_inline)) double gmx_simdcall
 gmx_simd_reduce_ibm_qpx(vector4double x)
 {
     vector4double y = vec_sldw(x, x, 2);
@@ -313,7 +315,7 @@ gmx_simd_reduce_ibm_qpx(vector4double x)
     return vec_extract(y, 0);
 }
 
-static __attribute__((always_inline)) vector4double
+static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_set1_int_ibm_qpx(int i)
 {
     int idata[4] __attribute__((aligned(32)));
@@ -325,7 +327,7 @@ gmx_simd_set1_int_ibm_qpx(int i)
 }
 
 /* This works in both single and double */
-static __attribute__((always_inline)) int
+static __attribute__((always_inline)) int gmx_simdcall
 gmx_simd_anytrue_bool_ibm_qpx(vector4double a)
 {
     vector4double b = vec_sldw(a, a, 2);
@@ -449,7 +451,7 @@ gmx_simd_anytrue_bool_ibm_qpx(vector4double a)
 #define gmx_simd4_blendv_d               gmx_simd_blendv_d
 #define gmx_simd4_reduce_d               gmx_simd_reduce_d
 
-static __attribute__((always_inline)) double
+static __attribute__((always_inline)) double gmx_simdcall
 gmx_simd4_dotproduct3_d_ibm_qpx(vector4double a, vector4double b)
 {
     vector4double dp_sh0 = vec_mul(a, b);
@@ -460,7 +462,7 @@ gmx_simd4_dotproduct3_d_ibm_qpx(vector4double a, vector4double b)
     return vec_extract(dp, 0);
 }
 
-static __attribute__((always_inline)) float
+static __attribute__((always_inline)) float gmx_simdcall
 gmx_simd4_dotproduct3_f_ibm_qpx(vector4double a, vector4double b)
 {
     return (float)gmx_simd4_dotproduct3_d_ibm_qpx(a, b);

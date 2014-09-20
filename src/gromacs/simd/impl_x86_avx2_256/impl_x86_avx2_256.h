@@ -36,7 +36,10 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX2_256_H
 #define GMX_SIMD_IMPL_X86_AVX2_256_H
 
+#include "config.h"
+
 #include <math.h>
+
 #include <immintrin.h>
 
 /* x86 256-bit AVX2 SIMD instruction wrappers
@@ -130,7 +133,7 @@
 /*********************************************************
  * SIMD SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  *********************************************************/
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_get_exponent_f_avx2_256(gmx_simd_float_t x)
 {
     const __m256  expmask      = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
@@ -142,7 +145,7 @@ gmx_simd_get_exponent_f_avx2_256(gmx_simd_float_t x)
     return _mm256_cvtepi32_ps(iexp);
 }
 
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_set_exponent_f_avx2_256(gmx_simd_float_t x)
 {
     const __m256i  expbias      = _mm256_set1_epi32(127);
@@ -155,7 +158,7 @@ gmx_simd_set_exponent_f_avx2_256(gmx_simd_float_t x)
 /*********************************************************
  * SIMD DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  *********************************************************/
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_get_exponent_d_avx2_256(gmx_simd_double_t x)
 {
     const __m256d  expmask      = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FF0000000000000LL));
@@ -172,7 +175,7 @@ gmx_simd_get_exponent_d_avx2_256(gmx_simd_double_t x)
     return _mm256_cvtepi32_pd(iexp128);
 }
 
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_set_exponent_d_avx2_256(gmx_simd_double_t x)
 {
     const __m256i  expbias      = _mm256_set1_epi64x(1023LL);
@@ -182,7 +185,7 @@ gmx_simd_set_exponent_d_avx2_256(gmx_simd_double_t x)
     return _mm256_castsi256_pd(iexp);
 }
 
-static gmx_inline gmx_simd_dibool_t
+static gmx_inline gmx_simd_dibool_t gmx_simdcall
 gmx_simd_cvt_db2dib_avx2_256(gmx_simd_dbool_t a)
 {
     __m128i ia = _mm256_castsi256_si128(_mm256_castpd_si256(a));
@@ -193,7 +196,7 @@ gmx_simd_cvt_db2dib_avx2_256(gmx_simd_dbool_t a)
     return ia;
 }
 
-static gmx_inline gmx_simd_dbool_t
+static gmx_inline gmx_simd_dbool_t gmx_simdcall
 gmx_simd_cvt_dib2db_avx2_256(gmx_simd_dibool_t ia)
 {
     __m128d lo = _mm_castsi128_pd(_mm_unpacklo_epi32(ia, ia));

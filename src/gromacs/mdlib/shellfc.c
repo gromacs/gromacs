@@ -34,31 +34,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/shellfc.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "txtdump.h"
-#include "force.h"
-#include "mdrun.h"
-#include "mdatoms.h"
-#include "vsite.h"
-#include "network.h"
-#include "names.h"
-#include "constr.h"
-#include "domdec.h"
+#include "gromacs/legacyheaders/chargegroup.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
-#include "shellfc.h"
-#include "gromacs/topology/mtop_util.h"
-#include "chargegroup.h"
-#include "macros.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

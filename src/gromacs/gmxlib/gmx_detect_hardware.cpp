@@ -32,32 +32,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include <string>
-#include <vector>
+#include "gromacs/legacyheaders/gmx_detect_hardware.h"
+
+#include "config.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <string>
+#include <vector>
+
 #ifdef HAVE_UNISTD_H
 /* For sysconf */
 #include <unistd.h>
 #endif
+#ifdef GMX_NATIVE_WINDOWS
+#include <windows.h>
+#endif
 
-#include "types/enums.h"
-#include "types/hw_info.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "md_logging.h"
-#include "gmx_cpuid.h"
-#include "gpu_utils.h"
-#include "copyrite.h"
-#include "gmx_detect_hardware.h"
-#include "md_logging.h"
+#include "thread_mpi/threads.h"
 
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_cpuid.h"
+#include "gromacs/legacyheaders/gpu_utils.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -65,12 +71,6 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "thread_mpi/threads.h"
-
-#ifdef GMX_NATIVE_WINDOWS
-#include <windows.h>
-#endif
 
 #ifdef GMX_GPU
 const gmx_bool bGPUBinary = TRUE;

@@ -39,30 +39,30 @@
  * \author Carsten Kutzner <ckutzne@gwdg.de>
  * \ingroup module_swap
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "swapcoords.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/topology/mtop_util.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "names.h"
-#include "network.h"
-#include "mdrun.h"
-#include "gromacs/fileio/xvgr.h"
-#include "copyrite.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/timing/wallcycle.h"
-#include "swapcoords.h"
-
-#include "gromacs/pbcutil/pbc.h"
 
 static char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
 static char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */

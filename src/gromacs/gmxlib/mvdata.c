@@ -35,18 +35,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/mvdata.h"
 
 #include <string.h>
 
-#include "typedefs.h"
-#include "main.h"
-#include "mvdata.h"
-#include "types/commrec.h"
-#include "network.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
-#include "tgroup.h"
-
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

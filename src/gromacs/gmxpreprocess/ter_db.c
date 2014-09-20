@@ -34,24 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "ter_db.h"
 
 #include <ctype.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
-#include "gromacs/utility/futil.h"
-#include "resall.h"
-#include "h_db.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "ter_db.h"
-#include "toputil.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "fflibutil.h"
-
-#include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* use bonded types definitions in hackblock.h */
 #define ekwRepl ebtsNR+1

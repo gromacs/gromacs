@@ -34,16 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
+
 #include "gromacs/commandline/pargs.h"
-#include "macros.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static int calc_ntype(int nft, int *ft, t_idef *idef)
 {
@@ -272,7 +273,7 @@ int gmx_mk_angndx(int argc, char *argv[])
     int               *nr;
     char             **grpnames;
     t_filenm           fnm[] = {
-        { efTPX, NULL, NULL, ffREAD  },
+        { efTPR, NULL, NULL, ffREAD  },
         { efNDX, NULL, "angle", ffWRITE }
     };
 #define NFILE asize(fnm)
@@ -286,7 +287,7 @@ int gmx_mk_angndx(int argc, char *argv[])
 
     ft = select_ftype(opt[0], &nft, &mult);
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), NULL);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), NULL);
 
     ntype = calc_ntype(nft, ft, &(top->idef));
     snew(grpnames, ntype);

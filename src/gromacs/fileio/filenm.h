@@ -38,8 +38,8 @@
 #ifndef GMX_FILEIO_FILENM_H
 #define GMX_FILEIO_FILENM_H
 
-#include "../legacyheaders/types/commrec_fwd.h"
-#include "../utility/basedefinitions.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,14 +48,14 @@ extern "C" {
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {
     efMDP,
-    efTRX, efTRO, efTRN, efTRR, efTRJ, efCOMPRESSED, efXTC, efTNG,
+    efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
     efEDR,
     efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR,
     efCPT,
     efLOG, efXVG, efOUT,
     efNDX,
     efTOP, efITP,
-    efTPX, efTPS, efTPR, efTPA, efTPB,
+    efTPS, efTPR,
     efTEX, efRTP, efATP, efHDB,
     efDAT, efDLG,
     efMAP, efEPS, efMAT, efM2P,

@@ -34,9 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/topology/index.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "index.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -45,11 +45,10 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/txtdump.h"
-
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"

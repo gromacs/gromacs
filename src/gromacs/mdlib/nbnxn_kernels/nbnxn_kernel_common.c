@@ -32,11 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
-
-#include "gromacs/pbcutil/ishift.h"
+#include "gmxpre.h"
 
 #include "nbnxn_kernel_common.h"
+
+#include "gromacs/pbcutil/ishift.h"
 
 static void
 clear_f_all(const nbnxn_atomdata_t *nbat, real *f)

@@ -32,15 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "copyrite.h"
-#include "gromacs/fileio/filenm.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
+#include "gmxpre.h"
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
@@ -127,7 +128,8 @@ int gmx_dyecoupl(int argc, char *argv[])
                 rrange, krange, rincr, kincr, Rfrac;
     int         rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }

@@ -1,0 +1,221 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+\chapter{Definitions and Units}
+\label{ch:defunits}
+\section{Notation}
+The following conventions for mathematical typesetting 
+are used throughout this document:
+
+\centerline{
+\begin{tabular}{l|l|c}
+Item		&	Notation	& Example	\\
+\hline	
+Vector		&	Bold italic	& $\rvi$	\\
+Vector Length	&	Italic		& $r_i$		\\
+\end{tabular}
+}
+
+We define the {\em lowercase} subscripts 
+$i$, $j$, $k$ and $l$ to denote particles:
+$\rvi$ is the {\em position vector} of particle $i$, and using this 
+notation:
+\bea
+\rvij	=	\rvj-\rvi	\\
+\rij	=	| \rvij |
+\eea
+The force on particle $i$ is denoted by $\ve{F}_i$ and 
+\beq
+\ve{F}_{ij} = \mbox{force on $i$ exerted by $j$}
+\eeq
+Please note that we changed notation as of version 2.0 to $\rvij=\rvj-\rvi$ since this
+is the notation commonly used. If you encounter an error, let us know.
+
+\section{\normindex{MD units}\index{units}}
+{\gromacs} uses a consistent set of units that produce values in the
+vicinity of unity for most relevant molecular quantities. Let us call
+them {\em MD units}. The basic units in this system are nm, ps, K,
+electron charge (e) and atomic mass unit (u), see
+\tabref{basicunits}.
+\begin{table}
+\centerline{
+\begin{tabular}{|l|c|l|}
+\dline
+Quantity	& Symbol&  Unit						\\
+\hline			
+length		&  r	&  nm $= 10^{-9}$ m				\\
+mass		&  m	&  u (atomic mass unit)	$=$ 
+				1.6605402(10)$\times 10^{-27}$ kg	\\
+		&	&  ($1/12$ the mass of a $^{12}$C atom)		\\
+		&	&  $1.6605402(10)\times 10^{-27}$ kg		\\
+time		&  t	&  ps $= 10^{-12}$ s				\\
+charge		&  q	&  {\it e} $=$ electronic charge $=
+				1.60217733(49)\times 10^{-19}$ C	\\
+temperature	&  T	&  K  						\\
+\dline
+\end{tabular}
+}
+\caption[Basic units used in {\gromacs}.]{Basic units used in
+{\gromacs}. Numbers in parentheses give accuracy.}
+\label{tab:basicunits}
+\end{table}
+
+Consistent with these units are a set of derived units, given in
+\tabref{derivedunits}.
+\begin{table}
+\centerline{
+\begin{tabular}{|l|c|l|}
+\dline
+Quantity	& Symbol   & Unit				\\
+\hline
+energy		& $E,V$	   & kJ~mol$^{-1}$			\\
+Force		& $\ve{F}$ & kJ~mol$^{-1}$~nm$^{-1}$		\\
+pressure	& $p$	   & kJ~mol$^{-1}$~nm$^{-3} =
+				10^{30}/N_{AV}$~Pa		\\
+        	&	   & $1.660\,54\times 10^6$~Pa $= 
+				16.6054$~bar         		\\
+velocity	& $v$	   & nm~ps$^{-1} = 1000$ m s$^{-1}$		\\
+dipole moment   & $\mu$	   & \emph{e}~nm                		\\ 
+electric potential& $\Phi$ & kJ~mol$^{-1}$~\emph{e}$^{-1} = 
+				0.010\,364\,272(3)$ Volt   	\\
+electric field	& $E$	   & kJ~mol$^{-1}$~nm$^{-1}$~\emph{e}$^{-1} =
+				1.036\,427\,2(3) \times 10^7$~V m$^{-1}$	\\
+\dline
+\end{tabular}
+}
+\caption{Derived units}
+\label{tab:derivedunits}
+\end{table}
+
+The {\bf electric conversion factor} $f=\frac{1}{4 \pi
+\varepsilon_o}=138.935\,485(9)$ kJ~mol$^{-1}$~nm~e$^{-2}$. It relates
+the mechanical quantities to the electrical quantities as in
+\beq
+ V = f \frac{q^2}{r} \mbox{\ \ or\ \ } F = f \frac{q^2}{r^2}
+\eeq
+
+Electric potentials $\Phi$ and electric fields $\ve{E}$ are
+intermediate quantities in the calculation of energies and
+forces. They do not occur inside {\gromacs}. If they are used in
+evaluations, there is a choice of equations and related units. We
+strongly recommend following the usual practice of including the factor
+$f$ in expressions that evaluate $\Phi$ and $\ve{E}$:
+\bea
+\Phi(\ve{r}) = f \sum_j \frac{q_j}{|\ve{r}-\ve{r}_j|} 	\\
+\ve{E}(\ve{r}) = f \sum_j q_j \frac{(\ve{r}-\ve{r}_j)}{|\ve{r}-\ve{r}_j|^3}
+\eea
+With these definitions, $q\Phi$ is an energy and $q\ve{E}$ is a
+force. The units are those given in \tabref{derivedunits}:
+about 10 mV for potential. Thus, the potential of an electronic charge
+at a distance of 1 nm equals $f \approx 140$ units $\approx
+1.4$~V. (exact value: 1.439965 V)
+
+{\bf Note} that these units are mutually consistent; changing any of the
+units is likely to produce inconsistencies and is therefore {\em
+strongly discouraged\/}! In particular: if \AA \ are used instead of
+nm, the unit of time changes to 0.1 ps. If kcal mol$^{-1}$ (= 4.184
+kJ mol$^{-1}$) is used instead of kJ mol$^{-1}$ for energy, the unit of time becomes
+0.488882 ps and the unit of temperature changes to 4.184 K. But in
+both cases all electrical energies go wrong, because they will still
+be computed in kJ mol$^{-1}$, expecting nm as the unit of length. Although
+careful rescaling of charges may still yield consistency, it is clear
+that such confusions must be rigidly avoided.
+  
+In terms of the MD units, the usual physical constants take on
+different values (see \tabref{consts}). All quantities are per mol rather than per
+molecule. There is no distinction between Boltzmann's constant $k$ and
+the gas constant $R$: their value is
+$0.008\,314\,51$~kJ~mol$^{-1}$~K$^{-1}$.
+\begin{table}
+\centerline{
+\begin{tabular}{|c|l|l|}
+\dline
+Symbol	& Name			& Value					\\
+\hline
+$N_{AV}$& Avogadro's number 	& $6.022\,136\,7(36)\times 10^{23}$  mol$^{-1}$	\\
+$R$   	& gas constant 	& $8.314\,510(70)\times 10^{-3}$~kJ~mol$^{-1}$~K$^{-1}$	\\
+$k_B$  	& Boltzmann's constant  & \emph{idem}	\\
+$h$	& Planck's constant	& $0.399\,031\,32(24)$~kJ~mol$^{-1}$~ps \\
+$\hbar$	& Dirac's constant	& $0.063\,507\,807(38)$~kJ~mol$^{-1}$~ps \\
+$c$	& velocity of light	& $299\,792.458$~nm~ps$^{-1}$ \\
+\dline
+\end{tabular}
+}
+\caption{Some Physical Constants}
+\label{tab:consts}
+\end{table}
+
+\section{Reduced units\index{reduced units}}
+When simulating Lennard-Jones (LJ) systems, it might be advantageous to
+use reduced units ({\ie}, setting
+$\epsilon_{ii}=\sigma_{ii}=m_i=k_B=1$ for one type of atoms). This is
+possible. When specifying the input in reduced units, the output will
+also be in reduced units. The one exception is the {\em
+temperature}, which is expressed in $0.008\,314\,51$ reduced
+units. This is a consequence of using Boltzmann's constant in the
+evaluation of temperature in the code. Thus not $T$, but $k_BT$, is the
+reduced temperature. A {\gromacs} temperature $T=1$ means a reduced
+temperature of $0.008\ldots$ units; if a reduced temperature of 1 is
+required, the {\gromacs} temperature should be 120.2717.
+
+In \tabref{reduced} quantities are given for LJ potentials:
+\beq
+V_{LJ} = 4\epsilon \left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^{6} \right]
+\eeq
+
+\begin{table}
+\centerline{
+\begin{tabular}{|l|c|l|}
+\dline
+Quantity	& Symbol	& Relation to SI			\\
+\hline
+Length		& r$^*$  	& r $\sigma^{-1}$			\\
+Mass		& m$^*$  	& m M$^{-1}$				\\
+Time		& t$^*$  	& t $\sigma^{-1}$ $\sqrt{\epsilon/M}$ \\
+Temperature  	& T$^*$  	& k$_B$T $\epsilon^{-1}$ 		\\
+Energy		& E$^*$  	& E $\epsilon^{-1}$           	\\
+Force		& F$^*$  	& F $\sigma~\epsilon^{-1}$		\\
+Pressure	& P$^*$  	& P $\sigma ^3 \epsilon^{-1}$		\\
+Velocity	& v$^*$  	& v $\sqrt{M/\epsilon}$		\\
+Density		& $\rho^*$  	& N $\sigma ^3~V^{-1}$		\\
+\dline
+\end{tabular}
+}
+\caption{Reduced Lennard-Jones quantities}
+\label{tab:reduced}
+\end{table}
+
+
+% LocalWords:  ij basicunits derivedunits kJ mol mV kcal consts LJ BT
+% LocalWords:  nm ps

@@ -35,7 +35,9 @@
 
 /* The source code in this file should be thread-safe.
    Please keep it that way. */
-#include "checkpoint.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/checkpoint.h"
 
 #include "config.h"
 
@@ -45,40 +47,37 @@
 #include <time.h>
 
 #include <fcntl.h>
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #ifdef GMX_NATIVE_WINDOWS
 /* _chsize_s */
 #include <io.h>
 #include <sys/locking.h>
 #endif
 
-#include "copyrite.h"
-#include "names.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "txtdump.h"
-#include "gromacs/math/vec.h"
-#include "network.h"
-
+#include "buildinfo.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xdr_datatype.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "buildinfo.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -175,7 +174,11 @@ gmx_wintruncate(const char *filename, __int64 size)
         return -1;
     }
 
+#ifdef _MSC_VER
     return _chsize_s( fileno(fp), size);
+#else
+    return _chsize( fileno(fp), size);
+#endif
 #endif
 }
 #endif

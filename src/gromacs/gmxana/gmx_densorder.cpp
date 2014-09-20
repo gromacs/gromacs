@@ -32,35 +32,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "gstat.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/math/units.h"
-#include "dens_filter.h"
-#include "binsearch.h"
-#include "powerspect.h"
-#include "gmx_ana.h"
-#include "copyrite.h"
-
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/binsearch.h"
+#include "gromacs/gmxana/dens_filter.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/powerspect.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_DOUBLE
@@ -726,7 +725,7 @@ int gmx_densorder(int argc, char *argv[])
 
 
     t_filenm fnm[] = {
-        { efTPX, "-s",  NULL, ffREAD },               /* this is for the topology */
+        { efTPR, "-s",  NULL, ffREAD },               /* this is for the topology */
         { efTRX, "-f", NULL, ffREAD },                /* and this for the trajectory */
         { efNDX, "-n", NULL, ffREAD},                 /* this is to select groups */
         { efDAT, "-o", "Density4D", ffOPTWR},         /* This is for outputting the entire 4D densityfield in binary format */
@@ -751,7 +750,7 @@ int gmx_densorder(int argc, char *argv[])
     bRawOut  = opt2bSet("-or", NFILE, fnm);
     bGraph   = opt2bSet("-og", NFILE, fnm);
     bOut     = opt2bSet("-o", NFILE, fnm);
-    top      = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top      = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
     snew(grpname, 1);
     snew(index, 1);
     snew(ngx, 1);

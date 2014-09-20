@@ -34,12 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "oenv.h"
+#include "gmxpre.h"
 
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/legacyheaders/oenv.h"
 
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 struct output_env
 {
@@ -195,11 +196,15 @@ xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
 
 const char *output_env_get_program_display_name(const output_env_t oenv)
 {
+    const char *displayName = NULL;
+
     try
     {
-        return oenv->programContext.displayName();
+        displayName = oenv->programContext.displayName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return displayName;
 }
 
 const gmx::ProgramContextInterface &

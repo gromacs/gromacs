@@ -34,13 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/math/utilities.h"
+#include "gmxpre.h"
+
+#include "utilities.h"
 
 #include "config.h"
 
 #include <assert.h>
-#include <math.h>
 #include <limits.h>
+#include <math.h>
+
 #ifdef HAVE__FINITE
 #include <float.h>
 #endif

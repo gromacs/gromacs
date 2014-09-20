@@ -59,19 +59,23 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "poscalc.h"
+
 #include <string.h>
 
 #include <algorithm>
 
 #include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/selection/centerofmass.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "centerofmass.h"
 
 namespace gmx
 {

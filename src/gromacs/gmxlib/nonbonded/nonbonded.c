@@ -34,6 +34,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/nonbonded.h"
+
 #include "config.h"
 
 #include <stdio.h>
@@ -41,62 +45,58 @@
 
 #include "thread_mpi/threads.h"
 
-#include "typedefs.h"
-#include "txtdump.h"
-#include "ns.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
+#include "gromacs/gmxlib/nonbonded/nb_generic.h"
+#include "gromacs/gmxlib/nonbonded/nb_generic_adress.h"
+#include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
-#include "macros.h"
-#include "force.h"
-#include "names.h"
-#include "force.h"
-#include "bondf.h"
-#include "nrnb.h"
-#include "nonbonded.h"
-#include "gromacs/simd/simd.h"
-
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "nb_kernel.h"
-#include "nb_free_energy.h"
-#include "nb_generic.h"
-#include "nb_generic_cg.h"
-#include "nb_generic_adress.h"
-
 /* Different default (c) and SIMD instructions interaction-specific kernels */
-#include "nb_kernel_c/nb_kernel_c.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
 
 #if (defined GMX_SIMD_X86_SSE2) && !(defined GMX_DOUBLE)
-#    include "nb_kernel_sse2_single/nb_kernel_sse2_single.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
 #endif
 #if (defined GMX_SIMD_X86_SSE4_1) && !(defined GMX_DOUBLE)
-#    include "nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
 #endif
 #if (defined GMX_SIMD_X86_AVX_128_FMA) && !(defined GMX_DOUBLE)
-#    include "nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
 #endif
 #if (defined GMX_SIMD_X86_AVX_256_OR_HIGHER) && !(defined GMX_DOUBLE)
-#    include "nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
 #endif
 #if (defined GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE)
-#    include "nb_kernel_sse2_double/nb_kernel_sse2_double.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_double/nb_kernel_sse2_double.h"
 #endif
 #if (defined GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE)
-#    include "nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
 #endif
 #if (defined GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE)
-#    include "nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
 #endif
 #if (defined GMX_SIMD_X86_AVX_256_OR_HIGHER && defined GMX_DOUBLE)
-#    include "nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
 #if (defined GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE)
-#    include "nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
 #endif
 
 
@@ -326,7 +326,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 }
 
 void do_nonbonded(t_forcerec *fr,
-                  rvec x[], rvec f_shortrange[], rvec f_longrange[], 
+                  rvec x[], rvec f_shortrange[], rvec f_longrange[],
                   rvec A[], real phi[],
                   t_mdatoms *mdatoms, t_blocka *excl,
                   gmx_grppairener_t *grppener,

@@ -37,9 +37,9 @@
 #ifndef _sfactor_h
 #define _sfactor_h
 
-#include "types/simple.h"
-#include "../math/gmxcomplex.h"
-#include "oenv.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/gmxcomplex.h"
 
 #ifdef __cplusplus
 extern "C" {

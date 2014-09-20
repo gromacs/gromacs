@@ -35,6 +35,8 @@
 #ifndef _nbnxn_kernel_simd_utils_h_
 #define _nbnxn_kernel_simd_utils_h_
 
+#include "config.h"
+
 #include "gromacs/legacyheaders/types/simple.h"
 
 /*! \brief Provides hardware-specific utility routines for the SIMD kernels.
@@ -63,7 +65,7 @@ prepare_table_load_buffer(const int gmx_unused *array)
     return NULL;
 }
 
-#include "nbnxn_kernel_simd_utils_ref.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_ref.h"
 
 #else /* GMX_SIMD_REFERENCE */
 
@@ -94,17 +96,17 @@ prepare_table_load_buffer(int gmx_unused *array)
 
 #ifdef GMX_DOUBLE
 #if GMX_SIMD_REAL_WIDTH == 2
-#include "nbnxn_kernel_simd_utils_x86_128d.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_128d.h"
 #else
-#include "nbnxn_kernel_simd_utils_x86_256d.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_256d.h"
 #endif
 #else /* GMX_DOUBLE */
 /* In single precision aligned FDV0 table loads are optimal */
 #define TAB_FDV0
 #if GMX_SIMD_REAL_WIDTH == 4
-#include "nbnxn_kernel_simd_utils_x86_128s.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_128s.h"
 #else
-#include "nbnxn_kernel_simd_utils_x86_256s.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_256s.h"
 #endif
 #endif /* GMX_DOUBLE */
 
@@ -123,11 +125,11 @@ static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
 #endif
 
 #ifdef GMX_SIMD_IBM_QPX
-#include "nbnxn_kernel_simd_utils_ibm_qpx.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_ibm_qpx.h"
 #endif /* GMX_SIMD_IBM_QPX */
 
 #ifdef __MIC__
-#include "nbnxn_kernel_simd_utils_x86_mic.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_mic.h"
 #endif
 
 #endif /* GMX_TARGET_X86 && !__MIC__ */

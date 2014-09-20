@@ -34,21 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "xdlghi.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #include <algorithm>
 
-#include "macros.h"
-#include "xutil.h"
-#include "xdlghi.h"
-#include "fgrid.h"
-
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "fgrid.h"
+#include "xutil.h"
 
 t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
                                    t_id GroupID, int nrb, t_id rb[],

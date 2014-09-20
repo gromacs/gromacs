@@ -34,18 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include <string.h>
+#include "mdebin_bar.h"
+
 #include <float.h>
 #include <math.h>
-#include "typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "mdebin.h"
-#include "gromacs/utility/smalloc.h"
+#include <string.h>
+
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "mdebin_bar.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* reset the delta_h list to prepare it for new values */
 static void mde_delta_h_reset(t_mde_delta_h *dh)

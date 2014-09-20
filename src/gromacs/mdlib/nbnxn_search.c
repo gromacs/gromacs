@@ -33,32 +33,35 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
+#include "nbnxn_search.h"
+
 #include "config.h"
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
 
-#include "types/commrec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "nbnxn_consts.h"
-/* nbnxn_internal.h included gromacs/simd/macros.h */
-#include "nbnxn_internal.h"
-#ifdef GMX_NBNXN_SIMD
-#include "gromacs/simd/vector_operations.h"
-#endif
-#include "nbnxn_atomdata.h"
-#include "nbnxn_search.h"
-#include "gmx_omp_nthreads.h"
-#include "nrnb.h"
-#include "ns.h"
-
-#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
+
+/* nbnxn_internal.h included gromacs/simd/macros.h */
+#include "gromacs/mdlib/nbnxn_internal.h"
+#ifdef GMX_SIMD
+#include "gromacs/simd/vector_operations.h"
+#endif
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
@@ -2939,10 +2942,10 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 }
 
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "nbnxn_search_simd_4xn.h"
+#include "gromacs/mdlib/nbnxn_search_simd_4xn.h"
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "nbnxn_search_simd_2xnn.h"
+#include "gromacs/mdlib/nbnxn_search_simd_2xnn.h"
 #endif
 
 /* Plain C or SIMD4 code for making a pair list of super-cell sci vs scj.

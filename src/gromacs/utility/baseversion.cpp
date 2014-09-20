@@ -32,7 +32,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "baseversion.h"
+
 #include "baseversion-gen.h"
 
 const char *gmx_version()

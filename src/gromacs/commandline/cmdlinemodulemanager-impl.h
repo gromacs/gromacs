@@ -46,9 +46,8 @@
 #include <string>
 #include <vector>
 
-#include "cmdlinemodule.h"
-#include "cmdlinemodulemanager.h"
-
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/common.h"
@@ -154,6 +153,9 @@ class CommandLineCommonOptionsHolder
          */
         bool finishOptions();
 
+        //! Adjust defaults based on module settings.
+        void adjustFromSettings(const CommandLineModuleSettings &settings);
+
         //! Returns the internal Options object.
         Options *options() { return &options_; }
         //! Returns the settings for printing startup information.
@@ -180,6 +182,8 @@ class CommandLineCommonOptionsHolder
             return bQuiet_ && !bVersion_;
         }
 
+        //! Returns the nice level.
+        int niceLevel() const { return niceLevel_; }
         //! Returns the debug level.
         int debugLevel() const { return debugLevel_; }
 
@@ -195,6 +199,7 @@ class CommandLineCommonOptionsHolder
         bool                         bQuiet_;
         bool                         bVersion_;
         bool                         bCopyright_;
+        int                          niceLevel_;
         int                          debugLevel_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineCommonOptionsHolder);

@@ -34,40 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/main.h"
+
 #include "config.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <time.h>
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef GMX_NATIVE_WINDOWS
-#include <process.h>
-#endif
-
-#include "types/commrec.h"
-#include "network.h"
-#include "main.h"
-#include "macros.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "copyrite.h"
-
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
@@ -99,7 +92,7 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     strcat(buf, ".");
 
     /* Add extension again */
-    strcat(buf, (ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
+    strcat(buf, (ftp == efTPR) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
     if (debug)
     {
         fprintf(debug, "rank %d par_fn '%s'\n", cr->nodeid, buf);
@@ -218,62 +211,21 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
 }
 
 
-void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
+void gmx_log_open(const char *lognm, const t_commrec *cr,
                   gmx_bool bAppendFiles, FILE** fplog)
 {
-    int    len, pid;
-    char   buf[256], host[256];
+    int    pid;
+    char   host[256];
     time_t t;
     char   timebuf[STRLEN];
     FILE  *fp = *fplog;
-    char  *tmpnm;
 
     debug_gmx();
 
-    /* Communicate the filename for logfile */
-    if (cr->nnodes > 1 && !bMasterOnly
-#ifdef GMX_THREAD_MPI
-        /* With thread MPI the non-master log files are opened later
-         * when the files names are already known on all nodes.
-         */
-        && FALSE
-#endif
-        )
+    if (!bAppendFiles)
     {
-        if (MASTER(cr))
-        {
-            len = strlen(lognm) + 1;
-        }
-        gmx_bcast(sizeof(len), &len, cr);
-        if (!MASTER(cr))
-        {
-            snew(tmpnm, len+8);
-        }
-        else
-        {
-            tmpnm = gmx_strdup(lognm);
-        }
-        gmx_bcast(len*sizeof(*tmpnm), tmpnm, cr);
+        fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+" );
     }
-    else
-    {
-        tmpnm = gmx_strdup(lognm);
-    }
-
-    debug_gmx();
-
-    if (!bMasterOnly && !MASTER(cr))
-    {
-        /* Since log always ends with '.log' let's use this info */
-        par_fn(tmpnm, efLOG, cr, FALSE, !bMasterOnly, buf, 255);
-        fp = gmx_fio_fopen(buf, bAppendFiles ? "a+" : "w+" );
-    }
-    else if (!bAppendFiles)
-    {
-        fp = gmx_fio_fopen(tmpnm, bAppendFiles ? "a+" : "w+" );
-    }
-
-    sfree(tmpnm);
 
     gmx_fatal_set_log_file(fp);
 
@@ -282,15 +234,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
 
     time(&t);
 
-#ifndef NO_GETPID
-#   ifdef GMX_NATIVE_WINDOWS
-    pid = _getpid();
-#   else
-    pid = getpid();
-#   endif
-#else
-    pid = 0;
-#endif
+    pid = gmx_getpid();
 
     if (bAppendFiles)
     {
@@ -435,7 +379,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
              * at the actual file name
              */
             if (is_output(&fnm[i]) ||
-                fnm[i].ftp == efTPX || fnm[i].ftp == efCPT ||
+                fnm[i].ftp == efTPR || fnm[i].ftp == efCPT ||
                 strcmp(fnm[i].opt, "-rerun") == 0)
             {
                 ftp = fn2ftp(fnm[i].fns[0]);

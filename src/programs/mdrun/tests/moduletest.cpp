@@ -39,6 +39,8 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
+#include "gmxpre.h"
+
 #include "moduletest.h"
 
 #include "config.h"
@@ -49,12 +51,11 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/file.h"
-
 #include "programs/mdrun/mdrun_main.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/integrationtests.h"
 #include "testutils/testoptions.h"
-#include "testutils/cmdlinetest.h"
 
 namespace gmx
 {
@@ -68,11 +69,14 @@ namespace test
 namespace
 {
 
+#if defined(GMX_THREAD_MPI) || defined(DOXYGEN)
 //! Number of tMPI threads for child mdrun call.
-int gmx_unused g_numThreads = 1;
+int g_numThreads = 1;
+#endif
+#if defined(GMX_OPENMP) || defined(DOXYGEN)
 //! Number of OpenMP threads for child mdrun call.
-int gmx_unused g_numOpenMPThreads = 1;
-
+int g_numOpenMPThreads = 1;
+#endif
 //! \cond
 GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {

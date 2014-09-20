@@ -46,8 +46,8 @@
 #include <string>
 #include <vector>
 
-#include "abstractoption.h"
-#include "optionfiletype.h"
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/optionfiletype.h"
 
 namespace gmx
 {
@@ -74,7 +74,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), optionType_(eftUnknown), legacyType_(-1),
-              defaultBasename_(NULL), bLegacyOptionalBehavior_(false),
+              defaultBasename_(NULL), defaultType_(-1),
+              bLegacyOptionalBehavior_(false),
               bRead_(false), bWrite_(false), bLibrary_(false)
         {
         }
@@ -138,7 +139,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          *
          * Use this method instead of defaultValue() or defaultValueIfSet() to
          * set a default value for a file name option.  No extension needs to
-         * be provided; it is automatically added based on filetype().
+         * be provided; it is automatically added based on filetype() or
+         * defaultType().
          * The behavior is also adjusted based on required(): if the option is
          * required, the value given to defaultBasename() is treated as for
          * both defaultValue() and defaultValueIfSet(), otherwise it is treated
@@ -147,10 +149,11 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * For input files that accept multiple extensions, the extension is
          * completed to the default extension on creation of the option or at
          * time of parsing an option without a value.
-         * The extension may change during Options::finish(), as this is the
-         * time when the default names are checked against the file system to
-         * provide an extension that matches an existing file if that is
-         * possible.
+         *
+         * If FileNameOptionManager is used, the extension may change during
+         * Options::finish(), as this is the time when the default names are
+         * checked against the file system to provide an extension that matches
+         * an existing file if that is possible.
          *
          * If FileNameOptionManager is used, and
          * FileNameOptionManager::addDefaultFileNameOption() is used, and the
@@ -159,6 +162,20 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          */
         MyClass &defaultBasename(const char *basename)
         { defaultBasename_ = basename; return me(); }
+        /*! \brief
+         * Sets a default type/extension for the file option.
+         *
+         * For options that accept multiple types of files (e.g.,
+         * eftTrajectory), this method sets the default extension used
+         * for completing defaultBasename(), as well as the default extension
+         * used by FileNameOptionManager to complete various file names.
+         *
+         * The value should be one of the enumerated `ef*` values from
+         * filenm.h, and be a valid type for the type specified with
+         * filetype().
+         */
+        MyClass &defaultType(int filetype)
+        { defaultType_ = filetype; return me(); }
 
     private:
         // Use defaultBasename() instead.
@@ -172,6 +189,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         OptionFileType          optionType_;
         int                     legacyType_;
         const char             *defaultBasename_;
+        int                     defaultType_;
         bool                    bLegacyOptionalBehavior_;
         bool                    bRead_;
         bool                    bWrite_;

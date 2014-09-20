@@ -34,40 +34,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gromacs/pbcutil/mshift.h"
-#include "viewit.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "nrnb.h"
-#include "disre.h"
-#include "force.h"
-#include "gstat.h"
-#include "main.h"
+#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/topology/index.h"
-#include "mdatoms.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "mdrun.h"
-#include "names.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -717,7 +716,7 @@ int gmx_disre(int argc, char *argv[])
     gmx_rmpbc_t     gpbc = NULL;
 
     t_filenm        fnm[] = {
-        { efTPX, NULL, NULL, ffREAD },
+        { efTPR, NULL, NULL, ffREAD },
         { efTRX, "-f", NULL, ffREAD },
         { efXVG, "-ds", "drsum",  ffWRITE },
         { efXVG, "-da", "draver", ffWRITE },
@@ -732,7 +731,7 @@ int gmx_disre(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -745,9 +744,9 @@ int gmx_disre(int argc, char *argv[])
         init5(ntop);
     }
 
-    read_tpxheader(ftp2fn(efTPX, NFILE, fnm), &header, FALSE, NULL, NULL);
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE, NULL, NULL);
     snew(xtop, header.natoms);
-    read_tpx(ftp2fn(efTPX, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, NULL, &mtop);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, NULL, &mtop);
     bPDB = opt2bSet("-q", NFILE, fnm);
     if (bPDB)
     {

@@ -40,6 +40,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include <cctype>
 #include <cstring>
 
@@ -48,19 +50,18 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/macros.h"
-
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/messagestringcollector.h"
-#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "keywords.h"
 #include "parsetree.h"
 #include "scanner.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 /*! \brief
  * Allocates data for integer keyword evaluation.

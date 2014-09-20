@@ -34,28 +34,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "princ.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/topology/index.h"
-#include "gmx_ana.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/princ.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19
@@ -459,7 +458,7 @@ int gmx_potential(int argc, char *argv[])
     t_filenm    fnm[] = {                      /* files for g_order       */
         { efTRX, "-f", NULL,  ffREAD },        /* trajectory file             */
         { efNDX, NULL, NULL,  ffREAD },        /* index file          */
-        { efTPX, NULL, NULL,  ffREAD },        /* topology file               */
+        { efTPR, NULL, NULL,  ffREAD },        /* topology file               */
         { efXVG, "-o", "potential", ffWRITE }, /* xvgr output file    */
         { efXVG, "-oc", "charge", ffWRITE },   /* xvgr output file    */
         { efXVG, "-of", "field", ffWRITE },    /* xvgr output file    */
@@ -467,7 +466,7 @@ int gmx_potential(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
                            &oenv))
     {
@@ -477,7 +476,7 @@ int gmx_potential(int argc, char *argv[])
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
     snew(grpname, ngrps);
     snew(index, ngrps);

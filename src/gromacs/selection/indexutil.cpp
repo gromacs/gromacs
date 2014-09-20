@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gromacs/selection/indexutil.h"
+#include "gmxpre.h"
+
+#include "indexutil.h"
 
 #include <cstdlib>
 #include <cstring>

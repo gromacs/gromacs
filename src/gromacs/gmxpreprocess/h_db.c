@@ -35,19 +35,20 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "h_db.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
-#include "h_db.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "fflibutil.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "macros.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Number of control atoms for each 'add' type.
  *

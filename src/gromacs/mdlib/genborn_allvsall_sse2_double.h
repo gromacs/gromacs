@@ -37,10 +37,8 @@
 #ifndef _GENBORN_ALLVSALL_SSE2_DOUBLE_H
 #define _GENBORN_ALLVSALL_SSE2_DOUBLE_H
 
-#include "config.h"
-
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 int
 genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,

@@ -82,9 +82,9 @@
 # filters, specified in .gitattributes files.  Only files that have the filter
 # set as "uncrustify" (or something ending in "uncrustify") are processed: if
 # other files have been changed, they are ignored by the script.  Files passed
-# to uncrustify, as well as files with filter "copyright", get their copyright
-# header checked.  To only run uncrustify for a file, set the filter to
-# "uncrustify_only".
+# to uncrustify, as well as files with filter "copyright" or "includesort", get
+# their copyright header checked.  To only run uncrustify for a file, set the
+# filter to "uncrustify_only".
 #
 # If you want to run uncrustify automatically for changes you make, there are
 # two options:
@@ -202,7 +202,7 @@ cut -f2 <$tmpdir/difflist | \
 cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
 grep -E '(uncrustify|uncrustify_only)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_uncrustify
-grep -E '(uncrustify|copyright)$' <$tmpdir/filtered | \
+grep -E '(uncrustify|copyright|includesort)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_copyright
 git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 
@@ -286,10 +286,10 @@ if [[ $action == diff-* ]] ; then
 fi
 
 # Find the changed files
+git diff --no-index --name-only --exit-code org/ new/ | \
+    sed -e 's#new/##' > $tmpdir/changed
 changes=
-set -o pipefail
-if ! git diff --no-index --name-only --exit-code org/ new/ | \
-         sed -e 's#new/##' > $tmpdir/changed
+if [[ -s $tmpdir/changed ]]
 then
     changes=1
 fi

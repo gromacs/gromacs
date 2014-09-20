@@ -34,30 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/mdebin.h"
 
 #include <float.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "mdebin.h"
-#include "gromacs/math/units.h"
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/math/vec.h"
-#include "disre.h"
-#include "network.h"
-#include "names.h"
-#include "orires.h"
-#include "constr.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "macros.h"
-#include "mdrun.h"
-#include "mdebin_bar.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdebin_bar.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/smalloc.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };

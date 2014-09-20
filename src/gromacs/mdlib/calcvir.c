@@ -35,11 +35,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "force.h"
-#include "macros.h"
-
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"

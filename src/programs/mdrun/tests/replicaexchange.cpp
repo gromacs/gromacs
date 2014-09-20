@@ -40,7 +40,9 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#include "moduletest.h"
+#include "gmxpre.h"
+
+#include "config.h"
 
 #include <math.h>
 
@@ -52,10 +54,11 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "programs/mdrun/mdrun_main.h"
 
 #include "testutils/cmdlinetest.h"
+
+#include "moduletest.h"
 
 namespace
 {

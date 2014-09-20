@@ -46,10 +46,8 @@
 
 /* Information about integer data type sizes */
 #include <limits.h>
-#define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #ifndef _MSC_VER
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #endif
 
@@ -193,6 +191,9 @@ typedef uint64_t gmx_uint64_t;
 #elif (defined(__INTEL_COMPILER) || defined(__ECC)) && !defined(_MSC_VER)
 /* ICC on *nix */
 #  define gmx_unused __attribute__ ((unused))
+#elif defined(__PGI)
+/* Portland group compilers */
+#  define gmx_unused __attribute__ ((unused))
 #elif defined _MSC_VER
 /* MSVC */
 #  define gmx_unused /*@unused@*/
@@ -203,5 +204,26 @@ typedef uint64_t gmx_uint64_t;
 #  define gmx_unused
 #endif
 #endif
+
+#ifndef __has_feature
+/** For compatibility with non-clang compilers. */
+#define __has_feature(x) 0
+#endif
+
+/*! \def gmx_noreturn
+ * \brief
+ * Indicate that a function is not expected to return.
+ *
+ */
+#ifndef gmx_noreturn
+#if defined(__GNUC__) || __has_feature(attribute_analyzer_noreturn)
+#define gmx_noreturn __attribute__((noreturn))
+#elif defined (_MSC_VER)
+#define gmx_noreturn __declspec(noreturn)
+#else
+#define gmx_noreturn
+#endif
+#endif
+
 
 #endif

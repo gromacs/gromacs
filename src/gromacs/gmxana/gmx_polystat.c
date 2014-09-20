@@ -34,26 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/topology/index.h"
-#include "macros.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void gyro_eigen(double **gyr, double *eig, double **eigv, int *ord)
 {
@@ -139,7 +138,7 @@ int gmx_polystat(int argc, char *argv[])
     };
 
     t_filenm        fnm[] = {
-        { efTPX, NULL, NULL,  ffREAD  },
+        { efTPR, NULL, NULL,  ffREAD  },
         { efTRX, "-f", NULL,  ffREAD  },
         { efNDX, NULL, NULL,  ffOPTRD },
         { efXVG, "-o", "polystat",  ffWRITE },
@@ -177,14 +176,14 @@ int gmx_polystat(int argc, char *argv[])
     gmx_rmpbc_t  gpbc = NULL;
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPX, NFILE, fnm),
+    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                         NULL, box, &natoms, NULL, NULL, NULL, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");

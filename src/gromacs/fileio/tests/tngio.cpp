@@ -39,10 +39,14 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_fileio
  */
-#include <gtest/gtest.h>
-#include <string>
+#include "gmxpre.h"
 
 #include "gromacs/fileio/tngio.h"
+
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/utility/path.h"
 

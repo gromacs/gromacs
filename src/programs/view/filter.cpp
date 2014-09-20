@@ -34,19 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <string.h>
 
 #include <algorithm>
 
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/topology/index.h"
-#include "xdlghi.h"
+
 #include "dialogs.h"
-#include "gromacs/utility/fatalerror.h"
+#include "xdlghi.h"
 
 t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
 {

@@ -247,17 +247,9 @@
     /* Atom indices (of the first atom in the cluster) */
     aj            = cj*UNROLLJ;
 #if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM)
-#if UNROLLJ == STRIDE
     aj2           = aj*2;
-#else
-    aj2           = (cj>>1)*2*STRIDE + (cj & 1)*UNROLLJ;
 #endif
-#endif
-#if UNROLLJ == STRIDE
     ajx           = aj*DIM;
-#else
-    ajx           = (cj>>1)*DIM*STRIDE + (cj & 1)*UNROLLJ;
-#endif
     ajy           = ajx + STRIDE;
     ajz           = ajy + STRIDE;
 
@@ -780,7 +772,7 @@
 #endif
 #endif
 
-        /* Mask for the cut-off to avoid overflow in gmx_simd_exp_r */
+        /* Mask for the cut-off to avoid overflow of cr2^2 */
         cr2_S0        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S0, wco_vdw_S0));
 #ifndef HALF_LJ
         cr2_S2        = gmx_simd_mul_r(lje_c2_S, gmx_simd_blendzero_r(rsq_S2, wco_vdw_S2));

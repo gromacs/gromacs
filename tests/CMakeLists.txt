@@ -60,6 +60,12 @@ status_code: ${status_code}
 status_string: ${status_string}
 log: ${log}")
     endif()
+    if (SOURCE_IS_SOURCE_DISTRIBUTION)
+        file(MD5 ${REGRESSIONTEST_FILE} COMPUTED_MD5SUM)
+        if(NOT ${REGRESSIONTEST_MD5SUM} STREQUAL ${COMPUTED_MD5SUM})
+            message(FATAL_ERROR "Download of regressiontests failed. Expected MD5 of ${REGRESSIONTEST_MD5SUM} but download has ${COMPUTED_MD5SUM}")
+        endif()
+    endif()
 
     file(REMOVE_RECURSE "${REGRESSIONTEST_PATH}") #delete potential prior folder
     execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${REGRESSIONTEST_FILE}"

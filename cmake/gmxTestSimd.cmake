@@ -249,6 +249,56 @@ elseif(${GMX_SIMD} STREQUAL "AVX2_256")
     set(GMX_SIMD_X86_AVX2_256 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
 
+elseif(${GMX_SIMD} STREQUAL "ARM_NEON")
+
+    gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler 32-bit ARM NEON flag"
+                              "#include<arm_neon.h>
+                              int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
+                              SIMD_C_FLAGS
+                              "-mfpu=neon" "")
+    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON "C++ compiler 32-bit ARM NEON flag"
+                                "#include<arm_neon.h>
+                                int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
+                                SIMD_CXX_FLAGS
+                                "-mfpu=neon" "-D__STDC_CONSTANT_MACROS" "")
+
+    if(NOT CFLAGS_ARM_NEON OR NOT CXXFLAGS_ARM_NEON)
+        message(FATAL_ERROR "Cannot find ARM 32-bit NEON compiler flag. Use a newer compiler, or disable NEON SIMD.")
+    endif()
+
+    set(GMX_SIMD_ARM_NEON 1)
+    set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions")
+
+elseif(${GMX_SIMD} STREQUAL "ARM_NEON_ASIMD")
+    # Gcc-4.8.1 appears to have a bug where the c++ compiler requires
+    # -D__STDC_CONSTANT_MACROS if we include arm_neon.h
+
+    gmx_find_cflag_for_source(CFLAGS_ARM_NEON_ASIMD "C compiler ARM NEON Advanced SIMD flag"
+                              "#include<arm_neon.h>
+                              int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                              SIMD_C_FLAGS
+                              "")
+    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON_ASIMD "C++ compiler ARM NEON Advanced SIMD flag"
+                                "#include<arm_neon.h>
+                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                                SIMD_CXX_FLAGS
+                                "-D__STDC_CONSTANT_MACROS" "")
+
+    if(NOT CFLAGS_ARM_NEON_ASIMD OR NOT CXXFLAGS_ARM_NEON_ASIMD)
+        message(FATAL_ERROR "Cannot find ARM (AArch64) NEON Advanced SIMD compiler flag. Use a newer compiler, or disable SIMD.")
+    endif()
+
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "4.9")
+        message(WARNING "At least gcc-4.8.1 has many bugs for ARM (AArch64) NEON Advanced SIMD compilation. You might need gcc version 4.9 or later.")
+    endif()
+
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.4")
+        message(FATAL_ERROR "Clang version 3.4 or later is required for ARM (AArch64) NEON Advanced SIMD.")
+    endif()
+
+    set(GMX_SIMD_ARM_NEON_ASIMD 1)
+    set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) NEON Advanced SIMD instructions")
+
 elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
 
     try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
@@ -263,7 +313,29 @@ elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
         message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics. If you are compiling for BlueGene/Q with the XL compilers, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-C' to set up the tool chain.")
     endif()
 
+elseif(${GMX_SIMD} STREQUAL "IBM_VMX")
+
+    gmx_find_cflag_for_source(CFLAGS_IBM_VMX "C compiler IBM VMX SIMD flag"
+                              "#include<altivec.h>
+                              int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                              SIMD_C_FLAGS
+                              "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VMX "C++ compiler IBM VMX SIMD flag"
+                                "#include<altivec.h>
+                                int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                                SIMD_CXX_FLAGS
+                                "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+
+    if(NOT CFLAGS_IBM_VMX OR NOT CXXFLAGS_IBM_VMX)
+        message(FATAL_ERROR "Cannot find IBM VMX SIMD compiler flag. Use a newer compiler, or disable VMX SIMD.")
+    endif()
+
+    set(GMX_SIMD_IBM_VMX 1)
+    set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions")
+
 elseif(${GMX_SIMD} STREQUAL "SPARC64_HPC_ACE")
+
+    # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
 
     set(GMX_SIMD_SPARC64_HPC_ACE 1)
     set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions")
@@ -291,6 +363,25 @@ endif()
 gmx_check_if_changed(SIMD_CHANGED GMX_SIMD)
 if (SIMD_CHANGED AND DEFINED SIMD_STATUS_MESSAGE)
     message(STATUS "${SIMD_STATUS_MESSAGE}")
+endif()
+
+# By default, 32-bit windows cannot pass SIMD (SSE/AVX) arguments in registers,
+# and even on 64-bit (all platforms) it is only used for a handful of arguments.
+# The __vectorcall (MSVC, from MSVC2013) or __regcall (ICC) calling conventions
+# enable this, which is critical to enable 32-bit SIMD and improves performance
+# for 64-bit SIMD.
+# Check if the compiler supports one of these, and in that case set gmx_simdcall
+# to that string. If we do not have any such calling convention modifier, set it
+# to an empty string.
+if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
+    foreach(callconv __vectorcall __regcall "")
+        set(callconv_compile_var "_callconv_${callconv}")
+        check_c_source_compiles("int ${callconv} f(int i) {return i;} int main(void) {return f(0);}" ${callconv_compile_var})
+        if(${callconv_compile_var})
+            set(GMX_SIMD_CALLING_CONVENTION "${callconv}" CACHE INTERNAL "Calling convention for SIMD routines" FORCE)
+            break()
+        endif()
+    endforeach()
 endif()
 
 endmacro()

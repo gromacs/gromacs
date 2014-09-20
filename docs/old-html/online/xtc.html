@@ -1,0 +1,97 @@
+<title>xtc file format</title>
+<H3>Description</H3>
+The xtc format is a <b>portable</b> format for trajectories.
+It uses the <i>xdr</i> routines for writing and reading
+data which was created for the Unix NFS system. The trajectories
+are written using a reduced precision algorithm which works
+in the following way: the coordinates (in nm) are multiplied by a scale
+factor, typically 1000, so that you have coordinates in pm.
+These are rounded to integer values. Then several other tricks are
+performed, for instance making use of the fact that atoms close
+in sequence are usually close in space too (e.g. a water molecule).
+To this end, the <i>xdr</i> library is extended with a special routine
+to write 3-D float coordinates. <!-- link is broken--><!-- This routine was written by Frans van Hoesel
+as part of an Europort project, and can be obtained through <a href="http://hpcv100.rc.rug.nl/xdrf.html">this link</a>.-->
+<p>
+All the data is stored using calls to <i>xdr</i> routines.
+
+<dl>
+<dt><b>int</b> magic
+	<dd>A magic number, for the current file version its value is 1995.
+<dt><b>int</b> natoms
+	<dd>The number of atoms in the trajectory.
+<dt><b>int</b> step
+	<dd>The simulation step.
+<dt><b>float</b> time
+	<dd>The simulation time.
+<dt><b>float</b> box[3][3]
+	<dd>The computational box which is stored as a set of three basis
+	vectors, to allow for triclinic PBC. For a rectangular box the
+	box edges are stored on the diagonal of the matrix.
+<dt><b>3dfcoord</b> x[natoms]
+	<dd>The coordinates themselves stored in reduced precision.
+	Please note that when the number of atoms is smaller than 9
+	no reduced precision is used.
+</dl>
+
+<h3>Using xtc in your "C" programs</h3>
+To read and write these files the following "C" routines are available:
+<pre>
+/* All functions return 1 if successful, 0 otherwise */  
+
+extern int open_xtc(XDR *xd,char *filename,char *mode);
+/* Open a file for xdr I/O */
+  
+extern void close_xtc(XDR *xd);
+/* Close the file for xdr I/O */
+  
+extern int read_first_xtc(XDR *xd,char *filename,
+			  int *natoms,int *step,real *time,
+			  matrix box,rvec **x,real *prec);
+/* Open xtc file, read xtc file first time, allocate memory for x */
+
+extern int read_next_xtc(XDR *xd,
+			 int *natoms,int *step,real *time,
+			 matrix box,rvec *x,real *prec);
+/* Read subsequent frames */
+
+extern int write_xtc(XDR *xd,
+		     int natoms,int step,real time,
+		     matrix box,rvec *x,real prec);
+/* Write a frame to xtc file */
+</pre>
+To use the library function include <tt>"gromacs/fileio/xtcio.h"</tt> 
+in your file and link with <tt>-lgmx.$(CPU)</tt>
+<p>
+
+<h3>Using xtc in your FORTRAN programs</h3>
+To read and write these in a FORTRAN program use the calls to
+<tt>readxtc</tt> and <tt>writextc</tt> as in the following sample program
+which reads and xtc file and copies it to a new one:
+<pre>
+      program testxtc
+      
+      parameter (maxatom=10000,maxx=3*maxatom)
+      integer xd,xd2,natoms,step,ret,i
+      real    time,box(9),x(maxx)
+      
+      call xdrfopen(xd,"test.xtc","r",ret)
+      print *,'opened test.xtc, ret=',ret
+      call xdrfopen(xd2,"testout.xtc","w",ret)
+      print *,'opened testout.xtc, ret=',ret
+      
+ 10   call readxtc(xd,natoms,step,time,box,x,prec,ret)
+ 
+      if ( ret .eq. 1 ) then
+         call writextc(xd2,natoms,step,time,box,x,prec,ret)
+      else
+         print *,'Error reading xtc'
+      endif
+         
+      stop
+      end
+</pre>
+To link your program use <tt>-L$(GMXHOME)/lib/$(CPU) -lxtcf</tt> 
+on your linker command line. 
+The source for this test can be found in file
+<tt>$(GMXHOME)/src/gmxlib/testxtcf.f</ff>.

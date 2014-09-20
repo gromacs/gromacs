@@ -35,10 +35,11 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "gromacs/topology/invblock.h"
+#include "gmxpre.h"
+
+#include "invblock.h"
 
 #include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

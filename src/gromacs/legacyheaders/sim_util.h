@@ -38,14 +38,14 @@
 #ifndef _sim_util_h
 #define _sim_util_h
 
-#include "typedefs.h"
-#include "mdebin.h"
-#include "update.h"
-#include "vcm.h"
-#include "../fileio/enxio.h"
-#include "../fileio/mdoutf.h"
-#include "../timing/wallcycle.h"
-#include "../timing/walltime_accounting.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/mdoutf.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,8 +114,8 @@ void finish_run(FILE *log, t_commrec *cr,
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
 
-void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
-                   gmx_int64_t step, int natoms,
+void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
+                   int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr);
 
@@ -136,7 +136,8 @@ void init_md(FILE *fplog,
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags);
+             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags,
+             gmx_wallcycle_t wcycle);
 /* Routine in sim_util.c */
 
 gmx_bool use_GPU(const struct nonbonded_verlet_t *nbv);

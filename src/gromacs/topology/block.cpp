@@ -34,8 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "block.h"
+
 #include <algorithm>
-#include "gromacs/topology/block.h"
 
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"

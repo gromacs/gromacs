@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -69,14 +69,14 @@
 namespace gmx
 {
 
-GromacsInABox::GromacsInABox(FILE             *fplog,
+GromacsInABox::GromacsInABox(FILE                    *fplog,
                              const struct t_commrec  *cr,
-                             const gmx_mtop_t *mtop,
-                             const t_inputrec *ir,
-                             matrix            box)
+                             const gmx_mtop_t        *mtop,
+                             const t_inputrec        *ir,
+                             matrix                   box)
 {
     t_filenm fnm[] = {
-        { efTPX, NULL,      NULL,       ffREAD },
+        { efTPR, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
         { efXTC, "-x",      NULL,       ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },
@@ -85,15 +85,15 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
         { efEDR, "-e",      "ener",     ffWRITE },
         { efLOG, "-g",      "md",       ffWRITE }
     };
-    int nfile = sizeof(fnm)/sizeof(fnm[0]);
-    int argc = 1;
-    char **argv;
-    
+    int      nfile = sizeof(fnm)/sizeof(fnm[0]);
+    int      argc  = 1;
+    char   **argv;
+
     snew(argv, argc);
     argv[0] = strdup("MM-Slave");
-    
+
     if (!parse_common_args(&argc, argv, 0, nfile, fnm, 0, NULL,
-                           0, (const char **)NULL, 
+                           0, (const char **)NULL,
                            0, (const char **)NULL, &oenv_))
     {
         GMX_THROW(InvalidInputError("Death Horror"));
@@ -104,7 +104,7 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
         sfree(argv);
         argc = 0;
     }
-    
+
     // Initiate everything
     bFirst_ = TRUE;
 
@@ -126,7 +126,7 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
     //! Global state
     init_state(&state_, mtop->natoms, 1, 0, 0, 0);
     copy_mat(box, state_.box);
-    
+
     //! Constraints
     //gmx_edsam_t ed = NULL;
     constr_ = NULL; //init_constraints(fplog, (gmx_mtop_t *)mtop, (t_inputrec *)ir, ed, &state_, (t_commrec *)cr);
@@ -154,21 +154,21 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
                   NULL, NULL, NULL, NULL, NULL,
                   FALSE, 0.0);
     fr_->qr->QMMMscheme = eQMMMschemeslave;
-    fr_->nthreads = 1;
+    fr_->nthreads       = 1;
     //! Energy data
     enerd_ = (gmx_enerdata_t *)calloc(1, sizeof(*enerd_));
 
     //! Check lambda stuff
-    int n_lambda = 0;
-    init_enerdata(std::min(1,ir->opts.ngener), n_lambda, enerd_);
+    int          n_lambda = 0;
+    init_enerdata(std::min(1, ir->opts.ngener), n_lambda, enerd_);
     gmx_mdoutf_t outf = NULL;
-    init_em(NULL, "MM-Slave",(t_commrec *)cr, (t_inputrec *)ir,
+    init_em(NULL, "MM-Slave", (t_commrec *)cr, (t_inputrec *)ir,
             &state_, (gmx_mtop_t *)mtop, ems_, &ltop_, &f_, &f_global_,
             &nrnb_, mu_tot_, fr_, &enerd_, &graph_, mdatoms_, &gstat_, vsite_, constr_,
             nfile, fnm, &outf, &mdebin_,
-            0, 0);
+            0, 0, NULL);
     fr_->print_force = -1;
-    
+
     //! Accounting
     count_ = 0;
 
@@ -346,13 +346,13 @@ bool MMSlave::calcEnergy(FILE       *fplog,
     {
         GMX_THROW(InternalError("Copying coordinates"));
     }
-    
+
     // Make sure the coordinates are in the state too!
     giab_->ems_->s.x = (rvec *)x_;
     giab_->ems_->f   = (rvec *)f;
     giab_->ems_->A   = (rvec *)A;
     giab_->ems_->phi = (real *)phi;
-    for(int i = 0; (i<nAtoms()); i++)
+    for (int i = 0; (i < nAtoms()); i++)
     {
         clear_rvec(A[i]);
         phi[i] = 0;

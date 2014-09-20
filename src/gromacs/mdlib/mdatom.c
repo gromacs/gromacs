@@ -34,16 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "mdatoms.h"
-#include "gromacs/utility/smalloc.h"
-#include "qmmm.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/qmmm.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/utility/smalloc.h"
 
 #define ALMOST_ZERO 1e-30
 

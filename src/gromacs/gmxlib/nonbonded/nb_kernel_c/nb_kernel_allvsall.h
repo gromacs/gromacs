@@ -37,9 +37,9 @@
 
 #include "config.h"
 
-#include "types/simple.h"
-#include "typedefs.h"
-#include "../nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 void
 nb_kernel_allvsall(t_nblist *                nlist,

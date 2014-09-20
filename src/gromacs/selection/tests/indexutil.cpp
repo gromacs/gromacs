@@ -42,9 +42,12 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include <gtest/gtest.h>
+#include "gmxpre.h"
 
 #include "gromacs/selection/indexutil.h"
+
+#include <gtest/gtest.h>
+
 #include "gromacs/topology/block.h"
 
 #include "testutils/refdata.h"

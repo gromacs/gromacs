@@ -35,17 +35,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/calcmu.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "typedefs.h"
-#include "network.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
-#include "calcmu.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/math/vec.h"
 
 void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
              int nChargePerturbed,

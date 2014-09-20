@@ -39,17 +39,18 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gromacs/legacyheaders/macros.h"
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
+#include "poscalc.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 /*! \internal \brief
  * Data structure for position keyword evaluation.

@@ -34,20 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/readinp.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "typedefs.h"
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "readinp.h"
-#include "macros.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "names.h"
-#include "warninp.h"
-#include "gromacs/utility/fatalerror.h"
 
 t_inpfile *read_inpfile(const char *fn, int *ninp,
                         warninp_t wi)

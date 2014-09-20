@@ -34,10 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "xdrf.h"
+#include "gmxpre.h"
 
-#include "config.h"
-
+#include "gromacs/fileio/xdrf.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

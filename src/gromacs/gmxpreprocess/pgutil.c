@@ -36,10 +36,13 @@
  */
 /* This file is completely threadsafe - keep it that way! */
 
-#include "config.h"
-#include "gromacs/utility/cstringutil.h"
+#include "gmxpre.h"
+
 #include "pgutil.h"
+
 #include <string.h>
+
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
 #define BUFSIZE 1024

@@ -33,22 +33,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "config.h"
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "copyrite.h"
-#include "gromacs/topology/index.h"
-#include "gstat.h"
-#include "gmx_ana.h"
-#include "nsfactor.h"
+#include "config.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/nsfactor.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
@@ -144,7 +145,7 @@ int gmx_sans(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     t_filenm   fnm[] = {
-        { efTPX,  "-s",       NULL,       ffREAD },
+        { efTPR,  "-s",       NULL,       ffREAD },
         { efTRX,  "-f",       NULL,       ffREAD },
         { efNDX,  NULL,       NULL,       ffOPTRD },
         { efDAT,  "-d",       "nsfactor", ffOPTRD },
@@ -156,7 +157,7 @@ int gmx_sans(int argc, char *argv[])
 
     nthreads = gmx_omp_get_max_threads();
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -215,7 +216,7 @@ int gmx_sans(int argc, char *argv[])
 
     /* Try to read files */
     fnDAT = ftp2fn(efDAT, NFILE, fnm);
-    fnTPX = ftp2fn(efTPX, NFILE, fnm);
+    fnTPX = ftp2fn(efTPR, NFILE, fnm);
     fnTRX = ftp2fn(efTRX, NFILE, fnm);
 
     gnsf = gmx_neutronstructurefactors_init(fnDAT);

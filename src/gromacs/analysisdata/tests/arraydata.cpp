@@ -44,9 +44,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include <gtest/gtest.h>
+#include "gmxpre.h"
 
 #include "gromacs/analysisdata/arraydata.h"
+
+#include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/testasserts.h"
@@ -69,7 +71,7 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
 #else

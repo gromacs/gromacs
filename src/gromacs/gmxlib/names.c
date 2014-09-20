@@ -34,10 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
 
 /* note: these arrays should correspond to enums in include/types/enums.h */
 

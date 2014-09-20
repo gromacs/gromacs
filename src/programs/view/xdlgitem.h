@@ -39,8 +39,8 @@
 #define _xdlgitem_h
 
 #include "Xstuff.h"
-#include "xutil.h"
 #include "x11.h"
+#include "xutil.h"
 
 typedef enum {
     edlgBN, edlgRB, edlgGB, edlgCB, edlgPM, edlgST, edlgET, edlgNR

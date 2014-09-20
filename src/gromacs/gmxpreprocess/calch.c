@@ -34,14 +34,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "macros.h"
 #include "calch.h"
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/math/units.h"
-
 #include "gromacs/utility/fatalerror.h"
 
 #define xAI xa[0]

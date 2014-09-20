@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
+
 #include "testfilemanager.h"
 
 #include <cstdio>
@@ -49,8 +51,8 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/options/options.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 

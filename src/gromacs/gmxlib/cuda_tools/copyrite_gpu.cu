@@ -33,9 +33,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "config.h"
+#include "gmxpre.h"
 
 #include <stdio.h>
+
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 

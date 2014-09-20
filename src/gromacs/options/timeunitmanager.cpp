@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
-#include "gromacs/options/timeunitmanager.h"
+#include "gmxpre.h"
+
+#include "timeunitmanager.h"
 
 #include <cstdlib>
 

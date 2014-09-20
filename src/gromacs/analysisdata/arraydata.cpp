@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include "gromacs/analysisdata/arraydata.h"
+#include "gmxpre.h"
+
+#include "arraydata.h"
 
 #include <algorithm>
 
@@ -74,8 +76,8 @@ AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
         = value_.begin() + index * columnCount();
     return AnalysisDataFrameRef(
             AnalysisDataFrameHeader(index, xvalue(index), 0.0),
-            AnalysisDataValuesRef(begin, begin + columnCount()),
-            AnalysisDataPointSetInfosRef(&pointSetInfo_, 1));
+            constArrayRefFromVector<AnalysisDataValue>(begin, begin + columnCount()),
+            constArrayRefFromArray(&pointSetInfo_, 1));
 }
 
 
@@ -184,8 +186,8 @@ AbstractAnalysisArrayData::valuesReady()
         modules.notifyPointsAdd(
                 AnalysisDataPointSetRef(
                         header, pointSetInfo_,
-                        AnalysisDataValuesRef(valueIter,
-                                              valueIter + columnCount())));
+                        constArrayRefFromVector<AnalysisDataValue>(valueIter,
+                                                                   valueIter + columnCount())));
         modules.notifyFrameFinish(header);
     }
     modules.notifyDataFinish();

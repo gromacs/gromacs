@@ -35,68 +35,70 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "config.h"
+#include "gmxpre.h"
 
-#include <algorithm>
+#include "config.h"
 
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <algorithm>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#include "typedefs.h"
-#include "oenv.h"
-#include "force.h"
-#include "mdrun.h"
-#include "md_logging.h"
-#include "md_support.h"
-#include "network.h"
-#include "names.h"
-#include "disre.h"
-#include "orires.h"
-#include "pme.h"
-#include "mdatoms.h"
-#include "repl_ex.h"
-#include "deform.h"
-#include "qmmm.h"
-#include "domdec.h"
-#include "coulomb.h"
-#include "constr.h"
-#include "mvdata.h"
-#include "checkpoint.h"
-#include "gromacs/topology/mtop_util.h"
-#include "sighandler.h"
-#include "txtdump.h"
-#include "gmx_detect_hardware.h"
-#include "gmx_omp_nthreads.h"
-#include "gromacs/gmxpreprocess/calc_verletbuf.h"
-#include "membed.h"
-#include "gmx_thread_affinity.h"
-#include "inputrec.h"
-#include "main.h"
-
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxpreprocess/calc_verletbuf.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_detect_hardware.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/gmx_thread_affinity.h"
+#include "gromacs/legacyheaders/inputrec.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/md_support.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/mvdata.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/pme.h"
+#include "gromacs/legacyheaders/qmmm.h"
+#include "gromacs/legacyheaders/sighandler.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "deform.h"
+#include "membed.h"
+#include "repl_ex.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
 
-#include "gpu_utils.h"
+#include "gromacs/legacyheaders/gpu_utils.h"
 
 typedef struct {
     gmx_integrator_t *func;
@@ -1101,7 +1103,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (SIMMASTER(cr))
     {
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPX, nfile, fnm), inputrec, state, NULL, mtop);
+        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, NULL, mtop);
 
         if (inputrec->cutoff_scheme != ecutsVERLET &&
             ((Flags & MD_TESTVERLET) || getenv("GMX_VERLET_SCHEME") != NULL))
@@ -1370,16 +1372,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
     }
 
-    if (((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
-#ifdef GMX_THREAD_MPI
-        /* With thread MPI only the master node/thread exists in mdrun.c,
-         * therefore non-master nodes need to open the "seppot" log file here.
-         */
-        || (!MASTER(cr) && (Flags & MD_SEPPOT))
-#endif
-        )
+    if (MASTER(cr) && (Flags & MD_APPENDFILES))
     {
-        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr, !(Flags & MD_SEPPOT),
+        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
                      Flags, &fplog);
     }
 
@@ -1552,7 +1547,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
            "nofile","nofile","nofile","nofile",FALSE,pforce);
          */
-        fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
 
         /* Initialize QM-MM */
         if (fr->bQMMM)

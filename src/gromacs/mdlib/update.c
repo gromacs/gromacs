@@ -34,34 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/update.h"
 
-#include <stdio.h>
 #include <math.h>
-
-#include "types/commrec.h"
-#include "typedefs.h"
-#include "nrnb.h"
-#include "gromacs/math/units.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "update.h"
-#include "gromacs/random/random.h"
-#include "tgroup.h"
-#include "force.h"
-#include "names.h"
-#include "txtdump.h"
-#include "mdrun.h"
-#include "constr.h"
-#include "disre.h"
-#include "orires.h"
-#include "gmx_omp_nthreads.h"
+#include <stdio.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
@@ -1315,7 +1314,7 @@ static void deform(gmx_update_t upd,
         x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
         x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
     }
-    if (*scale_tot)
+    if (scale_tot != NULL)
     {
         /* The transposes of the scaling matrices are stored,
          * so we need to do matrix multiplication in the inverse order.
@@ -1660,6 +1659,7 @@ void update_constraints(FILE             *fplog,
 
     if (inputrec->eI == eiSD1 && bDoConstr && !bFirstHalf)
     {
+        wallcycle_start(wcycle, ewcUPDATE);
         xprime = get_xprime(state, upd);
 
         nth = gmx_omp_nthreads_get(emntUpdate);
@@ -1686,6 +1686,7 @@ void update_constraints(FILE             *fplog,
                           DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
+        wallcycle_stop(wcycle, ewcUPDATE);
 
         if (bDoConstr)
         {
@@ -1705,6 +1706,7 @@ void update_constraints(FILE             *fplog,
 
     if ((inputrec->eI == eiSD2) && !(bFirstHalf))
     {
+        wallcycle_start(wcycle, ewcUPDATE);
         xprime = get_xprime(state, upd);
 
         nth = gmx_omp_nthreads_get(emntUpdate);
@@ -1729,6 +1731,7 @@ void update_constraints(FILE             *fplog,
                           DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
+        wallcycle_stop(wcycle, ewcUPDATE);
 
         if (bDoConstr)
         {

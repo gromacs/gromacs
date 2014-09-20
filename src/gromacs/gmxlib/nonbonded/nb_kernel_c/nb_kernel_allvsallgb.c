@@ -34,17 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "nb_kernel_allvsallgb.h"
+
 #include "config.h"
 
 #include <math.h>
 
-#include "types/simple.h"
-
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "nb_kernel_allvsallgb.h"
-#include "nrnb.h"
 
 typedef struct
 {

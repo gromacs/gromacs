@@ -34,14 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
 #include "eigio.h"
-#include "gromacs/fileio/trnio.h"
+
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
                        rvec **xref, gmx_bool *bDMR,

@@ -120,7 +120,7 @@ macro(manage_linear_algebra_library name function_in_library)
         endif()
 
         if (NOT _library_was_found AND NOT _find_quietly)
-            message("${_message_text}A ${name} library was not found by CMake in the paths available to it. Falling back on the GROMACS internal version of the ${name} library instead. This is fine for normal usage.")
+            message(STATUS "${_message_text}Using GROMACS built-in ${name}.")
         endif()
     endif()
 

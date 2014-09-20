@@ -34,19 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
-
-#include "gromacs/topology/index.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/math/units.h"
-#include "gmx_ana.h"
-#include "macros.h"
-#include "gromacs/fileio/trxio.h"
+#include "gmxpre.h"
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/3dtransforms.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

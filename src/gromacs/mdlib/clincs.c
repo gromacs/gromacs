@@ -35,25 +35,24 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 
-#include "types/commrec.h"
-#include "constr.h"
-#include "copyrite.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "mdrun.h"
-#include "nrnb.h"
-#include "domdec.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gmx_omp_nthreads.h"
-
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"

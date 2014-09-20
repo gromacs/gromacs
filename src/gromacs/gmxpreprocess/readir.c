@@ -34,32 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
+
+#include "readir.h"
 
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
 
-#include "typedefs.h"
+#include "gromacs/gmxpreprocess/calc_verletbuf.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/chargegroup.h"
+#include "gromacs/legacyheaders/inputrec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/math/units.h"
-#include "names.h"
-#include "macros.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/utility/cstringutil.h"
-#include "readinp.h"
-#include "warninp.h"
-#include "readir.h"
-#include "toputil.h"
-#include "network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/mtop_util.h"
-#include "chargegroup.h"
-#include "inputrec.h"
-#include "calc_verletbuf.h"
-
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -369,6 +369,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning_error(wi, warn_buf);
         }
 
+        if (ir->implicit_solvent != eisNO)
+        {
+            warning_error(wi, "Implicit solvent is not (yet) supported with the with Verlet lists.");
+        }
+
         if (ir->nstlist <= 0)
         {
             warning_error(wi, "With Verlet lists nstlist should be larger than 0");
@@ -574,6 +579,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK(ir->nstlist <= 0);
         sprintf(err_buf, "TPI does not work with full electrostatics other than PME");
         CHECK(EEL_FULL(ir->coulombtype) && !EEL_PME(ir->coulombtype));
+        sprintf(err_buf, "TPI does not work (yet) with the Verlet cut-off scheme");
+        CHECK(ir->cutoff_scheme == ecutsVERLET);
     }
 
     /* SHAKE / LINCS */
@@ -1002,7 +1009,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "tau-p must be > 0 instead of %g\n", ir->tau_p);
         CHECK(ir->tau_p <= 0);
 
-        if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc))
+        if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc) - 10*GMX_REAL_EPS)
         {
             sprintf(warn_buf, "For proper integration of the %s barostat, tau-p (%g) should be at least %d times larger than nstpcouple*dt (%g)",
                     EPCOUPLTYPE(ir->epc), ir->tau_p, pcouple_min_integration_steps(ir->epc), dt_pcoupl);
@@ -1328,11 +1335,9 @@ nd %s",
     /* IMPLICIT SOLVENT */
     if (ir->coulombtype == eelGB_NOTUSED)
     {
-        ir->coulombtype      = eelCUT;
-        ir->implicit_solvent = eisGBSA;
-        fprintf(stderr, "Note: Old option for generalized born electrostatics given:\n"
-                "Changing coulombtype from \"generalized-born\" to \"cut-off\" and instead\n"
-                "setting implicit-solvent value to \"GBSA\" in input section.\n");
+        sprintf(warn_buf, "Invalid option %s for coulombtype",
+                eel_names[ir->coulombtype]);
+        warning_error(wi, warn_buf);
     }
 
     if (ir->sa_algorithm == esaSTILL)
@@ -3277,7 +3282,7 @@ void do_index(const char* mdparin, const char *ndx,
         nstcmin = tcouple_min_integration_steps(ir->etc);
         if (nstcmin > 1)
         {
-            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
+            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin - 10*GMX_REAL_EPS)
             {
                 sprintf(warn_buf, "For proper integration of the %s thermostat, tau-t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
                         ETCOUPLTYPE(ir->etc),
@@ -3818,7 +3823,15 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                         case efbposresSPHERE:
                             AbsRef[XX] = AbsRef[YY] = AbsRef[ZZ] = 1;
                             break;
+                        case efbposresCYLINDERX:
+                            AbsRef[YY] = AbsRef[ZZ] = 1;
+                            break;
+                        case efbposresCYLINDERY:
+                            AbsRef[XX] = AbsRef[ZZ] = 1;
+                            break;
                         case efbposresCYLINDER:
+                        /* efbposres is a synonym for efbposresCYLINDERZ for backwards compatibility */
+                        case efbposresCYLINDERZ:
                             AbsRef[XX] = AbsRef[YY] = 1;
                             break;
                         case efbposresX: /* d=XX */

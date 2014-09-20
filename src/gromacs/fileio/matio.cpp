@@ -34,9 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "matio.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "matio.h"
 
 #include <ctype.h>
 #include <stdio.h>
