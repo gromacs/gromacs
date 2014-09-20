@@ -67,7 +67,6 @@
 #include "gromacs/legacyheaders/md_support.h"
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/mvdata.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/oenv.h"

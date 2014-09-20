@@ -49,12 +49,11 @@
 
 t_mdatoms *init_mdatoms(FILE *fp, gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 {
-    int                     mb, a, g, nmol;
+    int                     a;
     double                  tmA, tmB;
     t_atom                 *atom;
     t_mdatoms              *md;
     gmx_mtop_atomloop_all_t aloop;
-    t_ilist                *ilist;
 
     snew(md, 1);
 
@@ -117,16 +116,14 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
     int                   i;
     t_grpopts            *opts;
     gmx_groups_t         *groups;
-    gmx_molblock_t       *molblock;
     int                   nthreads gmx_unused;
+    const real            oneOverSix = 1.0 / 6.0;
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
     opts = &ir->opts;
 
     groups = &mtop->groups;
-
-    molblock = mtop->molblock;
 
     /* Index==NULL indicates no DD (unless we have a DD node with no
      * atoms), so also check for homenr. This should be
@@ -231,11 +228,12 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 
     alook = gmx_mtop_atomlookup_init(mtop);
 
+    // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (i = 0; i < md->nr; i++)
     {
-        int      g, ag, molb;
+        int      g, ag;
         real     mA, mB, fac;
         real     c6, c12;
         t_atom  *atom;
@@ -333,7 +331,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
             }
             else
             {
-                md->sigmaA[i] = pow(c12/c6, 1.0/6.0);
+                md->sigmaA[i] = pow(c12/c6, oneOverSix);
             }
             md->sigma3A[i]    = 1/(md->sigmaA[i]*md->sigmaA[i]*md->sigmaA[i]);
         }
@@ -353,7 +351,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
                 }
                 else
                 {
-                    md->sigmaB[i] = pow(c12/c6, 1.0/6.0);
+                    md->sigmaB[i] = pow(c12/c6, oneOverSix);
                 }
                 md->sigma3B[i]    = 1/(md->sigmaB[i]*md->sigmaB[i]*md->sigmaB[i]);
             }

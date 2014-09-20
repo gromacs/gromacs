@@ -45,7 +45,6 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/mvdata.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
