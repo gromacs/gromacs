@@ -64,6 +64,6 @@ main(int argc, char *argv[])
     catch (const std::exception &ex)
     {
         gmx::printFatalErrorMessage(stderr, ex);
-        return gmx::processExceptionAtExit(ex);
+        return gmx::processExceptionAtExitForCommandLine(ex);
     }
 }
