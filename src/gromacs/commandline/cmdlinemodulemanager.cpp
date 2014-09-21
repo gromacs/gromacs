@@ -566,6 +566,7 @@ int CommandLineModuleManager::runAsMainSingleModule(
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
+        gmx::finalizeForCommandLine();
         return processExceptionAtExit(ex);
     }
 }
