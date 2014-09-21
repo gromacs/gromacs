@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,46 +32,29 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-include(gmxCustomCommandUtilities)
-
-set(OUTPUT_DIR final)
-
-set(HTML_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${OUTPUT_DIR})
-if (GMX_BUILD_HELP)
-    # Unlike the man and completion targets, this target is not built
-    # automatically with GMX_BUILD_HELP=AUTO, since most people will not
-    # notice it missing.
-    file(GLOB_RECURSE deps
-         ${CMAKE_CURRENT_SOURCE_DIR}/images/*
-         ${CMAKE_CURRENT_SOURCE_DIR}/*.html
-         ${CMAKE_CURRENT_SOURCE_DIR}/*.css
-         )
-    list(APPEND deps
-         ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
-         ${CMAKE_CURRENT_SOURCE_DIR}/header.html.in
-         ${CMAKE_CURRENT_SOURCE_DIR}/links.dat
-         )
-
-    gmx_add_custom_output_target(html OUTPUT STAMP
-        COMMAND ${CMAKE_COMMAND}
-            -D GMX_EXECUTABLE=$<TARGET_FILE:gmx>
-            -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-            -D OUTPUT_DIR=${OUTPUT_DIR}
-            -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        DEPENDS gmx ${deps}
-        COMMENT "Generating HTML help")
-
-    if (GMX_BUILD_HELP_FORCE)
-        set_target_properties(html PROPERTIES EXCLUDE_FROM_ALL OFF)
-    endif()
-    set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.html")
-    set(HTML_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_DIR})
+if (NOT DEFINED GMX_EXECUTABLE OR NOT DEFINED SOURCE_DIR)
+    message(FATAL_ERROR "Required input parameter not set")
 endif()
 
-if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP_FORCE)
-    install(DIRECTORY ${HTML_PAGE_DIR}/
-        DESTINATION ${DATA_INSTALL_DIR}/html
-        COMPONENT html)
+file(MAKE_DIRECTORY man1)
+file(MAKE_DIRECTORY man7)
+file(COPY ${SOURCE_DIR}/man7/gromacs.7.in DESTINATION man7/)
+execute_process(
+    COMMAND ${GMX_EXECUTABLE} -quiet help -export man
+    RESULT_VARIABLE exitcode)
+if (exitcode)
+    # Ensure that no partial output is left behind.
+    file(REMOVE_RECURSE man1)
+    file(REMOVE man7/gromacs.7)
+    if (ERRORS_ARE_FATAL)
+        message(FATAL_ERROR
+            "Failed to generate man pages. "
+            "Set GMX_BUILD_HELP=OFF if you want to skip them.\n"
+            "Error/exit code: ${exitcode}")
+    else()
+        message(
+            "Failed to generate man pages, will build GROMACS without. "
+            "Set GMX_BUILD_HELP=OFF if you want to skip this notification and "
+            "warnings during installation.")
+    endif()
 endif()

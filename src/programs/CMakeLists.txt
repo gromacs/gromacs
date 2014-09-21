@@ -81,18 +81,19 @@ else()
 
     include(gmxCustomCommandUtilities)
 
-    gmx_add_custom_output_target(completion OUTPUT STAMP
-        COMMAND ${CMAKE_COMMAND} -E make_directory completion
-        COMMAND ${CMAKE_COMMAND} -E chdir completion
-            $<TARGET_FILE:gmx> -quiet help -export completion
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        DEPENDS gmx
-        COMMENT "Generating command-line completions for programs")
+    set(COMPLETION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/completion)
     # Using GMX_BUILD_HELP here is somewhat confusing, but the conditions when
     # this can be done are exactly the same (ability to run the compiled
     # binaries).
-    set(COMPLETION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/completion)
     if (GMX_BUILD_HELP)
+        gmx_add_custom_output_target(completion OUTPUT STAMP
+            COMMAND ${CMAKE_COMMAND}
+                -D GMX_EXECUTABLE=$<TARGET_FILE:gmx>
+                -D ERRORS_ARE_FATAL=${GMX_BUILD_HELP_FORCE}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildCompletions.cmake
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            DEPENDS gmx ${CMAKE_CURRENT_SOURCE_DIR}/BuildCompletions.cmake
+            COMMENT "Generating command-line completions for programs")
         set_target_properties(completion PROPERTIES EXCLUDE_FROM_ALL OFF)
         set_directory_properties(PROPERTIES
             ADDITIONAL_MAKE_CLEAN_FILES "completion")
@@ -100,7 +101,7 @@ else()
     endif()
     if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
         install(DIRECTORY ${COMPLETION_DIR}/
-                DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
+                DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime OPTIONAL)
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
              "complete -o nospace -F _gmx_compl ${BINARY_NAME}")
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash

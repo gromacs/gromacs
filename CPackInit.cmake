@@ -48,13 +48,14 @@ if(NOT CPACK_INSTALL_CMAKE_PROJECTS) #building source package
             "GMX_BUILD_HELP=ON to automatically build the HTML parts.")
     endif()
 else()
-    if (NOT CPACK_GMX_BUILD_HELP)
-        message(WARNING
-            "To create a complete binary package, bash completions, and "
-            "man and HTML pages need to be generated. "
-            "You need to configure with GMX_BUILD_HELP=ON to include all "
-            "in the binary package.")
-        # Building the man, html, ... targets is not sufficient because than the
-        # install is still not done.
-    endif()
+    # TODO: Make this work again.
+    #if (NOT CPACK_GMX_BUILD_HELP)
+    #    message(WARNING
+    #        "To create a complete binary package, bash completions, and "
+    #        "man and HTML pages need to be generated. "
+    #        "You need to configure with GMX_BUILD_HELP=ON to include all "
+    #        "in the binary package.")
+    #    # Building the man, html, ... targets is not sufficient because than the
+    #    # install is still not done.
+    #endif()
 endif()
