@@ -705,9 +705,7 @@ endif()
 
 option(GMX_BUILD_HELP "Build man pages, HTML help, and completions automatically (requires that compiled binaries can be executed on the build host)" OFF)
 mark_as_advanced(GMX_BUILD_HELP)
-if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND
-    "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
-
+if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
     message(FATAL_ERROR
         "Rebuilding HTML and man pages is not supported for in-source "
         "builds from a source distribution. "

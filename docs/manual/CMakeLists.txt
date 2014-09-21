@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+if (BUILD_IS_INSOURCE)
     # UseLATEX.cmake does not work with an in-source build
     message(STATUS "Cannot build the manual when building in the source directory")
     set(MANUAL_BUILD_IS_POSSIBLE OFF)
