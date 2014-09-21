@@ -196,7 +196,9 @@ set_target_properties(libgromacs PROPERTIES
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
     install(TARGETS libgromacs
             EXPORT libgromacs
-            DESTINATION ${LIB_INSTALL_DIR}
+            LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+            RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+            ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
             COMPONENT libraries)
 endif()
 

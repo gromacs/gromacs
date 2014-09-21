@@ -43,10 +43,10 @@ macro(gmx_use_clang_as_with_gnu_compilers_on_osx)
     # does not support AVX, so we need to tell the linker to use the clang
     # compilers assembler instead - and this has to happen before we detect AVX
     # flags.
-    if(APPLE AND ${CMAKE_C_COMPILER_ID} STREQUAL "GNU")
+    if(APPLE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
         gmx_test_cflag(GNU_C_USE_CLANG_AS "-Wa,-q" SIMD_C_FLAGS)
     endif()
-    if(APPLE AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    if(APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         gmx_test_cxxflag(GNU_CXX_USE_CLANG_AS "-Wa,-q" SIMD_CXX_FLAGS)
     endif()
 endmacro()
@@ -179,8 +179,8 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return _mm_movemask_ps(x);
     # We don't have the full compiler version string yet (BUILD_C_COMPILER),
     # so we can't distinguish vanilla from Apple clang versions, but catering for a few rare AMD
     # hackintoshes is not worth the effort.
-    if (APPLE AND (${CMAKE_C_COMPILER_ID} STREQUAL "Clang" OR
-                ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+    if (APPLE AND ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR
+                "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
         message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA SIMD. As we cannot work around this bug on OS X, you will have to select a different compiler or SIMD instruction set.")
     endif()
 
