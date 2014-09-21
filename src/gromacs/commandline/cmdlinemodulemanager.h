@@ -82,7 +82,7 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
        catch (const std::exception &ex)
        {
            gmx::printFatalErrorMessage(stderr, ex);
-           return gmx::processExceptionAtExit(ex);
+           return gmx::processExceptionAtExitForCommandLine(ex);
        }
    }
  * \endcode

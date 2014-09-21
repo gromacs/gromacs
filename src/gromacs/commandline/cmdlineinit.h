@@ -92,7 +92,19 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv);
  * \ingroup module_commandline
  */
 void finalizeForCommandLine();
-
+/*! \brief
+ * Handles an exception and deinitializes after initForCommandLine.
+ *
+ * \param[in] ex  Exception that is the cause for terminating the program.
+ * \returns   Return code to return from main().
+ *
+ * This method should be called as the last thing before terminating the
+ * program because of an exception. See processExceptionAtExit() for details.
+ * Additionally this method undoes the work done by initForCommandLine.
+ *
+ * Does not throw.
+ */
+int processExceptionAtExitForCommandLine(const std::exception &ex);
 /*! \brief
  * Implements a main() method that runs a single module.
  *

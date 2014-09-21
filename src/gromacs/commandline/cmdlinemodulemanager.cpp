@@ -622,7 +622,7 @@ int CommandLineModuleManager::runAsMainSingleModule(
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        return processExceptionAtExit(ex);
+        return processExceptionAtExitForCommandLine(ex);
     }
 }
 

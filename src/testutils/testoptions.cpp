@@ -189,7 +189,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        std::exit(processExceptionAtExit(ex));
+        std::exit(processExceptionAtExitForCommandLine(ex));
     }
 }
 
