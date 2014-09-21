@@ -79,16 +79,19 @@ else()
     ########################
     # Completion generation
 
-    set(COMPLETION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/completion)
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/completion)
-    add_custom_target(completion
-        gmx -quiet help -export completion
-        COMMENT "Generating command-line completions for programs"
-        WORKING_DIRECTORY completion
-        VERBATIM)
+    include(gmxCustomCommandUtilities)
+
+    gmx_add_custom_output_target(completion OUTPUT STAMP
+        COMMAND ${CMAKE_COMMAND} -E make_directory completion
+        COMMAND ${CMAKE_COMMAND} -E chdir completion
+            $<TARGET_FILE:gmx> -quiet help -export completion
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS gmx
+        COMMENT "Generating command-line completions for programs")
     # Using GMX_BUILD_HELP here is somewhat confusing, but the conditions when
     # this can be done are exactly the same (ability to run the compiled
     # binaries).
+    set(COMPLETION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/completion)
     if (GMX_BUILD_HELP)
         set_target_properties(completion PROPERTIES EXCLUDE_FROM_ALL OFF)
         set_directory_properties(PROPERTIES

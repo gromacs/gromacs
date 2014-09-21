@@ -32,14 +32,16 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_custom_target(man
-    ${CMAKE_COMMAND} -E make_directory man1
+include(gmxCustomCommandUtilities)
+
+gmx_add_custom_output_target(man OUTPUT STAMP
+    COMMAND ${CMAKE_COMMAND} -E make_directory man1
     COMMAND ${CMAKE_COMMAND} -E make_directory man7
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/man7/gromacs.7.in" man7/
     COMMAND gmx -quiet help -export man
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating man pages"
-    VERBATIM)
+    DEPENDS gmx ${CMAKE_CURRENT_SOURCE_DIR}/man7/gromacs.7.in
+    COMMENT "Generating man pages")
 
 set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 if (GMX_BUILD_HELP)
