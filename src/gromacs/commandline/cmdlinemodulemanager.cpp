@@ -611,19 +611,20 @@ int CommandLineModuleManager::runAsMainSingleModule(
         int argc, char *argv[], CommandLineModuleInterface *module)
 {
     CommandLineProgramContext &programContext = gmx::initForCommandLine(&argc, &argv);
+    int rc;
     try
     {
         CommandLineModuleManager manager(NULL, &programContext);
         manager.setSingleModule(module);
-        int rc = manager.run(argc, argv);
-        gmx::finalizeForCommandLine();
-        return rc;
+        rc = manager.run(argc, argv);
     }
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        return processExceptionAtExit(ex);
+        rc = processExceptionAtExit(ex); //this aborts for LIB_MPI
     }
+    gmx::finalizeForCommandLine();
+    return rc;
 }
 
 // static
