@@ -140,6 +140,13 @@ void finalizeForCommandLine()
     g_commandLineContext.reset();
 }
 
+int processExceptionAtExitForCommandLine(const std::exception &ex)
+{
+    int rc = processExceptionAtExit(ex); //Currently this aborts for GMX_LIB_MPI
+    finalizeForCommandLine();            //thus this MPI_Finalize doesn't matter
+    return rc;
+}
+
 int runCommandLineModule(int argc, char *argv[],
                          CommandLineModuleInterface *module)
 {
