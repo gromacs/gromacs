@@ -104,7 +104,7 @@ set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
 # part of the configuration or build.
 set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/docs/man/man1;docs/man/man1;${CMAKE_BINARY_DIR}/docs/man/man7;docs/man/man7;${CMAKE_BINARY_DIR}/docs/old-html/final;docs/old-html/final;${CMAKE_BINARY_DIR}/docs/install-guide/final;/")
 set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
-set(CPACK_GMX_BUILD_HELP "${GMX_BUILD_HELP}") #Works even though GMX_BUILD_HELP is defined later because it is off by default.
+#set(CPACK_GMX_BUILD_HELP "${GMX_BUILD_HELP}") #No longer works because GMX_BUILD_HELP is defined later.
 
 #must come after all cpack settings!
 include(CPack)
@@ -703,12 +703,18 @@ if(GMX_FAHCORE)
   include_directories(${COREWRAP_INCLUDE_DIR})
 endif()
 
-option(GMX_BUILD_HELP "Build man pages, HTML help, and completions automatically (requires that compiled binaries can be executed on the build host)" OFF)
+# Value of AUTO tries to generate things, but will only produce warnings if
+# that fails.
+set(build_help_default AUTO)
+if (SOURCE_IS_SOURCE_DISTRIBUTION)
+    set(build_help_default OFF)
+endif()
+gmx_option_trivalue(GMX_BUILD_HELP "Build man pages, HTML help, and completions automatically (requires that compiled binaries can be executed on the build host)" ${build_help_default})
 mark_as_advanced(GMX_BUILD_HELP)
 if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
     message(FATAL_ERROR
-        "Rebuilding HTML and man pages is not supported for in-source "
-        "builds from a source distribution. "
+        "Rebuilding HTML and man pages or shell completions is not supported "
+        "for in-source builds from a source distribution. "
         "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
 endif()
 
