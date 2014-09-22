@@ -430,6 +430,10 @@ static gmx_inline void close_i_nblist(t_nblist *nlist)
         nlist->jindex[nri+1] = nlist->nrj;
 
         len = nlist->nrj -  nlist->jindex[nri];
+        if ((len == 0) && (nlist->nri > 0))
+        {
+            nlist->nri--;
+        }
     }
 }
 
