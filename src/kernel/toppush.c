@@ -600,9 +600,11 @@ static void push_bondtype(t_params     *       bt,
                     {
                         sprintf(errbuf, "Overriding %s parameters.%s",
                                 interaction_function[ftype].longname,
-                                (ftype == F_PDIHS) ? "\nUse dihedraltype 4 to allow several multiplicity terms." : "");
+                                (ftype == F_PDIHS) ?
+                                "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
+                                : "");
                         warning(wi, errbuf);
-                        fprintf(stderr, "  old:");
+                        fprintf(stderr, "  old:                                         ");
                         for (j = 0; (j < nrfp); j++)
                         {
                             fprintf(stderr, " %g", bt->param[i].c[j]);
