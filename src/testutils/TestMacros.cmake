@@ -45,7 +45,7 @@ function (gmx_build_unit_test NAME EXENAME)
         include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-        target_link_libraries(${EXENAME} libgromacs ${TESTUTILS_LIBS} ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+        target_link_libraries(${EXENAME} ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
         set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
         file(MAKE_DIRECTORY ${_temporary_files_path})
 
