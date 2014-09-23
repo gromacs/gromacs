@@ -650,7 +650,7 @@ int gmx_mindist(int argc, char *argv[])
         "each direction is considered, giving a total of 26 shifts.",
         "It also plots the maximum distance within the group and the lengths",
         "of the three box vectors.[PAR]",
-        "Also [gmx-distance] calculates distances."
+        "Also [gmx-distance] and [gmx-pairdist] calculate distances."
     };
     const char     *bugs[] = {
         "The [TT]-pi[tt] option is very slow."
