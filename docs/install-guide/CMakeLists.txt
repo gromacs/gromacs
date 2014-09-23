@@ -60,4 +60,5 @@ if(MARKDOWN_CONFIGURE_IS_POSSIBLE AND PANDOC_EXECUTABLE)
             ${HTML_OUTPUT_DIR}/${name}.pdf
         VERBATIM
         )
+    gmx_cpack_add_generated_source_directory(final DESTINATION /)
 endif()

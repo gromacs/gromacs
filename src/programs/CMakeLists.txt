@@ -107,6 +107,7 @@ else()
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
                 DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
     endif()
+    gmx_cpack_add_generated_source_directory(completion)
 
     if (GMX_SYMLINK_OLD_BINARY_NAMES)
         configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)

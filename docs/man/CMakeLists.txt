@@ -62,3 +62,5 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
         DESTINATION ${MAN_INSTALL_DIR}
         COMPONENT man OPTIONAL)
 endif()
+gmx_cpack_add_generated_source_directory(man1)
+gmx_cpack_add_generated_source_directory(man7)
