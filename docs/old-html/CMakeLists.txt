@@ -75,3 +75,4 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP_FORCE)
         DESTINATION ${DATA_INSTALL_DIR}/html
         COMPONENT html)
 endif()
+gmx_cpack_add_generated_source_directory(${OUTPUT_DIR})
