@@ -149,7 +149,11 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
         "The location of the histogram is set with [TT]-len[tt] and",
         "[TT]-tol[tt]. Bin width is set with [TT]-binw[tt].",
         "[TT]-oallstat[tt] writes out the average and standard deviation for",
-        "each individual distance, calculated over the frames."
+        "each individual distance, calculated over the frames.[PAR]",
+        "Note that [THISMODULE] calculates distances between fixed pairs",
+        "(1-2, 3-4, etc.) within a single selection.  To calculate distances",
+        "between two selections, including minimum, maximum, and pairwise",
+        "distances, use [gmx-pairdist]."
     };
 
     options->setDescription(desc);
