@@ -55,11 +55,11 @@
 
 #include <algorithm>
 
+#include "gromacs/gmxlib/nonbonded/pairs.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/txtdump.h"
