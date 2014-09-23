@@ -289,6 +289,9 @@ bool MMSlave::setAtomQ(atom_id id, double q)
 
     gmx_mtop_atomlookup_destroy(alook);
 
+    giab_->mdatoms_->chargeA[id]     =
+        giab_->mdatoms_->chargeB[id] = q;
+
     return true;
 }
 
