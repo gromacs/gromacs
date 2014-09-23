@@ -606,7 +606,7 @@ interchangeably.}
 
 \section{Radius of gyration and distances}
 \label{sec:rg}
-{\tt gmx gyrate, gmx distance, gmx mindist, gmx mdmat, gmx xpm2ps}\\
+{\tt gmx gyrate, gmx distance, gmx mindist, gmx mdmat, gmx pairdist, gmx xpm2ps}\\
 To have a rough measure for the compactness of a structure, you can calculate 
 the {\em radius of gyration} with the program {\tt \normindex{gmx gyrate}} as follows:
 \beq
@@ -628,12 +628,15 @@ The {\em distance between the geometrical centers} of two groups can be
 calculated with the program
 %\ifthenelse{\equal{\gmxlite}{1}}{
 {{\tt \normindex{gmx distance}}, as explained in \secref{bad}.}
-\item[$\bullet$] 
+\item[$\bullet$]
 The {\em minimum distance} between two groups of atoms during time 
 can be calculated with the program {\tt \normindex{gmx mindist}}. It also calculates the 
 {\em number of contacts} between these groups 
 within a certain radius $r_{max}$.
-\item[$\bullet$] 
+\item[$\bullet$]
+{\tt \normindex{gmx pairdist}} is a selection-enabled version of
+{\tt gmx mindist}.
+\item[$\bullet$]
 To monitor the {\em minimum distances between amino acid residues} 
 within a (protein) molecule, you can use 
 the program {\tt \normindex{gmx mdmat}}. This minimum distance between two residues
@@ -1071,4 +1074,4 @@ atoms across the interface.
 % LocalWords:  dssp rama xrama rg Ramachandran phipsi amphipathic HPr xvgr pvd
 % LocalWords:  Scripps RDF online usinggroups mdrun groupconcept HOH
 % LocalWords:  residuetypes determinding OpenGL traj ov rcl ij ps nm
-% LocalWords:  autocorrelation interfacial
+% LocalWords:  autocorrelation interfacial pairdist
