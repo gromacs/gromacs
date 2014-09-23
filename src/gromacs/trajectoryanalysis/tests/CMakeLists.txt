@@ -37,6 +37,7 @@ gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
                   angle.cpp
                   distance.cpp
                   freevolume.cpp
+                  pairdist.cpp
                   sasa.cpp
                   select.cpp
                   $<TARGET_OBJECTS:analysisdata-test-shared>)
