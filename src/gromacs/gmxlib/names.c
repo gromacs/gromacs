@@ -80,7 +80,7 @@ const char *eel_names[eelNR+1] = {
     "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User",
     "Generalized-Born", "Reaction-Field-nec", "Encad-shift",
     "PME-User", "PME-Switch", "PME-User-Switch",
-    "Reaction-Field-zero", NULL
+    "Reaction-Field-zero", "PME-G", NULL
 };
 
 const char *eewg_names[eewgNR+1] = {
@@ -277,7 +277,7 @@ const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1] = {
 
 const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1] =
 {
-    "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Generalized-Born", "Ewald", NULL
+    "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Generalized-Born", "Ewald", "EwaldG", NULL
 };
 
 const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1] =

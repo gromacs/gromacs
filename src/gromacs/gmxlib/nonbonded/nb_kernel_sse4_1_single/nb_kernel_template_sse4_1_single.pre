@@ -121,11 +121,11 @@ void
     __m128           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     /* #for I in PARTICLES_I */
     int              vdwioffset{I};
-    __m128           ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I};
+    __m128           ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I},alphai{I};
     /* #endfor */
     /* #for J in PARTICLES_J */
     int              vdwjidx{J}A,vdwjidx{J}B,vdwjidx{J}C,vdwjidx{J}D;
-    __m128           jx{J},jy{J},jz{J},fjx{J},fjy{J},fjz{J},jq{J},isaj{J};
+    __m128           jx{J},jy{J},jz{J},fjx{J},fjy{J},fjz{J},jq{J},isaj{J},alphaj{J};
     /* #endfor */
     /* #for I,J in PAIRS_IJ */
     __m128           dx{I}{J},dy{I}{J},dz{I}{J},rsq{I}{J},rinv{I}{J},rinvsq{I}{J},r{I}{J},qq{I}{J},c6_{I}{J},c12_{I}{J};
@@ -133,6 +133,10 @@ void
     /* #if KERNEL_ELEC != 'None' */
     __m128           velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
+    /* #endif */
+    /* #if 'EwaldG' in KERNEL_ELEC */
+    real             *gaussian;
+    __m128           ewc, alphai, alphaij,velect,felect, scale,scalesq,ewg_mask,rscale,rscale2,zero;
     /* #endif */
     /* #if 'GeneralizedBorn' in KERNEL_ELEC */
     __m128i          gbitab;
@@ -190,6 +194,10 @@ void
     /* #if KERNEL_ELEC != 'None' */
     facel            = _mm_set1_ps(fr->epsfac);
     charge           = mdatoms->chargeA;
+    /*     #if 'EwaldG' in KERNEL_ELEC */
+    gaussian         = mdatoms->gaussian;
+    ewc              = _mm_set1_ps(fr->ewaldcoeff_q);
+    /*     #endif  */
     /*     #if 'ReactionField' in KERNEL_ELEC */
     krf              = _mm_set1_ps(fr->ic->k_rf);
     krf2             = _mm_set1_ps(fr->ic->k_rf*2.0);
@@ -219,7 +227,7 @@ void
     vftabscale       = _mm_set1_ps(kernel_data->table_vdw->scale);
     /* #endif */
 
-    /* #if 'Ewald' in KERNEL_ELEC */
+    /* #if 'Ewald' in KERNEL_ELEC or 'EwaldG' in KERNEL_ELEC */
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
     /*     #if KERNEL_VF=='Force' and KERNEL_MOD_ELEC!='PotentialSwitch' */
     ewtab            = fr->ic->tabq_coul_F;
@@ -245,6 +253,9 @@ void
     inr              = nlist->iinr[0];
     /*     #for I in PARTICLES_ELEC_I */
     iq{I}              = _mm_mul_ps(facel,_mm_set1_ps(charge[inr+{I}]));
+    /*         #if 'EwaldG' in KERNEL_ELEC */
+    alphai{I}          = _mm_set1_ps(gaussian[inr+{I}]);
+    /*         #endif */
     /*     #endfor */
     /*     #for I in PARTICLES_VDW_I */
     vdwioffset{I}      = 2*nvdwtype*vdwtype[inr+{I}];
@@ -254,6 +265,9 @@ void
     /* #if 'Water' in GEOMETRY_J */
     /*     #for J in PARTICLES_ELEC_J */
     jq{J}              = _mm_set1_ps(charge[inr+{J}]);
+    /*         #if 'EwaldG' in KERNEL_ELEC */
+    alphaj{J}          = _mm_set1_ps(gaussian[inr+{J}]);
+    /*         #endif */
     /*     #endfor */
     /*     #for J in PARTICLES_VDW_J */
     vdwjidx{J}A        = 2*vdwtype[inr+{J}];
@@ -273,6 +287,12 @@ void
     /*             #endif */
     /*         #endif */
     /*     #endfor */
+    /* #endif */
+    /* #if 'EwaldG' in KERNEL_ELEC */
+    rcutoff_scalar     = fr->rcoulomb;
+    rcutoff          = _mm_set1_ps(rcutoff_scalar);
+    rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
+
     /* #endif */
 
     /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
@@ -372,6 +392,9 @@ void
         /* Load parameters for i particles */
         /*     #for I in PARTICLES_ELEC_I */
         iq{I}              = _mm_mul_ps(facel,_mm_load1_ps(charge+inr+{I}));
+        /*         #if 'EwaldG' in KERNEL_ELEC */
+        alphai{I}          = _mm_set1_ps(gaussian[inr+{I}]);
+        /*         #endif */
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
         /*         #if KERNEL_ELEC=='GeneralizedBorn' */
         isai{I}            = _mm_load1_ps(invsqrta+inr+{I});
@@ -501,6 +524,10 @@ void
             /*     #for J in PARTICLES_ELEC_J */
             jq{J}              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+{J},charge+jnrB+{J},
                                                               charge+jnrC+{J},charge+jnrD+{J});
+            /*         #if 'EwaldG' in KERNEL_ELEC */
+            alphaj{J}          = gmx_mm_load_4real_swizzle_ps(gaussian+jnrA+{J},gaussian+jnrB+{J},
+                                                              gaussian+jnrC+{J},gaussian+jnrD+{J});
+            /*         #endif */
             /*         #if KERNEL_ELEC=='GeneralizedBorn' */
             isaj{J}            = gmx_mm_load_4real_swizzle_ps(invsqrta+jnrA+{J},invsqrta+jnrB+{J},
                                                               invsqrta+jnrC+{J},invsqrta+jnrD+{J});
@@ -706,6 +733,95 @@ void
                                          &ewtabF,&ewtabFn);
             felec            = _mm_add_ps(_mm_mul_ps( _mm_sub_ps(one,eweps),ewtabF),_mm_mul_ps(eweps,ewtabFn));
             felec            = _mm_mul_ps(_mm_mul_ps(qq{I}{J},rinv{I}{J}),_mm_sub_ps(rinvsq{I}{J},felec));
+            /*                 #define INNERFLOPS INNERFLOPS+7 */
+            /*             #endif */
+            /*         #elif KERNEL_ELEC=='EwaldG' */
+            /* EWALD ELECTROSTATICS WITH GAUSSIAN CHARGE DISTRIBUTIONS */
+            /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
+            ewrt             = _mm_add_ps( _mm_mul_ps(alphai{I},alphai{I}), _mm_mul_ps(alphaj{J},alphaj{J}) );
+            alphaij          = gmx_mm_invsqrt_ps(ewrt);
+            ewrt             = _mm_mul_ps (alphai{I},alphaij);
+            alphaij          = _mm_mul_ps (ewrt,alphaj{J});
+
+            ewrt             = _mm_mul_ps(r{I}{J},ewtabscale);
+            ewitab           = _mm_cvttps_epi32(ewrt);
+            eweps            = _mm_sub_ps(ewrt,_mm_round_ps(ewrt, _MM_FROUND_FLOOR));
+            scale            = _mm_div_ps(alphaij,ewc);
+            scalesq          = _mm_mul_ps(scale,scale);
+            zero             = _mm_setzero_ps();
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_ELEC=='PotentialSwitch' */
+            ewitab           = _mm_slli_epi32(ewitab,2);
+            ewtabF           = _mm_load_ps( ewtab + gmx_mm_extract_epi32(ewitab,0) );
+            ewtabD           = _mm_load_ps( ewtab + gmx_mm_extract_epi32(ewitab,1) );
+            ewtabV           = _mm_load_ps( ewtab + gmx_mm_extract_epi32(ewitab,2) );
+            ewtabFn          = _mm_load_ps( ewtab + gmx_mm_extract_epi32(ewitab,3) );
+            _MM_TRANSPOSE4_PS(ewtabF,ewtabD,ewtabV,ewtabFn);
+            felec            = _mm_add_ps(ewtabF,_mm_mul_ps(eweps,ewtabD));
+            /*                 #define INNERFLOPS INNERFLOPS+2 */
+            velec            = _mm_sub_ps(ewtabV,_mm_mul_ps(_mm_mul_ps(ewtabhalfspace,eweps),_mm_add_ps(ewtabF,felec)));
+            velec            = _mm_mul_ps(qq{I}{J},_mm_sub_ps(rinv{I}{J},velec));
+            /*                 #define INNERFLOPS INNERFLOPS+6 */
+            /*                 #if 'Force' in KERNEL_VF */
+            felec            = _mm_mul_ps(_mm_mul_ps(qq{I}{J},rinv{I}{J}),_mm_sub_ps(rinvsq{I}{J},felec));
+            /*                      #define INNERFLOPS INNERFLOPS+3 */
+            /*                 #endif */
+
+            rscale           = _mm_mul_ps(scale,r{I}{J});
+            rscale2          = _mm_mul_ps(rscale,rscale);
+            ewrt             = _mm_mul_ps(rscale,ewtabscale);
+            if (gmx_mm_any_lt(rscale2,rcutoff2)) { 
+            ewg_mask         = _mm_cmplt_ps(rscale2,rcutoff2 );
+            //  ewrt = (r{I}{J}*scale < rcutoff) ? ewrt : 0
+            ewrt             = _mm_or_ps(_mm_and_ps(ewg_mask , ewrt) , _mm_andnot_ps(ewg_mask, zero));
+            ewitab           = _mm_cvttps_epi32(ewrt);
+            eweps            = _mm_sub_ps(ewrt,_mm_round_ps(ewrt, _MM_FROUND_FLOOR));
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            ewitab           = _mm_slli_epi32(ewitab,2);
+            ewtabF           = _mm_load_ps( ewtab + gmx_mm_extract_epi32(ewitab,0) );
+            ewtabD           = _mm_load_ps( ewtab + gmx_mm_extract_epi32(ewitab,1) );
+            ewtabV           = _mm_load_ps( ewtab + gmx_mm_extract_epi32(ewitab,2) );
+            ewtabFn          = _mm_load_ps( ewtab + gmx_mm_extract_epi32(ewitab,3) );
+            _MM_TRANSPOSE4_PS(ewtabF,ewtabD,ewtabV,ewtabFn);
+            felect           = _mm_mul_ps(_mm_add_ps(ewtabF,_mm_mul_ps(eweps,ewtabD)),scale);
+            /*                 #define INNERFLOPS INNERFLOPS+2 */
+            velect           = _mm_sub_ps(_mm_mul_ps(ewtabV,scale),_mm_mul_ps(_mm_mul_ps(ewtabhalfspace,eweps),_mm_add_ps(_mm_mul_ps(ewtabF,scale),felect)));
+            velect           = _mm_mul_ps(qq{I}{J},_mm_sub_ps(rinv{I}{J},velect));
+            velect           = _mm_or_ps(_mm_and_ps(ewg_mask , velect) , _mm_andnot_ps(ewg_mask, zero));
+            velec            = _mm_sub_ps(velec,velect);            
+
+            /*                 #define INNERFLOPS INNERFLOPS+6 */
+            /*                 #if 'Force' in KERNEL_VF */
+            felect           = _mm_mul_ps(_mm_mul_ps(qq{I}{J},rinv{I}{J}),_mm_sub_ps(rinvsq{I}{J},_mm_mul_ps(felect,scale)));
+            felect           = _mm_or_ps(_mm_and_ps(ewg_mask , felect) , _mm_andnot_ps(ewg_mask, zero));
+            felec            = _mm_sub_ps(felec,felect);            
+            /*                 #endif */
+            }
+
+	    /*             #elif KERNEL_VF=='Force' */
+            gmx_mm_load_4pair_swizzle_ps(ewtab + gmx_mm_extract_epi32(ewitab,0),ewtab + gmx_mm_extract_epi32(ewitab,1),
+                                         ewtab + gmx_mm_extract_epi32(ewitab,2),ewtab + gmx_mm_extract_epi32(ewitab,3),
+                                         &ewtabF,&ewtabFn);
+            felec            = _mm_add_ps(_mm_mul_ps( _mm_sub_ps(one,eweps),ewtabF),_mm_mul_ps(eweps,ewtabFn));
+            felec            = _mm_mul_ps(_mm_mul_ps(qq{I}{J},rinv{I}{J}),_mm_sub_ps(rinvsq{I}{J},felec));
+
+            rscale           = _mm_mul_ps(scale,r{I}{J});
+            rscale2          = _mm_mul_ps(rscale,rscale);
+            ewrt             = _mm_mul_ps(rscale,ewtabscale);
+            if (gmx_mm_any_lt(rscale2,rcutoff2)) {
+            ewg_mask         = _mm_cmplt_ps(rscale2,rcutoff2);
+            ewrt             = _mm_or_ps(_mm_and_ps(ewg_mask , ewrt) , _mm_andnot_ps(ewg_mask, zero));
+            ewitab           = _mm_cvttps_epi32(ewrt);
+            eweps            = _mm_sub_ps(ewrt,_mm_round_ps(ewrt, _MM_FROUND_FLOOR));
+            gmx_mm_load_4pair_swizzle_ps(ewtab + gmx_mm_extract_epi32(ewitab,0),ewtab + gmx_mm_extract_epi32(ewitab,1),
+                                         ewtab + gmx_mm_extract_epi32(ewitab,2),ewtab + gmx_mm_extract_epi32(ewitab,3),
+                                         &ewtabF,&ewtabFn);
+            felect           = _mm_add_ps(_mm_mul_ps( _mm_sub_ps(one,eweps),ewtabF),_mm_mul_ps(eweps,ewtabFn));
+            felect           = _mm_mul_ps(felect,scale);
+            felect           = _mm_mul_ps(_mm_mul_ps(qq{I}{J},rinv{I}{J}),_mm_sub_ps(rinvsq{I}{J},_mm_mul_ps(felect,scale)));
+            felect           = _mm_or_ps(_mm_and_ps(ewg_mask , felect) , _mm_andnot_ps(ewg_mask, zero));
+            felec            = _mm_sub_ps(felec,felect);
+            }
             /*                 #define INNERFLOPS INNERFLOPS+7 */
             /*             #endif */
 
