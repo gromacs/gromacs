@@ -132,11 +132,11 @@ void
     real             *shiftvec,*fshift,*x,*f;
     /* #for I in PARTICLES_I */
     int              vdwioffset{I};
-    real             ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I};
+    real             ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I},alphai{I};
     /* #endfor */
     /* #for J in PARTICLES_J */
     int              vdwjidx{J};
-    real             jx{J},jy{J},jz{J},fjx{J},fjy{J},fjz{J},jq{J},isaj{J};
+    real             jx{J},jy{J},jz{J},fjx{J},fjy{J},fjz{J},jq{J},isaj{J},alphaj{J};
     /* #endfor */
     /* #for I,J in PAIRS_IJ */
     real             dx{I}{J},dy{I}{J},dz{I}{J},rsq{I}{J},rinv{I}{J},rinvsq{I}{J},r{I}{J},qq{I}{J},c6_{I}{J},c12_{I}{J},cexp1_{I}{J},cexp2_{I}{J};
@@ -144,6 +144,10 @@ void
     /* #if KERNEL_ELEC != 'None' */
     real             velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
+    /* #endif */
+    /* #if 'EwaldG' in KERNEL_ELEC */
+    real             *gaussian;
+    real             ewc,alphai,alphaij,felect,scale;
     /* #endif */
     /* #if 'GeneralizedBorn' in KERNEL_ELEC */
     int              gbitab;
@@ -191,6 +195,10 @@ void
     /* #if KERNEL_ELEC != 'None' */
     facel            = fr->epsfac;
     charge           = mdatoms->chargeA;
+    /*     #if 'EwaldG' in KERNEL_ELEC */
+    gaussian         = mdatoms->gaussian;
+    ewc              = fr->ewaldcoeff_q;
+    /*     #endif */
     /*     #if 'ReactionField' in KERNEL_ELEC */
     krf              = fr->ic->k_rf;
     krf2             = krf*2.0;
@@ -221,7 +229,7 @@ void
     vftabscale       = kernel_data->table_vdw->scale;
     /* #endif */
 
-    /* #if 'Ewald' in KERNEL_ELEC */
+    /* #if 'Ewald' in KERNEL_ELEC or 'EwaldG' in KERNEL_ELEC */
     sh_ewald         = fr->ic->sh_ewald;
     /*     #if KERNEL_VF=='Force' and KERNEL_MOD_ELEC!='PotentialSwitch' */
     ewtab            = fr->ic->tabq_coul_F;
@@ -247,6 +255,9 @@ void
     inr              = nlist->iinr[0];
     /*     #for I in PARTICLES_ELEC_I */
     iq{I}              = facel*charge[inr+{I}];
+    /*         #if 'EwaldG' in KERNEL_ELEC */
+    alphai{I}           = gaussian[inr+{I}];
+    /*         #endif */
     /*     #endfor */
     /*     #for I in PARTICLES_VDW_I */
     vdwioffset{I}      = {NVDWPARAM}*nvdwtype*vdwtype[inr+{I}];
@@ -256,6 +267,9 @@ void
     /* #if 'Water' in GEOMETRY_J */
     /*     #for J in PARTICLES_ELEC_J */
     jq{J}              = charge[inr+{J}];
+    /*         #if 'EwaldG' in KERNEL_ELEC */
+    alphaj{J}          = gaussian[inr+{J}];
+    /*         #endif */
     /*     #endfor */
     /*     #for J in PARTICLES_VDW_J */
     vdwjidx{J}         = {NVDWPARAM}*vdwtype[inr+{J}];
@@ -279,6 +293,9 @@ void
     /*             #endif */
     /*         #endif */
     /*     #endfor */
+    /* #endif */
+    /* #if 'EwaldG' in KERNEL_ELEC */
+    rcutoff          = fr->rcoulomb;
     /* #endif */
 
     /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
@@ -359,6 +376,9 @@ void
         /* Load parameters for i particles */
         /*     #for I in PARTICLES_ELEC_I */
         iq{I}              = facel*charge[inr+{I}];
+        /*         #if 'EwaldG' in KERNEL_ELEC */
+        alphai{I}           = gaussian[inr+{I}];
+        /*         #endif */
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
         /*         #if KERNEL_ELEC=='GeneralizedBorn' */
         isai{I}            = invsqrta[inr+{I}];
@@ -436,6 +456,9 @@ void
             /* Load parameters for j particles */
             /*     #for J in PARTICLES_ELEC_J */
             jq{J}              = charge[jnr+{J}];
+            /*         #if 'EwaldG' in KERNEL_ELEC */
+            alphaj{J}          = gaussian[jnr+{J}];
+            /*         #endif */
             /*         #if KERNEL_ELEC=='GeneralizedBorn' */
             isaj{J}           = invsqrta[jnr+{J}];
             /*         #endif */
@@ -590,6 +613,47 @@ void
             felec            = (1.0-eweps)*ewtab[ewitab]+eweps*ewtab[ewitab+1];
             felec            = qq{I}{J}*rinv{I}{J}*(rinvsq{I}{J}-felec);
             /*                 #define INNERFLOPS INNERFLOPS+7 */
+            /*             #endif */
+
+
+            /*         #elif KERNEL_ELEC=='EwaldG' */
+            /* EWALD ELECTROSTATICS WITH GAUSSIAN CHARGE DISTRIBUTIONS */
+
+            alphaij          = alphai{I} * alphaj{J} * gmx_invsqrt(alphai{I}*alphai{I} + alphaj{J}*alphaj{J});
+            ewrt             = r{I}{J}*ewtabscale;
+            ewitab           = ewrt;
+            eweps            = ewrt-ewitab;
+
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_ELEC=='PotentialSwitch' */
+            ewitab           = 4*ewitab;
+            felec            = ewtab[ewitab]+eweps*ewtab[ewitab+1];
+            velec            = qq{I}{J}*(rinv{I}{J} - (ewtab[ewitab+2]-ewtabhalfspace*eweps*(ewtab[ewitab]+felec)));
+            /*                 #if 'Force' in KERNEL_VF */
+            felec            = qq{I}{J}*rinv{I}{J}*( rinvsq{I}{J} - felec );
+            /*                 #endif */
+            scale            = alphaij/ewc;
+            if (  r{I}{J} * scale < rcutoff ) {
+                ewrt             = scale * r{I}{J}*ewtabscale;
+                ewitab           = ewrt;
+                eweps            = ewrt-ewitab;
+                ewitab           = 4*ewitab;
+                felect           = (ewtab[ewitab]+eweps*ewtab[ewitab+1])*scale ;
+                velec            -=  qq{I}{J}*(rinv{I}{J} - (scale*ewtab[ewitab+2]-ewtabhalfspace*eweps*(scale*ewtab[ewitab]+felect)));
+            /*                 #if 'Force' in KERNEL_VF */
+                felec            -=  qq{I}{J}*rinv{I}{J}*( rinvsq{I}{J} - scale*felect );
+            /*                 #endif */
+            }
+            /*             #elif  KERNEL_VF=='Force' */
+            felec            = (1.0-eweps)*ewtab[ewitab]+eweps*ewtab[ewitab+1];
+            felec            = qq{I}{J}*rinv{I}{J}*(rinvsq{I}{J}-felec);
+            scale            = alphaij/ewc;
+            if  (  r{I}{J} * scale < rcutoff ) {
+                ewrt             = scale * r{I}{J}*ewtabscale;
+                ewitab           = ewrt;
+                eweps            = ewrt-ewitab;
+                felect           = scale * ((1.0-eweps)*ewtab[ewitab]+eweps*ewtab[ewitab+1]);
+                felec            -=  qq{I}{J}*rinv{I}{J}*( rinvsq{I}{J} - scale*felect );
+	    }
             /*             #endif */
 
             /*         #elif KERNEL_ELEC=='CubicSplineTable' */

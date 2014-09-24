@@ -55,6 +55,7 @@ typedef struct t_atom
 {
     real           m, q;        /* Mass and charge                      */
     real           mB, qB;      /* Mass and charge for Free Energy calc */
+    real           gaussian;    /* Width of the gaussian charge distribution */
     unsigned short type;        /* Atom type                            */
     unsigned short typeB;       /* Atom type for Free Energy calc       */
     int            ptype;       /* Particle type                        */

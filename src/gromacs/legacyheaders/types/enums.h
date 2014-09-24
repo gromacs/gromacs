@@ -101,7 +101,7 @@ enum eintmod {
 enum {
     eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
     eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC, eelENCADSHIFT,
-    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
+    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelPMEG, eelNR
 };
 
 /* Ewald geometry */
@@ -111,7 +111,7 @@ enum {
 
 #define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC || (e) == eelRF_ZERO )
 
-#define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)
+#define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD || (e) == eelPMEG)
 #define EEL_PME_EWALD(e) (EEL_PME(e) || (e) == eelEWALD)
 #define EEL_FULL(e) (EEL_PME_EWALD(e) || (e) == eelPOISSON)
 
@@ -423,6 +423,7 @@ enum gmx_nbkernel_elec
     GMX_NBKERNEL_ELEC_CUBICSPLINETABLE,
     GMX_NBKERNEL_ELEC_GENERALIZEDBORN,
     GMX_NBKERNEL_ELEC_EWALD,
+    GMX_NBKERNEL_ELEC_EWALD_GAUSSIAN,
     GMX_NBKERNEL_ELEC_NR
 };
 

@@ -1229,7 +1229,7 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
                           int type, char *ctype, int ptype,
                           char *resnumberic,
                           char *resname, char *name, real m0, real q0,
-                          int typeB, char *ctypeB, real mB, real qB)
+                          int typeB, char *ctypeB, real mB, real qB, real Gaussian)
 {
     int           j, resind = 0, resnr;
     unsigned char ric;
@@ -1292,13 +1292,14 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
     srenew(at->atomtypeB, nr+1);
 
     /* fill the list */
-    at->atom[nr].type  = type;
-    at->atom[nr].ptype = ptype;
-    at->atom[nr].q     = q0;
-    at->atom[nr].m     = m0;
-    at->atom[nr].typeB = typeB;
-    at->atom[nr].qB    = qB;
-    at->atom[nr].mB    = mB;
+    at->atom[nr].type     = type;
+    at->atom[nr].ptype    = ptype;
+    at->atom[nr].q        = q0;
+    at->atom[nr].m        = m0;
+    at->atom[nr].typeB    = typeB;
+    at->atom[nr].qB       = qB;
+    at->atom[nr].mB       = mB;
+    at->atom[nr].gaussian = (Gaussian < 1e-8 ? 1e8 : 1./(sqrt(2.0)*Gaussian));
 
     at->atom[nr].resind     = resind;
     at->atom[nr].atomnumber = atomicnumber;
@@ -1333,8 +1334,8 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     int           cgnumber, atomnr, type, typeB, nscan;
     char          id[STRLEN], ctype[STRLEN], ctypeB[STRLEN],
                   resnumberic[STRLEN], resname[STRLEN], name[STRLEN], check[STRLEN];
-    double        m, q, mb, qb;
-    real          m0, q0, mB, qB;
+    double        m, q, mb, qb, gaussian;
+    real          m0, q0, mB, qB, Gaussian;
 
     /* Make a shortcut for writing in this molecule  */
     nr = at->nr;
@@ -1354,15 +1355,16 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     ptype = get_atomtype_ptype(type, atype);
 
     /* Set default from type */
-    q0    = get_atomtype_qA(type, atype);
-    m0    = get_atomtype_massA(type, atype);
-    typeB = type;
-    qB    = q0;
-    mB    = m0;
+    q0       = get_atomtype_qA(type, atype);
+    m0       = get_atomtype_massA(type, atype);
+    typeB    = type;
+    qB       = q0;
+    mB       = m0;
+    Gaussian = 1e8;
 
     /* Optional parameters */
-    nscan = sscanf(line, "%*s%*s%*s%*s%*s%*s%lf%lf%s%lf%lf%s",
-                   &q, &m, ctypeB, &qb, &mb, check);
+    nscan = sscanf(line, "%*s%*s%*s%*s%*s%*s%lf%lf%s%lf%lf%lf%s",
+                   &q, &m, ctypeB, &qb, &mb, &gaussian, check);
 
     /* Nasty switch that falls thru all the way down! */
     if (nscan > 0)
@@ -1387,7 +1389,11 @@ void push_atom(t_symtab *symtab, t_block *cgs,
                         mB = mb;
                         if (nscan > 5)
                         {
-                            warning_error(wi, "Too many parameters");
+                            Gaussian = gaussian;
+                            if (nscan > 6)
+                            {
+                                warning_error(wi, "Too many parameters");
+                            }
                         }
                     }
                 }
@@ -1396,7 +1402,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     }
     if (debug)
     {
-        fprintf(debug, "mB=%g, qB=%g, typeB=%d\n", mB, qB, typeB);
+        fprintf(debug, "mB=%g, qB=%g, typeB=%d, gaussian=%g \n", mB, qB, typeB, Gaussian);
     }
 
     push_cg(cgs, lastcg, cgnumber, nr);
@@ -1404,7 +1410,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     push_atom_now(symtab, at, atomnr, get_atomtype_atomnumber(type, atype),
                   type, ctype, ptype, resnumberic,
                   resname, name, m0, q0, typeB,
-                  typeB == type ? ctype : ctypeB, mB, qB);
+                  typeB == type ? ctype : ctypeB, mB, qB, Gaussian);
 }
 
 void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,

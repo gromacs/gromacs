@@ -2396,6 +2396,7 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
     if (file_version >= 52)
     {
         gmx_fio_do_int(fio, atom->atomnumber);
+        gmx_fio_do_real(fio, atom->gaussian);
         if (bRead)
         {
             /* Set element string from atomic number if present.

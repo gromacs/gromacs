@@ -108,6 +108,7 @@ ElectrostaticsList = {
     'GeneralizedBorn'         : ['rinv','r'],
     'CubicSplineTable'        : ['rinv','r','table'],
     'Ewald'                   : ['rinv','rinvsq','r'],
+    'EwaldG'                  : ['rinv','rinvsq','r'],
 }
 
 
@@ -189,6 +190,7 @@ Abbreviation = {
     'None'                    : 'None',
     'Coulomb'                 : 'Coul',
     'Ewald'                   : 'Ew',
+    'EwaldG'                  : 'EwG',
     'ReactionField'           : 'RF',
     'GeneralizedBorn'         : 'GB',
     'CubicSplineTable'        : 'CSTab',
@@ -309,7 +311,7 @@ def KeepKernel(KernelElec,KernelElecMod,KernelVdw,KernelVdwMod,KernelGeom,Kernel
             return 0
 
     #Only do LJ-PME if we are also doing PME for electrostatics, or no electrostatics at all.
-    if(KernelVdw=='LJEwald' and KernelElec not in ['Ewald','None']):
+    if(KernelVdw=='LJEwald' and KernelElec not in ['Ewald','EwaldG','None']):
         return 0
 
     return 1

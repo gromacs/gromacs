@@ -61,6 +61,7 @@ typedef struct {
     gmx_bool               bOrires;
     real                  *massA, *massB, *massT, *invmass;
     real                  *chargeA, *chargeB;
+    real                  *gaussian;
     real                  *sqrt_c6A, *sqrt_c6B;
     real                  *sigmaA, *sigmaB, *sigma3A, *sigma3B;
     gmx_bool              *bPerturbed;

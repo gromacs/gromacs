@@ -1718,9 +1718,9 @@ static void pr_atom(FILE *fp, int indent, const char *title, t_atom *atom, int n
         {
             (void) pr_indent(fp, indent);
             fprintf(fp, "%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
-                    "q=%12.5e, mB=%12.5e, qB=%12.5e, resind=%5d, atomnumber=%3d}\n",
+                    "q=%12.5e, mB=%12.5e, qB=%12.5e, gaussian=%12.5e, resind=%5d, atomnumber=%3d}\n",
                     title, i, atom[i].type, atom[i].typeB, ptype_str[atom[i].ptype],
-                    atom[i].m, atom[i].q, atom[i].mB, atom[i].qB,
+                    atom[i].m, atom[i].q, atom[i].mB, atom[i].qB, atom[i].gaussian,
                     atom[i].resind, atom[i].atomnumber);
         }
     }
@@ -1874,7 +1874,6 @@ void pr_mtop(FILE *fp, int indent, const char *title, gmx_mtop_t *mtop,
              gmx_bool bShowNumbers)
 {
     int mt, mb;
-
     if (available(fp, mtop, indent, title))
     {
         indent = pr_title(fp, indent, title);
