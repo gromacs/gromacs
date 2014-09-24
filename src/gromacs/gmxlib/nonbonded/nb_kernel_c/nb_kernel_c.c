@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "../nb_kernel.h"
 
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_c;
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_c;
@@ -257,6 +257,56 @@ nb_kernel_t nb_kernel_ElecCSTab_VdwBham_GeomW4P1_VF_c;
 nb_kernel_t nb_kernel_ElecCSTab_VdwBham_GeomW4P1_F_c;
 nb_kernel_t nb_kernel_ElecCSTab_VdwBham_GeomW4W4_VF_c;
 nb_kernel_t nb_kernel_ElecCSTab_VdwBham_GeomW4W4_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomP1P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomP1P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomW3P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomW3P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomW3W3_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomW3W3_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomW4P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomW4P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomW4W4_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJEw_GeomW4W4_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomP1P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomP1P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomW3P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomW3P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomW3W3_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomW3W3_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomW4P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomW4P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomW4W4_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwLJ_GeomW4W4_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomP1P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomP1P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomW3P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomW3P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomW3W3_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomW3W3_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomW4P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomW4P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomW4W4_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwNone_GeomW4W4_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomP1P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomP1P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomW3P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomW3P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomW3W3_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomW3W3_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomW4P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomW4P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomW4W4_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwCSTab_GeomW4W4_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomP1P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomP1P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomW3P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomW3P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomW3W3_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomW3W3_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomW4P1_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomW4P1_F_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomW4W4_VF_c;
+nb_kernel_t nb_kernel_ElecEwG_VdwBham_GeomW4W4_F_c;
 nb_kernel_t nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_c;
 nb_kernel_t nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_c;
 nb_kernel_t nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_c;
@@ -588,6 +638,56 @@ nb_kernel_info_t
     { nb_kernel_ElecCSTab_VdwBham_GeomW4P1_F_c, "nb_kernel_ElecCSTab_VdwBham_GeomW4P1_F_c", "c", "CubicSplineTable", "None", "Buckingham", "None", "Water4Particle", "", "Force" },
     { nb_kernel_ElecCSTab_VdwBham_GeomW4W4_VF_c, "nb_kernel_ElecCSTab_VdwBham_GeomW4W4_VF_c", "c", "CubicSplineTable", "None", "Buckingham", "None", "Water4Water4", "", "PotentialAndForce" },
     { nb_kernel_ElecCSTab_VdwBham_GeomW4W4_F_c, "nb_kernel_ElecCSTab_VdwBham_GeomW4W4_F_c", "c", "CubicSplineTable", "None", "Buckingham", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomP1P1_VF_c, "nb_kernel_ElecEwG_VdwLJEw_GeomP1P1_VF_c", "c", "EwaldG", "None", "LJEwald", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomP1P1_F_c, "nb_kernel_ElecEwG_VdwLJEw_GeomP1P1_F_c", "c", "EwaldG", "None", "LJEwald", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomW3P1_VF_c, "nb_kernel_ElecEwG_VdwLJEw_GeomW3P1_VF_c", "c", "EwaldG", "None", "LJEwald", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomW3P1_F_c, "nb_kernel_ElecEwG_VdwLJEw_GeomW3P1_F_c", "c", "EwaldG", "None", "LJEwald", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomW3W3_VF_c, "nb_kernel_ElecEwG_VdwLJEw_GeomW3W3_VF_c", "c", "EwaldG", "None", "LJEwald", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomW3W3_F_c, "nb_kernel_ElecEwG_VdwLJEw_GeomW3W3_F_c", "c", "EwaldG", "None", "LJEwald", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomW4P1_VF_c, "nb_kernel_ElecEwG_VdwLJEw_GeomW4P1_VF_c", "c", "EwaldG", "None", "LJEwald", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomW4P1_F_c, "nb_kernel_ElecEwG_VdwLJEw_GeomW4P1_F_c", "c", "EwaldG", "None", "LJEwald", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomW4W4_VF_c, "nb_kernel_ElecEwG_VdwLJEw_GeomW4W4_VF_c", "c", "EwaldG", "None", "LJEwald", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJEw_GeomW4W4_F_c, "nb_kernel_ElecEwG_VdwLJEw_GeomW4W4_F_c", "c", "EwaldG", "None", "LJEwald", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomP1P1_VF_c, "nb_kernel_ElecEwG_VdwLJ_GeomP1P1_VF_c", "c", "EwaldG", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomP1P1_F_c, "nb_kernel_ElecEwG_VdwLJ_GeomP1P1_F_c", "c", "EwaldG", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomW3P1_VF_c, "nb_kernel_ElecEwG_VdwLJ_GeomW3P1_VF_c", "c", "EwaldG", "None", "LennardJones", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomW3P1_F_c, "nb_kernel_ElecEwG_VdwLJ_GeomW3P1_F_c", "c", "EwaldG", "None", "LennardJones", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomW3W3_VF_c, "nb_kernel_ElecEwG_VdwLJ_GeomW3W3_VF_c", "c", "EwaldG", "None", "LennardJones", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomW3W3_F_c, "nb_kernel_ElecEwG_VdwLJ_GeomW3W3_F_c", "c", "EwaldG", "None", "LennardJones", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomW4P1_VF_c, "nb_kernel_ElecEwG_VdwLJ_GeomW4P1_VF_c", "c", "EwaldG", "None", "LennardJones", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomW4P1_F_c, "nb_kernel_ElecEwG_VdwLJ_GeomW4P1_F_c", "c", "EwaldG", "None", "LennardJones", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomW4W4_VF_c, "nb_kernel_ElecEwG_VdwLJ_GeomW4W4_VF_c", "c", "EwaldG", "None", "LennardJones", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwLJ_GeomW4W4_F_c, "nb_kernel_ElecEwG_VdwLJ_GeomW4W4_F_c", "c", "EwaldG", "None", "LennardJones", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecEwG_VdwNone_GeomP1P1_VF_c, "nb_kernel_ElecEwG_VdwNone_GeomP1P1_VF_c", "c", "EwaldG", "None", "None", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwNone_GeomP1P1_F_c, "nb_kernel_ElecEwG_VdwNone_GeomP1P1_F_c", "c", "EwaldG", "None", "None", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwNone_GeomW3P1_VF_c, "nb_kernel_ElecEwG_VdwNone_GeomW3P1_VF_c", "c", "EwaldG", "None", "None", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwNone_GeomW3P1_F_c, "nb_kernel_ElecEwG_VdwNone_GeomW3P1_F_c", "c", "EwaldG", "None", "None", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwNone_GeomW3W3_VF_c, "nb_kernel_ElecEwG_VdwNone_GeomW3W3_VF_c", "c", "EwaldG", "None", "None", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwNone_GeomW3W3_F_c, "nb_kernel_ElecEwG_VdwNone_GeomW3W3_F_c", "c", "EwaldG", "None", "None", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecEwG_VdwNone_GeomW4P1_VF_c, "nb_kernel_ElecEwG_VdwNone_GeomW4P1_VF_c", "c", "EwaldG", "None", "None", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwNone_GeomW4P1_F_c, "nb_kernel_ElecEwG_VdwNone_GeomW4P1_F_c", "c", "EwaldG", "None", "None", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwNone_GeomW4W4_VF_c, "nb_kernel_ElecEwG_VdwNone_GeomW4W4_VF_c", "c", "EwaldG", "None", "None", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwNone_GeomW4W4_F_c, "nb_kernel_ElecEwG_VdwNone_GeomW4W4_F_c", "c", "EwaldG", "None", "None", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomP1P1_VF_c, "nb_kernel_ElecEwG_VdwCSTab_GeomP1P1_VF_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomP1P1_F_c, "nb_kernel_ElecEwG_VdwCSTab_GeomP1P1_F_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomW3P1_VF_c, "nb_kernel_ElecEwG_VdwCSTab_GeomW3P1_VF_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomW3P1_F_c, "nb_kernel_ElecEwG_VdwCSTab_GeomW3P1_F_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomW3W3_VF_c, "nb_kernel_ElecEwG_VdwCSTab_GeomW3W3_VF_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomW3W3_F_c, "nb_kernel_ElecEwG_VdwCSTab_GeomW3W3_F_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomW4P1_VF_c, "nb_kernel_ElecEwG_VdwCSTab_GeomW4P1_VF_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomW4P1_F_c, "nb_kernel_ElecEwG_VdwCSTab_GeomW4P1_F_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomW4W4_VF_c, "nb_kernel_ElecEwG_VdwCSTab_GeomW4W4_VF_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwCSTab_GeomW4W4_F_c, "nb_kernel_ElecEwG_VdwCSTab_GeomW4W4_F_c", "c", "EwaldG", "None", "CubicSplineTable", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecEwG_VdwBham_GeomP1P1_VF_c, "nb_kernel_ElecEwG_VdwBham_GeomP1P1_VF_c", "c", "EwaldG", "None", "Buckingham", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwBham_GeomP1P1_F_c, "nb_kernel_ElecEwG_VdwBham_GeomP1P1_F_c", "c", "EwaldG", "None", "Buckingham", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwBham_GeomW3P1_VF_c, "nb_kernel_ElecEwG_VdwBham_GeomW3P1_VF_c", "c", "EwaldG", "None", "Buckingham", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwBham_GeomW3P1_F_c, "nb_kernel_ElecEwG_VdwBham_GeomW3P1_F_c", "c", "EwaldG", "None", "Buckingham", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwBham_GeomW3W3_VF_c, "nb_kernel_ElecEwG_VdwBham_GeomW3W3_VF_c", "c", "EwaldG", "None", "Buckingham", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwBham_GeomW3W3_F_c, "nb_kernel_ElecEwG_VdwBham_GeomW3W3_F_c", "c", "EwaldG", "None", "Buckingham", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecEwG_VdwBham_GeomW4P1_VF_c, "nb_kernel_ElecEwG_VdwBham_GeomW4P1_VF_c", "c", "EwaldG", "None", "Buckingham", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwBham_GeomW4P1_F_c, "nb_kernel_ElecEwG_VdwBham_GeomW4P1_F_c", "c", "EwaldG", "None", "Buckingham", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecEwG_VdwBham_GeomW4W4_VF_c, "nb_kernel_ElecEwG_VdwBham_GeomW4W4_VF_c", "c", "EwaldG", "None", "Buckingham", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwG_VdwBham_GeomW4W4_F_c, "nb_kernel_ElecEwG_VdwBham_GeomW4W4_F_c", "c", "EwaldG", "None", "Buckingham", "None", "Water4Water4", "", "Force" },
     { nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_c, "nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_c", "c", "GeneralizedBorn", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_c, "nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_c", "c", "GeneralizedBorn", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_c, "nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_c", "c", "GeneralizedBorn", "None", "None", "None", "ParticleParticle", "", "PotentialAndForce" },

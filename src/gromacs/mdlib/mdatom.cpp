@@ -150,6 +150,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
         srenew(md->massT, md->nalloc);
         srenew(md->invmass, md->nalloc);
         srenew(md->chargeA, md->nalloc);
+        srenew(md->gaussian, md->nalloc);
         if (bLJPME)
         {
             srenew(md->sqrt_c6A, md->nalloc);
@@ -319,6 +320,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
             md->invmass[i]    = 1.0/mA;
         }
         md->chargeA[i]      = atom->q;
+        md->gaussian[i]     = atom->gaussian;
         md->typeA[i]        = atom->type;
         if (bLJPME)
         {

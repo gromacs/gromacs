@@ -568,7 +568,6 @@ check_solvent(FILE  *                fp,
             bestsp = i;
         }
     }
-
     if (bestsp >= 0)
     {
         bestsol = solvent_parameters[bestsp].model;
@@ -2611,6 +2610,9 @@ void init_forcerec(FILE              *fp,
         case eelEWALD:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD;
             break;
+        case eelPMEG:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD_GAUSSIAN;
+            break;
 
         default:
             gmx_fatal(FARGS, "Unsupported electrostatic interaction: %s", eel_names[fr->eeltype]);
@@ -2669,6 +2671,7 @@ void init_forcerec(FILE              *fp,
                            fr->eeltype == eelEWALD ||
                            fr->eeltype == eelPME ||
                            fr->eeltype == eelRF ||
+                           fr->eeltype == eelPMEG ||
                            fr->eeltype == eelRF_ZERO);
 
         /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely

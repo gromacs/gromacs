@@ -70,9 +70,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_VF_c
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
     real             *shiftvec,*fshift,*x,*f;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,alphai0;
     int              vdwjidx0;
-    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
+    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0,alphaj0;
     real             dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00,cexp1_00,cexp2_00;
     real             velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
@@ -249,9 +249,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_F_c
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
     real             *shiftvec,*fshift,*x,*f;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,alphai0;
     int              vdwjidx0;
-    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
+    real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0,alphaj0;
     real             dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00,cexp1_00,cexp2_00;
     real             velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;

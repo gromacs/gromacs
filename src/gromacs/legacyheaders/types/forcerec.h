@@ -99,7 +99,7 @@ typedef struct
 /* macros for the cginfo data in forcerec
  *
  * Since the tpx format support max 256 energy groups, we do the same here.
- * Note that we thus have bits 8-14 still unused.
+ * Note that we thus have bits 8-13 still unused.
  *
  * The maximum cg size in cginfo is 63
  * because we only have space for 6 bits in cginfo,
