@@ -210,7 +210,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
     nbnxn_cu_kfunc_ptr_t res;
 
     assert(eeltype < eelCuNR);
-    assert(evdwtype < eelCuNR);
+    assert(evdwtype < evdwCuNR);
 
     if (bDoEne)
     {
