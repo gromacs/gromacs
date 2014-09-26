@@ -4273,12 +4273,63 @@ static gmx_inline gmx_bool ftype_is_bonded_potential(int ftype)
         (ftype < F_GB12 || ftype > F_GB14);
 }
 
+/* Divide proper and RB dihedrals over threads simultaneously */
+static void divide_dihedrals_over_threads(t_idef *idef, int nthreads)
+{
+    t_ilist   *pdihs, *rbdihs;
+    const int  nat1 = 5;
+    int        ind_p, ind_rb;
+    int        t;
+
+    pdihs  = &idef->il[F_PDIHS];
+    rbdihs = &idef->il[F_RBDIHS];
+
+    ind_p  = 0;
+    ind_rb = 0;
+    idef->il_thread_division[F_PDIHS *(nthreads+1)] = ind_p;
+    idef->il_thread_division[F_RBDIHS*(nthreads+1)] = ind_rb;
+
+    for (t = 1; t <= nthreads; t++)
+    {
+        int il_nr_thread;
+
+        /* Here we assume there is no significant difference in computational
+         * cost between a proper and a RB dihedral. A RB dihedral is a bit more
+         * expensive, but taking that into account is complicated.
+         */
+        il_nr_thread = ((((pdihs->nr + rbdihs->nr)/nat1)*t)/nthreads)*nat1;
+
+        while (ind_p + ind_rb < il_nr_thread)
+        {
+            /* To divide dihedrals based on atom order, we compare
+             * the index of the second atom in the dihedrals,
+             * since this is close to the center of the 4 atoms.
+             */
+            if ((ind_p < pdihs->nr &&
+                pdihs->iatoms[ind_p+1+1] <= rbdihs->iatoms[ind_rb+1+1]) ||
+                ind_rb == rbdihs->nr)
+            {
+                ind_p  += nat1;
+            }
+            else
+            {
+                ind_rb += nat1;
+            }
+        }
+        idef->il_thread_division[F_PDIHS *(nthreads+1) + t] = ind_p;
+        idef->il_thread_division[F_RBDIHS*(nthreads+1) + t] = ind_rb;
+    }
+
+    assert(ind_p == pdihs->nr && ind_rb == rbdihs->nr);
+}
+
 static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
 {
-    int ftype;
-    int nat1;
-    int t;
-    int il_nr_thread;
+    gmx_bool bInterleaveDihs;
+    int      ftype;
+    int      nat1;
+    int      t;
+    int      il_nr_thread;
 
     idef->nthreads = nthreads;
 
@@ -4288,9 +4339,33 @@ static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
         snew(idef->il_thread_division, idef->il_thread_division_nalloc);
     }
 
+    bInterleaveDihs = (idef->il[F_PDIHS].nr > 0 && idef->il[F_RBDIHS].nr > 0);
+
+    if (bInterleaveDihs)
+    {
+        /* Proper and RB dihedrals are usually divided very anisotropically
+         * over the system when both are present. Therefore we distribute
+         * them based on atom index to increase cache hits and reduce
+         * the cost of the force reduction.
+         */
+        divide_dihedrals_over_threads(idef, nthreads);
+    }
+
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (ftype_is_bonded_potential(ftype))
+        if (idef->il[ftype].nr == 0)
+        {
+            /* No interactions, avoid all the integer math below */
+            for (t = 0; t <= nthreads; t++)
+            {
+                idef->il_thread_division[ftype*(nthreads+1)+t] = 0;
+            }
+
+            continue;
+        }
+
+        if (ftype_is_bonded_potential(ftype) &&
+            !(bInterleaveDihs && (ftype == F_PDIHS || ftype == F_RBDIHS)))
         {
             nat1 = interaction_function[ftype].nratoms + 1;
 
