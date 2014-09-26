@@ -261,6 +261,15 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t  pme_lb,
     while (sp <= 1.001*pme_lb->setup[pme_lb->cur].spacing || !grid_ok);
 
     set->rcut_coulomb = pme_lb->cut_spacing*sp;
+    if (set->rcut_coulomb < pme_lb->rcut_coulomb_start)
+    {
+        /* This is unlikely, but can happen when e.g. continuing from
+         * a checkpoint after equilibration where the box shrank a lot.
+         * We want to avoid rcoulomb getting smaller than rvdw
+         * and there might be more issues with decreasing rcoulomb.
+         */
+        set->rcut_coulomb = pme_lb->rcut_coulomb_start;
+    }
 
     if (pme_lb->cutoff_scheme == ecutsVERLET)
     {
