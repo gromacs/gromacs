@@ -157,7 +157,7 @@
 /* Analytical Ewald interaction kernels with twin-range cut-off
  */
 #define EL_EWALD_ANA
-#define LJ_CUTOFF_CHECK
+#define VDW_CUTOFF_CHECK
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJ ## __VA_ARGS__
@@ -189,7 +189,7 @@
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_ANA
-#undef LJ_CUTOFF_CHECK
+#undef VDW_CUTOFF_CHECK
 
 
 /* Tabulated Ewald interaction kernels */
@@ -229,7 +229,7 @@
 
 /* Tabulated Ewald interaction kernels with twin-range cut-off */
 #define EL_EWALD_TAB
-#define LJ_CUTOFF_CHECK
+#define VDW_CUTOFF_CHECK
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJ ## __VA_ARGS__
@@ -261,4 +261,4 @@
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_TAB
-#undef LJ_CUTOFF_CHECK
+#undef VDW_CUTOFF_CHECK
