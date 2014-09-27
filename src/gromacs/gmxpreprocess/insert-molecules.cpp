@@ -45,128 +45,92 @@
 #include "gromacs/gmxpreprocess/addconf.h"
 #include "gromacs/gmxpreprocess/read-conformation.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
-static gmx_bool in_box(t_pbc *pbc, rvec x)
-{
-    rvec box_center, dx;
-    int  shift;
-
-    /* pbc_dx_aiuc only works correctly with the rectangular box center */
-    calc_box_center(ecenterRECT, pbc->box, box_center);
-
-    shift = pbc_dx_aiuc(pbc, x, box_center, dx);
-
-    return (shift == CENTRAL);
-}
-
-/* This is a (maybe) slow workaround to avoid the neighbor searching in addconf.c, which
- * leaks memory (May 2012). The function could be deleted as soon as the memory leaks
- * there are fixed.
- * However, when inserting a small molecule in a system containing not too many atoms,
- * allPairsDistOk is probably even faster than the other code.
- */
-static gmx_bool
-allPairsDistOk(t_atoms *atoms, rvec *x, real *exclusionDistances,
-               int ePBC, matrix box,
-               t_atoms *atoms_insrt, rvec *x_n, real *exclusionDistances_insrt)
-{
-    int   i, j;
-    rvec  dx;
-    real  n2, r2;
-    t_pbc pbc;
-
-    set_pbc(&pbc, ePBC, box);
-    for (i = 0; i < atoms->nr; i++)
-    {
-        for (j = 0; j < atoms_insrt->nr; j++)
-        {
-            pbc_dx(&pbc, x[i], x_n[j], dx);
-            n2 = norm2(dx);
-            r2 = sqr(exclusionDistances[i]+exclusionDistances_insrt[j]);
-            if (n2 < r2)
-            {
-                return FALSE;
-            }
-        }
-    }
-    return TRUE;
-}
 
 /* enum for random rotations of inserted solutes */
 enum {
     en_rot, en_rotXYZ, en_rotZ, en_rotNone, en_NR
 };
 
-static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int seed,
-                         t_atoms *atoms, rvec **x, real **exclusionDistances, int ePBC, matrix box,
-                         gmx_atomprop_t aps,
-                         real defaultDistance, real scaleFactor, real rshell,
-                         const output_env_t oenv,
-                         const char* posfn, const rvec deltaR, int enum_rot,
-                         gmx_bool bCheckAllPairDist)
+static void center_molecule(int atomCount, rvec x[])
+{
+    rvec center;
+    clear_rvec(center);
+    for (int i = 0; i < atomCount; ++i)
+    {
+        rvec_inc(center, x[i]);
+    }
+    svmul(1.0/atomCount, center, center);
+    for (int i = 0; i < atomCount; ++i)
+    {
+        rvec_dec(x[i], center);
+    }
+}
+
+static void generate_trial_conf(int atomCount, const rvec xin[],
+                                const rvec offset, int enum_rot, gmx_rng_t rng,
+                                rvec xout[])
+{
+    for (int i = 0; i < atomCount; ++i)
+    {
+        copy_rvec(xin[i], xout[i]);
+    }
+    real alfa = 0.0, beta = 0.0, gamma = 0.0;
+    switch (enum_rot)
+    {
+        case en_rotXYZ:
+            alfa  = 2*M_PI * gmx_rng_uniform_real(rng);
+            beta  = 2*M_PI * gmx_rng_uniform_real(rng);
+            gamma = 2*M_PI * gmx_rng_uniform_real(rng);
+            break;
+        case en_rotZ:
+            alfa  = beta = 0.;
+            gamma = 2*M_PI * gmx_rng_uniform_real(rng);
+            break;
+        case en_rotNone:
+            alfa = beta = gamma = 0.;
+            break;
+    }
+    if (enum_rot == en_rotXYZ || (enum_rot == en_rotZ))
+    {
+        rotate_conf(atomCount, xout, NULL, alfa, beta, gamma);
+    }
+    for (int i = 0; i < atomCount; ++i)
+    {
+        rvec_inc(xout[i], offset);
+    }
+}
+
+static void insert_mols(int nmol_insrt, int ntry, int seed,
+                        t_atoms *atoms, rvec **x, real **exclusionDistances,
+                        t_atoms *atoms_insrt, rvec *x_insrt, real *exclusionDistances_insrt,
+                        int ePBC, matrix box,
+                        const output_env_t oenv,
+                        const char* posfn, const rvec deltaR, int enum_rot)
 {
     t_pbc            pbc;
-    static  char    *title_insrt;
-    t_atoms          atoms_insrt;
-    rvec            *x_insrt, *x_n;
-    real            *exclusionDistances_insrt;
-    int              ePBC_insrt;
-    matrix           box_insrt;
-    int              i, mol, onr, ncol;
-    real             alfa = 0., beta = 0., gamma = 0.;
-    rvec             offset_x;
+    rvec            *x_n;
+    int              mol;
     int              trial;
     double         **rpos;
-    gmx_rng_t        rng;
 
-    rng = gmx_rng_init(seed);
+    gmx_rng_t        rng = gmx_rng_init(seed);
     set_pbc(&pbc, ePBC, box);
 
-    /* read number of atoms of insert molecules */
-    {
-        int natoms;
-        get_stx_coordnum(mol_insrt, &natoms);
-        if (natoms == 0)
-        {
-            gmx_fatal(FARGS, "No molecule in %s, please check your input\n", mol_insrt);
-        }
-        init_t_atoms(&atoms_insrt, natoms, FALSE);
-    }
-    /* allocate memory for atom coordinates of insert molecules */
-    snew(x_insrt, atoms_insrt.nr);
-    snew(atoms_insrt.resinfo, atoms_insrt.nr);
-    snew(atoms_insrt.atomname, atoms_insrt.nr);
-    snew(atoms_insrt.atom, atoms_insrt.nr);
-    atoms_insrt.pdbinfo = NULL;
-    snew(x_n, atoms_insrt.nr);
-    snew(title_insrt, STRLEN);
-
-    /* read residue number, residue names, atomnames, coordinates etc. */
-    fprintf(stderr, "Reading molecule configuration \n");
-    read_stx_conf(mol_insrt, title_insrt, &atoms_insrt, x_insrt, NULL,
-                  &ePBC_insrt, box_insrt);
-    fprintf(stderr, "%s\nContaining %d atoms in %d residue\n",
-            title_insrt, atoms_insrt.nr, atoms_insrt.nres);
-    srenew(atoms_insrt.resinfo, atoms_insrt.nres);
-
-    /* initialise distance arrays for inserted molecules */
-    exclusionDistances_insrt = makeExclusionDistances(&atoms_insrt, aps, defaultDistance, scaleFactor);
+    snew(x_n, atoms_insrt->nr);
 
     /* With -ip, take nmol_insrt from file posfn */
     if (posfn != NULL)
     {
+        int ncol;
         nmol_insrt = read_xvg(posfn, &rpos, &ncol);
         if (ncol != 3)
         {
@@ -175,50 +139,27 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
         fprintf(stderr, "Read %d positions from file %s\n\n", nmol_insrt, posfn);
     }
 
-    srenew(atoms->resinfo, (atoms->nres+nmol_insrt*atoms_insrt.nres));
-    srenew(atoms->atomname, (atoms->nr+atoms_insrt.nr*nmol_insrt));
-    srenew(atoms->atom, (atoms->nr+atoms_insrt.nr*nmol_insrt));
-    srenew(*x, (atoms->nr+atoms_insrt.nr*nmol_insrt));
-    srenew(*exclusionDistances, (atoms->nr+atoms_insrt.nr*nmol_insrt));
+    {
+        const int finalAtomCount    = atoms->nr + nmol_insrt * atoms_insrt->nr;
+        const int finalResidueCount = atoms->nres + nmol_insrt * atoms_insrt->nres;
+        srenew(atoms->resinfo,      finalResidueCount);
+        srenew(atoms->atomname,     finalAtomCount);
+        srenew(atoms->atom,         finalAtomCount);
+        srenew(*x,                  finalAtomCount);
+        srenew(*exclusionDistances, finalAtomCount);
+    }
 
     trial = mol = 0;
     while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt))
     {
         fprintf(stderr, "\rTry %d", trial++);
-        for (i = 0; (i < atoms_insrt.nr); i++)
-        {
-            copy_rvec(x_insrt[i], x_n[i]);
-        }
-        switch (enum_rot)
-        {
-            case en_rotXYZ:
-                alfa  = 2*M_PI * gmx_rng_uniform_real(rng);
-                beta  = 2*M_PI * gmx_rng_uniform_real(rng);
-                gamma = 2*M_PI * gmx_rng_uniform_real(rng);
-                break;
-            case en_rotZ:
-                alfa  = beta = 0.;
-                gamma = 2*M_PI * gmx_rng_uniform_real(rng);
-                break;
-            case en_rotNone:
-                alfa = beta = gamma = 0.;
-                break;
-        }
-        if (enum_rot == en_rotXYZ || (enum_rot == en_rotZ))
-        {
-            rotate_conf(atoms_insrt.nr, x_n, NULL, alfa, beta, gamma);
-        }
+        rvec offset_x;
         if (posfn == NULL)
         {
             /* insert at random positions */
             offset_x[XX] = box[XX][XX] * gmx_rng_uniform_real(rng);
             offset_x[YY] = box[YY][YY] * gmx_rng_uniform_real(rng);
             offset_x[ZZ] = box[ZZ][ZZ] * gmx_rng_uniform_real(rng);
-            make_new_box(atoms_insrt.nr, x_n, box_insrt, offset_x, TRUE);
-            if (!in_box(&pbc, x_n[0]) || !in_box(&pbc, x_n[atoms_insrt.nr-1]))
-            {
-                continue;
-            }
         }
         else
         {
@@ -226,29 +167,15 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
             offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2 * gmx_rng_uniform_real(rng)-1);
             offset_x[YY] = rpos[YY][mol] + deltaR[YY]*(2 * gmx_rng_uniform_real(rng)-1);
             offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2 * gmx_rng_uniform_real(rng)-1);
-            for (i = 0; i < atoms_insrt.nr; i++)
-            {
-                rvec_inc(x_n[i], offset_x);
-            }
         }
-
-        onr = atoms->nr;
-
-        /* This is a (maybe) slow workaround to avoid too many calls of add_conf, which
-         * leaks memory (status May 2012). If the momory leaks in add_conf() are fixed,
-         * this check could be removed. Note, however, that allPairsDistOk is probably
-         * even faster than add_conf() when inserting a small molecule into a moderately
-         * small system.
-         */
-        if (bCheckAllPairDist && !allPairsDistOk(atoms, *x, *exclusionDistances, ePBC, box, &atoms_insrt, x_n, exclusionDistances_insrt))
-        {
-            continue;
-        }
+        generate_trial_conf(atoms_insrt->nr, x_insrt, offset_x, enum_rot, rng,
+                            x_n);
+        const int onr = atoms->nr;
 
         add_conf(atoms, x, NULL, exclusionDistances, FALSE, ePBC, box, TRUE,
-                 &atoms_insrt, x_n, NULL, exclusionDistances_insrt, FALSE, rshell, 0, oenv);
+                 atoms_insrt, x_n, NULL, exclusionDistances_insrt, FALSE, 0, 0, oenv);
 
-        if (atoms->nr == (atoms_insrt.nr+onr))
+        if (atoms->nr == (atoms_insrt->nr+onr))
         {
             mol++;
             fprintf(stderr, " success (now %d atoms)!\n", atoms->nr);
@@ -264,13 +191,9 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
     fprintf(stderr, "\n");
     /* print number of molecules added */
     fprintf(stderr, "Added %d molecules (out of %d requested) of %s\n",
-            mol, nmol_insrt, *atoms_insrt.resinfo[0].name);
+            mol, nmol_insrt, *atoms_insrt->resinfo[0].name);
 
     sfree(x_n);
-    sfree(exclusionDistances_insrt);
-    done_atom(&atoms_insrt);
-
-    return title_insrt;
 }
 
 int gmx_insert_molecules(int argc, char *argv[])
@@ -311,23 +234,14 @@ int gmx_insert_molecules(int argc, char *argv[])
         "[PAR]",
     };
 
-    const char *bugs[] = {
-        "Molecules must be whole in the initial configurations.",
-        "Many repeated neighbor searchings with -ci blows up the allocated memory. "
-        "Option -allpair avoids this using all-to-all distance checks (slow for large systems)"
-    };
-
     /* parameter data */
-    gmx_bool       bProt, bBox;
-    const char    *conf_prot, *confout;
-    real          *exclusionDistances = NULL;
-    char          *title_ins          = NULL;
-    gmx_atomprop_t aps;
+    real          *exclusionDistances       = NULL;
+    real          *exclusionDistances_insrt = NULL;
 
     /* protein configuration data */
     char          *title = NULL;
-    t_atoms       *atoms;
-    rvec          *x    = NULL;
+    t_atoms       *atoms, *atoms_insrt;
+    rvec          *x    = NULL, *x_insrt = NULL;
     int            ePBC = -1;
     matrix         box;
 
@@ -339,10 +253,9 @@ int gmx_insert_molecules(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    static int      nmol_ins               = 0, nmol_try = 10, seed = 1997, enum_rot;
+    static int      nmol_ins               = 0, nmol_try = 10, seed = 1997;
     static real     defaultDistance        = 0.105, scaleFactor = 0.57;
     static rvec     new_box                = {0.0, 0.0, 0.0}, deltaR = {0.0, 0.0, 0.0};
-    static gmx_bool bCheckAllPairDist      = FALSE;
     output_env_t    oenv;
     const char     *enum_rot_string[] = {NULL, "xyz", "z", "none", NULL};
     t_pargs         pa[]              = {
@@ -361,29 +274,21 @@ int gmx_insert_molecules(int argc, char *argv[])
         { "-dr",    FALSE, etRVEC, {deltaR},
           "Allowed displacement in x/y/z from positions in [TT]-ip[tt] file" },
         { "-rot", FALSE,  etENUM, {enum_rot_string},
-          "rotate inserted molecules randomly" },
-        { "-allpair",    FALSE, etBOOL, {&bCheckAllPairDist},
-          "Avoid momory leaks during neighbor searching with option -ci. May be slow for large systems." },
+          "rotate inserted molecules randomly" }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+                           asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }
 
-    bProt     = opt2bSet("-f", NFILE, fnm);
-    bBox      = opt2parg_bSet("-box", asize(pa), pa);
-    enum_rot  = nenum(enum_rot_string);
+    const bool        bProt    = opt2bSet("-f", NFILE, fnm);
+    const bool        bBox     = opt2parg_bSet("-box", asize(pa), pa);
+    const char *const posfn    = opt2fn_null("-ip", NFILE, fnm);
+    const int         enum_rot = nenum(enum_rot_string);
 
     /* check input */
-    const char *insertionMoleculeFileName = opt2fn("-ci", NFILE, fnm);
-    if (!gmx_fexist(insertionMoleculeFileName))
-    {
-        gmx_fatal(FARGS,
-                  "A molecule conformation to insert is required in -ci. %s was not found!",
-                  insertionMoleculeFileName);
-    }
     if (nmol_ins <= 0 && !opt2bSet("-ip", NFILE, fnm))
     {
         gmx_fatal(FARGS, "Either -nmol must be larger than 0, "
@@ -395,21 +300,22 @@ int gmx_insert_molecules(int argc, char *argv[])
                   "a box size (-box) must be specified");
     }
 
-    aps = gmx_atomprop_init();
+    gmx_atomprop_t aps = gmx_atomprop_init();
 
     snew(atoms, 1);
     init_t_atoms(atoms, 0, FALSE);
     if (bProt)
     {
         /* Generate a solute configuration */
-        conf_prot = opt2fn("-f", NFILE, fnm);
-        title     = readConformation(conf_prot, atoms, &x, NULL,
-                                     &ePBC, box);
+        const char *conf_prot = opt2fn("-f", NFILE, fnm);
+        title                 = readConformation(conf_prot, atoms, &x, NULL,
+                                                 &ePBC, box);
         exclusionDistances = makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor);
         if (atoms->nr == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", conf_prot);
-            bProt = FALSE;
+            sfree(title);
+            title = NULL;
         }
     }
     if (bBox)
@@ -425,38 +331,60 @@ int gmx_insert_molecules(int argc, char *argv[])
         gmx_fatal(FARGS, "Undefined solute box.\nCreate one with gmx editconf "
                   "or give explicit -box command line option");
     }
+    snew(atoms_insrt, 1);
+    init_t_atoms(atoms_insrt, 0, FALSE);
+    {
+        int         ePBC_dummy;
+        matrix      box_dummy;
+        const char *conf_insrt = opt2fn("-ci", NFILE, fnm);
+        char       *title_ins
+            = readConformation(conf_insrt, atoms_insrt, &x_insrt, NULL,
+                               &ePBC_dummy, box_dummy);
+        if (atoms_insrt->nr == 0)
+        {
+            gmx_fatal(FARGS, "No molecule in %s, please check your input", conf_insrt);
+        }
+        if (title == NULL)
+        {
+            title = title_ins;
+        }
+        else
+        {
+            sfree(title_ins);
+        }
+        if (posfn == NULL)
+        {
+            center_molecule(atoms_insrt->nr, x_insrt);
+        }
+        exclusionDistances_insrt = makeExclusionDistances(atoms_insrt, aps, defaultDistance, scaleFactor);
+    }
+
+    gmx_atomprop_destroy(aps);
 
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
-    title_ins = insert_mols(insertionMoleculeFileName, nmol_ins, nmol_try, seed,
-                            atoms, &x, &exclusionDistances, ePBC, box, aps,
-                            defaultDistance, scaleFactor, 0,
-                            oenv, opt2fn_null("-ip", NFILE, fnm), deltaR, enum_rot,
-                            bCheckAllPairDist);
+    insert_mols(nmol_ins, nmol_try, seed,
+                atoms, &x, &exclusionDistances,
+                atoms_insrt, x_insrt, exclusionDistances_insrt,
+                ePBC, box, oenv, posfn, deltaR, enum_rot);
 
     /* write new configuration to file confout */
-    confout = ftp2fn(efSTO, NFILE, fnm);
+    const char *confout = ftp2fn(efSTO, NFILE, fnm);
     fprintf(stderr, "Writing generated configuration to %s\n", confout);
-    if (bProt)
-    {
-        write_sto_conf(confout, title, atoms, x, NULL, ePBC, box);
-        /* print box sizes and box type to stderr */
-        fprintf(stderr, "%s\n", title);
-    }
-    else
-    {
-        write_sto_conf(confout, title_ins, atoms, x, NULL, ePBC, box);
-    }
+    write_sto_conf(confout, title, atoms, x, NULL, ePBC, box);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
             atoms->nr, atoms->nres);
 
-    gmx_atomprop_destroy(aps);
     sfree(exclusionDistances);
+    sfree(exclusionDistances_insrt);
     sfree(x);
     done_atom(atoms);
+    done_atom(atoms_insrt);
     sfree(atoms);
+    sfree(atoms_insrt);
+    sfree(title);
 
     return 0;
 }
