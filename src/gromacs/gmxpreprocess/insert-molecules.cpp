@@ -38,17 +38,19 @@
 
 #include "insert-molecules.h"
 
+#include <algorithm>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "gromacs/gmxpreprocess/addconf.h"
 #include "gromacs/gmxpreprocess/read-conformation.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
+#include "gromacs/selection/nbsearch.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
@@ -109,11 +111,55 @@ static void generate_trial_conf(int atomCount, const rvec xin[],
     }
 }
 
+static bool is_insertion_allowed(gmx::AnalysisNeighborhoodSearch *search,
+                                 const real *exclusionDistances,
+                                 int atomCount, const rvec *x,
+                                 const real *exclusionDistances_insrt)
+{
+    gmx::AnalysisNeighborhoodPositions  pos(x, atomCount);
+    gmx::AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
+    gmx::AnalysisNeighborhoodPair       pair;
+    while (pairSearch.findNextPair(&pair))
+    {
+        const real r1 = exclusionDistances[pair.refIndex()];
+        const real r2 = exclusionDistances_insrt[pair.testIndex()];
+        if (pair.distance2() < sqr(r1 + r2))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void merge_atoms_noalloc(t_atoms *atoms, const t_atoms *atoms_add)
+{
+    int resnr = 0;
+    if (atoms->nr > 0)
+    {
+        resnr = atoms->resinfo[atoms->atom[atoms->nr-1].resind].nr;
+    }
+    int prevResInd = -1;
+    for (int i = 0; i < atoms_add->nr; ++i)
+    {
+        if (atoms_add->atom[i].resind != prevResInd)
+        {
+            prevResInd = atoms_add->atom[i].resind;
+            ++resnr;
+            atoms->resinfo[atoms->nres]    = atoms_add->resinfo[prevResInd];
+            atoms->resinfo[atoms->nres].nr = resnr;
+            ++atoms->nres;
+        }
+        atoms->atom[atoms->nr]        = atoms_add->atom[i];
+        atoms->atomname[atoms->nr]    = atoms_add->atomname[i];
+        atoms->atom[atoms->nr].resind = atoms->nres-1;
+        ++atoms->nr;
+    }
+}
+
 static void insert_mols(int nmol_insrt, int ntry, int seed,
                         t_atoms *atoms, rvec **x, real **exclusionDistances,
                         t_atoms *atoms_insrt, rvec *x_insrt, real *exclusionDistances_insrt,
                         int ePBC, matrix box,
-                        const output_env_t oenv,
                         const char* posfn, const rvec deltaR, int enum_rot)
 {
     t_pbc            pbc;
@@ -121,6 +167,22 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     int              mol;
     int              trial;
     double         **rpos;
+
+    const real       maxInsertRadius
+        = *std::max_element(exclusionDistances_insrt,
+                            exclusionDistances_insrt + atoms_insrt->nr);
+    real             maxRadius = maxInsertRadius;
+    if (atoms->nr > 0)
+    {
+        const real maxExistingRadius
+            = *std::max_element(*exclusionDistances,
+                                *exclusionDistances + atoms->nr);
+        maxRadius = std::max(maxInsertRadius, maxExistingRadius);
+    }
+
+    // TODO: Make all of this exception-safe.
+    gmx::AnalysisNeighborhood nb;
+    nb.setCutoff(maxInsertRadius + maxRadius);
 
     gmx_rng_t        rng = gmx_rng_init(seed);
     set_pbc(&pbc, ePBC, box);
@@ -170,14 +232,19 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         }
         generate_trial_conf(atoms_insrt->nr, x_insrt, offset_x, enum_rot, rng,
                             x_n);
-        const int onr = atoms->nr;
-
-        add_conf(atoms, x, NULL, exclusionDistances, FALSE, ePBC, box, TRUE,
-                 atoms_insrt, x_n, NULL, exclusionDistances_insrt, FALSE, 0, 0, oenv);
-
-        if (atoms->nr == (atoms_insrt->nr+onr))
+        gmx::AnalysisNeighborhoodPositions pos(*x, atoms->nr);
+        gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
+        if (is_insertion_allowed(&search, *exclusionDistances, atoms_insrt->nr,
+                                 x_n, exclusionDistances_insrt))
         {
-            mol++;
+            const int firstIndex = atoms->nr;
+            for (int i = 0; i < atoms_insrt->nr; ++i)
+            {
+                copy_rvec(x_n[i], (*x)[firstIndex + i]);
+                (*exclusionDistances)[firstIndex + i] = exclusionDistances_insrt[i];
+            }
+            merge_atoms_noalloc(atoms, atoms_insrt);
+            ++mol;
             fprintf(stderr, " success (now %d atoms)!\n", atoms->nr);
         }
     }
@@ -366,7 +433,7 @@ int gmx_insert_molecules(int argc, char *argv[])
     insert_mols(nmol_ins, nmol_try, seed,
                 atoms, &x, &exclusionDistances,
                 atoms_insrt, x_insrt, exclusionDistances_insrt,
-                ePBC, box, oenv, posfn, deltaR, enum_rot);
+                ePBC, box, posfn, deltaR, enum_rot);
 
     /* write new configuration to file confout */
     const char *confout = ftp2fn(efSTO, NFILE, fnm);
