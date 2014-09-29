@@ -4333,7 +4333,7 @@ static void clear_and_mark_ind(int ncg, int *move,
 static void print_cg_move(FILE *fplog,
                           gmx_domdec_t *dd,
                           gmx_int64_t step, int cg, int dim, int dir,
-                          gmx_bool bHaveLimitdAndCMOld, real limitd,
+                          gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
     gmx_domdec_comm_t *comm;
@@ -4342,19 +4342,22 @@ static void print_cg_move(FILE *fplog,
     comm = dd->comm;
 
     fprintf(fplog, "\nStep %s:\n", gmx_step_str(step, buf));
-    if (bHaveLimitdAndCMOld)
+    if (limitd > 0)
     {
-        fprintf(fplog, "The charge group starting at atom %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
+        fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
+                dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
                 ddglatnr(dd, dd->cgindex[cg]), limitd, dim2char(dim));
     }
     else
     {
-        fprintf(fplog, "The charge group starting at atom %d moved than the distance allowed by the domain decomposition in direction %c\n",
+        /* We don't have a limiting distance available: don't print it */
+        fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition in direction %c\n",
+                dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
                 ddglatnr(dd, dd->cgindex[cg]), dim2char(dim));
     }
     fprintf(fplog, "distance out of cell %f\n",
             dir == 1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
-    if (bHaveLimitdAndCMOld)
+    if (bHaveCgcmOld)
     {
         fprintf(fplog, "Old coordinates: %8.3f %8.3f %8.3f\n",
                 cm_old[XX], cm_old[YY], cm_old[ZZ]);
@@ -4372,19 +4375,20 @@ static void print_cg_move(FILE *fplog,
 static void cg_move_error(FILE *fplog,
                           gmx_domdec_t *dd,
                           gmx_int64_t step, int cg, int dim, int dir,
-                          gmx_bool bHaveLimitdAndCMOld, real limitd,
+                          gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
     if (fplog)
     {
         print_cg_move(fplog, dd, step, cg, dim, dir,
-                      bHaveLimitdAndCMOld, limitd, cm_old, cm_new, pos_d);
+                      bHaveCgcmOld, limitd, cm_old, cm_new, pos_d);
     }
     print_cg_move(stderr, dd, step, cg, dim, dir,
-                  bHaveLimitdAndCMOld, limitd, cm_old, cm_new, pos_d);
+                  bHaveCgcmOld, limitd, cm_old, cm_new, pos_d);
     gmx_fatal(FARGS,
-              "A charge group moved too far between two domain decomposition steps\n"
-              "This usually means that your system is not well equilibrated");
+              "%s moved too far between two domain decomposition steps\n"
+              "This usually means that your system is not well equilibrated",
+              dd->comm->bCGs ? "A charge group" : "An atom");
 }
 
 static void rotate_state_atom(t_state *state, int a)
@@ -4506,7 +4510,8 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                 {
                     if (pos_d >= limit1[d])
                     {
-                        cg_move_error(fplog, dd, step, cg, d, 1, TRUE, limitd[d],
+                        cg_move_error(fplog, dd, step, cg, d, 1,
+                                      cg_cm != state->x, limitd[d],
                                       cg_cm[cg], cm_new, pos_d);
                     }
                     dev[d] = 1;
@@ -4532,7 +4537,8 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                 {
                     if (pos_d < limit0[d])
                     {
-                        cg_move_error(fplog, dd, step, cg, d, -1, TRUE, limitd[d],
+                        cg_move_error(fplog, dd, step, cg, d, -1,
+                                      cg_cm != state->x, limitd[d],
                                       cg_cm[cg], cm_new, pos_d);
                     }
                     dev[d] = -1;
@@ -4950,7 +4956,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 {
                     cg_move_error(fplog, dd, step, cg, dim,
                                   (flag & DD_FLAG_FW(d)) ? 1 : 0,
-                                  FALSE, 0,
+                                  fr->cutoff_scheme == ecutsGROUP, 0,
                                   comm->vbuf.v[buf_pos],
                                   comm->vbuf.v[buf_pos],
                                   comm->vbuf.v[buf_pos][dim]);
@@ -6744,6 +6750,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     comm->cellsize_limit = 0;
     comm->bBondComm      = FALSE;
+
+    /* Atoms should be able to move by up to half the list buffer size (if > 0)
+     * within nstlist steps. Since boundaries are allowed to displace by half
+     * a cell size, DD cells should be at least the size of the list buffer.
+     */
+    comm->cellsize_limit = max(comm->cellsize_limit,
+                               ir->rlistlong - max(ir->rvdw, ir->rcoulomb));
 
     if (comm->bInterCGBondeds)
     {
