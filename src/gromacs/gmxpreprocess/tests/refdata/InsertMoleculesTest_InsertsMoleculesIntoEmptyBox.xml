@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">insert-molecules -box 4 -nmol 5</String>
+  <OutputFiles Name="Files">
+    <String Name="-o"><![CDATA[
+test molecule for insertion
+   10
+    1X       X1    1   1.800   2.235   2.020
+    1X       X2    2   1.835   2.105   2.012
+    2X       X1    3   2.182   2.671   2.520
+    2X       X2    4   2.277   2.767   2.532
+    3X       X1    5   3.533   1.682   2.647
+    3X       X2    6   3.427   1.599   2.645
+    4X       X1    7   2.600   0.394   2.706
+    4X       X2    8   2.642   0.267   2.722
+    5X       X1    9   0.575   2.262   0.881
+    5X       X2   10   0.515   2.259   1.002
+   4.00000   4.00000   4.00000
+]]></String>
+  </OutputFiles>
+</ReferenceData>
