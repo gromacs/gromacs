@@ -37,74 +37,69 @@
  * Tests for insertion of molecules.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-
 #include "gmxpre.h"
 
 #include "gromacs/gmxpreprocess/insert-molecules.h"
 
-#include "gromacs/utility/futil.h"
-
 #include "testutils/cmdlinetest.h"
-#include "testutils/integrationtests.h"
+#include "testutils/refdata.h"
 
 namespace
 {
 
-//! Helper typedef
-typedef int (*CMainFunction)(int argc, char *argv[]);
+using gmx::test::CommandLine;
 
-//! Test fixture for insert-molecules
-class InsertMoleculesTest : public gmx::test::IntegrationTestFixture
+class InsertMoleculesTest : public gmx::test::CommandLineTestBase
 {
     public:
-        //! Constructor
         InsertMoleculesTest()
-            : ciFileName(fileManager_.getInputFilePath("x.gro")),
-              outputFileName(fileManager_.getTemporaryFilePath("out.gro")),
-              theFunction(gmx_insert_molecules)
         {
-            caller.append("insert-molecules");
-            caller.addOption("-o", outputFileName);
+            setOutputFile("-o", "out.gro");
         }
 
-    public:
-        //! Name of file to use for -ci
-        std::string            ciFileName;
-        //! Name of output file to use for -o
-        std::string            outputFileName;
-        //! Helper object for managing the call to gmx_insert_molecules
-        gmx::test::CommandLine caller;
-        //! Points to the function to be tested
-        CMainFunction          theFunction;
+        void runTest(const CommandLine &args)
+        {
+            CommandLine &cmdline = commandLine();
+            cmdline.merge(args);
+
+            gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
+            rootChecker.checkString(args.toString(), "CommandLine");
+
+            ASSERT_EQ(0, gmx_insert_molecules(cmdline.argc(), cmdline.argv()));
+
+            checkOutputFiles();
+        }
 };
 
-TEST_F(InsertMoleculesTest, f_ci_Works)
+TEST_F(InsertMoleculesTest, InsertsMoleculesIntoExistingConfiguration)
 {
-    caller.addOption("-f", fileManager_.getInputFilePath("spc-and-methanol.gro"));
-    caller.addOption("-nmol", "1");
-    caller.addOption("-ci", ciFileName);
-
-    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
+    const char *const cmdline[] = {
+        "insert-molecules", "-nmol", "1"
+    };
+    setInputFile("-f", "spc-and-methanol.gro");
+    setInputFile("-ci", "x.gro");
+    runTest(CommandLine(cmdline));
 }
 
-TEST_F(InsertMoleculesTest, box_ci_Works)
+TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEmptyBox)
 {
-    caller.addOption("-box", "4");
-    caller.addOption("-nmol", "5");
-    caller.addOption("-ci", ciFileName);
-
-    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
+    const char *const cmdline[] = {
+        "insert-molecules", "-box", "4", "-nmol", "5"
+    };
+    setInputFile("-ci", "x.gro");
+    runTest(CommandLine(cmdline));
 }
 
-TEST_F(InsertMoleculesTest, f_box_ci_Works)
+TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEnlargedBox)
 {
-    caller.addOption("-f", fileManager_.getInputFilePath("spc-and-methanol.gro"));
-    caller.addOption("-box", "4");
-    caller.addOption("-nmol", "2");
-    caller.addOption("-ci", ciFileName);
-
-    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
+    const char *const cmdline[] = {
+        "insert-molecules", "-box", "4", "-nmol", "2"
+    };
+    setInputFile("-f", "spc-and-methanol.gro");
+    setInputFile("-ci", "x.gro");
+    runTest(CommandLine(cmdline));
 }
 
 // TODO Someone who knows what -ip is good for should write something
