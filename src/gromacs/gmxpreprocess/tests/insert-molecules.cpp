@@ -79,7 +79,7 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoExistingConfiguration)
         "insert-molecules", "-nmol", "1"
     };
     setInputFile("-f", "spc-and-methanol.gro");
-    setInputFile("-ci", "x.gro");
+    setInputFile("-ci", "x2.gro");
     runTest(CommandLine(cmdline));
 }
 
@@ -88,7 +88,7 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEmptyBox)
     const char *const cmdline[] = {
         "insert-molecules", "-box", "4", "-nmol", "5"
     };
-    setInputFile("-ci", "x.gro");
+    setInputFile("-ci", "x2.gro");
     runTest(CommandLine(cmdline));
 }
 
@@ -102,7 +102,20 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEnlargedBox)
     runTest(CommandLine(cmdline));
 }
 
-// TODO Someone who knows what -ip is good for should write something
-// to test it
+TEST_F(InsertMoleculesTest, InsertsMoleculesIntoFixedPositions)
+{
+    const char *const cmdline[] = {
+        "insert-molecules", "-box", "4"
+    };
+    const char *const positions[] = {
+        "0.0  0.0  0.0",
+        "1.0  2.0  3.0",
+        "0.99 2.01 3.0",
+        "2.0  1.0  2.0"
+    };
+    setInputFile("-ci", "x0.gro");
+    setInputFileContents("-ip", "dat", positions);
+    runTest(CommandLine(cmdline));
+}
 
 } // namespace

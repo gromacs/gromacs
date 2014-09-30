@@ -59,7 +59,7 @@ real *makeExclusionDistances(const struct t_atoms *a, struct gmx_atomprop *aps,
  * *v should be freed by the caller. atoms should have its destructor
  * called. */
 char *readConformation(const char *confin, struct t_atoms *atoms, rvec **x, rvec **v,
-                       int *ePBC, matrix box);
+                       int *ePBC, matrix box, const char *statusTitle);
 
 #ifdef __cplusplus
 }

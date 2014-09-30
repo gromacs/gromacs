@@ -423,6 +423,7 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     rm_res_pbc(atoms_solvt, x_solvt, box_solvt);
 
     /* initialise distance arrays for solvent configuration */
+    fprintf(stderr, "Initialising inter-atomic distances...\n");
     exclusionDistances_solvt = makeExclusionDistances(atoms_solvt, aps, defaultDistance, scaleFactor);
 
     /* calculate the box multiplication factors n_box[0...DIM] */
@@ -745,7 +746,8 @@ int gmx_solvate(int argc, char *argv[])
         /* Generate a solute configuration */
         conf_prot = opt2fn("-cp", NFILE, fnm);
         title     = readConformation(conf_prot, atoms, &x,
-                                     bReadV ? &v : NULL, &ePBC, box);
+                                     bReadV ? &v : NULL, &ePBC, box, "solute");
+        fprintf(stderr, "Initialising inter-atomic distances...\n");
         exclusionDistances = makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor);
 
         if (bReadV && !v)
