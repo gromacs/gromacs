@@ -80,6 +80,7 @@ IntegrationTestFixture::IntegrationTestFixture()
 {
     // TODO fix this when we have an encapsulation layer for handling
     // environment variables
+    // FIXME: This produces memory leaks.
 #ifdef GMX_NATIVE_WINDOWS
     _putenv(("GMX_MAXBACKUP="+s_maxBackup).c_str());
 #else
