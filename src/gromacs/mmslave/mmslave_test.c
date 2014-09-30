@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     rvec *x, *v, *f, *A;
     real *phi;
     gmx_mmslave_t gms;
-    double e0, e1;
+    double e0, e1, qq;
     int i;
     gmx_hw_info_t            *hwinfo       = NULL;
 
@@ -86,7 +86,8 @@ int main(int argc, char *argv[])
                 printf("A[%d] = %10g  %10g  %10g\n", i, A[i][XX], A[i][YY], A[i][ZZ]);
                 printf("phi[%d] = %10g\n", i, phi[i]);
             }
-            x[0][0] += 0.001;
+            printf("Changing a coordinate and re-evaluating energy:\n");
+            x[0][0] += 0.01;
             bOK = mmslave_calc_energy(gms, stdout, (const rvec *)x, f, A, phi, &e1);
         }
         else
@@ -103,6 +104,26 @@ int main(int argc, char *argv[])
                 printf("A[%d] = %10g  %10g  %10g\n", i, A[i][XX], A[i][YY], A[i][ZZ]);
                 printf("phi[%d] = %10g\n", i, phi[i]);
             }
+            bOK = mmslave_get_q(gms, 1, &qq);
+        }
+        
+        if (bOK) 
+        {
+            printf("Changing an atom charge and re-evaluating energy:\n");
+            bOK = mmslave_set_q(gms, 1, qq*2);
+        }
+        if (bOK)
+        {
+            bOK = mmslave_calc_energy(gms, stdout, (const rvec *)x, f, A, phi, &e0);
+        }
+        else
+        {
+            printf("Could not calculate energy\n");
+        }
+        
+        if (bOK)
+        {
+            printf("The energy is %lf\n", e0);
         }
     }
     else
