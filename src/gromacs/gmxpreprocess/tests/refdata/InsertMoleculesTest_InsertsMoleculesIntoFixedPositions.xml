@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">insert-molecules -box 4</String>
+  <OutputFiles Name="Files">
+    <String Name="-o"><![CDATA[
+test molecule for insertion at origin
+    6
+    1X       X1    1   0.000   0.000   0.000
+    1X       X2    2   0.027  -0.081  -0.104
+    2X       X1    3   1.000   2.000   3.000
+    2X       X2    4   1.019   2.063   3.118
+    3X       X1    5   2.000   1.000   2.000
+    3X       X2    6   1.893   1.048   1.933
+   4.00000   4.00000   4.00000
+]]></String>
+  </OutputFiles>
+</ReferenceData>

@@ -14,17 +14,33 @@
    fun:make_unsp
    fun:nsc_dclm_pbc
 }
+# Contains multiple leaks, and is in the same test binary as insert-molecules
+# that is desired to be included.
 {
-   libgomp
+   gmx_solvate
    Memcheck:Leak
    ...
-   obj:*/libgomp.so*
+   fun:gmx_solvate
 }
+
 {
    ctime_r
    Memcheck:Leak
    ...
    fun:ctime_r
+}
+{
+   setenv
+   Memcheck:Leak
+   ...
+   fun:setenv
+}
+
+{
+   libgomp
+   Memcheck:Leak
+   ...
+   obj:*/libgomp.so*
 }
 {
    libz

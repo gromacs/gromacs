@@ -223,6 +223,21 @@ class CommandLineTestHelper
                                   const char *extension,
                                   const std::string &contents);
         /*! \brief
+         * Generates and sets an input file.
+         *
+         * \param[in,out] args      CommandLine to which to add the option.
+         * \param[in]     option    Option to set.
+         * \param[in]     extension Extension for the file to create.
+         * \param[in]     contents  Text to write to the input file.
+         *
+         * Creates a temporary file with contents from \p contents (each array
+         * entry on its own line), and adds \p option to \p args with a value
+         * that points to the generated file.
+         */
+        void setInputFileContents(CommandLine *args, const char *option,
+                                  const char *extension,
+                                  const ConstArrayRef<const char *> &contents);
+        /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.
          *
          * \param[in,out] args      CommandLine to which to add the option.
@@ -331,6 +346,14 @@ class CommandLineTestBase : public ::testing::Test
         void setInputFileContents(const char        *option,
                                   const char        *extension,
                                   const std::string &contents);
+        /*! \brief
+         * Generates and sets an input file.
+         *
+         * \see CommandLineTestHelper::setInputFileContents()
+         */
+        void setInputFileContents(const char                        *option,
+                                  const char                        *extension,
+                                  const ConstArrayRef<const char *> &contents);
         /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.
          *
