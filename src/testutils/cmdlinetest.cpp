@@ -271,9 +271,27 @@ void CommandLineTestHelper::setInputFileContents(
         CommandLine *args, const char *option, const char *extension,
         const std::string &contents)
 {
+    GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
     File::writeFileFromString(fullFilename, contents);
+    args->addOption(option, fullFilename);
+}
+
+void CommandLineTestHelper::setInputFileContents(
+        CommandLine *args, const char *option, const char *extension,
+        const ConstArrayRef<const char *> &contents)
+{
+    GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
+                formatString("%d.%s", args->argc(), extension));
+    File        file(fullFilename, "w");
+    ConstArrayRef<const char *>::const_iterator i;
+    for (i = contents.begin(); i != contents.end(); ++i)
+    {
+        file.writeLine(*i);
+    }
+    file.close();
     args->addOption(option, fullFilename);
 }
 
@@ -349,6 +367,14 @@ void CommandLineTestBase::setInputFile(
 
 void CommandLineTestBase::setInputFileContents(
         const char *option, const char *extension, const std::string &contents)
+{
+    impl_->helper_.setInputFileContents(&impl_->cmdline_, option, extension,
+                                        contents);
+}
+
+void CommandLineTestBase::setInputFileContents(
+        const char *option, const char *extension,
+        const ConstArrayRef<const char *> &contents)
 {
     impl_->helper_.setInputFileContents(&impl_->cmdline_, option, extension,
                                         contents);

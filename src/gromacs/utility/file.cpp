@@ -377,6 +377,7 @@ void File::writeFileFromString(const std::string &filename,
 {
     File file(filename, "w");
     file.writeString(text);
+    file.close();
 }
 
 } // namespace gmx

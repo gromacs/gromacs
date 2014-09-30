@@ -32,17 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(testname "PreprocessingTests")
-set(exename "preprocessing-tools-test")
-
-gmx_build_unit_test(
-    ${testname}
-    ${exename}
-    # files with code for test fixtures
-    solvate.cpp
-    insert-molecules.cpp
-    )
-gmx_register_integration_test(
-    ${testname}
-    ${exename}
-    )
+gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
+                  solvate.cpp
+                  insert-molecules.cpp
+                  )
