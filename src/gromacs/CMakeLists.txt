@@ -77,7 +77,7 @@ endif()
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(gmxpreprocess)
-add_subdirectory(bonded)
+add_subdirectory(listed-forces)
 add_subdirectory(commandline)
 add_subdirectory(fft)
 add_subdirectory(linearalgebra)
@@ -145,7 +145,7 @@ list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 # apply gcc 4.4.x bug workaround
 if(GMX_USE_GCC44_BUG_WORKAROUND)
    include(gmxGCC44O3BugWorkaround)
-   gmx_apply_gcc44_bug_workaround("bonded/bonded.cpp")
+   gmx_apply_gcc44_bug_workaround("listed-forces/bonded.cpp")
    gmx_apply_gcc44_bug_workaround("mdlib/force.c")
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
@@ -199,7 +199,9 @@ set_target_properties(libgromacs PROPERTIES
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
     install(TARGETS libgromacs
             EXPORT libgromacs
-            DESTINATION ${LIB_INSTALL_DIR}
+            LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+            RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+            ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
             COMPONENT libraries)
 endif()
 

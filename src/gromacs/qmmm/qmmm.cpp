@@ -40,7 +40,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include "gromacs/bonded/bonded.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/force.h"
@@ -51,6 +50,7 @@
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"

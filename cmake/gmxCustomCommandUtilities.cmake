@@ -65,6 +65,29 @@ function (gmx_get_stamp_filename variable targetname)
         PARENT_SCOPE)
 endfunction()
 
+# Helper function to tell gmx_add_custom_output_target() the name of an output
+# file for a custom target.
+#
+# Usage:
+#   gmx_set_custom_target_output(<targetname> <output>)
+#
+#   <targetname> - name of an existing custom target
+#   <output>     - path to the output file produced by the custom target
+#
+# This is used internally by gmx_add_custom_output_target(), but can also be
+# called for targets created with add_custom_target() to make them work with
+# the dependency resolution mechanism in gmx_add_custom_output_target() if
+# those targets for some reason cannot be created with that command.
+function (gmx_set_custom_target_output targetname output)
+    # Store the output file name in a custom property to be used in dependency
+    # resolution later.
+    if (NOT IS_ABSOLUTE ${output})
+        set(output ${CMAKE_CURRENT_BINARY_DIR}/${output})
+    endif()
+    set_property(TARGET ${targetname}
+        PROPERTY GMX_CUSTOM_TARGET_OUTPUT_FILE ${output})
+endfunction()
+
 # More flexible alternative to add_custom_command() and add_custom_target()
 # for dependent custom commands.  It adds a few convenience features:
 #   - Support for custom commands that always run (like add_custom_target()),
@@ -225,11 +248,7 @@ function (gmx_add_custom_output_target targetname)
     endif()
     # Store the output file name in a custom property to be used in dependency
     # resolution later.
-    if (NOT IS_ABSOLUTE ${_output})
-        set(_output ${CMAKE_CURRENT_BINARY_DIR}/${_output})
-    endif()
-    set_property(TARGET ${targetname}
-        PROPERTY GMX_CUSTOM_TARGET_OUTPUT_FILE ${_output})
+    gmx_set_custom_target_output(${targetname} ${_output})
     # Create the fast target if requested.
     if (_add_fast)
         add_custom_target(${targetname}-fast ${_command_args} VERBATIM)

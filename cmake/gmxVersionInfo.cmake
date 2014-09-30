@@ -83,6 +83,8 @@
 #   SOURCE_IS_GIT_REPOSITORY       The source tree is a git repository.
 # Note that both can be false if the tree has been extracted, e.g., as a
 # tarball directly from git.
+# Additionally, the following variable is defined:
+#   BUILD_IS_INSOURCE              The build is happening in-source.
 #
 # This script also declares machinery to generate and obtain version
 # information from a git repository.  This is enabled by default if the source
@@ -185,6 +187,10 @@ endif()
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/admin/.isreposource")
     set(SOURCE_IS_SOURCE_DISTRIBUTION ON)
 endif()
+set(BUILD_IS_INSOURCE OFF)
+if ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+    set(BUILD_IS_INSOURCE ON)
+endif()
 
 #####################################################################
 # Manually maintained version info
@@ -256,6 +262,8 @@ if (GMX_GIT_VERSION_INFO)
     endif()
 endif()
 
+include(gmxCustomCommandUtilities)
+
 # The first two are also for use outside this file, encapsulating the details
 # of how to use the generated VersionInfo.cmake.
 set(VERSION_INFO_CMAKE_FILE   ${PROJECT_BINARY_DIR}/VersionInfo.cmake)
@@ -310,52 +318,17 @@ if (GMX_GIT_VERSION_INFO)
     # All targets added by gmx_configure_version_file() use the information
     # from this script to get their variables from, removing the need to run
     # git multiple times and simplifying reuse for other purposes.
-    #
-    # Ninja requires all generated files mentioned in dependencies of custom
-    # commands (in gmx_configure_version_info()) to be actually mentioned in
-    # the build system, and luckily add_custom_command() makes that possible.
-    # But it seems impossible to create a robust custom command that would be
-    # always run, so other generators that do not have this constraint simply
-    # use an add_custom_target().
-    if (CMAKE_GENERATOR STREQUAL "Ninja")
-        # The second, phony file is never created, so the rule is always
-        # triggered again.  TODO: Figure out why this works, even though ninja
-        # very eagerly complains about missing files.
-        # This unfortunately does not work with the make generator, as
-        # the non-existent second file causes some part of the generated system
-        # erase the first file at the beginning of every build, causing a full
-        # rebuild of the dependencies.
-        add_custom_command(OUTPUT ${VERSION_INFO_CMAKE_FILE} git-version-phony
-            COMMAND ${CMAKE_COMMAND}
-                -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
-                -D PROJECT_VERSION=${GMX_VERSION_STRING}
-                -D PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
-                -D VERSION_CMAKEIN=${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
-                -D VERSION_OUT=${VERSION_INFO_CMAKE_FILE}
-                -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfo.cmake
-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-            COMMENT "Generating git version information"
-            VERBATIM)
-        # The generated Ninja build system would probably work fine even
-        # without this target, but CMake requires all custom commands to belong
-        # to a target in the same CMakeLists.txt to generate anything for them.
-        add_custom_target(git-version-info DEPENDS ${VERSION_INFO_CMAKE_FILE})
-    else()
-        # For other generators, a target-level dependency on git-version-info
-        # ensures that VERSION_INFO_CMAKE_FILE is created before the dependent
-        # target's dependencies are even evaluated.
-        add_custom_target(git-version-info
-            COMMAND ${CMAKE_COMMAND}
-                -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
-                -D PROJECT_VERSION=${GMX_VERSION_STRING}
-                -D PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
-                -D VERSION_CMAKEIN=${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
-                -D VERSION_OUT=${VERSION_INFO_CMAKE_FILE}
-                -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfo.cmake
-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-            COMMENT "Generating git version information"
-            VERBATIM)
-    endif()
+    gmx_add_custom_output_target(git-version-info RUN_ALWAYS
+        OUTPUT ${VERSION_INFO_CMAKE_FILE}
+        COMMAND ${CMAKE_COMMAND}
+            -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
+            -D PROJECT_VERSION=${GMX_VERSION_STRING}
+            -D PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+            -D VERSION_CMAKEIN=${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
+            -D VERSION_OUT=${VERSION_INFO_CMAKE_FILE}
+            -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfo.cmake
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        COMMENT "Generating git version information")
     list(APPEND VERSION_INFO_DEPS git-version-info)
 else()
     # If the version info is static, just generate the CMake script with the
@@ -405,6 +378,7 @@ function (gmx_configure_version_file INFILE OUTFILE)
         VERBATIM)
     if (ARG_TARGET)
         add_custom_target(${ARG_TARGET} DEPENDS ${OUTFILE} VERBATIM)
+        gmx_set_custom_target_output(${ARG_TARGET} ${OUTFILE})
     endif()
     if (ARG_SOURCE_FILE)
         set_source_files_properties(${OUTFILE} PROPERTIES GENERATED true)

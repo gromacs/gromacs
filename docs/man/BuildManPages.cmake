@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,17 +32,29 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
-include_directories(${LIBXML2_INCLUDE_DIR})
-file(GLOB TESTUTILS_SOURCES *.cpp)
+if (NOT DEFINED GMX_EXECUTABLE OR NOT DEFINED SOURCE_DIR)
+    message(FATAL_ERROR "Required input parameter not set")
+endif()
 
-add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
-set(TESTUTILS_LIBS testutils)
-set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
-
-set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)
-set(TESTUTILS_LIBS ${TESTUTILS_LIBS} PARENT_SCOPE)
-
-add_subdirectory(tests)
+file(MAKE_DIRECTORY man1)
+file(MAKE_DIRECTORY man7)
+file(COPY ${SOURCE_DIR}/man7/gromacs.7.in DESTINATION man7/)
+execute_process(
+    COMMAND ${GMX_EXECUTABLE} -quiet help -export man
+    RESULT_VARIABLE exitcode)
+if (exitcode)
+    # Ensure that no partial output is left behind.
+    file(REMOVE_RECURSE man1)
+    file(REMOVE man7/gromacs.7)
+    if (ERRORS_ARE_FATAL)
+        message(FATAL_ERROR
+            "Failed to generate man pages. "
+            "Set GMX_BUILD_HELP=OFF if you want to skip them.\n"
+            "Error/exit code: ${exitcode}")
+    else()
+        message(
+            "Failed to generate man pages, will build GROMACS without. "
+            "Set GMX_BUILD_HELP=OFF if you want to skip this notification and "
+            "warnings during installation.")
+    endif()
+endif()

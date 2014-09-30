@@ -32,33 +32,47 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(gmxCustomCommandUtilities)
+
 set(OUTPUT_DIR final)
+
 set(HTML_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${OUTPUT_DIR})
-
-add_custom_target(html
-    ${CMAKE_COMMAND}
-    -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-    -D OUTPUT_DIR=${OUTPUT_DIR}
-    -D STEP=PRE
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
-    COMMAND gmx -quiet help -export html
-    COMMAND ${CMAKE_COMMAND}
-    -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-    -D OUTPUT_DIR=${OUTPUT_DIR}
-    -D STEP=POST
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
-    COMMENT "Generating HTML help"
-    VERBATIM)
-
 if (GMX_BUILD_HELP)
-    set_target_properties(html PROPERTIES EXCLUDE_FROM_ALL OFF)
+    # Unlike the man and completion targets, this target is not built
+    # automatically with GMX_BUILD_HELP=AUTO, since most people will not
+    # notice it missing.
+    file(GLOB_RECURSE deps
+         ${CMAKE_CURRENT_SOURCE_DIR}/images/*
+         ${CMAKE_CURRENT_SOURCE_DIR}/*.html
+         ${CMAKE_CURRENT_SOURCE_DIR}/*.css
+         )
+    list(APPEND deps
+         ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
+         ${CMAKE_CURRENT_SOURCE_DIR}/header.html.in
+         ${CMAKE_CURRENT_SOURCE_DIR}/links.dat
+         )
+
+    gmx_add_custom_output_target(html OUTPUT STAMP
+        COMMAND ${CMAKE_COMMAND}
+            -D GMX_EXECUTABLE=$<TARGET_FILE:gmx>
+            -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+            -D OUTPUT_DIR=${OUTPUT_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS gmx ${deps}
+        COMMENT "Generating HTML help")
+
+    if (GMX_BUILD_HELP_FORCE)
+        set_target_properties(html PROPERTIES EXCLUDE_FROM_ALL OFF)
+    endif()
     set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.html")
     set(HTML_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_DIR})
 endif()
 
-if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
+if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP_FORCE)
     install(DIRECTORY ${HTML_PAGE_DIR}/
         DESTINATION ${DATA_INSTALL_DIR}/html
         COMPONENT html)
 endif()
+gmx_cpack_add_generated_source_directory(${OUTPUT_DIR})

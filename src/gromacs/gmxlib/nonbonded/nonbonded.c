@@ -45,7 +45,6 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/bonded/bonded.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic_adress.h"
@@ -58,6 +57,7 @@
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"

@@ -86,7 +86,7 @@ typedef struct gbtmpnbls {
     int         list_nalloc;
 } t_gbtmpnbls;
 
-/* This function is exactly the same as the one in bonded/bonded.cpp. The reason
+/* This function is exactly the same as the one in listed-forces/bonded.cpp. The reason
  * it is copied here is that the bonded gb-interactions are evaluated
  * not in calc_bonds, but rather in calc_gb_forces
  */

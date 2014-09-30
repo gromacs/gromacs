@@ -32,17 +32,21 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_custom_target(man
-    ${CMAKE_COMMAND} -E make_directory man1
-    COMMAND ${CMAKE_COMMAND} -E make_directory man7
-    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/man7/gromacs.7.in" man7/
-    COMMAND gmx -quiet help -export man
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating man pages"
-    VERBATIM)
+include(gmxCustomCommandUtilities)
 
 set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 if (GMX_BUILD_HELP)
+    gmx_add_custom_output_target(man OUTPUT STAMP
+        COMMAND ${CMAKE_COMMAND}
+            -D GMX_EXECUTABLE=$<TARGET_FILE:gmx>
+            -D SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+            -D ERRORS_ARE_FATAL=${GMX_BUILD_HELP_FORCE}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildManPages.cmake
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS gmx
+            ${CMAKE_CURRENT_SOURCE_DIR}/man7/gromacs.7.in
+            ${CMAKE_CURRENT_SOURCE_DIR}/BuildManPages.cmake
+        COMMENT "Generating man pages")
     set_target_properties(man PROPERTIES EXCLUDE_FROM_ALL OFF)
     set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES "man1;man7/gromacs.7")
@@ -53,8 +57,10 @@ endif()
 if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
     install(FILES ${MAN_PAGE_DIR}/man7/gromacs.7
         DESTINATION ${MAN_INSTALL_DIR}/man7
-        COMPONENT man)
+        COMPONENT man OPTIONAL)
     install(DIRECTORY ${MAN_PAGE_DIR}/man1
         DESTINATION ${MAN_INSTALL_DIR}
-        COMPONENT man)
+        COMPONENT man OPTIONAL)
 endif()
+gmx_cpack_add_generated_source_directory(man1)
+gmx_cpack_add_generated_source_directory(man7)

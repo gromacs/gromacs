@@ -331,6 +331,9 @@ typedef unsigned __int64 uint64_t;
 #ifndef PRId64
 # define PRId64         __PRI64_PREFIX "d"
 #endif
+#ifndef PRIu64
+# define PRIu64         __PRI64_PREFIX "u"
+#endif
 
 #endif
 

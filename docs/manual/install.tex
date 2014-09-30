@@ -260,7 +260,7 @@ you should consult your local documentation for details.
 \item   {\tt GMX_NO_NODECOMM}: do not use separate inter- and intra-node communicators.
 \item   {\tt GMX_NO_NONBONDED}: skip non-bonded calculations; can be used to estimate the possible
         performance gain from adding a GPU accelerator to the current hardware setup -- assuming that this is
-        fast enough to complete the non-bonded calculations while the CPU does bonded force and PME computation.
+        fast enough to complete the non-bonded calculations while the CPU does listed force and PME computation.
 \item   {\tt GMX_NO_PULLVIR}: when set, do not add virial contribution to COM pull forces.
 \item   {\tt GMX_NOCHARGEGROUPS}: disables multi-atom charge groups, {\ie} each atom 
         in all non-solvent molecules is assigned its own charge group.

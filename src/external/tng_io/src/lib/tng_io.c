@@ -6907,8 +6907,8 @@ static tng_function_status tng_data_block_write(tng_trajectory_t tng_data,
         temp_name = realloc(block->name, len);
         if (!temp_name)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%d bytes). %s: %d\n", len+1,
-                    __FILE__, __LINE__);
+            fprintf(stderr, "TNG library: Cannot allocate memory (%u bytes). %s: %d\n", len+1,
+                   __FILE__, __LINE__);
             free(block->name);
             block->name = 0;
             return(TNG_CRITICAL);

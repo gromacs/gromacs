@@ -261,11 +261,11 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         if (fplog)
         {
             fprintf(fplog, "Inner product between old and new vector <= 0.0!\n"
-                    "constraint #%d atoms %u and %u\n",
+                    "constraint #%d atoms %d and %d\n",
                     error-1, iatom[3*(error-1)+1]+1, iatom[3*(error-1)+2]+1);
         }
         fprintf(stderr, "Inner product between old and new vector <= 0.0!\n"
-                "constraint #%d atoms %u and %u\n",
+                "constraint #%d atoms %d and %d\n",
                 error-1, iatom[3*(error-1)+1]+1, iatom[3*(error-1)+2]+1);
         nit = 0;
     }
