@@ -58,15 +58,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
 # REGRESSIONTEST_VERSION and REGRESSIONTEST_BRANCH should always be
 # defined.
-set(PROJECT_VERSION "5.0.2-dev")
+set(PROJECT_VERSION "5.0.2")
 # If this is a released tarball, "-dev" will not be present in
 # PROJECT_VERSION, and REGRESSIONTEST_VERSION specifies the version
 # number of the regressiontest tarball against which the code tarball
 # can be tested. This will be the version of the last patch release.
-set(REGRESSIONTEST_VERSION "5.0.2-dev")
+set(REGRESSIONTEST_VERSION "5.0.2")
 # The MD5 checksum of the regressiontest tarball. Only used if "-dev"
 # is not present in the PROJECT_VERSION
-set(REGRESSIONTEST_MD5SUM "8c048dd4636a95a4c22870b249106bc5")
+set(REGRESSIONTEST_MD5SUM "004f2377adf252e2caa9c241390d4b9c")
 # If this is not a released tarball, "-dev" will be present in
 # PROJECT_VERSION, and REGRESSIONTEST_BRANCH specifies the name of the
 # gerrit.gromacs.org branch whose HEAD can test this code, *if* this
