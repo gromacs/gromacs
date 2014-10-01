@@ -81,7 +81,7 @@ if(CMAKE_CONFIGURATION_TYPES)
         "List of configuration types"
         FORCE)
 endif()
-set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
+set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
 
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 

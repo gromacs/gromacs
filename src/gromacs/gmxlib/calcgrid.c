@@ -136,7 +136,7 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
                 /* Determine how many pre-factors of 2 we need */
                 fac2 = 1;
                 i    = g_baseNR - 1;
-                while (fac2*grid_base[i-1] < nmin)
+                while (fac2*grid_base[i] < nmin)
                 {
                     fac2 *= 2;
                 }

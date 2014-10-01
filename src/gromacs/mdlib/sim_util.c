@@ -1399,6 +1399,16 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces && DOMAINDECOMP(cr))
     {
+        if (bUseGPU)
+        {
+            /* We are done with the CPU compute, but the GPU local non-bonded
+             * kernel can still be running while we communicate the forces.
+             * We start a counter here, so we can, hopefully, time the rest
+             * of the GPU kernel execution and data transfer.
+             */
+            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L_EST);
+        }
+
         /* Communicate the forces */
         wallcycle_start(wcycle, ewcMOVEF);
         dd_move_f(cr->dd, f, fr->fshift);
@@ -1429,13 +1439,44 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
+            float       cycles_tmp, cycles_wait_est;
+            const float cuda_api_overhead_margin = 50000.0f; /* cycles */
+
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_cuda_wait_gpu(nbv->cu_nbv,
                                 nbv->grp[eintLocal].nbat,
                                 flags, eatLocal,
                                 enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                 fr->fshift);
-            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            cycles_tmp      = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+
+            if (bDoForces && DOMAINDECOMP(cr))
+            {
+                cycles_wait_est = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L_EST);
+
+                if (cycles_tmp < cuda_api_overhead_margin)
+                {
+                    /* We measured few cycles, it could be that the kernel
+                     * and transfer finished earlier and there was no actual
+                     * wait time, only API call overhead.
+                     * Then the actual time could be anywhere between 0 and
+                     * cycles_wait_est. As a compromise, we use half the time.
+                     */
+                    cycles_wait_est *= 0.5f;
+                }
+            }
+            else
+            {
+                /* No force communication so we actually timed the wait */
+                cycles_wait_est = cycles_tmp;
+            }
+            /* Even though this is after dd_move_f, the actual task we are
+             * waiting for runs asynchronously with dd_move_f and we usually
+             * have nothing to balance it with, so we can and should add
+             * the time to the force time for load balancing.
+             */
+            cycles_force    += cycles_wait_est;
+            cycles_wait_gpu += cycles_wait_est;
 
             /* now clear the GPU outputs while we finish the step on the CPU */
 

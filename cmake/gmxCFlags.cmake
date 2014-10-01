@@ -64,7 +64,7 @@ function(gmx_set_cmake_compiler_flags)
         # be set up elsewhere and passed to this function, but it is
         # inconvenient in CMake to pass more than one list, and such a
         # list is only used here.
-        foreach(build_type RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
+        foreach(build_type RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
             set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
         endforeach()
         # Copy the flags that are only used by the real Release build
@@ -85,9 +85,12 @@ function(gmx_set_cmake_compiler_flags)
             endif()
 
             # Append to the variables for the given build type for
-            # each language, in the parent scope.
+            # each language, in the parent scope. We add our new variables at the end, so
+            # compiler-specific choices are more likely to override default CMake choices.
+            # This is for instance useful for RelWithDebInfo builds, where we want to use the full
+            # set of our optimization flags detected in this file, rather than having -O2 override them.
             set(CMAKE_${language}_FLAGS${punctuation}${build_type}
-                "${GMXC_${language}FLAGS${punctuation}${build_type}} ${CMAKE_${language}_FLAGS${punctuation}${build_type}}"
+                "${CMAKE_${language}_FLAGS${punctuation}${build_type}} ${GMXC_${language}FLAGS${punctuation}${build_type}}"
                 PARENT_SCOPE)
         endforeach()
     endforeach()

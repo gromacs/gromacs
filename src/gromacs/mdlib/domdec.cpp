@@ -275,6 +275,8 @@ typedef struct gmx_domdec_comm
 
     /* The DLB option */
     int      eDLB;
+    /* Is eDLB=edlbAUTO locked such that we currently can't turn it on? */
+    gmx_bool bDLB_locked;
     /* Are we actually using DLB? */
     gmx_bool bDynLoadBal;
 
@@ -391,9 +393,9 @@ typedef struct gmx_domdec_comm
     int    eFlop;
     double flop;
     int    flop_n;
-    /* Have often have did we have load measurements */
+    /* How many times have did we have load measurements */
     int    n_load_have;
-    /* Have often have we collected the load measurements */
+    /* How many times have we collected the load measurements */
     int    n_load_collect;
 
     /* Statistics */
@@ -3465,7 +3467,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             cell_size[i] = 1.0/ncd;
         }
     }
-    else if (dd_load_count(comm))
+    else if (dd_load_count(comm) > 0)
     {
         load_aver  = comm->load[d].sum_m/ncd;
         change_max = 0;
@@ -4336,7 +4338,7 @@ static void clear_and_mark_ind(int ncg, int *move,
 static void print_cg_move(FILE *fplog,
                           gmx_domdec_t *dd,
                           gmx_int64_t step, int cg, int dim, int dir,
-                          gmx_bool bHaveLimitdAndCMOld, real limitd,
+                          gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
     gmx_domdec_comm_t *comm;
@@ -4345,19 +4347,22 @@ static void print_cg_move(FILE *fplog,
     comm = dd->comm;
 
     fprintf(fplog, "\nStep %s:\n", gmx_step_str(step, buf));
-    if (bHaveLimitdAndCMOld)
+    if (limitd > 0)
     {
-        fprintf(fplog, "The charge group starting at atom %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
+        fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
+                dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
                 ddglatnr(dd, dd->cgindex[cg]), limitd, dim2char(dim));
     }
     else
     {
-        fprintf(fplog, "The charge group starting at atom %d moved than the distance allowed by the domain decomposition in direction %c\n",
+        /* We don't have a limiting distance available: don't print it */
+        fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition in direction %c\n",
+                dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
                 ddglatnr(dd, dd->cgindex[cg]), dim2char(dim));
     }
     fprintf(fplog, "distance out of cell %f\n",
             dir == 1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
-    if (bHaveLimitdAndCMOld)
+    if (bHaveCgcmOld)
     {
         fprintf(fplog, "Old coordinates: %8.3f %8.3f %8.3f\n",
                 cm_old[XX], cm_old[YY], cm_old[ZZ]);
@@ -4375,19 +4380,20 @@ static void print_cg_move(FILE *fplog,
 static void cg_move_error(FILE *fplog,
                           gmx_domdec_t *dd,
                           gmx_int64_t step, int cg, int dim, int dir,
-                          gmx_bool bHaveLimitdAndCMOld, real limitd,
+                          gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
     if (fplog)
     {
         print_cg_move(fplog, dd, step, cg, dim, dir,
-                      bHaveLimitdAndCMOld, limitd, cm_old, cm_new, pos_d);
+                      bHaveCgcmOld, limitd, cm_old, cm_new, pos_d);
     }
     print_cg_move(stderr, dd, step, cg, dim, dir,
-                  bHaveLimitdAndCMOld, limitd, cm_old, cm_new, pos_d);
+                  bHaveCgcmOld, limitd, cm_old, cm_new, pos_d);
     gmx_fatal(FARGS,
-              "A charge group moved too far between two domain decomposition steps\n"
-              "This usually means that your system is not well equilibrated");
+              "%s moved too far between two domain decomposition steps\n"
+              "This usually means that your system is not well equilibrated",
+              dd->comm->bCGs ? "A charge group" : "An atom");
 }
 
 static void rotate_state_atom(t_state *state, int a)
@@ -4509,7 +4515,8 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                 {
                     if (pos_d >= limit1[d])
                     {
-                        cg_move_error(fplog, dd, step, cg, d, 1, TRUE, limitd[d],
+                        cg_move_error(fplog, dd, step, cg, d, 1,
+                                      cg_cm != state->x, limitd[d],
                                       cg_cm[cg], cm_new, pos_d);
                     }
                     dev[d] = 1;
@@ -4535,7 +4542,8 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                 {
                     if (pos_d < limit0[d])
                     {
-                        cg_move_error(fplog, dd, step, cg, d, -1, TRUE, limitd[d],
+                        cg_move_error(fplog, dd, step, cg, d, -1,
+                                      cg_cm != state->x, limitd[d],
                                       cg_cm[cg], cm_new, pos_d);
                     }
                     dev[d] = -1;
@@ -4949,7 +4957,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 {
                     cg_move_error(fplog, dd, step, cg, dim,
                                   (flag & DD_FLAG_FW(d)) ? 1 : 0,
-                                  FALSE, 0,
+                                  fr->cutoff_scheme == ecutsGROUP, 0,
                                   comm->vbuf.v[buf_pos],
                                   comm->vbuf.v[buf_pos],
                                   comm->vbuf.v[buf_pos][dim]);
@@ -6673,7 +6681,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->eDLB = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
+    comm->eDLB        = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
+    comm->bDLB_locked = FALSE;
 
     comm->bDynLoadBal = (comm->eDLB == edlbYES);
     if (fplog)
@@ -6738,6 +6747,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     comm->cellsize_limit = 0;
     comm->bBondComm      = FALSE;
+
+    /* Atoms should be able to move by up to half the list buffer size (if > 0)
+     * within nstlist steps. Since boundaries are allowed to displace by half
+     * a cell size, DD cells should be at least the size of the list buffer.
+     */
+    comm->cellsize_limit = std::max(comm->cellsize_limit,
+                                    ir->rlistlong - std::max(ir->rvdw, ir->rcoulomb));
 
     if (comm->bInterCGBondeds)
     {
@@ -7562,6 +7578,20 @@ void change_dd_dlb_cutoff_limit(t_commrec *cr)
 
     /* Change the cut-off limit */
     comm->PMELoadBal_max_cutoff = comm->cutoff;
+}
+
+gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd)
+{
+    return dd->comm->bDLB_locked;
+}
+
+void dd_dlb_set_lock(gmx_domdec_t *dd, gmx_bool bValue)
+{
+    /* We can only lock the DLB when it is set to auto, otherwise don't lock */
+    if (dd->comm->eDLB == edlbAUTO)
+    {
+        dd->comm->bDLB_locked = bValue;
+    }
 }
 
 static void merge_cg_buffers(int ncell,
@@ -9324,17 +9354,17 @@ void dd_partition_system(FILE                *fplog,
     }
 
     /* Check if we have recorded loads on the nodes */
-    if (comm->bRecordLoad && dd_load_count(comm))
+    if (comm->bRecordLoad && dd_load_count(comm) > 0)
     {
-        if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal)
+        if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal && !dd_dlb_is_locked(dd))
         {
             /* Check if we should use DLB at the second partitioning
              * and every 100 partitionings,
              * so the extra communication cost is negligible.
              */
-            n         = std::max(100, nstglobalcomm);
+            const int nddp_chk_dlb = 100;
             bCheckDLB = (comm->n_load_collect == 0 ||
-                         comm->n_load_have % n == n-1);
+                         comm->n_load_have % nddp_chk_dlb == nddp_chk_dlb - 1);
         }
         else
         {
@@ -9372,8 +9402,26 @@ void dd_partition_system(FILE                *fplog,
                 /* Since the timings are node dependent, the master decides */
                 if (DDMASTER(dd))
                 {
-                    bTurnOnDLB =
-                        (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS_DLB_ON);
+                    /* Here we check if the max PME rank load is more than 0.98
+                     * the max PP force load. If so, PP DLB will not help,
+                     * since we are (almost) limited by PME. Furthermore,
+                     * DLB will cause a significant extra x/f redistribution
+                     * cost on the PME ranks, which will then surely result
+                     * in lower total performance.
+                     * This check might be fragile, since one measurement
+                     * below 0.98 (although only done once every 100 DD part.)
+                     * could turn on DLB for the rest of the run.
+                     */
+                    if (cr->npmenodes > 0 &&
+                        dd_pme_f_ratio(dd) > 1 - DD_PERF_LOSS_DLB_ON)
+                    {
+                        bTurnOnDLB = FALSE;
+                    }
+                    else
+                    {
+                        bTurnOnDLB =
+                            (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS_DLB_ON);
+                    }
                     if (debug)
                     {
                         fprintf(debug, "step %s, imb loss %f\n",

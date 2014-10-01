@@ -2117,6 +2117,152 @@ pdihs_noener_simd(int nbonds,
     }
 }
 
+/* This is mostly a copy of pdihs_noener_simd above, but with using
+ * the RB potential instead of a harmonic potential.
+ * This function can replace rbdihs() when no energy and virial are needed.
+ */
+static void
+rbdihs_noener_simd(int nbonds,
+                   const t_iatom forceatoms[], const t_iparams forceparams[],
+                   const rvec x[], rvec f[],
+                   const t_pbc *pbc, const t_graph gmx_unused *g,
+                   real gmx_unused lambda,
+                   const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                   int gmx_unused *global_atom_index)
+{
+    const int             nfa1 = 5;
+    int                   i, iu, s, j;
+    int                   type, ai[GMX_SIMD_REAL_WIDTH], aj[GMX_SIMD_REAL_WIDTH], ak[GMX_SIMD_REAL_WIDTH], al[GMX_SIMD_REAL_WIDTH];
+    real                  dr_array[3*DIM*GMX_SIMD_REAL_WIDTH+GMX_SIMD_REAL_WIDTH], *dr;
+    real                  buf_array[(NR_RBDIHS + 4)*GMX_SIMD_REAL_WIDTH+GMX_SIMD_REAL_WIDTH], *buf;
+    real                 *parm, *p, *q;
+
+    gmx_simd_real_t       phi_S;
+    gmx_simd_real_t       ddphi_S, cosfac_S;
+    gmx_simd_real_t       mx_S, my_S, mz_S;
+    gmx_simd_real_t       nx_S, ny_S, nz_S;
+    gmx_simd_real_t       nrkj_m2_S, nrkj_n2_S;
+    gmx_simd_real_t       parm_S, c_S;
+    gmx_simd_real_t       sin_S, cos_S;
+    gmx_simd_real_t       sf_i_S, msf_l_S;
+    pbc_simd_t            pbc_simd;
+
+    gmx_simd_real_t       pi_S  = gmx_simd_set1_r(M_PI);
+    gmx_simd_real_t       one_S = gmx_simd_set1_r(1.0);
+
+    /* Ensure SIMD register alignment */
+    dr  = gmx_simd_align_r(dr_array);
+    buf = gmx_simd_align_r(buf_array);
+
+    /* Extract aligned pointer for parameters and variables */
+    parm  = buf;
+    p     = buf + (NR_RBDIHS + 0)*GMX_SIMD_REAL_WIDTH;
+    q     = buf + (NR_RBDIHS + 1)*GMX_SIMD_REAL_WIDTH;
+
+    set_pbc_simd(pbc, &pbc_simd);
+
+    /* nbonds is the number of dihedrals times nfa1, here we step GMX_SIMD_REAL_WIDTH dihs */
+    for (i = 0; (i < nbonds); i += GMX_SIMD_REAL_WIDTH*nfa1)
+    {
+        /* Collect atoms quadruplets for GMX_SIMD_REAL_WIDTH dihedrals.
+         * iu indexes into forceatoms, we should not let iu go beyond nbonds.
+         */
+        iu = i;
+        for (s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
+        {
+            type  = forceatoms[iu];
+            ai[s] = forceatoms[iu+1];
+            aj[s] = forceatoms[iu+2];
+            ak[s] = forceatoms[iu+3];
+            al[s] = forceatoms[iu+4];
+
+            /* We don't need the first parameter, since that's a constant
+             * which only affects the energies, not the forces.
+             */
+            for (j = 1; j < NR_RBDIHS; j++)
+            {
+                parm[j*GMX_SIMD_REAL_WIDTH + s] =
+                    forceparams[type].rbdihs.rbcA[j];
+            }
+
+            /* At the end fill the arrays with identical entries */
+            if (iu + nfa1 < nbonds)
+            {
+                iu += nfa1;
+            }
+        }
+
+        /* Caclulate GMX_SIMD_REAL_WIDTH dihedral angles at once */
+        dih_angle_simd(x, ai, aj, ak, al, &pbc_simd,
+                       dr,
+                       &phi_S,
+                       &mx_S, &my_S, &mz_S,
+                       &nx_S, &ny_S, &nz_S,
+                       &nrkj_m2_S,
+                       &nrkj_n2_S,
+                       p, q);
+
+        /* Change to polymer convention */
+        phi_S = gmx_simd_sub_r(phi_S, pi_S);
+
+        gmx_simd_sincos_r(phi_S, &sin_S, &cos_S);
+
+        ddphi_S   = gmx_simd_setzero_r();
+        c_S       = one_S;
+        cosfac_S  = one_S;
+        for (j = 1; j < NR_RBDIHS; j++)
+        {
+            parm_S   = gmx_simd_load_r(parm + j*GMX_SIMD_REAL_WIDTH);
+            ddphi_S  = gmx_simd_fmadd_r(gmx_simd_mul_r(c_S, parm_S), cosfac_S, ddphi_S);
+            cosfac_S = gmx_simd_mul_r(cosfac_S, cos_S);
+            c_S      = gmx_simd_add_r(c_S, one_S);
+        }
+
+        /* Note that here we do not use the minus sign which is present
+         * in the normal RB code. This is corrected for through (m)sf below.
+         */
+        ddphi_S  = gmx_simd_mul_r(ddphi_S, sin_S);
+
+        sf_i_S   = gmx_simd_mul_r(ddphi_S, nrkj_m2_S);
+        msf_l_S  = gmx_simd_mul_r(ddphi_S, nrkj_n2_S);
+
+        /* After this m?_S will contain f[i] */
+        mx_S     = gmx_simd_mul_r(sf_i_S, mx_S);
+        my_S     = gmx_simd_mul_r(sf_i_S, my_S);
+        mz_S     = gmx_simd_mul_r(sf_i_S, mz_S);
+
+        /* After this m?_S will contain -f[l] */
+        nx_S     = gmx_simd_mul_r(msf_l_S, nx_S);
+        ny_S     = gmx_simd_mul_r(msf_l_S, ny_S);
+        nz_S     = gmx_simd_mul_r(msf_l_S, nz_S);
+
+        gmx_simd_store_r(dr + 0*GMX_SIMD_REAL_WIDTH, mx_S);
+        gmx_simd_store_r(dr + 1*GMX_SIMD_REAL_WIDTH, my_S);
+        gmx_simd_store_r(dr + 2*GMX_SIMD_REAL_WIDTH, mz_S);
+        gmx_simd_store_r(dr + 3*GMX_SIMD_REAL_WIDTH, nx_S);
+        gmx_simd_store_r(dr + 4*GMX_SIMD_REAL_WIDTH, ny_S);
+        gmx_simd_store_r(dr + 5*GMX_SIMD_REAL_WIDTH, nz_S);
+
+        iu = i;
+        s  = 0;
+        do
+        {
+            do_dih_fup_noshiftf_precalc(ai[s], aj[s], ak[s], al[s],
+                                        p[s], q[s],
+                                        dr[     XX *GMX_SIMD_REAL_WIDTH+s],
+                                        dr[     YY *GMX_SIMD_REAL_WIDTH+s],
+                                        dr[     ZZ *GMX_SIMD_REAL_WIDTH+s],
+                                        dr[(DIM+XX)*GMX_SIMD_REAL_WIDTH+s],
+                                        dr[(DIM+YY)*GMX_SIMD_REAL_WIDTH+s],
+                                        dr[(DIM+ZZ)*GMX_SIMD_REAL_WIDTH+s],
+                                        f);
+            s++;
+            iu += nfa1;
+        }
+        while (s < GMX_SIMD_REAL_WIDTH && iu < nbonds);
+    }
+}
+
 #endif /* GMX_SIMD_HAVE_REAL */
 
 
@@ -4405,6 +4551,19 @@ static real calc_one_bond(int thread,
                 global_atom_index);
             v = 0;
         }
+#ifdef GMX_SIMD_HAVE_REAL
+        else if (ftype == F_RBDIHS &&
+                 !bCalcEnerVir && fr->efep == efepNO)
+        {
+            /* No energies, shift forces, dvdl */
+            rbdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+                               idef->iparams,
+                               (const rvec*)x, f,
+                               pbc, g, lambda[efptFTYPE], md, fcd,
+                               global_atom_index);
+            v = 0;
+        }
+#endif
         else
         {
             v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
