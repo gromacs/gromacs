@@ -50,11 +50,12 @@
 #endif
 
 #include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/utilities.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxpreprocess/calc_verletbuf.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
@@ -72,7 +73,6 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/sighandler.h"
 #include "gromacs/legacyheaders/txtdump.h"

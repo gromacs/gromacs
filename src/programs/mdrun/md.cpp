@@ -40,6 +40,8 @@
 
 #include <stdlib.h>
 
+#include "gromacs/ewald/pme-load-balancing.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mdoutf.h"
 #include "gromacs/fileio/trajectory_writing.h"
@@ -52,7 +54,6 @@
 #include "gromacs/legacyheaders/calcmu.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/domdec_network.h"
@@ -67,7 +68,6 @@
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/sighandler.h"
@@ -93,7 +93,6 @@
 
 #include "deform.h"
 #include "membed.h"
-#include "pme_loadbal.h"
 #include "repl_ex.h"
 
 #ifdef GMX_FAHCORE

@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/ewald/utilities.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"

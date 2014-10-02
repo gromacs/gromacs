@@ -36,10 +36,11 @@
  */
 #include "gmxpre.h"
 
+#include "utilities.h"
+
 #include <math.h>
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
