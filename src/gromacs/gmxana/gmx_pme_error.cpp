@@ -39,12 +39,12 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/calcgrid.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdatoms.h"
