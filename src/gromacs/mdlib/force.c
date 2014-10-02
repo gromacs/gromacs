@@ -44,7 +44,8 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -54,7 +55,6 @@
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"

@@ -50,6 +50,7 @@
 #endif
 
 #include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/imd/imd.h"
@@ -69,7 +70,6 @@
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
