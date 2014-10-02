@@ -42,7 +42,7 @@
 
 #include <sys/types.h>
 
-#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"

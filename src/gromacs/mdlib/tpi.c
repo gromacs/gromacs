@@ -41,6 +41,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
@@ -58,7 +59,6 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"

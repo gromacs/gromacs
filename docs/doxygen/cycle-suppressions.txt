@@ -1,5 +1,6 @@
 mdlib -> essentialdynamics
 mdlib -> imd
+mdlib -> ewald
 mdlib -> pulling
 mdlib -> swap
 legacyheaders -> swap

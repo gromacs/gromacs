@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _coulomb_h
-#define _coulomb_h
+#ifndef GMX_EWALD_EWALD_UTIL_H
+#define GMX_EWALD_EWALD_UTIL_H
 
 #include <stdio.h>
 
@@ -57,7 +57,7 @@ real
 calc_ewaldcoeff_q(real rc, real dtol);
 /* Determines the Ewald parameter, both for Ewald and PME */
 
-extern real calc_ewaldcoeff_lj(real rc, real dtol);
+real calc_ewaldcoeff_lj(real rc, real dtol);
 /* Determines the Ewald parameters for LJ-PME */
 
 real

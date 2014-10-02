@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _pme_loadbal_h
-#define _pme_loadbal_h
+#ifndef GMX_EWALD_PME_LOAD_BALANCING_H
+#define GMX_EWALD_PME_LOAD_BALANCING_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,4 +90,4 @@ void pme_loadbal_done(pme_load_balancing_t pme_lb,
 }
 #endif
 
-#endif /* _pme_loadbal_h */
+#endif

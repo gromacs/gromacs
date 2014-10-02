@@ -34,17 +34,17 @@
  */
 #include "gmxpre.h"
 
-#include "pme_loadbal.h"
+#include "pme-load-balancing.h"
 
 #include "config.h"
 
+#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/legacyheaders/calcgrid.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
