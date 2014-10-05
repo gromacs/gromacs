@@ -163,6 +163,7 @@ class File(object):
         self._main_header = None
         self._lines = None
         self._filter = None
+        self._used_config_h_defines = set()
         directory.add_file(self)
 
     def set_doc_xml(self, rawdoc, sourcetree):
@@ -214,26 +215,31 @@ class File(object):
         # TODO: Consider a more robust regex.
         include_re = r'^\s*#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
         current_block = None
-        # TODO: Consider reading directly into this list, and iterate that.
-        lines = []
         with open(self._abspath, 'r') as scanfile:
-            for lineno, line in enumerate(scanfile, 1):
-                lines.append(line)
-                match = re.match(include_re, line)
-                if match:
-                    is_system = (match.group('quote') == '<')
-                    includedpath = match.group('path')
-                    included_file = self._process_include(lineno, is_system,
-                            includedpath, line, sourcetree)
-                    if current_block is None:
-                        current_block = IncludeBlock(included_file)
-                        self._include_blocks.append(current_block)
-                    else:
-                        current_block.add_file(included_file)
-                elif line and not line.isspace():
-                    current_block = None
+            contents = scanfile.read()
+        lines = contents.splitlines(True)
+        for lineno, line in enumerate(lines, 1):
+            match = re.match(include_re, line)
+            if match:
+                is_system = (match.group('quote') == '<')
+                includedpath = match.group('path')
+                included_file = self._process_include(lineno, is_system,
+                        includedpath, line, sourcetree)
+                if current_block is None:
+                    current_block = IncludeBlock(included_file)
+                    self._include_blocks.append(current_block)
+                else:
+                    current_block.add_file(included_file)
+            elif line and not line.isspace():
+                current_block = None
         if keep_contents:
             self._lines = lines
+
+    def add_used_config_h_defines(self, defines):
+        """Set config.h defines used in this file.
+
+        Used internally by find_config_h_uses()."""
+        self._used_config_h_defines.update(defines)
 
     def get_reporter_location(self):
         return reporter.Location(self._abspath, None)
@@ -320,6 +326,13 @@ class File(object):
     def get_contents(self):
         return self._lines
 
+    def get_used_config_h_defines(self):
+        """Return set of defines from config.h that are used in this file.
+
+        The return value is empty if find_config_h_uses() has not been called,
+        as well as for headers that declare these defines."""
+        return self._used_config_h_defines
+
 class GeneratedFile(File):
     def __init__(self, abspath, relpath, directory):
         File.__init__(self, abspath, relpath, directory)
@@ -338,7 +351,29 @@ class GeneratedFile(File):
         return File.get_reporter_location(self)
 
 class GeneratorSourceFile(File):
-    pass
+    def __init__(self, abspath, relpath, directory):
+        File.__init__(self, abspath, relpath, directory)
+        self._defines = None
+
+    def scan_contents(self, sourcetree, keep_contents):
+        detect_defines = (self.get_name() == 'config.h.cmakein')
+        File.scan_contents(self, sourcetree, keep_contents or detect_defines)
+        if detect_defines:
+            self._defines = []
+            define_re = r'^#.*define\s*(\w*)'
+            for line in self.get_contents():
+                match = re.match(define_re, line)
+                if match:
+                    self._defines.append(match.group(1))
+            # Hard-code the contents of gmx_header_config.h to avoid
+            # unnecessary complexity.
+            self._defines.append('GMX_NATIVE_WINDOWS')
+
+    def get_defines(self):
+        """Return set of possible defines from config.h.cmakein.
+
+        The information is only populated for config.h.cmakein."""
+        return self._defines
 
 class Directory(object):
 
@@ -636,6 +671,10 @@ class GromacsTree(object):
     (Doxygen only sees those #includes that the preprocessor sees, which
     depends on what #defines it has seen).
 
+    find_config_h_uses() can be called to find all uses of defines declared in
+    config.h.  In the current implementation, scan_files() must have been
+    called earlier.
+
     load_xml() can be called to load information from Doxygen XML data in
     the build tree (the Doxygen XML data must have been built separately).
     """
@@ -908,6 +947,27 @@ class GromacsTree(object):
             fileobj = self._files.get(path)
             assert fileobj is not None
             fileobj.set_git_filter_attribute(value)
+
+    def find_config_h_uses(self):
+        """Find files that use defines from config.h."""
+        # Executing git grep is substantially faster than using the define_re
+        # directly on the contents of the file in Python.
+        args = ['git', 'grep', '-zwIF']
+        configfile = self._files['src/config.h.cmakein']
+        for define in configfile.get_defines():
+            args.extend(['-e', define])
+        args.extend(['--', '*.cpp', '*.c', '*.cu', '*.h', '*.cuh'])
+        define_re = r'\b(?:' + '|'.join(configfile.get_defines())+ r')\b'
+        output = subprocess.check_output(args, cwd=self._source_root)
+        for line in output.splitlines():
+            (filename, text) = line.split('\0')
+            fileobj = self._files.get(filename)
+            if fileobj is not None:
+                if fileobj.get_name() not in ('config.h', 'config.h.cmakein',
+                        'gmxpre-config.h', 'gmxpre-config.h.cmakein',
+                        'gmx_header_config.h'):
+                    defines = re.findall(define_re, text)
+                    fileobj.add_used_config_h_defines(defines)
 
     def load_installed_file_list(self):
         """Load list of installed files from the build tree."""
