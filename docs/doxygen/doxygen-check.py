@@ -62,16 +62,38 @@ from reporter import Reporter
 
 def check_file(fileobj, reporter):
     """Check file-level issues."""
-    if fileobj.is_source_file() and not fileobj.is_external() and \
-            fileobj.get_relpath().startswith('src/'):
+    if not fileobj.is_external() and fileobj.get_relpath().startswith('src/'):
         includes = fileobj.get_includes()
-        if includes:
-            firstinclude = includes[0].get_file()
-            if not firstinclude or firstinclude.get_name() != "gmxpre.h":
-                reporter.code_issue(includes[0],
-                                    "does not include \"gmxpre.h\" first")
+        if fileobj.is_source_file():
+            if includes:
+                firstinclude = includes[0].get_file()
+                if not firstinclude or firstinclude.get_name() != "gmxpre.h":
+                    reporter.code_issue(includes[0],
+                                        "does not include \"gmxpre.h\" first")
+            else:
+                reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
+        includes_config_h = False
+        includes_gmx_header_config_h = False
+        for include in includes:
+            includedfile = include.get_file()
+            if includedfile:
+                if includedfile.get_name() == 'config.h':
+                    includes_config_h = True
+                if includedfile.get_name() == 'gmx_header_config.h':
+                    includes_gmx_header_config_h = True
+        if includes_config_h:
+            if not fileobj.get_used_defines():
+                reporter.code_issue(fileobj, "includes \"config.h\" unnecessarily")
+        elif includes_gmx_header_config_h:
+            if not fileobj.get_used_defines():
+                if fileobj.get_name() != 'config.h':
+                    reporter.code_issue(fileobj, "includes \"gmx_header_config.h\" unnecessarily")
+            elif len(fileobj.get_used_defines()) > 1 or \
+                    'GMX_NATIVE_WINDOWS' not in fileobj.get_used_defines():
+                reporter.code_issue(fileobj, "should include \"config.h\"")
         else:
-            reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
+            if fileobj.get_used_defines():
+                reporter.code_issue(fileobj, "should include \"config.h\"")
 
     if not fileobj.is_documented():
         # TODO: Add rules for required documentation
@@ -348,7 +370,7 @@ def check_all(tree, reporter, check_ignored):
             check_include(fileobj, includedfile, reporter)
         if fileobj.should_includes_be_sorted() \
                 and not includesorter.check_sorted(fileobj):
-            reporter.code_issue(fileobj, "include order is not consistent")
+            reporter.code_issue(fileobj, "include style/order is not consistent")
 
     for classobj in tree.get_classes():
         check_class(classobj, reporter)
@@ -391,7 +413,7 @@ def main():
     if not options.quiet:
         sys.stderr.write('Reading source files...\n')
     # TODO: The checking should be possible without storing everything in memory
-    tree.scan_files(keep_contents=True)
+    tree.scan_files(keep_contents=True, track_config_h=True)
     if options.ignore_cycles:
         tree.load_cycle_suppression_list(options.ignore_cycles)
     if not options.quiet:

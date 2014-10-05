@@ -163,6 +163,7 @@ class File(object):
         self._main_header = None
         self._lines = None
         self._filter = None
+        self._used_defines = set()
         directory.add_file(self)
 
     def set_doc_xml(self, rawdoc, sourcetree):
@@ -209,31 +210,41 @@ class File(object):
         self._includes.append(included_file)
         return included_file
 
-    def scan_contents(self, sourcetree, keep_contents):
+    def scan_contents(self, sourcetree, keep_contents, define_re):
         """Scan the file contents and initialize information based on it."""
+        if self._lines is not None:
+            return
         # TODO: Consider a more robust regex.
         include_re = r'^\s*#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
         current_block = None
-        # TODO: Consider reading directly into this list, and iterate that.
-        lines = []
         with open(self._abspath, 'r') as scanfile:
-            for lineno, line in enumerate(scanfile, 1):
-                lines.append(line)
-                match = re.match(include_re, line)
-                if match:
-                    is_system = (match.group('quote') == '<')
-                    includedpath = match.group('path')
-                    included_file = self._process_include(lineno, is_system,
-                            includedpath, line, sourcetree)
-                    if current_block is None:
-                        current_block = IncludeBlock(included_file)
-                        self._include_blocks.append(current_block)
-                    else:
-                        current_block.add_file(included_file)
-                elif line and not line.isspace():
-                    current_block = None
+            contents = scanfile.read()
+        lines = contents.splitlines(True)
+        for lineno, line in enumerate(lines, 1):
+            match = re.match(include_re, line)
+            if match:
+                is_system = (match.group('quote') == '<')
+                includedpath = match.group('path')
+                included_file = self._process_include(lineno, is_system,
+                        includedpath, line, sourcetree)
+                if current_block is None:
+                    current_block = IncludeBlock(included_file)
+                    self._include_blocks.append(current_block)
+                else:
+                    current_block.add_file(included_file)
+            elif line and not line.isspace():
+                current_block = None
+        if define_re and self.get_name() not in ('config.h', 'config.h.cmakein',
+                'gmxpre-config.h', 'gmxpre-config.h.cmakein',
+                'gmx_header_config.h'):
+            # TODO: This is way too slow for this operation. Probably the
+            # easiest way to make it faster is to run 'git grep' in a separate
+            # process...
+            self._used_defines = set(re.findall(define_re, contents))
         if keep_contents:
             self._lines = lines
+        else:
+            self._lines = []
 
     def get_reporter_location(self):
         return reporter.Location(self._abspath, None)
@@ -320,14 +331,17 @@ class File(object):
     def get_contents(self):
         return self._lines
 
+    def get_used_defines(self):
+        return self._used_defines
+
 class GeneratedFile(File):
     def __init__(self, abspath, relpath, directory):
         File.__init__(self, abspath, relpath, directory)
         self._generator_source_file = None
 
-    def scan_contents(self, sourcetree, keep_contents):
+    def scan_contents(self, sourcetree, keep_contents, define_re):
         if os.path.exists(self.get_abspath()):
-            File.scan_contents(self, sourcetree, keep_contents)
+            File.scan_contents(self, sourcetree, keep_contents, define_re)
 
     def set_generator_source(self, sourcefile):
         self._generator_source_file = sourcefile
@@ -338,7 +352,27 @@ class GeneratedFile(File):
         return File.get_reporter_location(self)
 
 class GeneratorSourceFile(File):
-    pass
+    def __init__(self, abspath, relpath, directory):
+        File.__init__(self, abspath, relpath, directory)
+        self._defines = None
+
+    def scan_contents(self, sourcetree, keep_contents, define_re, detect_defines=False):
+        File.scan_contents(self, sourcetree, keep_contents, define_re)
+        if detect_defines:
+            self._defines = []
+            define_re = r'^#.*define\s*(\w*)'
+            for line in self.get_contents():
+                match = re.match(define_re, line)
+                if match:
+                    self.add_define(match.group(1))
+
+    def add_define(self, define):
+        self._defines.append(define)
+
+    def get_define_re(self):
+        if not self._defines:
+            return None
+        return r'\b(?:' + '|'.join(self._defines) + r')\b'
 
 class Directory(object):
 
@@ -743,15 +777,21 @@ class GromacsTree(object):
         rootdir.set_module(moduleobj)
         self._modules[name] = moduleobj
 
-    def scan_files(self, only_files=None, keep_contents=False):
+    def scan_files(self, only_files=None, keep_contents=False, track_config_h=False):
         """Read source files to initialize #include dependencies."""
         if only_files:
             filelist = only_files
         else:
             filelist = self._files.itervalues()
+        define_re = None
+        if track_config_h:
+            configfile = self._files['src/config.h.cmakein']
+            configfile.scan_contents(self, keep_contents, None, detect_defines=True)
+            configfile.add_define('GMX_NATIVE_WINDOWS')
+            define_re = configfile.get_define_re()
         for fileobj in filelist:
             if not fileobj.is_external():
-                fileobj.scan_contents(self, keep_contents)
+                fileobj.scan_contents(self, keep_contents, define_re)
                 module = fileobj.get_module()
                 if module:
                     for includedfile in fileobj.get_includes():
