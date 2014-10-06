@@ -1852,7 +1852,7 @@ int gmx_trjconv(int argc, char *argv[])
                                         }
                                         write_g96_conf(out, &frout, -1, NULL);
                                 }
-                                if (bSeparate)
+                                if (bSeparate || bSplitHere)
                                 {
                                     gmx_ffclose(out);
                                     out = NULL;
