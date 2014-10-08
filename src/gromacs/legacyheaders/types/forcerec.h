@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ extern "C" {
 #endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
-typedef struct gmx_pme *gmx_pme_t;
+struct gmx_pme_t;
 struct nonbonded_verlet_t;
 
 /* Structure describing the data in a single table */
@@ -349,10 +349,10 @@ typedef struct {
     rvec *f_novirsum;
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
-    gmx_pme_t pmedata;
-    int       ljpme_combination_rule;
-    tensor    vir_el_recip;
-    tensor    vir_lj_recip;
+    struct gmx_pme_t *pmedata;
+    int               ljpme_combination_rule;
+    tensor            vir_el_recip;
+    tensor            vir_lj_recip;
 
     /* PME/Ewald stuff */
     gmx_bool                bEwald;
