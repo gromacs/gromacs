@@ -54,7 +54,7 @@ extern "C" {
 #endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
-typedef struct gmx_pme *gmx_pme_t;
+struct gmx_pme;
 struct nonbonded_verlet_t;
 
 /* Structure describing the data in a single table */
@@ -357,10 +357,10 @@ typedef struct {
     rvec *f_novirsum;
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
-    gmx_pme_t pmedata;
-    int       ljpme_combination_rule;
-    tensor    vir_el_recip;
-    tensor    vir_lj_recip;
+    struct gmx_pme *pmedata;
+    int             ljpme_combination_rule;
+    tensor          vir_el_recip;
+    tensor          vir_lj_recip;
 
     /* PME/Ewald stuff */
     gmx_bool          bEwald;
