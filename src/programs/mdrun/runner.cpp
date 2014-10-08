@@ -1060,7 +1060,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     t_fcdata                 *fcd           = NULL;
     real                      ewaldcoeff_q  = 0;
     real                      ewaldcoeff_lj = 0;
-    gmx_pme_t                *pmedata       = NULL;
+    struct gmx_pme          **pmedata       = NULL;
     gmx_vsite_t              *vsite         = NULL;
     gmx_constr_t              constr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
