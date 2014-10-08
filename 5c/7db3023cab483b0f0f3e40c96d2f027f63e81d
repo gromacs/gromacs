@@ -1,0 +1,7 @@
+Verified+2: Jenkins Buildbot
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Wed, 08 Oct 2014 20:02:32 +0200
+Reviewed-on: https://gerrit.gromacs.org/4126
+Project: gromacs
+Branch: refs/heads/release-5-0
