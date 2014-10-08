@@ -64,7 +64,7 @@ typedef struct {
     real      grid_efficiency; /* ineffiency factor for non-uniform grids <= 1 */
     real      ewaldcoeff_q;    /* Electrostatic Ewald coefficient            */
     real      ewaldcoeff_lj;   /* LJ Ewald coefficient, only for the call to send_switchgrid */
-    gmx_pme_t pmedata;         /* the data structure used in the PME code      */
+    struct gmx_pme *pmedata;         /* the data structure used in the PME code      */
     int       count;           /* number of times this setup has been timed    */
     double    cycles;          /* the fastest time for this setup in cycles    */
 } pme_setup_t;
@@ -114,7 +114,7 @@ struct pme_load_balancing {
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
-                      gmx_pme_t pmedata)
+                      struct gmx_pme *pmedata)
 {
     pme_load_balancing_t pme_lb;
     real                 spm, sp;
@@ -440,17 +440,17 @@ static void switch_to_stage1(pme_load_balancing_t pme_lb)
     pme_lb->cur = pme_lb->start - 1;
 }
 
-gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
-                          t_commrec                  *cr,
-                          FILE                       *fp_err,
-                          FILE                       *fp_log,
-                          t_inputrec                 *ir,
-                          t_state                    *state,
-                          double                      cycles,
-                          interaction_const_t        *ic,
-                          struct nonbonded_verlet_t  *nbv,
-                          gmx_pme_t                  *pmedata,
-                          gmx_int64_t                 step)
+gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
+                          t_commrec                 *cr,
+                          FILE                      *fp_err,
+                          FILE                      *fp_log,
+                          t_inputrec                *ir,
+                          t_state                   *state,
+                          double                     cycles,
+                          interaction_const_t       *ic,
+                          struct nonbonded_verlet_t *nbv,
+                          struct gmx_pme **          pmedata,
+                          gmx_int64_t                step)
 {
     gmx_bool     OK;
     pme_setup_t *set;
