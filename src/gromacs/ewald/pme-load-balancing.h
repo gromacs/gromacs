@@ -52,7 +52,7 @@ typedef struct pme_load_balancing *pme_load_balancing_t;
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
-                      gmx_pme_t pmedata);
+                      struct gmx_pme *pmedata);
 
 /* Try to adjust the PME grid and Coulomb cut-off.
  * The adjustment is done to generate a different non-bonded PP and PME load.
@@ -66,17 +66,17 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
  * factors as well as DD load balancing.
  * Returns TRUE the load balancing continues, FALSE is the balancing is done.
  */
-gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
-                          t_commrec                  *cr,
-                          FILE                       *fp_err,
-                          FILE                       *fp_log,
-                          t_inputrec                 *ir,
-                          t_state                    *state,
-                          double                      cycles,
-                          interaction_const_t        *ic,
-                          struct nonbonded_verlet_t  *nbv,
-                          gmx_pme_t                  *pmedata,
-                          gmx_int64_t                 step);
+gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
+                          t_commrec                 *cr,
+                          FILE                      *fp_err,
+                          FILE                      *fp_log,
+                          t_inputrec                *ir,
+                          t_state                   *state,
+                          double                     cycles,
+                          interaction_const_t       *ic,
+                          struct nonbonded_verlet_t *nbv,
+                          struct gmx_pme **          pmedata,
+                          gmx_int64_t                step);
 
 /* Restart the PME load balancing discarding all timings gathered up till now */
 void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);

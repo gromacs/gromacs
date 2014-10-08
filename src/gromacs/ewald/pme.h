@@ -59,7 +59,7 @@ enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
 };
 
-int gmx_pme_init(gmx_pme_t *pmedata, t_commrec *cr,
+int gmx_pme_init(struct gmx_pme **pmedata, t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
                  t_inputrec *ir, int homenr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
@@ -68,7 +68,7 @@ int gmx_pme_init(gmx_pme_t *pmedata, t_commrec *cr,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
+int gmx_pme_destroy(FILE *log, struct gmx_pme **pmedata);
 /* Destroy the pme data structures resepectively.
  * Return value 0 indicates all well, non zero is an error code.
  */
@@ -88,7 +88,7 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
 
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
-int gmx_pme_do(gmx_pme_t pme,
+int gmx_pme_do(struct gmx_pme *pme,
                int start,       int homenr,
                rvec x[],        rvec f[],
                real chargeA[],  real chargeB[],
@@ -108,7 +108,7 @@ int gmx_pme_do(gmx_pme_t pme,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-int gmx_pmeonly(gmx_pme_t pme,
+int gmx_pmeonly(struct gmx_pme *pme,
                 t_commrec *cr,     t_nrnb *mynrnb,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -117,7 +117,7 @@ int gmx_pmeonly(gmx_pme_t pme,
 /* Called on the nodes that do PME exclusively (as slaves)
  */
 
-void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V);
+void gmx_pme_calc_energy(struct gmx_pme *pme, int n, rvec *x, real *q, real *V);
 /* Calculate the PME grid energy V for n charges with a potential
  * in the pme struct determined before with a call to gmx_pme_do
  * with at least GMX_PME_SPREAD and GMX_PME_SOLVE specified.
