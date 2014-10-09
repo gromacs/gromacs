@@ -117,13 +117,15 @@
 
 #if (defined CALC_COULOMB && defined CALC_COUL_TAB) || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
     gmx_simd_real_t r_S0;
+#if (defined CALC_COULOMB && defined CALC_COUL_TAB) || !defined HALF_LJ
     gmx_simd_real_t r_S2;
+#endif
 #endif
 
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-    gmx_simd_real_t  rsw_S0, rsw2_S0, rsw2_r_S0;
+    gmx_simd_real_t  rsw_S0, rsw2_S0;
 #ifndef HALF_LJ
-    gmx_simd_real_t  rsw_S2, rsw2_S2, rsw2_r_S2;
+    gmx_simd_real_t  rsw_S2, rsw2_S2;
 #endif
 #endif
 
@@ -205,14 +207,6 @@
     int         aj2;
 #endif
 
-#ifndef FIX_LJ_C
-    /* LJ C6 and C12 parameters, used with geometric comb. rule */
-    gmx_simd_real_t  c6_S0, c12_S0;
-#ifndef HALF_LJ
-    gmx_simd_real_t  c6_S2, c12_S2;
-#endif
-#endif
-
     /* Intermediate variables for LJ calculation */
 #ifndef LJ_COMB_LB
     gmx_simd_real_t  rinvsix_S0;
@@ -230,12 +224,6 @@
     gmx_simd_real_t  FrLJ6_S0, FrLJ12_S0, frLJ_S0;
 #ifndef HALF_LJ
     gmx_simd_real_t  FrLJ6_S2, FrLJ12_S2, frLJ_S2;
-#endif
-#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    gmx_simd_real_t  VLJ6_S0, VLJ12_S0, VLJ_S0;
-#ifndef HALF_LJ
-    gmx_simd_real_t  VLJ6_S2, VLJ12_S2, VLJ_S2;
-#endif
 #endif
 #endif /* CALC_LJ */
 
@@ -352,8 +340,10 @@
 #ifdef CALC_LJ
 
 #if !defined LJ_COMB_GEOM && !defined LJ_COMB_LB && !defined FIX_LJ_C
+    gmx_simd_real_t c6_S0, c12_S0;
     load_lj_pair_params2(nbfp0, nbfp1, type, aj, &c6_S0, &c12_S0);
 #ifndef HALF_LJ
+    gmx_simd_real_t c6_S2, c12_S2;
     load_lj_pair_params2(nbfp2, nbfp3, type, aj, &c6_S2, &c12_S2);
 #endif
 #endif /* not defined any LJ rule */
@@ -361,13 +351,13 @@
 #ifdef LJ_COMB_GEOM
     gmx_loaddh_pr(&c6s_j_S,  ljc+aj2+0);
     gmx_loaddh_pr(&c12s_j_S, ljc+aj2+STRIDE);
-    c6_S0       = gmx_simd_mul_r(c6s_S0, c6s_j_S );
+    gmx_simd_real_t c6_S0       = gmx_simd_mul_r(c6s_S0, c6s_j_S );
 #ifndef HALF_LJ
-    c6_S2       = gmx_simd_mul_r(c6s_S2, c6s_j_S );
+    gmx_simd_real_t c6_S2       = gmx_simd_mul_r(c6s_S2, c6s_j_S );
 #endif
-    c12_S0      = gmx_simd_mul_r(c12s_S0, c12s_j_S);
+    gmx_simd_real_t c12_S0      = gmx_simd_mul_r(c12s_S0, c12s_j_S);
 #ifndef HALF_LJ
-    c12_S2      = gmx_simd_mul_r(c12s_S2, c12s_j_S);
+    gmx_simd_real_t c12_S2      = gmx_simd_mul_r(c12s_S2, c12s_j_S);
 #endif
 #endif /* LJ_COMB_GEOM */
 
@@ -569,21 +559,20 @@
     r_S0        = gmx_simd_mul_r(rsq_S0, rinv_S0);
     rsw_S0      = gmx_simd_max_r(gmx_simd_sub_r(r_S0, rswitch_S), zero_S);
     rsw2_S0     = gmx_simd_mul_r(rsw_S0, rsw_S0);
-    rsw2_r_S0   = gmx_simd_mul_r(rsw2_S0, r_S0);
 #ifndef HALF_LJ
     r_S2        = gmx_simd_mul_r(rsq_S2, rinv_S2);
     rsw_S2      = gmx_simd_max_r(gmx_simd_sub_r(r_S2, rswitch_S), zero_S);
     rsw2_S2     = gmx_simd_mul_r(rsw_S2, rsw_S2);
-    rsw2_r_S2   = gmx_simd_mul_r(rsw2_S2, r_S2);
 #endif
 #endif
 
 #ifdef LJ_FORCE_SWITCH
 
 #define add_fr_switch(fr, rsw, rsw2_r, c2, c3) gmx_simd_fmadd_r(gmx_simd_fmadd_r(c3, rsw, c2), rsw2_r, fr)
-
+    gmx_simd_real_t rsw2_r_S0 = gmx_simd_mul_r(rsw2_S0, r_S0);
     FrLJ6_S0    = gmx_simd_mul_r(c6_S0, add_fr_switch(rinvsix_S0, rsw_S0, rsw2_r_S0, p6_fc2_S, p6_fc3_S));
 #ifndef HALF_LJ
+    gmx_simd_real_t rsw2_r_S2 = gmx_simd_mul_r(rsw2_S2, r_S2);
     FrLJ6_S2    = gmx_simd_mul_r(c6_S2, add_fr_switch(rinvsix_S2, rsw_S2, rsw2_r_S2, p6_fc2_S, p6_fc3_S));
 #endif
     FrLJ12_S0   = gmx_simd_mul_r(c12_S0, add_fr_switch(gmx_simd_mul_r(rinvsix_S0, rinvsix_S0), rsw_S0, rsw2_r_S0, p12_fc2_S, p12_fc3_S));
@@ -638,13 +627,13 @@
 #ifndef HALF_LJ
     sig6_S2     = gmx_simd_mul_r(sig2_S2, gmx_simd_mul_r(sig2_S2, sig2_S2));
 #endif
-    c6_S0       = gmx_simd_mul_r(eps_S0, sig6_S0);
+    gmx_simd_real_t c6_S0  = gmx_simd_mul_r(eps_S0, sig6_S0);
 #ifndef HALF_LJ
-    c6_S2       = gmx_simd_mul_r(eps_S2, sig6_S2);
+    gmx_simd_real_t c6_S2  = gmx_simd_mul_r(eps_S2, sig6_S2);
 #endif
-    c12_S0      = gmx_simd_mul_r(c6_S0, sig6_S0);
+    gmx_simd_real_t c12_S0 = gmx_simd_mul_r(c6_S0, sig6_S0);
 #ifndef HALF_LJ
-    c12_S2      = gmx_simd_mul_r(c6_S2, sig6_S2);
+    gmx_simd_real_t c12_S2 = gmx_simd_mul_r(c6_S2, sig6_S2);
 #endif
 #endif
 #endif /* LJ_COMB_LB */
@@ -659,43 +648,43 @@
 
 #ifdef LJ_CUT
     /* Calculate the LJ energies, with constant potential shift */
-    VLJ6_S0     = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S0, p6_cpot_S, FrLJ6_S0));
+    gmx_simd_real_t VLJ6_S0  = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S0, p6_cpot_S, FrLJ6_S0));
 #ifndef HALF_LJ
-    VLJ6_S2     = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S2, p6_cpot_S, FrLJ6_S2));
+    gmx_simd_real_t VLJ6_S2  = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S2, p6_cpot_S, FrLJ6_S2));
 #endif
-    VLJ12_S0    = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S0, p12_cpot_S, FrLJ12_S0));
+    gmx_simd_real_t VLJ12_S0 = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S0, p12_cpot_S, FrLJ12_S0));
 #ifndef HALF_LJ
-    VLJ12_S2    = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S2, p12_cpot_S, FrLJ12_S2));
+    gmx_simd_real_t VLJ12_S2 = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S2, p12_cpot_S, FrLJ12_S2));
 #endif
 #endif /* LJ_CUT */
 
 #ifdef LJ_FORCE_SWITCH
 #define v_fswitch_pr(rsw, rsw2, c0, c3, c4) gmx_simd_fmadd_r(gmx_simd_fmadd_r(c4, rsw, c3), gmx_simd_mul_r(rsw2, rsw), c0)
 
-    VLJ6_S0     = gmx_simd_mul_r(c6_S0, gmx_simd_fmadd_r(sixth_S, rinvsix_S0, v_fswitch_pr(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
+    gmx_simd_real_t VLJ6_S0     = gmx_simd_mul_r(c6_S0, gmx_simd_fmadd_r(sixth_S, rinvsix_S0, v_fswitch_pr(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
 #ifndef HALF_LJ
-    VLJ6_S2     = gmx_simd_mul_r(c6_S2, gmx_simd_fmadd_r(sixth_S, rinvsix_S2, v_fswitch_pr(rsw_S2, rsw2_S2, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
+    gmx_simd_real_t VLJ6_S2     = gmx_simd_mul_r(c6_S2, gmx_simd_fmadd_r(sixth_S, rinvsix_S2, v_fswitch_pr(rsw_S2, rsw2_S2, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
 #endif
-    VLJ12_S0    = gmx_simd_mul_r(c12_S0, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S0, rinvsix_S0), v_fswitch_pr(rsw_S0, rsw2_S0, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
+    gmx_simd_real_t VLJ12_S0    = gmx_simd_mul_r(c12_S0, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S0, rinvsix_S0), v_fswitch_pr(rsw_S0, rsw2_S0, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
 #ifndef HALF_LJ
-    VLJ12_S2    = gmx_simd_mul_r(c12_S2, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S2, rinvsix_S2), v_fswitch_pr(rsw_S2, rsw2_S2, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
+    gmx_simd_real_t VLJ12_S2    = gmx_simd_mul_r(c12_S2, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S2, rinvsix_S2), v_fswitch_pr(rsw_S2, rsw2_S2, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
 #endif
 #undef v_fswitch_pr
 #endif /* LJ_FORCE_SWITCH */
 
     /* Add up the repulsion and dispersion */
-    VLJ_S0      = gmx_simd_sub_r(VLJ12_S0, VLJ6_S0);
+    gmx_simd_real_t VLJ_S0      = gmx_simd_sub_r(VLJ12_S0, VLJ6_S0);
 #ifndef HALF_LJ
-    VLJ_S2      = gmx_simd_sub_r(VLJ12_S2, VLJ6_S2);
+    gmx_simd_real_t VLJ_S2      = gmx_simd_sub_r(VLJ12_S2, VLJ6_S2);
 #endif
 
 #endif /* (LJ_CUT || LJ_FORCE_SWITCH) && CALC_ENERGIES */
 
 #ifdef LJ_POT_SWITCH
     /* We always need the potential, since it is needed for the force */
-    VLJ_S0 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S0, gmx_simd_mul_r(twelveth_S, FrLJ12_S0));
+    gmx_simd_real_t VLJ_S0 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S0, gmx_simd_mul_r(twelveth_S, FrLJ12_S0));
 #ifndef HALF_LJ
-    VLJ_S2 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S2, gmx_simd_mul_r(twelveth_S, FrLJ12_S2));
+    gmx_simd_real_t VLJ_S2 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S2, gmx_simd_mul_r(twelveth_S, FrLJ12_S2));
 #endif
 
     {
