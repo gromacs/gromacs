@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.c nbnxn_kernels/simd_2xnn/*.c nbnxn_kernels/*.c *.c *.cpp)
+file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.c nbnxn_kernels/simd_2xnn/*.cpp nbnxn_kernels/*.c *.c *.cpp)
 
 if(GMX_GPU)
     add_subdirectory(nbnxn_cuda)
