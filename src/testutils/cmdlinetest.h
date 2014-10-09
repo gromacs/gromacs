@@ -379,6 +379,16 @@ class CommandLineTestBase : public ::testing::Test
          */
         CommandLine &commandLine();
         /*! \brief
+         * Returns the internal TestFileManager object used to manage the
+         * files.
+         *
+         * Derived test fixtures can use this to manage files in cases the
+         * canned methods are not sufficient.
+         *
+         * Does not throw.
+         */
+        TestFileManager &fileManager();
+        /*! \brief
          * Returns the root reference data checker.
          *
          * Derived test fixtures can use this to check other things than output
