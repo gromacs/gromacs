@@ -110,7 +110,7 @@ static const char *wcsn[ewcsNR] =
     "DD redist.", "DD NS grid + sort", "DD setup comm.",
     "DD make top.", "DD make constr.", "DD top. other",
     "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc.",
-    "Listed F", "Nonbonded F", "Ewald F correction",
+    "Bonded F", "Nonbonded F", "Ewald F correction",
     "NB X buffer ops.", "NB F buffer ops."
 };
 

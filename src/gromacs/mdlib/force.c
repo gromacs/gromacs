@@ -300,10 +300,10 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     /* MRS: Eventually, many need to include free energy contribution here! */
     if (ir->implicit_solvent)
     {
-        wallcycle_sub_start(wcycle, ewcsLISTED);
+        wallcycle_sub_start(wcycle, ewcsBONDED);
         calc_gb_forces(cr, md, born, top, x, f, fr, idef,
                        ir->gb_algorithm, ir->sa_algorithm, nrnb, &pbc, graph, enerd);
-        wallcycle_sub_stop(wcycle, ewcsLISTED);
+        wallcycle_sub_stop(wcycle, ewcsBONDED);
     }
 
 #ifdef GMX_MPI
@@ -377,7 +377,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
     if (flags & GMX_FORCE_LISTED)
     {
-        wallcycle_sub_start(wcycle, ewcsLISTED);
+        wallcycle_sub_start(wcycle, ewcsBONDED);
         calc_bonds(cr->ms,
                    idef, (const rvec *) x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
@@ -408,7 +408,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         }
         debug_gmx();
 
-        wallcycle_sub_stop(wcycle, ewcsLISTED);
+        wallcycle_sub_stop(wcycle, ewcsBONDED);
     }
 
     where();
