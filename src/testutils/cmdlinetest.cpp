@@ -397,6 +397,11 @@ CommandLine &CommandLineTestBase::commandLine()
     return impl_->cmdline_;
 }
 
+TestFileManager &CommandLineTestBase::fileManager()
+{
+    return impl_->tempFiles_;
+}
+
 TestReferenceChecker CommandLineTestBase::rootChecker()
 {
     return impl_->data_.rootChecker();
