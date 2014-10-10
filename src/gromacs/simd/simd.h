@@ -111,7 +111,7 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
  * this SIMD module are static, so it will work perfectly fine to include this
  * file with different SIMD definitions for different files.
  */
-#if defined __MIC__
+#if defined GMX_SIMD_X86_MIC
 #    include "impl_intel_mic/impl_intel_mic.h"
 #elif defined GMX_SIMD_X86_AVX2_256
 #    include "impl_x86_avx2_256/impl_x86_avx2_256.h"

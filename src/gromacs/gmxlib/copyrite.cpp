@@ -680,12 +680,7 @@ static void gmx_print_version_info(FILE *fp)
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
-#ifndef __MIC__
     fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
-#else
-    fprintf(fp, "SIMD instructions:  %s\n", "Intel MIC");
-#endif
-
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP
     fprintf(fp, "RDTSCP usage:       enabled\n");
