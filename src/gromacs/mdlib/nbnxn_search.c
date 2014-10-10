@@ -269,7 +269,7 @@ int nbnxn_kernel_to_cj_size(int nb_kernel_type)
     switch (nb_kernel_type)
     {
         case nbnxnk4x4_PlainC:
-            cj_size = NBNXN_CPU_CLUSTER_I_SIZE;
+            cj_size = NBNXN_PLAINC_CLUSTER_J_SIZE;
             break;
         case nbnxnk4xN_SIMD_4xN:
             cj_size = nbnxn_simd_width;
@@ -2871,15 +2871,22 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
             cjf_gl = gridj->cell0 + cjf;
             for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
             {
-                for (j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (j = 0; j < NBNXN_PLAINC_CLUSTER_J_SIZE; j++)
                 {
+#ifndef NBNXN_PLAINC_SIMD
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+XX]) +
+                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+YY]) +
+                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+#else
+                    InRange = InRange ||
+                        (sqr(x_ci[XX*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjf_gl*STRIDE_XYZ+XX)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) +
+                         sqr(x_ci[YY*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjf_gl*STRIDE_XYZ+YY)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) +
+                         sqr(x_ci[ZZ*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjf_gl*STRIDE_XYZ+ZZ)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) < rl2);
+#endif
                 }
             }
-            *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
+            *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_PLAINC_CLUSTER_J_SIZE;
         }
         if (!InRange)
         {
@@ -2913,15 +2920,22 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
             cjl_gl = gridj->cell0 + cjl;
             for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
             {
-                for (j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (j = 0; j < NBNXN_PLAINC_CLUSTER_J_SIZE; j++)
                 {
+#ifndef NBNXN_PLAINC_SIMD
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+XX]) +
+                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+YY]) +
+                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+#else
+                    InRange = InRange ||
+                        (sqr(x_ci[XX*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjl_gl*STRIDE_XYZ+XX)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) +
+                         sqr(x_ci[YY*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjl_gl*STRIDE_XYZ+YY)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) +
+                         sqr(x_ci[ZZ*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjl_gl*STRIDE_XYZ+ZZ)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) < rl2);
+#endif
                 }
             }
-            *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
+            *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_PLAINC_CLUSTER_J_SIZE;
         }
         if (!InRange)
         {
@@ -4162,9 +4176,15 @@ static void icell_set_x_simple(int ci,
 
     for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE; i++)
     {
+#ifndef NBNXN_PLAINC_SIMD
         work->x_ci[i*STRIDE_XYZ+XX] = x[(ia+i)*stride+XX] + shx;
         work->x_ci[i*STRIDE_XYZ+YY] = x[(ia+i)*stride+YY] + shy;
         work->x_ci[i*STRIDE_XYZ+ZZ] = x[(ia+i)*stride+ZZ] + shz;
+#else
+        work->x_ci[XX*NBNXN_CPU_CLUSTER_I_SIZE+i] = x[ia*stride+XX*NBNXN_CPU_CLUSTER_I_SIZE+i] + shx;
+        work->x_ci[YY*NBNXN_CPU_CLUSTER_I_SIZE+i] = x[ia*stride+YY*NBNXN_CPU_CLUSTER_I_SIZE+i] + shy;
+        work->x_ci[ZZ*NBNXN_CPU_CLUSTER_I_SIZE+i] = x[ia*stride+ZZ*NBNXN_CPU_CLUSTER_I_SIZE+i] + shz;
+#endif
     }
 }
 

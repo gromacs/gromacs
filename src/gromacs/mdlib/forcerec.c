@@ -1566,16 +1566,15 @@ static void init_forcerec_f_threads(t_forcerec *fr, int nenergrp)
 }
 
 
-gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
-                                      const t_commrec  *cr,
-                                      const t_inputrec *ir,
-                                      gmx_bool          bGPU)
+gmx_bool nbnxn_acceleration_supported(FILE gmx_unused            *fplog,
+                                      const t_commrec gmx_unused *cr,
+                                      const t_inputrec           *ir,
+                                      gmx_bool                   bGPU)
 {
     if (!bGPU && (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB))
     {
-        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with %s, falling back to %s\n",
-                      bGPU ? "GPUs" : "SIMD kernels",
-                      bGPU ? "CPU only" : "plain-C kernels");
+        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported "
+                      "with SIMD kernels, falling back to plain-C kernels\n");
         return FALSE;
     }
 

@@ -34,7 +34,7 @@
  */
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    NBNXN_PLAINC_CLUSTER_J_SIZE
 
 /* We could use nbat->xstride and nbat->fstride, but macros might be faster */
 #define X_STRIDE   3
@@ -240,7 +240,7 @@ NBK_FUNC_NAME(_VgrpF)
         nbln = &nbl->ci[n];
 
         ish              = (nbln->shift & NBNXN_CI_SHIFT);
-        /* x, f and fshift are assumed to be stored with stride 3 */
+        /* fshift is stored with stride 3 */
         ishf             = ish*DIM;
         cjind0           = nbln->cj_ind_start;
         cjind1           = nbln->cj_ind_end;
@@ -279,10 +279,14 @@ NBK_FUNC_NAME(_VgrpF)
         {
             for (d = 0; d < DIM; d++)
             {
+#ifndef NBNXN_PLAINC_SIMD
                 xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
                 fi[i*FI_STRIDE+d] = 0;
+#else
+                xi[i+d*UNROLLI] = x[ci*UNROLLI*X_STRIDE+d*UNROLLI+i] + shiftvec[ishf+d];
+                fi[i+d*UNROLLI] = 0;
+#endif
             }
-
             qi[i] = facel*q[ci*UNROLLI+i];
         }
 
@@ -374,11 +378,16 @@ NBK_FUNC_NAME(_VgrpF)
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
+
         for (i = 0; i < UNROLLI; i++)
         {
             for (d = 0; d < DIM; d++)
             {
+#ifndef NBNXN_PLAINC_SIMD
                 f[(ci*UNROLLI+i)*F_STRIDE+d] += fi[i*FI_STRIDE+d];
+#else
+                f[ci*UNROLLI*F_STRIDE+d*UNROLLI+i] += fi[i+d*UNROLLI];
+#endif
             }
         }
 #ifdef CALC_SHIFTFORCES
@@ -389,7 +398,11 @@ NBK_FUNC_NAME(_VgrpF)
             {
                 for (d = 0; d < DIM; d++)
                 {
+#ifndef NBNXN_PLAINC_SIMD
                     fshift[ishf+d] += fi[i*FI_STRIDE+d];
+#else
+                    fshift[ishf+d] += fi[i+d*UNROLLI];
+#endif
                 }
             }
         }
