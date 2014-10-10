@@ -65,6 +65,7 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -149,7 +150,7 @@ class CMainCommandLineModule : public CommandLineModuleInterface
 CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
     : options_(NULL, NULL), bHelp_(false), bHidden_(false),
       bQuiet_(false), bVersion_(false), bCopyright_(true),
-      niceLevel_(19), debugLevel_(0)
+      niceLevel_(19), bBackup_(true), debugLevel_(0)
 {
     binaryInfoSettings_.copyright(true);
 }
@@ -173,6 +174,8 @@ void CommandLineCommonOptionsHolder::initOptions()
                            .description("Print copyright information on startup"));
     options_.addOption(IntegerOption("nice").store(&niceLevel_)
                            .description("Set the nicelevel (default depends on command)"));
+    options_.addOption(BooleanOption("backup").store(&bBackup_)
+                           .description("Write backups if output files exist"));
     options_.addOption(IntegerOption("debug").store(&debugLevel_)
                            .hidden().defaultValueIfSet(1)
                            .description("Write file with debug information, "
@@ -564,6 +567,8 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     CommandLineModuleSettings settings;
     module->init(&settings);
     optionsHolder.adjustFromSettings(settings);
+
+    gmx_set_max_backup_count(optionsHolder.shouldBackup() ? -1 : 0);
 
     // Open the debug file.
     if (optionsHolder.debugLevel() > 0)

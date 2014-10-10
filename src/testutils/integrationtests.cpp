@@ -43,18 +43,10 @@
 
 #include "integrationtests.h"
 
-#include "config.h"
-
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/stringutil.h"
-
-#include "testutils/testoptions.h"
 
 namespace gmx
 {
@@ -65,27 +57,8 @@ namespace test
  * IntegrationTestFixture
  */
 
-std::string IntegrationTestFixture::s_maxBackup("-1");
-
-//! \cond
-GMX_TEST_OPTIONS(IntegrationTestOptions, options)
-{
-    options->addOption(StringOption("max-backup")
-                           .store(&IntegrationTestFixture::s_maxBackup)
-                           .description("Maximum number of backup files of old test output to write (-1 prevents backups being created)"));
-}
-//! \endcond
-
 IntegrationTestFixture::IntegrationTestFixture()
 {
-    // TODO fix this when we have an encapsulation layer for handling
-    // environment variables
-    // FIXME: This produces memory leaks.
-#ifdef GMX_NATIVE_WINDOWS
-    _putenv(("GMX_MAXBACKUP="+s_maxBackup).c_str());
-#else
-    setenv("GMX_MAXBACKUP", s_maxBackup.c_str(), true);
-#endif
 }
 
 IntegrationTestFixture::~IntegrationTestFixture()
