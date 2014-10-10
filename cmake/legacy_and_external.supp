@@ -20,7 +20,7 @@
    gmx_solvate
    Memcheck:Leak
    ...
-   fun:gmx_solvate
+   fun:add_conf
 }
 
 {

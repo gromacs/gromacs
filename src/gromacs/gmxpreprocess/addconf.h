@@ -44,8 +44,8 @@ extern "C" {
 #endif
 
 extern
-void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
-              int ePBC, matrix box, gmx_bool bInsert,
+void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r,
+              int ePBC, matrix box,
               t_atoms *atoms_solvt, rvec *x_solvt, rvec *v_solvt, real *r_solvt,
               gmx_bool bVerbose, real rshell, int max_sol, const output_env_t oenv);
 /* Add two conformations together, without generating overlap.
