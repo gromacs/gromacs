@@ -112,6 +112,12 @@ static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_1 = 0x002fU;
 static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
 static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
 
+/* uncomment this line to use the nbatX4 or nbatX8 data storage format for the
+ * plain-C kernels. Default is the XYZ format. */
+/* #define NBNXN_PLAINC_SIMD */
+/* The cluster size used by the plain-C kernels. Currently only 4 and 8 works. */
+#define NBNXN_PLAINC_CLUSTER_J_SIZE 4
+
 
 #ifdef __cplusplus
 }

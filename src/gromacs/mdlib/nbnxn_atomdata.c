@@ -703,7 +703,11 @@ void nbnxn_atomdata_init(FILE *fp,
     }
 
     bSIMD = (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
-             nb_kernel_type == nbnxnk4xN_SIMD_2xNN);
+             nb_kernel_type == nbnxnk4xN_SIMD_2xNN
+#ifdef NBNXN_PLAINC_SIMD
+             || nb_kernel_type == nbnxnk4x4_PlainC
+#endif
+             );
 
     set_lj_parameter_data(nbat, bSIMD);
 
