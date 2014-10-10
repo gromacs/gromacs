@@ -28,12 +28,6 @@
    ...
    fun:ctime_r
 }
-{
-   setenv
-   Memcheck:Leak
-   ...
-   fun:setenv
-}
 
 {
    libgomp

@@ -101,6 +101,17 @@ typedef gmx_int64_t    gmx_off_t;
 void gmx_disable_file_buffering(void);
 
 /*! \brief
+ * Enables backups with the specified number of maximum backups.
+ *
+ * If \p count == 0, disables backups.  If not called, this is the default.
+ * If \p count == -1, reads the count from an environment variable.
+ *
+ * This is not currently thread-safe, as it is only called during
+ * initialization code.
+ */
+void gmx_set_max_backup_count(int count);
+
+/*! \brief
  * Check whether a path exists.
  *
  * \returns `TRUE` when \p fname exists.
@@ -112,10 +123,8 @@ gmx_bool gmx_fexist(const char *fname);
 
 /*! \brief
  * Makes a backup of file if the file exists.
- *
- * \returns `FALSE` if there was a problem.
  */
-gmx_bool make_backup(const char *file);
+void make_backup(const char *file);
 
 /*! \brief
  * Opens a file, with \Gromacs-specific additions.

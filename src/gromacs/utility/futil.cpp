@@ -80,8 +80,9 @@ typedef struct t_pstack {
     struct t_pstack *prev;
 } t_pstack;
 
-static t_pstack    *pstack      = NULL;
-static bool         bUnbuffered = false;
+static t_pstack    *pstack           = NULL;
+static bool         bUnbuffered      = false;
+static int          s_maxBackupCount = 0;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
@@ -90,6 +91,31 @@ static tMPI_Thread_mutex_t pstack_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 void gmx_disable_file_buffering(void)
 {
     bUnbuffered = true;
+}
+
+void gmx_set_max_backup_count(int count)
+{
+    if (count < 0)
+    {
+        const char *env = getenv("GMX_MAXBACKUP");
+        if (env != NULL)
+        {
+            // TODO: Check that the value is converted properly.
+            count = strtol(env, NULL, 10);
+            if (count < 0)
+            {
+                count = 0;
+            }
+        }
+        else
+        {
+            // Use a reasonably low value for countmax; we might
+            // generate 4-5 files in each round, and we don't
+            // want to hit directory limits of 1024 or 2048 files.
+            count = 99;
+        }
+    }
+    s_maxBackupCount = count;
 }
 
 void push_ps(FILE *fp)
@@ -317,21 +343,11 @@ gmx_bool gmx_fexist(const char *fname)
     }
 }
 
-static char *backup_fn(const char *file, int count_max)
+static char *backup_fn(const char *file)
 {
-    /* Use a reasonably low value for countmax; we might
-     * generate 4-5 files in each round, and we dont
-     * want to hit directory limits of 1024 or 2048 files.
-     */
-#define COUNTMAX 99
     int          i, count = 1;
     char        *directory, *fn;
     char        *buf;
-
-    if (count_max == -1)
-    {
-        count_max = COUNTMAX;
-    }
 
     smalloc(buf, GMX_PATH_MAX);
 
@@ -359,14 +375,16 @@ static char *backup_fn(const char *file, int count_max)
         sprintf(buf, "%s/#%s.%d#", directory, fn, count);
         count++;
     }
-    while ((count <= count_max) && gmx_fexist(buf));
+    while ((count <= s_maxBackupCount) && gmx_fexist(buf));
 
     /* Arbitrarily bail out */
-    if (count > count_max)
+    if (count > s_maxBackupCount)
     {
+        /* TODO: The error message is only accurate for code that starts with
+         * Gromacs command-line interface. */
         gmx_fatal(FARGS, "Won't make more than %d backups of %s for you.\n"
                   "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
-                  count_max, fn);
+                  s_maxBackupCount, fn);
     }
 
     sfree(directory);
@@ -375,34 +393,15 @@ static char *backup_fn(const char *file, int count_max)
     return buf;
 }
 
-gmx_bool make_backup(const char * name)
+void make_backup(const char *name)
 {
-    char * env;
-    int    count_max;
-    char * backup;
-
-#ifdef GMX_FAHCORE
-    return FALSE; /* skip making backups */
-#else
-
+    if (s_maxBackupCount <= 0)
+    {
+        return;
+    }
     if (gmx_fexist(name))
     {
-        env = getenv("GMX_MAXBACKUP");
-        if (env != NULL)
-        {
-            count_max = strtol(env, NULL, 10);
-            if (count_max == -1)
-            {
-                /* Do not make backups and possibly overwrite old files */
-                return TRUE;
-            }
-        }
-        else
-        {
-            /* Use the default maximum */
-            count_max = -1;
-        }
-        backup = backup_fn(name, count_max);
+        char *backup = backup_fn(name);
         if (rename(name, backup) == 0)
         {
             fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
@@ -410,13 +409,10 @@ gmx_bool make_backup(const char * name)
         }
         else
         {
-            fprintf(stderr, "Sorry couldn't backup %s to %s\n", name, backup);
-            return FALSE;
+            fprintf(stderr, "\nSorry couldn't backup %s to %s\n", name, backup);
         }
         sfree(backup);
     }
-    return TRUE;
-#endif
 }
 
 FILE *gmx_ffopen(const char *file, const char *mode)
