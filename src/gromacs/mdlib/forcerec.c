@@ -1647,6 +1647,10 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
             gmx_fatal(FARGS, "SIMD 2x(N+N) kernels requested, but Gromacs has been compiled without support for these kernels");
 #endif
         }
+        if (getenv("GMX_NBNXN_NO_SIMD") != NULL)
+        {
+            *kernel_type = nbnxnk4x4_PlainC;
+        }
 
         /* Analytical Ewald exclusion correction is only an option in
          * the SIMD kernel.

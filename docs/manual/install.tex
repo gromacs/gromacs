@@ -246,9 +246,11 @@ you should consult your local documentation for details.
 \item   {\tt GMX_NBNXN_EWALD_TABLE}: force the use of tabulated Ewald non-bonded kernels,
         mutually exclusive of {\tt GMX_NBNXN_EWALD_ANALYTICAL}.
 \item   {\tt GMX_NBNXN_SIMD_2XNN}: force the use of 2x(N+N) SIMD CPU non-bonded kernels,
-        mutually exclusive of {\tt GMX_NBNXN_SIMD_4XN}.
+        mutually exclusive of {\tt GMX_NBNXN_SIMD_4XN} and {\tt GMX_NBNXN_NO_SIMD}.
 \item   {\tt GMX_NBNXN_SIMD_4XN}: force the use of 4xN SIMD CPU non-bonded kernels,
-        mutually exclusive of {\tt GMX_NBNXN_SIMD_2XNN}.
+        mutually exclusive of {\tt GMX_NBNXN_SIMD_2XNN} and {\tt GMX_NBNXN_NO_SIMD}.
+\item   {\tt GMX_NBNXN_NO_SIMD}: force the use of the plain C 4x4 CPU non-bonded kernels,
+        mutually exclusive of {\tt GMX_NBNXN_SIMD_2XNN} and {\tt GMX_NBNXN_SIMD_4XN}.
 \item   {\tt GMX_NO_ALLVSALL}: disables optimized all-vs-all kernels.
 \item   {\tt GMX_NO_CART_REORDER}: used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
