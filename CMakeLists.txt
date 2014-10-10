@@ -179,18 +179,14 @@ if(GMX_CPU_ACCELERATION)
     # TODO remove all references to GMX_CPU_ACCELERATION in master branch
 endif()
 
-if(NOT GMX_TARGET_MIC)
-    include(gmxDetectSimd)
-    gmx_detect_simd(GMX_SUGGESTED_SIMD)
-else()
-    set(GMX_SUGGESTED_SIMD "None")
-endif()
+include(gmxDetectSimd)
+gmx_detect_simd(GMX_SUGGESTED_SIMD)
 
 gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_SIMD}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 MIC ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
