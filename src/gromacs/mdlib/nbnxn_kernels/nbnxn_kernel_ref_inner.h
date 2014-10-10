@@ -101,7 +101,7 @@
              * (e.g. because of bonding). */
             int interact;
 
-            interact = ((l_cj[cjind].excl>>(i*UNROLLI + j)) & 1);
+            interact = ((l_cj[cjind].excl>>(i*UNROLLJ + j)) & 1);
 #ifndef EXCL_FORCES
             skipmask = interact;
 #else
@@ -113,10 +113,15 @@
 #endif
 
             aj = cj*UNROLLJ + j;
-
+#ifndef NBNXN_PLAINC_SIMD
             dx  = xi[i*XI_STRIDE+XX] - x[aj*X_STRIDE+XX];
             dy  = xi[i*XI_STRIDE+YY] - x[aj*X_STRIDE+YY];
             dz  = xi[i*XI_STRIDE+ZZ] - x[aj*X_STRIDE+ZZ];
+#else
+            dx  = xi[XX*UNROLLI+i] - x[cj*UNROLLJ*X_STRIDE+XX*UNROLLJ+j];
+            dy  = xi[YY*UNROLLI+i] - x[cj*UNROLLJ*X_STRIDE+YY*UNROLLJ+j];
+            dz  = xi[ZZ*UNROLLI+i] - x[cj*UNROLLJ*X_STRIDE+ZZ*UNROLLJ+j];
+#endif
 
             rsq = dx*dx + dy*dy + dz*dz;
 
@@ -360,6 +365,7 @@
             fy = fscal*dy;
             fz = fscal*dz;
 
+#ifndef NBNXN_PLAINC_SIMD
             /* Increment i-atom force */
             fi[i*FI_STRIDE+XX] += fx;
             fi[i*FI_STRIDE+YY] += fy;
@@ -369,6 +375,17 @@
             f[aj*F_STRIDE+YY]  -= fy;
             f[aj*F_STRIDE+ZZ]  -= fz;
             /* 9 flops for force addition */
+#else
+            /* Increment i-atom force */
+            fi[i+XX*UNROLLI] += fx;
+            fi[i+YY*UNROLLI] += fy;
+            fi[i+ZZ*UNROLLI] += fz;
+            /* Decrement j-atom force */
+            f[cj*UNROLLJ*F_STRIDE+XX*UNROLLJ+j]  -= fx;
+            f[cj*UNROLLJ*F_STRIDE+YY*UNROLLJ+j]  -= fy;
+            f[cj*UNROLLJ*F_STRIDE+ZZ*UNROLLJ+j]  -= fz;
+            /* 9 flops for force addition */
+#endif
         }
     }
 }
