@@ -169,6 +169,7 @@ NBK_FUNC_NAME(_VgrpF)
 #endif
 
     int ninner;
+    const int XFormat = nbat->XFormat;
 
 #ifdef COUNT_PAIRS
     int npair = 0;
@@ -275,15 +276,35 @@ NBK_FUNC_NAME(_VgrpF)
 #endif
 #endif
 
-        for (i = 0; i < UNROLLI; i++)
+        if (XFormat == nbatXYZ)
         {
-            for (d = 0; d < DIM; d++)
+            for (i = 0; i < UNROLLI; i++)
             {
-                xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
-                fi[i*FI_STRIDE+d] = 0;
-            }
+                for (d = 0; d < DIM; d++)
+                {
+                    xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
+                    fi[i*FI_STRIDE+d] = 0;
+                }
 
-            qi[i] = facel*q[ci*UNROLLI+i];
+                qi[i] = facel*q[ci*UNROLLI+i];
+            }
+        }
+        else if (XFormat == nbatX4)
+        {
+            for (i = 0; i < UNROLLI; i++)
+            {
+                for (d = 0; d < DIM; d++)
+                {
+                    xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d]; //TODO
+                    fi[i*FI_STRIDE+d] = 0;
+                }
+
+                qi[i] = facel*q[ci*UNROLLI+i];
+            }
+        }
+        else
+        {
+            gmx_incons("Format not supported")
         }
 
 #ifdef CALC_ENERGIES

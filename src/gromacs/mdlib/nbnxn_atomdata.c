@@ -705,7 +705,7 @@ void nbnxn_atomdata_init(FILE *fp,
     bSIMD = (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
              nb_kernel_type == nbnxnk4xN_SIMD_2xNN);
 
-    set_lj_parameter_data(nbat, bSIMD);
+    set_lj_parameter_data(nbat, bSIMD); //TODO
 
     nbat->natoms  = 0;
     nbat->type    = NULL;
@@ -714,7 +714,7 @@ void nbnxn_atomdata_init(FILE *fp,
     {
         int pack_x;
 
-        if (bSIMD)
+        if (bSIMD || 1) //hack
         {
             pack_x = max(NBNXN_CPU_CLUSTER_I_SIZE,
                          nbnxn_kernel_to_cj_size(nb_kernel_type));
