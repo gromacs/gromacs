@@ -249,6 +249,12 @@ elseif(${GMX_SIMD} STREQUAL "AVX2_256")
     set(GMX_SIMD_X86_AVX2_256 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
 
+elseif(${GMX_SIMD} STREQUAL "MIC")
+
+    # No flags needed. Not testing.
+    set(GMX_SIMD_X86_MIC 1)
+    set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions")
+
 elseif(${GMX_SIMD} STREQUAL "ARM_NEON")
 
     gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler 32-bit ARM NEON flag"

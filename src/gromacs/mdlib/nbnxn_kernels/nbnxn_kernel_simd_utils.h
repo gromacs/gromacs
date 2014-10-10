@@ -69,7 +69,7 @@ prepare_table_load_buffer(const int gmx_unused *array)
 
 #else /* GMX_SIMD_REFERENCE */
 
-#if defined  GMX_TARGET_X86 && !defined __MIC__
+#if defined  GMX_TARGET_X86 && !defined GMX_SIMD_X86_MIC
 /* Include x86 SSE2 compatible SIMD functions */
 
 /* Set the stride for the lookup of the two LJ parameters from their
@@ -110,7 +110,7 @@ prepare_table_load_buffer(int gmx_unused *array)
 #endif
 #endif /* GMX_DOUBLE */
 
-#else  /* GMX_TARGET_X86 && !__MIC__ */
+#else  /* GMX_TARGET_X86 && !GMX_SIMD_X86_MIC */
 
 #if GMX_SIMD_REAL_WIDTH > 4
 /* For width>4 we use unaligned loads. And thus we can use the minimal stride */
@@ -128,11 +128,11 @@ static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_ibm_qpx.h"
 #endif /* GMX_SIMD_IBM_QPX */
 
-#ifdef __MIC__
+#ifdef GMX_SIMD_X86_MIC
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_mic.h"
 #endif
 
-#endif /* GMX_TARGET_X86 && !__MIC__ */
+#endif /* GMX_TARGET_X86 && !GMX_SIMD_X86_MIC */
 
 #endif /* GMX_SIMD_REFERENCE */
 
