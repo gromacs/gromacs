@@ -84,8 +84,6 @@
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
 
-#ifdef GMX_NBNXN_SIMD
-
 /* The functions below are macros as they are performance sensitive */
 
 /* 4x4 list, pack=4: no complex conversion required */
@@ -109,6 +107,7 @@
 #define X_IND_CI_J8(ci)  (((ci)>>1)*STRIDE_P8 + ((ci) & 1)*(PACK_X8>>1))
 #define X_IND_CJ_J8(cj)  ((cj)*STRIDE_P8)
 
+#ifdef GMX_NBNXN_SIMD
 /* The j-cluster size is matched to the SIMD width */
 #if GMX_SIMD_REAL_WIDTH == 2
 #define CI_TO_CJ_SIMD_4XN(ci)  CI_TO_CJ_J2(ci)
@@ -139,8 +138,17 @@
 #endif
 #endif
 #endif
-
 #endif /* GMX_NBNXN_SIMD */
+
+#if NBNXN_PLAINC_CLUSTER_J_SIZE == 4
+#define CI_TO_CJ_PLAINC(ci)  CI_TO_CJ_J4(ci)
+#else
+#if NBNXN_PLAINC_CLUSTER_J_SIZE == 8
+#define CI_TO_CJ_PLAINC(ci)  CI_TO_CJ_J8(ci)
+#else
+#error "unsupported NBNXN_PLAINC_CLUSTER_J_SIZE"
+#endif
+#endif
 
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
@@ -269,7 +277,7 @@ int nbnxn_kernel_to_cj_size(int nb_kernel_type)
     switch (nb_kernel_type)
     {
         case nbnxnk4x4_PlainC:
-            cj_size = NBNXN_CPU_CLUSTER_I_SIZE;
+            cj_size = NBNXN_PLAINC_CLUSTER_J_SIZE;
             break;
         case nbnxnk4xN_SIMD_4xN:
             cj_size = nbnxn_simd_width;
@@ -2780,12 +2788,6 @@ static void set_self_and_newton_excls_supersub(nbnxn_pairlist_t *nbl,
     }
 }
 
-/* Returns a diagonal or off-diagonal interaction mask for plain C lists */
-static unsigned int get_imask(gmx_bool rdiag, int ci, int cj)
-{
-    return (rdiag && ci == cj ? NBNXN_INTERACTION_MASK_DIAG : NBNXN_INTERACTION_MASK_ALL);
-}
-
 /* Returns a diagonal or off-diagonal interaction mask for cj-size=2 */
 static unsigned int get_imask_simd_j2(gmx_bool rdiag, int ci, int cj)
 {
@@ -2824,6 +2826,12 @@ static unsigned int get_imask_simd_j8(gmx_bool rdiag, int ci, int cj)
 #endif
 #endif
 
+#if NBNXN_PLAINC_CLUSTER_J_SIZE == 4
+#define get_imask get_imask_simd_j4
+#else
+#define get_imask get_imask_simd_j8
+#endif
+
 /* Plain C code for making a pair list of cell ci vs cell cjf-cjl.
  * Checks bounding box distances and possibly atom pair distances.
  */
@@ -2843,6 +2851,10 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
     gmx_bool                 InRange;
     real                     d2;
     int                      cjf_gl, cjl_gl, cj;
+
+    //TODO: check that the M-number is the same between this and real SIMD. Also check for similar macro usage in nbnxn_search_simd_4xn.h
+    cjf = CI_TO_CJ_PLAINC(cjf);
+    cjl = CI_TO_CJ_PLAINC(cjl+1) - 1;
 
     work = nbl->work;
 
@@ -2868,18 +2880,25 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
         {
             int i, j;
 
-            cjf_gl = gridj->cell0 + cjf;
+            cjf_gl = CI_TO_CJ_PLAINC(gridj->cell0) + cjf;
             for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
             {
-                for (j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (j = 0; j < NBNXN_PLAINC_CLUSTER_J_SIZE; j++)
                 {
+#ifndef NBNXN_PLAINC_SIMD
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+XX]) +
+                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+YY]) +
+                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+#else
+                    InRange = InRange ||
+                        (sqr(x_ci[XX*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjf_gl*STRIDE_XYZ+XX)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) +
+                         sqr(x_ci[YY*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjf_gl*STRIDE_XYZ+YY)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) +
+                         sqr(x_ci[ZZ*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjf_gl*STRIDE_XYZ+ZZ)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) < rl2);
+#endif
                 }
             }
-            *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
+            *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_PLAINC_CLUSTER_J_SIZE;
         }
         if (!InRange)
         {
@@ -2910,18 +2929,25 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
         {
             int i, j;
 
-            cjl_gl = gridj->cell0 + cjl;
+            cjl_gl = CI_TO_CJ_PLAINC(gridj->cell0) + cjl;
             for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
             {
-                for (j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (j = 0; j < NBNXN_PLAINC_CLUSTER_J_SIZE; j++)
                 {
+#ifndef NBNXN_PLAINC_SIMD
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+XX]) +
+                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+YY]) +
+                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_PLAINC_CLUSTER_J_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+#else
+                    InRange = InRange ||
+                        (sqr(x_ci[XX*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjl_gl*STRIDE_XYZ+XX)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) +
+                         sqr(x_ci[YY*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjl_gl*STRIDE_XYZ+YY)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) +
+                         sqr(x_ci[ZZ*NBNXN_CPU_CLUSTER_I_SIZE+i] - x_j[(cjl_gl*STRIDE_XYZ+ZZ)*NBNXN_PLAINC_CLUSTER_J_SIZE+j]) < rl2);
+#endif
                 }
             }
-            *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
+            *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_PLAINC_CLUSTER_J_SIZE;
         }
         if (!InRange)
         {
@@ -2934,7 +2960,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
         for (cj = cjf; cj <= cjl; cj++)
         {
             /* Store cj and the interaction mask */
-            nbl->cj[nbl->ncj].cj   = gridj->cell0 + cj;
+            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_PLAINC(gridj->cell0) + cj;
             nbl->cj[nbl->ncj].excl = get_imask(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }
@@ -4156,16 +4182,35 @@ static void icell_set_x_simple(int ci,
                                int stride, const real *x,
                                nbnxn_list_work_t *work)
 {
-    int  ia, i;
+    int  i;
 
-    ia = ci*NBNXN_CPU_CLUSTER_I_SIZE;
+#ifndef NBNXN_PLAINC_SIMD
+    int ia = ci*NBNXN_CPU_CLUSTER_I_SIZE;
+#else
+#if NBNXN_CPU_CLUSTER_I_SIZE >= NBNXN_CPU_CLUSTER_I_SIZE
+#define STRIDE NBNXN_CPU_CLUSTER_I_SIZE
+    int scix             = ci*STRIDE*stride;
+#else
+#define STRIDE NBNXN_PLAINC_CLUSTER_J_SIZE
+    int scix             = (ci>>1)*STRIDE*stride + (ci & 1)*(STRIDE>>1);
+#endif
+#endif
 
     for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE; i++)
     {
+#ifndef NBNXN_PLAINC_SIMD
         work->x_ci[i*STRIDE_XYZ+XX] = x[(ia+i)*stride+XX] + shx;
         work->x_ci[i*STRIDE_XYZ+YY] = x[(ia+i)*stride+YY] + shy;
         work->x_ci[i*STRIDE_XYZ+ZZ] = x[(ia+i)*stride+ZZ] + shz;
+#else
+        work->x_ci[XX*NBNXN_CPU_CLUSTER_I_SIZE+i] = x[scix+XX*STRIDE+i] + shx;
+        work->x_ci[YY*NBNXN_CPU_CLUSTER_I_SIZE+i] = x[scix+YY*STRIDE+i] + shy;
+        work->x_ci[ZZ*NBNXN_CPU_CLUSTER_I_SIZE+i] = x[scix+ZZ*STRIDE+i] + shz;
+#endif
     }
+#ifdef NBNXN_PLAINC_SIMD
+#undef STRIDE
+#endif
 }
 
 /* Copies PBC shifted super-cell atom coordinates x,y,z to working array */

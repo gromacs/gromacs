@@ -34,7 +34,13 @@
  */
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    NBNXN_PLAINC_CLUSTER_J_SIZE
+
+#if UNROLLI >= UNROLLJ
+#define STRIDE UNROLLI
+#else
+#define STRIDE UNROLLJ
+#endif
 
 /* We could use nbat->xstride and nbat->fstride, but macros might be faster */
 #define X_STRIDE   3
@@ -122,6 +128,9 @@ NBK_FUNC_NAME(_VgrpF)
     real                facel;
     real               *nbfp_i;
     int                 n, ci, ci_sh;
+#ifdef NBNXN_PLAINC_SIMD
+    int                 scix;
+#endif
     int                 ish, ishf;
     gmx_bool            do_LJ, half_LJ, do_coul, do_self;
     int                 cjind0, cjind1, cjind;
@@ -240,14 +249,20 @@ NBK_FUNC_NAME(_VgrpF)
         nbln = &nbl->ci[n];
 
         ish              = (nbln->shift & NBNXN_CI_SHIFT);
-        /* x, f and fshift are assumed to be stored with stride 3 */
+        /* fshift is stored with stride 3 */
         ishf             = ish*DIM;
         cjind0           = nbln->cj_ind_start;
         cjind1           = nbln->cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
-
+#ifdef NBNXN_PLAINC_SIMD
+#if UNROLLI == STRIDE
+        scix             = ci*STRIDE*DIM;
+#else
+        scix             = (ci>>1)*STRIDE*DIM + (ci & 1)*(STRIDE>>1);
+#endif
+#endif
         /* We have 5 LJ/C combinations, but use only three inner loops,
          * as the other combinations are unlikely and/or not much faster:
          * inner half-LJ + C for half-LJ + C / no-LJ + C
@@ -279,10 +294,14 @@ NBK_FUNC_NAME(_VgrpF)
         {
             for (d = 0; d < DIM; d++)
             {
+#ifndef NBNXN_PLAINC_SIMD
                 xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
                 fi[i*FI_STRIDE+d] = 0;
+#else
+                xi[i+d*UNROLLI] = x[scix+d*STRIDE+i] + shiftvec[ishf+d];
+                fi[i+d*UNROLLI] = 0;
+#endif
             }
-
             qi[i] = facel*q[ci*UNROLLI+i];
         }
 
@@ -374,11 +393,16 @@ NBK_FUNC_NAME(_VgrpF)
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
+
         for (i = 0; i < UNROLLI; i++)
         {
             for (d = 0; d < DIM; d++)
             {
+#ifndef NBNXN_PLAINC_SIMD
                 f[(ci*UNROLLI+i)*F_STRIDE+d] += fi[i*FI_STRIDE+d];
+#else
+                f[scix+d*STRIDE+i] += fi[i+d*UNROLLI];
+#endif
             }
         }
 #ifdef CALC_SHIFTFORCES
@@ -389,7 +413,11 @@ NBK_FUNC_NAME(_VgrpF)
             {
                 for (d = 0; d < DIM; d++)
                 {
+#ifndef NBNXN_PLAINC_SIMD
                     fshift[ishf+d] += fi[i*FI_STRIDE+d];
+#else
+                    fshift[ishf+d] += fi[i+d*UNROLLI];
+#endif
                 }
             }
         }
