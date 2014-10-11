@@ -14,14 +14,6 @@
    fun:make_unsp
    fun:nsc_dclm_pbc
 }
-# Contains multiple leaks, and is in the same test binary as insert-molecules
-# that is desired to be included.
-{
-   gmx_solvate
-   Memcheck:Leak
-   ...
-   fun:add_conf
-}
 
 {
    ctime_r
