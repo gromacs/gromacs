@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,29 +32,65 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXPREPROCESS_ADDCONF_H
-#define GMX_GMXPREPROCESS_ADDCONF_H
+#ifndef GMX_TOPOLOGY_ATOMSBUILDER_H
+#define GMX_TOPOLOGY_ATOMSBUILDER_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <vector>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/real.h"
 
-extern
-void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r,
-              int ePBC, matrix box,
-              t_atoms *atoms_solvt, rvec *x_solvt, rvec *v_solvt, real *r_solvt,
-              gmx_bool bVerbose, real rshell, int max_sol, const output_env_t oenv);
-/* Add two conformations together, without generating overlap.
- * When not inserting, don't check overlap in the middle of the box.
- * If rshell > 0, keep all the residues around the protein (0..natoms_prot-1)
- * that are within rshell distance.
- * If max_sol > 0, add max max_sol solvent molecules.
- */
+namespace gmx
+{
 
-#ifdef __cplusplus
-}
-#endif
+class AtomsBuilder
+{
+    public:
+        explicit AtomsBuilder(t_atoms *atoms);
+        ~AtomsBuilder();
+
+        void reserve(int atomCount, int residueCount);
+        void clearAtoms();
+        void addAtom(const t_atoms &atoms, int i);
+        void startResidue(const t_resinfo &resinfo);
+        void finishResidue(const t_resinfo &resinfo);
+        void discardCurrentResidue();
+
+        void mergeAtoms(const t_atoms &atoms);
+
+    private:
+        t_atoms *atoms_;
+        int      nrAlloc_;
+        int      nresAlloc_;
+        int      currentResidueIndex_;
+        int      nextResidueNumber_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(AtomsBuilder);
+};
+
+class AtomsRemover
+{
+    public:
+        explicit AtomsRemover(const t_atoms &atoms)
+            : removed_(atoms.nr, 0)
+        {
+        }
+
+        void markResidue(const t_atoms &atoms, int atomIndex);
+        bool isMarked(int atomIndex) const { return removed_[atomIndex] != 0; }
+
+        void removeMarkedVectors(rvec array[]) const;
+        void removeMarkedValues(real array[]) const;
+        void removeMarkedAtoms(t_atoms *atoms) const;
+
+    private:
+        std::vector<char> removed_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(AtomsRemover);
+};
+
+} // namespace gmx
 
 #endif
