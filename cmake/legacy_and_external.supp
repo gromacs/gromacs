@@ -3,15 +3,6 @@
 # Memory leaks in the legacy code are excluded
 # Other problems besides memory leaks should NOT be excluded for legacy code
 
-# Contains multiple leaks, and is in the same test binary as insert-molecules
-# that is desired to be included.
-{
-   gmx_solvate
-   Memcheck:Leak
-   ...
-   fun:add_conf
-}
-
 {
    ctime_r
    Memcheck:Leak
