@@ -34,6 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function definitions necessary for
+ * managing the offload of long-ranged PME work to separate MPI rank,
+ * for computing energies and forces (Coulomb and LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_ewald
+ */
 
 #include "gmxpre.h"
 
@@ -44,7 +53,6 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sighandler.h"
@@ -54,6 +62,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
 
 enum {
     eCommType_ChargeA, eCommType_ChargeB, eCommType_SQRTC6A, eCommType_SQRTC6B,
@@ -140,7 +150,7 @@ typedef struct {
 gmx_pme_pp_t gmx_pme_pp_init(t_commrec gmx_unused *cr)
 {
     struct gmx_pme_pp *pme_pp;
-    int                rank;
+    int                rank gmx_unused;
 
     snew(pme_pp, 1);
 
@@ -428,8 +438,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
                                real gmx_unused            *ewaldcoeff_lj)
 {
     gmx_pme_comm_n_box_t cnb;
-    int                  nat = 0, q, messages, sender;
-    real                *charge_pp;
+    int                  nat = 0, messages;
 
     messages = 0;
 
@@ -474,7 +483,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
         if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
         {
             /* Receive the send counts from the other PP nodes */
-            for (sender = 0; sender < pme_pp->nnode; sender++)
+            for (int sender = 0; sender < pme_pp->nnode; sender++)
             {
                 if (pme_pp->node[sender] == pme_pp->node_peer)
                 {
@@ -492,7 +501,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
             messages = 0;
 
             nat = 0;
-            for (sender = 0; sender < pme_pp->nnode; sender++)
+            for (int sender = 0; sender < pme_pp->nnode; sender++)
             {
                 nat += pme_pp->nat[sender];
             }
@@ -533,8 +542,10 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
             *maxshift_y = cnb.maxshift_y;
 
             /* Receive the charges in place */
-            for (q = 0; q < eCommType_NR; q++)
+            for (int q = 0; q < eCommType_NR; q++)
             {
+                real *charge_pp;
+
                 if (!(cnb.flags & (PP_PME_CHARGE<<q)))
                 {
                     continue;
@@ -550,7 +561,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
                     default: gmx_incons("Wrong eCommType");
                 }
                 nat = 0;
-                for (sender = 0; sender < pme_pp->nnode; sender++)
+                for (int sender = 0; sender < pme_pp->nnode; sender++)
                 {
                     if (pme_pp->nat[sender] > 0)
                     {
@@ -609,7 +620,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
 
             /* Receive the coordinates in place */
             nat = 0;
-            for (sender = 0; sender < pme_pp->nnode; sender++)
+            for (int sender = 0; sender < pme_pp->nnode; sender++)
             {
                 if (pme_pp->nat[sender] > 0)
                 {
@@ -738,26 +749,24 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
                                  real dvdlambda_q, real dvdlambda_lj,
                                  float cycles)
 {
+#ifdef GMX_MPI
     gmx_pme_comm_vir_ene_t cve;
-    int                    messages, ind_start, ind_end, receiver;
-
+    int                    messages, ind_start, ind_end;
     cve.cycles = cycles;
 
     /* Now the evaluated forces have to be transferred to the PP nodes */
     messages = 0;
     ind_end  = 0;
-    for (receiver = 0; receiver < pme_pp->nnode; receiver++)
+    for (int receiver = 0; receiver < pme_pp->nnode; receiver++)
     {
         ind_start = ind_end;
         ind_end   = ind_start + pme_pp->nat[receiver];
-#ifdef GMX_MPI
         if (MPI_Isend(f[ind_start], (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
                       pme_pp->node[receiver], 0,
                       pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
         {
             gmx_comm("MPI_Isend failed in do_pmeonly");
         }
-#endif
     }
 
     /* send virial and energy to our last PP node */
@@ -777,12 +786,22 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
         fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n",
                 pme_pp->node_peer);
     }
-#ifdef GMX_MPI
     MPI_Isend(&cve, sizeof(cve), MPI_BYTE,
               pme_pp->node_peer, 1,
               pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
 
     /* Wait for the forces to arrive */
     MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
+#else
+    gmx_call("MPI not enabled");
+    GMX_UNUSED_VALUE(pme_pp);
+    GMX_UNUSED_VALUE(f);
+    GMX_UNUSED_VALUE(vir_q);
+    GMX_UNUSED_VALUE(energy_q);
+    GMX_UNUSED_VALUE(vir_lj);
+    GMX_UNUSED_VALUE(energy_lj);
+    GMX_UNUSED_VALUE(dvdlambda_q);
+    GMX_UNUSED_VALUE(dvdlambda_lj);
+    GMX_UNUSED_VALUE(cycles);
 #endif
 }

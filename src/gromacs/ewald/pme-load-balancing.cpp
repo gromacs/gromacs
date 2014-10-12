@@ -32,17 +32,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function definitions necessary for
+ * managing automatic load balance of PME calculations (Coulomb and
+ * LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_ewald
+ */
 #include "gmxpre.h"
 
 #include "pme-load-balancing.h"
 
 #include "config.h"
 
+#include <algorithm>
+
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/legacyheaders/calcgrid.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sim_util.h"
@@ -52,6 +61,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
 
 /* Parameters and setting for one PP-PME setup */
 typedef struct {
@@ -285,8 +296,8 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t  pme_lb,
     {
         tmpr_coulomb          = set->rcut_coulomb + pme_lb->rbuf_coulomb;
         tmpr_vdw              = pme_lb->rcut_vdw + pme_lb->rbuf_vdw;
-        set->rlist            = min(tmpr_coulomb, tmpr_vdw);
-        set->rlistlong        = max(tmpr_coulomb, tmpr_vdw);
+        set->rlist            = std::min(tmpr_coulomb, tmpr_vdw);
+        set->rlistlong        = std::max(tmpr_coulomb, tmpr_vdw);
 
         /* Set the long-range update frequency */
         if (set->rlist == set->rlistlong)
@@ -510,7 +521,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
                         pme_lb->nstage);
             }
         }
-        set->cycles = min(set->cycles, cycles);
+        set->cycles = std::min(set->cycles, cycles);
     }
 
     if (set->cycles < pme_lb->setup[pme_lb->fastest].cycles)
@@ -691,13 +702,14 @@ gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
         ic->ewaldcoeff_lj   = set->ewaldcoeff_lj;
         if (ic->vdw_modifier == eintmodPOTSHIFT)
         {
-            real crc2;
+            real       crc2;
+            const real minusSix = -6.0, minusTwelve = -12.0;
 
-            ic->dispersion_shift.cpot = -pow(ic->rvdw, -6.0);
-            ic->repulsion_shift.cpot  = -pow(ic->rvdw, -12.0);
+            ic->dispersion_shift.cpot = -std::pow(ic->rvdw, minusSix);
+            ic->repulsion_shift.cpot  = -std::pow(ic->rvdw, minusTwelve);
             ic->sh_invrc6             = -ic->dispersion_shift.cpot;
             crc2                      = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-            ic->sh_lj_ewald           = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
+            ic->sh_lj_ewald           = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*std::pow(ic->rvdw, minusSix);
         }
     }
 
@@ -788,7 +800,7 @@ static real pme_loadbal_rlist(const pme_setup_t *setup)
 }
 
 static void print_pme_loadbal_setting(FILE              *fplog,
-                                      char              *name,
+                                      const char        *name,
                                       const pme_setup_t *setup)
 {
     fprintf(fplog,
@@ -804,9 +816,10 @@ static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
                                        FILE                *fplog,
                                        gmx_bool             bNonBondedOnGPU)
 {
-    double pp_ratio, grid_ratio;
+    double     pp_ratio, grid_ratio;
+    const real three = 3.0;
 
-    pp_ratio   = pow(pme_loadbal_rlist(&pme_lb->setup[pme_lb->cur])/pme_loadbal_rlist(&pme_lb->setup[0]), 3.0);
+    pp_ratio   = std::pow(pme_loadbal_rlist(&pme_lb->setup[pme_lb->cur])/pme_loadbal_rlist(&pme_lb->setup[0]), three);
     grid_ratio = pme_grid_points(&pme_lb->setup[pme_lb->cur])/
         (double)pme_grid_points(&pme_lb->setup[0]);
 

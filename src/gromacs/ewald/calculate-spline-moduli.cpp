@@ -40,11 +40,13 @@
 
 #include <math.h>
 
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/legacyheaders/macros.h"
+#include <algorithm>
+
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
 
 void make_dft_mod(real *mod, real *data, int ndata)
 {
@@ -74,7 +76,7 @@ void make_dft_mod(real *mod, real *data, int ndata)
 void make_bspline_moduli(splinevec bsp_mod,
                          int nx, int ny, int nz, int order)
 {
-    int   nmax = max(nx, max(ny, nz));
+    int   nmax = std::max(nx, std::max(ny, nz));
     real *data, *ddata, *bsp_data;
     int   i, k, l;
     real  div;
