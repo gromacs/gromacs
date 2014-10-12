@@ -48,7 +48,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxpreprocess/calc_verletbuf.h"
@@ -73,6 +72,7 @@
 #include "gromacs/legacyheaders/sighandler.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_search.h"
