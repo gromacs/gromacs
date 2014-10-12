@@ -65,11 +65,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"
@@ -85,6 +83,8 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
 
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
@@ -165,7 +165,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     int                count;
     gmx_bool           bEnerVir;
     int                pme_flags;
-    gmx_int64_t        step, step_rel;
+    gmx_int64_t        step;
     ivec               grid_switch;
 
     /* This data will only use with PME tuning, i.e. switching PME grids */
@@ -217,8 +217,6 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             /* We should stop: break out of the loop */
             break;
         }
-
-        step_rel = step - ir->init_step;
 
         if (count == 0)
         {

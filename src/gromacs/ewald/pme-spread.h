@@ -37,21 +37,14 @@
 #ifndef GMX_EWALD_PME_SPREAD_H
 #define GMX_EWALD_PME_SPREAD_H
 
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "pme-internal.h"
 
 void
 spread_on_grid(struct gmx_pme_t *pme,
                pme_atomcomm_t *atc, pmegrids_t *grids,
                gmx_bool bCalcSplines, gmx_bool bSpread,
                real *fftgrid, gmx_bool bDoSplines, int grid_index);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

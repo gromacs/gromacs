@@ -41,12 +41,13 @@
 
 #include <math.h>
 
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
 
 #ifdef GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
@@ -194,9 +195,7 @@ void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
 gmx_inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
-        const gmx_simd_real_t two = gmx_simd_set1_r(2.0);
         gmx_simd_real_t       f_simd;
-        gmx_simd_real_t       lu;
         gmx_simd_real_t       tmp_d1, d_inv, tmp_r, tmp_e;
         int                   kx;
         f_simd = gmx_simd_set1_r(f);
@@ -288,7 +287,7 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
     t_complex               *p0;
-    int                      kx, ky, kz, maxkx, maxky, maxkz;
+    int                      kx, ky, kz, maxkx, maxky;
     int                      nx, ny, nz, iyz0, iyz1, iyz, iy, iz, kxstart, kxend;
     real                     mx, my, mz;
     real                     factor = M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
@@ -327,7 +326,6 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
 
     maxkx = (nx+1)/2;
     maxky = (ny+1)/2;
-    maxkz = nz/2+1;
 
     work  = &pme->solve_work[thread];
     mhx   = work->mhx;
@@ -539,7 +537,7 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
     int                      ig, gcount;
-    int                      kx, ky, kz, maxkx, maxky, maxkz;
+    int                      kx, ky, kz, maxkx, maxky;
     int                      nx, ny, nz, iy, iyz0, iyz1, iyz, iz, kxstart, kxend;
     real                     mx, my, mz;
     real                     factor = M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
@@ -550,7 +548,6 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
     real                     rxx, ryx, ryy, rzx, rzy, rzz;
     real                    *mhx, *mhy, *mhz, *m2, *denom, *tmp1, *tmp2;
     real                     mhxk, mhyk, mhzk, m2k;
-    real                     mk;
     struct pme_solve_work_t *work;
     real                     corner_fac;
     ivec                     complex_order;
@@ -574,7 +571,6 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
 
     maxkx = (nx+1)/2;
     maxky = (ny+1)/2;
-    maxkz = nz/2+1;
 
     work  = &pme->solve_work[thread];
     mhx   = work->mhx;

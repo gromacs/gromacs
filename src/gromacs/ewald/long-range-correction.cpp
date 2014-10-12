@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,16 +79,17 @@ void ewald_LRcorrection(int start, int end,
     double      Vexcl_q, dvdl_excl_q, dvdl_excl_lj; /* Necessary for precision */
     double      Vexcl_lj;
     real        one_4pi_eps;
-    real        v, vc, qiA, qiB, dr2, rinv, enercorr;
+    real        v, vc, qiA, qiB, dr2, rinv;
     real        Vself_q[2], Vself_lj[2], Vdipole[2], rinv2, ewc_q = fr->ewaldcoeff_q, ewcdr;
     real        ewc_lj = fr->ewaldcoeff_lj, ewc_lj2 = ewc_lj * ewc_lj;
     real        c6Ai   = 0, c6Bi = 0, c6A = 0, c6B = 0, ewcdr2, ewcdr4, c6L = 0, rinv6;
     rvec        df, dx, mutot[2], dipcorrA, dipcorrB;
-    tensor      dxdf_q, dxdf_lj;
-    real        vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+    tensor      dxdf_q = {{0}}, dxdf_lj = {{0}};
+    real        vol    = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
     real        L1_q, L1_lj, dipole_coeff, qqA, qqB, qqL, vr0_q, vr0_lj = 0;
     gmx_bool    bMolPBC      = fr->bMolPBC;
     gmx_bool    bDoingLBRule = (fr->ljpme_combination_rule == eljpmeLB);
+    gmx_bool    bNeedLongRangeCorrection;
 
     /* This routine can be made faster by using tables instead of analytical interactions
      * However, that requires a thorough verification that they are correct in all cases.
@@ -151,12 +152,8 @@ void ewald_LRcorrection(int start, int end,
         fprintf(debug, "mutot   = %8.3f  %8.3f  %8.3f\n",
                 mutot[0][XX], mutot[0][YY], mutot[0][ZZ]);
     }
-    clear_mat(dxdf_q);
-    if (EVDW_PME(fr->vdwtype))
-    {
-        clear_mat(dxdf_lj);
-    }
-    if ((calc_excl_corr || dipole_coeff != 0) && !bHaveChargeOrTypePerturbed)
+    bNeedLongRangeCorrection = (calc_excl_corr || dipole_coeff != 0);
+    if (bNeedLongRangeCorrection && !bHaveChargeOrTypePerturbed)
     {
         for (i = start; (i < end); i++)
         {
@@ -199,9 +196,6 @@ void ewald_LRcorrection(int start, int end,
                         }
                         if (qqA != 0.0 || c6A != 0.0)
                         {
-                            real fscal;
-
-                            fscal = 0;
                             rvec_sub(x[i], x[k], dx);
                             if (bMolPBC)
                             {
@@ -228,7 +222,7 @@ void ewald_LRcorrection(int start, int end,
                                 rinv2             = rinv*rinv;
                                 if (qqA != 0.0)
                                 {
-                                    real dr;
+                                    real dr, fscal;
 
                                     dr       = 1.0/rinv;
                                     ewcdr    = ewc_q*dr;
@@ -270,6 +264,8 @@ void ewald_LRcorrection(int start, int end,
 
                                 if (c6A != 0.0)
                                 {
+                                    real fscal;
+
                                     rinv6     = rinv2*rinv2*rinv2;
                                     ewcdr2    = ewc_lj2*dr2;
                                     ewcdr4    = ewcdr2*ewcdr2;
@@ -317,7 +313,7 @@ void ewald_LRcorrection(int start, int end,
             }
         }
     }
-    else if (calc_excl_corr || dipole_coeff != 0)
+    else if (bNeedLongRangeCorrection)
     {
         for (i = start; (i < end); i++)
         {
@@ -361,7 +357,6 @@ void ewald_LRcorrection(int start, int end,
                         {
                             real fscal;
 
-                            fscal = 0;
                             qqL   = L1_q*qqA + lambda_q*qqB;
                             if (EVDW_PME(fr->vdwtype))
                             {
