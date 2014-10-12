@@ -90,7 +90,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
-        TrajectoryAnalysisModule *module)
+    TrajectoryAnalysisModule *module)
     : module_(module), bUseDefaultGroups_(true), debugLevel_(0)
 {
 }
@@ -103,10 +103,10 @@ TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 
 void
 TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
-        TrajectoryAnalysisSettings *settings,
-        TrajectoryAnalysisRunnerCommon *common,
-        SelectionCollection *selections,
-        int *argc, char *argv[])
+    TrajectoryAnalysisSettings *settings,
+    TrajectoryAnalysisRunnerCommon *common,
+    SelectionCollection *selections,
+    int *argc, char *argv[])
 {
     FileNameOptionManager  fileoptManager;
     SelectionOptionManager seloptManager(selections);
@@ -153,7 +153,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
  */
 
 TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
-        TrajectoryAnalysisModule *module)
+    TrajectoryAnalysisModule *module)
     : impl_(new Impl(module))
 {
 }
@@ -204,7 +204,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     int    nframes = 0;
     AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
-            module->startFrames(dataOptions, selections));
+        module->startFrames(dataOptions, selections));
     do
     {
         common.initFrame();
@@ -300,7 +300,16 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
          */
         RunnerCommandLineModule(const char *name, const char *description,
                                 ModuleFactoryMethod factory)
-            : name_(name), description_(description), factory_(factory)
+            : name_(name), description_(description), hasFunction_(true), factory_(factory), functor_(NULL)
+        {
+        }
+
+        /*! \brief
+         * Overloaded constructor accepting a functor instead of function pointer.
+         */
+        RunnerCommandLineModule(const char *name, const char *description,
+                                ModuleFactoryFunctor *factory)
+            : name_(name), description_(description), hasFunction_(false), factory_(NULL), functor_(factory)
         {
         }
 
@@ -314,26 +323,28 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
     private:
         const char             *name_;
         const char             *description_;
+        bool                    hasFunction_;
         ModuleFactoryMethod     factory_;
+        ModuleFactoryFunctor   *functor_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RunnerCommandLineModule);
 };
 
 void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::init(
-        CommandLineModuleSettings * /*settings*/)
+    CommandLineModuleSettings * /*settings*/)
 {
 }
 
 int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
-        int argc, char *argv[])
+    int argc, char *argv[])
 {
-    TrajectoryAnalysisModulePointer     module(factory_());
+    TrajectoryAnalysisModulePointer     module(hasFunction_ ? factory_() : (*functor_)());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     return runner.run(argc, argv);
 }
 
 void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHelp(
-        const CommandLineHelpContext &context) const
+    const CommandLineHelpContext &context) const
 {
     TrajectoryAnalysisModulePointer     module(factory_());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
@@ -343,7 +354,16 @@ void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHe
 // static
 int
 TrajectoryAnalysisCommandLineRunner::runAsMain(
-        int argc, char *argv[], ModuleFactoryMethod factory)
+    int argc, char *argv[], ModuleFactoryMethod factory)
+{
+    Impl::RunnerCommandLineModule module(NULL, NULL, factory);
+    return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
+}
+
+// static
+int
+TrajectoryAnalysisCommandLineRunner::runAsMain(
+    int argc, char *argv[], ModuleFactoryFunctor *factory)
 {
     Impl::RunnerCommandLineModule module(NULL, NULL, factory);
     return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
@@ -352,11 +372,11 @@ TrajectoryAnalysisCommandLineRunner::runAsMain(
 // static
 void
 TrajectoryAnalysisCommandLineRunner::registerModule(
-        CommandLineModuleManager *manager, const char *name,
-        const char *description, ModuleFactoryMethod factory)
+    CommandLineModuleManager *manager, const char *name,
+    const char *description, ModuleFactoryMethod factory)
 {
     CommandLineModulePointer module(
-            new Impl::RunnerCommandLineModule(name, description, factory));
+        new Impl::RunnerCommandLineModule(name, description, factory));
     manager->addModule(move(module));
 }
 
