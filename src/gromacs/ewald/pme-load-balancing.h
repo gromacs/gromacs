@@ -32,6 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * managing automatic load balance of PME calculations (Coulomb and
+ * LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \inlibraryapi
+ * \ingroup module_ewald
+ */
 
 #ifndef GMX_EWALD_PME_LOAD_BALANCING_H
 #define GMX_EWALD_PME_LOAD_BALANCING_H
@@ -41,10 +51,6 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/state.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct pme_load_balancing *pme_load_balancing_t;
 
@@ -85,9 +91,5 @@ void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
 void pme_loadbal_done(pme_load_balancing_t pme_lb,
                       t_commrec *cr, FILE *fplog,
                       gmx_bool bNonBondedOnGPU);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

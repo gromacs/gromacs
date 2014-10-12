@@ -34,6 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function definitions necessary for
+ * managing the offload of long-ranged PME work to separate MPI rank,
+ * for computing energies and forces (Coulomb and LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_ewald
+ */
 
 #include "gmxpre.h"
 
@@ -44,7 +53,6 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sighandler.h"
@@ -54,6 +62,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
 
 enum {
     eCommType_ChargeA, eCommType_ChargeB, eCommType_SQRTC6A, eCommType_SQRTC6B,

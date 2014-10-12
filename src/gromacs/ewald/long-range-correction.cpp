@@ -68,7 +68,7 @@ void ewald_LRcorrection(int start, int end,
     double      Vexcl_q, dvdl_excl_q, dvdl_excl_lj; /* Necessary for precision */
     double      Vexcl_lj;
     real        one_4pi_eps;
-    real        v, vc, qiA, qiB, dr2, rinv, enercorr;
+    real        v, vc, qiA, qiB, dr2, rinv;
     real        Vself_q[2], Vself_lj[2], Vdipole[2], rinv2, ewc_q = fr->ewaldcoeff_q, ewcdr;
     real        ewc_lj = fr->ewaldcoeff_lj, ewc_lj2 = ewc_lj * ewc_lj;
     real        c6Ai   = 0, c6Bi = 0, c6A = 0, c6B = 0, ewcdr2, ewcdr4, c6L = 0, rinv6;

@@ -39,10 +39,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct pme_work_t;
 struct gmx_pme_t;
 
@@ -80,9 +76,5 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
 int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
                      real ewaldcoeff, real vol,
                      gmx_bool bEnerVir, int nthread, int thread);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
