@@ -38,13 +38,10 @@
 
 #include "config.h"
 
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "pme-internal.h"
 
 #ifdef GMX_MPI
 void
@@ -95,9 +92,5 @@ set_grid_alignment(int *pmegrid_nz, int pme_order);
 
 void
 reuse_pmegrids(const pmegrids_t *oldgrid, pmegrids_t *newgrid);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

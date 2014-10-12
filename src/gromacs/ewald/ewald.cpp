@@ -34,6 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function definitions necessary for
+ * computing energies and forces for the plain-Ewald long-ranged part,
+ * and the correction for overall system charge for all Ewald-family
+ * methods.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_ewald
+ */
 #include "gmxpre.h"
 
 #include "ewald.h"
@@ -41,7 +52,10 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/macros.h"
+#include <cstdlib>
+
+#include <algorithm>
+
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/gmxcomplex.h"
@@ -58,8 +72,6 @@ struct gmx_ewald_tab_t
 
 void init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir, FILE *fp)
 {
-    int n;
-
     snew(*et, 1);
     if (fp)
     {
@@ -69,24 +81,14 @@ void init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir, FILE *fp)
     (*et)->nx       = ir->nkx+1;
     (*et)->ny       = ir->nky+1;
     (*et)->nz       = ir->nkz+1;
-    (*et)->kmax     = max((*et)->nx, max((*et)->ny, (*et)->nz));
+    (*et)->kmax     = std::max((*et)->nx, std::max((*et)->ny, (*et)->nz));
     (*et)->eir      = NULL;
     (*et)->tab_xy   = NULL;
     (*et)->tab_qxyz = NULL;
 }
 
-/* the other routines are in complex.h */
-static t_complex conjmul(t_complex a, t_complex b)
-{
-    t_complex c;
-
-    c.re = a.re*b.re + a.im*b.im;
-    c.im = a.im*b.re - a.re*b.im;
-
-    return c;
-}
-
-static void tabulate_eir(int natom, rvec x[], int kmax, cvec **eir, rvec lll)
+//! Make tables for the structure factor parts
+static void tabulateStructureFactors(int natom, rvec x[], int kmax, cvec **eir, rvec lll)
 {
     int  i, j, m;
 
@@ -161,8 +163,7 @@ real do_ewald(t_inputrec *ir,
     clear_mat(lrvir);
 
     calc_lll(box, lll);
-    /* make tables for the structure factor parts */
-    tabulate_eir(natoms, x, et->kmax, et->eir, lll);
+    tabulateStructureFactors(natoms, x, et->kmax, et->eir, lll);
 
     for (q = 0; q < (bFreeEnergy ? 2 : 1); q++)
     {
@@ -201,7 +202,7 @@ real do_ewald(t_inputrec *ir,
                 {
                     for (n = 0; n < natoms; n++)
                     {
-                        et->tab_xy[n] = conjmul(et->eir[ix][n][XX], et->eir[-iy][n][YY]);
+                        et->tab_xy[n] = cmul(et->eir[ix][n][XX], conjugate(et->eir[-iy][n][YY]));
                     }
                 }
                 for (iz = lowiz; iz < et->nz; iz++)
@@ -222,8 +223,8 @@ real do_ewald(t_inputrec *ir,
                     {
                         for (n = 0; n < natoms; n++)
                         {
-                            et->tab_qxyz[n] = rcmul(charge[n], conjmul(et->tab_xy[n],
-                                                                       et->eir[-iz][n][ZZ]));
+                            et->tab_qxyz[n] = rcmul(charge[n], cmul(et->tab_xy[n],
+                                                                    conjugate(et->eir[-iz][n][ZZ])));
                         }
                     }
 

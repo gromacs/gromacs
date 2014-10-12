@@ -34,6 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \defgroup module_ewald Ewald-family treatments of long-ranged forces
+ * \ingroup group_mdrun
+ *
+ * \brief Computes energies and forces for long-ranged interactions
+ * using the Ewald decomposition. Includes plain Ewald, PME, P3M for
+ * Coulomb, PME for Lennard-Jones, load-balancing for PME, and
+ * supporting code.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Erik Lindahl <erik@kth.se>
+ * \author Roland Schulz <roland@rschulz.eu>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Christan Wennberg <cwennberg@kth.se>
+ */
+
+/*! \libinternal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * computing energies and forces for the plain-Ewald long-ranged part,
+ * and the correction for overall system charge for all Ewald-family
+ * methods.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_ewald
+ */
 
 #ifndef GMX_EWALD_EWALD_H
 #define GMX_EWALD_EWALD_H
@@ -45,10 +72,6 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Forward declaration of type for managing Ewald tables */
 struct gmx_ewald_tab_t;
@@ -76,9 +99,5 @@ do_ewald(t_inputrec *ir,
 real
 ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
                         real *dvdlambda, tensor vir);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

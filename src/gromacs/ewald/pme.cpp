@@ -34,6 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function definitions necessary for
+ * computing energies and forces for the PME long-ranged part (Coulomb
+ * and LJ).
+ *
+ * \author Erik Lindahl <erik@kth.se>
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_ewald
+ */
 /* IMPORTANT FOR DEVELOPERS:
  *
  * Triclinic pme stuff isn't entirely trivial, and we've experienced
@@ -67,19 +77,13 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "gromacs/ewald/calculate-spline-moduli.h"
-#include "gromacs/ewald/pme-gather.h"
-#include "gromacs/ewald/pme-grid.h"
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme-redistribute.h"
-#include "gromacs/ewald/pme-simd.h"
-#include "gromacs/ewald/pme-solve.h"
-#include "gromacs/ewald/pme-spline-work.h"
-#include "gromacs/ewald/pme-spread.h"
-#include "gromacs/fft/fft.h"
+#include <algorithm>
+
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/enums.h"
@@ -100,17 +104,24 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_DOUBLE
-#define mpi_type MPI_DOUBLE
-#else
-#define mpi_type MPI_FLOAT
-#endif
+#include "calculate-spline-moduli.h"
+#include "pme-gather.h"
+#include "pme-grid.h"
+#include "pme-internal.h"
+#include "pme-redistribute.h"
+#include "pme-simd.h"
+#include "pme-solve.h"
+#include "pme-spline-work.h"
+#include "pme-spread.h"
 
-/* GMX_CACHE_SEP should be a multiple of the SIMD and SIMD4 register size
- * to preserve alignment.
+/*! \brief Number of bytes in a cache line.
+ *
+ * Must also be a multiple of the SIMD and SIMD4 register size, to
+ * preserve alignment.
  */
-#define GMX_CACHE_SEP 64
+const int gmxCacheLineSize = 64;
 
+//! Set up coordinate communication
 static void setup_coordinate_communication(pme_atomcomm_t *atc)
 {
     int nslab, n, i;
@@ -140,7 +151,7 @@ static void setup_coordinate_communication(pme_atomcomm_t *atc)
 
 int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
 {
-    int thread, i;
+    int i;
 
     if (NULL != log)
     {
@@ -170,13 +181,14 @@ int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
     return 0;
 }
 
+/*! \brief Round \p n up to the next multiple of \p f */
 static int mult_up(int n, int f)
 {
     return ((n + f - 1)/f)*f;
 }
 
-// TODO change this name to reflect what it actually does
-static double pme_load_imbalance(struct gmx_pme_t *pme)
+/*! \brief Return estimate of the load imbalance from the PME grid not being a good match for the number of PME ranks */
+static double estimate_pme_load_imbalance(struct gmx_pme_t *pme)
 {
     int    nma, nmi;
     double n1, n2, n3;
@@ -193,10 +205,11 @@ static double pme_load_imbalance(struct gmx_pme_t *pme)
     return (n1 + n2 + 3*n3)/(double)(6*pme->nkx*pme->nky*pme->nkz);
 }
 
+/*! \brief Initialize atom communication data structure */
 static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
                           int dimind, gmx_bool bSpread)
 {
-    int nk, k, s, thread;
+    int thread;
 
     atc->dimind    = dimind;
     atc->nslab     = 1;
@@ -244,14 +257,15 @@ static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     {
         if (atc->nthread > 1)
         {
-            snew(atc->thread_plist[thread].n, atc->nthread+2*GMX_CACHE_SEP);
-            atc->thread_plist[thread].n += GMX_CACHE_SEP;
+            snew(atc->thread_plist[thread].n, atc->nthread+2*gmxCacheLineSize);
+            atc->thread_plist[thread].n += gmxCacheLineSize;
         }
         snew(atc->spline[thread].thread_one, pme->nthread);
         atc->spline[thread].thread_one[thread] = 1;
     }
 }
 
+/*! \brief Initialize data structure for communication */
 static void
 init_overlap_comm(pme_overlap_t *  ol,
                   int              norder,
@@ -263,9 +277,7 @@ init_overlap_comm(pme_overlap_t *  ol,
                   int              ndata,
                   int              commplainsize)
 {
-    int              lbnd, rbnd, maxlr, b, i;
-    int              exten;
-    int              nn, nk;
+    int              b, i;
     pme_grid_comm_t *pgc;
     gmx_bool         bCont;
     int              fft_start, fft_end, send_index1, recv_index1;
@@ -353,9 +365,9 @@ init_overlap_comm(pme_overlap_t *  ol,
             fft_end   += ndata;
         }
         send_index1       = ol->s2g1[nodeid];
-        send_index1       = min(send_index1, fft_end);
+        send_index1       = std::min(send_index1, fft_end);
         pgc->send_index0  = fft_start;
-        pgc->send_nindex  = max(0, send_index1 - pgc->send_index0);
+        pgc->send_nindex  = std::max(0, send_index1 - pgc->send_index0);
         ol->send_size    += pgc->send_nindex;
 
         /* We always start receiving to the first index of our slab */
@@ -366,9 +378,9 @@ init_overlap_comm(pme_overlap_t *  ol,
         {
             recv_index1 -= ndata;
         }
-        recv_index1      = min(recv_index1, fft_end);
+        recv_index1      = std::min(recv_index1, fft_end);
         pgc->recv_index0 = fft_start;
-        pgc->recv_nindex = max(0, recv_index1 - pgc->recv_index0);
+        pgc->recv_nindex = std::max(0, recv_index1 - pgc->recv_index0);
     }
 
 #ifdef GMX_MPI
@@ -441,6 +453,7 @@ void gmx_pme_check_restrictions(int pme_order,
     return;
 }
 
+/*! \brief Round \p enumerator */
 static int div_round_up(int enumerator, int denominator)
 {
     return (enumerator + denominator - 1)/denominator;
@@ -606,7 +619,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
         double imbal;
 
 #ifdef GMX_MPI
-        MPI_Type_contiguous(DIM, mpi_type, &(pme->rvec_mpi));
+        MPI_Type_contiguous(DIM, GMX_MPI_REAL, &(pme->rvec_mpi));
         MPI_Type_commit(&(pme->rvec_mpi));
 #endif
 
@@ -616,7 +629,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
          * (unless the coefficient distribution is inhomogeneous).
          */
 
-        imbal = pme_load_imbalance(pme);
+        imbal = estimate_pme_load_imbalance(pme);
         if (imbal >= 1.2 && pme->nodeid_major == 0 && pme->nodeid_minor == 0)
         {
             fprintf(stderr,
@@ -814,6 +827,7 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
     return ret;
 }
 
+/*! \brief Dump an FFT grid to \p fp */
 static void dump_grid(FILE *fp,
                       int sx, int sy, int sz, int nx, int ny, int nz,
                       int my, int mz, const real *g)
@@ -833,6 +847,7 @@ static void dump_grid(FILE *fp,
     }
 }
 
+/*! \brief Dump the local FFT grid to stderr */
 static void dump_local_fftgrid(struct gmx_pme_t *pme, const real *fftgrid)
 {
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
@@ -892,6 +907,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
     *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
 
+/*! \brief Calculate initial Lorentz-Berthelot coefficients for LJ-PME */
 static void
 calc_initial_lb_coeffs(struct gmx_pme_t *pme, real *local_c6, real *local_sigma)
 {
@@ -906,6 +922,7 @@ calc_initial_lb_coeffs(struct gmx_pme_t *pme, real *local_c6, real *local_sigma)
     }
 }
 
+/*! \brief Calculate next Lorentz-Berthelot coefficients for LJ-PME */
 static void
 calc_next_lb_coeffs(struct gmx_pme_t *pme, real *local_sigma)
 {
@@ -920,27 +937,25 @@ calc_next_lb_coeffs(struct gmx_pme_t *pme, real *local_sigma)
 int gmx_pme_do(struct gmx_pme_t *pme,
                int start,       int homenr,
                rvec x[],        rvec f[],
-               real *chargeA,   real *chargeB,
-               real *c6A,       real *c6B,
-               real *sigmaA,    real *sigmaB,
-               matrix box, t_commrec *cr,
+               real chargeA[],  real chargeB[],
+               real c6A[],      real c6B[],
+               real sigmaA[],   real sigmaB[],
+               matrix box,      t_commrec *cr,
                int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-               matrix vir_q,      real ewaldcoeff_q,
+               matrix vir_q,    real ewaldcoeff_q,
                matrix vir_lj,   real ewaldcoeff_lj,
                real *energy_q,  real *energy_lj,
-               real lambda_q, real lambda_lj,
+               real lambda_q,   real lambda_lj,
                real *dvdlambda_q, real *dvdlambda_lj,
                int flags)
 {
-    int                  d, i, j, k, ntot, npme, grid_index, max_grid_index;
-    int                  nx, ny, nz;
-    int                  n_d, local_ny;
+    int                  d, i, j, npme, grid_index, max_grid_index;
+    int                  n_d;
     pme_atomcomm_t      *atc        = NULL;
     pmegrids_t          *pmegrid    = NULL;
     real                *grid       = NULL;
-    real                *ptr;
-    rvec                *x_d, *f_d;
+    rvec                *f_d;
     real                *coefficient = NULL;
     real                 energy_AB[4];
     matrix               vir_AB[4];
@@ -1178,8 +1193,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                     if (pme->nodeid == 0)
                     {
-                        ntot  = pme->nkx*pme->nky*pme->nkz;
-                        npme  = ntot*log((real)ntot)/log(2.0);
+                        real ntot = pme->nkx*pme->nky*pme->nkz;
+                        npme  = static_cast<int>(ntot*log(ntot)/log(2.0));
                         inc_nrnb(nrnb, eNR_FFT, 2*npme);
                     }
 
@@ -1334,7 +1349,6 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 /* Unpack structure */
                 pmegrid    = &pme->pmegrid[grid_index];
                 fftgrid    = pme->fftgrid[grid_index];
-                cfftgrid   = pme->cfftgrid[grid_index];
                 pfft_setup = pme->pfft_setup[grid_index];
                 calc_next_lb_coeffs(pme, local_sigma);
                 grid = pmegrid->grid.grid;
@@ -1434,7 +1448,6 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     /* Unpack structure */
                     pmegrid    = &pme->pmegrid[grid_index];
                     fftgrid    = pme->fftgrid[grid_index];
-                    cfftgrid   = pme->cfftgrid[grid_index];
                     pfft_setup = pme->pfft_setup[grid_index];
                     grid       = pmegrid->grid.grid;
                     calc_next_lb_coeffs(pme, local_sigma);
@@ -1459,8 +1472,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                             if (pme->nodeid == 0)
                             {
-                                ntot  = pme->nkx*pme->nky*pme->nkz;
-                                npme  = ntot*log((real)ntot)/log(2.0);
+                                real ntot = pme->nkx*pme->nky*pme->nkz;
+                                npme  = static_cast<int>(ntot*log(ntot)/log(2.0));
                                 inc_nrnb(nrnb, eNR_FFT, 2*npme);
                             }
                             wallcycle_start(wcycle, ewcPME_SPREADGATHER);
