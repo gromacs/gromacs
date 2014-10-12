@@ -178,8 +178,8 @@ typedef struct {
 } cginfo_mb_t;
 
 
-/* ewald table type */
-typedef struct ewald_tab *ewald_tab_t;
+/* Forward declaration of type for managing Ewald tables */
+struct gmx_ewald_tab_t;
 
 typedef struct {
     rvec             *f;
@@ -363,10 +363,10 @@ typedef struct {
     tensor    vir_lj_recip;
 
     /* PME/Ewald stuff */
-    gmx_bool    bEwald;
-    real        ewaldcoeff_q;
-    real        ewaldcoeff_lj;
-    ewald_tab_t ewald_table;
+    gmx_bool                bEwald;
+    real                    ewaldcoeff_q;
+    real                    ewaldcoeff_lj;
+    struct gmx_ewald_tab_t *ewald_table;
 
     /* Virial Stuff */
     rvec *fshift;

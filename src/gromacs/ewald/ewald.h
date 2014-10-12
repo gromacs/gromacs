@@ -35,31 +35,30 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_EWALD_EWALD_UTIL_H
-#define GMX_EWALD_EWALD_UTIL_H
+#ifndef GMX_EWALD_EWALD_H
+#define GMX_EWALD_EWALD_H
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Ewald related stuff */
+/* Forward declaration of type for managing Ewald tables */
+struct gmx_ewald_tab_t;
 
+/*! \brief Initialize the tables used in the Ewald long-ranged part */
 void
-init_ewald_tab(ewald_tab_t *et, const t_inputrec *ir,
+init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir,
                FILE *fp);
-/* initialize the ewald table (as found in the t_forcerec) */
 
-real
-calc_ewaldcoeff_q(real rc, real dtol);
-/* Determines the Ewald parameter, both for Ewald and PME */
-
-real calc_ewaldcoeff_lj(real rc, real dtol);
-/* Determines the Ewald parameters for LJ-PME */
-
+/*! \brief Do the long-ranged part of an Ewald calculation */
 real
 do_ewald(t_inputrec *ir,
          rvec x[],        rvec f[],
@@ -68,36 +67,15 @@ do_ewald(t_inputrec *ir,
          t_commrec *cr,  int natoms,
          matrix lrvir,   real ewaldcoeff,
          real lambda,    real *dvdlambda,
-         ewald_tab_t et);
-/* Do an Ewald calculation for the long range electrostatics. */
+         struct gmx_ewald_tab_t *et);
 
-void
-ewald_LRcorrection(int start, int end,
-                   t_commrec *cr, int thread, t_forcerec *fr,
-                   real *chargeA, real *chargeB,
-                   real *C6A, real *C6B,
-                   real *sigmaA, real *sigmaB,
-                   real *sigma3A, real *sigma3B,
-                   gmx_bool calc_excl_corr,
-                   t_blocka *excl, rvec x[],
-                   matrix box, rvec mu_tot[],
-                   int ewald_geometry, real epsilon_surface,
-                   rvec *f, tensor vir_q, tensor vir_lj,
-                   real *Vcorr_q, real *Vcorr_lj,
-                   real lambda_q, real lambda_lj,
-                   real *dvdlambda_q, real *dvdlambda_lj);
-/* Calculate the Long range correction to the Ewald sums,
- * electrostatic and/or LJ, due to excluded pairs and/or
- * surface dipole terms.
- */
-
+/*! \brief Calculate the correction to the Ewald sum, due to a net system
+ * charge.
+ *
+ * Should only be called on one thread. */
 real
 ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
                         real *dvdlambda, tensor vir);
-/* Calculate the Long range correction to the Ewald sum,
- * due to a net system charge.
- * Should only be called on one thread.
- */
 
 #ifdef __cplusplus
 }

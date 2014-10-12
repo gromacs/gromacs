@@ -37,8 +37,9 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
     3dtransforms.h
-    gmxcomplex.h
+    calculate-ewald-splitting-coefficient.h
     do_fit.h
+    gmxcomplex.h
     units.h
     utilities.h
     vec.h

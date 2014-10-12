@@ -42,7 +42,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/ewald/ewald-util.h"
+#include "gromacs/ewald/ewald.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
@@ -64,6 +64,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
