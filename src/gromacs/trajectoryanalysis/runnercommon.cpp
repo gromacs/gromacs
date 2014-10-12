@@ -56,6 +56,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -129,6 +130,8 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         bool                        bTrajOpen_;
         //! The current frame, or \p NULL if no frame loaded yet.
         t_trxframe                 *fr;
+        //! The PBC structure for current frame, if available
+        t_pbc                      *pbc_;
         gmx_rmpbc_t                 gpbc_;
         //! Used to store the status variable from read_first_frame().
         t_trxstatus                *status_;
@@ -156,6 +159,10 @@ TrajectoryAnalysisRunnerCommon::Impl::~Impl()
         sfree(fr->f);
         sfree(fr->index);
         sfree(fr);
+    }
+    if (pbc_ != nullptr)
+    {
+        sfree(pbc_);
     }
     if (oenv_ != nullptr)
     {
@@ -267,6 +274,11 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     {
         gpbc_ = gmx_rmpbc_init(&topInfo_.topology()->idef, topInfo_.ePBC(),
                                fr->natoms);
+    }
+
+    if (settings_.hasPBC())
+    {
+        snew(pbc_, 1);
     }
 }
 
@@ -468,6 +480,10 @@ TrajectoryAnalysisRunnerCommon::initFrame()
     {
         gmx_rmpbc_trxfr(impl_->gpbc_, impl_->fr);
     }
+    if (impl_->pbc_ != NULL)
+    {
+        set_pbc(impl_->pbc_, impl_->topInfo_.ePBC(), impl_->fr->box);
+    }
 }
 
 
@@ -490,6 +506,12 @@ TrajectoryAnalysisRunnerCommon::frame() const
 {
     GMX_RELEASE_ASSERT(impl_->fr != nullptr, "Frame not available when accessed");
     return *impl_->fr;
+}
+
+t_pbc *
+TrajectoryAnalysisRunnerCommon::pbc() const
+{
+    return impl_->pbc_;
 }
 
 } // namespace gmx

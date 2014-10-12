@@ -143,8 +143,8 @@ int RunnerModule::run()
             set_pbc(ppbc, topology.ePBC(), frame.box);
         }
 
-        selections_.evaluate(&frame, ppbc);
-        module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        selections_.evaluate(&frame, common_.pbc());
+        module_->analyzeFrame(nframes, frame, common_.pbc(), pdata.get());
         module_->finishFrameSerial(nframes);
 
         ++nframes;

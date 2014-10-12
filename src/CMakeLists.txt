@@ -64,3 +64,7 @@ add_subdirectory(programs)
 if (NOT GMX_FAHCORE)
     add_subdirectory(contrib)
 endif()
+
+if (GMX_PYTHON_BINDINGS)
+    add_subdirectory(python)
+endif()
