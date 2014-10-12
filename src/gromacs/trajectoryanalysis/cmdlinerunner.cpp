@@ -81,7 +81,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         void parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
                           SelectionCollection *selections,
-                          int *argc, char *argv[]);
+                          int *argc, char *argv[], bool full = true);
 
         TrajectoryAnalysisModule *module_;
         bool                      bUseDefaultGroups_;
@@ -106,19 +106,22 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         TrajectoryAnalysisSettings *settings,
         TrajectoryAnalysisRunnerCommon *common,
         SelectionCollection *selections,
-        int *argc, char *argv[])
+        int *argc, char *argv[], bool full)
 {
     FileNameOptionManager  fileoptManager;
     SelectionOptionManager seloptManager(selections);
     Options                options(NULL, NULL);
+    IOptionsContainer     &commonOptions = options.addGroup();
+    IOptionsContainer     &moduleOptions = options.addGroup();
 
     options.addManager(&fileoptManager);
     options.addManager(&seloptManager);
-    IOptionsContainer &commonOptions = options.addGroup();
-    IOptionsContainer &moduleOptions = options.addGroup();
 
     module_->initOptions(&moduleOptions, settings);
-    common->initOptions(&commonOptions);
+    if (full)
+    {
+        common->initOptions(&commonOptions);
+    }
     selections->initOptions(&commonOptions);
 
     {
@@ -130,16 +133,20 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         options.finish();
     }
 
-    common->optionsFinished();
+    if (full)
+    {
+        common->optionsFinished();
+    }
     module_->optionsFinished(settings);
 
     common->initIndexGroups(selections, bUseDefaultGroups_);
 
     const bool bInteractive = StandardInputStream::instance().isInteractive();
     seloptManager.parseRequestedFromStdin(bInteractive);
-    common->doneIndexGroups(selections);
 
+    common->doneIndexGroups(selections);
     common->initTopology(selections);
+
     selections->compile();
 }
 
@@ -190,6 +197,21 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     const TopologyInformation &topology = common.topologyInformation();
     module->initAnalysis(settings, topology);
 
+    TrajectoryAnalysisModule::Batch   batch = module->getBatch();
+    std::vector<SelectionCollection*> batchSelections;
+    std::vector<Impl*>                impls;
+    for (size_t i = 0; i < batch.size(); i++)
+    {
+        TrajectoryAnalysisModule *bmodule = batch[i];
+        batchSelections.push_back(new SelectionCollection());
+        impls.push_back(new Impl(bmodule));
+        std::vector<char*> modArgv = module->getArgv(i);
+        int                modArgc = modArgv.size();
+        impls.back()->parseOptions(&settings, &common, batchSelections.back(), &modArgc, modArgv.data(), false);
+
+        batch[i]->initAnalysis(settings, topology);
+    }
+
     // Load first frame.
     common.initFirstFrame();
     module->initAfterFirstFrame(settings, common.frame());
@@ -201,6 +223,18 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
             module->startFrames(dataOptions, selections));
+
+    std::vector<AnalysisDataParallelOptions>         batchOptions;
+    std::vector<TrajectoryAnalysisModuleDataPointer> batchDataPointers;
+    for (size_t i = 0; i < batch.size(); i++)
+    {
+        batch[i]->initAfterFirstFrame(settings, common.frame());
+
+        batchOptions.push_back(AnalysisDataParallelOptions());
+        batchDataPointers.push_back(batch[i]->startFrames(
+                                            batchOptions.back(), *batchSelections[i]));
+    }
+
     do
     {
         common.initFrame();
@@ -210,6 +244,12 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
             set_pbc(ppbc, topology.ePBC(), frame.box);
         }
 
+        for (size_t i = 0; i < batch.size(); i++)
+        {
+            batchSelections[i]->evaluate(&frame, ppbc);
+            batch[i]->analyzeFrame(nframes, frame, ppbc, batchDataPointers[i].get());
+            batch[i]->finishFrameSerial(nframes);
+        }
         selections.evaluate(&frame, ppbc);
         module->analyzeFrame(nframes, frame, ppbc, pdata.get());
         module->finishFrameSerial(nframes);
@@ -217,6 +257,16 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
         ++nframes;
     }
     while (common.readNextFrame());
+    for (size_t i = 0; i < batch.size(); i++)
+    {
+        batch[i]->finishFrames(batchDataPointers[i].get());
+        if (batchDataPointers[i].get() != NULL)
+        {
+            batchDataPointers[i]->finish();
+        }
+        batchDataPointers[i].reset();
+    }
+
     module->finishFrames(pdata.get());
     if (pdata.get() != NULL)
     {
@@ -235,6 +285,16 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     }
 
     // Restore the maximal groups for dynamic selections.
+    for (size_t i = 0; i < batch.size(); i++)
+    {
+        batchSelections[i]->evaluateFinal(nframes);
+        batch[i]->finishAnalysis(nframes);
+        batch[i]->writeOutput();
+
+        delete batchSelections[i];
+        delete impls[i];
+    }
+
     selections.evaluateFinal(nframes);
 
     module->finishAnalysis(nframes);
@@ -292,7 +352,16 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
          */
         RunnerCommandLineModule(const char *name, const char *description,
                                 ModuleFactoryMethod factory)
-            : name_(name), description_(description), factory_(factory)
+            : name_(name), description_(description), hasFunction_(true), factory_(factory), functor_(NULL)
+        {
+        }
+
+        /*! \brief
+         * Overloaded constructor accepting a functor instead of function pointer.
+         */
+        RunnerCommandLineModule(const char *name, const char *description,
+                                ModuleFactoryFunctor *factory)
+            : name_(name), description_(description), hasFunction_(false), factory_(NULL), functor_(factory)
         {
         }
 
@@ -306,7 +375,9 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
     private:
         const char             *name_;
         const char             *description_;
+        bool                    hasFunction_;
         ModuleFactoryMethod     factory_;
+        ModuleFactoryFunctor   *functor_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RunnerCommandLineModule);
 };
@@ -319,7 +390,7 @@ void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::init(
 int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
         int argc, char *argv[])
 {
-    TrajectoryAnalysisModulePointer     module(factory_());
+    TrajectoryAnalysisModulePointer     module(hasFunction_ ? factory_() : (*functor_)());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     return runner.run(argc, argv);
 }
@@ -327,7 +398,7 @@ int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
 void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHelp(
         const CommandLineHelpContext &context) const
 {
-    TrajectoryAnalysisModulePointer     module(factory_());
+    TrajectoryAnalysisModulePointer     module(hasFunction_ ? factory_() : (*functor_)());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     runner.writeHelp(context);
 }
@@ -336,6 +407,15 @@ void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHe
 int
 TrajectoryAnalysisCommandLineRunner::runAsMain(
         int argc, char *argv[], ModuleFactoryMethod factory)
+{
+    Impl::RunnerCommandLineModule module(NULL, NULL, factory);
+    return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
+}
+
+// static
+int
+TrajectoryAnalysisCommandLineRunner::runAsMain(
+        int argc, char *argv[], ModuleFactoryFunctor *factory)
 {
     Impl::RunnerCommandLineModule module(NULL, NULL, factory);
     return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);

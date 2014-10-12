@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,46 +32,43 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-######################################
-# Output compiler and CFLAGS used
-######################################
-include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-if(GMX_GPU AND NOT GMX_USE_OPENCL)
-    get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
-endif()
+from gromacs import TrajectoryAnalysis
+from runner.pipeline import GromacsPipeline
+from runner.pipeline import runPipeline
 
-configure_file(config.h.cmakein config.h)
-configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
-configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
+class Test(TrajectoryAnalysis.TrajectoryAnalysisModule):
 
-if (BUILD_TESTING)
-    if(NOT GMX_DEVELOPER_BUILD)
-        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
-    endif()
-    if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(external/gmock-1.7.0)
-    endif()
-    include(testutils/TestMacros.cmake)
-    if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(testutils)
-    else()
-        add_custom_target(unittests-notice
-            ${CMAKE_COMMAND} -E echo "NOTE: Unit tests have not been run. You need to set GMX_BUILD_UNITTESTS=ON if you want to build and run them."
-            DEPENDS run-ctest
-            COMMENT "Unit tests disabled" VERBATIM)
-        add_dependencies(check unittests-notice)
-    endif()
-endif()
+    def __init__(self):
+        super(Test, self).__init__("test", "test")
 
-add_subdirectory(gromacs)
-add_subdirectory(programs)
+    def initOptions(self, options, settings):
+        settings.setHelpText(self.description())
 
-if (NOT GMX_FAHCORE)
-    add_subdirectory(contrib)
-endif()
+    def getBatch(self):
+        return self.modules
 
-if (GMX_PYTHON_BINDINGS)
-    add_subdirectory(python)
-endif()
+    def getArgv(self, i):
+        return self.options[i]
+
+    def initAnalysis(self, settings, top):
+        pass
+
+    def analyzeFrame(self, frnr, frame, pbc, data):
+        print("Analyzing frame in Test module")
+
+    def finishAnalysis(self, nframes):
+        pass
+
+    def writeOutput(self):
+        pass
+
+modules = [
+    ("Angle", "-group1 System -oav angles.xvg"),
+    (Test(), ""),
+    (TrajectoryAnalysis.SasaInfo.create(), "-surface DNA"),
+]
+
+pipeline = runPipeline(name="Pipeline", modules=modules, keep_datasets=True)
+dataset = pipeline.modules[0].datasetFromIndex(1)
+for i in range(dataset.frameCount()):
+    print('frame =', i, ', columnCount =', dataset.columnCount(), ', y =', dataset.getDataFrame(i).y(0))

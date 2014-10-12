@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,6 +76,26 @@ class TrajectoryAnalysisCommandLineRunner
          * the ABI more stable.
          */
         typedef TrajectoryAnalysisModulePointer (*ModuleFactoryMethod)();
+
+        /*! \brief
+         * Factory functor class for creating a trajectory analysis module.
+         *
+         * Old compilers that still must be supported do not have std::function,
+         * so we have to implement runAsMain overload accepting a functor instead
+         * of a function pointer.
+         *
+         * This abstract class should be subclassed to be used. The main usage is for
+         * python bindings.
+         */
+        class ModuleFactoryFunctor
+        {
+            public:
+                /*! \brief
+                 * operator() that returns a pointer to valid TrajectoryAnalysisModule
+                 */
+                virtual TrajectoryAnalysisModulePointer operator() () = 0;
+                virtual ~ModuleFactoryFunctor() {};
+        };
 
         /*! \brief
          * Implements a main() method that runs a given module.
@@ -187,6 +207,12 @@ class TrajectoryAnalysisCommandLineRunner
          */
         void writeHelp(const CommandLineHelpContext &context);
 
+        //! Implements the template runAsMain() method.
+        static int runAsMain(int argc, char *argv[],
+                             ModuleFactoryMethod factory);
+        //! Overload of runAsMain accepting functor.
+        static int runAsMain(int argc, char *argv[],
+                             ModuleFactoryFunctor *factory);
     private:
         /*! \brief
          * Creates a trajectory analysis module of a given type.
@@ -199,9 +225,6 @@ class TrajectoryAnalysisCommandLineRunner
             return TrajectoryAnalysisModulePointer(new ModuleType());
         }
 
-        //! Implements the template runAsMain() method.
-        static int runAsMain(int argc, char *argv[],
-                             ModuleFactoryMethod factory);
 
         class Impl;
 

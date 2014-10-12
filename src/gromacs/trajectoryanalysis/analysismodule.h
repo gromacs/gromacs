@@ -388,6 +388,11 @@ class TrajectoryAnalysisModule
          */
         virtual void writeOutput() = 0;
 
+        typedef std::vector<TrajectoryAnalysisModule*> Batch;
+        virtual const Batch getBatch() { return Batch(); }
+
+        virtual const std::vector<char*> getArgv(int) { return std::vector<char*>(); }
+
         /*! \brief
          * Returns the name of the analysis module.
          *
