@@ -36,97 +36,17 @@
  */
 #include "gmxpre.h"
 
-#include "ewald-util.h"
+#include "long-range-correction.h"
 
 #include <math.h>
-#include <stdio.h>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
-
-real calc_ewaldcoeff_q(real rc, real dtol)
-{
-    real x = 5, low, high;
-    int  n, i = 0;
-
-
-    do
-    {
-        i++;
-        x *= 2;
-    }
-    while (gmx_erfc(x*rc) > dtol);
-
-    n    = i+60; /* search tolerance is 2^-60 */
-    low  = 0;
-    high = x;
-    for (i = 0; i < n; i++)
-    {
-        x = (low+high)/2;
-        if (gmx_erfc(x*rc) > dtol)
-        {
-            low = x;
-        }
-        else
-        {
-            high = x;
-        }
-    }
-    return x;
-}
-
-static real ewald_function_lj(real x, real rc)
-{
-    real xrc, xrc2, xrc4, factor;
-    xrc  = x*rc;
-    xrc2 = xrc*xrc;
-    xrc4 = xrc2*xrc2;
-#ifdef GMX_DOUBLE
-    factor = exp(-xrc2)*(1 + xrc2 + xrc4/2.0);
-#else
-    factor = expf(-xrc2)*(1 + xrc2 + xrc4/2.0);
-#endif
-
-    return factor;
-}
-
-real calc_ewaldcoeff_lj(real rc, real dtol)
-{
-    real x = 5, low, high;
-    int  n, i = 0;
-
-    do
-    {
-        i++;
-        x *= 2.0;
-    }
-    while (ewald_function_lj(x, rc) > dtol);
-
-    n    = i + 60; /* search tolerance is 2^-60 */
-    low  = 0;
-    high = x;
-    for (i = 0; i < n; ++i)
-    {
-        x = (low + high) / 2.0;
-        if (ewald_function_lj(x, rc) > dtol)
-        {
-            low = x;
-        }
-        else
-        {
-            high = x;
-        }
-    }
-    return x;
-}
 
 void ewald_LRcorrection(int start, int end,
                         t_commrec *cr, int thread, t_forcerec *fr,
@@ -620,46 +540,4 @@ void ewald_LRcorrection(int start, int end,
             }
         }
     }
-}
-
-real ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda,
-                             matrix box,
-                             real *dvdlambda, tensor vir)
-
-{
-    real vol, fac, qs2A, qs2B, vc, enercorr;
-    int  d;
-
-    if (MASTER(cr))
-    {
-        /* Apply charge correction */
-        vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-
-        fac = M_PI*ONE_4PI_EPS0/(fr->epsilon_r*2.0*vol*vol*sqr(fr->ewaldcoeff_q));
-
-        qs2A = fr->qsum[0]*fr->qsum[0];
-        qs2B = fr->qsum[1]*fr->qsum[1];
-
-        vc = (qs2A*(1 - lambda) + qs2B*lambda)*fac;
-
-        enercorr = -vol*vc;
-
-        *dvdlambda += -vol*(qs2B - qs2A)*fac;
-
-        for (d = 0; d < DIM; d++)
-        {
-            vir[d][d] += vc;
-        }
-
-        if (debug)
-        {
-            fprintf(debug, "Total charge correction: Vcharge=%g\n", enercorr);
-        }
-    }
-    else
-    {
-        enercorr = 0;
-    }
-
-    return enercorr;
 }

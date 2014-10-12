@@ -45,7 +45,8 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/ewald-util.h"
+#include "gromacs/ewald/ewald.h"
+#include "gromacs/ewald/long-range-correction.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
