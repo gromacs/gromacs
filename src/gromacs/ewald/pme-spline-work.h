@@ -35,11 +35,7 @@
 #ifndef GMX_EWALD_PME_SPLINE_WORK_H
 #define GMX_EWALD_PME_SPLINE_WORK_H
 
-#include "gromacs/ewald/pme-simd.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "pme-simd.h"
 
 struct pme_spline_work
 {
@@ -52,9 +48,5 @@ struct pme_spline_work
 };
 
 struct pme_spline_work *make_pme_spline_work(int order);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

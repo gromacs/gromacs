@@ -44,11 +44,10 @@
 
 #include <algorithm>
 
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme-simd.h"
-#include "gromacs/ewald/pme-spline-work.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
 
 /* TODO consider split of pme-spline from this file */
 
@@ -367,7 +366,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "gromacs/ewald/pme-simd4.h"
+#include "pme-simd4.h"
 #else
                     DO_BSPLINE(4);
 #endif
@@ -376,7 +375,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
 #ifdef PME_SIMD4_SPREAD_GATHER
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "gromacs/ewald/pme-simd4.h"
+#include "pme-simd4.h"
 #else
                     DO_BSPLINE(5);
 #endif
