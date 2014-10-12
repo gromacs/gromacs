@@ -45,6 +45,7 @@
 #include "gromacs/utility/classhelpers.h"
 
 struct t_trxframe;
+struct t_pbc;
 
 namespace gmx
 {
@@ -124,6 +125,8 @@ class TrajectoryAnalysisRunnerCommon
         const TopologyInformation &topologyInformation() const;
         //! Returns the currently loaded frame.
         t_trxframe                &frame() const;
+        //! Returns PBC structure for the currently loaded frame
+        t_pbc                    *pbc() const;
 
     private:
         class Impl;
