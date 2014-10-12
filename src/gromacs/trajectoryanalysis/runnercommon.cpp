@@ -293,16 +293,9 @@ TrajectoryAnalysisRunnerCommon::doneIndexGroups(SelectionCollection *selections)
     }
 }
 
-
 void
 TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
 {
-    // Return immediately if the topology has already been loaded.
-    if (impl_->topInfo_.hasTopology())
-    {
-        return;
-    }
-
     const TrajectoryAnalysisSettings &settings = impl_->settings_;
     const bool bRequireTop
         = settings.hasFlag(TrajectoryAnalysisSettings::efRequireTop)
@@ -313,7 +306,7 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
     }
 
     // Load the topology if requested.
-    if (!impl_->topfile_.empty())
+    if (!impl_->topfile_.empty() && !impl_->topInfo_.hasTopology())
     {
         char  title[STRLEN];
 

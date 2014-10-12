@@ -172,6 +172,9 @@ class ICommandLineOptionsModule
         static int
         runAsMain(int argc, char *argv[], const char *name,
                   const char *description, FactoryMethod factory);
+
+        static int
+        runAsMain(int argc, char *argv[], ICommandLineOptionsModule *module);
         /*! \brief
          * Registers a module of a certain type to this manager.
          *

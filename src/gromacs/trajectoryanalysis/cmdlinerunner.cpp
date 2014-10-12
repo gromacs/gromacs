@@ -46,7 +46,7 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
-#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/fileio/trx.h"
@@ -73,74 +73,30 @@ namespace gmx
 class TrajectoryAnalysisCommandLineRunner::Impl
 {
     public:
-        class RunnerCommandLineModule;
-
-        Impl(TrajectoryAnalysisModule *module);
+        Impl(TrajectoryAnalysisModulePointer module);
         ~Impl();
 
-        void parseOptions(TrajectoryAnalysisSettings *settings,
-                          TrajectoryAnalysisRunnerCommon *common,
-                          SelectionCollection *selections,
-                          int *argc, char *argv[]);
-
-        TrajectoryAnalysisModule *module_;
-        bool                      bUseDefaultGroups_;
-        int                       debugLevel_;
+        TrajectoryAnalysisModulePointer module_;
+        bool                            bUseDefaultGroups_;
+        int                             debugLevel_;
+        SelectionCollection             selections_;
+        SelectionOptionManager          selOptManager_;
+        TrajectoryAnalysisSettings      settings_;
+        TrajectoryAnalysisRunnerCommon  common_;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
-        TrajectoryAnalysisModule *module)
-    : module_(module), bUseDefaultGroups_(true), debugLevel_(0)
+        TrajectoryAnalysisModulePointer module)
+    : module_(module), bUseDefaultGroups_(true), debugLevel_(0),
+      selOptManager_(&selections_), common_(&settings_)
 {
 }
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 {
-}
-
-
-void
-TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
-        TrajectoryAnalysisSettings *settings,
-        TrajectoryAnalysisRunnerCommon *common,
-        SelectionCollection *selections,
-        int *argc, char *argv[])
-{
-    FileNameOptionManager  fileoptManager;
-    SelectionOptionManager seloptManager(selections);
-    Options                options(NULL, NULL);
-
-    options.addManager(&fileoptManager);
-    options.addManager(&seloptManager);
-    IOptionsContainer &commonOptions = options.addGroup();
-    IOptionsContainer &moduleOptions = options.addGroup();
-
-    module_->initOptions(&moduleOptions, settings);
-    common->initOptions(&commonOptions);
-    selections->initOptions(&commonOptions);
-
-    {
-        CommandLineParser  parser(&options);
-        // TODO: Print the help if user provides an invalid option?
-        // Or just add a message advising the user to invoke the help?
-        parser.parse(argc, argv);
-        common->scaleTimeOptions(&options);
-        options.finish();
-    }
-
-    common->optionsFinished();
-    module_->optionsFinished(settings);
-
-    common->initIndexGroups(selections, bUseDefaultGroups_);
-
-    const bool bInteractive = StandardInputStream::instance().isInteractive();
-    seloptManager.parseRequestedFromStdin(bInteractive);
-    common->doneIndexGroups(selections);
-
-    common->initTopology(selections);
-    selections->compile();
+    module_.reset();
 }
 
 
@@ -149,11 +105,16 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
  */
 
 TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
-        TrajectoryAnalysisModule *module)
-    : impl_(new Impl(module))
+        TrajectoryAnalysisCommandLineRunner::ModuleFactoryMethod factory)
+    : impl_(new Impl(factory()))
 {
 }
 
+TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
+        TrajectoryAnalysisCommandLineRunner::ModuleFactoryFunctor *functor)
+    : impl_(new Impl((*functor)()))
+{
+}
 
 TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 {
@@ -173,61 +134,91 @@ TrajectoryAnalysisCommandLineRunner::setSelectionDebugLevel(int debuglevel)
     impl_->debugLevel_ = debuglevel;
 }
 
+void TrajectoryAnalysisCommandLineRunner::init(CommandLineModuleSettings * /*settings*/)
+{
+}
+
+void
+TrajectoryAnalysisCommandLineRunner::initOptions(IOptionsContainer                 *options,
+                                                 ICommandLineOptionsModuleSettings *settings)
+{
+    impl_->selections_.setDebugLevel(impl_->debugLevel_);
+
+    options->addManager(&impl_->selOptManager_);
+
+    IOptionsContainer &commonOptions = options->addGroup();
+    IOptionsContainer &moduleOptions = options->addGroup();
+
+    impl_->module_->initOptions(&moduleOptions, &impl_->settings_);
+    impl_->common_.initOptions(&commonOptions);
+    impl_->selections_.initOptions(&commonOptions);
+
+    const char *help[] = { impl_->settings_.helpText().data() };
+    settings->setHelpText(help);
+}
+
+void
+TrajectoryAnalysisCommandLineRunner::optionsFinished()
+{
+    // TODO: scaleTimeOptions? (maybe pass options here too, with default arg)
+    impl_->common_.optionsFinished();
+    impl_->module_->optionsFinished(&impl_->settings_);
+
+    impl_->common_.initIndexGroups(&impl_->selections_, impl_->bUseDefaultGroups_);
+
+    const bool bInteractive = StandardInputStream::instance().isInteractive();
+    impl_->selOptManager_.parseRequestedFromStdin(bInteractive);
+    impl_->common_.doneIndexGroups(&impl_->selections_);
+
+    impl_->common_.initTopology(&impl_->selections_);
+    impl_->selections_.compile();
+}
+
 
 int
-TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
+TrajectoryAnalysisCommandLineRunner::run()
 {
-    TrajectoryAnalysisModule *module = impl_->module_;
-
-    SelectionCollection       selections;
-    selections.setDebugLevel(impl_->debugLevel_);
-
-    TrajectoryAnalysisSettings      settings;
-    TrajectoryAnalysisRunnerCommon  common(&settings);
-
-    impl_->parseOptions(&settings, &common, &selections, &argc, argv);
-
-    const TopologyInformation &topology = common.topologyInformation();
-    module->initAnalysis(settings, topology);
+    const TopologyInformation &topology = impl_->common_.topologyInformation();
+    impl_->module_->initAnalysis(impl_->settings_, topology);
 
     // Load first frame.
-    common.initFirstFrame();
-    module->initAfterFirstFrame(settings, common.frame());
+    impl_->common_.initFirstFrame();
+    impl_->module_->initAfterFirstFrame(impl_->settings_, impl_->common_.frame());
 
     t_pbc  pbc;
-    t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
+    t_pbc *ppbc = impl_->settings_.hasPBC() ? &pbc : NULL;
 
     int    nframes = 0;
     AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
-            module->startFrames(dataOptions, selections));
+            impl_->module_->startFrames(dataOptions, impl_->selections_));
     do
     {
-        common.initFrame();
-        t_trxframe &frame = common.frame();
+        impl_->common_.initFrame();
+        t_trxframe &frame = impl_->common_.frame();
         if (ppbc != NULL)
         {
             set_pbc(ppbc, topology.ePBC(), frame.box);
         }
 
-        selections.evaluate(&frame, ppbc);
-        module->analyzeFrame(nframes, frame, ppbc, pdata.get());
-        module->finishFrameSerial(nframes);
+        impl_->selections_.evaluate(&frame, ppbc);
+        impl_->module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        impl_->module_->finishFrameSerial(nframes);
 
         ++nframes;
     }
-    while (common.readNextFrame());
-    module->finishFrames(pdata.get());
+    while (impl_->common_.readNextFrame());
+    impl_->module_->finishFrames(pdata.get());
     if (pdata.get() != NULL)
     {
         pdata->finish();
     }
     pdata.reset();
 
-    if (common.hasTrajectory())
+    if (impl_->common_.hasTrajectory())
     {
         fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
-                nframes, common.frame().time);
+                nframes, impl_->common_.frame().time);
     }
     else
     {
@@ -235,101 +226,11 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     }
 
     // Restore the maximal groups for dynamic selections.
-    selections.evaluateFinal(nframes);
+    impl_->selections_.evaluateFinal(nframes);
 
-    module->finishAnalysis(nframes);
-    module->writeOutput();
-
+    impl_->module_->finishAnalysis(nframes);
+    impl_->module_->writeOutput();
     return 0;
-}
-
-
-void
-TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &context)
-{
-    // TODO: This method duplicates some code from run().
-    // See how to best refactor it to share the common code.
-    SelectionCollection             selections;
-    TrajectoryAnalysisSettings      settings;
-    TrajectoryAnalysisRunnerCommon  common(&settings);
-
-    SelectionOptionManager          seloptManager(&selections);
-    Options                         options(NULL, NULL);
-
-    options.addManager(&seloptManager);
-    IOptionsContainer &commonOptions = options.addGroup();
-    IOptionsContainer &moduleOptions = options.addGroup();
-
-    impl_->module_->initOptions(&moduleOptions, &settings);
-    common.initOptions(&commonOptions);
-    selections.initOptions(&commonOptions);
-
-    CommandLineHelpWriter(options)
-        .setHelpText(settings.helpText())
-        .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-        .writeHelp(context);
-}
-
-
-/*! \internal \brief
- * Command line module for a trajectory analysis module.
- *
- * \ingroup module_trajectoryanalysis
- */
-class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
-    : public ICommandLineModule
-{
-    public:
-        /*! \brief
-         * Constructs a module.
-         *
-         * \param[in] name         Name for the module.
-         * \param[in] description  One-line description for the module.
-         * \param[in] factory      Factory method to create the analysis module.
-         *
-         * Does not throw.  This is important for correct implementation of
-         * runAsMain().
-         */
-        RunnerCommandLineModule(const char *name, const char *description,
-                                ModuleFactoryMethod factory)
-            : name_(name), description_(description), factory_(factory)
-        {
-        }
-
-        virtual const char *name() const { return name_; }
-        virtual const char *shortDescription() const { return description_; };
-
-        virtual void init(CommandLineModuleSettings *settings);
-        virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(const CommandLineHelpContext &context) const;
-
-    private:
-        const char             *name_;
-        const char             *description_;
-        ModuleFactoryMethod     factory_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(RunnerCommandLineModule);
-};
-
-void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::init(
-        CommandLineModuleSettings * /*settings*/)
-{
-}
-
-int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
-        int argc, char *argv[])
-{
-    TrajectoryAnalysisModulePointer     module(factory_());
-    TrajectoryAnalysisCommandLineRunner runner(module.get());
-    return runner.run(argc, argv);
-}
-
-void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHelp(
-        const CommandLineHelpContext &context) const
-{
-    TrajectoryAnalysisModulePointer     module(factory_());
-    TrajectoryAnalysisCommandLineRunner runner(module.get());
-    runner.writeHelp(context);
 }
 
 // static
@@ -337,8 +238,17 @@ int
 TrajectoryAnalysisCommandLineRunner::runAsMain(
         int argc, char *argv[], ModuleFactoryMethod factory)
 {
-    Impl::RunnerCommandLineModule module(NULL, NULL, factory);
-    return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
+    TrajectoryAnalysisCommandLineRunner *module = new TrajectoryAnalysisCommandLineRunner(factory);
+    return ICommandLineOptionsModule::runAsMain(argc, argv, module);
+}
+
+// static
+int
+TrajectoryAnalysisCommandLineRunner::runAsMain(
+        int argc, char *argv[], ModuleFactoryFunctor *factory)
+{
+    TrajectoryAnalysisCommandLineRunner *module = new TrajectoryAnalysisCommandLineRunner(factory);
+    return ICommandLineOptionsModule::runAsMain(argc, argv, module);
 }
 
 // static
@@ -347,9 +257,8 @@ TrajectoryAnalysisCommandLineRunner::registerModule(
         CommandLineModuleManager *manager, const char *name,
         const char *description, ModuleFactoryMethod factory)
 {
-    CommandLineModulePointer module(
-            new Impl::RunnerCommandLineModule(name, description, factory));
-    manager->addModule(move(module));
+    ICommandLineOptionsModule::registerModule(manager, name, description,
+                                              new TrajectoryAnalysisCommandLineRunner(factory));
 }
 
 } // namespace gmx

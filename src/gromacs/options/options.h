@@ -63,26 +63,6 @@ namespace internal
 class OptionsImpl;
 }
 
-/*! \brief
- * Base class for option managers.
- *
- * This class is used as a marker for all classes that are used with
- * Options::addManager().  It doesn't provide any methods, but only supports
- * transporting these classes through the Options collection into the
- * individual option implementation classes.
- *
- * The virtual destructor is present to make this class polymorphic, such that
- * `dynamic_cast` can be used when retrieving a manager of a certain type for
- * the individual options.
- *
- * \inlibraryapi
- * \ingroup module_options
- */
-class IOptionManager
-{
-    protected:
-        virtual ~IOptionManager();
-};
 
 /*! \brief
  * Collection of options.
@@ -115,27 +95,6 @@ class Options : public IOptionsContainer
         //! Returns the short name of the option collection.
         const std::string &name() const;
 
-        /*! \brief
-         * Adds an option manager.
-         *
-         * \param    manager Manager to add.
-         * \throws   std::bad_alloc if out of memory.
-         *
-         * Option managers are used by some types of options that require
-         * interaction between different option instances (e.g., selection
-         * options), or need to support globally set properties (e.g., a global
-         * default file prefix).  Option objects can retrieve the pointer to
-         * their manager when they are created, and the caller can alter the
-         * behavior of the options through the manager.
-         * See the individual managers for details.
-         *
-         * Caller is responsible for memory management of \p manager.
-         * The Options object (and its contained options) only stores a
-         * reference to the object.
-         *
-         * This method cannot be called after adding options or subsections.
-         */
-        void addManager(IOptionManager *manager);
 
         /*! \brief
          * Adds an option collection as a subsection of this collection.
@@ -158,22 +117,11 @@ class Options : public IOptionsContainer
          */
         void addSubSection(Options *section);
 
-        /*! \brief
-         * Creates a subgroup of options within the current options.
-         *
-         * To add options to the group, use the returned interface.
-         *
-         * Currently, this is only used to influence the order of options:
-         * all options in a group appear before options in a group added after
-         * it, no matter in which order the options are added to the groups.
-         * In the future, the groups could also be used to influence the help
-         * output.
-         */
-        IOptionsContainer &addGroup();
-
         // From IOptionsContainer
         virtual OptionInfo *addOption(const AbstractOption &settings);
         using IOptionsContainer::addOption;
+        void addManager(IOptionManager *manager);
+        IOptionsContainer &addGroup();
 
         /*! \brief
          * Notifies the collection that all option values are assigned.

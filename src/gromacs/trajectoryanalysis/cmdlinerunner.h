@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #ifndef GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -64,7 +65,7 @@ class CommandLineHelpContext;
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
  */
-class TrajectoryAnalysisCommandLineRunner
+class TrajectoryAnalysisCommandLineRunner : public ICommandLineOptionsModule
 {
     public:
         /*! \brief
@@ -76,6 +77,26 @@ class TrajectoryAnalysisCommandLineRunner
          * the ABI more stable.
          */
         typedef TrajectoryAnalysisModulePointer (*ModuleFactoryMethod)();
+
+        /*! \brief
+         * Factory functor class for creating a trajectory analysis module.
+         *
+         * Old compilers that still must be supported do not have std::function,
+         * so we have to implement runAsMain overload accepting a functor instead
+         * of a function pointer.
+         *
+         * This abstract class should be subclassed to be used. The main usage is for
+         * python bindings.
+         */
+        class ModuleFactoryFunctor
+        {
+            public:
+                /*! \brief
+                 * operator() that returns a pointer to valid TrajectoryAnalysisModule
+                 */
+                virtual TrajectoryAnalysisModulePointer operator() () = 0;
+                virtual ~ModuleFactoryFunctor() {};
+        };
 
         /*! \brief
          * Implements a main() method that runs a given module.
@@ -138,15 +159,19 @@ class TrajectoryAnalysisCommandLineRunner
                                    ModuleFactoryMethod factory);
 
         /*! \brief
-         * Create a new runner with the provided module.
+         * Constructs a module.
          *
-         * \param  module  Analysis module to run using the runner.
-         * \throws std::bad_alloc if out of memory.
+         * \param[in] factory      Factory method to create the analysis module.
          *
-         * The caller should ensure that the provided module is not destroyed
-         * while the runner exists.
+         * Does not throw.  This is important for correct implementation of
+         * runAsMain().
          */
-        TrajectoryAnalysisCommandLineRunner(TrajectoryAnalysisModule *module);
+        TrajectoryAnalysisCommandLineRunner(ModuleFactoryMethod factory);
+
+        /*! \brief
+         * Overloaded constructor accepting a functor instead of function pointer.
+         */
+        TrajectoryAnalysisCommandLineRunner(ModuleFactoryFunctor *factory);
         ~TrajectoryAnalysisCommandLineRunner();
 
         /*! \brief
@@ -171,22 +196,20 @@ class TrajectoryAnalysisCommandLineRunner
          * \see SelectionCollection::setDebugLevel()
          */
         void setSelectionDebugLevel(int debuglevel);
-        /*! \brief
-         * Parses options from the given command line and runs the analysis.
-         *
-         * \throws  multiple  Exceptions are used to indicate errors.
-         * \returns Zero on success.
-         */
-        int run(int argc, char *argv[]);
-        /*! \brief
-         * Prints help for the module, including common options from the runner.
-         *
-         * \param[in] context  Context object for writing the help.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         */
-        void writeHelp(const CommandLineHelpContext &context);
 
+        // From ICommandLineOptionsModule
+        virtual void init(CommandLineModuleSettings *settings);
+        void initOptions(IOptionsContainer                 *options,
+                         ICommandLineOptionsModuleSettings *settings);
+        void optionsFinished();
+        int run();
+
+        //! Implements the template runAsMain() method.
+        static int runAsMain(int argc, char *argv[],
+                             ModuleFactoryMethod factory);
+        //! Overload of runAsMain accepting functor.
+        static int runAsMain(int argc, char *argv[],
+                             ModuleFactoryFunctor *factory);
     private:
         /*! \brief
          * Creates a trajectory analysis module of a given type.
@@ -199,9 +222,6 @@ class TrajectoryAnalysisCommandLineRunner
             return TrajectoryAnalysisModulePointer(new ModuleType());
         }
 
-        //! Implements the template runAsMain() method.
-        static int runAsMain(int argc, char *argv[],
-                             ModuleFactoryMethod factory);
 
         class Impl;
 

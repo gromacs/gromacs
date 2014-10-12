@@ -203,6 +203,15 @@ int ICommandLineOptionsModule::runAsMain(
 }
 
 // static
+int ICommandLineOptionsModule::runAsMain(
+        int argc, char *argv[],
+        ICommandLineOptionsModule *module)
+{
+    CommandLineOptionsModule cmdmodule("", "", module);
+    return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &cmdmodule);
+}
+
+// static
 void ICommandLineOptionsModule::registerModule(
         CommandLineModuleManager *manager, const char *name,
         const char *description, FactoryMethod factory)

@@ -88,11 +88,14 @@ class OptionsImpl
                 //! Creates a group within the given Options.
                 explicit Group(OptionsImpl *parent) : parent_(parent) {}
 
-                //! Adds an option subgroup.
-                IOptionsContainer &addGroup();
                 // From IOptionsContainer
+                virtual IOptionsContainer &addGroup();
                 virtual OptionInfo *addOption(const AbstractOption &settings);
 
+                virtual void addManager(IOptionManager * /*manager*/)
+                {
+                    // TODO: raise error?
+                }
                 //! Containing options object.
                 OptionsImpl  *parent_;
                 /*! \brief
