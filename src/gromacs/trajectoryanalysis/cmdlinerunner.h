@@ -168,6 +168,9 @@ class TrajectoryAnalysisCommandLineRunner : public ICommandLineOptionsModule
         virtual void optionsFinished();
         virtual int run();
 
+        //! Implements the template runAsMain() method.
+        static int runAsMain(int argc, char *argv[],
+                             ModuleFactoryMethod factory);
     private:
         /*! \brief
          * Creates a trajectory analysis module of a given type.
@@ -180,9 +183,6 @@ class TrajectoryAnalysisCommandLineRunner : public ICommandLineOptionsModule
             return TrajectoryAnalysisModulePointer(new ModuleType());
         }
 
-        //! Implements the template runAsMain() method.
-        static int runAsMain(int argc, char *argv[],
-                             ModuleFactoryMethod factory);
 
         class Impl;
 
