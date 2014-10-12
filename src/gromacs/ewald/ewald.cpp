@@ -34,6 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function definitions necessary for
+ * computing energies and forces for the plain-Ewald long-ranged part,
+ * and the correction for overall system charge for all Ewald-family
+ * methods.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_ewald
+ */
 #include "gmxpre.h"
 
 #include "ewald.h"
@@ -41,7 +52,10 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/macros.h"
+#include <cstdlib>
+
+#include <algorithm>
+
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/gmxcomplex.h"
@@ -58,8 +72,6 @@ struct gmx_ewald_tab_t
 
 void init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir, FILE *fp)
 {
-    int n;
-
     snew(*et, 1);
     if (fp)
     {
@@ -69,7 +81,7 @@ void init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir, FILE *fp)
     (*et)->nx       = ir->nkx+1;
     (*et)->ny       = ir->nky+1;
     (*et)->nz       = ir->nkz+1;
-    (*et)->kmax     = max((*et)->nx, max((*et)->ny, (*et)->nz));
+    (*et)->kmax     = std::max((*et)->nx, std::max((*et)->ny, (*et)->nz));
     (*et)->eir      = NULL;
     (*et)->tab_xy   = NULL;
     (*et)->tab_qxyz = NULL;

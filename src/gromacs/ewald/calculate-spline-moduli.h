@@ -37,11 +37,7 @@
 #ifndef GMX_EWALD_CALCULATE_SPLINE_MODULI_H
 #define GMX_EWALD_CALCULATE_SPLINE_MODULI_H
 
-#include "gromacs/ewald/pme-internal.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "pme-internal.h"
 
 /* Calulate plain SPME B-spline interpolation */
 void make_bspline_moduli(splinevec bsp_mod,
@@ -50,9 +46,5 @@ void make_bspline_moduli(splinevec bsp_mod,
 /* Calculate the P3M B-spline moduli */
 void make_p3m_bspline_moduli(splinevec bsp_mod,
                              int nx, int ny, int nz, int order);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

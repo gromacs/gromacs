@@ -41,10 +41,9 @@
 
 #include "config.h"
 
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme-simd.h"
+#include <cstdlib>
+
 #include "gromacs/ewald/pme.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/smalloc.h"
@@ -54,6 +53,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #endif
+
+#include "pme-simd.h"
 
 /* GMX_CACHE_SEP should be a multiple of the SIMD and SIMD4 register size
  * to preserve alignment.
@@ -234,7 +235,7 @@ int copy_pmegrid_to_fftgrid(struct gmx_pme_t *pme, real *pmegrid, real *fftgrid,
 {
     ivec    local_fft_ndata, local_fft_offset, local_fft_size;
     ivec    local_pme_size;
-    int     i, ix, iy, iz;
+    int     ix, iy, iz;
     int     pmeidx, fftidx;
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
@@ -371,13 +372,12 @@ int copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pm
 
 void wrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
 {
-    int     nx, ny, nz, pnx, pny, pnz, ny_x, overlap, ix, iy, iz;
+    int     nx, ny, nz, pny, pnz, ny_x, overlap, ix, iy, iz;
 
     nx = pme->nkx;
     ny = pme->nky;
     nz = pme->nkz;
 
-    pnx = pme->pmegrid_nx;
     pny = pme->pmegrid_ny;
     pnz = pme->pmegrid_nz;
 
@@ -432,13 +432,12 @@ void wrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
 
 void unwrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
 {
-    int     nx, ny, nz, pnx, pny, pnz, ny_x, overlap, ix;
+    int     nx, ny, nz, pny, pnz, ny_x, overlap, ix;
 
     nx = pme->nkx;
     ny = pme->nky;
     nz = pme->nkz;
 
-    pnx = pme->pmegrid_nx;
     pny = pme->pmegrid_ny;
     pnz = pme->pmegrid_nz;
 
@@ -625,7 +624,7 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread,
     env = getenv("GMX_PME_THREAD_DIVISION");
     if (env != NULL)
     {
-        sscanf(env, "%d %d %d", &nsub[XX], &nsub[YY], &nsub[ZZ]);
+        sscanf(env, "%20d %20d %20d", &nsub[XX], &nsub[YY], &nsub[ZZ]);
     }
 
     if (nsub[XX]*nsub[YY]*nsub[ZZ] != nthread)
@@ -642,7 +641,7 @@ void pmegrids_init(pmegrids_t *grids,
                    int overlap_x,
                    int overlap_y)
 {
-    ivec n, n_base, g0, g1;
+    ivec n, n_base;
     int  t, x, y, z, d, i, tfac;
     int  max_comm_lines = -1;
 
