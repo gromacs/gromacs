@@ -34,6 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function definitions necessary for
+ * computing energies and forces for the PME long-ranged part (Coulomb
+ * and LJ).
+ *
+ * \author Erik Lindahl <erik@kth.se>
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_ewald
+ */
 /* IMPORTANT FOR DEVELOPERS:
  *
  * Triclinic pme stuff isn't entirely trivial, and we've experienced
@@ -67,19 +77,13 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "gromacs/ewald/calculate-spline-moduli.h"
-#include "gromacs/ewald/pme-gather.h"
-#include "gromacs/ewald/pme-grid.h"
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme-redistribute.h"
-#include "gromacs/ewald/pme-simd.h"
-#include "gromacs/ewald/pme-solve.h"
-#include "gromacs/ewald/pme-spline-work.h"
-#include "gromacs/ewald/pme-spread.h"
-#include "gromacs/fft/fft.h"
+#include <algorithm>
+
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/enums.h"
@@ -99,6 +103,16 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "calculate-spline-moduli.h"
+#include "pme-gather.h"
+#include "pme-grid.h"
+#include "pme-internal.h"
+#include "pme-redistribute.h"
+#include "pme-simd.h"
+#include "pme-solve.h"
+#include "pme-spline-work.h"
+#include "pme-spread.h"
 
 #ifdef GMX_DOUBLE
 #define mpi_type MPI_DOUBLE
@@ -140,7 +154,7 @@ static void setup_coordinate_communication(pme_atomcomm_t *atc)
 
 int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
 {
-    int thread, i;
+    int i;
 
     if (NULL != log)
     {
@@ -196,7 +210,7 @@ static double pme_load_imbalance(struct gmx_pme_t *pme)
 static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
                           int dimind, gmx_bool bSpread)
 {
-    int nk, k, s, thread;
+    int thread;
 
     atc->dimind    = dimind;
     atc->nslab     = 1;
@@ -263,9 +277,7 @@ init_overlap_comm(pme_overlap_t *  ol,
                   int              ndata,
                   int              commplainsize)
 {
-    int              lbnd, rbnd, maxlr, b, i;
-    int              exten;
-    int              nn, nk;
+    int              b, i;
     pme_grid_comm_t *pgc;
     gmx_bool         bCont;
     int              fft_start, fft_end, send_index1, recv_index1;
@@ -353,9 +365,9 @@ init_overlap_comm(pme_overlap_t *  ol,
             fft_end   += ndata;
         }
         send_index1       = ol->s2g1[nodeid];
-        send_index1       = min(send_index1, fft_end);
+        send_index1       = std::min(send_index1, fft_end);
         pgc->send_index0  = fft_start;
-        pgc->send_nindex  = max(0, send_index1 - pgc->send_index0);
+        pgc->send_nindex  = std::max(0, send_index1 - pgc->send_index0);
         ol->send_size    += pgc->send_nindex;
 
         /* We always start receiving to the first index of our slab */
@@ -366,9 +378,9 @@ init_overlap_comm(pme_overlap_t *  ol,
         {
             recv_index1 -= ndata;
         }
-        recv_index1      = min(recv_index1, fft_end);
+        recv_index1      = std::min(recv_index1, fft_end);
         pgc->recv_index0 = fft_start;
-        pgc->recv_nindex = max(0, recv_index1 - pgc->recv_index0);
+        pgc->recv_nindex = std::max(0, recv_index1 - pgc->recv_index0);
     }
 
 #ifdef GMX_MPI
@@ -933,14 +945,12 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                real *dvdlambda_q, real *dvdlambda_lj,
                int flags)
 {
-    int                  d, i, j, k, ntot, npme, grid_index, max_grid_index;
-    int                  nx, ny, nz;
-    int                  n_d, local_ny;
+    int                  d, i, j, npme, grid_index, max_grid_index;
+    int                  n_d;
     pme_atomcomm_t      *atc        = NULL;
     pmegrids_t          *pmegrid    = NULL;
     real                *grid       = NULL;
-    real                *ptr;
-    rvec                *x_d, *f_d;
+    rvec                *f_d;
     real                *coefficient = NULL;
     real                 energy_AB[4];
     matrix               vir_AB[4];
@@ -1178,8 +1188,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                     if (pme->nodeid == 0)
                     {
-                        ntot  = pme->nkx*pme->nky*pme->nkz;
-                        npme  = ntot*log((real)ntot)/log(2.0);
+                        real ntot = pme->nkx*pme->nky*pme->nkz;
+                        npme  = static_cast<int>(ntot*log(ntot)/log(2.0));
                         inc_nrnb(nrnb, eNR_FFT, 2*npme);
                     }
 
@@ -1334,7 +1344,6 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 /* Unpack structure */
                 pmegrid    = &pme->pmegrid[grid_index];
                 fftgrid    = pme->fftgrid[grid_index];
-                cfftgrid   = pme->cfftgrid[grid_index];
                 pfft_setup = pme->pfft_setup[grid_index];
                 calc_next_lb_coeffs(pme, local_sigma);
                 grid = pmegrid->grid.grid;
@@ -1434,7 +1443,6 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     /* Unpack structure */
                     pmegrid    = &pme->pmegrid[grid_index];
                     fftgrid    = pme->fftgrid[grid_index];
-                    cfftgrid   = pme->cfftgrid[grid_index];
                     pfft_setup = pme->pfft_setup[grid_index];
                     grid       = pmegrid->grid.grid;
                     calc_next_lb_coeffs(pme, local_sigma);
@@ -1459,8 +1467,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                             if (pme->nodeid == 0)
                             {
-                                ntot  = pme->nkx*pme->nky*pme->nkz;
-                                npme  = ntot*log((real)ntot)/log(2.0);
+                                real ntot = pme->nkx*pme->nky*pme->nkz;
+                                npme  = static_cast<int>(ntot*log(ntot)/log(2.0));
                                 inc_nrnb(nrnb, eNR_FFT, 2*npme);
                             }
                             wallcycle_start(wcycle, ewcPME_SPREADGATHER);

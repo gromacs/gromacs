@@ -34,6 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * computing energies and forces for the PME long-ranged part (Coulomb
+ * and LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_ewald
+ */
 
 /* TODO This file is a temporary holding area for stuff local to the
  * PME code, before it acquires some more normal ewald/file.c and
@@ -55,44 +65,53 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//@{
+//! Grid indices for A state for charge and Lennard-Jones C6
+#define PME_GRID_QA    0
+#define PME_GRID_C6A   2
+//@}
 
-#define PME_GRID_QA    0 /* Gridindex for A-state for Q */
-#define PME_GRID_C6A   2 /* Gridindex for A-state for LJ */
+//@{
+/*! \brief Flags that indicate the number of PME grids in use */
 #define DO_Q           2 /* Electrostatic grids have index q<2 */
 #define DO_Q_AND_LJ    4 /* non-LB LJ grids have index 2 <= q < 4 */
 #define DO_Q_AND_LJ_LB 9 /* With LB rules we need a total of 2+7 grids */
+//@}
 
-/* Pascal triangle coefficients scaled with (1/2)^6 for LJ-PME with LB-rules */
+/* \brief Pascal triangle coefficients scaled with (1/2)^6 for LJ-PME with LB-rules */
 static const real lb_scale_factor[] = {
     1.0/64, 6.0/64, 15.0/64, 20.0/64,
     15.0/64, 6.0/64, 1.0/64
 };
 
-/* Pascal triangle coefficients used in solve_pme_lj_yzx, only need to do 4 calculations due to symmetry */
+/* \brief Pascal triangle coefficients used in solve_pme_lj_yzx, only need to do 4 calculations due to symmetry */
 static const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 };
 
-/* We only define a maximum to be able to use local arrays without allocation.
+/* \brief We only define a maximum to be able to use local arrays without allocation.
  * An order larger than 12 should never be needed, even for test cases.
  * If needed it can be changed here.
  */
 #define PME_ORDER_MAX 12
 
+/* \brief As gmx_pme_init, but takes most settings, except the grid, from pme_src */
 int gmx_pme_reinit(struct gmx_pme_t **pmedata,
                    t_commrec *        cr,
                    struct gmx_pme_t * pme_src,
                    const t_inputrec * ir,
                    ivec               grid_size);
-/* As gmx_pme_init, but takes most settings, except the grid, from pme_src */
 
 /* The following three routines are for PME/PP node splitting in pme_pp.c */
 
-/* Abstract type for PME <-> PP communication */
+/*! \brief Abstract type for PME <-> PP communication */
 typedef struct gmx_pme_pp *gmx_pme_pp_t;
 
-/* Internal datastructures */
+/* Temporary suppression until these structs become opaque and don't live in
+ * a header that is included by other headers. Also, until then I have no
+ * idea what some of the names mean. */
+
+//! @cond Doxygen_Suppress
+
+/*! \brief Data structure for grid communication */
 typedef struct {
     int send_index0;
     int send_nindex;
@@ -101,6 +120,7 @@ typedef struct {
     int recv_size;   /* Receive buffer width, used with OpenMP */
 } pme_grid_comm_t;
 
+/*! \brief Data structure for grid overlap communication */
 typedef struct {
 #ifdef GMX_MPI
     MPI_Comm         mpi_comm;
@@ -116,14 +136,17 @@ typedef struct {
     real            *recvbuf;
 } pme_overlap_t;
 
+/*! \brief Data structure for organizing particle allocation to threads */
 typedef struct {
     int *n;      /* Cumulative counts of the number of particles per thread */
     int  nalloc; /* Allocation size of i */
     int *i;      /* Particle indices ordered on thread index (n) */
 } thread_plist_t;
 
+/*! \brief Helper typedef for spline vectors */
 typedef real *splinevec[DIM];
 
+/*! \brief Data structure for beta-spline interpolation */
 typedef struct {
     int      *thread_one;
     int       n;
@@ -134,6 +157,7 @@ typedef struct {
     real     *ptr_dtheta_z;
 } splinedata_t;
 
+/*! \brief Data structure for coordinating transfer between PP and PME ranks*/
 typedef struct {
     int      dimind;        /* The index of the dimension, 0=x, 1=y */
     int      nslab;
@@ -172,6 +196,7 @@ typedef struct {
     splinedata_t   *spline;
 } pme_atomcomm_t;
 
+/*! \brief Data structure for a single PME grid */
 typedef struct {
     ivec  ci;     /* The spatial location of this grid         */
     ivec  n;      /* The used size of *grid, including order-1 */
@@ -181,6 +206,7 @@ typedef struct {
     real *grid;   /* The grid local thread, size n             */
 } pmegrid_t;
 
+/*! \brief Data structures for PME grids */
 typedef struct {
     pmegrid_t  grid;         /* The full node grid (non thread-local)            */
     int        nthread;      /* The number of threads operating on this grid     */
@@ -191,10 +217,13 @@ typedef struct {
     ivec       nthread_comm; /* The number of threads to communicate with        */
 } pmegrids_t;
 
+/*! \brief Data structure for spline-interpolation working buffers */
 struct pme_spline_work;
 
+/*! \brief Data structure for working buffers */
 struct pme_work_t;
 
+/*! \brief Master PME data structure */
 typedef struct gmx_pme_t {
     int           ndecompdim; /* The number of decomposition dimensions */
     int           nodeid;     /* Our nodeid in mpi->mpi_comm */
@@ -287,14 +316,10 @@ typedef struct gmx_pme_t {
     real *   sum_qgrid_dd_tmp;
 } t_gmx_pme_t;
 
-void gmx_pme_check_restrictions(int pme_order,
-                                int nkx, int nky, int nkz,
-                                int nnodes_major,
-                                int nnodes_minor,
-                                gmx_bool bUseThreads,
-                                gmx_bool bFatal,
-                                gmx_bool *bValidSettings);
-/* Check restrictions on pme_order and the PME grid nkx,nky,nkz.
+//! @endcond
+
+/*! \brief Check restrictions on pme_order and the PME grid nkx,nky,nkz.
+ *
  * With bFatal=TRUE, a fatal error is generated on violation,
  * bValidSettings=NULL can be passed.
  * With bFatal=FALSE, *bValidSettings reports the validity of the settings.
@@ -302,14 +327,21 @@ void gmx_pme_check_restrictions(int pme_order,
  * If at calling you bUseThreads is unknown, pass TRUE for conservative
  * checking.
  */
+void gmx_pme_check_restrictions(int pme_order,
+                                int nkx, int nky, int nkz,
+                                int nnodes_major,
+                                int nnodes_minor,
+                                gmx_bool bUseThreads,
+                                gmx_bool bFatal,
+                                gmx_bool *bValidSettings);
 
 gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
-/* Initialize the PME-only side of the PME <-> PP communication */
+/*! \brief Initialize the PME-only side of the PME <-> PP communication */
 
 void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj);
-/* Tell our PME-only node to switch to a new grid size */
+/*! \brief Tell our PME-only node to switch to a new grid size */
 
-/* Return values for gmx_pme_recv_q_x */
+/*! \brief Return values for gmx_pme_recv_q_x */
 enum {
     pmerecvqxX,            /* calculate PME mesh interactions for new x    */
     pmerecvqxFINISH,       /* the simulation should finish, we should quit */
@@ -317,6 +349,14 @@ enum {
     pmerecvqxRESETCOUNTERS /* reset the cycle and flop counters            */
 };
 
+/*! \brief Called by PME-only ranks to receive coefficients and coordinates
+ *
+ * The return value is used to control further processing, with meanings:
+ * pmerecvqxX:             all parameters set, chargeA and chargeB can be NULL
+ * pmerecvqxFINISH:        no parameters set
+ * pmerecvqxSWITCHGRID:    only grid_size and *ewaldcoeff are set
+ * pmerecvqxRESETCOUNTERS: *step is set
+ */
 int gmx_pme_recv_coeffs_coords(gmx_pme_pp_t pme_pp,
                                int *natoms,
                                real **chargeA, real **chargeB,
@@ -329,23 +369,12 @@ int gmx_pme_recv_coeffs_coords(gmx_pme_pp_t pme_pp,
                                gmx_bool *bEnerVir, int *pme_flags,
                                gmx_int64_t *step,
                                ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
-;
-/* With return value:
- * pmerecvqxX:             all parameters set, chargeA and chargeB can be NULL
- * pmerecvqxFINISH:        no parameters set
- * pmerecvqxSWITCHGRID:    only grid_size and *ewaldcoeff are set
- * pmerecvqxRESETCOUNTERS: *step is set
- */
 
+/*! \brief Send the PME mesh force, virial and energy to the PP-only nodes */
 void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
                                  rvec *f, matrix vir_q, real energy_q,
                                  matrix vir_lj, real energy_lj,
                                  real dvdlambda_q, real dvdlambda_lj,
                                  float cycles);
-/* Send the PME mesh force, virial and energy to the PP-only nodes */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

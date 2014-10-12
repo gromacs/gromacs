@@ -35,11 +35,7 @@
 #ifndef GMX_EWALD_PME_REDISTRIBUTE_H
 #define GMX_EWALD_PME_REDISTRIBUTE_H
 
-#include "gromacs/ewald/pme-internal.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "pme-internal.h"
 
 void
 pme_realloc_atomcomm_things(pme_atomcomm_t *atc);
@@ -52,9 +48,5 @@ dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
 void
 do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr,
                      gmx_bool bFirst, rvec x[], real *data);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
