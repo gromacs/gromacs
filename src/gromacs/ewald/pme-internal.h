@@ -34,6 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * computing energies and forces for the PME long-ranged part (Coulomb
+ * and LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_ewald
+ */
 
 /* TODO This file is a temporary holding area for stuff local to the
  * PME code, before it acquires some more normal ewald/file.c and
@@ -54,10 +64,6 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define PME_GRID_QA    0 /* Gridindex for A-state for Q */
 #define PME_GRID_C6A   2 /* Gridindex for A-state for LJ */
@@ -343,9 +349,5 @@ void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
                                  real dvdlambda_q, real dvdlambda_lj,
                                  float cycles);
 /* Send the PME mesh force, virial and energy to the PP-only nodes */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

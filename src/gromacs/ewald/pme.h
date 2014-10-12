@@ -34,6 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * computing energies and forces for the PME long-ranged part (Coulomb
+ * and LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \inlibraryapi
+ * \ingroup module_ewald
+ */
 
 #ifndef GMX_EWALD_PME_H
 #define GMX_EWALD_PME_H
@@ -50,10 +60,6 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
@@ -153,9 +159,5 @@ void gmx_pme_receive_f(t_commrec *cr,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
