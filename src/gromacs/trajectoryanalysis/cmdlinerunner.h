@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,7 +75,7 @@ class TrajectoryAnalysisCommandLineRunner
          * methods and still keep the implementation out of the header, making
          * the ABI more stable.
          */
-        typedef TrajectoryAnalysisModulePointer (*ModuleFactoryMethod)();
+        typedef std::function<TrajectoryAnalysisModulePointer()> ModuleFactoryMethod;
 
         /*! \brief
          * Implements a main() method that runs a given module.
@@ -187,6 +187,9 @@ class TrajectoryAnalysisCommandLineRunner
          */
         void writeHelp(const CommandLineHelpContext &context);
 
+        //! Implements the template runAsMain() method.
+        static int runAsMain(int argc, char *argv[],
+                             ModuleFactoryMethod factory);
     private:
         /*! \brief
          * Creates a trajectory analysis module of a given type.
@@ -199,9 +202,6 @@ class TrajectoryAnalysisCommandLineRunner
             return TrajectoryAnalysisModulePointer(new ModuleType());
         }
 
-        //! Implements the template runAsMain() method.
-        static int runAsMain(int argc, char *argv[],
-                             ModuleFactoryMethod factory);
 
         class Impl;
 
