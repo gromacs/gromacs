@@ -91,13 +91,13 @@ class RunnerModule : public ICommandLineOptionsModule
 };
 
 void RunnerModule::initOptions(
-        IOptionsContainer *options, ICommandLineOptionsModuleSettings *settings)
+    IOptionsContainer *options, ICommandLineOptionsModuleSettings *settings)
 {
     std::shared_ptr<TimeUnitBehavior>        timeUnitBehavior(
-            new TimeUnitBehavior());
+        new TimeUnitBehavior());
     std::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
-            new SelectionOptionBehavior(&selections_,
-                                        common_.topologyProvider()));
+        new SelectionOptionBehavior(&selections_,
+                                    common_.topologyProvider()));
     settings->addOptionsBehavior(timeUnitBehavior);
     settings->addOptionsBehavior(selectionOptionBehavior);
     IOptionsContainer &commonOptions = options->addGroup();
@@ -127,24 +127,17 @@ int RunnerModule::run()
     common_.initFrameIndexGroup();
     module_->initAfterFirstFrame(settings_, common_.frame());
 
-    t_pbc  pbc;
-    t_pbc *ppbc = settings_.hasPBC() ? &pbc : NULL;
-
     int    nframes = 0;
     AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
-            module_->startFrames(dataOptions, selections_));
+        module_->startFrames(dataOptions, selections_));
     do
     {
         common_.initFrame();
         t_trxframe &frame = common_.frame();
-        if (ppbc != NULL)
-        {
-            set_pbc(ppbc, topology.ePBC(), frame.box);
-        }
 
-        selections_.evaluate(&frame, ppbc);
-        module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        selections_.evaluate(&frame, common_.pbc());
+        module_->analyzeFrame(nframes, frame, common_.pbc(), pdata.get());
         module_->finishFrameSerial(nframes);
 
         ++nframes;
@@ -185,7 +178,7 @@ int RunnerModule::run()
 // static
 int
 TrajectoryAnalysisCommandLineRunner::runAsMain(
-        int argc, char *argv[], ModuleFactoryMethod factory)
+    int argc, char *argv[], ModuleFactoryMethod factory)
 {
     auto runnerFactory = [factory]
     {
@@ -197,21 +190,21 @@ TrajectoryAnalysisCommandLineRunner::runAsMain(
 // static
 void
 TrajectoryAnalysisCommandLineRunner::registerModule(
-        CommandLineModuleManager *manager, const char *name,
-        const char *description, ModuleFactoryMethod factory)
+    CommandLineModuleManager *manager, const char *name,
+    const char *description, ModuleFactoryMethod factory)
 {
     auto runnerFactory = [factory]
     {
         return createModule(factory());
     };
     ICommandLineOptionsModule::registerModuleFactory(
-            manager, name, description, runnerFactory);
+        manager, name, description, runnerFactory);
 }
 
 // static
 std::unique_ptr<ICommandLineOptionsModule>
 TrajectoryAnalysisCommandLineRunner::createModule(
-        TrajectoryAnalysisModulePointer module)
+    TrajectoryAnalysisModulePointer module)
 {
     return ICommandLineOptionsModulePointer(new RunnerModule(std::move(module)));
 }

@@ -24,6 +24,11 @@ cmake/CheckC*CompilerFlag.cmake         !filter
 cmake/FindBLAS.cmake                    !filter
 cmake/FindLAPACK.cmake                  !filter
 cmake/ThreadMPI.cmake                   !filter
+cmake/FindPythonLibrary.cmake		!filter
+cmake/FindNumPy.cmake			!filter
+cmake/FindSIP.*				!filter
+cmake/SIPMacros.cmake			!filter
+cmake/PythonMacros.cmake		!filter
 cmake/Platform/BluegeneQ*.cmake         !filter
 cmake/*.c                               -filter -gmx-doxygen
 cmake/*.cpp                             -filter -gmx-doxygen
