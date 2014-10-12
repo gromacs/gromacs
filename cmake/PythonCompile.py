@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2014, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,26 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_executable(template template.cpp)
-target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
-install(FILES CMakeLists.txt.template
-        DESTINATION ${DATA_INSTALL_DIR}/template
-        RENAME CMakeLists.txt
-        COMPONENT development)
-
-install(FILES README template.cpp Makefile.pkg
-        DESTINATION ${DATA_INSTALL_DIR}/template
-        COMPONENT development)
-
-install(FILES cmake/FindGROMACS.cmake
-        DESTINATION ${DATA_INSTALL_DIR}/template/cmake
-        COMPONENT development)
-
-# install py api templates if GMX_PYTHON awailable
-if (GMX_PYTHON_BINDINGS)
-	file(GLOB PYTHON_BINDINGS_TEMPLATES *.py)
-	install(FILES ${PYTHON_BINDINGS_TEMPLATES}
-		DESTINATION ${DATA_INSTALL_DIR}/template
-		COMPONENT development)
-endif()
+# By Simon Edwards <simon@simonzone.com>
+# This file is in the public domain.
+import sys
+import py_compile
+sys.exit(py_compile.main())
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,9 @@
 #include "modules.h"
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "modules/angle.h"
 #include "modules/distance.h"
@@ -54,48 +56,50 @@
 #include "modules/sasa.h"
 #include "modules/select.h"
 
+#include <string>
+#include <map>
+
 namespace gmx
 {
 
 namespace
 {
 
-/*! \brief
- * Convenience method for registering a command-line module for trajectory
- * analysis.
- *
- * \tparam ModuleInfo  Info about trajectory analysis module to wrap.
- *
- * \p ModuleInfo should have static public members
- * `const char name[]`, `const char shortDescription[]`, and
- * `gmx::TrajectoryAnalysisModulePointer create()`.
- *
- * \ingroup module_trajectoryanalysis
- */
-template <class ModuleInfo>
-void registerModule(CommandLineModuleManager *manager,
-                    CommandLineModuleGroup    group)
-{
-    TrajectoryAnalysisCommandLineRunner::registerModule(
-            manager, ModuleInfo::name, ModuleInfo::shortDescription,
-            &ModuleInfo::create);
-    group.addModule(ModuleInfo::name);
-}
-
+using namespace gmx::analysismodules;
+//! \brief Storage for module factories
+const std::pair<std::string, std::pair<const char *, TrajectoryAnalysisCommandLineRunner::ModuleFactoryMethod>>
+registeredModules[] {
+    {AngleInfo::name, {AngleInfo::shortDescription, AngleInfo::create}},
+    {DistanceInfo::name, {DistanceInfo::shortDescription, DistanceInfo::create}},
+    {FreeVolumeInfo::name, {FreeVolumeInfo::shortDescription, FreeVolumeInfo::create}},
+    {PairDistanceInfo::name, {PairDistanceInfo::shortDescription, PairDistanceInfo::create}},
+    {RdfInfo::name, {RdfInfo::shortDescription, RdfInfo::create}},
+    {SasaInfo::name, {SasaInfo::shortDescription, SasaInfo::create}},
+    {SelectInfo::name, {SelectInfo::shortDescription, SelectInfo::create}},
+};
 }   // namespace
 
 //! \cond libapi
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
-    using namespace gmx::analysismodules;
     CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
-    registerModule<AngleInfo>(manager, group);
-    registerModule<DistanceInfo>(manager, group);
-    registerModule<FreeVolumeInfo>(manager, group);
-    registerModule<PairDistanceInfo>(manager, group);
-    registerModule<RdfInfo>(manager, group);
-    registerModule<SasaInfo>(manager, group);
-    registerModule<SelectInfo>(manager, group);
+
+    for (const auto &item : registeredModules) {
+        TrajectoryAnalysisCommandLineRunner::registerModule(
+                manager, item.first.c_str(), item.second.first, item.second.second);
+        group.addModule(item.first.c_str());
+    }
+}
+
+std::unique_ptr<TrajectoryAnalysisModule>
+createTrajectoryAnalysisModuleByName(const char *name)
+{
+    for (const auto &item : registeredModules) {
+        if (item.first == name)
+            return item.second.second();
+    }
+
+    GMX_THROW(APIError("Module has not been registered"));
 }
 //! \endcond
 
