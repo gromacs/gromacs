@@ -40,13 +40,15 @@
 
 #include "config.h"
 
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme-simd.h"
-#include "gromacs/legacyheaders/macros.h"
+#include <algorithm>
+
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
+#include "pme-simd.h"
 
 static void pme_calc_pidx(int start, int end,
                           matrix recipbox, rvec x[],
@@ -151,7 +153,7 @@ static void realloc_splinevec(splinevec th, real **ptr_z, int nalloc)
 
 static void pme_realloc_splinedata(splinedata_t *spline, pme_atomcomm_t *atc)
 {
-    int i, d;
+    int i;
 
     srenew(spline->ind, atc->nalloc);
     /* Initialize the index to identity so it works without threads */
@@ -168,7 +170,7 @@ static void pme_realloc_splinedata(splinedata_t *spline, pme_atomcomm_t *atc)
 
 void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
 {
-    int nalloc_old, i, j, nalloc_tpl;
+    int nalloc_old, i;
 
     /* We have to avoid a NULL pointer for atc->x to avoid
      * possible fatal errors in MPI routines.
@@ -176,7 +178,7 @@ void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
     if (atc->n > atc->nalloc || atc->nalloc == 0)
     {
         nalloc_old  = atc->nalloc;
-        atc->nalloc = over_alloc_dd(max(atc->n, 1));
+        atc->nalloc = over_alloc_dd(std::max(atc->n, 1));
 
         if (atc->nslab > 1)
         {
@@ -259,7 +261,7 @@ void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
     commnode  = atc->node_dest;
     buf_index = atc->buf_index;
 
-    nnodes_comm = min(2*atc->maxshift, atc->nslab-1);
+    nnodes_comm = std::min(2*atc->maxshift, atc->nslab-1);
 
     nsend = 0;
     for (i = 0; i < nnodes_comm; i++)
@@ -363,7 +365,7 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     commnode  = atc->node_dest;
     buf_index = atc->buf_index;
 
-    nnodes_comm = min(2*atc->maxshift, atc->nslab-1);
+    nnodes_comm = std::min(2*atc->maxshift, atc->nslab-1);
 
     local_pos = atc->count[atc->nodeid];
     buf_pos   = 0;

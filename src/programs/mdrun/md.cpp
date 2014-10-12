@@ -232,9 +232,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                                                           simulation stops. If equal to zero, don't
                                                                           communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
-    pme_load_balancing_t pme_loadbal = NULL;
-    double               cycles_pmes;
-    gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
+    pme_load_balancing_t *pme_loadbal = NULL;
+    double                cycles_pmes;
+    gmx_bool              bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
