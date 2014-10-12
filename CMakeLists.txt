@@ -704,6 +704,14 @@ if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
         "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
 endif()
 
+#######################
+## Python bindings
+#######################
+
+# We only set option here, actual detection goes to
+# src/python/CMakeLists.txt due to bugs in FindSIP
+option(GMX_PYTHON_BINDINGS "Enable GROMACS Python API bindings" OFF)
+
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
@@ -866,6 +874,7 @@ if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_
     message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
 endif()
 set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
+
 
 #######################
 ## uninstall target
