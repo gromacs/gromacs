@@ -871,6 +871,15 @@ endif()
 set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
 
 #######################
+## Python bindings
+#######################
+
+# We only set option here, actual detection goes to
+# src/python/CMakeLists.txt due to bugs in FindSIP
+option(GMX_PYTHON_BINDINGS "Enable GROMACS Python API bindings"	OFF)
+
+
+#######################
 ## uninstall target
 #######################
 CONFIGURE_FILE(   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"

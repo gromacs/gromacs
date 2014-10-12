@@ -31,47 +31,45 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+#
 
-######################################
-# Output compiler and CFLAGS used
-######################################
-include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-if(GMX_GPU)
-    get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
-endif()
+find_package(PythonLibrary REQUIRED)
+find_package(NumPy REQUIRED)
+find_package(SIP REQUIRED)
 
-configure_file(config.h.cmakein config.h)
-configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
-configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
+include(SIPMacros)
+include(PythonMacros)
 
-if (BUILD_TESTING)
-    if(NOT GMX_DEVELOPER_BUILD)
-        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
-    endif()
-    if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(external/gmock-1.7.0)
-    endif()
-    include(testutils/TestMacros.cmake)
-    if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(testutils)
-    else()
-        add_custom_target(unittests-notice
-            ${CMAKE_COMMAND} -E echo "NOTE: Unit tests have not been run. You need to set GMX_BUILD_UNITTESTS=ON if you want to build and run them."
-            DEPENDS run-ctest
-            COMMENT "Unit tests disabled" VERBATIM)
-        add_dependencies(check unittests-notice)
-    endif()
-endif()
+include_directories(
+    ${PYTHON_INCLUDE_PATH}
+    ${SIP_INCLUDE_DIR}
+    ${GROMACS_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/src/python/include
+    ${NUMPY_INCLUDE_DIRS}   
+)
 
-add_subdirectory(gromacs)
-add_subdirectory(programs)
+add_definitions(-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION)
 
-if (NOT GMX_FAHCORE)
-    add_subdirectory(contrib)
-endif()
+set(SIP_INCLUDES ${CMAKE_BINARY_DIR} sip)
+set(SIP_EXTRA_OPTIONS ${SIP_EXTRA_OPTIONS} -e -o)
 
-if (GMX_PYTHON_BINDINGS)
-    add_subdirectory(python)
-endif()
+# This is needed for NumPy, which does not like code in many files
+set(SIP_CONCAT_PARTS 1)
+
+file(GLOB common_files_sip sip/*.sip)
+
+file(GLOB options_files_sip sip/options/*.sip)
+set(SIP_EXTRA_FILES_DEPEND ${options_files_sip} ${common_files_sip})
+add_sip_python_module(gromacs.Options sip/options/Options.sip libgromacs)
+
+file(GLOB trajectoryanalysis_files_sip sip/trajectoryanalysis/*.sip)
+set(SIP_EXTRA_FILES_DEPEND ${trajectoryanalysis_files_sip} ${common_files_sip})
+add_sip_python_module(gromacs.TrajectoryAnalysis
+    sip/trajectoryanalysis/TrajectoryAnalysis.sip libgromacs)
+
+file(GLOB topology_files_sip sip/topology/*.sip)
+set(SIP_EXTRA_FILES_DEPEND ${topology_files_sip} ${common_files_sip})
+add_sip_python_module(gromacs.Topology
+    sip/topology/Topology.sip libgromacs)
+
+python_install(__init__.py ${PYTHON_SITE_PACKAGES_INSTALL_DIR}/gromacs)
