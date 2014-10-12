@@ -35,42 +35,25 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_EWALD_EWALD_UTIL_H
-#define GMX_EWALD_EWALD_UTIL_H
+#ifndef GMX_PME_GROUP_SCHEME_EWALD_CORRECTION_H
+#define GMX_PME_GROUP_SCHEME_EWALD_CORRECTION_H
 
-#include <stdio.h>
-
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Ewald related stuff */
-
-void
-init_ewald_tab(ewald_tab_t *et, const t_inputrec *ir,
-               FILE *fp);
-/* initialize the ewald table (as found in the t_forcerec) */
-
-real
-calc_ewaldcoeff_q(real rc, real dtol);
-/* Determines the Ewald parameter, both for Ewald and PME */
-
-real calc_ewaldcoeff_lj(real rc, real dtol);
-/* Determines the Ewald parameters for LJ-PME */
-
-real
-do_ewald(t_inputrec *ir,
-         rvec x[],        rvec f[],
-         real chargeA[],  real chargeB[],
-         rvec box,
-         t_commrec *cr,  int natoms,
-         matrix lrvir,   real ewaldcoeff,
-         real lambda,    real *dvdlambda,
-         ewald_tab_t et);
-/* Do an Ewald calculation for the long range electrostatics. */
-
+/*! \brief Calculate group-scheme Ewald correction terms.
+ *
+ * For the group cutoff scheme (only), calculates the correction to
+ * the Ewald sums (electrostatic and/or LJ) due to pairs excluded from
+ * the long-ranged part, and/or surface dipole terms. */
 void
 ewald_LRcorrection(int start, int end,
                    t_commrec *cr, int thread, t_forcerec *fr,
@@ -86,18 +69,6 @@ ewald_LRcorrection(int start, int end,
                    real *Vcorr_q, real *Vcorr_lj,
                    real lambda_q, real lambda_lj,
                    real *dvdlambda_q, real *dvdlambda_lj);
-/* Calculate the Long range correction to the Ewald sums,
- * electrostatic and/or LJ, due to excluded pairs and/or
- * surface dipole terms.
- */
-
-real
-ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
-                        real *dvdlambda, tensor vir);
-/* Calculate the Long range correction to the Ewald sum,
- * due to a net system charge.
- * Should only be called on one thread.
- */
 
 #ifdef __cplusplus
 }

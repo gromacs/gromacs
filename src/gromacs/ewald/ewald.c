@@ -36,22 +36,18 @@
  */
 #include "gmxpre.h"
 
+#include "ewald.h"
+
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/smalloc.h"
-
-#define TOL 2e-5
 
 struct ewald_tab
 {
@@ -60,9 +56,24 @@ struct ewald_tab
     t_complex *tab_xy, *tab_qxyz;
 };
 
+void init_ewald_tab(struct ewald_tab **et, const t_inputrec *ir, FILE *fp)
+{
+    int n;
 
+    snew(*et, 1);
+    if (fp)
+    {
+        fprintf(fp, "Will do ordinary reciprocal space Ewald sum.\n");
+    }
 
-/* TODO: fix thread-safety */
+    (*et)->nx       = ir->nkx+1;
+    (*et)->ny       = ir->nky+1;
+    (*et)->nz       = ir->nkz+1;
+    (*et)->kmax     = max((*et)->nx, max((*et)->ny, (*et)->nz));
+    (*et)->eir      = NULL;
+    (*et)->tab_xy   = NULL;
+    (*et)->tab_qxyz = NULL;
+}
 
 /* the other routines are in complex.h */
 static t_complex conjmul(t_complex a, t_complex b)
@@ -74,9 +85,6 @@ static t_complex conjmul(t_complex a, t_complex b)
 
     return c;
 }
-
-
-
 
 static void tabulate_eir(int natom, rvec x[], int kmax, cvec **eir, rvec lll)
 {
@@ -111,27 +119,6 @@ static void tabulate_eir(int natom, rvec x[], int kmax, cvec **eir, rvec lll)
     }
 }
 
-void init_ewald_tab(ewald_tab_t *et, const t_inputrec *ir, FILE *fp)
-{
-    int n;
-
-    snew(*et, 1);
-    if (fp)
-    {
-        fprintf(fp, "Will do ordinary reciprocal space Ewald sum.\n");
-    }
-
-    (*et)->nx       = ir->nkx+1;
-    (*et)->ny       = ir->nky+1;
-    (*et)->nz       = ir->nkz+1;
-    (*et)->kmax     = max((*et)->nx, max((*et)->ny, (*et)->nz));
-    (*et)->eir      = NULL;
-    (*et)->tab_xy   = NULL;
-    (*et)->tab_qxyz = NULL;
-}
-
-
-
 real do_ewald(t_inputrec *ir,
               rvec x[],        rvec f[],
               real chargeA[],  real chargeB[],
@@ -139,7 +126,7 @@ real do_ewald(t_inputrec *ir,
               t_commrec *cr,   int natoms,
               matrix lrvir,    real ewaldcoeff,
               real lambda,     real *dvdlambda,
-              ewald_tab_t et)
+              struct ewald_tab *et)
 {
     real     factor     = -1.0/(4*ewaldcoeff*ewaldcoeff);
     real     scaleRecip = 4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r; /* 1/(Vol*e0) */
@@ -298,4 +285,46 @@ real do_ewald(t_inputrec *ir,
     energy *= scaleRecip;
 
     return energy;
+}
+
+real ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda,
+                             matrix box,
+                             real *dvdlambda, tensor vir)
+
+{
+    real vol, fac, qs2A, qs2B, vc, enercorr;
+    int  d;
+
+    if (MASTER(cr))
+    {
+        /* Apply charge correction */
+        vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+
+        fac = M_PI*ONE_4PI_EPS0/(fr->epsilon_r*2.0*vol*vol*sqr(fr->ewaldcoeff_q));
+
+        qs2A = fr->qsum[0]*fr->qsum[0];
+        qs2B = fr->qsum[1]*fr->qsum[1];
+
+        vc = (qs2A*(1 - lambda) + qs2B*lambda)*fac;
+
+        enercorr = -vol*vc;
+
+        *dvdlambda += -vol*(qs2B - qs2A)*fac;
+
+        for (d = 0; d < DIM; d++)
+        {
+            vir[d][d] += vc;
+        }
+
+        if (debug)
+        {
+            fprintf(debug, "Total charge correction: Vcharge=%g\n", enercorr);
+        }
+    }
+    else
+    {
+        enercorr = 0;
+    }
+
+    return enercorr;
 }

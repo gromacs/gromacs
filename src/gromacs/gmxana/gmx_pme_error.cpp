@@ -39,7 +39,6 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/calcgrid.h"
@@ -52,6 +51,7 @@
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"

@@ -44,7 +44,8 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/ewald/ewald-util.h"
+#include "gromacs/ewald/ewald.h"
+#include "gromacs/ewald/group-scheme-ewald-correction.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
