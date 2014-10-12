@@ -46,3 +46,12 @@ install(FILES README template.cpp Makefile.pkg
 install(FILES cmake/FindGROMACS.cmake
         DESTINATION ${DATA_INSTALL_DIR}/template/cmake
         COMPONENT development)
+
+# install py api templates if GMX_PYTHON awailable
+if (GMX_PYTHON_BINDINGS)
+	file(GLOB PYTHON_BINDINGS_TEMPLATES *.py)
+	install(FILES ${PYTHON_BINDINGS_TEMPLATES}
+		DESTINATION ${DATA_INSTALL_DIR}/template
+		COMPONENT development)
+endif()
+
