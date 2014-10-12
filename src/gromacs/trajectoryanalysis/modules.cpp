@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "modules/angle.h"
 #include "modules/distance.h"
@@ -54,11 +55,18 @@
 #include "modules/sasa.h"
 #include "modules/select.h"
 
+#include <string>
+#include <map>
+
 namespace gmx
 {
 
 namespace
 {
+
+//! \brief Storage for module factories
+std::map<std::string, TrajectoryAnalysisCommandLineRunner::ModuleFactoryMethod>
+registeredModules;
 
 /*! \brief
  * Convenience method for registering a command-line module for trajectory
@@ -74,12 +82,16 @@ namespace
  */
 template <class ModuleInfo>
 void registerModule(CommandLineModuleManager *manager,
-                    CommandLineModuleGroup    group)
+                    CommandLineModuleGroup   *group)
 {
-    TrajectoryAnalysisCommandLineRunner::registerModule(
-            manager, ModuleInfo::name, ModuleInfo::shortDescription,
-            &ModuleInfo::create);
-    group.addModule(ModuleInfo::name);
+    if (manager != nullptr)
+    {
+        TrajectoryAnalysisCommandLineRunner::registerModule(
+                manager, ModuleInfo::name, ModuleInfo::shortDescription,
+                &ModuleInfo::create);
+        group->addModule(ModuleInfo::name);
+    }
+    registeredModules[ModuleInfo::name] = ModuleInfo::create;
 }
 
 }   // namespace
@@ -88,7 +100,12 @@ void registerModule(CommandLineModuleManager *manager,
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
     using namespace gmx::analysismodules;
-    CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
+    CommandLineModuleGroup *group = nullptr;
+    if (manager != nullptr)
+    {
+        group = new CommandLineModuleGroup(manager->addModuleGroup("Trajectory analysis"));
+    }
+
     registerModule<AngleInfo>(manager, group);
     registerModule<DistanceInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
@@ -96,7 +113,23 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<RdfInfo>(manager, group);
     registerModule<SasaInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
+
+    if (manager != nullptr)
+    {
+        delete group;
+    }
 }
 //! \endcond
+
+std::unique_ptr<TrajectoryAnalysisModule>
+createModuleByName(const char *name)
+{
+    if (!registeredModules.count(name))
+    {
+        GMX_THROW(APIError("Module has not been registered"));
+    }
+
+    return registeredModules[name]();
+}
 
 } // namespace gmx

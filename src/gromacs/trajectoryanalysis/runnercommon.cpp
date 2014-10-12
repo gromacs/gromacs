@@ -56,6 +56,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -129,6 +130,8 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         bool                        bTrajOpen_;
         //! The current frame, or \p NULL if no frame loaded yet.
         t_trxframe                 *fr;
+        //! The PBC structure for current frame, if available
+        t_pbc                      *pbc;
         gmx_rmpbc_t                 gpbc_;
         //! Used to store the status variable from read_first_frame().
         t_trxstatus                *status_;
@@ -140,7 +143,7 @@ TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
     : settings_(*settings),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
       bStartTimeSet_(false), bEndTimeSet_(false), bDeltaTimeSet_(false),
-      bTrajOpen_(false), fr(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL)
+      bTrajOpen_(false), fr(NULL), pbc(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL)
 {
 }
 
@@ -156,6 +159,10 @@ TrajectoryAnalysisRunnerCommon::Impl::~Impl()
         sfree(fr->f);
         sfree(fr->index);
         sfree(fr);
+    }
+    if (fr != nullptr)
+    {
+        sfree(pbc);
     }
     if (oenv_ != nullptr)
     {
@@ -189,6 +196,11 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
             sfree(topInfo_.xtop_);
             topInfo_.xtop_ = NULL;
         }
+    }
+
+    if (settings_.hasPBC())
+    {
+        snew(pbc, 1);
     }
 }
 
@@ -456,6 +468,10 @@ TrajectoryAnalysisRunnerCommon::initFrame()
     {
         gmx_rmpbc_trxfr(impl_->gpbc_, impl_->fr);
     }
+    if (impl_->pbc != NULL)
+    {
+        set_pbc(impl_->pbc, impl_->topInfo_.ePBC(), impl_->fr->box);
+    }
 }
 
 
@@ -478,6 +494,12 @@ TrajectoryAnalysisRunnerCommon::frame() const
 {
     GMX_RELEASE_ASSERT(impl_->fr != NULL, "Frame not available when accessed");
     return *impl_->fr;
+}
+
+t_pbc *
+TrajectoryAnalysisRunnerCommon::pbc() const
+{
+    return impl_->pbc;
 }
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,43 +32,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief
- * Generic interface for accessing trajectory analysis modules.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
- * \ingroup module_trajectoryanalysis
- */
-#ifndef GMX_TRAJECTORYANALYSIS_MODULES_H
-#define GMX_TRAJECTORYANALYSIS_MODULES_H
 
-#include <memory>
-#include "gromacs/trajectoryanalysis/analysismodule.h"
-
-namespace gmx
+struct t_topology
 {
 
-class CommandLineModuleManager;
+%TypeHeaderCode
+#include <gromacs/topology/topology.h>
+%End
 
-//! \cond libapi
-/*! \brief
- * Registers all trajectory analysis command-line modules.
- *
- * \param[in] manager  Command-line module manager to receive the modules.
- * \throws    std::bad_alloc if out of memory.
- *
- * Registers all trajectory analysis modules declared in the library such that
- * they can be run through \p manager.
- *
- * \ingroup module_trajectoryanalysis
- */
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager);
-//! \endcond
-
-std::unique_ptr<TrajectoryAnalysisModule>
-createModuleByName(const char *name);
-
-} // namespace gmx
-
-#endif
+    SIP_PYOBJECT      name /NoSetter/ {       // Name of the topology
+    %GetCode
+        // name is stored as char**, when the outer pointer is null, let sip wrap it as None
+        sipPy = sipBuildResult(NULL, "A", (sipCpp->name) ? *(sipCpp->name) : NULL);
+    %End
+    };
+    //t_idef          idef;       [> The interaction function definition  <]
+    t_atoms         atoms;      /* The atoms                            */
+    //t_atomtypes     atomtypes;  [> Atomtype properties                  <]
+    //t_block         cgs;        [> The charge groups                    <]
+    //t_block         mols;       [> The molecules                        <]
+    //t_blocka        excls;      [> The exclusions                       <]
+    //t_symtab        symtab;     [> The symbol table                     <]
+};
