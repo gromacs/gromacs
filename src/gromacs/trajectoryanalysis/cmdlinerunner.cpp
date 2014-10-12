@@ -127,9 +127,6 @@ int RunnerModule::run()
     common_.initFrameIndexGroup();
     module_->initAfterFirstFrame(settings_, common_.frame());
 
-    t_pbc  pbc;
-    t_pbc *ppbc = settings_.hasPBC() ? &pbc : NULL;
-
     int    nframes = 0;
     AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
@@ -138,13 +135,9 @@ int RunnerModule::run()
     {
         common_.initFrame();
         t_trxframe &frame = common_.frame();
-        if (ppbc != NULL)
-        {
-            set_pbc(ppbc, topology.ePBC(), frame.box);
-        }
 
-        selections_.evaluate(&frame, ppbc);
-        module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        selections_.evaluate(&frame, common_.pbc());
+        module_->analyzeFrame(nframes, frame, common_.pbc(), pdata.get());
         module_->finishFrameSerial(nframes);
 
         ++nframes;
