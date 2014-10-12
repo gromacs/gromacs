@@ -303,7 +303,7 @@ def select_comment_handler(override, filename):
             dummy, ext2 = os.path.splitext(root)
             if ext2:
                 ext = ext2
-        if ext in ('.c', '.cu', '.cpp', '.h', '.cuh', '.y', '.l', '.pre', '.bm'):
+        if ext in ('.c', '.cu', '.cpp', '.h', '.cuh', '.y', '.l', '.pre', '.bm', '.sip'):
             filetype = 'c'
         elif ext in ('.tex',):
             filetype = 'tex'
