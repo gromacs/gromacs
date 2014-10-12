@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,51 +32,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief
- * Generic interface for accessing trajectory analysis modules.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
- * \ingroup module_trajectoryanalysis
- */
-#ifndef GMX_TRAJECTORYANALYSIS_MODULES_H
-#define GMX_TRAJECTORYANALYSIS_MODULES_H
 
-#include <memory>
+class AbstractOption /NoDefaultCtors,Abstract/ {
+%TypeHeaderCode
+#include <gromacs/options/abstractoption.h>
+using gmx::AbstractOption;
+%End
+};
 
-namespace gmx
-{
-
-class CommandLineModuleManager;
-class TrajectoryAnalysisModule;
-
-//! \cond libapi
-/*! \brief
- * Registers all trajectory analysis command-line modules.
- *
- * \param[in] manager  Command-line module manager to receive the modules.
- * \throws    std::bad_alloc if out of memory.
- *
- * Registers all trajectory analysis modules declared in the library such that
- * they can be run through \p manager.
- *
- * \ingroup module_trajectoryanalysis
- */
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager);
-
-/*! \brief
- * Creates a trajectory analysis module by its name if it was previously registered
- *
- * \param   name  Name of TrajectoryAnalysisModule to create
- * \throws  gmx::APIError if module is not found
- *
- * \ingroup module_trajectoryanalysis
- */
-std::unique_ptr<TrajectoryAnalysisModule>
-createTrajectoryAnalysisModuleByName(const char *name);
-
-//! \endcond
-} // namespace gmx
-
-#endif
+template<T, U> class OptionTemplate : AbstractOption /NoDefaultCtors/ {
+%TypeHeaderCode
+#include <gromacs/options/abstractoption.h>
+using namespace gmx;
+%End
+public:
+    U& description(const char * /KeepReference/);
+    U& hidden(bool = true);
+    U& required(bool = true);
+    U& allowMultiple(bool = true);
+    // FIXME
+    // These function do not work, because they store pointer to argument, which then is garbage collected in python.
+    // Different combinations of Factory, KeepReference and Transfer annotations do not help.
+    // Use third argument of PyOptionsHolder's methods instead.
+    U& defaultValue(const T&);
+    U& defaultValueIfSet(const T&);
+};
