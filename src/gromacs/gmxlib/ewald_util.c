@@ -128,12 +128,22 @@ real calc_ewaldcoeff_lj(real rc, real dtol)
     return x;
 }
 
+/* Note that the parameter vectors for B states are NULL by
+ * construction in atoms2md when either FEP is inactive, or when there
+ * are no mass/charge/type perturbations. The parameter vectors for
+ * LJ-PME are likewise NULL when LJ-PME is not active.
+ *
+ * There's nothing special to do here if just masses are perturbed,
+ * but if either charge or type is perturbed then the implementation
+ * requires that B states are defined for both charge and type, and
+ * does not optimize for the cases where only one changes. */
 void ewald_LRcorrection(int start, int end,
                         t_commrec *cr, int thread, t_forcerec *fr,
                         real *chargeA, real *chargeB,
                         real *C6A, real *C6B,
                         real *sigmaA, real *sigmaB,
                         real *sigma3A, real *sigma3B,
+                        gmx_bool bHaveChargeOrTypePerturbed,
                         gmx_bool calc_excl_corr,
                         t_blocka *excl, rvec x[],
                         matrix box, rvec mu_tot[],
@@ -156,7 +166,6 @@ void ewald_LRcorrection(int start, int end,
     tensor      dxdf_q, dxdf_lj;
     real        vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
     real        L1_q, L1_lj, dipole_coeff, qqA, qqB, qqL, vr0_q, vr0_lj = 0;
-    gmx_bool    bFreeEnergy  = (chargeB != NULL);
     gmx_bool    bMolPBC      = fr->bMolPBC;
     gmx_bool    bDoingLBRule = (fr->ljpme_combination_rule == eljpmeLB);
 
@@ -226,7 +235,7 @@ void ewald_LRcorrection(int start, int end,
     {
         clear_mat(dxdf_lj);
     }
-    if ((calc_excl_corr || dipole_coeff != 0) && !bFreeEnergy)
+    if ((calc_excl_corr || dipole_coeff != 0) && !bHaveChargeOrTypePerturbed)
     {
         for (i = start; (i < end); i++)
         {
@@ -553,7 +562,7 @@ void ewald_LRcorrection(int start, int end,
     /* Global corrections only on master process */
     if (MASTER(cr) && thread == 0)
     {
-        for (q = 0; q < (bFreeEnergy ? 2 : 1); q++)
+        for (q = 0; q < (bHaveChargeOrTypePerturbed ? 2 : 1); q++)
         {
             if (calc_excl_corr)
             {
@@ -581,7 +590,7 @@ void ewald_LRcorrection(int start, int end,
             }
         }
     }
-    if (!bFreeEnergy)
+    if (!bHaveChargeOrTypePerturbed)
     {
         *Vcorr_q = Vdipole[0] - Vself_q[0] - Vexcl_q;
         if (EVDW_PME(fr->vdwtype))
