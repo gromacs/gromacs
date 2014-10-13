@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
                 printf("phi[%d] = %10g\n", i, phi[i]);
             }
             printf("Changing a coordinate and re-evaluating energy:\n");
-            x[0][0] += 0.01;
+            x[0][0] += 0.1;
             bOK = mmslave_calc_energy(gms, stdout, (const rvec *)x, f, A, phi, &e1);
         }
         else
