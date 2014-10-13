@@ -134,6 +134,7 @@ void ewald_LRcorrection(int start, int end,
                         real *C6A, real *C6B,
                         real *sigmaA, real *sigmaB,
                         real *sigma3A, real *sigma3B,
+                        gmx_bool bFreeEnergy,
                         gmx_bool calc_excl_corr,
                         t_blocka *excl, rvec x[],
                         matrix box, rvec mu_tot[],
@@ -156,7 +157,6 @@ void ewald_LRcorrection(int start, int end,
     tensor      dxdf_q, dxdf_lj;
     real        vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
     real        L1_q, L1_lj, dipole_coeff, qqA, qqB, qqL, vr0_q, vr0_lj = 0;
-    gmx_bool    bFreeEnergy  = (chargeB != NULL);
     gmx_bool    bMolPBC      = fr->bMolPBC;
     gmx_bool    bDoingLBRule = (fr->ljpme_combination_rule == eljpmeLB);
 
