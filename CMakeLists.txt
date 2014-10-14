@@ -153,7 +153,13 @@ gmx_dependent_option(
     ON
     GMX_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
-option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
+
+if(CMAKE_C_COMPILER_ID MATCHES "Intel")
+    set(GMX_SOFTWARE_INVSQRT_DEFAULT OFF)
+else()
+    set(GMX_SOFTWARE_INVSQRT_DEFAULT ON)
+endif()
+option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ${GMX_SOFTWARE_INVSQRT_DEFAULT})
 mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
