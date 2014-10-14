@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot
+Code-Review+1: Paul van Maaren <maarengmx@gmail.com>
+Verified+1: Nina Fischer <nina.fischer@icm.uu.se>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Tue, 14 Oct 2014 20:16:34 +0200
+Reviewed-on: https://gerrit.gromacs.org/3471
+Project: gromacs
+Branch: refs/heads/master
