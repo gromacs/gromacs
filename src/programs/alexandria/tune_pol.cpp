@@ -46,7 +46,25 @@
 #include "molprop_util.h"
 #include "composition.h"
 
-bool check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
+class pType 
+{
+private:
+    std::string name_;
+    bool bUse_;
+    int nCopies_;
+public:
+    pType(std::string name, const bool bUse, const int nCopies) { name_ = name; bUse_ = bUse; nCopies_ = nCopies; }
+    ~pType() {};
+    bool bUse() { return bUse_; }
+    void setUse(bool bUse) { bUse_ = bUse; }
+    void checkUse(int mindata) { bUse_ = (nCopies_ > mindata); }
+    std::string name() { return name_; }
+    int nCopies() { return nCopies_; }
+    void incCopies() { nCopies_++; }
+};
+
+bool check_matrix(double **a, double *x, int nrow, int ncol, 
+                  std::vector<pType> &ptypes)
 {
     int nrownew = nrow;
 
@@ -64,7 +82,7 @@ bool check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
             {
                 return false;
                 gmx_fatal(FARGS, "Columns %d (%s) and %d (%s) are linearly dependent",
-                          i, atype[i], j, atype[j]);
+                          i, ptypes[i].name().c_str(), j, ptypes[j].name().c_str());
             }
         }
     }
@@ -76,7 +94,8 @@ bool check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
             if (a[i][i] == 0)
             {
                 return false;
-                gmx_fatal(FARGS, "a[%d][%d] = 0. Atom type = %s", i, i, atype[i]);
+                gmx_fatal(FARGS, "a[%d][%d] = 0. Pol type = %s",
+                          i, i, ptypes[i].name().c_str());
             }
         }
     }
@@ -111,10 +130,10 @@ bool check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
 
 static void dump_csv(gmx_poldata_t                     pd,
                      std::vector<alexandria::MolProp> &mp,
-                     char                            **atype,
+                     gmx_molselect_t                   gms,
+                     std::vector<pType>               &ptypes,
                      int                               nusemol,
                      double                            x[],
-                     int                               ntest,
                      double                          **a,
                      double                          **at)
 {
@@ -122,52 +141,57 @@ static void dump_csv(gmx_poldata_t                     pd,
     FILE *csv = gmx_ffopen("out.csv", "w");
 
     fprintf(csv, "\"molecule\",\"formula\",");
-    for (int i = 0; (i < ntest); i++)
+    for (unsigned int i = 0; (i < ptypes.size()); i++)
     {
-        fprintf(csv, "\"%d %s\",", i, atype[i]);
+        fprintf(csv, "\"%u %s\",", i, ptypes[i].name().c_str());
     }
     fprintf(csv, "\"polarizability\"\n");
     int nn = 0;
     int j  = 0;
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++, j++)
     {
-        alexandria::MolecularCompositionIterator mci =
-            mpi->SearchMolecularComposition(cs.searchCS(alexandria::iCalexandria)->name());
-        fprintf(csv, "\"%d %s\",\"%s\",",
-                nn, mpi->GetMolname().c_str(), mpi->GetFormula().c_str());
-        int *count;
-        snew(count, ntest);
-        for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
-             ani < mci->EndAtomNum(); ani++)
+        iMolSelect ims  = gmx_molselect_status(gms, mpi->GetIupac().c_str());
+        
+        if (imsTrain == ims)
         {
-            const char *atomname = ani->GetAtom().c_str();
-            const char *ptype    = gmx_poldata_atype_to_ptype(pd, atomname);
-            int         i;
-            for (i = 0; (i < ntest); i++)
+            alexandria::MolecularCompositionIterator mci =
+                mpi->SearchMolecularComposition(cs.searchCS(alexandria::iCalexandria)->name());
+            fprintf(csv, "\"%d %s\",\"%s\",",
+                    nn, mpi->GetMolname().c_str(), mpi->GetFormula().c_str());
+            int *count;
+            snew(count, ptypes.size());
+            for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
+                 ani < mci->EndAtomNum(); ani++)
             {
-                if (strcmp(ptype, atype[i]) == 0)
+                const char *atomname = ani->GetAtom().c_str();
+                const char  *ptype    = gmx_poldata_atype_to_ptype(pd, atomname);
+                unsigned int i;
+                for (i = 0; (i < ptypes.size()); i++)
                 {
-                    break;
+                    if (strcmp(ptype, ptypes[i].name().c_str()) == 0)
+                    {
+                        break;
+                    }
+                }
+                if (i < ptypes.size())
+                {
+                    count[i] += ani->GetNumber();
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Supported molecule %s has unsupported atom %s (ptype %s)",
+                              mpi->GetMolname().c_str(), atomname, ptype);
                 }
             }
-            if (i < ntest)
+            for (unsigned int i = 0; (i < ptypes.size()); i++)
             {
-                count[i] += ani->GetNumber();
+                a[nn][i] = at[i][nn] = count[i];
+                fprintf(csv, "%d,", count[i]);
             }
-            else
-            {
-                gmx_fatal(FARGS, "Supported molecule %s has unsupported atom %s (ptype %s)",
-                          mpi->GetMolname().c_str(), atomname, ptype);
-            }
+            sfree(count);
+            fprintf(csv, "%.3f\n", x[nn]);
+            nn++;
         }
-        for (int i = 0; (i < ntest); i++)
-        {
-            a[nn][i] = at[i][nn] = count[i];
-            fprintf(csv, "%d,", count[i]);
-        }
-        sfree(count);
-        fprintf(csv, "%.3f\n", x[nn]);
-        nn++;
     }
     fclose(csv);
     if (nusemol != nn)
@@ -190,27 +214,22 @@ static int decompose_frag(FILE *fplog,
     double                      *x, *atx;
     double                     **a, **at, **ata, *fpp;
     double                       pol, poltot, a0, da0, ax, chi2;
-    char                       **atype = NULL, *ptype;
+    std::vector<pType>           ptypes;
+    char                        *ptype;
     int                          j, niter = 0, nusemol;
-    int                         *test = NULL, ntest[2], ntmax, row, cur = 0;
-    bool                         bUseMol, *bUseAtype;
+    int                          ntest[2], nPtypeMax, row, cur = 0;
+    bool                         bUseMol;
 #define prev (1-cur)
     alexandria::CompositionSpecs cs;
     const char                  *alex = cs.searchCS(alexandria::iCalexandria)->name();
 
     snew(x, mp.size()+1);
-    ntmax = gmx_poldata_get_nptypes(pd);
-    snew(bUseAtype, ntmax);
-    snew(test, ntmax);
-    snew(atype, ntmax);
-    ntest[prev] = ntest[cur] = ntmax;
-    j           = 0;
+    nPtypeMax = gmx_poldata_get_nptypes(pd);
+    ntest[prev] = ntest[cur] = nPtypeMax;
     // Copy all atom types into array. Set usage array.
     while (1 == gmx_poldata_get_ptype(pd, &ptype, NULL, NULL, NULL, NULL))
     {
-        atype[j]     = strdup(ptype);
-        bUseAtype[j] = true;
-        j++;
+        ptypes.push_back(pType(ptype, false, 0));
     }
     int iter      = 1;
     int nmol_orig = mp.size();
@@ -310,14 +329,15 @@ static int decompose_frag(FILE *fplog,
                         if (strcmp(ptype,
                                    gmx_poldata_atype_to_ptype(pd, ani->GetAtom().c_str())) == 0)
                         {
-                            test[ntp]++;
+                            ptypes[ntp].incCopies();
                             break;
                         }
                     }
                 }
-                printf("iter %2d ptype %s test[%d] = %d\n", iter, ptype, ntp, test[ntp]);
-                bUseAtype[ntp] = (test[ntp] >= mindata);
-                if (bUseAtype[ntp])
+                printf("iter %2d ptype %s test[%d] = %d\n", iter, ptype, ntp, 
+                       ptypes[ntp].nCopies());
+                ptypes[ntp].checkUse(mindata);
+                if (ptypes[ntp].bUse())
                 {
                     ntest[cur]++;
                     ntp++;
@@ -327,7 +347,8 @@ static int decompose_frag(FILE *fplog,
                     if (NULL != fplog)
                     {
                         fprintf(fplog, "Not enough polarizability data points (%d out of %d required) to optimize %s\n",
-                                test[ntp], mindata, ptype);
+                                ptypes[ntp].nCopies(),
+                                mindata, ptype);
                     }
                 }
             }
@@ -352,23 +373,21 @@ static int decompose_frag(FILE *fplog,
         printf("No polarization types to optimize. Check your input.\n");
         return 0;
     }
-    else if (ntest[cur] < ntmax)
+    else if (ntest[cur] < nPtypeMax)
     {
-        printf("Reduced number of atomtypes from %d to %d\n", ntmax, ntest[cur]);
+        printf("Reduced number of atomtypes from %d to %d\n", nPtypeMax, ntest[cur]);
     }
     // Compact the arrays
-    for (int i = 0; (i < ntmax); i++)
+    for(std::vector<pType>::iterator pi = ptypes.begin(); (pi<=ptypes.end()); ++pi) 
     {
-        for (int j = i+1; !bUseAtype[i] && (j < ntmax); j++)
+        if (!pi->bUse())
         {
-            if (bUseAtype[j])
-            {
-                bUseAtype[i] = true;
-                sfree(atype[i]);
-                atype[i]     = atype[j];
-                atype[j]     = NULL;
-                bUseAtype[j] = false;
-            }
+            pi = ptypes.erase(pi);
+        }
+        if (NULL != debug)
+        {
+            fprintf(debug, "Will optimize polarizability for ptype %s\n", 
+                    pi->name().c_str());
         }
     }
     /* Now we know how many atomtyopes there are (ntest[cur]) and
@@ -384,19 +403,19 @@ static int decompose_frag(FILE *fplog,
         fprintf(fplog, "There are %d (experimental) reference polarizabilities.\n", nusemol);
     }
     // As a side effect this function fills a and at and probably x.
-    dump_csv(pd, mp, atype, nusemol, x, ntest[cur], a, at);
+    dump_csv(pd, mp, gms, ptypes, nusemol, x, a, at);
 
     if (fplog)
     {
         for (int i = 0; (i < ntest[cur]); i++)
         {
             fprintf(fplog, "Optimizing polarizability for %s with %d copies\n",
-                    atype[i], test[i]);
+                    ptypes[i].name().c_str(), ptypes[i].nCopies());
         }
     }
 
     // Check for linear dependencies
-    if (!check_matrix(a, x, nusemol, ntest[cur], atype))
+    if (!check_matrix(a, x, nusemol, ntest[cur], ptypes))
     {
         fprintf(stderr, "Matrix is linearly dependent. Sorry.\n");
     }
@@ -437,7 +456,7 @@ static int decompose_frag(FILE *fplog,
             }
         }
         matrix_multiply(debug, nUseBootStrap, ntest[cur], a_copy, at_copy, ata);
-        if (check_matrix(ata, x_copy, ntest[cur], ntest[cur], atype) &&
+        if (check_matrix(ata, x_copy, ntest[cur], ntest[cur], ptypes) &&
             ((row = matrix_invert(debug, ntest[cur], ata)) == 0))
         {
             snew(atx, ntest[cur]);
@@ -495,7 +514,7 @@ static int decompose_frag(FILE *fplog,
     }
     fprintf(stderr, "\n");
     FILE *xp = xvgropen(hisfn, "Polarizability distribution", "alpha (A\\S3\\N)", "", oenv);
-    xvgr_legend(xp, ntest[cur], (const char **)atype, oenv);
+    //xvgr_legend(xp, ntest[cur], (const char **)ptypes, oenv);
 
     for (int i = 0; (i < ntest[cur]); i++)
     {
@@ -505,8 +524,8 @@ static int decompose_frag(FILE *fplog,
         if ((estatsOK == (result1 = gmx_stats_get_average(polstats[i], &aver))) &&
             (estatsOK == (result2 = gmx_stats_get_sigma(polstats[i], &sigma))))
         {
-            gmx_poldata_set_ptype_polarizability(pd, atype[i], aver, sigma);
-            fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", atype[i], aver, sigma);
+            gmx_poldata_set_ptype_polarizability(pd, ptypes[i].name().c_str(), aver, sigma);
+            fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", ptypes[i].name().c_str(), aver, sigma);
             int   nbins = 1+sqrt(nBootStrap);
             real *my_x, *my_y;
             gmx_stats_make_histogram(polstats[i], 0, &nbins,
@@ -523,7 +542,7 @@ static int decompose_frag(FILE *fplog,
         else
         {
             fprintf(stderr, "Could not determine polarizability for %s\n",
-                    atype[i]);
+                    ptypes[i].name().c_str());
         }
         gmx_stats_done(polstats[i]);
     }
