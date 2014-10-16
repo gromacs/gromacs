@@ -958,12 +958,19 @@ bool MolProp::GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
 }
 
 bool MolProp::GetProp(MolPropObservable mpo, iqmType iQM, char *lot,
-                      char *conf, char *type, double *value)
+                      char *conf, char *type, double *value, double *error)
 {
-    double error, vec[3];
+    double myerror, vec[3];
     tensor quad;
-
-    return GetPropRef(mpo, iQM, lot, conf, type, value, &error, NULL, NULL, vec, quad);
+    bool   bReturn;
+    
+    bReturn = GetPropRef(mpo, iQM, lot, conf, type, value, &myerror,
+                         NULL, NULL, vec, quad);
+    if (NULL != error)
+    {
+        *error = myerror;
+    }      
+    return bReturn;
 }
 
 

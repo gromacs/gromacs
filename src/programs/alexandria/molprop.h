@@ -1231,7 +1231,7 @@ class MolProp
 
         //! And another one
         bool GetProp(MolPropObservable mpo, iqmType iQM, char *lot,
-                     char *conf, char *type, double *value);
+                     char *conf, char *type, double *value, double *error);
 
         //! Add a classification category for this molecule
         void AddCategory(const char *category)

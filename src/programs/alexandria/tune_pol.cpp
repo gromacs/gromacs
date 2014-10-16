@@ -265,7 +265,7 @@ static int decompose_frag(FILE *fplog,
             pol             = 0;
             bool       bPol = mpi->GetProp(MPO_POLARIZABILITY,
                                            bQM ? iqmBoth : iqmExp,
-                                           lot, NULL, NULL, &pol);
+                                           lot, NULL, NULL, &pol, NULL);
             alexandria::MolecularCompositionIterator mci =
                 mpi->SearchMolecularComposition(alex);
             

@@ -346,11 +346,12 @@ void gmx_molprop_stats_table(FILE                            *fp,
                     if (mpi->SearchCategory(cats->catli[i].cat) == 1)
                     {
                         if (mpi->GetProp(mpo, iqmExp, NULL,
-                                         NULL /*qmc->conf[m]*/, exp_type, &exp_val))
+                                         NULL /*qmc->conf[m]*/, 
+                                         exp_type, &exp_val, NULL))
                         {
                             nexpres = 1;
                             if (mpi->GetProp(mpo, iqmQM, lbuf, NULL /*qmc->conf[m]*/,
-                                             qmc->type[k], &qm_val))
+                                             qmc->type[k], &qm_val, NULL))
                             {
                                 if (debug)
                                 {
@@ -403,8 +404,8 @@ void gmx_molprop_stats_table(FILE                            *fp,
             {
                 for (m = 0; (m < qmc->nconf); m++)
                 {
-                    if ((mpi->GetProp(mpo, iqmExp, NULL, qmc->conf[m], exp_type, &exp_val)) &&
-                        (mpi->GetProp(mpo, iqmQM, lbuf, qmc->conf[m], qmc->type[k], &qm_val)))
+                    if ((mpi->GetProp(mpo, iqmExp, NULL, qmc->conf[m], exp_type, &exp_val, NULL)) &&
+                        (mpi->GetProp(mpo, iqmQM, lbuf, qmc->conf[m], qmc->type[k], &qm_val, NULL)))
                     {
                         gmx_stats_add_point(lsqtot[k], exp_val, qm_val, 0, 0);
                     }
@@ -818,11 +819,11 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
                     if (bFound)
                     {
                         double val;
-                        if (mpi->GetProp(mpo, iqmExp, lot, NULL, exp_type, &val))
+                        if (mpi->GetProp(mpo, iqmExp, lot, NULL, exp_type, &val, NULL))
                         {
                             nexp++;
                         }
-                        else if (mpi->GetProp(mpo, iqmQM, lot, NULL, NULL, &val))
+                        else if (mpi->GetProp(mpo, iqmQM, lot, NULL, NULL, &val, NULL))
                         {
                             nqm++;
                         }

@@ -1708,7 +1708,7 @@ immStatus MyMol::GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
         }
     }
     if (GetProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
-                lot, NULL, (char *)"DHf(298.15K)", &value))
+                lot, NULL, (char *)"DHf(298.15K)", &value, NULL))
     {
         Hform = value;
         Emol  = value;

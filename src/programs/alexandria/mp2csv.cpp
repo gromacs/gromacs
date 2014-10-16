@@ -135,7 +135,7 @@ static void gmx_molprop_csv(const char *fn,
             }
             for (j = 0; (j < qmc[k]->n); j++)
             {
-                if (mpi->GetProp(mpo[k], iqmQM, qmc[k]->lot[j], NULL, qmc[k]->type[j], &d))
+                if (mpi->GetProp(mpo[k], iqmQM, qmc[k]->lot[j], NULL, qmc[k]->type[j], &d, NULL))
                 {
                     fprintf(fp, ",\"%.4f\"", d);
                 }

@@ -166,7 +166,7 @@ static void write_corr_xvg(const char *fn,
     int    i, k, nout;
     iMolSelect                  ims;
     char   lbuf[256];
-    double exp_val, qm_val, diff;
+    double exp_val, qm_val, diff, qm_error;
 
     fp  = xvgropen(fn, "", "Exper.", "Calc. - Exper.", oenv);
     for (i = 0; (i < qmc->n); i++)
@@ -181,7 +181,7 @@ static void write_corr_xvg(const char *fn,
     }
     for (i = 0; (i < qmc->n); i++)
     {
-        fprintf(fp, "@type xy\n");
+        fprintf(fp, "@type xydy\n");
         sprintf(lbuf, "%s/%s", qmc->method[i], qmc->basis[i]);
         if (debug)
         {
@@ -195,19 +195,19 @@ static void write_corr_xvg(const char *fn,
             {
                 for (k = 0; (k < qmc->nconf); k++)
                 {
-                    bool bExp = mpi->GetProp(mpo, iqmExp, NULL, NULL, exp_type, &exp_val);
+                    bool bExp = mpi->GetProp(mpo, iqmExp, NULL, NULL, exp_type, &exp_val, NULL);
                     bool bQM  = mpi->GetProp(mpo, iqmQM, lbuf, qmc->conf[k],
-                                             qmc->type[i], &qm_val);
+                                             qmc->type[i], &qm_val, &qm_error);
                     if (bExp && bQM)
                     {
-                        fprintf(fp, "%8.3f  %8.3f\n", exp_val, qm_val-exp_val);
+                        fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
                         diff = fabs(qm_val-exp_val);
                         if (debug &&
                             (((atoler > 0) && (diff >= atoler)) ||
                              ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
                         {
-                            fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g\n",
-                                    mpi->GetIupac().c_str(), exp_val, qm_val);
+                            fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g\n",
+                                    mpi->GetIupac().c_str(), exp_val, qm_val, qm_error);
                             nout++;
                         }
                     }
