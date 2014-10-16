@@ -832,8 +832,14 @@ int gmx_poldata_get_ptype_pol(gmx_poldata_t pd, const char *ptype,
     {
         if (strcmp(ptype, pd->ptype[j].type) == 0)
         {
-            *polar   = pd->ptype[j].polarizability;
-            *sig_pol = pd->ptype[j].sig_pol;
+            if (NULL != polar)
+            {
+                *polar   = pd->ptype[j].polarizability;
+            }
+            if (NULL != sig_pol)
+            {
+                *sig_pol = pd->ptype[j].sig_pol;
+            }
             return 1;
         }
     }
