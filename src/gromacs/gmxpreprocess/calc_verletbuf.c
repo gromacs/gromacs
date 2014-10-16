@@ -554,13 +554,18 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                        real r_buffer,
                        real rlist, real boxvol)
 {
-    double drift_tot, pot1, pot2, pot3, pot;
-    int    i, j;
-    real   s2i_2d, s2i_3d, s2j_2d, s2j_3d, s2, s;
-    int    ti, tj;
-    real   md1, d2, md3;
-    real   sc_fac, rsh, rsh2;
-    double c_exp, c_erfc;
+    /* Erfc(8)=1e-29, use this limit so we have some space for arithmetic
+     * on the result when using float precision.
+     */
+    const real erfc_arg_max = 8.0;
+
+    double     drift_tot, pot1, pot2, pot3, pot;
+    int        i, j;
+    real       s2i_2d, s2i_3d, s2j_2d, s2j_3d, s2, s;
+    int        ti, tj;
+    real       md1, d2, md3;
+    real       sc_fac, rsh, rsh2;
+    double     c_exp, c_erfc;
 
     drift_tot = 0;
 
@@ -600,37 +605,56 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
 
             rsh    = r_buffer;
             sc_fac = 1.0;
-            /* For constraints: adapt r and scaling for the Gaussian */
-            if (att[i].prop.bConstr)
+
+            if (rsh*rsh > 2*s2*erfc_arg_max*erfc_arg_max)
             {
-                real sh, sc;
-
-                approx_2dof(s2i_2d, r_buffer*s2i_2d/s2, &sh, &sc);
-                rsh    += sh;
-                sc_fac *= sc;
+                /* Erfc might run out of float and become 0, somewhat before
+                 * c_exp becomes 0. To avoid this and to avoid NaN in
+                 * approx_2dof, we set both c_expc and c_erfc to zero.
+                 * In any relevant case this has no effect on the results,
+                 * since c_exp < 6e-29, so the displacement is completely
+                 * negligible for such atom pairs (and an overestimate).
+                 * In nearly all use cases, there will be other atom
+                 * pairs that contribute much more to the total, so zeroing
+                 * this particular contribution has no effect at all.
+                 */
+                c_exp  = 0;
+                c_erfc = 0;
             }
-            if (att[j].prop.bConstr)
+            else
             {
-                real sh, sc;
+                /* For constraints: adapt r and scaling for the Gaussian */
+                if (att[i].prop.bConstr)
+                {
+                    real sh, sc;
 
-                approx_2dof(s2j_2d, r_buffer*s2j_2d/s2, &sh, &sc);
-                rsh    += sh;
-                sc_fac *= sc;
+                    approx_2dof(s2i_2d, r_buffer*s2i_2d/s2, &sh, &sc);
+                    rsh    += sh;
+                    sc_fac *= sc;
+                }
+                if (att[j].prop.bConstr)
+                {
+                    real sh, sc;
+
+                    approx_2dof(s2j_2d, r_buffer*s2j_2d/s2, &sh, &sc);
+                    rsh    += sh;
+                    sc_fac *= sc;
+                }
+
+                /* Exact contribution of an atom pair with Gaussian displacement
+                 * with sigma s to the energy drift for a potential with
+                 * derivative -md and second derivative dd at the cut-off.
+                 * The only catch is that for potentials that change sign
+                 * near the cut-off there could be an unlucky compensation
+                 * of positive and negative energy drift.
+                 * Such potentials are extremely rare though.
+                 *
+                 * Note that pot has unit energy*length, as the linear
+                 * atom density still needs to be put in.
+                 */
+                c_exp  = exp(-rsh*rsh/(2*s2))/sqrt(2*M_PI);
+                c_erfc = 0.5*gmx_erfc(rsh/(sqrt(2*s2)));
             }
-
-            /* Exact contribution of an atom pair with Gaussian displacement
-             * with sigma s to the energy drift for a potential with
-             * derivative -md and second derivative dd at the cut-off.
-             * The only catch is that for potentials that change sign
-             * near the cut-off there could be an unlucky compensation
-             * of positive and negative energy drift.
-             * Such potentials are extremely rare though.
-             *
-             * Note that pot has unit energy*length, as the linear
-             * atom density still needs to be put in.
-             */
-            c_exp  = exp(-rsh*rsh/(2*s2))/sqrt(2*M_PI);
-            c_erfc = 0.5*gmx_erfc(rsh/(sqrt(2*s2)));
             s      = sqrt(s2);
             rsh2   = rsh*rsh;
 
@@ -638,7 +662,7 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                 md1/2*((rsh2 + s2)*c_erfc - rsh*s*c_exp);
             pot2 = sc_fac*
                 d2/6*(s*(rsh2 + 2*s2)*c_exp - rsh*(rsh2 + 3*s2)*c_erfc);
-            pot3 =
+            pot3 = sc_fac*
                 md3/24*((rsh2*rsh2 + 6*rsh2*s2 + 3*s2*s2)*c_erfc - rsh*s*(rsh2 + 5*s2)*c_exp);
             pot = pot1 + pot2 + pot3;
 
@@ -1046,7 +1070,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
         if (debug)
         {
-            fprintf(debug, "ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %f\n",
+            fprintf(debug, "ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %.1e\n",
                     ib0, ib, ib1, rb,
                     list_setup->cluster_size_i, list_setup->cluster_size_j,
                     nb_clust_frac_pairs_not_in_list_at_cutoff,
