@@ -656,7 +656,7 @@ Select::writeOutput()
         atoms = top_->topology()->atoms;
         t_pdbinfo       *pdbinfo;
         snew(pdbinfo, atoms.nr);
-        scoped_ptr_sfree pdbinfoGuard(pdbinfo);
+        scoped_ptr_sfree<t_pdbinfo> pdbinfoGuard(pdbinfo);
         if (atoms.pdbinfo != NULL)
         {
             std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
