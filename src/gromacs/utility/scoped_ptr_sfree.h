@@ -66,6 +66,7 @@ namespace gmx
  * \inlibraryapi
  * \ingroup module_utility
  */
+template <class T>
 class scoped_ptr_sfree
 {
     public:
@@ -74,12 +75,15 @@ class scoped_ptr_sfree
          *
          * \param[in] ptr  Pointer to use for initialization.
          */
-        explicit scoped_ptr_sfree(void *ptr) : ptr_(ptr) {}
+        explicit scoped_ptr_sfree(T *ptr) : px(ptr) {}
         //! Frees the pointer passed to the constructor.
-        ~scoped_ptr_sfree() { sfree(ptr_); }
+        ~scoped_ptr_sfree() { sfree(px); }
+        T * get() const { return px; }
+        typedef T element_type;
+#include <boost/smart_ptr/detail/operator_bool.hpp>
 
     private:
-        void                   *ptr_;
+        T                   *px;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(scoped_ptr_sfree);
 };

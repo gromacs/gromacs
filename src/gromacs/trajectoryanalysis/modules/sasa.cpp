@@ -942,7 +942,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         }
         sfree(area);
     }
-    scoped_ptr_sfree dotsGuard(surfacedots);
+    scoped_ptr_sfree<real> dotsGuard(surfacedots);
     if (retval != 0)
     {
         GMX_THROW(InternalError("nsc_dclm_pbc failed"));
