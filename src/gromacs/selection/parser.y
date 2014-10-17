@@ -251,7 +251,7 @@ cmd_plain:   /* empty */
            | string
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard($1);
+                 scoped_ptr_sfree<char> nameGuard($1);
                  SelectionTreeElementPointer s
                         = _gmx_sel_init_group_by_name($1, scanner);
                  SelectionTreeElementPointer p
@@ -269,28 +269,28 @@ cmd_plain:   /* empty */
            | string selection
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard($1);
+                 scoped_ptr_sfree<char> nameGuard($1);
                  set($$, _gmx_sel_init_selection($1, get($2), scanner));
                  END_ACTION;
              }
            | IDENTIFIER '=' sel_expr
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard($1);
+                 scoped_ptr_sfree<char> nameGuard($1);
                  set($$, _gmx_sel_assign_variable($1, get($3), scanner));
                  END_ACTION;
              }
            | IDENTIFIER '=' num_expr
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard($1);
+                 scoped_ptr_sfree<char> nameGuard($1);
                  set($$, _gmx_sel_assign_variable($1, get($3), scanner));
                  END_ACTION;
              }
            | IDENTIFIER '=' pos_expr
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard($1);
+                 scoped_ptr_sfree<char> nameGuard($1);
                  set($$, _gmx_sel_assign_variable($1, get($3), scanner));
                  END_ACTION;
              }
@@ -382,7 +382,7 @@ sel_expr:    NOT sel_expr
 sel_expr:    num_expr CMP_OP num_expr
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree opGuard($2);
+                 scoped_ptr_sfree<char> opGuard($2);
                  set($$, _gmx_sel_init_comparison(get($1), get($3), $2, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -393,7 +393,7 @@ sel_expr:    num_expr CMP_OP num_expr
 sel_expr:    GROUP string
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard($2);
+                 scoped_ptr_sfree<char> nameGuard($2);
                  set($$, _gmx_sel_init_group_by_name($2, scanner));
                  END_ACTION;
              }
@@ -421,7 +421,7 @@ str_match_type:
 sel_expr:    pos_mod KEYWORD_GROUP
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard($1);
+                 scoped_ptr_sfree<char> posmodGuard($1);
                  set($$, _gmx_sel_init_keyword($2, SelectionParserValueListPointer(), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -429,7 +429,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
            | pos_mod KEYWORD_STR basic_value_list
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard($1);
+                 scoped_ptr_sfree<char> posmodGuard($1);
                  set($$, _gmx_sel_init_keyword_strmatch($2, gmx::eStringMatchType_Auto, get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -437,7 +437,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
            | pos_mod KEYWORD_STR str_match_type basic_value_list
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard($1);
+                 scoped_ptr_sfree<char> posmodGuard($1);
                  set($$, _gmx_sel_init_keyword_strmatch($2, $3, get($4), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -445,7 +445,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
            | pos_mod KEYWORD_NUMERIC basic_value_list
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard($1);
+                 scoped_ptr_sfree<char> posmodGuard($1);
                  set($$, _gmx_sel_init_keyword($2, get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -456,7 +456,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
 sel_expr:    pos_mod METHOD_GROUP method_params
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard($1);
+                 scoped_ptr_sfree<char> posmodGuard($1);
                  set($$, _gmx_sel_init_method($2, get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -496,7 +496,7 @@ num_expr:    TOK_INT
 num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard($1);
+                 scoped_ptr_sfree<char> posmodGuard($1);
                  set($$, _gmx_sel_init_keyword($2, SelectionParserValueListPointer(), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -504,7 +504,7 @@ num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
            | pos_mod METHOD_NUMERIC method_params
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard($1);
+                 scoped_ptr_sfree<char> posmodGuard($1);
                  set($$, _gmx_sel_init_method($2, get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -569,7 +569,7 @@ str_expr:    string
            | pos_mod KEYWORD_STR
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard($1);
+                 scoped_ptr_sfree<char> posmodGuard($1);
                  set($$, _gmx_sel_init_keyword($2, SelectionParserValueListPointer(), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -607,7 +607,7 @@ pos_expr:    METHOD_POS method_params
 pos_expr:    KEYWORD_POS OF sel_expr    %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree keywordGuard($1);
+                 scoped_ptr_sfree<char> keywordGuard($1);
                  set($$, _gmx_sel_init_position(get($3), $1, scanner));
                  CHECK_SEL($$);
                  END_ACTION;
@@ -674,7 +674,7 @@ method_param:
              PARAM value_list
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard($1);
+                 scoped_ptr_sfree<char> nameGuard($1);
                  set($$, SelectionParserParameter::create($1, get($2)));
                  END_ACTION;
              }
@@ -782,7 +782,7 @@ basic_value_item:
            | string              %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree stringGuard($1);
+                 scoped_ptr_sfree<char> stringGuard($1);
                  set($$, SelectionParserValue::createString($1));
                  END_ACTION;
              }
