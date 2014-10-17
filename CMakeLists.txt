@@ -354,6 +354,7 @@ check_function_exists(sysconf           HAVE_SYSCONF)
 check_function_exists(rsqrt             HAVE_RSQRT)
 check_function_exists(rsqrtf            HAVE_RSQRTF)
 check_function_exists(sqrtf             HAVE_SQRTF)
+check_function_exists(realpath          HAVE_REALPATH)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)

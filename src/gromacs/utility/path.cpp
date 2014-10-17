@@ -62,6 +62,7 @@
 #endif
 #endif
 
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -251,6 +252,26 @@ std::vector<std::string> Path::getExecutablePaths()
 
 std::string Path::resolveSymlinks(const std::string &path)
 {
+#ifdef HAVE_REALPATH
+#if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200809L
+    scoped_cptr<char> buf(realpath(path.c_str(), NULL));
+    if (buf)
+    {
+        return buf.get();
+    }
+#else
+    char        buf[GMX_PATH_MAX];
+    //possible buffer-overflow if pathlen > GMX_PATH_MAX
+    if (realpath(path.c_str(), buf))
+    {
+        return buf;
+    }
+#endif
+    else
+    {
+        return path;
+    }
+#else
     std::string result(path);
 #ifndef GMX_NATIVE_WINDOWS
     char        buf[GMX_PATH_MAX];
@@ -268,7 +289,8 @@ std::string Path::resolveSymlinks(const std::string &path)
         }
     }
 #endif
-    return result;
+    return Path::normalize(result);
+#endif
 }
 
 
