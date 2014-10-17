@@ -253,6 +253,14 @@ std::string Path::resolveSymlinks(const std::string &path)
 {
     std::string result(path);
 #ifndef GMX_NATIVE_WINDOWS
+#ifdef HAVE_REALPATH
+    char *buf = realpath(result.c_str(), NULL);
+    if (buf != NULL)
+    {
+        result = buf;
+        free(buf);
+    }
+#else
     char        buf[GMX_PATH_MAX];
     int         length;
     while ((length = readlink(result.c_str(), buf, sizeof(buf)-1)) > 0)
@@ -267,6 +275,7 @@ std::string Path::resolveSymlinks(const std::string &path)
             result = join(getParentPath(result), buf);
         }
     }
+#endif
 #endif
     return result;
 }
