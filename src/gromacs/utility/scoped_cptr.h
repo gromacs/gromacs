@@ -34,7 +34,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::scoped_ptr_sfree.
+ * Declares gmx::scoped_cptr and gmx::scoped_guard_sfree.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -43,6 +43,8 @@
 #ifndef GMX_UTILITY_SCOPED_PTR_SFREE_H
 #define GMX_UTILITY_SCOPED_PTR_SFREE_H
 
+#include "config.h"
+
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -50,23 +52,29 @@ namespace gmx
 {
 
 /*! \libinternal \brief
- * Stripped-down version of scoped_ptr that uses sfree().
+ * Stripped-down version of scoped_ptr that uses sfree() or custom deleter.
  *
- * Currently only implements constructor from a pointer value and destructor;
- * other operations can be added if they become necessary.
+ * Currently only implements some operations; other operations can be added
+ * if they become necessary.
  *
- * This class provides a very basic guard/smart pointer for C pointers.
- * Currently, boost::shared_ptr is used in a few locations that require more
- * flexibility, but is not suitable for all cases either.  A scoped_ptr with
- * deleter support would be a general enough implementation for all uses.
- * C++11 unique_ptr has this, but for non-C++11 support we need something else.
+ * This class provides a basic guard/smart pointer for C pointers.
  *
  * Methods in this class do not throw.
  *
  * \inlibraryapi
  * \ingroup module_utility
  */
-class scoped_ptr_sfree
+
+namespace
+{
+struct sfree_deleter
+{
+    void operator()(void* p) { sfree(p); }
+};
+}
+
+template <class T, class D=sfree_deleter>
+class scoped_cptr
 {
     public:
         /*! \brief
@@ -74,15 +82,25 @@ class scoped_ptr_sfree
          *
          * \param[in] ptr  Pointer to use for initialization.
          */
-        explicit scoped_ptr_sfree(void *ptr) : ptr_(ptr) {}
+        explicit scoped_cptr(T *ptr) : ptr_(ptr) {}
         //! Frees the pointer passed to the constructor.
-        ~scoped_ptr_sfree() { sfree(ptr_); }
+        ~scoped_cptr() { D()(ptr_); }
+        //! Returns the stored pointer.
+        T * get() const { return ptr_; }
+        //! Check for non-null pointer in boolean context.
+#ifdef GMX_CXX11
+        explicit
+#endif
+        operator bool () const { return ptr_ != 0; }
 
     private:
-        void                   *ptr_;
+        T                    *ptr_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(scoped_ptr_sfree);
+        GMX_DISALLOW_COPY_AND_ASSIGN(scoped_cptr);
 };
+
+//! Simple guard which calls sfree. See scoped_cptr for details.
+typedef scoped_cptr<void> scoped_guard_sfree;
 
 }      // namespace gmx
 
