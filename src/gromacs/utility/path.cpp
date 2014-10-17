@@ -251,6 +251,17 @@ std::vector<std::string> Path::getExecutablePaths()
 
 std::string Path::resolveSymlinks(const std::string &path)
 {
+#ifdef HAVE_REALPATH
+    char        buf[GMX_PATH_MAX];
+    if (realpath(path.c_str(), buf))
+    {
+        return buf;
+    }
+    else
+    {
+        return path;
+    }
+#else
     std::string result(path);
 #ifndef GMX_NATIVE_WINDOWS
     char        buf[GMX_PATH_MAX];
@@ -268,7 +279,8 @@ std::string Path::resolveSymlinks(const std::string &path)
         }
     }
 #endif
-    return result;
+    return Path::normalize(result);
+#endif
 }
 
 
