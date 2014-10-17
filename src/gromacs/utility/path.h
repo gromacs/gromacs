@@ -64,6 +64,7 @@ class Path
         static std::string join(const std::string &path1,
                                 const std::string &path2,
                                 const std::string &path3);
+        //In most cases on should use resolveSymlinks
         static std::string normalize(const std::string &path);
         static std::string getParentPath(const std::string &path);
         static std::string getFilename(const std::string &path);

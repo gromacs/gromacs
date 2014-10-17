@@ -352,6 +352,9 @@
 /* Define if we have zlib */
 #cmakedefine HAVE_ZLIB
 
+/* Define if we boost filesystem is available */
+#cmakedefine BOOST_FILESYSTEM_FOUND
+
 /*! \endcond */
 
 #endif
