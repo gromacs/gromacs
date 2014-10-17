@@ -6821,13 +6821,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
                 comm->cutoff       = max(comm->cutoff, comm->cutoff_mbody);
             }
         }
-        comm->cellsize_limit = max(comm->cellsize_limit, r_bonded_limit);
         if (fplog)
         {
             fprintf(fplog,
                     "Minimum cell size due to bonded interactions: %.3f nm\n",
-                    comm->cellsize_limit);
+                    r_bonded_limit);
         }
+        comm->cellsize_limit = max(comm->cellsize_limit, r_bonded_limit);
     }
 
     if (dd->bInterCGcons && rconstr <= 0)
