@@ -295,6 +295,9 @@
 /* Define to 1 if you have the sqrtf() function. */
 #cmakedefine HAVE_SQRTF
 
+/* Define to 1 if you have the realpath() function. */
+#cmakedefine HAVE_REALPATH
+
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
