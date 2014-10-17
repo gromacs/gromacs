@@ -59,6 +59,7 @@ struct VarList {
   typedef VarList<Tail...> VarListTail;
   typedef std::pair<Head, typename VarListTail::ListType> ListType;
 };
+class a { explicit operator bool() {return true;} };
 int main() {
   typedef std::unique_ptr<int> intPointer;
   intPointer p(new int(10));
