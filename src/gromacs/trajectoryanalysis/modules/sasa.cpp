@@ -71,7 +71,7 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/scoped_ptr_sfree.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -942,7 +942,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         }
         sfree(area);
     }
-    scoped_ptr_sfree dotsGuard(surfacedots);
+    scoped_guard_sfree dotsGuard(surfacedots);
     if (retval != 0)
     {
         GMX_THROW(InternalError("nsc_dclm_pbc failed"));
