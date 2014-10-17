@@ -61,8 +61,12 @@
 #include <unistd.h>
 #endif
 #endif
+#ifdef BOOST_FILESYSTEM_FOUND
+#include <boost/filesystem/operations.hpp>
+#endif
 
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace
@@ -188,7 +192,6 @@ std::string Path::stripExtension(const std::string &path)
 std::string Path::normalize(const std::string &path)
 {
     std::string result(path);
-    // TODO: Remove . and .. entries.
     if (DIR_SEPARATOR != '/')
     {
         std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
@@ -252,6 +255,19 @@ std::vector<std::string> Path::getExecutablePaths()
 std::string Path::resolveSymlinks(const std::string &path)
 {
     std::string result(path);
+#if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200809L
+    /* Don't use realpath for <2008 because it isn't guaranteed to be
+     * thread-safe and can cause buffer overflow */
+    scoped_cptr<char> buf(realpath(path.c_str(), NULL));
+    if (buf)
+    {
+        return buf.get();
+    }
+#elif defined(BOOST_FILESYSTEM_FOUND)
+    return normalize(boost::filesystem::canonical(
+                             boost::filesystem::path(path)).string());
+#else   //If neither boost nor Posix>2008 is available use minimal version.
+        //Only partially resolving symlinks and no normalization of ".." or "."
 #ifndef GMX_NATIVE_WINDOWS
     char        buf[GMX_PATH_MAX];
     int         length;
@@ -268,7 +284,8 @@ std::string Path::resolveSymlinks(const std::string &path)
         }
     }
 #endif
-    return result;
+#endif
+    return normalize(result);
 }
 
 

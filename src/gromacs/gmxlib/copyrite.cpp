@@ -781,54 +781,58 @@ void printBinaryInformation(FILE                            *fp,
 #ifdef GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
-    const char *const name = programContext.displayName();
-    if (settings.bGeneratedByHeader_)
+    try
     {
-        fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
-    }
-    if (settings.bCopyright_)
-    {
-        GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
-                           "Prefix/suffix not supported with copyright");
-        // This line is printed again after the copyright notice to make it
-        // appear together with all the other information, so that it is not
-        // necessary to read stuff above the copyright notice.
-        // The line above the copyright notice puts the copyright notice is
-        // context, though.
-        // TODO: It would be nice to know here whether we are really running a
-        // Gromacs binary or some other binary that is calling Gromacs; we
-        // could then print "%s is part of GROMACS" or some alternative text.
-        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
+        const char *const name = programContext.displayName();
+        if (settings.bGeneratedByHeader_)
+        {
+            fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
+        }
+        if (settings.bCopyright_)
+        {
+            GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
+                               "Prefix/suffix not supported with copyright");
+            // This line is printed again after the copyright notice to make it
+            // appear together with all the other information, so that it is not
+            // necessary to read stuff above the copyright notice.
+            // The line above the copyright notice puts the copyright notice is
+            // context, though.
+            // TODO: It would be nice to know here whether we are really running a
+            // Gromacs binary or some other binary that is calling Gromacs; we
+            // could then print "%s is part of GROMACS" or some alternative text.
+            fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
+                    gmx_version(), precisionString, suffix);
+            fprintf(fp, "\n");
+            printCopyright(fp);
+            fprintf(fp, "\n");
+        }
+        fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
                 gmx_version(), precisionString, suffix);
-        fprintf(fp, "\n");
-        printCopyright(fp);
-        fprintf(fp, "\n");
+        const char *const binaryPath = programContext.fullBinaryPath();
+        if (binaryPath != NULL && binaryPath[0] != '\0')
+        {
+            fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
+        }
+        const char *const libraryPath = programContext.defaultLibraryDataPath();
+        if (libraryPath != NULL && libraryPath[0] != '\0')
+        {
+            fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
+        }
+        const char *const commandLine = programContext.commandLine();
+        if (commandLine != NULL && commandLine[0] != '\0')
+        {
+            fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
+                    prefix, suffix, prefix, commandLine, suffix);
+        }
+        if (settings.bExtendedInfo_)
+        {
+            GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
+                               "Prefix/suffix not supported with extended info");
+            fprintf(fp, "\n");
+            gmx_print_version_info(fp);
+        }
     }
-    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
-            gmx_version(), precisionString, suffix);
-    const char *const binaryPath = programContext.fullBinaryPath();
-    if (binaryPath != NULL && binaryPath[0] != '\0')
-    {
-        fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
-    }
-    const char *const libraryPath = programContext.defaultLibraryDataPath();
-    if (libraryPath != NULL && libraryPath[0] != '\0')
-    {
-        fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
-    }
-    const char *const commandLine = programContext.commandLine();
-    if (commandLine != NULL && commandLine[0] != '\0')
-    {
-        fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
-                prefix, suffix, prefix, commandLine, suffix);
-    }
-    if (settings.bExtendedInfo_)
-    {
-        GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
-                           "Prefix/suffix not supported with extended info");
-        fprintf(fp, "\n");
-        gmx_print_version_info(fp);
-    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 } // namespace gmx

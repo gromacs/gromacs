@@ -496,6 +496,11 @@ if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
                 "This may cause trouble if you plan on compiling/linking other "
                 "software that uses Boost against Gromacs.")
     endif()
+    if (Boost_FOUND)
+        find_package(Boost 1.48.0 COMPONENTS filesystem system)
+        set(BOOST_FILESYSTEM_FOUND ${Boost_FOUND} CACHE INTERNAL "Found Boost 1.48 with filesystem library" FORCE)
+        set(Boost_FOUND TRUE) #reset to previous/general value
+    endif()
 endif()
 option(GMX_EXTERNAL_BOOST "Use external Boost instead of minimal built-in version"
        ${Boost_FOUND})
