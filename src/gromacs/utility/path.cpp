@@ -63,6 +63,7 @@
 #endif
 
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace
@@ -248,10 +249,20 @@ std::vector<std::string> Path::getExecutablePaths()
     }
     return result;
 }
-
 std::string Path::resolveSymlinks(const std::string &path)
 {
-    std::string result(path);
+#ifdef HAVE_REALPATH
+    scoped_cptr<char> buf(realpath(path.c_str(), NULL));
+    if (buf)
+    {
+        return buf.get();
+    }
+    else
+    {
+        return path;
+    }
+#else
+    std::string result(Path::normalize(path));
 #ifndef GMX_NATIVE_WINDOWS
     char        buf[GMX_PATH_MAX];
     int         length;
@@ -269,6 +280,7 @@ std::string Path::resolveSymlinks(const std::string &path)
     }
 #endif
     return result;
+#endif
 }
 
 
