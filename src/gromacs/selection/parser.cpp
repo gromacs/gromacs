@@ -1975,7 +1975,7 @@ yyreduce:
 #line 252 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard((yyvsp[(1) - (1)].str));
+                 scoped_ptr_sfree<char> nameGuard((yyvsp[(1) - (1)].str));
                  SelectionTreeElementPointer s
                         = _gmx_sel_init_group_by_name((yyvsp[(1) - (1)].str), scanner);
                  SelectionTreeElementPointer p
@@ -2001,7 +2001,7 @@ yyreduce:
 #line 270 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard((yyvsp[(1) - (2)].str));
+                 scoped_ptr_sfree<char> nameGuard((yyvsp[(1) - (2)].str));
                  set((yyval.sel), _gmx_sel_init_selection((yyvsp[(1) - (2)].str), get((yyvsp[(2) - (2)].sel)), scanner));
                  END_ACTION;
              }
@@ -2012,7 +2012,7 @@ yyreduce:
 #line 277 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard((yyvsp[(1) - (3)].str));
+                 scoped_ptr_sfree<char> nameGuard((yyvsp[(1) - (3)].str));
                  set((yyval.sel), _gmx_sel_assign_variable((yyvsp[(1) - (3)].str), get((yyvsp[(3) - (3)].sel)), scanner));
                  END_ACTION;
              }
@@ -2023,7 +2023,7 @@ yyreduce:
 #line 284 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard((yyvsp[(1) - (3)].str));
+                 scoped_ptr_sfree<char> nameGuard((yyvsp[(1) - (3)].str));
                  set((yyval.sel), _gmx_sel_assign_variable((yyvsp[(1) - (3)].str), get((yyvsp[(3) - (3)].sel)), scanner));
                  END_ACTION;
              }
@@ -2034,7 +2034,7 @@ yyreduce:
 #line 291 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard((yyvsp[(1) - (3)].str));
+                 scoped_ptr_sfree<char> nameGuard((yyvsp[(1) - (3)].str));
                  set((yyval.sel), _gmx_sel_assign_variable((yyvsp[(1) - (3)].str), get((yyvsp[(3) - (3)].sel)), scanner));
                  END_ACTION;
              }
@@ -2178,7 +2178,7 @@ yyreduce:
 #line 383 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree opGuard((yyvsp[(2) - (3)].str));
+                 scoped_ptr_sfree<char> opGuard((yyvsp[(2) - (3)].str));
                  set((yyval.sel), _gmx_sel_init_comparison(get((yyvsp[(1) - (3)].sel)), get((yyvsp[(3) - (3)].sel)), (yyvsp[(2) - (3)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2190,7 +2190,7 @@ yyreduce:
 #line 394 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard((yyvsp[(2) - (2)].str));
+                 scoped_ptr_sfree<char> nameGuard((yyvsp[(2) - (2)].str));
                  set((yyval.sel), _gmx_sel_init_group_by_name((yyvsp[(2) - (2)].str), scanner));
                  END_ACTION;
              }
@@ -2241,7 +2241,7 @@ yyreduce:
 #line 422 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard((yyvsp[(1) - (2)].str));
+                 scoped_ptr_sfree<char> posmodGuard((yyvsp[(1) - (2)].str));
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (2)].meth), SelectionParserValueListPointer(), (yyvsp[(1) - (2)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2253,7 +2253,7 @@ yyreduce:
 #line 430 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard((yyvsp[(1) - (3)].str));
+                 scoped_ptr_sfree<char> posmodGuard((yyvsp[(1) - (3)].str));
                  set((yyval.sel), _gmx_sel_init_keyword_strmatch((yyvsp[(2) - (3)].meth), gmx::eStringMatchType_Auto, get((yyvsp[(3) - (3)].vlist)), (yyvsp[(1) - (3)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2265,7 +2265,7 @@ yyreduce:
 #line 438 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard((yyvsp[(1) - (4)].str));
+                 scoped_ptr_sfree<char> posmodGuard((yyvsp[(1) - (4)].str));
                  set((yyval.sel), _gmx_sel_init_keyword_strmatch((yyvsp[(2) - (4)].meth), (yyvsp[(3) - (4)].smt), get((yyvsp[(4) - (4)].vlist)), (yyvsp[(1) - (4)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2277,7 +2277,7 @@ yyreduce:
 #line 446 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard((yyvsp[(1) - (3)].str));
+                 scoped_ptr_sfree<char> posmodGuard((yyvsp[(1) - (3)].str));
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (3)].meth), get((yyvsp[(3) - (3)].vlist)), (yyvsp[(1) - (3)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2289,7 +2289,7 @@ yyreduce:
 #line 457 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard((yyvsp[(1) - (3)].str));
+                 scoped_ptr_sfree<char> posmodGuard((yyvsp[(1) - (3)].str));
                  set((yyval.sel), _gmx_sel_init_method((yyvsp[(2) - (3)].meth), get((yyvsp[(3) - (3)].plist)), (yyvsp[(1) - (3)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2331,7 +2331,7 @@ yyreduce:
 #line 497 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard((yyvsp[(1) - (2)].str));
+                 scoped_ptr_sfree<char> posmodGuard((yyvsp[(1) - (2)].str));
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (2)].meth), SelectionParserValueListPointer(), (yyvsp[(1) - (2)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2343,7 +2343,7 @@ yyreduce:
 #line 505 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard((yyvsp[(1) - (3)].str));
+                 scoped_ptr_sfree<char> posmodGuard((yyvsp[(1) - (3)].str));
                  set((yyval.sel), _gmx_sel_init_method((yyvsp[(2) - (3)].meth), get((yyvsp[(3) - (3)].plist)), (yyvsp[(1) - (3)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2436,7 +2436,7 @@ yyreduce:
 #line 570 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree posmodGuard((yyvsp[(1) - (2)].str));
+                 scoped_ptr_sfree<char> posmodGuard((yyvsp[(1) - (2)].str));
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[(2) - (2)].meth), SelectionParserValueListPointer(), (yyvsp[(1) - (2)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2475,7 +2475,7 @@ yyreduce:
 #line 608 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree keywordGuard((yyvsp[(1) - (3)].str));
+                 scoped_ptr_sfree<char> keywordGuard((yyvsp[(1) - (3)].str));
                  set((yyval.sel), _gmx_sel_init_position(get((yyvsp[(3) - (3)].sel)), (yyvsp[(1) - (3)].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2551,7 +2551,7 @@ yyreduce:
 #line 675 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree nameGuard((yyvsp[(1) - (2)].str));
+                 scoped_ptr_sfree<char> nameGuard((yyvsp[(1) - (2)].str));
                  set((yyval.param), SelectionParserParameter::create((yyvsp[(1) - (2)].str), get((yyvsp[(2) - (2)].vlist))));
                  END_ACTION;
              }
@@ -2720,7 +2720,7 @@ yyreduce:
 #line 783 "parser.y"
     {
                  BEGIN_ACTION;
-                 scoped_ptr_sfree stringGuard((yyvsp[(1) - (1)].str));
+                 scoped_ptr_sfree<char> stringGuard((yyvsp[(1) - (1)].str));
                  set((yyval.val), SelectionParserValue::createString((yyvsp[(1) - (1)].str)));
                  END_ACTION;
              }
