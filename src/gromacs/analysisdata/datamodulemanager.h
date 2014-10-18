@@ -44,7 +44,7 @@
 #define GMX_ANALYSISDATA_DATAMODULEMANAGER_H
 
 #include "gromacs/analysisdata/abstractdata.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

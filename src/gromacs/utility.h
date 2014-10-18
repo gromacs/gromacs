@@ -105,7 +105,7 @@
  * attributes, and ::GMX_UNUSED_VALUE and ::GMX_IGNORE_RETURN_VALUE for
  * handling warnings about unused values.
  *
- * The header common.h implements a gmx::PrivateImplPointer template for easily
+ * The header classhelpers.h implements a gmx::PrivateImplPointer template for easily
  * writing classes that use the private implementation idiom.  This header also
  * declares ::GMX_DISALLOW_COPY_AND_ASSIGN and ::GMX_DISALLOW_ASSIGN macros for
  * class declarations.

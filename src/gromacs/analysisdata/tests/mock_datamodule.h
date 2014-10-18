@@ -51,7 +51,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

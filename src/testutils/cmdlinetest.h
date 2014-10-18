@@ -50,7 +50,7 @@
 // arrayref.h is not strictly necessary for this header, but nearly all
 // callers will need it to use the constructor that takes ConstArrayRef.
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

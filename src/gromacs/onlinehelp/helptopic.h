@@ -45,7 +45,7 @@
 #define GMX_ONLINEHELP_HELPTOPIC_H
 
 #include "gromacs/onlinehelp/helptopicinterface.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/uniqueptr.h"
 

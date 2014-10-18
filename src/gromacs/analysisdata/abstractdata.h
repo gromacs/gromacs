@@ -45,7 +45,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

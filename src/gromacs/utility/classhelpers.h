@@ -44,8 +44,8 @@
  * \inlibraryapi
  * \ingroup module_utility
  */
-#ifndef GMX_UTILITY_COMMON_H
-#define GMX_UTILITY_COMMON_H
+#ifndef GMX_UTILITY_CLASSHELPERS_H
+#define GMX_UTILITY_CLASSHELPERS_H
 
 #include <boost/scoped_ptr.hpp>
 

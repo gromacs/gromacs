@@ -44,7 +44,7 @@
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 
 #include "gromacs/trajectoryanalysis/analysismodule.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
