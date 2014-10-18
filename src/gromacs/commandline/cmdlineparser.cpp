@@ -49,7 +49,7 @@
 #include <vector>
 
 #include "gromacs/options/optionsassigner.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx

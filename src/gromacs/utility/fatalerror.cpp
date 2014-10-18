@@ -49,9 +49,9 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
-#include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"

@@ -38,11 +38,11 @@
 #ifndef GMX_LEGACYHEADERS_TYPES_GENBORN_H
 #define GMX_LEGACYHEADERS_TYPES_GENBORN_H
 
+#include "gromacs/legacyheaders/types/simple.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "gromacs/legacyheaders/types/simple.h"
 
 typedef struct
 {

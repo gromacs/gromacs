@@ -99,11 +99,16 @@
  *
  * <H3>Implementation Helpers</H3>
  *
+ * The header basedefinitions.h contains common definitions and macros used
+ * throughout \Gromacs.  It includes fixed-width integer types (`gmx_int64_t`
+ * and friends), `gmx_bool` for C code, some macros for compiler-specific
+ * attributes, and ::GMX_UNUSED_VALUE and ::GMX_IGNORE_RETURN_VALUE for
+ * handling warnings about unused values.
+ *
  * The header common.h implements a gmx::PrivateImplPointer template for easily
  * writing classes that use the private implementation idiom.  This header also
  * declares ::GMX_DISALLOW_COPY_AND_ASSIGN and ::GMX_DISALLOW_ASSIGN macros for
- * class declarations, and ::GMX_IGNORE_RETURN_VALUE for cleanly ignoring a
- * return value from a function.
+ * class declarations.
  *
  * The header flags.h implements a gmx::FlagsTemplate template for better type
  * safety when using bit flag fields.

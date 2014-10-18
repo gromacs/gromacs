@@ -51,7 +51,7 @@
 #include <omp.h>
 #endif
 
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
