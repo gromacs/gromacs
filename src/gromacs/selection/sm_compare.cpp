@@ -45,7 +45,7 @@
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
