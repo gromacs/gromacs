@@ -49,6 +49,8 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
@@ -57,8 +59,6 @@
 #ifdef GMX_MPI
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
-#else
-#include "gromacs/utility/common.h"
 #endif
 
 static bool                bDebug         = false;
