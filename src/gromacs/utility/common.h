@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,20 +51,6 @@
 
 namespace gmx
 {
-namespace internal
-{
-/*! \cond internal */
-/*! \internal \brief
- * Helper for ignoring values in macros.
- *
- * \ingroup module_utility
- */
-template <typename T>
-void inline ignoreValueHelper(const T &)
-{
-}
-//! \endcond
-}   // namespace internal
 
 /*! \brief
  * Macro to declare a class non-copyable and non-assignable.
@@ -87,27 +73,6 @@ void inline ignoreValueHelper(const T &)
 #define GMX_DISALLOW_ASSIGN(ClassName) \
     private: \
         ClassName &operator=(const ClassName &)
-/*! \brief
- * Macro to explicitly ignore a return value of a call.
- *
- * Mainly meant for ignoring values of functions declared with
- * `__attribute__((warn_unused_return))`.  Makes it easy to find those places if
- * they need to be fixed, and document the intent in cases where the return
- * value really can be ignored.  It also makes it easy to adapt the approach so
- * that they don't produce warnings.  A cast to void doesn't remove the warning
- * in gcc, while adding a dummy variable can cause warnings about an unused
- * variable.
- *
- * \ingroup module_utility
- */
-#define GMX_IGNORE_RETURN_VALUE(call) \
-        ::gmx::internal::ignoreValueHelper(call)
-/*! \brief
- * Macro to explicitly ignore an unused value.
- *
- * \ingroup module_utility
- */
-#define GMX_UNUSED_VALUE(value) (void)value
 
 /*! \brief
  * Helper class to manage a pointer to a private implementation class.

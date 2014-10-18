@@ -213,7 +213,6 @@ typedef uint64_t gmx_uint64_t;
 /*! \def gmx_noreturn
  * \brief
  * Indicate that a function is not expected to return.
- *
  */
 #ifndef gmx_noreturn
 #if defined(__GNUC__) || __has_feature(attribute_analyzer_noreturn)
@@ -225,5 +224,47 @@ typedef uint64_t gmx_uint64_t;
 #endif
 #endif
 
+/*! \brief
+ * Macro to explicitly ignore an unused value.
+ *
+ * \ingroup module_utility
+ */
+#define GMX_UNUSED_VALUE(value) (void)value
+
+#ifdef __cplusplus
+namespace gmx
+{
+namespace internal
+{
+/*! \cond internal */
+/*! \internal \brief
+ * Helper for ignoring values in macros.
+ *
+ * \ingroup module_utility
+ */
+template <typename T>
+static inline void ignoreValueHelper(const T &)
+{
+}
+//! \endcond
+}   // namespace internal
+}   // namespace gmx
+
+/*! \brief
+ * Macro to explicitly ignore a return value of a call.
+ *
+ * Mainly meant for ignoring values of functions declared with
+ * `__attribute__((warn_unused_return))`.  Makes it easy to find those places if
+ * they need to be fixed, and document the intent in cases where the return
+ * value really can be ignored.  It also makes it easy to adapt the approach so
+ * that they don't produce warnings.  A cast to void doesn't remove the warning
+ * in gcc, while adding a dummy variable can cause warnings about an unused
+ * variable.
+ *
+ * \ingroup module_utility
+ */
+#define GMX_IGNORE_RETURN_VALUE(call) \
+        ::gmx::internal::ignoreValueHelper(call)
+#endif
 
 #endif
