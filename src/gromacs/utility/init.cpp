@@ -45,12 +45,11 @@
 
 #include "config.h"
 
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #ifdef GMX_LIB_MPI
 #include "gromacs/utility/gmxmpi.h"
 #endif
-
-#include "gromacs/utility/common.h"
-#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
