@@ -43,7 +43,7 @@
 #ifndef GMX_COMMANDLINE_CMDLINEMODULE_H
 #define GMX_COMMANDLINE_CMDLINEMODULE_H
 
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

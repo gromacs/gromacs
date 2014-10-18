@@ -50,7 +50,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 struct t_pbc;
 struct t_trxframe;

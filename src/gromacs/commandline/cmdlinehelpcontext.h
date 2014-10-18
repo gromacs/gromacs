@@ -44,7 +44,7 @@
 #define GMX_COMMANDLINE_CMDLINEHELPCONTEXT_H
 
 #include "gromacs/onlinehelp/helpwritercontext.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
