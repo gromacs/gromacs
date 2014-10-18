@@ -47,7 +47,7 @@
 #include <string>
 
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

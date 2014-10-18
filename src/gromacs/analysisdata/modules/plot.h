@@ -49,7 +49,7 @@
 
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/options/timeunitmanager.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

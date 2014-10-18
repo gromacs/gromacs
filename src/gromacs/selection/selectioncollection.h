@@ -50,7 +50,7 @@
 
 #include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 struct gmx_ana_indexgrps_t;
 struct t_pbc;

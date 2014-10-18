@@ -48,7 +48,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
 #define FORWARD_TO_DEFAULT_PRINTER1(MethodName, Param1Type) \

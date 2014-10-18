@@ -46,7 +46,7 @@
 #include <vector>
 
 #include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 

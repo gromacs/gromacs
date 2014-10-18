@@ -49,7 +49,7 @@
 #include <string>
 
 #include "gromacs/options/abstractoption.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx

@@ -48,7 +48,7 @@
 #include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/arraydata.h"
 #include "gromacs/analysisdata/datamodule.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

@@ -45,7 +45,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/trajectoryanalysis/analysismodule.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 #include "testutils/cmdlinetest.h"
 

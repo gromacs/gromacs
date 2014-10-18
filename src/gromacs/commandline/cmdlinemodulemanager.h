@@ -44,7 +44,7 @@
 #define GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
 
 #include "gromacs/onlinehelp/helptopicinterface.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
