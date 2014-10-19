@@ -315,7 +315,7 @@ if(GMX_SOFTWARE_INVSQRT)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
 endif()
 
-if(WIN32 AND NOT CYGWIN)
+if(WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
     add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
@@ -470,7 +470,7 @@ if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif()
 
-if(WIN32 AND NOT CYGWIN)
+if(WIN32)
     set(GMX_NATIVE_WINDOWS 1)
     # This makes windows.h not declare min/max as macros that would break
     # C++ code using std::min/std::max.
@@ -640,7 +640,7 @@ if(GMX_LOAD_PLUGINS)
   endif()
 
   # so, should we use plug-ins?
-  if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
+  if(WIN32 OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
     if(NOT VMD_QUIETLY)
       MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
     endif()

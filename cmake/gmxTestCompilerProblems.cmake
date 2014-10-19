@@ -87,7 +87,7 @@ macro(gmx_test_compiler_problems)
         message(WARNING "GCC on Windows (GCC older than 4.9 or any version when compiling for 64bit) with AVX (other than AVX_128_FMA) crashes. Choose a different GMX_SIMD or a different compiler.") # GCC bug 49001, 54412.
     endif()
 
-    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND WIN32 AND NOT CYGWIN)
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND WIN32)
         if(CMAKE_VERSION VERSION_LESS 3.0.0)
             message(WARNING "Clang on Windows requires cmake 3.0.0")
         endif()
