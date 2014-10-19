@@ -39,32 +39,17 @@
 
 #include "cstringutil.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-
-#include <sys/types.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#ifdef HAVE_PWD_H
-#include <pwd.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 int continuing(char *s)
 {
@@ -190,71 +175,27 @@ void trim (char *str)
     rtrim (str);
 }
 
-char *
-gmx_ctime_r(const time_t *clock, char *buf, int n)
+void nice_header(FILE *out, const char *fn)
 {
-#ifdef _MSC_VER
-    /* Windows */
-    ctime_s( buf, n, clock );
-#elif defined(GMX_NATIVE_WINDOWS)
-    char *tmpbuf = ctime( clock );
-    strncpy(buf, tmpbuf, n-1);
-    buf[n-1] = '\0';
-#elif (defined(__sun))
-    /*Solaris*/
-    ctime_r(clock, buf, n);
-#else
-    char tmpbuf[STRLEN];
-    ctime_r(clock, tmpbuf);
-    strncpy(buf, tmpbuf, n-1);
-    buf[n-1] = '\0';
-#endif
-    return buf;
-}
-
-void nice_header (FILE *out, const char *fn)
-{
-    const char    *unk = "onbekend";
-    time_t         clock;
-    const char    *user;
-    int            gh;
-#ifdef HAVE_PWD_H
-    uid_t          uid;
-#else
     int            uid;
-#endif
-    char           buf[256] = "";
+    char           userbuf[256];
+    char           hostbuf[256];
     char           timebuf[STRLEN];
-#ifdef HAVE_PWD_H
-    struct passwd *pw;
-#endif
 
     /* Print a nice header above the file */
-    time(&clock);
-    fprintf (out, "%c\n", COMMENTSIGN);
-    fprintf (out, "%c\tFile '%s' was generated\n", COMMENTSIGN, fn ? fn : unk);
+    fprintf(out, "%c\n", COMMENTSIGN);
+    fprintf(out, "%c\tFile '%s' was generated\n", COMMENTSIGN, fn ? fn : "unknown");
 
-#ifdef HAVE_PWD_H
-    uid  = getuid();
-    pw   = getpwuid(uid);
-    gh   = gmx_gethostname(buf, 255);
-    /* pw returns null on error (e.g. compute nodes lack /etc/passwd) */
-    user = pw ? pw->pw_name : unk;
-#else
-    uid  = 0;
-    gh   = -1;
-    user = unk;
-#endif
+    uid  = gmx_getuid();
+    gmx_getusername(userbuf, 256);
+    gmx_gethostname(hostbuf, 256);
+    gmx_format_current_time(timebuf, STRLEN);
 
-    gmx_ctime_r(&clock, timebuf, STRLEN);
-    fprintf (out, "%c\tBy user: %s (%d)\n", COMMENTSIGN,
-             user ? user : unk, (int) uid);
-    fprintf(out, "%c\tOn host: %s\n", COMMENTSIGN, (gh == 0) ? buf : unk);
-
-    fprintf (out, "%c\tAt date: %s", COMMENTSIGN, timebuf);
-    fprintf (out, "%c\n", COMMENTSIGN);
+    fprintf(out, "%c\tBy user: %s (%d)\n", COMMENTSIGN, userbuf, uid);
+    fprintf(out, "%c\tOn host: %s\n", COMMENTSIGN, hostbuf);
+    fprintf(out, "%c\tAt date: %s\n", COMMENTSIGN, timebuf);
+    fprintf(out, "%c\n", COMMENTSIGN);
 }
-
 
 int gmx_strcasecmp_min(const char *str1, const char *str2)
 {
