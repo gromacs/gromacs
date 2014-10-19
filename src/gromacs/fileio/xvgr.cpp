@@ -38,15 +38,8 @@
 
 #include "xvgr.h"
 
-#include "config.h"
-
 #include <ctype.h>
 #include <string.h>
-#include <time.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -57,6 +50,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
@@ -238,12 +232,10 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
                  const output_env_t oenv)
 {
     char   pukestr[100], buf[STRLEN];
-    time_t t;
 
     if (output_env_get_print_xvgr_codes(oenv))
     {
-        time(&t);
-        gmx_ctime_r(&t, buf, STRLEN);
+        gmx_format_current_time(buf, STRLEN);
         fprintf(fp, "# This file was created %s", buf);
         try
         {

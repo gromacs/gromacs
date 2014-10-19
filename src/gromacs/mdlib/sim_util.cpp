@@ -45,10 +45,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
@@ -97,6 +93,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 #include "adress.h"
 
