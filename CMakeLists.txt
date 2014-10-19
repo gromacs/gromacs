@@ -315,7 +315,7 @@ if(GMX_SOFTWARE_INVSQRT)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
 endif()
 
-if(WIN32 AND NOT CYGWIN)
+if(WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
     add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
@@ -470,7 +470,7 @@ if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif()
 
-if(WIN32 AND NOT CYGWIN)
+if(WIN32)
     set(GMX_NATIVE_WINDOWS 1)
     # This makes windows.h not declare min/max as macros that would break
     # C++ code using std::min/std::max.
@@ -632,15 +632,14 @@ include(gmxManageLinearAlgebraLibraries)
 set(GMX_USE_PLUGINS OFF)
 
 if(GMX_LOAD_PLUGINS)
-  if(CYGWIN OR NOT WIN32)
+  if(NOT WIN32)
     # Native Windows does not have, nor need dlopen
-    # Note that WIN32 is set with Cygwin, but Cygwin needs dlopen to use plug-ins
     include(gmxTestdlopen)
     gmx_test_dlopen(HAVE_DLOPEN)
   endif()
 
   # so, should we use plug-ins?
-  if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
+  if(WIN32 OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
     if(NOT VMD_QUIETLY)
       MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
     endif()

@@ -34,7 +34,7 @@
 
 include(CheckCXXSourceCompiles)
 MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
-    if(WIN32)
+    if(WIN32 AND NOT MINGW)
         set(CXX11_FLAG "/Qstd=c++0x")
     elseif(CYGWIN)
         set(CXX11_FLAG "-std=gnu++0x") #required for strdup
