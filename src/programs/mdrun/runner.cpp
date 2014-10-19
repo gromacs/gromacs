@@ -45,9 +45,6 @@
 #include <string.h>
 
 #include <algorithm>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/ewald-util.h"

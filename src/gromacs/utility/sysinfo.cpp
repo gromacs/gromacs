@@ -145,3 +145,20 @@ void gmx_format_current_time(char *buf, size_t len)
     time_t clock = time(NULL);
     gmx_ctime_r(&clock, buf, len);
 }
+
+int gmx_set_nice(int level)
+{
+#ifdef GMX_USE_NICE
+    // TODO: This may not be reliable, but currently the return value is not
+    // used.
+    if (nice(level) != -1)
+    {
+        return 0;
+    }
+#else
+    // TODO: Use GMX_UNUSED_VALUE here, once its location stabilizes so that
+    // merging this will not cause compilation failures.
+    (void)level;
+#endif
+    return -1;
+}

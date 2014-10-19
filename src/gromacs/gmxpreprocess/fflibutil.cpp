@@ -36,19 +36,9 @@
 
 #include "fflibutil.h"
 
-#include "config.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/utility/cstringutil.h"

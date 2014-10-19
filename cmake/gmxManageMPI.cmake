@@ -156,9 +156,10 @@ if(GMX_MPI)
   include(gmxTestCatamount)
   gmx_test_catamount(GMX_CRAY_CATAMOUNT)
   if(GMX_CRAY_CATAMOUNT)
-    set(GMX_NO_SYSTEM 1)
-    set(GMX_NO_NICE 1)
-    set(HAVE_PWD_H 0)
+      set(GMX_NO_SYSTEM 1)
+      # TODO: Is this still necessary with the check for its presence?
+      set(GMX_USE_NICE 0)
+      set(HAVE_PWD_H 0)
   endif()
 
   set(GMX_LIB_MPI 1)
