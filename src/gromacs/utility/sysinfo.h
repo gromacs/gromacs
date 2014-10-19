@@ -108,6 +108,13 @@ char *gmx_ctime_r(const time_t *clock, char *buf, size_t len);
  */
 void gmx_format_current_time(char *buf, size_t len);
 
+/*! \brief
+ * Wrapper for nice().
+ *
+ * Does not throw.
+ */
+int gmx_set_nice(int level);
+
 /*! \} */
 
 #ifdef __cplusplus

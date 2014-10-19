@@ -62,6 +62,7 @@
 #include <unistd.h>
 #endif
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace
@@ -144,4 +145,19 @@ void gmx_format_current_time(char *buf, size_t len)
 {
     time_t clock = time(NULL);
     gmx_ctime_r(&clock, buf, len);
+}
+
+int gmx_set_nice(int level)
+{
+#ifdef GMX_USE_NICE
+    // TODO: This may not be reliable, but currently the return value is not
+    // used.
+    if (nice(level) != -1)
+    {
+        return 0;
+    }
+#else
+    GMX_UNUSED_VALUE(level);
+#endif
+    return -1;
 }

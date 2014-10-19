@@ -169,8 +169,8 @@
 /* Use OpenMP multithreading */
 #cmakedefine GMX_OPENMP
 
-/* Ignore calls to nice(3) */
-#cmakedefine GMX_NO_NICE
+/* Can and should use nice(3) to set priority */
+#cmakedefine GMX_USE_NICE
 
 /* Use if can't rename checkpoints */
 #cmakedefine GMX_NO_RENAME

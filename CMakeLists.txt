@@ -354,6 +354,7 @@ check_function_exists(sysconf           HAVE_SYSCONF)
 check_function_exists(rsqrt             HAVE_RSQRT)
 check_function_exists(rsqrtf            HAVE_RSQRTF)
 check_function_exists(sqrtf             HAVE_SQRTF)
+check_function_exists(nice              HAVE_NICE)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -364,6 +365,11 @@ test_sched_affinity(HAVE_SCHED_AFFINITY)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
+
+set(GMX_USE_NICE 0)
+if (HAVE_UNISTD_H AND HAVE_NICE)
+    set(GMX_USE_NICE 1)
+endif()
 
 # Management of GROMACS options for specific toolchains should go
 # here. Because the initial settings for some of the main options have
@@ -670,7 +676,8 @@ option(GMX_NACL "Configure for Native Client builds" OFF)
 if (GMX_NACL)
   list(APPEND GMX_EXTRA_LIBRARIES nosys)
   set(GMX_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lnosys")
-  set(GMX_NO_NICE 1)
+  # TODO: Is this still necessary with the check for its presence?
+  set(GMX_USE_NICE 0)
   set(GMX_NO_RENAME 1)
 endif()
 mark_as_advanced(GMX_NACL)
