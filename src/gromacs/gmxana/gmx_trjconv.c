@@ -36,15 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -475,7 +469,6 @@ void check_trn(const char *fn)
     }
 }
 
-#ifndef GMX_NATIVE_WINDOWS
 void do_trunc(const char *fn, real t0)
 {
     t_fileio        *in;
@@ -531,7 +524,7 @@ void do_trunc(const char *fn, real t0)
             {
                 fprintf(stderr, "Once again, I'm gonna DO this...\n");
                 close_trn(in);
-                if (0 != truncate(fn, fpos))
+                if (0 != gmx_truncate(fn, fpos))
                 {
                     gmx_fatal(FARGS, "Error truncating file %s", fn);
                 }
@@ -548,7 +541,6 @@ void do_trunc(const char *fn, real t0)
         }
     }
 }
-#endif
 
 /*! \brief Read a full molecular topology if useful and available.
  *
@@ -828,11 +820,9 @@ int gmx_trjconv(int argc, char *argv[])
           { &bVels }, "Read and write velocities if possible" },
         { "-force", FALSE, etBOOL,
           { &bForce }, "Read and write forces if possible" },
-#ifndef GMX_NATIVE_WINDOWS
         { "-trunc", FALSE, etTIME,
           { &ttrunc },
           "Truncate input trajectory file after this time (%t)" },
-#endif
         { "-exec", FALSE, etSTR,
           { &exec_command },
           "Execute command for every output frame with the "
@@ -940,9 +930,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     if (ttrunc != -1)
     {
-#ifndef GMX_NATIVE_WINDOWS
         do_trunc(in_file, ttrunc);
-#endif
     }
     else
     {

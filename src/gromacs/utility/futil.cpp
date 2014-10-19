@@ -52,19 +52,12 @@
 /* POSIX */
 #include <dirent.h>
 #endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #include <io.h>
-#include <windows.h>
-#endif
-
-/* Windows file stuff, only necessary for visual studio */
-#ifdef _MSC_VER
 #include <windows.h>
 #endif
 
@@ -243,6 +236,26 @@ gmx_off_t gmx_ftell(FILE *stream)
 #else
     return ftell(stream);
 #endif
+#endif
+}
+
+int gmx_truncate(const char *filename, gmx_off_t length)
+{
+#ifdef GMX_NATIVE_WINDOWS
+    FILE *fp = fopen(filename, "rb+");
+    if (fp == NULL)
+    {
+        return -1;
+    }
+#ifdef _MSC_VER
+    int rc = _chsize_s(fileno(fp), length);
+#else
+    int rc = _chsize(fileno(fp), length);
+#endif
+    fclose(fp);
+    return rc;
+#else
+    return truncate(filename, length);
 #endif
 }
 
