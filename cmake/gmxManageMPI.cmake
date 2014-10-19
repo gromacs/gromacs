@@ -153,13 +153,5 @@ if(GMX_MPI)
         "or set the variables reported missing for MPI_C above.")
   endif()
 
-  include(gmxTestCatamount)
-  gmx_test_catamount(GMX_CRAY_CATAMOUNT)
-  if(GMX_CRAY_CATAMOUNT)
-    set(GMX_NO_SYSTEM 1)
-    set(GMX_NO_NICE 1)
-    set(HAVE_PWD_H 0)
-  endif()
-
   set(GMX_LIB_MPI 1)
 endif()
