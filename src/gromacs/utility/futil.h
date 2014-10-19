@@ -149,6 +149,9 @@ int gmx_fseek(FILE *stream, gmx_off_t offset, int whence);
 /** OS-independent 64-bit ftell(). */
 gmx_off_t gmx_ftell(FILE *stream);
 
+/** OS-independent truncate(). */
+int gmx_truncate(const char *filename, gmx_off_t length);
+
 /*! \brief
  * Finds full path for a library file.
  *

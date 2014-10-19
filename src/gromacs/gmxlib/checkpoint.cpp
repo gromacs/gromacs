@@ -47,12 +47,7 @@
 
 #include <fcntl.h>
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #ifdef GMX_NATIVE_WINDOWS
-/* _chsize_s */
-#include <io.h>
 #include <sys/locking.h>
 #endif
 
@@ -152,33 +147,6 @@ const char *edfh_names[edfhNR] =
     "bEquilibrated", "N_at_state", "Wang-Landau Histogram", "Wang-Landau Delta", "Weights", "Free Energies", "minvar", "variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
-
-#ifdef GMX_NATIVE_WINDOWS
-static int
-gmx_wintruncate(const char *filename, __int64 size)
-{
-#ifdef GMX_FAHCORE
-    /*we do this elsewhere*/
-    return 0;
-#else
-    FILE *fp;
-
-    fp = fopen(filename, "rb+");
-
-    if (fp == NULL)
-    {
-        return -1;
-    }
-
-#ifdef _MSC_VER
-    return _chsize_s( fileno(fp), size);
-#else
-    return _chsize( fileno(fp), size);
-#endif
-#endif
-}
-#endif
-
 
 enum {
     ecprREAL, ecprRVEC, ecprMATRIX
@@ -2240,15 +2208,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
             if (i != 0) /*log file is already seeked to correct position */
             {
-#ifdef GMX_NATIVE_WINDOWS
-                rc = gmx_wintruncate(outputfiles[i].filename, outputfiles[i].offset);
-#else
-                rc = truncate(outputfiles[i].filename, outputfiles[i].offset);
-#endif
+#if !defined(GMX_NATIVE_WINDOWS) || !defined(GMX_FAHCORE)
+                /* For FAHCORE, we do this elsewhere*/
+                rc = gmx_truncate(outputfiles[i].filename, outputfiles[i].offset);
                 if (rc != 0)
                 {
                     gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfiles[i].filename);
                 }
+#endif
             }
         }
     }
