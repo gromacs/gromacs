@@ -39,8 +39,6 @@
 
 #include "gromacs/legacyheaders/viewit.h"
 
-#include "config.h"
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -125,15 +123,10 @@ void do_view(const output_env_t oenv, const char *fn, const char *opts)
             {
                 sprintf(buf, "%s %s %s &", cmd, opts ? opts : "", fn);
                 fprintf(stderr, "Executing '%s'\n", buf);
-#ifdef GMX_NO_SYSTEM
-                printf("Warning-- No calls to system(3) supported on this platform.");
-                printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
-#else
                 if (0 != system(buf) )
                 {
                     gmx_fatal(FARGS, "Failed executing command: %s", buf);
                 }
-#endif
             }
         }
     }

@@ -119,11 +119,7 @@ static void sep_line(FILE *fp)
 /* Wrapper for system calls */
 static int gmx_system_call(char *command)
 {
-#ifdef GMX_NO_SYSTEM
-    gmx_fatal(FARGS, "No calls to system(3) supported on this platform. Attempted to call:\n'%s'\n", command);
-#else
     return ( system(command) );
-#endif
 }
 
 
