@@ -50,10 +50,6 @@
 #include <string>
 #include <utility>
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodule.h"
@@ -67,6 +63,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/sysinfo.h"
 
 #include "cmdlinehelpmodule.h"
 #include "cmdlinemodulemanager-impl.h"
@@ -578,21 +575,17 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         fprintf(stderr, "Will write debug log file: %s\n", filename.c_str());
         gmx_init_debug(optionsHolder.debugLevel(), filename.c_str());
     }
-#if defined(HAVE_UNISTD_H) && !defined(GMX_NO_NICE) && !defined(__MINGW32__)
     // Set the nice level unless disabled in the configuration.
     if (optionsHolder.niceLevel() != 0)
     {
         static bool bNiceSet = false; // Only set it once.
         if (!bNiceSet)
         {
-            if (nice(optionsHolder.niceLevel()) == -1)
-            {
-                // Do nothing, but use the return value to avoid warnings.
-            }
+            // TODO: Diagnostic if this fails and the user explicitly requested it.
+            gmx_set_nice(optionsHolder.niceLevel());
             bNiceSet = true;
         }
     }
-#endif
 
     int rc = 0;
     if (!(module == impl_->helpModule_ && !bMaster))
