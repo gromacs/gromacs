@@ -53,6 +53,7 @@
 #include <sys/time.h>
 #endif
 #ifdef GMX_NATIVE_WINDOWS
+#include <Windows.h>
 #include <process.h>
 #endif
 #ifdef HAVE_PWD_H
@@ -74,7 +75,13 @@ const char c_unknown[] = "unknown";
 int gmx_gethostname(char *buf, size_t len)
 {
     GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
-#if defined(HAVE_UNISTD_H) && !defined(__native_client__) && !defined(__MINGW32__)
+#ifdef GMX_NATIVE_WINDOWS
+    DWORD  dlen = len;
+    if (GetComputerName(buf, &dlen))
+    {
+        return 0;
+    }
+#elif defined(HAVE_UNISTD_H) && !defined(__native_client__)
     if (gethostname(buf, len-1) == 0)
     {
         buf[len-1] = '\0';
@@ -108,7 +115,13 @@ int gmx_getusername(char *buf, size_t len)
     GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
     // TODO: nice_header() used getpwuid() instead; consider using getpwuid_r()
     // here.  If not, get rid of HAVE_PWD_H completely.
-#if defined(HAVE_UNISTD_H) && !defined(__MINGW32__)
+#ifdef GMX_NATIVE_WINDOWS
+    DWORD  dlen = len;
+    if (GetUserName(buf, &dlen))
+    {
+        return 0;
+    }
+#elif defined(HAVE_UNISTD_H)
     if (!getlogin_r(buf, len))
     {
         buf[len-1] = '\0';
