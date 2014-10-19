@@ -659,17 +659,11 @@ int gmx_do_dssp(int argc, char *argv[])
         write_pdbfile_indexed(tapein, NULL, atoms, x, ePBC, box, ' ', -1, gnx, index, NULL, TRUE);
         gmx_ffclose(tapein);
 
-#ifdef GMX_NO_SYSTEM
-        printf("Warning-- No calls to system(3) supported on this platform.");
-        printf("Warning-- Skipping execution of 'system(\"%s\")'.", dssp);
-        exit(1);
-#else
         if (0 != system(dssp))
         {
             gmx_fatal(FARGS, "Failed to execute command: %s\n",
                       "Try specifying your dssp version with the -ver option.", dssp);
         }
-#endif
 
         /* strip_dssp returns the number of lines found in the dssp file, i.e.
          * the number of residues plus the separator lines */

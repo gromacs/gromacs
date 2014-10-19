@@ -175,9 +175,6 @@
 /* Use if can't rename checkpoints */
 #cmakedefine GMX_NO_RENAME
 
-/* Ignore calls to system(3) */
-#cmakedefine GMX_NO_SYSTEM
-
 /* Use (modified) Gamess-UK for QM-MM calculations */
 #cmakedefine GMX_QMMM_GAMESS
 

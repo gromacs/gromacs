@@ -1870,15 +1870,10 @@ int gmx_trjconv(int argc, char *argv[])
                             char c[255];
                             sprintf(c, "%s  %d", exec_command, file_nr-1);
                             /*fprintf(stderr,"Executing '%s'\n",c);*/
-#ifdef GMX_NO_SYSTEM
-                            printf("Warning-- No calls to system(3) supported on this platform.");
-                            printf("Warning-- Skipping execution of 'system(\"%s\")'.", c);
-#else
                             if (0 != system(c))
                             {
                                 gmx_fatal(FARGS, "Error executing command: %s", c);
                             }
-#endif
                         }
                         outframe++;
                     }
