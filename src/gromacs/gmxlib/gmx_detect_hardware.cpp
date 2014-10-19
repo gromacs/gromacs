@@ -71,6 +71,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/sysinfo.h"
 
 #ifdef GMX_GPU
 const gmx_bool bGPUBinary = TRUE;

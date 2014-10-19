@@ -46,7 +46,6 @@
 #include "gromacs/utility/gmx_header_config.h"
 
 #include <stdio.h>
-#include <time.h>
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -94,9 +93,6 @@ void rtrim(char *str);
 
 /** Remove leading and trailing whitespace from a string. */
 void trim(char *str);
-
-/** Portable version of ctime_r. */
-char *gmx_ctime_r(const time_t *clock, char *buf, int n);
 
 /** Prints creation time stamp and user information into a file as comments. */
 void nice_header(FILE *out, const char *fn);

@@ -44,13 +44,9 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include <fcntl.h>
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -72,12 +68,12 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -1502,7 +1498,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     int                  double_prec;
     char                *fprog;
     char                *fntemp; /* the temporary checkpoint file name */
-    time_t               now;
     char                 timebuf[STRLEN];
     int                  nppnodes, npmenodes;
     char                 buf[1024], suffix[5+STEPSTRSIZE], sbuf[STEPSTRSIZE];
@@ -1538,8 +1533,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     snew(fntemp, strlen(fn));
     strcpy(fntemp, fn);
 #endif
-    time(&now);
-    gmx_ctime_r(&now, timebuf, STRLEN);
+    gmx_format_current_time(timebuf, STRLEN);
 
     if (fplog)
     {

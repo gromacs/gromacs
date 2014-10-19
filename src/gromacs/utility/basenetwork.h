@@ -53,18 +53,6 @@ extern "C" {
 #endif
 
 /*! \brief
- * Sets the hostname to the value given by gethostname(), if available.
- *
- * \param[out] name Buffer to receive the hostname.
- * \param[in]  len  Length of buffer \p name (must be >= 8).
- * \returns 0 on success, -1 on error.
- *
- * If the value is not available, "unknown" is returned.
- * \p name should have at least size \p len.
- */
-int gmx_gethostname(char *name, size_t len);
-
-/*! \brief
  * Returns whether MPI has been initialized.
  *
  * The return value is `FALSE` if MPI_Init() has not been called, or if
