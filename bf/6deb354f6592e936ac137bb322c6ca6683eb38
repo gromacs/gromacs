@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Code-Review+1: Roland Schulz <roland@rschulz.eu>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Mon, 20 Oct 2014 03:33:32 +0200
+Reviewed-on: https://gerrit.gromacs.org/4153
+Project: gromacs
+Branch: refs/heads/release-5-0
