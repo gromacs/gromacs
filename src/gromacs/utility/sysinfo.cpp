@@ -48,6 +48,9 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef HAVE_DLADDR
+#include <dlfcn.h>
+#endif
 #include <sys/types.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -71,6 +74,28 @@ namespace
 //! Static return value for cases when a string value is not available.
 const char c_unknown[] = "unknown";
 } // namespace
+
+namespace gmx
+{
+
+std::string getExecutablePath()
+{
+    return std::string();
+}
+
+std::string getLibGromacsPath()
+{
+#ifdef HAVE_DLADDR
+    Dl_info info;
+    if (dladdr(reinterpret_cast<const void *>(&getLibGromacsPath), &info) != 0)
+    {
+        return info.dli_fname;
+    }
+#endif
+    return std::string();
+}
+
+} // namespace gmx
 
 int gmx_gethostname(char *buf, size_t len)
 {

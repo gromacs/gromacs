@@ -48,6 +48,16 @@
 #include <time.h>
 
 #ifdef __cplusplus
+#include <string>
+
+namespace gmx
+{
+
+std::string getExecutablePath();
+std::string getLibGromacsPath();
+
+} // namespace gmx
+
 extern "C" {
 #endif
 

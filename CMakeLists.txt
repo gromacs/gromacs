@@ -624,17 +624,20 @@ endif()
 # Process FFT library settings
 ##################################################
 include(gmxManageFFTLibraries)
-
-
 include(gmxManageLinearAlgebraLibraries)
+
+# We only have meaningful use for dladdr() with shared libraries.
+if (BUILD_SHARED_LIBS)
+    include(gmxTestDl)
+    gmx_test_dladdr(HAVE_DLADDR)
+endif()
 
 # Whether GROMACS will really try to compile support for VMD plugins
 set(GMX_USE_PLUGINS OFF)
-
 if(GMX_LOAD_PLUGINS)
   if(NOT WIN32)
     # Native Windows does not have, nor need dlopen
-    include(gmxTestdlopen)
+    include(gmxTestDl)
     gmx_test_dlopen(HAVE_DLOPEN)
   endif()
 
@@ -647,13 +650,16 @@ if(GMX_LOAD_PLUGINS)
       find_package(VMD)
     endif()
     set(GMX_USE_PLUGINS ON)
-    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
-    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
-  else()
-    set(PKG_DL_LIBS)
   endif()
 endif()
 set(VMD_QUIETLY TRUE CACHE INTERNAL "")
+
+if (HAVE_DLADDR OR GMX_USE_PLUGINS)
+    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
+    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
+else()
+    set(PKG_DL_LIBS "")
+endif()
 
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.

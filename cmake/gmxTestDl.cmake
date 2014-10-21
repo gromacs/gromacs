@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012, by the GROMACS development team, led by
+# Copyright (c) 2012,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,33 +32,43 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# - Define macro to check if DLOPEN is defined
+# Defines macros to detect various functions related to dynamic linker
+# interaction
 #
-#  GMX_TEST_DLOPEN(VARIABLE)
-#
-#  VARIABLE will be set if dlopen is present in dlfcn.h
-#
+# The following macros are provided:
+#   gmx_test_dlopen(VARIABLE)
+#     Sets VARIABLE to 1 or 0 based on whether dlopen is available.
+#   gmx_test_dladdr(VARIABLE)
+#     Sets VARIABLE to 1 or 0 based on whether dladdr is available.
 
-MACRO(GMX_TEST_DLOPEN VARIABLE)
-  IF(NOT DEFINED ${VARIABLE})
-    MESSAGE(STATUS "Checking for dlopen")
+include(CheckCSourceCompiles)
 
-    set(CMAKE_REQUIRED_INCLUDES "dlfcn.h")
-    set(CMAKE_REQUIRED_LIBRARIES "dl")
-    check_c_source_compiles(
-      "#include <dlfcn.h>
+function (gmx_test_dlopen VARIABLE)
+    # The variable is created in the cache by check_c_source_compiles()
+    if (NOT DEFINED ${VARIABLE})
+        set(CMAKE_REQUIRED_DEFINITIONS "")
+        set(CMAKE_REQUIRED_FLAGS "")
+        set(CMAKE_REQUIRED_INCLUDES "")
+        set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
+        check_c_source_compiles("
+#include <dlfcn.h>
+int main(void) { dlopen(0,0); }" ${VARIABLE})
+    endif()
+endfunction()
+
+function (gmx_test_dladdr VARIABLE)
+    # The variable is created in the cache by check_c_source_compiles()
+    if (NOT DEFINED ${VARIABLE})
+        set(CMAKE_REQUIRED_DEFINITIONS "")
+        set(CMAKE_REQUIRED_FLAGS "")
+        set(CMAKE_REQUIRED_INCLUDES "")
+        set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
+        check_c_source_compiles("
+#include <dlfcn.h>
 int main(void) {
-  dlopen(0,0);
+  Dl_info info;
+  dladdr(0,&info);
+  return (info.dli_fname != 0) ? 0 : 1;
 }" ${VARIABLE})
-
-    IF(${VARIABLE})
-      MESSAGE(STATUS "Checking for dlopen - found")
-      set(${VARIABLE} 1 CACHE INTERNAL "Result of test for dlopen" FORCE)
-    ELSE()
-      MESSAGE(STATUS "Checking for dlopen - not found")
-      set(${VARIABLE} 0 CACHE INTERNAL "Result of test for dlopen" FORCE)
-    ENDIF()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  ENDIF()
-ENDMACRO()
+    endif()
+endfunction()

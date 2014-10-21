@@ -265,6 +265,9 @@
 /* Define to 1 if you have the clock_gettime() function. */
 #cmakedefine HAVE_CLOCK_GETTIME
 
+/* Define to 1 if you have the dladdr() function. */
+#cmakedefine HAVE_DLADDR
+
 /* Define to 1 if you have the gettimeofday() function. */
 #cmakedefine HAVE_GETTIMEOFDAY
 

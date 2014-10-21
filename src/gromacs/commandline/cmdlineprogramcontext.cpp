@@ -60,6 +60,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/sysinfo.h"
 
 namespace gmx
 {
@@ -241,48 +242,47 @@ std::string findFallbackLibraryDataPath()
  * Extra logic is present to allow running binaries from the build tree such
  * that they use up-to-date data files from the source tree.
  */
-std::string findDefaultLibraryDataPath(const std::string &binaryPath)
+std::string findDefaultLibraryDataPath(const std::string &initialPath)
 {
     // If the input path is not absolute, the binary could not be found.
     // Don't search anything.
-    if (Path::isAbsolute(binaryPath))
+    if (initialPath.empty() || !Path::isAbsolute(initialPath))
     {
-        // Remove the executable name.
-        std::string searchPath = Path::getParentPath(binaryPath);
-        // If running directly from the build tree, try to use the source
-        // directory.
+        return std::string();
+    }
+    // Remove the filename.
+    std::string searchPath = Path::getParentPath(initialPath);
+    // If running directly from the build tree, try to use the source
+    // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
-        std::string buildBinPath;
+    std::string buildBinPath;
 #ifdef CMAKE_INTDIR
-        buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin", CMAKE_INTDIR);
+    buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin", CMAKE_INTDIR);
 #else
-        buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin");
+    buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin");
 #endif
-        if (Path::isEquivalent(searchPath, buildBinPath))
+    if (Path::isEquivalent(searchPath, buildBinPath))
+    {
+        std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
+        if (isAcceptableLibraryPath(testPath))
         {
-            std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
-            if (isAcceptableLibraryPath(testPath))
-            {
-                return testPath;
-            }
-        }
-#endif
-
-        // Use the executable path to (try to) find the library dir.
-        while (!searchPath.empty())
-        {
-            std::string testPath = Path::join(searchPath, GMXLIB_SEARCH_DIR);
-            if (isAcceptableLibraryPath(testPath))
-            {
-                return testPath;
-            }
-            searchPath = Path::getParentPath(searchPath);
+            return testPath;
         }
     }
+#endif
 
-    // End of smart searching. If we didn't find it in our parent tree,
-    // or if the program name wasn't set, return a fallback.
-    return findFallbackLibraryDataPath();
+    // Use the executable path to (try to) find the library dir.
+    while (!searchPath.empty())
+    {
+        std::string testPath = Path::join(searchPath, GMXLIB_SEARCH_DIR);
+        if (isAcceptableLibraryPath(testPath))
+        {
+            return testPath;
+        }
+        searchPath = Path::getParentPath(searchPath);
+    }
+
+    return std::string();
 }
 
 //! \}
@@ -309,6 +309,7 @@ class CommandLineProgramContext::Impl
          * calling this function.
          */
         void findBinaryPath() const;
+        void findDefaultLibraryPath() const;
 
         ExecutableEnvironmentPointer  executableEnv_;
         std::string                   invokedName_;
@@ -345,12 +346,33 @@ void CommandLineProgramContext::Impl::findBinaryPath() const
 {
     if (fullBinaryPath_.empty())
     {
-        fullBinaryPath_ = findFullBinaryPath(invokedName_, *executableEnv_);
-        fullBinaryPath_ = Path::normalize(Path::resolveSymlinks(fullBinaryPath_));
-        // TODO: Investigate/Consider using a dladdr()-based solution.
-        // Potentially less portable, but significantly simpler, and also works
-        // with user binaries even if they are located in some arbitrary location,
-        // as long as shared libraries are used.
+        fullBinaryPath_ = getExecutablePath();
+        if (fullBinaryPath_.empty() || !Path::isAbsolute(fullBinaryPath_))
+        {
+            fullBinaryPath_ = findFullBinaryPath(invokedName_, *executableEnv_);
+            fullBinaryPath_ = Path::resolveSymlinks(fullBinaryPath_);
+        }
+        fullBinaryPath_ = Path::normalize(fullBinaryPath_);
+    }
+}
+
+void CommandLineProgramContext::Impl::findDefaultLibraryPath() const
+{
+    if (defaultLibraryDataPath_.empty())
+    {
+        defaultLibraryDataPath_ = findDefaultLibraryDataPath(getLibGromacsPath());
+        if (defaultLibraryDataPath_.empty())
+        {
+            findBinaryPath();
+            defaultLibraryDataPath_ = findDefaultLibraryDataPath(fullBinaryPath_);
+        }
+        // End of smart searching. If we didn't find it in our parent tree,
+        // or if the program name wasn't set, return a fallback.
+        if (defaultLibraryDataPath_.empty())
+        {
+            defaultLibraryDataPath_ = findFallbackLibraryDataPath();
+        }
+        defaultLibraryDataPath_ = Path::normalize(defaultLibraryDataPath_);
     }
 }
 
@@ -418,12 +440,7 @@ const char *CommandLineProgramContext::fullBinaryPath() const
 const char *CommandLineProgramContext::defaultLibraryDataPath() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
-    if (impl_->defaultLibraryDataPath_.empty())
-    {
-        impl_->findBinaryPath();
-        impl_->defaultLibraryDataPath_ =
-            Path::normalize(findDefaultLibraryDataPath(impl_->fullBinaryPath_));
-    }
+    impl_->findDefaultLibraryPath();
     return impl_->defaultLibraryDataPath_.c_str();
 }
 
