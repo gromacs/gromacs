@@ -188,10 +188,16 @@ gmx_option_multichoice(
     "${GMX_SUGGESTED_SIMD}"
     None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 MIC ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
+if(GMX_TARGET_MIC)
+    set(GMX_FFT_LIBRARY_DEFAULT "mkl")
+else()
+    set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
+endif()
+
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
     "FFT library"
-    "fftw3"
+    "${GMX_FFT_LIBRARY_DEFAULT}"
     fftw3 mkl "fftpack[built-in]")
 gmx_dependent_option(
     GMX_BUILD_OWN_FFTW

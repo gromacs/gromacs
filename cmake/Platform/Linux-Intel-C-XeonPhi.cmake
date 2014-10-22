@@ -31,12 +31,5 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
-set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR XeonPhi)
-if(NOT GMX_MPI)
-    set(CMAKE_C_COMPILER "icc")
-    set(CMAKE_CXX_COMPILER "icpc")
-else()
-    set(CMAKE_C_COMPILER "mpiicc") #FindMPI doesn't work (#14991)
-    set(CMAKE_CXX_COMPILER "mpiicpc")
-endif()
+set(CMAKE_C_FLAGS_INIT "-mmic")
+set(CMAKE_SYSTEM_PREFIX_PATH  "${_CMAKE_INSTALL_DIR}" "${CMAKE_INSTALL_PREFIX}") #remove /usr and /usr/local
