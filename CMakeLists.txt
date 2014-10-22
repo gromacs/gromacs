@@ -182,8 +182,10 @@ endif()
 if(NOT GMX_TARGET_MIC)
     include(gmxDetectSimd)
     gmx_detect_simd(GMX_SUGGESTED_SIMD)
+    set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
 else()
     set(GMX_SUGGESTED_SIMD "None")
+    set(GMX_FFT_LIBRARY_DEFAULT "mkl")
 endif()
 
 gmx_option_multichoice(
@@ -195,7 +197,7 @@ gmx_option_multichoice(
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
     "FFT library"
-    "fftw3"
+    "${GMX_FFT_LIBRARY_DEFAULT}"
     fftw3 mkl "fftpack[built-in]")
 gmx_dependent_option(
     GMX_BUILD_OWN_FFTW
