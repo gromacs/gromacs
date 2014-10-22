@@ -235,6 +235,9 @@
 /* Use GPU native acceleration */
 #cmakedefine GMX_GPU
 
+/* Use NVML */
+#cmakedefine HAVE_NVML
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
 
