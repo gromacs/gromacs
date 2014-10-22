@@ -189,6 +189,9 @@ gmx_bool init_gpu(int mygpu, char *result_str,
                   const gmx_gpu_opt_t *gpu_opt)
 {
     cudaError_t stat;
+#if GMX_USE_NVML
+    nvmlReturn_t nvml_stat = NVML_SUCCESS;
+#endif /*GMX_USE_NVML*/
     char        sbuf[STRLEN];
     int         gpuid;
 
@@ -213,7 +216,82 @@ gmx_bool init_gpu(int mygpu, char *result_str,
         fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuid, gpu_info->cuda_dev[gpuid].prop.name);
     }
 
+#if GMX_USE_NVML
+    if ( gpu_info->cuda_dev[gpuid].prop.major >= 3 && 
+         gpu_info->cuda_dev[gpuid].prop.minor >= 5 )
+    {
+        nvml_stat = nvmlInit();
+        //TODO: Should NVML errors handled as critical errors?
+        if ( nvml_stat == NVML_SUCCESS )
+        {
+            //TODO: How should errors be reported?
+            //TODO: Should this go into a separate function?
+            //1. get nvmlDeviceId
+            nvmlDevice_t nvml_device_id;
+            unsigned int nvml_device_count = 0;
+            nvml_stat = nvmlDeviceGetCount ( &nvml_device_count );
+            NVML_RET_ERR( nvml_stat, "nvmlDeviceGetCount failed" );
+            for ( unsigned int nvml_device_idx = 0; nvml_device_idx < nvml_device_count; ++nvml_device_idx )
+            {
+                nvml_stat = nvmlDeviceGetHandleByIndex ( nvml_device_idx, &nvml_device_id );
+                NVML_RET_ERR( nvml_stat, "nvmlDeviceGetHandleByIndex failed" );
+
+                nvmlPciInfo_t nvml_pci_info;
+                nvml_stat = nvmlDeviceGetPciInfo ( nvml_device_id, &nvml_pci_info );
+                NVML_RET_ERR( nvml_stat, "nvmlDeviceGetPciInfo failed" );
+                if ( static_cast<unsigned int>(gpu_info->cuda_dev[gpuid].prop.pciBusID) == nvml_pci_info.bus &&
+                     static_cast<unsigned int>(gpu_info->cuda_dev[gpuid].prop.pciDeviceID) == nvml_pci_info.device &&
+                     static_cast<unsigned int>(gpu_info->cuda_dev[gpuid].prop.pciDomainID) == nvml_pci_info.domain )
+                    break;
+            }
+            if ( nvml_stat == NVML_SUCCESS )
+            {
+                gpu_info->cuda_dev[gpuid].nvml_initialized      = true;
+                gpu_info->cuda_dev[gpuid].nvml_device_id        = nvml_device_id;
+                gpu_info->cuda_dev[gpuid].nvml_is_restricted    = NVML_FEATURE_ENABLED;
+                
+                nvml_stat = nvmlDeviceGetAPIRestriction ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_RESTRICTED_API_SET_APPLICATION_CLOCKS, &(gpu_info->cuda_dev[gpuid].nvml_is_restricted) );
+                NVML_RET_ERR( nvml_stat, "nvmlDeviceGetAPIRestriction failed" );
+                
+                //get max application clocks
+                unsigned int max_sm_clock = 0;
+                unsigned int max_mem_clock = 0;
+                nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &max_sm_clock );
+                NVML_RET_ERR( nvml_stat, "nvmlDeviceGetMaxClockInfo failed" );
+                nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &max_mem_clock );
+                NVML_RET_ERR( nvml_stat, "nvmlDeviceGetMaxClockInfo failed" );
+                
+                //get current application clocks setting
+                unsigned int app_sm_clock = 0;
+                unsigned int app_mem_clock = 0;
+                nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &app_sm_clock );
+                NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+                nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &app_mem_clock );
+                NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+            
+                //TODO: Need to distinguish between different GPUs?         
+                if ( app_sm_clock < max_sm_clock && gpu_info->cuda_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED )
+                {
+                    //TODO: Whats the right way of printing this?
+                    fprintf(stderr, "Setting application clocks for %s to (%d,%d)\n", gpu_info->cuda_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
+                    nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->cuda_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
+                    NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+                }
+                else if ( app_sm_clock < max_sm_clock )
+                {
+                    //TODO: Whats the right way of printing this?
+                    fprintf(stderr, "Insufficient permissions to set application clocks for %s. Current values are (%d,%d). Max values are (%d,%d)\nUse nvidia-smi -acp to change application clock permissions.", gpu_info->cuda_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
+                }
+            }
+        }
+
+        strncpy(result_str, nvmlErrorString(nvml_stat), STRLEN);
+    }
+    return (stat == cudaSuccess) && (nvml_stat == NVML_SUCCESS);
+#else
     return (stat == cudaSuccess);
+#endif /*GMX_USE_NVML*/
+
 }
 
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
@@ -228,6 +306,9 @@ gmx_bool init_gpu(int mygpu, char *result_str,
 gmx_bool free_gpu(char *result_str)
 {
     cudaError_t stat;
+#if GMX_USE_NVML
+    nvmlReturn_t nvml_stat;
+#endif /*GMX_USE_NVML*/
 
     assert(result_str);
 
@@ -238,6 +319,13 @@ gmx_bool free_gpu(char *result_str)
         CU_RET_ERR(stat, "cudaGetDevice failed");
         fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuid);
     }
+    
+#if GMX_USE_NVML
+    //TODO: Would need to access gpu_info->cuda_dev[gpuid].nvml_is_restricted and 
+    //      gpu_info->cuda_dev[gpuid].nvml_device_id to decide if application clocks need to be reset or not.
+    nvml_stat = nvmlShutdown();
+    strncpy(result_str, nvmlErrorString(nvml_stat), STRLEN);
+#endif /* GMX_USE_NVML */
 
 #if CUDA_VERSION < 4000
     stat = cudaThreadExit();
@@ -246,7 +334,11 @@ gmx_bool free_gpu(char *result_str)
 #endif
     strncpy(result_str, cudaGetErrorString(stat), STRLEN);
 
+#if GMX_USE_NVML
+    return (stat == cudaSuccess) && (nvml_stat == NVML_SUCCESS);
+#else   
     return (stat == cudaSuccess);
+#endif /* GMX_USE_NVML */
 }
 
 /*! \brief Returns true if the gpu characterized by the device properties is

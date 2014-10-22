@@ -141,6 +141,12 @@ ${_msg}")
         endif()
     endif() # NOT CUDA_FOUND
 endif()
+
+# Try to find NVML if a GPU accelerated binary should be build.
+if (GMX_GPU)
+	find_package(NVML)
+endif()
+
 # Annoyingly enough, FindCUDA leaves a few variables behind as non-advanced.
 # We need to mark these advanced outside the conditional, otherwise, if the
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be

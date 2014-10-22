@@ -165,6 +165,11 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
 endif()
 
 if (GMX_GPU)
+    if(NVML_FOUND)
+		include_directories(${NVML_INCLUDE_DIR})
+		add_definitions(-DGMX_USE_NVML)
+		list(APPEND GMX_EXTRA_LIBRARIES ${NVML_LIBRARY})
+	endif(NVML_FOUND)
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES}
             OPTIONS
             RELWITHDEBINFO -g

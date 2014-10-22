@@ -37,6 +37,9 @@
 #define CUDAUTILS_CUH
 
 #include <stdio.h>
+#if GMX_USE_NVML
+#include <nvml.h>
+#endif /* GMX_USE_NVML */
 
 #include "gromacs/utility/fatalerror.h"
 
@@ -99,12 +102,23 @@
         } \
     } while (0)
 
+/*! Check for NVML error on the return status of a NVML API call. */
+#if GMX_USE_NVML
+#define NVML_RET_ERR(status, msg) \
+    do { \
+        if (status != NVML_SUCCESS) \
+        { \
+            gmx_fatal(FARGS, "%s: %s\n", msg, nvmlErrorString(status)); \
+        } \
+    } while (0)
+#endif /* GMX_USE_NVML */	
 #else
 
 #define CU_RET_ERR(status, msg) do { } while (0)
 #define CU_CHECK_PREV_ERR()     do { } while (0)
 #define CU_LAUNCH_ERR(msg)      do { } while (0)
 #define CU_LAUNCH_ERR_SYNC(msg) do { } while (0)
+#define NVML_RET_ERR(status, msg) do { } while (0)
 
 #endif /* CHECK_CUDA_ERRORS */
 
@@ -116,9 +130,14 @@ extern "C" {
 typedef struct cuda_dev_info cuda_dev_info_t;
 struct cuda_dev_info
 {
-    int             id;      /* id of the CUDA device */
-    cudaDeviceProp  prop;    /* CUDA device properties */
-    int             stat;    /* result of the device check */
+    int             	id;      			/* id of the CUDA device */
+    cudaDeviceProp  	prop;    			/* CUDA device properties */
+    int             	stat;    			/* result of the device check */
+#if GMX_USE_NVML
+	bool				nvml_initialized;	/* If NVML was initialized */
+	nvmlDevice_t		nvml_device_id;  	/* NVML device id */
+	nvmlEnableState_t	nvml_is_restricted;	/* Status of application clocks permission */
+#endif /* GMX_USE_NVML */
 };
 
 
