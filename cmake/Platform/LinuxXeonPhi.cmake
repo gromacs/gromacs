@@ -31,13 +31,8 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
-set(CMAKE_SYSTEM_NAME LinuxXeonPhi)
-set(CMAKE_SYSTEM_PROCESSOR x86_64) #needs to be set with CMAKE_SYSTEM_NAME
-if(NOT GMX_MPI)
-    set(CMAKE_C_COMPILER "icc")
-    set(CMAKE_CXX_COMPILER "icpc")
-else()
-    set(CMAKE_C_COMPILER "mpiicc")
-    set(CMAKE_CXX_COMPILER "mpiicpc")
-    set(GMX_PREFER_STATIC_LIBS ON CACHE BOOL "Shared libraries on Xeon Phi with MPI don't work.")
-endif()
+set(CMAKE_CXX_FLAGS_INIT "-mmic")
+set(CMAKE_C_FLAGS_INIT "-mmic")
+include(Platform/Linux) #include the std Linux platform files
+include(Platform/Linux-Intel-C)
+include(Platform/Linux-Intel-CXX)
