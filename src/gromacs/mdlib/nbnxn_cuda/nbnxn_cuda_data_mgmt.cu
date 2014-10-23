@@ -42,6 +42,7 @@
 #include <stdio.h>
 
 #include <cuda.h>
+#include <cuda_profiler_api.h>
 
 #include "gmx_fatal.h"
 #include "gromacs/utility/smalloc.h"
@@ -919,6 +920,13 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
     cu_plist_t      *plist, *plist_nl;
     cu_timers_t     *timers;
 
+    if ((getenv("NVPROF_ID") != NULL) &&
+        (getenv("GMX_CUDAPROF_START_AT_RESET") != NULL))
+    {
+        stat = cudaProfilerStop();
+        CU_RET_ERR(stat, "cudaProfilerStop failed");
+    }
+
     if (cu_nb == NULL)
     {
         return;
@@ -1079,6 +1087,14 @@ wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
 
 void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
 {
+    if ((getenv("NVPROF_ID") != NULL) &&
+        (getenv("GMX_CUDAPROF_START_AT_RESET") != NULL))
+    {
+        cudaError_t stat;
+        stat = cudaProfilerStart();
+        CU_RET_ERR(stat, "cudaProfilerStart failed");
+    }
+
     if (cu_nb->bDoTime)
     {
         init_timings(cu_nb->timings);
