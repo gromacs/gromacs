@@ -44,6 +44,7 @@
 #include <stdlib.h>
 
 #include <cuda.h>
+#include <cuda_profiler_api.h>
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
@@ -926,6 +927,14 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
     cu_plist_t      *plist, *plist_nl;
     cu_timers_t     *timers;
 
+    /* Stopping the nvidia profiler here allows us to eliminate the subsequent
+       uninitialization API calls from the trace. */
+    if (getenv("NVPROF_ID") != NULL)
+    {
+        stat = cudaProfilerStop();
+        CU_RET_ERR(stat, "cudaProfilerStop failed");
+    }
+
     if (cu_nb == NULL)
     {
         return;
@@ -1086,6 +1095,18 @@ wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
 
 void nbnxn_cuda_reset_timings(nonbonded_verlet_t* nbv)
 {
+    /* Start the CUDA profiler here if the NVPROF_ID environment variable is
+       is set which indicates that mdrun is running in nvprof. This will have
+       an effect only if running in nvprof is with "--profile-from-start off",
+       otherwise it has no side-effects.
+     */
+    if (getenv("NVPROF_ID") != NULL)
+    {
+        cudaError_t stat;
+        stat = cudaProfilerStart();
+        CU_RET_ERR(stat, "cudaProfilerStart failed");
+    }
+
     if (nbv->cu_nbv && nbv->cu_nbv->bDoTime)
     {
         init_timings(nbv->cu_nbv->timings);
