@@ -40,6 +40,8 @@
 
 #include "../../gmxlib/cuda_tools/vectype_ops.cuh"
 
+#define NTHREAD_Z  2
+
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
