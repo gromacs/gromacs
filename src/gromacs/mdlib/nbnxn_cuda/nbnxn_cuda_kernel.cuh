@@ -74,8 +74,11 @@
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
+
 #if __CUDA_ARCH__ >= 350
-__launch_bounds__(64, 16)
+__launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
+#else
+__launch_bounds__(THREADS_PER_BLOCK)
 #endif
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
@@ -144,6 +147,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     unsigned int tidxi  = threadIdx.x;
     unsigned int tidxj  = threadIdx.y;
     unsigned int tidx   = threadIdx.y * blockDim.x + threadIdx.x;
+#if NTHREAD_Z == 1
+    unsigned int tidxz  = 0;
+#else
+    unsigned int tidxz  = threadIdx.z;
+#endif
     unsigned int bidx   = blockIdx.x;
     unsigned int widx   = tidx / WARP_SIZE; /* warp index */
 
@@ -171,11 +179,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
     /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
-    /* shmem buffer for cj, for both warps separately */
-    int *cjs     = (int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
+    /* shmem buffer for cj, for each warp separately */
+    int *cjs     = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + tidxz * 2 * NBNXN_GPU_JGROUP_SIZE;
 #ifdef IATYPE_SHMEM
     /* shmem buffer for i atom-type pre-loading */
-    int *atib = (int *)(cjs + 2 * NBNXN_GPU_JGROUP_SIZE);
+    int *atib    = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE;
 #endif
 
 #ifndef REDUCE_SHUFFLE
@@ -183,7 +191,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef IATYPE_SHMEM
     float *f_buf = (float *)(atib + NCL_PER_SUPERCL * CL_SIZE);
 #else
-    float *f_buf = (float *)(cjs + 2 * NBNXN_GPU_JGROUP_SIZE);
+    float *f_buf = (float *)(cjs + NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE);
 #endif
 #endif
 
@@ -192,14 +200,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     cij4_start  = nb_sci.cj4_ind_start; /* first ...*/
     cij4_end    = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
-    /* Pre-load i-atom x and q into shared memory */
-    ci = sci * NCL_PER_SUPERCL + tidxj;
-    ai = ci * CL_SIZE + tidxi;
-    xqib[tidxj * CL_SIZE + tidxi] = xq[ai] + shift_vec[nb_sci.shift];
+    if (tidxz == 0)
+    {
+        /* Pre-load i-atom x and q into shared memory */
+        ci = sci * NCL_PER_SUPERCL + tidxj;
+        ai = ci * CL_SIZE + tidxi;
+        xqib[tidxj * CL_SIZE + tidxi] = xq[ai] + shift_vec[nb_sci.shift];
 #ifdef IATYPE_SHMEM
-    /* Pre-load the i-atom types into shared memory */
-    atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
+        /* Pre-load the i-atom types into shared memory */
+        atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
 #endif
+    }
     __syncthreads();
 
     for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
@@ -241,12 +252,12 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
         /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
 #ifdef LJ_EWALD
-        E_lj /= CL_SIZE;
+        E_lj /= CL_SIZE*NTHREAD_Z;
         E_lj *= 0.5f*ONE_SIXTH_F*lje_coeff6_6;
 #endif  /* LJ_EWALD */
 
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
-        E_el /= CL_SIZE;
+        E_el /= CL_SIZE*NTHREAD_Z;
 #if defined EL_RF || defined EL_CUTOFF
         E_el *= -nbparam.epsfac*0.5f*c_rf;
 #else
@@ -267,7 +278,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     fshift_buf = make_float3(0.0f);
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
-    for (j4 = cij4_start; j4 < cij4_end; j4++)
+    for (j4 = cij4_start + tidxz; j4 < cij4_end; j4+=NTHREAD_Z)
     {
         wexcl_idx   = pl_cj4[j4].imei[widx].excl_ind;
         imask       = pl_cj4[j4].imei[widx].imask;
