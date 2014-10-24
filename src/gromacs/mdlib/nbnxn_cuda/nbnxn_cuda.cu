@@ -78,6 +78,25 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
+/* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
+ * warp-pairs per block. Due to register limitations on current architectures
+ * NTHREAD_Z == 1, translating to 64 threads/block and 16 blocks/multiproc, is the
+ * fastest setup even though this results in low occupancy. Increasing the numbeir
+ * of threads per block results in excessive register spilling unless the minimum
+ * number of blocks is reduced proportionally to get the original number of max
+ * threads in flight.
+ *
+ * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
+ * shuffle-based reduction, hence CC >= 3.0.
+ */
+#define NTHREAD_Z           (1)
+/* Kernel launch bounds as function of NTHREAD_Z. On current architectures (up to
+ * CC 3.5/5.2) the (64, 16) bounds are always is used.
+ */
+#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
+#define MIN_BLOCKS_PER_MP   (16/NTHREAD_Z)
+
+
 /***** The kernels come here *****/
 #include "nbnxn_cuda_kernel_utils.cuh"
 
@@ -247,8 +266,8 @@ static inline int calc_shmem_required()
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
-    /* cj in shared memory, for both warps separately */
-    shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
+    /* cj in shared memory, for each warp separately */
+    shmem += NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
 #ifdef IATYPE_SHMEM
     /* i-atom types in shared memory */
     shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
@@ -366,19 +385,25 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
                                     bCalcEner,
                                     plist->bDoPrune || always_prune);
 
-    /* kernel launch config */
+    /* Kernel launch config:
+     * - The thread block dimensions match the size of i-clusters, j-clusters,
+     *   and j-cluster concurrency, in x, y, and z, respectively.
+     * - The 1D block-grid contains as many blocks as super-clusters.
+     */
     nblock    = calc_nb_kernel_nblock(plist->nsci, cu_nb->dev_info);
-    dim_block = dim3(CL_SIZE, CL_SIZE, 1);
+    dim_block = dim3(CL_SIZE, CL_SIZE, NTHREAD_Z);
     dim_grid  = dim3(nblock, 1, 1);
     shmem     = calc_shmem_required();
 
     if (debug)
     {
         fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
-                "Grid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
+                "\tGrid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                "\tShMem: %d\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, plist->nsci*NCL_PER_SUPERCL,
-                NCL_PER_SUPERCL, plist->na_c);
+                NCL_PER_SUPERCL, plist->na_c,
+                shmem);
     }
 
     nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
