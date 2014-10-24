@@ -1290,6 +1290,11 @@ nd %s",
     {
         warning_note(wi, "You have selected user tables with dispersion correction, the dispersion will be corrected to -C6/r^6 beyond rvdw_switch (the tabulated interaction between rvdw_switch and rvdw will not be double counted). Make sure that you really want dispersion correction to -C6/r^6.");
     }
+    if (ir->vdwtype == evdwPME && ir->eDispCorr != edispcNO)
+    {
+        warning_error(wi, "With vdwtype = PME you can not use analytical dispersion correction");
+        ir->eDispCorr = edispcNO;
+    }
 
     if (ir->nstlist == -1)
     {
