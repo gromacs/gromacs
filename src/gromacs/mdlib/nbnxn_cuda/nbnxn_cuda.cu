@@ -247,8 +247,8 @@ static inline int calc_shmem_required()
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
-    /* cj in shared memory, for both warps separately */
-    shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
+    /* cj in shared memory, for each warp separately */
+    shmem += NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
 #ifdef IATYPE_SHMEM
     /* i-atom types in shared memory */
     shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
@@ -368,17 +368,20 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
 
     /* kernel launch config */
     nblock    = calc_nb_kernel_nblock(plist->nsci, cu_nb->dev_info);
-    dim_block = dim3(CL_SIZE, CL_SIZE, 1);
+    /* Divide j4's over NTHREAD_Z warps */
+    dim_block = dim3(CL_SIZE, CL_SIZE, NTHREAD_Z);
     dim_grid  = dim3(nblock, 1, 1);
     shmem     = calc_shmem_required();
 
     if (debug)
     {
         fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
-                "Grid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
+                "\tGrid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                "\tShMem: %d\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, plist->nsci*NCL_PER_SUPERCL,
-                NCL_PER_SUPERCL, plist->na_c);
+                NCL_PER_SUPERCL, plist->na_c,
+                shmem);
     }
 
     nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
