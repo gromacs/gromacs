@@ -1028,18 +1028,9 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * limit and the velocities along the bond vector are scaled 
  * down according to the Drude temperature set in the .mdp file
  */
-/* TODO: changing the function call here... */
-static void apply_drude_hardwall(t_commrec *cr, t_idef *idef, /* gmx_shellfc_t shfc, *t_shell s[], int nshell, */ 
-                                 t_inputrec *ir, t_mdatoms *md, 
+static void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md, 
                                  t_state *state, rvec f[], tensor force_vir)
 {
-
-    if (debug)
-    {
-        fprintf(debug, "HARDWALL: Entering hard wall function...\n");
-        /* TODO: temporarily removing */
-        /* pr_shell(debug, nshell, s); */
-    }
 
     int     i, j, m, n;
     atom_id ia, ib;                 /* heavy atom and drude, respectively */
@@ -1071,27 +1062,7 @@ static void apply_drude_hardwall(t_commrec *cr, t_idef *idef, /* gmx_shellfc_t s
     int         nrlocal = 2;        /* size of flocal[] array */
     int         nral;
 
-    /*
-    t_shell *s;
-    int     nshell;
-
-    s = shfc->shell;
-    nshell = shfc->nshell;
-    */
-
     set_pbc(&pbc, ir->ePBC, state->box);
-
-    /* Here, we get the local bonded interactions that will be used for searching.
-     * Basically, we will check any atom-Drude bond for the hardwall criterion and
-     * apply the restraint, if necessary.  So the total number of bonds/polarization entries is
-     * what we actually care about, so we loop over entries in iatoms within the local ilist. */
-
-    /*
-    if (debug)
-    {
-        fprintf(debug, "HARDWALL: nshell = %d, homenr = %d\n", nshell, md->homenr);
-    }
-    */
 
     const real kbt = BOLTZ * ir->drude->drude_t;
     max_t = 2.0 * ir->delta_t;
@@ -1104,8 +1075,11 @@ static void apply_drude_hardwall(t_commrec *cr, t_idef *idef, /* gmx_shellfc_t s
         fprintf(debug, "HARDWALL: rwall = %f  rwall2 = %f\n", rwall, rwall2);
     }
 
-    /* find which particles are Drudes */
-    /* loop over entries in iatoms and find their associated nuclei/heavy atoms */
+    /* Here, we get the local bonded interactions that will be used for searching.
+     * Basically, we will check any atom-Drude bond for the hardwall criterion and
+     * apply the restraint, if necessary.  So the total number of bonds/polarization entries is
+     * what we actually care about, so we loop over entries in iatoms within the local ilist.
+     */
     for (i = 0; i < nrlocal; i++)
     {
         nral = NRAL(flocal[i]);
