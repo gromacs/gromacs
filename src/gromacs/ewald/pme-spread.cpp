@@ -39,6 +39,8 @@
 #include "config.h"
 
 #include <assert.h>
+
+#include <algorithm>
 /*
    #include <math.h>
    #include <stdio.h>
@@ -78,7 +80,6 @@ static void calc_interpolation_idx(struct gmx_pme *pme, pme_atomcomm_t *atc,
     real           *xptr, *fptr, tx, ty, tz;
     real            rxx, ryx, ryy, rzx, rzy, rzz;
     int             nx, ny, nz;
-    int             start_ix, start_iy, start_iz;
     int            *g2tx, *g2ty, *g2tz;
     gmx_bool        bThreads;
     int            *thread_idx = NULL;
@@ -89,10 +90,6 @@ static void calc_interpolation_idx(struct gmx_pme *pme, pme_atomcomm_t *atc,
     nx  = pme->nkx;
     ny  = pme->nky;
     nz  = pme->nkz;
-
-    start_ix = pme->pmegrid_start_ix;
-    start_iy = pme->pmegrid_start_iy;
-    start_iz = pme->pmegrid_start_iz;
 
     rxx = pme->recipbox[XX][XX];
     ryx = pme->recipbox[YY][XX];
@@ -331,13 +328,11 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
 
     /* spread coefficients from home atoms to local grid */
     real          *grid;
-    pme_overlap_t *ol;
-    int            b, i, nn, n, ithx, ithy, ithz, i0, j0, k0;
+    int            i, nn, n, ithx, ithy, ithz, i0, j0, k0;
     int       *    idxptr;
     int            order, norder, index_x, index_xy, index_xyz;
     real           valx, valxy, coefficient;
     real          *thx, *thy, *thz;
-    int            localsize, bndsize;
     int            pnx, pny, pnz, ndatatot;
     int            offx, offy, offz;
 
@@ -419,7 +414,7 @@ static void copy_local_grid(struct gmx_pme *pme, pmegrids_t *pmegrids,
 {
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
     int  fft_my, fft_mz;
-    int  nsx, nsy, nsz;
+    int  nsy, nsz;
     ivec nf;
     int  offx, offy, offz, x, y, z, i0, i0t;
     int  d;
@@ -435,13 +430,12 @@ static void copy_local_grid(struct gmx_pme *pme, pmegrids_t *pmegrids,
 
     pmegrid = &pmegrids->grid_th[thread];
 
-    nsx = pmegrid->s[XX];
     nsy = pmegrid->s[YY];
     nsz = pmegrid->s[ZZ];
 
     for (d = 0; d < DIM; d++)
     {
-        nf[d] = min(pmegrid->n[d] - (pmegrid->order - 1),
+        nf[d] = std::min(pmegrid->n[d] - (pmegrid->order - 1),
                     local_fft_ndata[d] - pmegrid->offset[d]);
     }
 
@@ -477,7 +471,7 @@ reduce_threadgrid_overlap(struct gmx_pme *pme,
     int  fft_nx, fft_ny, fft_nz;
     int  fft_my, fft_mz;
     int  buf_my = -1;
-    int  nsx, nsy, nsz;
+    int  nsy, nsz;
     ivec localcopy_end;
     int  offx, offy, offz, x, y, z, i0, i0t;
     int  sx, sy, sz, fx, fy, fz, tx1, ty1, tz1, ox, oy, oz;
@@ -520,7 +514,7 @@ reduce_threadgrid_overlap(struct gmx_pme *pme,
          * not beyond the local FFT grid.
          */
         localcopy_end[d] =
-            min(pmegrid->offset[d]+pmegrid->n[d]-(pmegrid->order-1),
+            std::min(pmegrid->offset[d]+pmegrid->n[d]-(pmegrid->order-1),
                 local_fft_ndata[d]);
     }
 
@@ -556,12 +550,12 @@ reduce_threadgrid_overlap(struct gmx_pme *pme,
         if (!bCommX)
         {
             /* Use our thread local source grid and target grid part */
-            tx1 = min(ox + pmegrid_g->n[XX], localcopy_end[XX]);
+            tx1 = std::min(ox + pmegrid_g->n[XX], localcopy_end[XX]);
         }
         else
         {
             /* Use our thread local source grid and the spreading range */
-            tx1 = min(ox + pmegrid_g->n[XX], pme->pme_order);
+            tx1 = std::min(ox + pmegrid_g->n[XX], pme->pme_order);
         }
 
         for (sy = 0; sy >= -pmegrids->nthread_comm[YY]; sy--)
@@ -581,12 +575,12 @@ reduce_threadgrid_overlap(struct gmx_pme *pme,
             if (!bCommY)
             {
                 /* Use our thread local source grid and target grid part */
-                ty1 = min(oy + pmegrid_g->n[YY], localcopy_end[YY]);
+                ty1 = std::min(oy + pmegrid_g->n[YY], localcopy_end[YY]);
             }
             else
             {
                 /* Use our thread local source grid and the spreading range */
-                ty1 = min(oy + pmegrid_g->n[YY], pme->pme_order);
+                ty1 = std::min(oy + pmegrid_g->n[YY], pme->pme_order);
             }
 
             for (sz = 0; sz >= -pmegrids->nthread_comm[ZZ]; sz--)
@@ -600,7 +594,7 @@ reduce_threadgrid_overlap(struct gmx_pme *pme,
                 }
                 pmegrid_g = &pmegrids->grid_th[fz];
                 oz       += pmegrid_g->offset[ZZ];
-                tz1       = min(oz + pmegrid_g->n[ZZ], localcopy_end[ZZ]);
+                tz1       = std::min(oz + pmegrid_g->n[ZZ], localcopy_end[ZZ]);
 
                 if (sx == 0 && sy == 0 && sz == 0)
                 {
@@ -616,7 +610,6 @@ reduce_threadgrid_overlap(struct gmx_pme *pme,
 
                 grid_th = pmegrid_f->grid;
 
-                nsx = pmegrid_f->s[XX];
                 nsy = pmegrid_f->s[YY];
                 nsz = pmegrid_f->s[ZZ];
 
@@ -727,7 +720,7 @@ static void sum_fftgrid_dd(struct gmx_pme *pme, real *fftgrid, int grid_index)
     MPI_Status stat;
 #endif
     int  send_size_y, recv_size_y;
-    int  ipulse, send_id, recv_id, datasize, gridsize, size_yx;
+    int  ipulse, send_id, recv_id, datasize, size_yx;
     real *sendptr, *recvptr;
     int  x, y, z, indg, indb;
 
@@ -832,7 +825,6 @@ static void sum_fftgrid_dd(struct gmx_pme *pme, real *fftgrid, int grid_index)
         overlap = &pme->overlap[0];
 
         datasize = local_fft_ndata[YY]*local_fft_ndata[ZZ];
-        gridsize = local_fft_size[YY] *local_fft_size[ZZ];
 
         ipulse = 0;
 

@@ -40,6 +40,7 @@
 #include "config.h"
 
 #include "gromacs/ewald/pme-internal.h"
+#include "gromacs/ewald/pme-gather.h"
 #include "gromacs/ewald/pme-simd.h"
 #include "gromacs/ewald/pme-spline-work.h"
 #include "gromacs/math/vec.h"
@@ -80,7 +81,7 @@ void gather_f_bsplines(struct gmx_pme *pme, real *grid,
     /* sum forces for local particles */
     int                     nn, n, ithx, ithy, ithz, i0, j0, k0;
     int                     index_x, index_xy;
-    int                     nx, ny, nz, pnx, pny, pnz;
+    int                     nx, ny, nz, pny, pnz;
     int                 *   idxptr;
     real                    tx, ty, dx, dy, coefficient;
     real                    fx, fy, fz, gval;
@@ -90,29 +91,22 @@ void gather_f_bsplines(struct gmx_pme *pme, real *grid,
     real                    rxx, ryx, ryy, rzx, rzy, rzz;
     int                     order;
 
-    struct pme_spline_work *work;
-
-#if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
+#ifdef PME_SIMD4_SPREAD_GATHER
+    // cppcheck-suppress unreadVariable cppcheck seems not to analyze code from pme-simd4.h
+    struct pme_spline_work *work = pme->spline_work;
+#ifndef PME_SIMD4_UNALIGNED
     real           thz_buffer[GMX_SIMD4_WIDTH*3],  *thz_aligned;
     real           dthz_buffer[GMX_SIMD4_WIDTH*3], *dthz_aligned;
 
     thz_aligned  = gmx_simd4_align_r(thz_buffer);
     dthz_aligned = gmx_simd4_align_r(dthz_buffer);
 #endif
-
-    work = pme->spline_work;
+#endif
 
     order = pme->pme_order;
-    thx   = spline->theta[XX];
-    thy   = spline->theta[YY];
-    thz   = spline->theta[ZZ];
-    dthx  = spline->dtheta[XX];
-    dthy  = spline->dtheta[YY];
-    dthz  = spline->dtheta[ZZ];
     nx    = pme->nkx;
     ny    = pme->nky;
     nz    = pme->nkz;
-    pnx   = pme->pmegrid_nx;
     pny   = pme->pmegrid_ny;
     pnz   = pme->pmegrid_nz;
 
