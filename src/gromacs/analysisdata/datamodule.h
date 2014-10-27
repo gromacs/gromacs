@@ -60,20 +60,8 @@ class AnalysisDataPointSetRef;
  * parallelDataStarted() methods (see below).
  * All other methods in the interface are callbacks that are called by the
  * data object to which the module is attached to describe the data.
- *
- * The modules can operate in two modes: serial or parallel.
- * In serial mode, the frames are presented to the module always in the order
- * of increasing indices, even if they become ready in a different order in the
- * attached data.
- * In parallel mode, the frames are presented in the order that they become
- * available in the input data, which may not be sequential.  This mode allows
- * the input data to optimize its behavior if it does not need to store and
- * sort the frames.
- * If the input data supports parallel mode, it calls parallelDataStarted().
- * If the module returns true from this method, then it will process the frames
- * in the parallel mode.  If the module returns false, it will get the frames
- * in serial order.
- * If the input data does not support parallel mode, it calls dataStarted().
+ * See \ref module_analysisdata for an overview of the notifications the
+ * modules receive, and \ref page_analysisdata for overview of the terminology.
  *
  * Concrete modules typically do not directly derive from this interface, but
  * from either AnalysisDataModuleSerial or AnalysisDataModuleParallel.
@@ -216,6 +204,21 @@ class AnalysisDataModuleInterface
          */
         virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
         /*! \brief
+         * Called in sequential order for each frame after they are finished.
+         *
+         * \param[in] frameIndex   Index of the next finished frame.
+         * \throws    unspecified  Can throw any exception required by the
+         *      implementing class to report errors.
+         *
+         * This method is called after frameFinished(), but with an additional
+         * constraint that it is always called in serial and with an increasing
+         * \p frameIndex.  Parallel data modules need this to serialize their
+         * data for downsteam serial modules; AnalysisDataModuleSerial provides
+         * an empty implementation, as there frameFinished() can be used for
+         * the same purpose.
+         */
+        virtual void frameFinishedSerial(int frameIndex) = 0;
+        /*! \brief
          * Called (once) when no more data is available.
          *
          * \throws    unspecified  Can throw any exception required by the
@@ -251,6 +254,7 @@ class AnalysisDataModuleSerial : public AnalysisDataModuleInterface
         virtual bool parallelDataStarted(
             AbstractAnalysisData              *data,
             const AnalysisDataParallelOptions &options);
+        virtual void frameFinishedSerial(int /*frameIndex*/) {}
 };
 
 /*! \brief
@@ -276,7 +280,8 @@ class AnalysisDataModuleParallel : public AnalysisDataModuleInterface
         virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
         virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
         virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
-        virtual void dataFinished() = 0;
+        virtual void frameFinishedSerial(int index) = 0;
+        virtual void dataFinished()                 = 0;
 
     private:
         virtual void dataStarted(AbstractAnalysisData *data);

@@ -249,6 +249,7 @@ AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData        *data,
             module->pointsAdded(frame.pointSet(j));
         }
         module->frameFinished(frame.header());
+        module->frameFinishedSerial(frame.header().index());
     }
     if (state_ == eFinished)
     {
@@ -501,6 +502,11 @@ AnalysisDataModuleManager::notifyFrameFinish(const AnalysisDataFrameHeader &head
                 i->module->frameFinished(header);
             }
         }
+    }
+    Impl::ModuleList::const_iterator i;
+    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+    {
+        i->module->frameFinishedSerial(header.index());
     }
 }
 

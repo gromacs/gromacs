@@ -62,11 +62,13 @@ class AnalysisDataParallelOptions;
  * AnalysisDataHandle objects can be created using startData().  Each data
  * handle can then be independently used to provide data frames (each frame
  * must be provided by a single handle, but different frames can be freely
- * mixed between the handles).  When all data has been provided, the handles
+ * mixed between the handles).  The finishFrameSerial() method must be called
+ * in serial for each frame, after one of the handles has been used to provide
+ * the data for that frame.  When all data has been provided, the handles
  * are destroyed using finishData() (or AnalysisDataHandle::finishData()).
- * The AnalysisData object takes care of internally sorting the frames and
- * passing them to the attached modules in the order in which the modules
- * expect them.
+ *
+ * When used through the trajectory analysis framework, calls to startData(),
+ * finishFrameSerial(), and finishData() are handled by the framework.
  *
  * \todo
  * Parallel implementation is not complete.
@@ -141,7 +143,7 @@ class AnalysisData : public AbstractAnalysisData
         virtual int frameCount() const;
 
         /*! \brief
-         * Create a handle for adding data.
+         * Creates a handle for adding data.
          *
          * \param[in]  opt     Options for setting how this handle will be
          *     used.
@@ -163,7 +165,21 @@ class AnalysisData : public AbstractAnalysisData
          */
         AnalysisDataHandle startData(const AnalysisDataParallelOptions &opt);
         /*! \brief
-         * Destroy a handle after all data has been added.
+         * Performs in-order sequential processing for the next frame.
+         *
+         * \param[in]  frameIndex Index of the frame that has been finished.
+         * \throws  unspecified  Any exception thrown by attached data modules
+         *      in AnalysisDataModuleInterface::frameFinishedSerial().
+         *
+         * This method should be called sequentially for each frame, after data
+         * for that frame has been produced.  It is not necessary to call this
+         * method if there is no parallelism, i.e., if only a single data
+         * handle is created and the parallelization options provided at that
+         * time do not indicate parallelism.
+         */
+        void finishFrameSerial(int frameIndex);
+        /*! \brief
+         * Destroys a handle after all data has been added.
          *
          * \param[in]  handle  Handle to destroy.
          * \throws  unspecified  Any exception thrown by attached data modules

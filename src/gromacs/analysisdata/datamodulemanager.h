@@ -54,6 +54,9 @@ class AnalysisDataParallelOptions;
 /*! \libinternal \brief
  * Encapsulates handling of data modules attached to AbstractAnalysisData.
  *
+ * See AnalysisDataModuleInterface and \ref module_analysisdata for more
+ * details on the notifications and the order in which they should be raised.
+ *
  * \inlibraryapi
  * \ingroup module_analysisdata
  */
@@ -242,6 +245,8 @@ class AnalysisDataModuleManager
          * notifyPointsAdd() calls for the frame.
          * \p header should be identical to that used in the corresponding
          * notifyFrameStart() call.
+         *
+         * This method also notified parallel modules about serial end of frame.
          */
         void notifyFrameFinish(const AnalysisDataFrameHeader &header) const;
         /*! \brief
