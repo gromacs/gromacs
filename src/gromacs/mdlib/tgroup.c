@@ -101,12 +101,6 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
             opts->ngener);
 #endif
 
-    /* TODO: REMOVE */
-    if (debug)
-    {
-        fprintf(debug, "INIT EKINDATA: Entering function...\n");
-    }
-
     /* bNEMD tells if we should remove remove the COM velocity
      * from the velocities during velocity scaling in T-coupling.
      * Turn this on when we have multiple acceleration groups

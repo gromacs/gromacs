@@ -291,12 +291,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      matrix box, gmx_mtop_t *top_global, t_idef *idef, 
                      gmx_bool *bSumEkinhOld, int flags)
 {
-    /* TODO: remove me! */
-    if (debug)
-    {
-        fprintf(debug, "GLOBALS: mdatoms->homenr = %d\n", mdatoms->homenr);
-    }
-
     int      i, gsi;
     real     gs_buf[eglsNR];
     tensor   corr_vir, corr_pres;
