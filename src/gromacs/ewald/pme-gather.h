@@ -38,6 +38,9 @@
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/utility/real.h"
 
+#include "gromacs/ewald/pme-internal.h"
+#include "gromacs/utility/real.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
