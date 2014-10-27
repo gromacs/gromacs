@@ -345,6 +345,7 @@ static void do_update_drude_vv_vel(int start, int nrend, double dt,
     if (debug)
     {
         fprintf(debug, "DRUDE VV VEL: Entering update function\n");
+        fprintf(debug, "DRUDE VV VEL: start = %d, nrend = %d\n", start, nrend);
     }
 
     if (bExtended)
@@ -525,7 +526,6 @@ static void do_update_drude_vv_pos(int start, int nrend, double dt,
                 {
                     fprintf(debug, "DRUDE VV POS: x of Drude %d after x update: x[%d][%d]: %f\n", n, n, d, x[n][d]);
                 }
-
             }
             else
             {
@@ -1227,11 +1227,6 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
             if (md->cTC)
             {
                 gt = md->cTC[n];
-                /* TODO: remove me */
-                if (debug)
-                {
-                    fprintf(debug, "UPDATE KE PART: gt = %d for n = %d\n", gt, n);
-                }
             }
             hm   = 0.5*md->massT[n];
 
@@ -1240,23 +1235,12 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
                 v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
             }
 
-            /* TODO: remove me */
-            if (debug)
-            {
-                fprintf(debug, "UPDATE KE PART: v_corrt = %f %f %f\n", v_corrt[XX], v_corrt[YY], v_corrt[ZZ]);
-            }
-
             for (d = 0; (d < DIM); d++)
             {
                 for (m = 0; (m < DIM); m++)
                 {
                     /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
                     ekin_sum[gt][m][d] += hm*v_corrt[m]*v_corrt[d];
-                    /* TODO: remove me */
-                    if (debug)
-                    {
-                        fprintf(debug, "UPDATE KE PART: ekin_sum[%d][%d][%d] = %f\n", gt, m, d, ekin_sum[gt][m][d]);
-                    }
                 }
             }
             if (md->nMassPerturbed && md->bPerturbed[n])
@@ -1363,12 +1347,21 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+void calc_ke_part(t_inputrec *ir, t_state *state, t_grpopts *opts, t_mdatoms *md,
+                  gmx_ekindata_t *ekind, t_nrnb *nrnb, t_idef *idef, 
+                  gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+        /* TODO: WIP */
+        if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+        {
+           nosehoover_KE(ir, idef, md, state, ekind, nrnb, bEkinAveVel, bSaveEkinOld); 
+        }
+        else
+        {
+            calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+        }
     }
     else
     {

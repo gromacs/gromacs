@@ -1018,6 +1018,12 @@ void unshift_x(t_graph *g, matrix box, rvec x[], rvec x_s[])
 
 void unshift_self(t_graph *g, matrix box, rvec x[])
 {
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Entering unshift_self()...\n");
+    }
+
     ivec *is;
     int   g0, g1;
     int   j, tx, ty, tz;
@@ -1031,6 +1037,12 @@ void unshift_self(t_graph *g, matrix box, rvec x[])
     g1 = g->at_end;
     is = g->ishift;
 
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "g0: %d, g1: %d\n", g0, g1);
+    }
+
     if (TRICLINIC(box))
     {
         for (j = g0; (j < g1); j++)
@@ -1038,6 +1050,12 @@ void unshift_self(t_graph *g, matrix box, rvec x[])
             tx = is[j][XX];
             ty = is[j][YY];
             tz = is[j][ZZ];
+
+            /* TODO: remove */
+            if (debug)
+            {
+                fprintf(debug, "Triclinic tx: %d ty: %d tz: %d\n", tx, ty, tz);
+            }
 
             x[j][XX] = x[j][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
             x[j][YY] = x[j][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
@@ -1051,6 +1069,12 @@ void unshift_self(t_graph *g, matrix box, rvec x[])
             tx = is[j][XX];
             ty = is[j][YY];
             tz = is[j][ZZ];
+
+            /* TODO: remove */
+            if (debug)
+            {
+                fprintf(debug, "Not triclinic tx: %d ty: %d tz: %d\n", tx, ty, tz);
+            }
 
             x[j][XX] = x[j][XX]-tx*box[XX][XX];
             x[j][YY] = x[j][YY]-ty*box[YY][YY];

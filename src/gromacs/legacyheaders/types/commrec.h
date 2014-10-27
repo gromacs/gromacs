@@ -38,6 +38,7 @@
 #define _commrec_h
 
 #include "../../utility/gmxmpi.h"
+#include "../../pbcutil/ishift.h"
 #include "../typedefs.h"
 
 #ifdef __cplusplus
@@ -189,6 +190,10 @@ struct gmx_domdec_t {
     /* Constraint stuff */
     gmx_domdec_constraints_p_t constraints;
     gmx_domdec_specat_comm_p_t constraint_comm;
+
+    /* Shell/Drude stuff */
+    gmx_hash_t                  ga2la_shell;
+    gmx_domdec_specat_comm_p_t  shell_comm;
 
     /* The local to gobal charge group index and local cg to local atom index */
     int   ncg_home;

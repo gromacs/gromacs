@@ -47,6 +47,7 @@
 #include "network.h"
 #include "chargegroup.h"
 #include "vsite.h"
+#include "shellfc.h"
 #include "gmx_ga2la.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"
@@ -92,6 +93,8 @@ typedef struct gmx_reverse_top {
     t_idef     *idef_thread;
     int      ***vsite_pbc;
     int       **vsite_pbc_nalloc;
+    int      ***shell_pbc;
+    int       **shell_pbc_nalloc; 
     int        *nbonded_thread;
     t_blocka   *excl_thread;
     int        *excl_count_thread;
@@ -614,7 +617,7 @@ static void destroy_reverse_ilist(gmx_reverse_ilist_t *ril)
 }
 
 static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
-                                           int ***vsite_pbc_molt,
+                                           int ***vsite_pbc_molt, /* int gmx_unused ***shell_pbc_molt, */
                                            gmx_bool bConstr, gmx_bool bSettle,
                                            gmx_bool bBCheck, int *nint)
 {
@@ -697,6 +700,21 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
             snew(rt->vsite_pbc_nalloc[thread], F_VSITEN-F_VSITE2+1);
         }
     }
+
+    /* TODO: check */
+    /*
+    if (shell_pbc_molt != NULL)
+    {
+        snew(rt->shell_pbc, rt->nthread);
+        snew(rt->shell_pbc_nalloc, rt->nthread);
+        for (thread = 0; thread < rt->nthread; thread++)
+        {
+            snew(rt->shell_pbc[thread], F_HARMONIC-F_BONDS+1);
+            snew(rt->shell_pbc_nalloc[thread], F_HARMONIC-F_BONDS+1);
+        }
+    }
+    */
+
     snew(rt->nbonded_thread, rt->nthread);
     snew(rt->excl_thread, rt->nthread);
     snew(rt->excl_count_thread, rt->nthread);
@@ -704,9 +722,10 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
     return rt;
 }
 
+/* WIP: jal */
 void dd_make_reverse_top(FILE *fplog,
                          gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                         gmx_vsite_t *vsite,
+                         gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
                          t_inputrec *ir, gmx_bool bBCheck)
 {
     int             mb, n_recursive_vsite, nexcl, nexcl_icg, a;
@@ -721,11 +740,12 @@ void dd_make_reverse_top(FILE *fplog,
     /* If normal and/or settle constraints act only within charge groups,
      * we can store them in the reverse top and simply assign them to domains.
      * Otherwise we need to assign them to multiple domains and set up
-     * the parallel version constraint algoirthm(s).
+     * the parallel version constraint algorithm(s).
      */
 
     dd->reverse_top = make_reverse_top(mtop, ir->efep != efepNO,
                                        vsite ? vsite->vsite_pbc_molt : NULL,
+                                       /* shellfc ? shellfc->shell_pbc_molt : NULL, */
                                        !dd->bInterCGcons, !dd->bInterCGsettles,
                                        bBCheck, &dd->nbonded_global);
 
@@ -776,6 +796,20 @@ void dd_make_reverse_top(FILE *fplog,
                     vsite->n_intercg_vsite);
         }
         init_domdec_vsites(dd, vsite->n_intercg_vsite);
+    }
+
+    /* TODO: check */
+    if (shellfc)
+    {
+        /* number of global shells is OK to use since with Verlet they will always be
+         * split between charge groups */
+        if (fplog)
+        {
+            fprintf(fplog, "There are %d shells in the system,\n"
+                    "will do an extra communication step for selected coordinates and forces\n",
+                    shellfc->n_intercg_shells);
+        }
+        init_domdec_shells(dd, shellfc->n_intercg_shells);
     }
 
     if (dd->bInterCGcons || dd->bInterCGsettles)
@@ -1081,12 +1115,14 @@ static void combine_blocka(t_blocka *dest, const t_blocka *src, int nsrc)
  * virtual sites need special attention, as pbc info differs per vsite.
  */
 static void combine_idef(t_idef *dest, const t_idef *src, int nsrc,
-                         gmx_vsite_t *vsite, int ***vsite_pbc_t)
+                         gmx_vsite_t *vsite, int ***vsite_pbc_t /*,
+                         gmx_shellfc_t gmx_unused shellfc, int ***shell_pbc_t */)
 {
     int            ftype, n, s, i;
     t_ilist       *ild;
     const t_ilist *ils;
     gmx_bool       vpbc;
+    gmx_bool       spbc;
     int            nral1 = 0, ftv = 0;
 
     for (ftype = 0; ftype < F_NRE; ftype++)
@@ -1121,6 +1157,25 @@ static void combine_idef(t_idef *dest, const t_idef *src, int nsrc,
                 }
             }
 
+            /* TODO: check */
+            /*
+            spbc = ((interaction_function[ftype].flags & (IF_BOND | IF_CHEMBOND) &&
+                    shellfc->shell_pbc_loc != NULL));
+
+            if (spbc)
+            {
+                nral1 = 1 + NRAL(ftype);
+                ftv   = ftype - F_BONDS;
+                if ((ild->nr + n)/nral1 > shellfc->shell_pbc_loc_nalloc[ftv])
+                {
+                    shellfc->shell_pbc_loc_nalloc[ftv] =
+                        over_alloc_large((ild->nr + n)/nral1);
+                    srenew(shellfc->shell_pbc_loc[ftv],
+                           shellfc->shell_pbc_loc_nalloc[ftv]);
+                }
+            }
+            */
+
             for (s = 0; s < nsrc; s++)
             {
                 ils = &src[s].il[ftype];
@@ -1136,6 +1191,18 @@ static void combine_idef(t_idef *dest, const t_idef *src, int nsrc,
                             vsite_pbc_t[s][ftv][i/nral1];
                     }
                 }
+
+                /* TODO: check */
+                /*
+                if (spbc)
+                {
+                    for (i = 0; i < ils->nr; i += nral1)
+                    {
+                        shellfc->shell_pbc_loc[ftv][(ild->nr+i)/nral1] =
+                            shell_pbc_t[s][ftv][i/nral1];
+                    }
+                }
+                */
 
                 ild->nr += ils->nr;
             }
@@ -1618,7 +1685,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                     gmx_bool bRCheckMB, ivec rcheck, gmx_bool bRCheck2B,
                                     real rc,
                                     int *la2lc, t_pbc *pbc_null, rvec *cg_cm,
-                                    t_idef *idef, gmx_vsite_t *vsite,
+                                    t_idef *idef, gmx_vsite_t *vsite, /* gmx_shellfc_t gmx_unused shellfc, */
                                     t_blocka *lexcls, int *excl_count)
 {
     int                nzone_bondeds, nzone_excl;
@@ -1678,6 +1745,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
             int       ftype;
             int     **vsite_pbc;
             int      *vsite_pbc_nalloc;
+            int     **shell_pbc;
+            int      *shell_pbc_nalloc;
             t_blocka *excl_t;
 
             cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
@@ -1711,6 +1780,23 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 vsite_pbc        = NULL;
                 vsite_pbc_nalloc = NULL;
             }
+
+            /* TODO: check */
+            /*
+            if (shellfc && shellfc->bInterCG && shellfc->nshell_gl > 0)
+            {
+                if (thread == 0)
+                {
+                    shell_pbc        = shellfc->shell_pbc_loc;
+                    shell_pbc_nalloc = shellfc->shell_pbc_loc_nalloc;
+                }
+                else
+                {
+                    shell_pbc        = NULL;
+                    shell_pbc_nalloc = NULL;
+                }
+            }
+            */
 
             rt->nbonded_thread[thread] =
                 make_bondeds_zone(dd, zones,
@@ -1747,8 +1833,9 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 
         if (rt->nthread > 1)
         {
+            /* TODO: check */
             combine_idef(idef, rt->idef_thread+1, rt->nthread-1,
-                         vsite, rt->vsite_pbc+1);
+                         vsite, rt->vsite_pbc+1 /*, shellfc, rt->shell_pbc+1 */);
         }
 
         for (thread = 0; thread < rt->nthread; thread++)
@@ -1800,6 +1887,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        t_forcerec *fr,
                        rvec *cgcm_or_x,
                        gmx_vsite_t *vsite,
+                       /* gmx_shellfc_t gmx_unused shellfc, */
                        gmx_mtop_t *mtop, gmx_localtop_t *ltop)
 {
     gmx_bool bUniqueExcl, bRCheckMB, bRCheck2B, bRCheckExcl;
@@ -1887,7 +1975,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                  bRCheckMB, rcheck, bRCheck2B, rc,
                                  dd->la2lc,
                                  pbc_null, cgcm_or_x,
-                                 &ltop->idef, vsite,
+                                 &ltop->idef, vsite, /* shellfc, */
                                  &ltop->excls, &nexcl);
 
     /* The ilist is not sorted yet,
@@ -2292,6 +2380,8 @@ void dd_bonded_cg_distance(FILE *fplog,
     int             mb, cg_offset, at_offset, *at2cg, mol;
     t_graph         graph;
     gmx_vsite_t    *vsite;
+    /* TODO: check */
+    gmx_shellfc_t   shfc;
     gmx_molblock_t *molb;
     gmx_moltype_t  *molt;
     rvec           *xs, *cg_cm;
@@ -2302,6 +2392,8 @@ void dd_bonded_cg_distance(FILE *fplog,
     bExclRequired = IR_EXCL_FORCES(*ir);
 
     vsite = init_vsite(mtop, NULL, TRUE);
+    /* TODO: check, since this doesn't go anywhere!!! */
+    /* shfc = init_shell(mtop, NULL, TRUE); */
 
     *r_2b     = 0;
     *r_mb     = 0;

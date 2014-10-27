@@ -184,7 +184,7 @@ typedef struct
  * the others can be ordered as wanted.
  */
 enum {
-    ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR
+    ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatSHELL, ddnatNR
 };
 
 enum {
@@ -640,6 +640,11 @@ void dd_get_ns_ranges(gmx_domdec_t *dd, int icg,
 int dd_natoms_vsite(gmx_domdec_t *dd)
 {
     return dd->comm->nat[ddnatVSITE];
+}
+
+int dd_natoms_shell(gmx_domdec_t *dd)
+{
+    return dd->comm->nat[ddnatSHELL];
 }
 
 void dd_get_constraint_range(gmx_domdec_t *dd, int *at_start, int *at_end)
@@ -2714,6 +2719,8 @@ static void clear_dd_indices(gmx_domdec_t *dd, int cg_start, int a_start)
     }
 
     dd_clear_local_vsite_indices(dd);
+
+    dd_clear_local_shell_indices(dd);
 
     if (dd->constraints)
     {
@@ -7131,16 +7138,18 @@ static char *init_bLocalCG(gmx_mtop_t *mtop)
     return bLocalCG;
 }
 
+/* WIP: jal */
 void dd_init_bondeds(FILE *fplog,
                      gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                     gmx_vsite_t *vsite,
+                     gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
                      t_inputrec *ir, gmx_bool bBCheck, cginfo_mb_t *cginfo_mb)
 {
     gmx_domdec_comm_t *comm;
     gmx_bool           bBondComm;
     int                d;
 
-    dd_make_reverse_top(fplog, dd, mtop, vsite, ir, bBCheck);
+    /* TODO: check */
+    dd_make_reverse_top(fplog, dd, mtop, vsite, shellfc, ir, bBCheck);
 
     comm = dd->comm;
 
@@ -7230,7 +7239,7 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
         fprintf(fplog, "\n\n");
     }
 
-    if (comm->bInterCGBondeds || dd->vsite_comm || dd->constraint_comm)
+    if (comm->bInterCGBondeds || dd->vsite_comm || dd->constraint_comm || dd->shell_comm)
     {
         fprintf(fplog, "The maximum allowed distance for charge groups involved in interactions is:\n");
         fprintf(fplog, "%40s  %-7s %6.3f nm\n",
@@ -9227,6 +9236,15 @@ void print_dd_statistics(t_commrec *cr, t_inputrec *ir, FILE *fplog)
                             av);
                 }
                 break;
+            case ddnatSHELL:
+                if (cr->dd->shell_comm)
+                {
+                    fprintf(fplog,
+                            " av. #atoms communicated per step for shells: %d x %.1f\n",
+                            (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)? 3 : 2,
+                            av);
+                }
+                break;
             case ddnatCON:
                 if (cr->dd->constraint_comm)
                 {
@@ -9660,7 +9678,7 @@ void dd_partition_system(FILE                *fplog,
                       comm->cellsize_min, np,
                       fr,
                       fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x,
-                      vsite, top_global, top_local);
+                      vsite, /* shellfc, */ top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 
@@ -9686,6 +9704,15 @@ void dd_partition_system(FILE                *fplog,
                                                   constr, ir->nProjOrder,
                                                   top_local->idef.il);
                 }
+                break;
+            case ddnatSHELL:   
+                /* TODO: removing just to test!!! */ 
+                /*
+                if (shellfc)
+                {
+                    n = dd_make_local_shells(dd, n, top_local->idef.il, shellfc);
+                }
+                */
                 break;
             default:
                 gmx_incons("Unknown special atom type setup");
@@ -9755,11 +9782,15 @@ void dd_partition_system(FILE                *fplog,
         split_vsites_over_threads(top_local->idef.il, mdatoms, FALSE, vsite);
     }
 
+    /* TODO: check! */
+    /* Make the local shell stuff, currently no communication is done */
+    /* jal - removing and putting relevant content into dd_make_local_shells() */
+    /*
     if (shellfc)
     {
-        /* Make the local shell stuff, currently no communication is done */
         make_local_shells(cr, mdatoms, shellfc);
     }
+    */
 
     if (ir->implicit_solvent)
     {
@@ -9844,5 +9875,11 @@ void dd_partition_system(FILE                *fplog,
         /* Set the env var GMX_DD_DEBUG if you suspect corrupted indices */
         check_index_consistency(dd, top_global->natoms, ncg_mtop(top_global),
                                 "after partitioning");
+    }
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "PARTITION: end of DD partition, nshell = %d\n", shellfc->nshell);
     }
 }

@@ -66,6 +66,7 @@
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
+#include "shellfc.h"
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
@@ -309,7 +310,7 @@ void init_em(FILE *fplog, const char *title,
              t_nrnb *nrnb, rvec mu_tot,
              t_forcerec *fr, gmx_enerdata_t **enerd,
              t_graph **graph, t_mdatoms *mdatoms, gmx_global_stat_t *gstat,
-             gmx_vsite_t *vsite, gmx_constr_t constr,
+             gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              int imdport, unsigned long gmx_unused Flags)
@@ -345,7 +346,7 @@ void init_em(FILE *fplog, const char *title,
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
                             &ems->s, &ems->f, mdatoms, *top,
-                            fr, vsite, NULL, constr,
+                            fr, vsite, shellfc, constr,
                             nrnb, NULL, FALSE);
         dd_store_state(cr->dd, &ems->s);
 
@@ -396,6 +397,15 @@ void init_em(FILE *fplog, const char *title,
         {
             set_vsite_top(vsite, *top, mdatoms, cr);
         }
+
+        /* TODO: check */
+        /*
+        if (shellfc)
+        {
+            set_shell_top(shellfc, *top, mdatoms, cr);
+        }
+        */
+
     }
 
     if (constr)
@@ -662,7 +672,8 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
                                    gmx_mtop_t *top_global, t_inputrec *ir,
                                    em_state_t *ems, gmx_localtop_t *top,
                                    t_mdatoms *mdatoms, t_forcerec *fr,
-                                   gmx_vsite_t *vsite, gmx_constr_t constr,
+                                   gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
+                                   gmx_constr_t constr,
                                    t_nrnb *nrnb, gmx_wallcycle_t wcycle)
 {
     /* Repartition the domain decomposition */
@@ -670,7 +681,7 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
     dd_partition_system(fplog, step, cr, FALSE, 1,
                         NULL, top_global, ir,
                         &ems->s, &ems->f,
-                        mdatoms, top, fr, vsite, NULL, constr,
+                        mdatoms, top, fr, vsite, shellfc, constr,
                         nrnb, wcycle, FALSE);
     dd_store_state(cr->dd, &ems->s);
     wallcycle_stop(wcycle, ewcDOMDEC);
@@ -682,8 +693,8 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                             t_inputrec *inputrec,
                             t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                             gmx_global_stat_t gstat,
-                            gmx_vsite_t *vsite, gmx_constr_t constr,
-                            t_fcdata *fcd,
+                            gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
+                            gmx_constr_t constr, t_fcdata *fcd,
                             t_graph *graph, t_mdatoms *mdatoms,
                             t_forcerec *fr, rvec mu_tot,
                             gmx_enerdata_t *enerd, tensor vir, tensor pres,
@@ -734,7 +745,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     {
         /* Repartition the domain decomposition */
         em_dd_partition_system(fplog, count, cr, top_global, inputrec,
-                               ems, top, mdatoms, fr, vsite, constr,
+                               ems, top, mdatoms, fr, vsite, shellfc, constr,
                                nrnb, wcycle);
     }
 
@@ -949,7 +960,8 @@ double do_cg(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
              const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
              int gmx_unused nstglobalcomm,
-             gmx_vsite_t *vsite, gmx_constr_t constr,
+             gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
+             gmx_constr_t constr,
              int gmx_unused stepout,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global, t_fcdata *fcd,
@@ -1001,7 +1013,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     /* Init em and store the local state in s_min */
     init_em(fplog, CG, cr, inputrec,
             state_global, top_global, s_min, &top, &f, &f_global,
-            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
+            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, shellfc, constr,
             nfile, fnm, &outf, &mdebin, imdport, Flags);
 
     /* Print to log file */
@@ -1026,7 +1038,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     evaluate_energy(fplog, cr,
                     top_global, s_min, top,
                     inputrec, nrnb, wcycle, gstat,
-                    vsite, constr, fcd, graph, mdatoms, fr,
+                    vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     where();
 
@@ -1190,7 +1202,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
         if (DOMAINDECOMP(cr) && s_min->s.ddp_count < cr->dd->ddp_count)
         {
             em_dd_partition_system(fplog, step, cr, top_global, inputrec,
-                                   s_min, top, mdatoms, fr, vsite, constr,
+                                   s_min, top, mdatoms, fr, vsite, shellfc, constr,
                                    nrnb, wcycle);
         }
 
@@ -1203,7 +1215,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
         evaluate_energy(fplog, cr,
                         top_global, s_c, top,
                         inputrec, nrnb, wcycle, gstat,
-                        vsite, constr, fcd, graph, mdatoms, fr,
+                        vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, -1, FALSE);
 
         /* Calc derivative along line */
@@ -1298,7 +1310,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                 {
                     /* Reload the old state */
                     em_dd_partition_system(fplog, -1, cr, top_global, inputrec,
-                                           s_min, top, mdatoms, fr, vsite, constr,
+                                           s_min, top, mdatoms, fr, vsite, shellfc, constr,
                                            nrnb, wcycle);
                 }
 
@@ -1311,7 +1323,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                 evaluate_energy(fplog, cr,
                                 top_global, s_b, top,
                                 inputrec, nrnb, wcycle, gstat,
-                                vsite, constr, fcd, graph, mdatoms, fr,
+                                vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                                 mu_tot, enerd, vir, pres, -1, FALSE);
 
                 /* p does not change within a step, but since the domain decomposition
@@ -1577,7 +1589,8 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
                 const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
                 int gmx_unused nstglobalcomm,
-                gmx_vsite_t *vsite, gmx_constr_t constr,
+                gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
+                gmx_constr_t constr,
                 int gmx_unused stepout,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
@@ -1673,7 +1686,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     /* Init em */
     init_em(fplog, LBFGS, cr, inputrec,
             state, top_global, &ems, &top, &f, &f_global,
-            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
+            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, shellfc, constr,
             nfile, fnm, &outf, &mdebin, imdport, Flags);
     /* Do_lbfgs is not completely updated like do_steep and do_cg,
      * so we free some memory again.
@@ -1734,7 +1747,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     evaluate_energy(fplog, cr,
                     top_global, &ems, top,
                     inputrec, nrnb, wcycle, gstat,
-                    vsite, constr, fcd, graph, mdatoms, fr,
+                    vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     where();
 
@@ -1931,7 +1944,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         evaluate_energy(fplog, cr,
                         top_global, &ems, top,
                         inputrec, nrnb, wcycle, gstat,
-                        vsite, constr, fcd, graph, mdatoms, fr,
+                        vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, step, FALSE);
         EpotC = ems.epot;
 
@@ -2029,7 +2042,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 evaluate_energy(fplog, cr,
                                 top_global, &ems, top,
                                 inputrec, nrnb, wcycle, gstat,
-                                vsite, constr, fcd, graph, mdatoms, fr,
+                                vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                                 mu_tot, enerd, vir, pres, step, FALSE);
                 EpotB = ems.epot;
 
@@ -2373,7 +2386,8 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
                 const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
                 int gmx_unused nstglobalcomm,
-                gmx_vsite_t *vsite, gmx_constr_t constr,
+                gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
+                gmx_constr_t constr,
                 int gmx_unused stepout,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
@@ -2417,7 +2431,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     /* Init em and store the local state in s_try */
     init_em(fplog, SD, cr, inputrec,
             state_global, top_global, s_try, &top, &f, &f_global,
-            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
+            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, shellfc, constr,
             nfile, fnm, &outf, &mdebin, imdport, Flags);
 
     /* Print to log file  */
@@ -2466,7 +2480,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
         evaluate_energy(fplog, cr,
                         top_global, s_try, top,
                         inputrec, nrnb, wcycle, gstat,
-                        vsite, constr, fcd, graph, mdatoms, fr,
+                        vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, count, count == 0);
 
         if (MASTER(cr))
@@ -2545,7 +2559,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
             {
                 /* Reload the old state */
                 em_dd_partition_system(fplog, count, cr, top_global, inputrec,
-                                       s_min, top, mdatoms, fr, vsite, constr,
+                                       s_min, top, mdatoms, fr, vsite, shellfc, constr,
                                        nrnb, wcycle);
             }
         }
@@ -2614,7 +2628,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
              const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused  bCompact,
              int gmx_unused nstglobalcomm,
-             gmx_vsite_t *vsite, gmx_constr_t constr,
+             gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
              int gmx_unused stepout,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global, t_fcdata *fcd,
@@ -2669,7 +2683,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     init_em(fplog, NM, cr, inputrec,
             state_global, top_global, state_work, &top,
             &f, &f_global,
-            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
+            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, shellfc, constr,
             nfile, fnm, &outf, NULL, imdport, Flags);
 
     natoms = top_global->natoms;
@@ -2755,7 +2769,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     evaluate_energy(fplog, cr,
                     top_global, state_work, top,
                     inputrec, nrnb, wcycle, gstat,
-                    vsite, constr, fcd, graph, mdatoms, fr,
+                    vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     cr->nnodes = nnodes;
 
@@ -2796,7 +2810,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
             evaluate_energy(fplog, cr,
                             top_global, state_work, top,
                             inputrec, nrnb, wcycle, gstat,
-                            vsite, constr, fcd, graph, mdatoms, fr,
+                            vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                             mu_tot, enerd, vir, pres, atom*2, FALSE);
 
             for (i = 0; i < natoms; i++)
@@ -2809,7 +2823,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
             evaluate_energy(fplog, cr,
                             top_global, state_work, top,
                             inputrec, nrnb, wcycle, gstat,
-                            vsite, constr, fcd, graph, mdatoms, fr,
+                            vsite, shellfc, constr, fcd, graph, mdatoms, fr,
                             mu_tot, enerd, vir, pres, atom*2+1, FALSE);
             cr->nnodes = nnodes;
 

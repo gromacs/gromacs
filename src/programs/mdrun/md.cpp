@@ -136,7 +136,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
 double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
              int nstglobalcomm,
-             gmx_vsite_t *vsite, gmx_constr_t constr,
+             gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
              int stepout, t_inputrec *ir,
              gmx_mtop_t *top_global,
              t_fcdata *fcd,
@@ -187,7 +187,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     globsig_t         gs;
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind, *ekind_save;
-    gmx_shellfc_t     shellfc;
+    /* gmx_shellfc_t     shellfc; */
     int               count, nconverged = 0;
     double            tcount                 = 0;
     gmx_bool          bConverged             = TRUE, bOK, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
@@ -320,23 +320,47 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* Copy the cos acceleration to the groups struct */
     ekind->cosacc.cos_accel = ir->cos_accel;
 
+    if (debug)
+    {
+        fprintf(debug, "After init_ekindata.\n");
+    }
+
     gstat = global_stat_init(ir);
     debug_gmx();
 
     /* Check for polarizable models and flexible constraints */
+    /* jal - restructuring */
+    /*
     shellfc = init_shell_flexcon(fplog, ir,
                                  top_global, n_flexible_constraints(constr),
                                  (ir->bContinuation ||
-                                  (DOMAINDECOMP(cr) && !MASTER(cr))) ?
+                                 (DOMAINDECOMP(cr) && !MASTER(cr))) ?
                                  NULL : state_global->x);
+    */
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Setup complete, now starting important stuff...\n");
+    }
+    if (shellfc && debug)
+    {
+        fprintf(debug, "Non-null shellfc structure found...\n");
+        fprintf(debug, "There are %d global shells in do_md()...\n", shellfc->nshell_gl);
+        fprintf(debug, "There are %d local shells in do_md()...\n", shellfc->nshell);
+    }
+
     if (shellfc && ir->nstcalcenergy != 1 && (ir->drude->drudemode == edrudeSCF))
     {
         gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles.\nPlease make a new tpr file.", ir->nstcalcenergy);
     }
+    /*
     if (shellfc && DOMAINDECOMP(cr))
     {
         gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
     }
+    */
+    /* TODO: not necessary any more now that grompp can check for shells/Drudes */
     if (shellfc && ir->eI == eiNM)
     {
         /* Currently shells don't work with Normal Modes */
@@ -401,6 +425,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             graph = mk_graph(fplog, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
         }
 
+        /* TODO: check to see if this is still even necessary... */
         if (shellfc)
         {
             make_local_shells(cr, mdatoms, shellfc);
@@ -421,7 +446,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             state, &f, mdatoms, top, fr,
                             vsite, shellfc, constr,
                             nrnb, wcycle, FALSE);
-
     }
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
@@ -554,7 +578,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                     NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                     constr, NULL, FALSE, state->box,
-                    top_global, &bSumEkinhOld, cglo_flags);
+                    top_global, &(top->idef), &bSumEkinhOld, cglo_flags);
     if (ir->eI == eiVVAK)
     {
         /* a second call to get the half step temperature initialized as well */
@@ -566,7 +590,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
-                        top_global, &bSumEkinhOld,
+                        top_global, &(top->idef), &bSumEkinhOld,
                         cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
     }
 
@@ -937,6 +961,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 /* Repartition the domain decomposition */
                 wallcycle_start(wcycle, ewcDOMDEC);
+                /* TODO: remove */
+                if (debug)
+                {
+                    fprintf(debug, "DD: Second call to dd_partition_system()\n");
+                }
                 dd_partition_system(fplog, step, cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
@@ -968,7 +997,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
-                            top_global, &bSumEkinhOld,
+                            top_global, &(top->idef), &bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
@@ -1100,7 +1129,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
 
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ1);
+                trotter_update(ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ1);
 
             }
 
@@ -1159,7 +1188,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         }
 
                         veta_save = state->veta;
-                        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ0);
+                        trotter_update(ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ0);
                         vetanew     = state->veta;
                         state->veta = veta_save;
                     }
@@ -1215,7 +1244,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, state->box,
-                                    top_global, &bSumEkinhOld,
+                                    top_global, &(top->idef), &bSumEkinhOld,
                                     cglo_flags
                                     | CGLO_ENERGY
                                     | (bTemp ? CGLO_TEMPERATURE : 0)
@@ -1245,7 +1274,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         {
                             fprintf(debug, "MD: step = %d, calling trotter ettTSEQ2\n", (int)step);
                         }
-                        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ2);
+                        trotter_update(ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ2);
 
                         if (debug)
                         {
@@ -1267,7 +1296,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                             constr, NULL, FALSE, state->box,
-                                            top_global, &bSumEkinhOld,
+                                            top_global, &(top->idef), &bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
                         }
                     }
@@ -1527,7 +1556,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         fprintf(debug, "MD: step = %d, calling trotter ettTSEQ3\n", (int)step);
                     }
 
-                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ3);
+                    trotter_update(ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ3);
                     /* We can only do Berendsen coupling after we have summed
                      * the kinetic energy or virial. Since the happens
                      * in global_state after update, we should only do it at
@@ -1586,7 +1615,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, lastbox,
-                                    top_global, &bSumEkinhOld,
+                                    top_global, &(top->idef), &bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE
                                     );
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1596,7 +1625,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         fprintf(debug, "MD: step = %d, calling trotter ettTSEQ4\n", (int)step);
                     }
-                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
+                    trotter_update(ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
 
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf, state->x, 0, state->natoms);
@@ -1694,7 +1723,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 (step_rel % gs.nstms == 0) &&
                                 (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
                                 lastbox,
-                                top_global, &bSumEkinhOld,
+                                top_global, &(top->idef), &bSumEkinhOld,
                                 cglo_flags
                                 | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
                                 | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
@@ -1857,6 +1886,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
         {
+            /* TODO: remove */
+            if (debug)
+            {
+                fprintf(debug, "DD: Third call to dd_partition_system\n");
+            }
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
                                 state, &f, mdatoms, top, fr,

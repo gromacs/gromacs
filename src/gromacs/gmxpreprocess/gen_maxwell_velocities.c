@@ -87,9 +87,12 @@ static void low_mspeed(real tempi,
                 for (m = 0; (m < DIM); m++)
                 {
                     v[i][m] = sd*gmx_rng_gaussian_real(rng);
-                    ekin   += 0.5*mass*v[i][m]*v[i][m];
+                    /* TODO: does this belong here? */
+                    /* Drude T is not an absolute T and should not affect system T */
+                    /* ekin   += 0.5*mass*v[i][m]*v[i][m]; */
                 }
-                nrdf += DIM;
+                /* TODO: likewise, does this belong here? */
+                /* nrdf += DIM; */
             }
         }
     }
@@ -112,7 +115,7 @@ static void low_mspeed(real tempi,
     fprintf(stderr, "Velocities were taken from a Maxwell distribution at %g K\n",
             tempi);
 
-    if (ir->bDrude)
+    if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
     {
         fprintf(stderr, "Drude velocities were taken from a Maxwell distribution at %g K\n",
                 ir->drude->drude_t);

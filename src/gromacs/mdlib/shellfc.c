@@ -53,52 +53,18 @@
 #include "constr.h"
 #include "domdec.h"
 #include "gromacs/math/units.h"
-#include "shellfc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "chargegroup.h"
 #include "macros.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
-    int     nnucl;
-    atom_id shell;               /* The shell id				*/
-    atom_id nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
-    /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
-    real    k;                   /* force constant		        */
-    real    k_1;                 /* 1 over force constant		*/
-    rvec    xold;
-    rvec    fold;
-    rvec    step;
-    real    k11, k22, k33;       /* anisotropic polarization force constants */
-} t_shell;
-
-typedef struct gmx_shellfc {
-    int         nshell_gl;      /* The number of shells in the system       */
-    t_shell    *shell_gl;       /* All the shells (for DD only)             */
-    int        *shell_index_gl; /* Global shell index (for DD only)         */
-    gmx_bool    bInterCG;       /* Are there inter charge-group shells?     */
-    int         nshell;         /* The number of local shells               */
-    t_shell    *shell;          /* The local shells                         */
-    int         shell_nalloc;   /* The allocation size of shell             */
-    gmx_bool    bPredict;       /* Predict shell positions                  */
-    gmx_bool    bRequireInit;   /* Require initialization of shell positions  */
-    int         nflexcon;       /* The number of flexible constraints       */
-    rvec       *x[2];           /* Array for iterative minimization         */
-    rvec       *f[2];           /* Array for iterative minimization         */
-    int         x_nalloc;       /* The allocation size of x and f           */
-    rvec       *acc_dir;        /* Acceleration direction for flexcon       */
-    rvec       *x_old;          /* Old coordinates for flexcon              */
-    int         flex_nalloc;    /* The allocation size of acc_dir and x_old */
-    rvec       *adir_xnold;     /* Work space for init_adir                 */
-    rvec       *adir_xnew;      /* Work space for init_adir                 */
-    int         adir_nalloc;    /* Work space for init_adir                 */
-} t_gmx_shellfc;
-
+#include "shellfc.h"
 
 /* copied from bondfree.c, needed by hardwall */
 static int hardwall_pbc_rvec_sub(t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
@@ -252,7 +218,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x)
 {
-    struct gmx_shellfc       *shfc;
+    gmx_shellfc_t             shfc;
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
     t_atom                   *atom;
@@ -296,6 +262,12 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
 
     nshell = n[eptShell];
 
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "INIT SHELL FLEXCON: nshell from n[eptShell] = %d\n", nshell);
+    }
+
     if (nshell == 0 && nflexcon == 0)
     {
         /* We're not doing shells or flexible constraints */
@@ -326,6 +298,16 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
     }
 
     snew(shell, nshell);
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "INIT SHELL FLEXCON: nshell after atomloop = %d\n", nshell);
+        for (i = 0; i < nshell; i++)
+        {
+            fprintf(debug, "INIT SHELL FLEXCON: shell_index[%d] = %d\n", i, shell_index[i]);
+        }
+    }
 
     /* Initiate the shell structures */
     for (i = 0; (i < nshell); i++)
@@ -544,7 +526,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
         pr_shell(debug, ns, shell);
     }
 
-
+    /* TODO: is this right? */
     shfc->nshell_gl      = ns;
     shfc->shell_gl       = shell;
     shfc->shell_index_gl = shell_index;
@@ -597,11 +579,22 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
         }
     }
 
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "INIT SHELL FLEXCON: returning %d local and %d global shells.\n", shfc->nshell, shfc->nshell_gl);
+        for (i = 0; i < ns; i++)
+        {
+            fprintf(debug, "INIT SHELL FLEXCON: shell %d, s = %d, nucl1 = %d\n",
+                    i, shell[i].shell, shell[i].nucl1);
+        }
+    }
+
     return shfc;
 }
 
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
-                       struct gmx_shellfc *shfc)
+                       gmx_shellfc_t shfc)
 {
     t_shell      *shell;
     int           a0, a1, *ind, nshell, i;
@@ -612,13 +605,18 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
         dd = cr->dd;
         a0 = 0;
         a1 = dd->nat_home;
+
+        /* TODO: remove */
+        if (debug)
+        {
+            fprintf(debug, "MAKE LOCAL SHELLS: DD a0 = %d a1 = %d\n", a0, a1);
+        }
     }
     else
     {
         /* Single node: we need all shells, just copy the pointer */
         shfc->nshell = shfc->nshell_gl;
         shfc->shell  = shfc->shell_gl;
-
         return;
     }
 
@@ -628,6 +626,12 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
     shell  = shfc->shell;
     for (i = a0; i < a1; i++)
     {
+        /* TODO: remove */
+        if (debug)
+        {
+            fprintf(debug, "MAKE LOCAL SHELLS: Drude found at i = %d, DD global i = %d\n", i, ddglatnr(dd, i));
+        }
+
         if (md->ptype[i] == eptShell)
         {
             if (nshell+1 > shfc->shell_nalloc)
@@ -638,32 +642,46 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
             if (dd)
             {
                 shell[nshell] = shfc->shell_gl[ind[dd->gatindex[i]]];
+                /* TODO: remove */
+                if (debug)
+                {
+                    fprintf(debug, "MAKE LOCAL SHELLS: from gatindex, shell = %d, nucl1 = %d\n",
+                            shell[nshell].shell, shell[nshell].nucl1);
+                }
             }
             else
             {
                 shell[nshell] = shfc->shell_gl[ind[i]];
             }
 
-            /* With inter-cg shells we can no do shell prediction,
-             * so we do not need the nuclei numbers.
-             */
-            if (!shfc->bInterCG)
-            {
-                shell[nshell].nucl1   = i + shell[nshell].nucl1 - shell[nshell].shell;
-                if (shell[nshell].nnucl > 1)
-                {
-                    shell[nshell].nucl2 = i + shell[nshell].nucl2 - shell[nshell].shell;
-                }
-                if (shell[nshell].nnucl > 2)
-                {
-                    shell[nshell].nucl3 = i + shell[nshell].nucl3 - shell[nshell].shell;
-                }
-            }
-            shell[nshell].shell = i;
+            /* jal - now that we're doing extra communication, there is no
+             * problem with shell prediction, so these assignments can 
+             * always be made */ 
+
             /* TODO: remove */
             if (debug)
             {
-                fprintf(debug, "MAKE LOCAL SHELLS: shell[%d].shell = %d, nucl1 = %d\n", nshell, shell[nshell].shell, shell[nshell].nucl1);
+                fprintf(debug, "MAKE LOCAL SHELLS: shell[%d].nucl1 = %d shell = %d b4 modifying\n", nshell, 
+                        shell[nshell].nucl1, shell[nshell].shell);
+            }
+
+            /* PROBLEM: if nucl1 = 0, shell = 1, nucl1 becomes -1 and results in junk */
+            /* jal - the difference here will always be 1, so nucl1 is always i+1... */
+            shell[nshell].nucl1   = i + shell[nshell].nucl1 - shell[nshell].shell;
+            if (shell[nshell].nnucl > 1)
+            {
+                shell[nshell].nucl2 = i + shell[nshell].nucl2 - shell[nshell].shell;
+            }
+            if (shell[nshell].nnucl > 2)
+            {
+                shell[nshell].nucl3 = i + shell[nshell].nucl3 - shell[nshell].shell;
+            }
+            shell[nshell].shell = i;   /* jal - using += i gets global atom index */
+
+            /* TODO: remove */
+            if (debug)
+            {
+                fprintf(debug, "MAKE LOCAL SHELLS: shell[%d].shell = %d, nucl1 = %d\n", nshell, i, shell[nshell].nucl1);
             }
             nshell++;
         }
@@ -991,17 +1009,20 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * limit and the velocities along the bond vector are scaled 
  * down according to the Drude temperature set in the .mdp file
  */
-static void apply_drude_hardwall(t_shell s[], int nshell, t_inputrec *ir, t_mdatoms *md, 
+/* TODO: changing the function call here... */
+static void apply_drude_hardwall(t_commrec *cr, t_idef *idef, /* gmx_shellfc_t shfc, *t_shell s[], int nshell, */ 
+                                 t_inputrec *ir, t_mdatoms *md, 
                                  t_state *state, rvec f[], tensor force_vir)
 {
 
     if (debug)
     {
         fprintf(debug, "HARDWALL: Entering hard wall function...\n");
-        pr_shell(debug, nshell, s);
+        /* TODO: temporarily removing */
+        /* pr_shell(debug, nshell, s); */
     }
 
-    int     i, m, n;
+    int     i, j, m, n;
     atom_id ia, ib;                 /* heavy atom and drude, respectively */
     real    ma, mb, mtot;           /* masses of drude and heavy atom, and their sum */
     real    dt, max_t;
@@ -1025,20 +1046,33 @@ static void apply_drude_hardwall(t_shell s[], int nshell, t_inputrec *ir, t_mdat
     rvec    diff_vr12;
     rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
     t_pbc   pbc;
+    t_ilist    *ilist;
+    t_iatom    *iatoms;
+    int         flocal[] = { F_BONDS, F_POLARIZATION }; /* local interactions subject to hardwall restraint */
+    int         nrlocal = 2;        /* size of flocal[] array */
+    int         nral;
 
-    /* TODO: should this be set_pbc_dd? Would need cr->dd passed into hardwall function */
+    /*
+    t_shell *s;
+    int     nshell;
+
+    s = shfc->shell;
+    nshell = shfc->nshell;
+    */
+
     set_pbc(&pbc, ir->ePBC, state->box);
 
     /* Here, we get the local bonded interactions that will be used for searching.
      * Basically, we will check any atom-Drude bond for the hardwall criterion and
-     * apply the restraint, if necessary.  So the total number of bonds is larger than
-     * what we actually care about, but this is the easiest way to guarantee that we're 
-     * dealing with the atoms of interest. */
+     * apply the restraint, if necessary.  So the total number of bonds/polarization entries is
+     * what we actually care about, so we loop over entries in iatoms within the local ilist. */
 
+    /*
     if (debug)
     {
         fprintf(debug, "HARDWALL: nshell = %d, homenr = %d\n", nshell, md->homenr);
     }
+    */
 
     const real kbt = BOLTZ * ir->drude->drude_t;
     max_t = 2.0 * ir->delta_t;
@@ -1052,17 +1086,46 @@ static void apply_drude_hardwall(t_shell s[], int nshell, t_inputrec *ir, t_mdat
     }
 
     /* find which particles are Drudes */
-    /* loop over nshells and find their associated nuclei/heavy atoms */
-    for (i = 0; (i < nshell); i++)
+    /* loop over entries in iatoms and find their associated nuclei/heavy atoms */
+    for (i = 0; i < nrlocal; i++)
     {
-        ia = s[i].nucl1;    /* Atom */
-        ib = s[i].shell;    /* Drude */
+        nral = NRAL(flocal[i]);
+        ilist = &idef->il[flocal[i]];    
+
+        /* loop over all entries in ilist for bonds or polarization */
+        for (j = 0; j < ilist->nr; j += 1+nral)
+        {
+            iatoms = ilist->iatoms + j;
+
+            /* find Drudes and connected heavy atoms */
+            if (md->ptype[iatoms[1]] == eptShell && md->ptype[iatoms[2]] == eptAtom)
+            {
+                ia = iatoms[2]; /* atom */
+                ib = iatoms[1]; /* Drude */
+            }
+            else if (md->ptype[iatoms[1]] == eptAtom && md->ptype[iatoms[2]] == eptShell)
+            {
+                ia = iatoms[1]; /* atom */
+                ib = iatoms[2]; /* Drude */
+            }
+            else
+            {
+                /* no Drude involved in this interaction, i.e. normal bond */
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: No Drude found in bond between %d - %d\n",
+                            DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1),
+                            DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
+                }
+                continue;
+            }
+            
 
         if (debug)
         {
-            fprintf(debug, "HARDWALL: Drude atom %d connected to heavy atom %d\n", (ib+1), (ia+1));
-            fprintf(debug, "HARDWALL: shell[%d], shell = %d, nucl1 = %d, nucl2 = %d, nucl3 = %d\n", i, s[i].shell,
-                    s[i].nucl1, s[i].nucl2, s[i].nucl3);
+            fprintf(debug, "HARDWALL: Drude atom %d connected to heavy atom %d\n", 
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), 
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
         }
 
         /* copy current positions and velocities for manipulation */
@@ -1118,7 +1181,8 @@ static void apply_drude_hardwall(t_shell s[], int nshell, t_inputrec *ir, t_mdat
             if (rab > (2.0*rwall))
             {
                 gmx_fatal(FARGS, "Drude atom %d is too far (r = %f) from its heavy atom %d.\n"
-                    "Cannot apply hardwall.\n", (ib+1), rab, (ia+1));
+                    "Cannot apply hardwall.\n", DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), rab, 
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
             }
 
             /* scale distance between drude and heavy atom */
@@ -1294,9 +1358,11 @@ static void apply_drude_hardwall(t_shell s[], int nshell, t_inputrec *ir, t_mdat
                 fprintf(debug, "HARDWALL: New force f[%d]: %f %f %f\n", (ib+1), f[ib][XX], f[ib][YY], f[ib][ZZ]);
             }
 
+        } /* TODO: fix indentation - loop over j within iatoms */
+
         } /* end of hard wall conditions */
 
-    } /* end of loop over all atoms */
+    } /* TODO: fix - end of loop over all atoms */
 
 } 
 
@@ -1312,7 +1378,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                         t_graph *graph,
                         gmx_groups_t *groups,
-                        struct gmx_shellfc *shfc,
+                        gmx_shellfc_t shfc,
                         t_forcerec *fr,
                         gmx_bool bBornRadii,
                         double t, rvec mu_tot,
@@ -1455,17 +1521,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              state->lambda, graph,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
-
-    /* TODO: remove */
-    if (debug)
-    {
-        fprintf(debug, "RELAX SHELL FLEXCON: b4 any updates!\n");
-        for (i=0; i<md->nr; i++)
-        {
-            fprintf(debug, "RELAX SHELL FLEXCON: v of atom %d = %f %f %f\n", i, state->v[i][XX],
-                    state->v[i][YY], state->v[i][ZZ]);
-        }
-    }
 
     /* Now, update shell/Drude positions. There are two methods to do this:
      *  1. The energy minimization/SCF approach
@@ -1674,25 +1729,12 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     {
         /* Step 1. Apply forces to Drudes and update their velocities */
         /* TODO: check usage of fr->vir_twin_constr */
-        if (debug)
-        {
-            fprintf(debug, "RELAX SHELL FLEXCON: updating velocities of Drudes...\n");
-            for (i=0; i<md->nr; i++)
-            {
-                fprintf(debug, "RELAX SHELL FLEXCON: v of atom %d = %f %f %f\n", i, state->v[i][XX],
-                        state->v[i][YY], state->v[i][ZZ]);
-            }
-        }
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
                       f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
                       ekind, NULL, upd, bInitStep, etrtVELOCITY1,
                       cr, nrnb, constr, idef, TRUE);
 
         /* Step 2. Update Drude positions */
-        if (debug)
-        {
-            fprintf(debug, "RELAX SHELL FLEXCON: updating positions of Drudes...\n");
-        }
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
                       f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
                       ekind, NULL, upd, bInitStep, etrtPOSITION,
@@ -1701,7 +1743,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         /* Step 3. Apply hard wall, if requested, to make sure the Drude hasn't gone too far */
         if (inputrec->drude->bHardWall)
         {
-            apply_drude_hardwall(shell, nshell, inputrec, md, state, f, force_vir);
+            /* apply_drude_hardwall(cr, shell, nshell, inputrec, md, state, f, force_vir); */
+            apply_drude_hardwall(cr, idef, /*shfc,*/ inputrec, md, state, f, force_vir);
         }
 
         /* At this point, Drude positions have been updated and then 

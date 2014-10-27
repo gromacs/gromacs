@@ -39,6 +39,7 @@
 #include "typedefs.h"
 #include "vsite.h"
 #include "genborn.h"
+#include "shellfc.h"
 
 #include "../timing/wallcycle.h"
 
@@ -112,7 +113,7 @@ init_domain_decomposition(FILE *fplog,
 
 void dd_init_bondeds(FILE *fplog,
                      gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                     gmx_vsite_t *vsite,
+                     gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
                      t_inputrec *ir, gmx_bool bBCheck, cginfo_mb_t *cginfo_mb);
 /* Initialize data structures for bonded interactions */
 
@@ -225,7 +226,11 @@ void print_dd_statistics(t_commrec *cr, t_inputrec *ir, FILE *fplog);
 
 void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift);
 
+void dd_move_f_shells(gmx_domdec_t *dd, rvec *f, rvec *fshift);
+
 void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f);
+
+void dd_clear_f_shells(gmx_domdec_t *dd, rvec *f);
 
 void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
                            rvec *x0, rvec *x1, gmx_bool bX1IsCoord);
@@ -238,6 +243,10 @@ int *dd_constraints_nlocalatoms(gmx_domdec_t *dd);
 void dd_clear_local_constraint_indices(gmx_domdec_t *dd);
 
 void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
+
+void dd_clear_local_shell_indices(gmx_domdec_t *dd);
+
+int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil);
 
 int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil);
 
@@ -252,6 +261,7 @@ void init_domdec_constraints(gmx_domdec_t *dd,
 
 void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite);
 
+void init_domdec_shells(gmx_domdec_t *dd, int n_intercg_shells);
 
 /* In domdec_top.c */
 
@@ -260,7 +270,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
 
 void dd_make_reverse_top(FILE *fplog,
                          gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                         gmx_vsite_t *vsite,
+                         gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
                          t_inputrec *ir, gmx_bool bBCheck);
 
 void dd_make_local_cgs(gmx_domdec_t *dd, t_block *lcgs);

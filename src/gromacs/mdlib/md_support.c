@@ -288,9 +288,15 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
                      globsig_t *gs, gmx_bool bInterSimGS,
-                     matrix box, gmx_mtop_t *top_global,
+                     matrix box, gmx_mtop_t *top_global, t_idef *idef, 
                      gmx_bool *bSumEkinhOld, int flags)
 {
+    /* TODO: remove me! */
+    if (debug)
+    {
+        fprintf(debug, "GLOBALS: mdatoms->homenr = %d\n", mdatoms->homenr);
+    }
+
     int      i, gsi;
     real     gs_buf[eglsNR];
     tensor   corr_vir, corr_pres;
@@ -340,7 +346,8 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         else
         {
-            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel, bIterate);
+            /* idef and ir are only used in case of Drude simulations */
+            calc_ke_part(ir, state, &(ir->opts), mdatoms, ekind, nrnb, idef, bEkinAveVel, bIterate);
         }
 
         debug_gmx();
@@ -432,6 +439,41 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bStopCM)
     {
         check_cm_grp(fplog, vcm, ir, 1);
+
+        /* special Drude scaling */
+        if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+        {
+            int         g;
+            double      fac_ext, dtsy;
+
+            dtsy = (double)(ir->delta_t)/(double)(ir->drude->tsteps);        
+            fac_ext = exp(-1.0 * (0.5*dtsy));
+            /* fac_ext = exp(-1.0*state->nosehoover_vxi[0] * (0.5*dtsy)); */
+            /* Provided that the first group is reasonably large, this could be OK. */
+
+            if (vcm->mode != ecmNO)
+            {
+                for (g=0; g<vcm->nr; g++)
+                {
+                    /* check */
+                    if (fplog)
+                    {
+                        fprintf(fplog, "DRUDE COM: b4 scale: group_v[%d] = %f %f %f\n", g, vcm->group_v[g][XX],
+                                vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
+                    }
+
+                    svmul(fac_ext, vcm->group_v[g], vcm->group_v[g]);
+
+                    /* check */
+                    if (fplog)
+                    {
+                        fprintf(fplog, "DRUDE COM: after scale: group_v[%d] = %f %f %f\n", g, vcm->group_v[g][XX],
+                                vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
+                    }
+                }
+            }
+        }
+
         do_stopcm_grp(0, mdatoms->homenr, mdatoms->cVCM,
                       state->x, state->v, vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);

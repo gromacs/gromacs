@@ -47,6 +47,7 @@
 #include "mdebin.h"
 #include "vcm.h"
 #include "vsite.h"
+#include "shellfc.h"
 #include "update.h"
 #include "types/membedt.h"
 #include "types/globsig.h"
@@ -87,7 +88,8 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  int nfile, const t_filenm fnm[],
                                  const output_env_t oenv, gmx_bool bVerbose,
                                  gmx_bool bCompact, int nstglobalcomm,
-                                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                                 gmx_vsite_t *vsite, gmx_shellfc_t shellfc, 
+                                 gmx_constr_t constr,
                                  int stepout,
                                  t_inputrec *inputrec,
                                  gmx_mtop_t *mtop, t_fcdata *fcd,

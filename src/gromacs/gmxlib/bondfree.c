@@ -1126,11 +1126,6 @@ real thole_pol(int nbonds,
         al2   = forceparams[type].thole.alpha2;
         afac  = a*pow(al1*al2, -1.0/6.0);
 
-        if (debug)
-        {
-            fprintf(debug, "THOLE: a1 = %d, da1 = %d, a2 = %d, da2 = %d, q1 = %f, q2 = %f\n", a1, da1, a2, da2, q1, q2);
-            fprintf(debug, "THOLE: a = %f, al1 = %f, al2 = %f, qq = %f, afac = %f\n", a, al1, al2, qq, afac);
-        }
         /* atom 1 - atom 2 */
         qq    = q1*q2;
         V    += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq, fshift, afac);

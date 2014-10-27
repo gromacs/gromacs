@@ -48,6 +48,7 @@
 #include "gmx_hash.h"
 #include "gmx_omp_nthreads.h"
 #include "macros.h"
+#include "shellfc.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
@@ -226,6 +227,14 @@ void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift)
     }
 }
 
+void dd_move_f_shells(gmx_domdec_t *dd, rvec *f, rvec *fshift)
+{
+    if (dd->shell_comm)
+    {
+        dd_move_f_specat(dd, dd->shell_comm, f, fshift);
+    }
+}
+
 void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f)
 {
     int i;
@@ -233,6 +242,19 @@ void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f)
     if (dd->vsite_comm)
     {
         for (i = dd->vsite_comm->at_start; i < dd->vsite_comm->at_end; i++)
+        {
+            clear_rvec(f[i]);
+        }
+    }
+}
+
+void dd_clear_f_shells(gmx_domdec_t *dd, rvec *f)
+{
+    int i;
+
+    if (dd->shell_comm)
+    {
+        for (i = dd->shell_comm->at_start; i < dd->shell_comm->at_end; i++)
         {
             clear_rvec(f[i]);
         }
@@ -437,6 +459,14 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
     }
 }
 
+void dd_move_x_shells(gmx_domdec_t *dd, matrix box, rvec *x)
+{
+    if (dd->shell_comm)
+    {
+        dd_move_x_specat(dd, dd->shell_comm, box, x, NULL, FALSE);
+    }
+}
+
 int *dd_constraints_nlocalatoms(gmx_domdec_t *dd)
 {
     if (dd->constraints)
@@ -474,6 +504,14 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
     if (dd->vsite_comm)
     {
         gmx_hash_clear_and_optimize(dd->ga2la_vsite);
+    }
+}
+
+void dd_clear_local_shell_indices(gmx_domdec_t *dd)
+{
+    if (dd->shell_comm)
+    {
+        gmx_hash_clear_and_optimize(dd->ga2la_shell);
     }
 }
 
@@ -1333,6 +1371,93 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
     return at_end;
 }
 
+/* This routine sets up proper communication for function types related to
+ * polarizable interactions.  It does not cover F_BONDS (i.e., CHARMM Drude FF)
+ * because those are normal bonded interactions that are handled elsewhere.
+ */
+int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
+{
+    gmx_domdec_specat_comm_t   *spac;
+    ind_req_t                  *ireq;
+    gmx_hash_t                  ga2la_specat;
+    int                         ftype, nral, i, j, gat, a;
+    int                         at_end;
+    int                         flocal[] = { F_POLARIZATION };
+    int                         nrloc = 1;  /* number of elements in flocal[] array */
+    t_ilist                    *lilf;
+    t_iatom                    *iatoms;
+
+    spac = dd->shell_comm;
+    ireq = &spac->ireq[0];
+    ga2la_specat = dd->ga2la_shell;
+
+    ireq->n = 0;
+
+    /* TODO: remove loop? */
+    for (ftype = 0; ftype < nrloc; ftype++)
+    {
+        /* we only care about Drudes/shells within this loop, and
+         * by choosing these functions we can easily assume the atom
+         * indices without any complex decisions within this block of code */
+        nral = NRAL(flocal[ftype]);
+        lilf = &lil[flocal[ftype]];
+
+        for (i = 0; i < lilf->nr; i += 1+nral)
+        {
+            iatoms = lilf->iatoms + i;
+
+            /* check for other atoms */
+            for (j = 1; j < 1 + nral; j++)
+            {
+                if (iatoms[j] < 0)
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, "DD LOCAL SHELLS: non-local iatoms[%d] = %d\n", j, iatoms[j]);
+                    }
+                    /* not a home atom */
+                    a = -iatoms[j] - 1;
+                    if (gmx_hash_get_minone(dd->ga2la_shell, a) == -1)
+                    {
+                        /* add non-home atom to list */
+                        if (ireq->n+1 > ireq->nalloc)
+                        {
+                            ireq->nalloc = over_alloc_large(ireq->n+1);
+                            srenew(ireq->ind, ireq->nalloc);
+                        }
+                        ireq->ind[ireq->n++] = a;
+                        /* temporarily mark -2, get index later */
+                        gmx_hash_set(ga2la_specat, a, -2);
+                    }    
+                }
+            }
+        }
+    }
+
+    at_end = setup_specat_communication(dd, ireq, dd->shell_comm, ga2la_specat, at_start, 1, "shell", "");
+
+    /* fill in missing indices */
+    for (ftype = 0; ftype < nrloc; ftype++)
+    {
+        /* same as above */
+        nral = NRAL(flocal[ftype]);
+        lilf = &lil[flocal[ftype]];
+        for (i = 0; i < lilf->nr; i += 1+nral)
+        {
+            iatoms = lilf->iatoms + i;
+            for (j = 1; j < 1+nral; j++)
+            {
+                if (iatoms[j] < 0)
+                {
+                    iatoms[j] = gmx_hash_get_minone(ga2la_specat, -iatoms[j]-1);
+                }
+            }
+        }
+    }
+
+    return at_end;
+}
+
 static gmx_domdec_specat_comm_t *specat_comm_init(int nthread)
 {
     gmx_domdec_specat_comm_t *spac;
@@ -1411,4 +1536,20 @@ void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite)
                                         n_intercg_vsite/(2*dd->nnodes)));
 
     dd->vsite_comm = specat_comm_init(1);
+}
+
+void init_domdec_shells(gmx_domdec_t *dd, int n_intercg_shells)
+{
+    int i;
+
+    if (debug)
+    {
+        fprintf(debug, "Begin init_domdec_shells\n");
+    }
+
+    /* same logic as in setting up vsites */
+    dd->ga2la_shell = gmx_hash_init(min(n_intercg_shells/20,
+                                        n_intercg_shells/(2*dd->nnodes)));
+
+    dd->shell_comm = specat_comm_init(1);
 }

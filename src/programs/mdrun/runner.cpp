@@ -210,6 +210,12 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          real pforce, real cpt_period, real max_hours,
                                          const char *deviceOptions, unsigned long Flags)
 {
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Entering mdrunner_start_threads()...\n");
+    }
+
     int                      ret;
     struct mdrunner_arglist *mda;
     t_commrec               *crn; /* the new commrec */
@@ -356,6 +362,12 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                             const t_commrec *cr,
                             FILE *fplog)
 {
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Entering get_nthreads_mpi...\n");
+    }
+
     int      nthreads_hw, nthreads_tot_max, nthreads_tmpi, nthreads_new, ngpu;
     int      min_atoms_per_mpi_thread;
     gmx_bool bCanUseGPU;
@@ -865,6 +877,12 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 static void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
                                       gmx_bool      bIsSimMaster)
 {
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Entering check and update #1...\n");
+    }
+
     gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp, bIsSimMaster);
 
 #ifndef GMX_THREAD_MPI
@@ -982,6 +1000,12 @@ static void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
 static void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
                                       int           cutoff_scheme)
 {
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Entering check and update #2...\n");
+    }
+
     if (cutoff_scheme == ecutsGROUP)
     {
         /* We only have OpenMP support for PME only nodes */
@@ -1108,6 +1132,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     real                      ewaldcoeff_lj = 0;
     gmx_pme_t                *pmedata       = NULL;
     gmx_vsite_t              *vsite         = NULL;
+    gmx_shellfc_t             shellfc       = NULL;
     gmx_constr_t              constr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
     gmx_wallcycle_t           wcycle;
@@ -1612,6 +1637,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         /* Initialize the virtual site communication */
         vsite = init_vsite(mtop, cr, FALSE);
+        /* TODO: jal */
+        shellfc = init_shell(mtop, cr, FALSE);
+
+        if (debug && (shellfc != NULL))
+        {
+            fprintf(debug, "Non-null shellfc found after init_shell().\n");
+        }
 
         calc_shifts(box, fr->shift_vec);
 
@@ -1742,10 +1774,25 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
 
+        /* TODO: jal - initialize shells here (global) */
+        shellfc = init_shell_flexcon(fplog, inputrec,
+                                     mtop, n_flexible_constraints(constr),
+                                     (inputrec->bContinuation ||
+                                     (DOMAINDECOMP(cr) && !MASTER(cr))) ?
+                                     NULL : state->x);
+
+        /* TODO: remove */
+        if (debug && shellfc)
+        {
+            fprintf(debug, "After init_shell_flexcon, shellfc is non-null.\n");
+            fprintf(debug, "Found %d global shells in shellfc.\n", shellfc->nshell_gl);
+            fprintf(debug, "Found %d local shells in shellfc b4 do_md().\n", shellfc->nshell);
+        }
+
         if (DOMAINDECOMP(cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
-            dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
+            dd_init_bondeds(fplog, cr->dd, mtop, vsite, shellfc, inputrec,
                             Flags & MD_DDBONDCHECK, fr->cginfo_mb);
 
             set_dd_parameters(fplog, cr->dd, dlb_scale, inputrec, &ddbox);
@@ -1757,7 +1804,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         integrator[inputrec->eI].func(fplog, cr, nfile, fnm,
                                       oenv, bVerbose, bCompact,
                                       nstglobalcomm,
-                                      vsite, constr,
+                                      vsite, shellfc, constr,
                                       nstepout, inputrec, mtop,
                                       fcd, state,
                                       mdatoms, nrnb, wcycle, ed, fr,

@@ -127,7 +127,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
                      globsig_t *gs, gmx_bool bInterSimGS,
-                     matrix box, gmx_mtop_t *top_global, gmx_bool *bSumEkinhOld, int flags);
+                     matrix box, gmx_mtop_t *top_global, t_idef *idef, gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
 
 #ifdef __cplusplus

@@ -75,7 +75,7 @@ static const char *modth_env_var[emntNR] =
     "GMX_DOMDEC_NUM_THREADS", "GMX_PAIRSEARCH_NUM_THREADS",
     "GMX_NONBONDED_NUM_THREADS", "GMX_BONDED_NUM_THREADS",
     "GMX_PME_NUM_THREADS", "GMX_UPDATE_NUM_THREADS",
-    "GMX_VSITE_NUM_THREADS",
+    "GMX_VSITE_NUM_THREADS", "GMX_SHELL_NUM_THREADS",
     "GMX_LINCS_NUM_THREADS", "GMX_SETTLE_NUM_THREADS"
 };
 
@@ -83,7 +83,7 @@ static const char *modth_env_var[emntNR] =
 static const char *mod_name[emntNR] =
 {
     "default", "domain decomposition", "pair search", "non-bonded",
-    "bonded", "PME", "update", "LINCS", "SETTLE"
+    "bonded", "PME", "update", "vsite", "shell", "LINCS", "SETTLE"
 };
 
 /** Number of threads for each algorithmic module.
@@ -365,6 +365,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         pick_module_nthreads(fplog, emntPME, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntUpdate, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntVSITE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
+        pick_module_nthreads(fplog, emntSHELL, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
 

@@ -37,14 +37,76 @@
 
 #include "../timing/wallcycle.h"
 
+#include "../pbcutil/mshift.h"
+#include "../pbcutil/ishift.h"
+#include "../pbcutil/pbc.h"
+
 #include "typedefs.h"
 #include "vsite.h"
+#include "update.h"
+
+#ifndef _shellfc_h
+#define _shellfc_h
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef struct {
+    int         nnucl;
+    atom_id     shell;               /* The shell id                */
+    atom_id     nucl1, nucl2, nucl3; /* The nuclei connected to the shell   */
+    /* gmx_bool    bInterCG; */            /* Coupled to nuclei outside cg?        */
+    real        k;                   /* force constant              */
+    real        k_1;                 /* 1 over force constant       */
+    rvec        xold;
+    rvec        fold;
+    rvec        step;
+    real        k11, k22, k33;       /* anisotropic polarization force constants */
+} t_shell;
+
+typedef struct {
+    t_ilist ilist[F_NRE];     /* shell ilists for this thread            */
+    rvec    fshift[SHIFTS];   /* fshift accumulation buffer              */
+    matrix  dxdf;             /* virial dx*df accumulation buffer        */
+} gmx_shell_thread_t;
+
+typedef struct gmx_shellfc {
+    int                 nshell_gl;            /* The number of shells in the system       */
+    t_shell            *shell_gl;             /* All the shells (for DD only)             */
+    int                *shell_index_gl;       /* Global shell index (for DD only)         */
+    int                 nshell;               /* The number of local shells               */
+    t_shell            *shell;                /* The local shells                         */
+    int                 shell_nalloc;         /* The allocation size of shell             */
+    gmx_bool            bPredict;             /* Predict shell positions                  */
+    gmx_bool            bRequireInit;         /* Require initialization of shell positions  */
+    int                 nflexcon;             /* The number of flexible constraints       */
+    rvec               *x[2];                 /* Array for iterative minimization         */
+    rvec               *f[2];                 /* Array for iterative minimization         */
+    int                 x_nalloc;             /* The allocation size of x and f           */
+    rvec               *acc_dir;              /* Acceleration direction for flexcon       */
+    rvec               *x_old;                /* Old coordinates for flexcon              */
+    int                 flex_nalloc;          /* The allocation size of acc_dir and x_old */
+    rvec               *adir_xnold;           /* Work space for init_adir                 */
+    rvec               *adir_xnew;            /* Work space for init_adir                 */
+    int                 adir_nalloc;          /* Work space for init_adir                 */
+    gmx_bool            bInterCG;             /* Are there inter charge-group shells?     */
+    int                 n_intercg_shells;     /* inter-charge group shells                */
+    int                 nshell_pbc_molt;      /* The array size of shell_pbc_molt         */
+    int              ***shell_pbc_molt;       /* The pbc atoms for intercg shells         */
+    int               **shell_pbc_loc;        /* The local pbc atoms                      */
+    int                *shell_pbc_loc_nalloc; /* Sizes of shell_pbc_loc                   */
+    int                 nthreads;             /* Number of threads used for shells        */
+    gmx_shell_thread_t *tdata;                /* Thread local shells and work structs     */
+    int                *th_ind;               /* Work array                               */
+    int                 th_ind_nalloc;        /* Size of th_ind                           */
+} t_gmx_shellfc;
+
+/* Abstract type for shells */
+typedef struct gmx_shellfc *gmx_shellfc_t;
+
 struct t_graph;
+struct t_pbc;
 
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
@@ -54,6 +116,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
                                  rvec *x);
 
 /* Get the local shell with domain decomposition */
+/* TODO: jal changing */
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
                        gmx_shellfc_t shfc);
 
@@ -82,7 +145,37 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_update_t upd,
                         gmx_ekindata_t *ekind);
 
+/* functions for DD */
+static void spread_shell(t_iatom ia[],
+                         rvec x[], rvec f[], rvec fshift[],
+                         t_pbc *pbc, t_graph *g);
+
+static void spread_shell_f_thread(gmx_shellfc_t shell,
+                                  rvec x[], rvec f[], rvec *fshift,
+                                  gmx_bool VirCorr, matrix dxdf,
+                                  t_ilist ilist[],
+                                  t_graph *g, t_pbc *pbc_null);
+
+void spread_shell_f(gmx_shellfc_t shell,
+                    rvec x[], rvec f[], rvec *fshift,
+                    gmx_bool VirCorr, matrix vir,
+                    t_nrnb *nrnb, t_idef *idef,
+                    int ePBC, gmx_bool bMolPBC, t_graph *g, matrix box,
+                    t_commrec *cr);
+
+gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
+                         gmx_bool bSerial_NoPBC);
+
+void split_shells_over_threads(const t_ilist   *ilist,
+                               const t_mdatoms *mdatoms,
+                               gmx_bool         bLimitRange,
+                               gmx_shellfc_t    shfc);
+
+void set_shell_top(gmx_shellfc_t shfc, gmx_localtop_t *top, t_mdatoms *md,
+                   t_commrec *cr);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

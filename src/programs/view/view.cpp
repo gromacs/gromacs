@@ -44,6 +44,7 @@
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"

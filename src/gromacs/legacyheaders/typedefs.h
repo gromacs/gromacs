@@ -60,7 +60,6 @@
 #include "types/ifunc.h"
 #include "types/group.h"
 #include "types/state.h"
-#include "types/shellfc.h"
 #include "types/constr.h"
 #include "types/oenv.h"
 #include "types/commrec_fwd.h"

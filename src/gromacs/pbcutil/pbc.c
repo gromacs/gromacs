@@ -1327,6 +1327,12 @@ gmx_bool image_cylindric(ivec xi, ivec xj, ivec box_size, real rlong2,
 
 void calc_shifts(matrix box, rvec shift_vec[])
 {
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Entering calc_shifts()...\n");
+    }
+
     int k, l, m, d, n, test;
 
     n = 0;
@@ -1547,8 +1553,20 @@ int *compact_unitcell_edges()
 
 void put_atoms_in_box_omp(int ePBC, matrix box, int natoms, rvec x[])
 {
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Entering put_atoms_in_box_omp...\n");
+    }
+
     int t, nth;
     nth = gmx_omp_nthreads_get(emntDefault);
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "nth = %d\n", nth);
+    }
 
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (t = 0; t < nth; t++)
@@ -1557,12 +1575,31 @@ void put_atoms_in_box_omp(int ePBC, matrix box, int natoms, rvec x[])
 
         offset = (natoms*t    )/nth;
         len    = (natoms*(t + 1))/nth - offset;
+
+        /* TODO: remove */
+        if (debug)
+        {
+            fprintf(debug, "t: %d, natoms: %d, offset: %d, len: %d\n", t, natoms, offset, len);
+        }
+
         put_atoms_in_box(ePBC, box, len, x + offset);
+    }
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Exiting put_atoms_in_box_omp...\n");
     }
 }
 
 void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[])
 {
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Entering put_atoms_in_box...\n");
+    }
+
     int npbcdim, i, m, d;
 
     if (ePBC == epbcSCREW)
@@ -1581,22 +1618,50 @@ void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[])
 
     if (TRICLINIC(box))
     {
+        if (debug)
+        {
+            fprintf(debug, "Triclinic box detected.\n");
+        }
         for (i = 0; (i < natoms); i++)
         {
+            if (debug)
+            {
+                fprintf(debug, "i = %d\n", i);
+            }
             for (m = npbcdim-1; m >= 0; m--)
             {
+                if (debug)
+                {
+                    fprintf(debug, "m = %d\n", m);
+                }
                 while (x[i][m] < 0)
                 {
                     for (d = 0; d <= m; d++)
                     {
+                        if (debug)
+                        {
+                            fprintf(debug, "x < 0, d = %d x[%d][%d] = %.3f\n", d, i, d, x[i][d]);
+                        }
                         x[i][d] += box[m][d];
+                        if (debug)
+                        {
+                            fprintf(debug, "add box, x = %.3f\n", x[i][d]);
+                        }
                     }
                 }
                 while (x[i][m] >= box[m][m])
                 {
                     for (d = 0; d <= m; d++)
                     {
+                        if (debug)
+                        {
+                            fprintf(debug, "x > box, d = %d, x[%d][%d] = %.3f\n", d, i, d, x[i][d]);
+                        }
                         x[i][d] -= box[m][d];
+                        if (debug)
+                        {
+                            fprintf(debug, "sub box, x = %.3f\n", x[i][d]);
+                        }
                     }
                 }
             }
@@ -1604,20 +1669,50 @@ void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[])
     }
     else
     {
+        if (debug)
+        {
+            fprintf(debug, "Not a triclinic box.\n");
+        }
         for (i = 0; i < natoms; i++)
         {
+            if (debug)
+            {
+                fprintf(debug, "i = %d\n", i);
+            }
             for (d = 0; d < npbcdim; d++)
             {
                 while (x[i][d] < 0)
                 {
+                    if (debug)
+                    {
+                        fprintf(debug, "x < 0, d = %d x[%d][%d] = %.3f\n", d, i, d, x[i][d]);
+                    }
                     x[i][d] += box[d][d];
+                    if (debug)
+                    {
+                        fprintf(debug, "add box, x = %.3f\n", x[i][d]);
+                    }
                 }
                 while (x[i][d] >= box[d][d])
                 {
+                    if (debug)
+                    {
+                        fprintf(debug, "x > box, d = %d, x[%d][%d] = %.3f\n", d, i, d, x[i][d]);
+                    }
                     x[i][d] -= box[d][d];
+                    if (debug)
+                    {
+                        fprintf(debug, "sub box, x = %.3f\n", x[i][d]);
+                    }
                 }
             }
         }
+    }
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Exiting put_atoms_in_box...\n");
     }
 }
 
