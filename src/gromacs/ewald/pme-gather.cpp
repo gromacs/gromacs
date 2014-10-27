@@ -47,32 +47,208 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-#define DO_FSPLINE(order)                      \
-    for (ithx = 0; (ithx < order); ithx++)              \
-    {                                              \
-        index_x = (i0+ithx)*pny*pnz;               \
-        tx      = thx[ithx];                       \
-        dx      = dthx[ithx];                      \
-                                               \
-        for (ithy = 0; (ithy < order); ithy++)          \
-        {                                          \
-            index_xy = index_x+(j0+ithy)*pnz;      \
-            ty       = thy[ithy];                  \
-            dy       = dthy[ithy];                 \
-            fxy1     = fz1 = 0;                    \
-                                               \
-            for (ithz = 0; (ithz < order); ithz++)      \
-            {                                      \
-                gval  = grid[index_xy+(k0+ithz)];  \
-                fxy1 += thz[ithz]*gval;            \
-                fz1  += dthz[ithz]*gval;           \
-            }                                      \
-            fx += dx*ty*fxy1;                      \
-            fy += tx*dy*fxy1;                      \
-            fz += tx*ty*fz1;                       \
-        }                                          \
+static inline void
+do_fspline(int order,
+           int pny, int pnz, int i0, int j0, int k0,
+           const real *thx, const real *thy, const real *thz,
+           const real *dthx, const real *dthy, const real *dthz,
+           const real *grid,
+           real &fx, real &fy, real &fz)
+{
+    for (int ithx = 0; (ithx < order); ithx++)
+    {
+        int  index_x = (i0+ithx)*pny*pnz;
+        real tx      = thx[ithx];
+        real dx      = dthx[ithx];
+
+        for (int ithy = 0; (ithy < order); ithy++)
+        {
+            int  index_xy = index_x+(j0+ithy)*pnz;
+            real ty       = thy[ithy];
+            real dy       = dthy[ithy];
+            real fxy1     = 0, fz1 = 0;
+
+            for (int ithz = 0; (ithz < order); ithz++)
+            {
+                real gval  = grid[index_xy+(k0+ithz)];
+                fxy1 += thz[ithz]*gval;
+                fz1  += dthz[ithz]*gval;
+            }
+            fx += dx*ty*fxy1;
+            fy += tx*dy*fxy1;
+            fz += tx*ty*fz1;
+        }
+    }
+}
+
+template <int order>
+static inline void
+do_fspline_order(int pny, int pnz, int i0, int j0, int k0,
+                 const real *thx, const real *thy, const real *thz,
+                 const real *dthx, const real *dthy, const real *dthz,
+                 const real *grid,
+                 const struct pme_spline_work gmx_unused *work,
+                 real gmx_unused *thz_aligned, real gmx_unused *dthz_aligned,
+                 real &fx, real &fy, real &fz)
+{
+    do_fspline(order, pny, pnz, i0, j0, k0,
+               thx, thy, thz, dthx, dthy, dthz,
+               grid, fx, fy, fz);
+}
+
+#ifdef PME_SIMD4_SPREAD_GATHER
+template <>
+inline void
+do_fspline_order<4>(int pny, int pnz, int i0, int j0, int k0,
+                    const real *thx, const real *thy, const real *thz,
+                    const real *dthx, const real *dthy, const real *dthz,
+                    const real *grid,
+                    const struct pme_spline_work gmx_unused *work,
+                    real gmx_unused *thz_aligned, real gmx_unused *dthz_aligned,
+                    real &fx, real &fy, real &fz)
+/* Gather for one charge with pme_order=4 with unaligned SIMD4 load+store.
+ * This code does not assume any memory alignment for the grid.
+ */
+{
+    gmx_simd4_real_t fx_S, fy_S, fz_S;
+
+    gmx_simd4_real_t tx_S, ty_S, tz_S;
+    gmx_simd4_real_t dx_S, dy_S, dz_S;
+
+    gmx_simd4_real_t gval_S;
+
+    gmx_simd4_real_t fxy1_S;
+    gmx_simd4_real_t fz1_S;
+
+    fx_S = gmx_simd4_setzero_r();
+    fy_S = gmx_simd4_setzero_r();
+    fz_S = gmx_simd4_setzero_r();
+
+    /* With order 4 the z-spline is actually aligned */
+    tz_S  = gmx_simd4_load_r(thz);
+    dz_S  = gmx_simd4_load_r(dthz);
+
+    for (int ithx = 0; (ithx < 4); ithx++)
+    {
+        int index_x  = (i0+ithx)*pny*pnz;
+        tx_S     = gmx_simd4_set1_r(thx[ithx]);
+        dx_S     = gmx_simd4_set1_r(dthx[ithx]);
+
+        for (int ithy = 0; (ithy < 4); ithy++)
+        {
+            int index_xy = index_x+(j0+ithy)*pnz;
+            ty_S     = gmx_simd4_set1_r(thy[ithy]);
+            dy_S     = gmx_simd4_set1_r(dthy[ithy]);
+
+            gval_S = gmx_simd4_loadu_r(grid+index_xy+k0);
+
+            fxy1_S = gmx_simd4_mul_r(tz_S, gval_S);
+            fz1_S  = gmx_simd4_mul_r(dz_S, gval_S);
+
+            fx_S = gmx_simd4_fmadd_r(gmx_simd4_mul_r(dx_S, ty_S), fxy1_S, fx_S);
+            fy_S = gmx_simd4_fmadd_r(gmx_simd4_mul_r(tx_S, dy_S), fxy1_S, fy_S);
+            fz_S = gmx_simd4_fmadd_r(gmx_simd4_mul_r(tx_S, ty_S), fz1_S, fz_S);
+        }
     }
 
+    fx += gmx_simd4_reduce_r(fx_S);
+    fy += gmx_simd4_reduce_r(fy_S);
+    fz += gmx_simd4_reduce_r(fz_S);
+}
+
+template <>
+inline void
+do_fspline_order<5>(int pny, int pnz, int i0, int j0, int k0,
+                    const real *thx, const real *thy, const real *thz,
+                    const real *dthx, const real *dthy, const real *dthz,
+                    const real *grid, const struct pme_spline_work *work,
+                    real gmx_unused *thz_aligned, real gmx_unused *dthz_aligned,
+                    real &fx, real &fy, real &fz)
+/* This code assumes that the grid is allocated 4-real aligned
+ * and that pnz is a multiple of 4.
+ * This code supports pme_order <= 5.
+ */
+{
+    const int        order = 5;
+    int              offset;
+
+    gmx_simd4_real_t fx_S, fy_S, fz_S;
+
+    gmx_simd4_real_t tx_S, ty_S, tz_S0, tz_S1;
+    gmx_simd4_real_t dx_S, dy_S, dz_S0, dz_S1;
+
+    gmx_simd4_real_t gval_S0;
+    gmx_simd4_real_t gval_S1;
+
+    gmx_simd4_real_t fxy1_S0;
+    gmx_simd4_real_t fz1_S0;
+    gmx_simd4_real_t fxy1_S1;
+    gmx_simd4_real_t fz1_S1;
+    gmx_simd4_real_t fxy1_S;
+    gmx_simd4_real_t fz1_S;
+
+    offset = k0 & 3;
+
+    fx_S = gmx_simd4_setzero_r();
+    fy_S = gmx_simd4_setzero_r();
+    fz_S = gmx_simd4_setzero_r();
+
+#ifdef PME_SIMD4_UNALIGNED
+    tz_S0 = gmx_simd4_loadu_r(thz-offset);
+    tz_S1 = gmx_simd4_loadu_r(thz-offset+4);
+    dz_S0 = gmx_simd4_loadu_r(dthz-offset);
+    dz_S1 = gmx_simd4_loadu_r(dthz-offset+4);
+#else
+    /* Copy (d)thz to an aligned buffer (unused buffer parts are masked) */
+    for (int i = 0; i < order; i++)
+    {
+        thz_aligned[offset+i]  = thz[i];
+        dthz_aligned[offset+i] = dthz[i];
+    }
+    tz_S0 = gmx_simd4_load_r(thz_aligned);
+    tz_S1 = gmx_simd4_load_r(thz_aligned+4);
+    dz_S0 = gmx_simd4_load_r(dthz_aligned);
+    dz_S1 = gmx_simd4_load_r(dthz_aligned+4);
+#endif
+    tz_S0 = gmx_simd4_blendzero_r(tz_S0, work->mask_S0[offset]);
+    dz_S0 = gmx_simd4_blendzero_r(dz_S0, work->mask_S0[offset]);
+    tz_S1 = gmx_simd4_blendzero_r(tz_S1, work->mask_S1[offset]);
+    dz_S1 = gmx_simd4_blendzero_r(dz_S1, work->mask_S1[offset]);
+
+    for (int ithx = 0; (ithx < order); ithx++)
+    {
+        int index_x  = (i0+ithx)*pny*pnz;
+        tx_S     = gmx_simd4_set1_r(thx[ithx]);
+        dx_S     = gmx_simd4_set1_r(dthx[ithx]);
+
+        for (int ithy = 0; (ithy < order); ithy++)
+        {
+            int index_xy = index_x+(j0+ithy)*pnz;
+            ty_S     = gmx_simd4_set1_r(thy[ithy]);
+            dy_S     = gmx_simd4_set1_r(dthy[ithy]);
+
+            gval_S0 = gmx_simd4_load_r(grid+index_xy+k0-offset);
+            gval_S1 = gmx_simd4_load_r(grid+index_xy+k0-offset+4);
+
+            fxy1_S0 = gmx_simd4_mul_r(tz_S0, gval_S0);
+            fz1_S0  = gmx_simd4_mul_r(dz_S0, gval_S0);
+            fxy1_S1 = gmx_simd4_mul_r(tz_S1, gval_S1);
+            fz1_S1  = gmx_simd4_mul_r(dz_S1, gval_S1);
+
+            fxy1_S = gmx_simd4_add_r(fxy1_S0, fxy1_S1);
+            fz1_S  = gmx_simd4_add_r(fz1_S0, fz1_S1);
+
+            fx_S = gmx_simd4_fmadd_r(gmx_simd4_mul_r(dx_S, ty_S), fxy1_S, fx_S);
+            fy_S = gmx_simd4_fmadd_r(gmx_simd4_mul_r(tx_S, dy_S), fxy1_S, fy_S);
+            fz_S = gmx_simd4_fmadd_r(gmx_simd4_mul_r(tx_S, ty_S), fz1_S, fz_S);
+        }
+    }
+
+    fx += gmx_simd4_reduce_r(fx_S);
+    fy += gmx_simd4_reduce_r(fy_S);
+    fz += gmx_simd4_reduce_r(fz_S);
+}
+#endif
 
 void gather_f_bsplines(struct gmx_pme *pme, real *grid,
                        gmx_bool bClearF, pme_atomcomm_t *atc,
@@ -80,28 +256,23 @@ void gather_f_bsplines(struct gmx_pme *pme, real *grid,
                        real scale)
 {
     /* sum forces for local particles */
-    int                     nn, n, ithx, ithy, ithz, i0, j0, k0;
-    int                     index_x, index_xy;
+    int                     nn, n, i0, j0, k0;
     int                     nx, ny, nz, pny, pnz;
     int                 *   idxptr;
-    real                    tx, ty, dx, dy, coefficient;
-    real                    fx, fy, fz, gval;
-    real                    fxy1, fz1;
+    real                    coefficient;
+    real                    fx, fy, fz;
     real                   *thx, *thy, *thz, *dthx, *dthy, *dthz;
     int                     norder;
     real                    rxx, ryx, ryy, rzx, rzy, rzz;
     int                     order;
 
-#ifdef PME_SIMD4_SPREAD_GATHER
-    // cppcheck-suppress unreadVariable cppcheck seems not to analyze code from pme-simd4.h
     struct pme_spline_work *work = pme->spline_work;
-#ifndef PME_SIMD4_UNALIGNED
     real                    thz_buffer[GMX_SIMD4_WIDTH*3],  *thz_aligned;
     real                    dthz_buffer[GMX_SIMD4_WIDTH*3], *dthz_aligned;
 
+#ifdef PME_SIMD4_SPREAD_GATHER
     thz_aligned  = gmx_simd4_align_r(thz_buffer);
     dthz_aligned = gmx_simd4_align_r(dthz_buffer);
-#endif
 #endif
 
     order = pme->pme_order;
@@ -152,29 +323,21 @@ void gather_f_bsplines(struct gmx_pme *pme, real *grid,
             switch (order)
             {
                 case 4:
-#ifdef PME_SIMD4_SPREAD_GATHER
-#ifdef PME_SIMD4_UNALIGNED
-#define PME_GATHER_F_SIMD4_ORDER4
-#else
-#define PME_GATHER_F_SIMD4_ALIGNED
-#define PME_ORDER 4
-#endif
-#include "gromacs/ewald/pme-simd4.h"
-#else
-                    DO_FSPLINE(4);
-#endif
+                    do_fspline_order<4>(pny, pnz, i0, j0, k0,
+                                        thx, thy, thz, dthx, dthy, dthz,
+                                        grid, work, thz_aligned, dthz_aligned,
+                                        fx, fy, fz);
                     break;
                 case 5:
-#ifdef PME_SIMD4_SPREAD_GATHER
-#define PME_GATHER_F_SIMD4_ALIGNED
-#define PME_ORDER 5
-#include "gromacs/ewald/pme-simd4.h"
-#else
-                    DO_FSPLINE(5);
-#endif
+                    do_fspline_order<5>(pny, pnz, i0, j0, k0,
+                                        thx, thy, thz, dthx, dthy, dthz,
+                                        grid, work, thz_aligned, dthz_aligned,
+                                        fx, fy, fz);
                     break;
                 default:
-                    DO_FSPLINE(order);
+                    do_fspline(order, pny, pnz, i0, j0, k0,
+                               thx, thy, thz, dthx, dthy, dthz,
+                               grid, fx, fy, fz);
                     break;
             }
 
@@ -199,13 +362,13 @@ real gather_energy_bsplines(struct gmx_pme *pme, real *grid,
                             pme_atomcomm_t *atc)
 {
     splinedata_t *spline;
-    int     n, ithx, ithy, ithz, i0, j0, k0;
-    int     index_x, index_xy;
-    int *   idxptr;
-    real    energy, pot, tx, ty, coefficient, gval;
-    real    *thx, *thy, *thz;
-    int     norder;
-    int     order;
+    int           n, ithx, ithy, ithz, i0, j0, k0;
+    int           index_x, index_xy;
+    int       *   idxptr;
+    real          energy, pot, tx, ty, coefficient, gval;
+    real         *thx, *thy, *thz;
+    int           norder;
+    int           order;
 
     spline = &atc->spline[0];
 
