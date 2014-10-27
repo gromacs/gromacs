@@ -443,6 +443,20 @@ class TrajectoryAnalysisModule
          * care about external modifications.
          */
         AbstractAnalysisData &datasetFromName(const char *name) const;
+        /*! \brief
+         * Processes data in AnalysisData objects in serial for each frame.
+         *
+         * \param[in] frameIndex  Index of the frame that has been finished.
+         *
+         * This method is called by the framework in order for each frame,
+         * after the analysis for that frame has been finished.  These calls
+         * always execute in serial and in sequential frame order, even during
+         * parallel analysis where multiple analyzeFrame() calls may be
+         * executing concurrently.
+         *
+         * \see AnalysisData::finishFrameSerial()
+         */
+        void finishFrameSerial(int frameIndex);
 
     protected:
         /*! \brief

@@ -65,11 +65,12 @@
  * analysis module at appropriate points to perform the module-specific tasks.
  * The analysis module is responsible for creating and managing
  * gmx::AnalysisData objects, and the chart shows the most important
- * interactions with this module as well.  Interactions with options (for
- * command-line option processing) and selections is not shown for brevity: see
- * \ref module_options for an overview of how options work, and the second
- * chart for a more detailed view of how selections are accessed from an
- * analysis module.
+ * interactions with this module as well.  However, the runner takes
+ * responsibility of calling gmx::AnalysisData::finishFrameSerial().
+ * Interactions with options (for command-line option processing) and
+ * selections is not shown for brevity: see \ref module_options for an overview
+ * of how options work, and the second chart for a more detailed view of how
+ * selections are accessed from an analysis module.
  * \msc
  *     runner,
  *     module [ URL="\ref gmx::TrajectoryAnalysisModule" ],
@@ -97,7 +98,8 @@
  *                      URL="\ref gmx::AnalysisDataHandle" ];
  *     module => data [ label="finishFrame()",
  *                      URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
- *     data => data [ label="process frame 0" ];
+ *     runner => data [ label="finishFrameSerial()",
+ *                      URL="\ref gmx::AnalysisData::finishFrameSerial()" ];
  *     runner => runner [ label="read and initialize frame 1" ];
  *     runner => module [ label="analyzeFrame(1)",
  *                         URL="\ref gmx::TrajectoryAnalysisModule::analyzeFrame()" ];
@@ -183,9 +185,9 @@
  * together with the appropriate thread-local data object.
  * The gmx::TrajectoryAnalysisModule::analyzeFrame() calls are only allowed to modify
  * the thread-local data object; everything else is read-only.  For any output,
- * they pass the information to gmx::AnalysisData, which takes care of ordering
- * the data from different frames such that it gets processed in the right
- * order.
+ * they pass the information to gmx::AnalysisData, which together with the
+ * runner takes care of ordering the data from different frames such that it
+ * gets processed in the right order.
  * When all frames are analyzed, gmx::TrajectoryAnalysisModule::finishFrames()
  * is called for each thread-local data object to destroy them and to
  * accumulate possible results from them into the main
@@ -233,9 +235,11 @@
  *                         URL="\ref gmx::TrajectoryAnalysisModule::analyzeFrame()" ];
  *     thread1 => data [ label="finishFrame(0)",
  *                       URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
- *     data => data [ label="process frame 0" ];
- *     data => data [ label="process frame 1" ];
  *     runner << thread1 [ label="analyzeFrame() (frame 0)" ];
+ *     runner => data [ label="finishFrameSerial() (frame 0)",
+ *                      URL="\ref gmx::AnalysisData::finishFrameSerial()" ];
+ *     runner => data [ label="finishFrameSerial() (frame 1)",
+ *                      URL="\ref gmx::AnalysisData::finishFrameSerial()" ];
  *     ...;
  *     runner => thread1 [ label="finishFrames(pdata1)",
  *                         URL="\ref gmx::TrajectoryAnalysisModule::finishFrames()" ];

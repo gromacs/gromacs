@@ -735,6 +735,13 @@ AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &
 
 
 void
+AnalysisDataSimpleHistogramModule::frameFinishedSerial(int frameIndex)
+{
+    impl_->storage_.finishFrameSerial(frameIndex);
+}
+
+
+void
 AnalysisDataSimpleHistogramModule::dataFinished()
 {
     impl_->storage_.finishDataStorage();
@@ -898,6 +905,13 @@ AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader
         }
     }
     frame.finishFrame();
+}
+
+
+void
+AnalysisDataWeightedHistogramModule::frameFinishedSerial(int frameIndex)
+{
+    impl_->storage_.finishFrameSerial(frameIndex);
 }
 
 
