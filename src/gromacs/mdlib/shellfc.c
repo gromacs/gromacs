@@ -218,8 +218,6 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                         gmx_mtop_t *mtop, int nflexcon,
                         rvec *x)
 {
-    /* TODO: restructuring */
-    /* gmx_shellfc_t             shfc; */
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
     t_atom                   *atom;
@@ -263,29 +261,17 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
 
     nshell = n[eptShell];
 
-    /* TODO: remove */
-    if (debug)
-    {
-        fprintf(debug, "INIT SHELL FLEXCON: nshell from n[eptShell] = %d\n", nshell);
-    }
-
     if (nshell == 0 && nflexcon == 0)
     {
         /* We're not doing shells or flexible constraints */
-        /* TODO: restructuring */
         return;
-        /* return NULL; */
     }
 
-    /* TODO: check...already in init_shell() */
-    /* snew(shfc, 1); */
     shfc->nflexcon = nflexcon;
 
     if (nshell == 0)
     {
-        /* TODO: restructuring */
         return;
-        /* return shfc; */
     }
 
     /* We have shells: fill the shell data structure */
@@ -304,16 +290,6 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
     }
 
     snew(shell, nshell);
-
-    /* TODO: remove */
-    if (debug)
-    {
-        fprintf(debug, "INIT SHELL FLEXCON: nshell after atomloop = %d\n", nshell);
-        for (i = 0; i < nshell; i++)
-        {
-            fprintf(debug, "INIT SHELL FLEXCON: shell_index[%d] = %d\n", i, shell_index[i]);
-        }
-    }
 
     /* Initiate the shell structures */
     for (i = 0; (i < nshell); i++)
@@ -532,7 +508,6 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
         pr_shell(debug, ns, shell);
     }
 
-    /* TODO: is this right? */
     shfc->nshell_gl      = ns;
     shfc->shell_gl       = shell;
     shfc->shell_index_gl = shell_index;
@@ -584,20 +559,6 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
             shfc->bPredict = FALSE;
         }
     }
-
-    /* TODO: remove */
-    if (debug)
-    {
-        fprintf(debug, "INIT SHELL FLEXCON: returning %d local and %d global shells.\n", shfc->nshell, shfc->nshell_gl);
-        for (i = 0; i < ns; i++)
-        {
-            fprintf(debug, "INIT SHELL FLEXCON: shell %d, s = %d, nucl1 = %d\n",
-                    i, shell[i].shell, shell[i].nucl1);
-        }
-    }
-
-    /* TODO: restructuring */
-    /* return shfc; */
 }
 
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
@@ -612,12 +573,6 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
         dd = cr->dd;
         a0 = 0;
         a1 = dd->nat_home;
-
-        /* TODO: remove */
-        if (debug)
-        {
-            fprintf(debug, "MAKE LOCAL SHELLS: DD a0 = %d a1 = %d\n", a0, a1);
-        }
     }
     else
     {
@@ -633,12 +588,6 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
     shell  = shfc->shell;
     for (i = a0; i < a1; i++)
     {
-        /* TODO: remove */
-        if (debug)
-        {
-            fprintf(debug, "MAKE LOCAL SHELLS: Drude found at i = %d, DD global i = %d\n", i, ddglatnr(dd, i));
-        }
-
         if (md->ptype[i] == eptShell)
         {
             if (nshell+1 > shfc->shell_nalloc)
@@ -649,12 +598,6 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
             if (dd)
             {
                 shell[nshell] = shfc->shell_gl[ind[dd->gatindex[i]]];
-                /* TODO: remove */
-                if (debug)
-                {
-                    fprintf(debug, "MAKE LOCAL SHELLS: from gatindex, shell = %d, nucl1 = %d\n",
-                            shell[nshell].shell, shell[nshell].nucl1);
-                }
             }
             else
             {
@@ -664,16 +607,6 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
             /* jal - now that we're doing extra communication, there is no
              * problem with shell prediction, so these assignments can 
              * always be made */ 
-
-            /* TODO: remove */
-            if (debug)
-            {
-                fprintf(debug, "MAKE LOCAL SHELLS: shell[%d].nucl1 = %d shell = %d b4 modifying\n", nshell, 
-                        shell[nshell].nucl1, shell[nshell].shell);
-            }
-
-            /* PROBLEM: if nucl1 = 0, shell = 1, nucl1 becomes -1 and results in junk */
-            /* jal - the difference here will always be 1, so nucl1 is always i+1... */
             shell[nshell].nucl1   = i + shell[nshell].nucl1 - shell[nshell].shell;
             if (shell[nshell].nnucl > 1)
             {
@@ -684,12 +617,6 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
                 shell[nshell].nucl3 = i + shell[nshell].nucl3 - shell[nshell].shell;
             }
             shell[nshell].shell = i;   /* jal - using += i gets global atom index */
-
-            /* TODO: remove */
-            if (debug)
-            {
-                fprintf(debug, "MAKE LOCAL SHELLS: shell[%d].shell = %d, nucl1 = %d\n", nshell, i, shell[nshell].nucl1);
-            }
             nshell++;
         }
     }
@@ -868,19 +795,8 @@ static real rms_force(t_commrec *cr, rvec f[], int ns, t_shell s[],
 
     buf[0] = *sf_dir;
 
-    /* TODO: remove */
-    if (debug)
-    {
-        fprintf(debug, "RMS FORCE: %d shells\n", ns);
-    }
-
     for (i = 0; i < ns; i++)
     {
-        /* TODO: remove */
-        if (debug)
-        {
-            fprintf(debug, "RMS FORCE: shell[%d] = %d\n", i, s[i].shell);
-        }
         shell    = s[i].shell;
         buf[0]  += norm2(f[shell]);
     }
@@ -1732,7 +1648,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     else if (inputrec->drude->drudemode==edrudeLagrangian) 
     {
         /* Step 1. Apply forces to Drudes and update their velocities */
-        /* TODO: check usage of fr->vir_twin_constr */
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
                       f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
                       ekind, NULL, upd, bInitStep, etrtVELOCITY1,

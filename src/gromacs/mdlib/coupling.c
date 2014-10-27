@@ -704,7 +704,6 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
         }
     }
 
-    /* TODO: TESTING */
     if (nrnb)
     {
         inc_nrnb(nrnb, eNR_EKIN, md->homenr);
@@ -777,20 +776,10 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies associated with thermostats */
-        /* TODO: WIP */
         nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
         if (PAR(cr))
         {
             accumulate_ekin(cr, opts, ekind);
-        }
-
-        /* TODO: remove */
-        if (debug)
-        {
-            for (i = 0; i < opts->ngtc; i++)
-            {
-                fprintf(debug, "DRUDE TFP: b4 first NHC trotter: tcstat[%d] ekinf = %f\n", i, trace(ekind->tcstat[i].ekinf));
-            }
         }
 
         /* get forces and velocities on all thermostats */
@@ -801,33 +790,10 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
         for (i=0; i<opts->ngtc; i++)
         {
             expfac[i] = exp((-1.0)*state->nosehoover_vxi[i*nh] * (0.5*dtsy));
-
-            if (debug)
-            {
-                fprintf(debug, "DRUDE TFP: expfac[%d] = %f\n", i, expfac[i]);
-            }
-        }
-
-        if (debug)
-        {
-            fprintf(debug, "DRUDE TFP: b4 REL TSTAT b4 scale: n = %d\n", n);
-            for (i=0; i<md->homenr; i++)
-            {
-                fprintf(debug, " DRUDE TFP: v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
-            }
         }
 
         /* scale relative to COM, subtracting COM velocity */
         relative_tstat(state, md, ir, grpmass, TRUE, TRUE);
-
-        if (debug)
-        {
-            fprintf(debug, "DRUDE TFP: after REL TSTAT b4 scale: n = %d\n", n);
-            for (i=0; i<md->homenr; i++)
-            {
-                fprintf(debug, " DRUDE TFP: v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
-            }
-        }
 
         /* Now do the actual velocity scaling for each particle */
         for (i = 0; i < nrlocal; i++)
@@ -868,11 +834,6 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
                     ti = md->cTC[ib];
                     fac_int = expfac[ti];
 
-                    if (debug)
-                    {
-                        fprintf(debug, "DRUDE TFP: Atom %d: ti = %d, fac_int = %f, fac_ext = %f\n", ia, ti, fac_int, fac_ext);
-                    }
-
                     ma = md->massT[ia];
                     mb = md->massT[ib];
                     mtot = ma + mb;
@@ -881,11 +842,6 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
                     /* get velocities */
                     copy_rvec(state->v[ia], va);
                     copy_rvec(state->v[ib], vb);
-
-                    if (debug)
-                    {
-                        fprintf(debug, "    DRUDE TFP: initial v = %f %f %f\n", va[XX], va[YY], va[ZZ]);
-                    }
 
                     /* multiply by mass */
                     svmul(ma, va, pa);
@@ -904,11 +860,6 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
                     clear_rvec(va);
                     rvec_add(vcomscale, vdiffscale, va);
 
-                    if (debug)
-                    {
-                        fprintf(debug, "    DRUDE TFP: final v for atom %d = %f %f %f\n", ia, va[XX], va[YY], va[ZZ]);
-                    }
-
                     /* copy new velocity back to state */
                     copy_rvec(va, state->v[ia]);
 
@@ -922,19 +873,9 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
                     ti = md->cTC[ia];
                     fac_ext = expfac[ti];
 
-                    if (debug)
-                    {
-                        fprintf(debug, "DRUDE TFP: Drude atom %d: ti = %d, fac_int = %f, fac_ext = %f\n", ib, ti, fac_int, fac_ext);
-                    }
-
                     /* get velocities */
                     copy_rvec(state->v[ia], va);
                     copy_rvec(state->v[ib], vb);
-
-                    if (debug)
-                    {
-                        fprintf(debug, "    DRUDE TFP: initial v = %f %f %f\n", vb[XX], vb[YY], vb[ZZ]);
-                    }
 
                     /* multiply by masses */
                     svmul(ma, va, pa);
@@ -952,11 +893,6 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
                     /* solve for final velocity of Drude */
                     clear_rvec(vb);
                     rvec_add(vcomscale, vdiffscale, vb);
-
-                    if (debug)
-                    {
-                        fprintf(debug, "    DRUDE TFP: final v for Drude %d = %f %f %f\n", ib, vb[XX], vb[YY], vb[ZZ]);
-                    }
 
                     /* copy new velocity back to state */
                     copy_rvec(vb, state->v[ib]);
@@ -1013,68 +949,20 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
 
             for (j=0; j<nh; j++)
             {
-                if (debug)
-                {
-                    fprintf(debug, "DRUDE TFP: i = %d, ixi[%d] b4 update = %f, ivxi[%d] = %f\n", i, j, ixi[j], j, ivxi[j]);
-                }
-
                 ixi[j] += 0.5*dtsy*ivxi[j];
-
-                if (debug)
-                {
-                    fprintf(debug, "DRUDE TFP: i = %d, ixi[%d] = %f\n", i, j, ixi[j]);
-                }
             }
         }
 
         /* calculate new kinetic energies */
-        /* TODO: WIP */
         nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
         if (PAR(cr))
         {
             accumulate_ekin(cr, opts, ekind);
         }
 
-        if (debug)
-        {
-            fprintf(debug, "DRUDE TFP: after NH KE after scale: n = %d\n", n);
-            for (i=0; i<md->homenr; i++)
-            {
-                fprintf(debug, "    v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
-            }
-        }
-
-        /* TODO: remove */
-        if (debug)
-        {
-            for (i = 0; i < opts->ngtc; i++)
-            {
-                fprintf(debug, "DRUDE TFP: b4 last NHC trotter: tcstat[%d] ekinf = %f\n", i, trace(ekind->tcstat[i].ekinf));
-            }
-        }
-
         /* propagate remaining thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
                     state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), FALSE);
-
-        /* TODO: remove */
-        if (debug)
-        {
-            for (i = 0; i < opts->ngtc; i++)
-            {
-                fprintf(debug, "DRUDE TFP: after last NHC trotter: tcstat[%d] ekinf = %f\n", i, trace(ekind->tcstat[i].ekinf));
-            }
-        }
-
-        if (debug)
-        {
-            fprintf(debug, "DRUDE TFP: after NHC after scale: n = %d\n", n);
-            for (i=0; i<md->homenr; i++)
-            {
-                fprintf(debug, "    v[%d] = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
-            }
-        }
-
     } /* end for-loop over thermostat subdivided time steps */
 
     sfree(expfac);
@@ -1121,20 +1009,12 @@ static void drude_tstat_for_barostat(t_inputrec *ir, t_idef gmx_unused *idef, t_
         }
     }
 
-    /* TODO: remove */
-    if (debug)
-    {
-        fprintf(debug, "DRUDE TFB: MassQ->Winv = %f\n", MassQ->Winv);
-    }
-
     /* set subdivided time step */
     dtsy = (double)(ir->delta_t)/(double)nc;
 
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies */
-        /* TODO: shifting */
-        /* nosehoover_KE(ir, idef, md, state, ekind, vcm, grpmass, seqno); */
         nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
 
         /* propagate thermostat variables for subdivided time step */
@@ -1155,8 +1035,6 @@ static void drude_tstat_for_barostat(t_inputrec *ir, t_idef gmx_unused *idef, t_
         }
 
         /* update thermostat kinetic energies */
-        /* TODO: shifting */
-        /* nosehoover_KE(ir, idef, md, state, ekind, vcm, grpmass, seqno); */
         nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
 
         /* propagate thermostat variables for subdivided time step */
@@ -1797,11 +1675,6 @@ void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t ste
         {
             case etrtBAROV:
             case etrtBAROV2:
-                /* TODO: remove debug stuff, just for me to trace through */
-                if (debug)
-                {
-                    fprintf(debug, "TROTTER: calling boxv_trotter\n");
-                }
                 boxv_trotter(ir, &(state->veta), dt, state->box, ekind, vir,
                              enerd->term[F_PDISPCORR], MassQ);
                 break;
@@ -1809,18 +1682,10 @@ void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t ste
             case etrtBARONHC2:
                 if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
                 {
-                    if (debug)
-                    {
-                        fprintf(debug, "TROTTER: Calling Drude tstat for barostat\n");
-                    }
                     drude_tstat_for_barostat(ir, idef, md, state, MassQ, vcm, ekind, trotter_seq[i]);
                 }
                 else
                 {
-                    if (debug)
-                    {
-                        fprintf(debug, "TROTTER: calling NHC_trotter for barostat\n");
-                    }
                     NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
                                 state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE, TRUE);
                 }
@@ -1829,19 +1694,10 @@ void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t ste
             case etrtNHC2:
                 if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
                 {
-                    if (debug)
-                    {
-                        fprintf(debug, "TROTTER: Calling Drude tstat for particles\n");
-                    }
                     drude_tstat_for_particles(cr, ir, idef, md, state, MassQ, vcm, ekind, scalefac, trotter_seq[i]); 
                 }
                 else
                 {
-                    if (debug)
-                    {
-                        fprintf(debug, "TROTTER: calling NHC_trotter for thermostat\n");
-                        fprintf(debug, "TROTTER: there are %d tc-grps\n", opts->ngtc);
-                    }
                     NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
                                 state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), TRUE);
                 }
