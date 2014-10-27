@@ -42,6 +42,8 @@
 
 #include <assert.h>
 
+#include <algorithm>
+
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme-simd.h"
 #include "gromacs/ewald/pme-spline-work.h"
@@ -56,7 +58,6 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     real           *xptr, *fptr, tx, ty, tz;
     real            rxx, ryx, ryy, rzx, rzy, rzz;
     int             nx, ny, nz;
-    int             start_ix, start_iy, start_iz;
     int            *g2tx, *g2ty, *g2tz;
     gmx_bool        bThreads;
     int            *thread_idx = NULL;
@@ -67,10 +68,6 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     nx  = pme->nkx;
     ny  = pme->nky;
     nz  = pme->nkz;
-
-    start_ix = pme->pmegrid_start_ix;
-    start_iy = pme->pmegrid_start_iy;
-    start_iz = pme->pmegrid_start_iz;
 
     rxx = pme->recipbox[XX][XX];
     ryx = pme->recipbox[YY][XX];
@@ -309,13 +306,11 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
 
     /* spread coefficients from home atoms to local grid */
     real          *grid;
-    pme_overlap_t *ol;
-    int            b, i, nn, n, ithx, ithy, ithz, i0, j0, k0;
+    int            i, nn, n, ithx, ithy, ithz, i0, j0, k0;
     int       *    idxptr;
     int            order, norder, index_x, index_xy, index_xyz;
     real           valx, valxy, coefficient;
     real          *thx, *thy, *thz;
-    int            localsize, bndsize;
     int            pnx, pny, pnz, ndatatot;
     int            offx, offy, offz;
 
@@ -397,7 +392,7 @@ static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
 {
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
     int  fft_my, fft_mz;
-    int  nsx, nsy, nsz;
+    int  nsy, nsz;
     ivec nf;
     int  offx, offy, offz, x, y, z, i0, i0t;
     int  d;
@@ -413,14 +408,13 @@ static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
 
     pmegrid = &pmegrids->grid_th[thread];
 
-    nsx = pmegrid->s[XX];
     nsy = pmegrid->s[YY];
     nsz = pmegrid->s[ZZ];
 
     for (d = 0; d < DIM; d++)
     {
-        nf[d] = min(pmegrid->n[d] - (pmegrid->order - 1),
-                    local_fft_ndata[d] - pmegrid->offset[d]);
+        nf[d] = std::min(pmegrid->n[d] - (pmegrid->order - 1),
+                         local_fft_ndata[d] - pmegrid->offset[d]);
     }
 
     offx = pmegrid->offset[XX];
@@ -455,7 +449,7 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
     int  fft_nx, fft_ny, fft_nz;
     int  fft_my, fft_mz;
     int  buf_my = -1;
-    int  nsx, nsy, nsz;
+    int  nsy, nsz;
     ivec localcopy_end, commcopy_end;
     int  offx, offy, offz, x, y, z, i0, i0t;
     int  sx, sy, sz, fx, fy, fz, tx1, ty1, tz1, ox, oy, oz;
@@ -498,8 +492,8 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
          * not beyond the local FFT grid.
          */
         localcopy_end[d] =
-            min(pmegrid->offset[d] + pmegrid->n[d] - (pmegrid->order - 1),
-                local_fft_ndata[d]);
+            std::min(pmegrid->offset[d] + pmegrid->n[d] - (pmegrid->order - 1),
+                     local_fft_ndata[d]);
 
         /* Determine up to where our thread needs to copy from the
          * thread-local charge spreading grid to the communication buffer.
@@ -512,7 +506,7 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
              * When the rank-local FFT grid is narrower than pme-order,
              * we need the max below to ensure copying of all data.
              */
-            commcopy_end[d] = max(commcopy_end[d], pme->pme_order);
+            commcopy_end[d] = std::max(commcopy_end[d], pme->pme_order);
         }
     }
 
@@ -547,8 +541,8 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
         /* Determine the end of our part of the source grid.
          * Use our thread local source grid and target grid part
          */
-        tx1 = min(ox + pmegrid_g->n[XX],
-                  !bCommX ? localcopy_end[XX] : commcopy_end[XX]);
+        tx1 = std::min(ox + pmegrid_g->n[XX],
+                       !bCommX ? localcopy_end[XX] : commcopy_end[XX]);
 
         for (sy = 0; sy >= -pmegrids->nthread_comm[YY]; sy--)
         {
@@ -566,8 +560,8 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
             /* Determine the end of our part of the source grid.
              * Use our thread local source grid and target grid part
              */
-            ty1 = min(oy + pmegrid_g->n[YY],
-                      !bCommY ? localcopy_end[YY] : commcopy_end[YY]);
+            ty1 = std::min(oy + pmegrid_g->n[YY],
+                           !bCommY ? localcopy_end[YY] : commcopy_end[YY]);
 
             for (sz = 0; sz >= -pmegrids->nthread_comm[ZZ]; sz--)
             {
@@ -580,7 +574,7 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
                 }
                 pmegrid_g = &pmegrids->grid_th[fz];
                 oz       += pmegrid_g->offset[ZZ];
-                tz1       = min(oz + pmegrid_g->n[ZZ], localcopy_end[ZZ]);
+                tz1       = std::min(oz + pmegrid_g->n[ZZ], localcopy_end[ZZ]);
 
                 if (sx == 0 && sy == 0 && sz == 0)
                 {
@@ -596,7 +590,6 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
 
                 grid_th = pmegrid_f->grid;
 
-                nsx = pmegrid_f->s[XX];
                 nsy = pmegrid_f->s[YY];
                 nsz = pmegrid_f->s[ZZ];
 
@@ -706,8 +699,8 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
 #ifdef GMX_MPI
     MPI_Status stat;
 #endif
-    int  send_size_y, recv_size_y;
-    int  ipulse, send_id, recv_id, datasize, gridsize, size_yx;
+    int  recv_size_y;
+    int  ipulse, size_yx;
     real *sendptr, *recvptr;
     int  x, y, z, indg, indb;
 
@@ -736,14 +729,14 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
         {
             size_yx = 0;
         }
-        datasize = (local_fft_ndata[XX] + size_yx)*local_fft_ndata[ZZ];
+#ifdef GMX_MPI
+        int datasize = (local_fft_ndata[XX] + size_yx)*local_fft_ndata[ZZ];
 
-        send_size_y = overlap->send_size;
+        int send_size_y = overlap->send_size;
+#endif
 
         for (ipulse = 0; ipulse < overlap->noverlap_nodes; ipulse++)
         {
-            send_id       = overlap->send_id[ipulse];
-            recv_id       = overlap->recv_id[ipulse];
             send_index0   =
                 overlap->comm_data[ipulse].send_index0 -
                 overlap->comm_data[0].send_index0;
@@ -762,6 +755,8 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
             }
 
 #ifdef GMX_MPI
+            int send_id       = overlap->send_id[ipulse];
+            int recv_id       = overlap->recv_id[ipulse];
             MPI_Sendrecv(sendptr, send_size_y*datasize, GMX_MPI_REAL,
                          send_id, ipulse,
                          recvptr, recv_size_y*datasize, GMX_MPI_REAL,
@@ -811,18 +806,12 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
         /* Major dimension */
         overlap = &pme->overlap[0];
 
-        datasize = local_fft_ndata[YY]*local_fft_ndata[ZZ];
-        gridsize = local_fft_size[YY] *local_fft_size[ZZ];
-
         ipulse = 0;
 
-        send_id       = overlap->send_id[ipulse];
-        recv_id       = overlap->recv_id[ipulse];
         send_nindex   = overlap->comm_data[ipulse].send_nindex;
         /* We don't use recv_index0, as we always receive starting at 0 */
         recv_nindex   = overlap->comm_data[ipulse].recv_nindex;
 
-        sendptr = overlap->sendbuf;
         recvptr = overlap->recvbuf;
 
         if (debug != NULL)
@@ -832,6 +821,10 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
         }
 
 #ifdef GMX_MPI
+        int datasize      = local_fft_ndata[YY]*local_fft_ndata[ZZ];
+        int send_id       = overlap->send_id[ipulse];
+        int recv_id       = overlap->recv_id[ipulse];
+        sendptr = overlap->sendbuf;
         MPI_Sendrecv(sendptr, send_nindex*datasize, GMX_MPI_REAL,
                      send_id, ipulse,
                      recvptr, recv_nindex*datasize, GMX_MPI_REAL,
