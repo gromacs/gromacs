@@ -55,7 +55,7 @@ void done_ekindata(gmx_ekindata_t *ekind);
 void accumulate_u(t_commrec *cr, t_grpopts *opts,
                   gmx_ekindata_t *ekind);
 
-/*extern void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps);*/
+void accumulate_ekin(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind);
 /* Communicate subsystem - group velocities and subsystem ekin respectively
  * and sum them up. Return them in grps.
  */

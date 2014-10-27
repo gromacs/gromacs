@@ -1122,7 +1122,8 @@ static void combine_idef(t_idef *dest, const t_idef *src, int nsrc,
     t_ilist       *ild;
     const t_ilist *ils;
     gmx_bool       vpbc;
-    gmx_bool       spbc;
+    /* TODO: check */
+    /* gmx_bool       spbc; */
     int            nral1 = 0, ftv = 0;
 
     for (ftype = 0; ftype < F_NRE; ftype++)

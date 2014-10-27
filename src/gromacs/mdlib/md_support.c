@@ -346,8 +346,10 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         else
         {
-            /* idef and ir are only used in case of Drude simulations */
-            calc_ke_part(ir, state, &(ir->opts), mdatoms, ekind, nrnb, idef, bEkinAveVel, bIterate);
+            /* idef is only used in case of Drude simulations, ir->opts always needed,
+             * but other data in ir are needed by Drude algorithms, so instead of just
+             * passing opts, we use ir directly */
+            calc_ke_part(ir, state, mdatoms, ekind, nrnb, idef, bEkinAveVel, bIterate);
         }
 
         debug_gmx();
@@ -455,21 +457,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             {
                 for (g=0; g<vcm->nr; g++)
                 {
-                    /* check */
-                    if (fplog)
-                    {
-                        fprintf(fplog, "DRUDE COM: b4 scale: group_v[%d] = %f %f %f\n", g, vcm->group_v[g][XX],
-                                vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
-                    }
-
                     svmul(fac_ext, vcm->group_v[g], vcm->group_v[g]);
-
-                    /* check */
-                    if (fplog)
-                    {
-                        fprintf(fplog, "DRUDE COM: after scale: group_v[%d] = %f %f %f\n", g, vcm->group_v[g][XX],
-                                vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
-                    }
                 }
             }
         }

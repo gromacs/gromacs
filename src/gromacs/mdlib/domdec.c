@@ -9706,13 +9706,10 @@ void dd_partition_system(FILE                *fplog,
                 }
                 break;
             case ddnatSHELL:   
-                /* TODO: removing just to test!!! */ 
-                /*
                 if (shellfc)
                 {
-                    n = dd_make_local_shells(dd, n, top_local->idef.il, shellfc);
+                    n = dd_make_local_shells(dd, n, top_local->idef.il);
                 }
-                */
                 break;
             default:
                 gmx_incons("Unknown special atom type setup");
@@ -9784,13 +9781,10 @@ void dd_partition_system(FILE                *fplog,
 
     /* TODO: check! */
     /* Make the local shell stuff, currently no communication is done */
-    /* jal - removing and putting relevant content into dd_make_local_shells() */
-    /*
-    if (shellfc)
+    if (shellfc && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
         make_local_shells(cr, mdatoms, shellfc);
     }
-    */
 
     if (ir->implicit_solvent)
     {

@@ -339,7 +339,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
                 w_a2+1, *w_moltype->atoms.atomname[w_a2],
                 sqrt(w_period2), bWarn ? min_steps_warn : min_steps_note, dt,
                 bWater ?
-                "Maybe you asked for fexible water." :
+                "Maybe you asked for flexible water." :
                 "Maybe you forgot to change the constraints mdp option.");
         if (bWarn)
         {
@@ -1829,6 +1829,18 @@ int gmx_grompp(int argc, char *argv[])
             sprintf(warn_buf, "Drude simulations are not yet compatible with multiple NH chains.\n"
                               "Set nh-chain-length to 1.\n");
             warning_note(wi, warn_buf);
+        }
+
+        /* Moved from md.cpp */
+        if (ir->eI == eiNM)
+        {
+            /* Currently shells don't work with Normal Modes */
+            gmx_fatal(FARGS, "Normal Mode analysis is not supported with shells.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+        }
+
+        if (ir->nstcalcenergy != 1 && (ir->drude->drudemode == edrudeSCF))
+        {
+            gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles in SCF mode.", ir->nstcalcenergy);
         }
 
     }

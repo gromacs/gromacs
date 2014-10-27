@@ -87,9 +87,12 @@ static void low_mspeed(real tempi,
                 for (m = 0; (m < DIM); m++)
                 {
                     v[i][m] = sd*gmx_rng_gaussian_real(rng);
-                    /* Drudes do not contribute to Ekin or nrdf for the purpose of
-                     * the calculations done here */
+                    /* TODO: does this belong here? */
+                    /* Drude T is not an absolute T and should not affect system T */
+                    /* ekin   += 0.5*mass*v[i][m]*v[i][m]; */
                 }
+                /* TODO: likewise, does this belong here? */
+                /* nrdf += DIM; */
             }
         }
     }

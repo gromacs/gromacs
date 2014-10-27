@@ -111,12 +111,12 @@ struct t_pbc;
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
-gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
-                                 gmx_mtop_t *mtop, int nflexcon,
-                                 rvec *x);
+/* TODO: restructuring */
+void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
+                        gmx_mtop_t *mtop, int nflexcon,
+                        rvec *x);
 
 /* Get the local shell with domain decomposition */
-/* TODO: jal changing */
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
                        gmx_shellfc_t shfc);
 

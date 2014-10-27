@@ -1775,11 +1775,16 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
 
         /* TODO: jal - initialize shells here (global) */
+        /* TODO: moving back to md.cpp */
+        /* Need to re-think this function a bit, as it should read in the shellfc initialized
+         * above by init_shell() and just fill its contents */
+        /*
         shellfc = init_shell_flexcon(fplog, inputrec,
                                      mtop, n_flexible_constraints(constr),
                                      (inputrec->bContinuation ||
                                      (DOMAINDECOMP(cr) && !MASTER(cr))) ?
                                      NULL : state->x);
+        */
 
         /* TODO: remove */
         if (debug && shellfc)

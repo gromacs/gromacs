@@ -101,6 +101,12 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
             opts->ngener);
 #endif
 
+    /* TODO: REMOVE */
+    if (debug)
+    {
+        fprintf(debug, "INIT EKINDATA: Entering function...\n");
+    }
+
     /* bNEMD tells if we should remove remove the COM velocity
      * from the velocities during velocity scaling in T-coupling.
      * Turn this on when we have multiple acceleration groups
@@ -173,22 +179,17 @@ void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
 }
 
 /* I don't think accumulate_ekin is used anymore? */
+/* jal 10/10/2014 - using this for Drude stuff */
 
-#if 0
-static void accumulate_ekin(t_commrec *cr, t_grpopts *opts,
-                            gmx_ekindata_t *ekind)
+void accumulate_ekin(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
 {
     int g;
 
-    if (PAR(cr))
+    for (g = 0; (g < opts->ngtc); g++)
     {
-        for (g = 0; (g < opts->ngtc); g++)
-        {
-            gmx_sum(DIM*DIM, ekind->tcstat[g].ekinf[0], cr);
-        }
+        gmx_sum(DIM*DIM, ekind->tcstat[g].ekinf[0], cr);
     }
 }
-#endif
 
 void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
                      t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda)
@@ -256,9 +257,9 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
         nd     = ndf[i];
         tcstat = &ekind->tcstat[i];
         /* Sometimes a group does not have degrees of freedom, e.g.
-         * when it consists of shells and virtual sites, then we just
-         * set the temperatue to 0 and also neglect the kinetic
-         * energy, which should be  zero anyway.
+         * when it consists of massless shells and virtual sites, then we just
+         * set the temperature to 0 and also neglect the kinetic
+         * energy, which should be zero anyway.
          */
 
         if (nd > 0)

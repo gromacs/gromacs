@@ -377,6 +377,12 @@ static int **get_shell_pbc(t_ilist *ilist,
     char    *pbc_set;
     gmx_bool bShellOnlyCG_and_FirstAtom;
 
+    /* TODO: testing!!! */
+    if (md == NULL)
+    {
+        return 0;
+    }
+
     /* Make an array that tells if the pbc of an atom is set */
     snew(pbc_set, cgs->index[cgs->nr]);
     /* PBC is set for all non shells */
@@ -390,31 +396,38 @@ static int **get_shell_pbc(t_ilist *ilist,
     }
 
     /* TODO: check this */
-    snew(shell_pbc, F_HARMONIC-F_BONDS+1);
+    /* 2 possible functions for shells/Drudes - F_BONDS and F_POLARIZATION */
+    snew(shell_pbc, 2);
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        /*
-        if (interaction_function[ftype].flags & (IF_BOND | IF_CHEMBOND))
-        */
         if (ftype == F_BONDS || ftype == F_POLARIZATION)
         {
             nral = NRAL(ftype);
             il   = &ilist[ftype];
             ia   = il->iatoms;
 
-            snew(shell_pbc[ftype-F_BONDS], il->nr/(1+nral));
-            shell_pbc_f = shell_pbc[ftype-F_BONDS];
+            /* TODO: check!!! */ 
+            if (ftype == F_BONDS)
+            {
+                snew(shell_pbc[0], il->nr/(1+nral));
+                shell_pbc_f = shell_pbc[0];
+            }
+            else /* F_POLARIZATION */
+            {
+                snew(shell_pbc[1], il->nr/(1+nral));
+                shell_pbc_f = shell_pbc[1];
+            }
 
             i = 0;
             while (i < il->nr)
             {
                 shi   = i/(1+nral);
-                if (md->ptype[ia[i+1]] == eptShell)
+                if (md && (md->ptype[ia[i+1]] == eptShell))
                 {
                     shell = ia[i+1];
                 }
-                else if (md->ptype[ia[i+2]] == eptShell)
+                else if (md && (md->ptype[ia[i+2]] == eptShell))
                 {
                     shell = ia[i+2];
                 }
@@ -529,7 +542,7 @@ gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
     }
 
     snew(shfc, 1);
-    /* TODO: check */
+    /* TODO: check - nshell or nshell_gl? Seems like nshell_gl */
     shfc->nshell = nshell;
 
     if (debug)
@@ -562,17 +575,16 @@ gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
             /* Make an atom to charge group index */
             a2cg = atom2cg(&molt->cgs);
             /* TODO: check */
-            /*
             shfc->shell_pbc_molt[mt] = get_shell_pbc(molt->ilist,
                                                      molt->atoms.atom, NULL,
                                                      &molt->cgs, a2cg);
-            */
             sfree(a2cg);
         }
 
         /* TODO: check this */
-        snew(shfc->shell_pbc_loc_nalloc, F_HARMONIC-F_BONDS+1);
-        snew(shfc->shell_pbc_loc, F_HARMONIC-F_BONDS+1);
+        /* 2 possible functions that hold shells/Drudes - F_BONDS and F_POLARIZATION */
+        snew(shfc->shell_pbc_loc_nalloc, 2);
+        snew(shfc->shell_pbc_loc, 2);
     }
 
     if (bSerial_NoPBC)

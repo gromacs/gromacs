@@ -1347,7 +1347,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(t_inputrec *ir, t_state *state, t_grpopts *opts, t_mdatoms *md,
+void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, t_idef *idef, 
                   gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
@@ -1356,16 +1356,17 @@ void calc_ke_part(t_inputrec *ir, t_state *state, t_grpopts *opts, t_mdatoms *md
         /* TODO: WIP */
         if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
         {
-           nosehoover_KE(ir, idef, md, state, ekind, nrnb, bEkinAveVel, bSaveEkinOld); 
+            nosehoover_KE(ir, idef, md, state, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+            /* Note: summation of ekind occurs in compute_globals(), no need to do it here */
         }
         else
         {
-            calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+            calc_ke_part_normal(state->v, &(ir->opts), md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
         }
     }
     else
     {
-        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(state->box, state->x, state->v, &(ir->opts), md, ekind, nrnb, bEkinAveVel);
     }
 }
 

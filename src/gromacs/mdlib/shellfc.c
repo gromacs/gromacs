@@ -214,11 +214,12 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     }
 }
 
-gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
-                                 gmx_mtop_t *mtop, int nflexcon,
-                                 rvec *x)
+void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
+                        gmx_mtop_t *mtop, int nflexcon,
+                        rvec *x)
 {
-    gmx_shellfc_t             shfc;
+    /* TODO: restructuring */
+    /* gmx_shellfc_t             shfc; */
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
     t_atom                   *atom;
@@ -271,15 +272,20 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
     if (nshell == 0 && nflexcon == 0)
     {
         /* We're not doing shells or flexible constraints */
-        return NULL;
+        /* TODO: restructuring */
+        return;
+        /* return NULL; */
     }
 
-    snew(shfc, 1);
+    /* TODO: check...already in init_shell() */
+    /* snew(shfc, 1); */
     shfc->nflexcon = nflexcon;
 
     if (nshell == 0)
     {
-        return shfc;
+        /* TODO: restructuring */
+        return;
+        /* return shfc; */
     }
 
     /* We have shells: fill the shell data structure */
@@ -590,7 +596,8 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
         }
     }
 
-    return shfc;
+    /* TODO: restructuring */
+    /* return shfc; */
 }
 
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
@@ -860,8 +867,20 @@ static real rms_force(t_commrec *cr, rvec f[], int ns, t_shell s[],
     double buf[4];
 
     buf[0] = *sf_dir;
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "RMS FORCE: %d shells\n", ns);
+    }
+
     for (i = 0; i < ns; i++)
     {
+        /* TODO: remove */
+        if (debug)
+        {
+            fprintf(debug, "RMS FORCE: shell[%d] = %d\n", i, s[i].shell);
+        }
         shell    = s[i].shell;
         buf[0]  += norm2(f[shell]);
     }
@@ -1114,255 +1133,255 @@ static void apply_drude_hardwall(t_commrec *cr, t_idef *idef, /* gmx_shellfc_t s
                 if (debug)
                 {
                     fprintf(debug, "HARDWALL: No Drude found in bond between %d - %d\n",
-                            DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1),
-                            DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
+                            DOMAINDECOMP(cr) ? ddglatnr(cr->dd, iatoms[1]):(iatoms[1]+1),
+                            DOMAINDECOMP(cr) ? ddglatnr(cr->dd, iatoms[2]):(iatoms[2]+1));
                 }
                 continue;
             }
             
 
-        if (debug)
-        {
-            fprintf(debug, "HARDWALL: Drude atom %d connected to heavy atom %d\n", 
-                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), 
-                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
-        }
+            if (debug)
+            {
+                fprintf(debug, "HARDWALL: Drude atom %d connected to heavy atom %d\n", 
+                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), 
+                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
+            }
 
-        /* copy current positions and velocities for manipulation */
-        copy_rvec(state->x[ia], xa);
-        copy_rvec(state->x[ib], xb);
-
-        if (debug)
-        {
-            fprintf(debug, "HARDWALL: x[%d]: %f %f %f\n", (ia+1), xa[XX], xa[YY], xa[ZZ]);
-            fprintf(debug, "HARDWALL: x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xb[ZZ]);
-        }
-
-        /* do_em_step() seg faults here because there are no velocities, so
-         * EM + hardwall explicitly disabled in grompp - workaround could be
-         * to simply reset state->x[ib] to state->x[ia] in case of hardwall
-         * violation during EM.  Note that CHARMM does not support the use of
-         * the hardwall function during EM, so some correction could be a nice 
-         * addition... */ 
-        copy_rvec(state->v[ia], va);
-        copy_rvec(state->v[ib], vb);
-
-        if (debug)
-        {
-            fprintf(debug, "HARDWALL: v[%d]: %f %f %f\n", (ia+1), va[XX], va[YY], va[ZZ]);
-            fprintf(debug, "HARDWALL: v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
-        }
-
-        /* save original velocities for later use */
-        copy_rvec(state->v[ia], vinita);
-        copy_rvec(state->v[ib], vinitb);
-
-        /* get vector between atom b (Drude) and a (heavy atom) */
-        hardwall_pbc_rvec_sub(&pbc, xb, xa, vecab);
-
-        if (debug)
-        {
-            fprintf(debug, "HARDWALL: vecab b4 hardwall check: %f %f %f\n", vecab[XX], vecab[YY], vecab[ZZ]);
-        }
-
-        rab2 = norm2(vecab);
-
-        /* impose hardwall if the Drude has strayed too far */
-        if (rab2 > rwall2)
-        {
-            rab = sqrt(rab2);
+            /* copy current positions and velocities for manipulation */
+            copy_rvec(state->x[ia], xa);
+            copy_rvec(state->x[ib], xb);
 
             if (debug)
             {
-                fprintf(debug, "HARDWALL: Imposing restraint on atom %d rab2 = %f\n", (ib+1), rab2);
+                fprintf(debug, "HARDWALL: x[%d]: %f %f %f\n", (ia+1), xa[XX], xa[YY], xa[ZZ]);
+                fprintf(debug, "HARDWALL: x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xb[ZZ]);
             }
 
-            /* Make sure nothing catastrophic is going on */
-            if (rab > (2.0*rwall))
-            {
-                gmx_fatal(FARGS, "Drude atom %d is too far (r = %f) from its heavy atom %d.\n"
-                    "Cannot apply hardwall.\n", DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), rab, 
-                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
-            }
-
-            /* scale distance between drude and heavy atom */
-            svmul((1.0/rab), vecab, vecab);
+            /* do_em_step() seg faults here because there are no velocities, so
+             * EM + hardwall explicitly disabled in grompp - workaround could be
+             * to simply reset state->x[ib] to state->x[ia] in case of hardwall
+             * violation during EM.  Note that CHARMM does not support the use of
+             * the hardwall function during EM, so some correction could be a nice 
+             * addition... */ 
+            copy_rvec(state->v[ia], va);
+            copy_rvec(state->v[ib], vb);
 
             if (debug)
             {
-                fprintf(debug, "HARDWALL: scaled vecab: %f %f %f\n", vecab[XX], vecab[YY], vecab[ZZ]);
+                fprintf(debug, "HARDWALL: v[%d]: %f %f %f\n", (ia+1), va[XX], va[YY], va[ZZ]);
+                fprintf(debug, "HARDWALL: v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
             }
 
-            /* Here, we assume both atoms are free to move (no freezing)
-             * since freezegrps were defined as incompatible in grompp (could fix this later).
-             * Restraint potentials are defined elsewhere */
+            /* save original velocities for later use */
+            copy_rvec(state->v[ia], vinita);
+            copy_rvec(state->v[ib], vinitb);
 
-            /* First, get masses */
-            ma = md->massT[ia];
-            mb = md->massT[ib];
-            mtot = ma + mb;
+            /* get vector between atom b (Drude) and a (heavy atom) */
+            hardwall_pbc_rvec_sub(&pbc, xb, xa, vecab);
 
             if (debug)
             {
-                fprintf(debug, "HARDWALL: masses ma = %f mb = %f mtot = %f\n", ma, mb, mtot);
+                fprintf(debug, "HARDWALL: vecab b4 hardwall check: %f %f %f\n", vecab[XX], vecab[YY], vecab[ZZ]);
             }
 
-            /* scale velocity of heavy atom */
-            dprod_vr1 = iprod(va, vecab);
-            svmul(dprod_vr1, vecab, vb1);
-            rvec_sub(va, vb1, vp1);
+            rab2 = norm2(vecab);
 
-            if (debug)
+            /* impose hardwall if the Drude has strayed too far */
+            if (rab2 > rwall2)
             {
-                fprintf(debug, "HARDWALL: dprod_vr1 = %f\n", dprod_vr1);
-                fprintf(debug, "HARDWALL: vb1 = %f %f %f\n", vb1[XX], vb1[YY], vb1[ZZ]);
-            }
+                rab = sqrt(rab2);
 
-            /* scale velocity of drude */
-            dprod_vr2 = iprod(vb, vecab);
-            svmul(dprod_vr2, vecab, vb2);
-            rvec_sub(vb, vb2, vp2);
-
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: dprod_vr2 = %f\n", dprod_vr2);
-                fprintf(debug, "HARDWALL: vb2 = %f %f %f\n", vb2[XX], vb2[YY], vb2[ZZ]);
-            }
-
-            /* scale velocity of COM */
-            vbcom = (ma*dprod_vr1 + mb*dprod_vr2)/mtot;
-            dprod_vr1 -= vbcom;
-            dprod_vr2 -= vbcom;
-
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: vbcom: %f\n", vbcom);
-                fprintf(debug, "HARDWALL: dprod_vr1 - vbcom = %f\n", dprod_vr1);
-                fprintf(debug, "HARDWALL: dprod_vr2 - vbcom = %f\n", dprod_vr2);
-            }
-
-            dr = rab - rwall;
-
-            if (dprod_vr1 == dprod_vr2)
-            {
-                dt = max_t; 
-            }
-            else
-            {
-                dt = dr / fabs(dprod_vr1 - dprod_vr2); 
-                /* sanity check */
-                if (dt > max_t)
+                if (debug)
                 {
-                    dt = max_t;
+                    fprintf(debug, "HARDWALL: Imposing restraint on atom %d rab2 = %f\n", (ib+1), rab2);
                 }
-            }
 
-            /* relative velocity between ia and ib */
-            vbond = sqrt(kbt/mb);
+                /* Make sure nothing catastrophic is going on */
+                if (rab > (2.0*rwall))
+                {
+                    gmx_fatal(FARGS, "Drude atom %d is too far (r = %f) from its heavy atom %d.\n"
+                              "Cannot apply hardwall.\n", DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), rab, 
+                              DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
+                }
 
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: vbond = %f\n", vbond);
-            }
+                /* scale distance between drude and heavy atom */
+                svmul((1.0/rab), vecab, vecab);
 
-            /* reflect the velocity along the bond vector, scale down */
-            tmp_dprod_vr1 = ((-1.0)*dprod_vr1*vbond*mb) / (fabs(dprod_vr1)*mtot);
-            tmp_dprod_vr2 = ((-1.0)*dprod_vr2*vbond*ma) / (fabs(dprod_vr2)*mtot);
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: scaled vecab: %f %f %f\n", vecab[XX], vecab[YY], vecab[ZZ]);
+                }
 
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: numerator for reflect = %f\n", ((-1.0)*dprod_vr1*vbond*mb));
-                fprintf(debug, "HARDWALL: denominator for reflect = %f\n", (fabs(dprod_vr1)*mtot));
-                fprintf(debug, "HARDWALL: tmp_dprod_vr1 after reflect: %f\n", tmp_dprod_vr1);
-                fprintf(debug, "HARDWALL: tmp_dprod_vr2 after reflect: %f\n", tmp_dprod_vr2);
-            }
+                /* Here, we assume both atoms are free to move (no freezing)
+                 * since freezegrps were defined as incompatible in grompp (could fix this later).
+                 * Restraint potentials are defined elsewhere */
 
-            dr_a = (dr*mb)/mtot + (dt*tmp_dprod_vr1); 
-            dr_b = (-1.0*dr*ma)/mtot + (dt*tmp_dprod_vr2); 
+                /* First, get masses */
+                ma = md->massT[ia];
+                mb = md->massT[ib];
+                mtot = ma + mb;
 
-            /* correct the positions */
-            svmul(dr_a, vecab, tmpvecab);
-            rvec_inc(xa, tmpvecab);
-            clear_rvec(tmpvecab);
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: masses ma = %f mb = %f mtot = %f\n", ma, mb, mtot);
+                }
 
-            svmul(dr_b, vecab, tmpvecab);
-            rvec_inc(xb, tmpvecab);
-            clear_rvec(tmpvecab);
+                /* scale velocity of heavy atom */
+                dprod_vr1 = iprod(va, vecab);
+                svmul(dprod_vr1, vecab, vb1);
+                rvec_sub(va, vb1, vp1);
 
-            /* correct the velocities */
-            tmp_dprod_vr1 += vbcom;
-            tmp_dprod_vr2 += vbcom;
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: dprod_vr1 = %f\n", dprod_vr1);
+                    fprintf(debug, "HARDWALL: vb1 = %f %f %f\n", vb1[XX], vb1[YY], vb1[ZZ]);
+                }
+
+                /* scale velocity of drude */
+                dprod_vr2 = iprod(vb, vecab);
+                svmul(dprod_vr2, vecab, vb2);
+                rvec_sub(vb, vb2, vp2);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: dprod_vr2 = %f\n", dprod_vr2);
+                    fprintf(debug, "HARDWALL: vb2 = %f %f %f\n", vb2[XX], vb2[YY], vb2[ZZ]);
+                }
+
+                /* scale velocity of COM */
+                vbcom = (ma*dprod_vr1 + mb*dprod_vr2)/mtot;
+                dprod_vr1 -= vbcom;
+                dprod_vr2 -= vbcom;
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: vbcom: %f\n", vbcom);
+                    fprintf(debug, "HARDWALL: dprod_vr1 - vbcom = %f\n", dprod_vr1);
+                    fprintf(debug, "HARDWALL: dprod_vr2 - vbcom = %f\n", dprod_vr2);
+                }
+
+                dr = rab - rwall;
+
+                if (dprod_vr1 == dprod_vr2)
+                {
+                    dt = max_t; 
+                }
+                else
+                {
+                    dt = dr / fabs(dprod_vr1 - dprod_vr2); 
+                    /* sanity check */
+                    if (dt > max_t)
+                    {
+                        dt = max_t;
+                    }
+                }
+
+                /* relative velocity between ia and ib */
+                vbond = sqrt(kbt/mb);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: vbond = %f\n", vbond);
+                }
+
+                /* reflect the velocity along the bond vector, scale down */
+                tmp_dprod_vr1 = ((-1.0)*dprod_vr1*vbond*mb) / (fabs(dprod_vr1)*mtot);
+                tmp_dprod_vr2 = ((-1.0)*dprod_vr2*vbond*ma) / (fabs(dprod_vr2)*mtot);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: numerator for reflect = %f\n", ((-1.0)*dprod_vr1*vbond*mb));
+                    fprintf(debug, "HARDWALL: denominator for reflect = %f\n", (fabs(dprod_vr1)*mtot));
+                    fprintf(debug, "HARDWALL: tmp_dprod_vr1 after reflect: %f\n", tmp_dprod_vr1);
+                    fprintf(debug, "HARDWALL: tmp_dprod_vr2 after reflect: %f\n", tmp_dprod_vr2);
+                }
+
+                dr_a = (dr*mb)/mtot + (dt*tmp_dprod_vr1); 
+                dr_b = (-1.0*dr*ma)/mtot + (dt*tmp_dprod_vr2); 
+
+                /* correct the positions */
+                svmul(dr_a, vecab, tmpvecab);
+                rvec_inc(xa, tmpvecab);
+                clear_rvec(tmpvecab);
+
+                svmul(dr_b, vecab, tmpvecab);
+                rvec_inc(xb, tmpvecab);
+                clear_rvec(tmpvecab);
+
+                /* correct the velocities */
+                tmp_dprod_vr1 += vbcom;
+                tmp_dprod_vr2 += vbcom;
         
-            svmul(tmp_dprod_vr1, vecab, vb1); 
-            svmul(tmp_dprod_vr2, vecab, vb2);
+                svmul(tmp_dprod_vr1, vecab, vb1); 
+                svmul(tmp_dprod_vr2, vecab, vb2);
 
-            rvec_inc(va, vb1);
-            rvec_inc(vb, vb2);
+                rvec_inc(va, vb1);
+                rvec_inc(vb, vb2);
 
-            /* copy new positions back */
-            copy_rvec(xa, state->x[ia]);
-            copy_rvec(xa, state->x[ib]);
+                /* copy new positions back */
+                copy_rvec(xa, state->x[ia]);
+                copy_rvec(xa, state->x[ib]);
 
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ia+1), xa[XX], xa[YY], xa[ZZ]);
-                fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xa[ZZ]);
-            }
-
-            /* copy new velocities back */
-            copy_rvec(va, vnewa);
-            copy_rvec(vb, vnewb);
-
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ia+1), va[XX], va[YY], va[ZZ]);
-                fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
-            }
-
-            copy_rvec(va, state->v[ia]);
-            copy_rvec(vb, state->v[ib]);
-
-            /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
-
-            /* Update force on heavy atom */
-            rvec_sub(vnewa, vinita, dva);
-            fac = ma*(1.0/(dt*0.5));
-            svmul(fac, dva, f[ia]);
-
-            /* Update virial related to heavy atom motion */
-            for (m=0; m<DIM; m++)
-            {
-                for (n=0; n<DIM; n++)
+                if (debug)
                 {
-                    force_vir[m][n] += state->x[ia][m]*f[ia][n];
+                    fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ia+1), xa[XX], xa[YY], xa[ZZ]);
+                    fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xa[ZZ]);
                 }
-            }
 
-            /* Update force on Drude */
-            rvec_sub(vnewb, vinitb, dvb);
-            fac = mb*(1.0/(dt*0.5));
-            svmul(fac, dvb, f[ib]);
+                /* copy new velocities back */
+                copy_rvec(va, vnewa);
+                copy_rvec(vb, vnewb);
 
-            /* Update virial related to Drude motion */
-            for (m=0; m<DIM; m++)
-            {
-                for (n=0; n<DIM; n++)
+                if (debug)
                 {
-                    force_vir[m][n] += state->x[ib][m]*f[ib][n];
+                    fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ia+1), va[XX], va[YY], va[ZZ]);
+                    fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
                 }
-            }
 
-            if (debug)
-            {
-                fprintf(debug, "HARDWALL: New force f[%d]: %f %f %f\n", (ia+1), f[ia][XX], f[ia][YY], f[ia][ZZ]);
-                fprintf(debug, "HARDWALL: New force f[%d]: %f %f %f\n", (ib+1), f[ib][XX], f[ib][YY], f[ib][ZZ]);
-            }
+                copy_rvec(va, state->v[ia]);
+                copy_rvec(vb, state->v[ib]);
 
-        } /* TODO: fix indentation - loop over j within iatoms */
+                /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
+
+                /* Update force on heavy atom */
+                rvec_sub(vnewa, vinita, dva);
+                fac = ma*(1.0/(dt*0.5));
+                svmul(fac, dva, f[ia]);
+
+                /* Update virial related to heavy atom motion */
+                for (m=0; m<DIM; m++)
+                {
+                    for (n=0; n<DIM; n++)
+                    {
+                        force_vir[m][n] += state->x[ia][m]*f[ia][n];
+                    }
+                }
+
+                /* Update force on Drude */
+                rvec_sub(vnewb, vinitb, dvb);
+                fac = mb*(1.0/(dt*0.5));
+                svmul(fac, dvb, f[ib]);
+
+                /* Update virial related to Drude motion */
+                for (m=0; m<DIM; m++)
+                {
+                    for (n=0; n<DIM; n++)
+                    {
+                        force_vir[m][n] += state->x[ib][m]*f[ib][n];
+                    }
+                }
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: New force f[%d]: %f %f %f\n", (ia+1), f[ia][XX], f[ia][YY], f[ia][ZZ]);
+                    fprintf(debug, "HARDWALL: New force f[%d]: %f %f %f\n", (ib+1), f[ib][XX], f[ib][YY], f[ib][ZZ]);
+                }
+
+            } /* end loop over j within iatoms */
 
         } /* end of hard wall conditions */
 
-    } /* TODO: fix - end of loop over all atoms */
+    } /* end of loop over all local bonded interactions */
 
 } 
 
@@ -1416,6 +1435,17 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     nflexcon     = shfc->nflexcon;
 
     idef = &top->idef;
+
+    if (debug)
+    {
+        fprintf(debug, "RELAX SHELL FLEXCON: top of function.\n");
+        fprintf(debug, "RELAX SHELL FLEXCON: %d shells\n", nshell);
+        int     x;
+        for (x = 0; x < nshell; x++)
+        {
+            fprintf(debug, "RELAX SHELL FLEXCON: shell[%d].shell = %d\n", x, shell[x].shell);
+        }
+    }
 
     if (DOMAINDECOMP(cr))
     {
