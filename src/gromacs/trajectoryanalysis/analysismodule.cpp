@@ -385,4 +385,16 @@ void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
     impl_->analysisDatasets_[name] = data;
 }
 
+
+void TrajectoryAnalysisModule::finishFrameSerial(int frameIndex)
+{
+    Impl::AnalysisDatasetContainer::const_iterator data;
+    for (data = impl_->analysisDatasets_.begin();
+         data != impl_->analysisDatasets_.end();
+         ++data)
+    {
+        data->second->finishFrameSerial(frameIndex);
+    }
+}
+
 } // namespace gmx
