@@ -52,7 +52,8 @@ do_fspline(int order,
            int pny, int pnz, int i0, int j0, int k0,
            const real *thx, const real *thy, const real *thz,
            const real *dthx, const real *dthy, const real *dthz,
-           const real *grid,
+           const real *grid, const struct pme_spline_work gmx_unused *work,
+           real gmx_unused *thz_aligned, real gmx_unused *dthz_aligned,
            real &fx, real &fy, real &fz)
 {
     for (int ithx = 0; (ithx < order); ithx++)
@@ -79,21 +80,6 @@ do_fspline(int order,
             fz += tx*ty*fz1;
         }
     }
-}
-
-template <int order>
-static inline void
-do_fspline_order(int pny, int pnz, int i0, int j0, int k0,
-                 const real *thx, const real *thy, const real *thz,
-                 const real *dthx, const real *dthy, const real *dthz,
-                 const real *grid,
-                 const struct pme_spline_work gmx_unused *work,
-                 real gmx_unused *thz_aligned, real gmx_unused *dthz_aligned,
-                 real &fx, real &fy, real &fz)
-{
-    do_fspline(order, pny, pnz, i0, j0, k0,
-               thx, thy, thz, dthx, dthy, dthz,
-               grid, fx, fy, fz);
 }
 
 #ifdef PME_SIMD4_SPREAD_GATHER
@@ -192,10 +178,11 @@ do_fspline_simd(int order, int pny, int pnz, int i0, int j0, int k0,
  * This code does not assume any memory alignment for the grid.
  */
 static inline void
-do_fspline_simd_unaligned4(int pny, int pnz, int i0, int j0, int k0,
+do_fspline_simd_unaligned4(int gmx_unused order, int pny, int pnz, int i0, int j0, int k0,
                            const real *thx, const real *thy, const real *thz,
                            const real *dthx, const real *dthy, const real *dthz,
-                           const real *grid,
+                           const real *grid, const struct pme_spline_work gmx_unused *work,
+                           real gmx_unused *thz_aligned, real gmx_unused *dthz_aligned,
                            real &fx, real &fy, real &fz)
 {
     gmx_simd4_real_t fx_S, fy_S, fz_S;
@@ -244,41 +231,6 @@ do_fspline_simd_unaligned4(int pny, int pnz, int i0, int j0, int k0,
     fz += gmx_simd4_reduce_r(fz_S);
 }
 #endif
-template <>
-inline void
-do_fspline_order<4>(int pny, int pnz, int i0, int j0, int k0,
-                    const real *thx, const real *thy, const real *thz,
-                    const real *dthx, const real *dthy, const real *dthz,
-                    const real *grid,
-                    const struct pme_spline_work gmx_unused *work,
-                    real gmx_unused *thz_aligned, real gmx_unused *dthz_aligned,
-                    real &fx, real &fy, real &fz)
-{
-#ifdef PME_SIMD4_UNALIGNED
-    do_fspline_simd_unaligned4(pny, pnz, i0, j0, k0,
-                               thx, thy, thz, dthx, dthy, dthz,
-                               grid, fx, fy, fz);
-#else
-    do_fspline_simd(4, pny, pnz, i0, j0, k0,
-                    thx, thy, thz, dthx, dthy, dthz,
-                    grid, work, thz_aligned, dthz_aligned, fx, fy, fz);
-#endif
-}
-
-template <>
-inline void
-do_fspline_order<5>(int pny, int pnz, int i0, int j0, int k0,
-                    const real *thx, const real *thy, const real *thz,
-                    const real *dthx, const real *dthy, const real *dthz,
-                    const real *grid,
-                    const struct pme_spline_work gmx_unused *work,
-                    real gmx_unused *thz_aligned, real gmx_unused *dthz_aligned,
-                    real &fx, real &fy, real &fz)
-{
-    do_fspline_simd(5, pny, pnz, i0, j0, k0,
-                    thx, thy, thz, dthx, dthy, dthz,
-                    grid, work, thz_aligned, dthz_aligned, fx, fy, fz);
-}
 #endif
 
 void gather_f_bsplines(struct gmx_pme *pme, real *grid,
@@ -354,21 +306,36 @@ void gather_f_bsplines(struct gmx_pme *pme, real *grid,
             switch (order)
             {
                 case 4:
-                    do_fspline_order<4>(pny, pnz, i0, j0, k0,
-                                        thx, thy, thz, dthx, dthy, dthz,
-                                        grid, work, thz_aligned, dthz_aligned,
-                                        fx, fy, fz);
+#ifdef PME_SIMD4_SPREAD_GATHER
+#ifdef PME_SIMD4_UNALIGNED
+                    do_fspline_simd_unaligned4
+#else
+                    do_fspline_simd
+#endif
+#else
+                    do_fspline
+#endif
+                        (4, pny, pnz, i0, j0, k0,
+                        thx, thy, thz, dthx, dthy, dthz,
+                        grid, work, thz_aligned, dthz_aligned,
+                        fx, fy, fz);
                     break;
                 case 5:
-                    do_fspline_order<5>(pny, pnz, i0, j0, k0,
-                                        thx, thy, thz, dthx, dthy, dthz,
-                                        grid, work, thz_aligned, dthz_aligned,
-                                        fx, fy, fz);
+#ifdef PME_SIMD4_SPREAD_GATHER
+                    do_fspline_simd
+#else
+                    do_fspline
+#endif
+                        (5, pny, pnz, i0, j0, k0,
+                        thx, thy, thz, dthx, dthy, dthz,
+                        grid, work, thz_aligned, dthz_aligned,
+                        fx, fy, fz);
                     break;
                 default:
                     do_fspline(order, pny, pnz, i0, j0, k0,
                                thx, thy, thz, dthx, dthy, dthz,
-                               grid, fx, fy, fz);
+                               grid, work, thz_aligned, dthz_aligned,
+                               fx, fy, fz);
                     break;
             }
 
