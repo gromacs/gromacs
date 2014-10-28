@@ -166,7 +166,7 @@ endmacro()
 function(GMX_CHECK_IF_CHANGED RESULT)
     set(_result FALSE)
     foreach (_var ${ARGN})
-        if (NOT "${_var}" STREQUAL "${_var}_PREVIOUS_VALUE")
+        if (NOT "${${_var}}" STREQUAL "${${_var}_PREVIOUS_VALUE}")
             set(_result TRUE)
         endif()
         set(${_var}_PREVIOUS_VALUE "${${_var}}" CACHE INTERNAL
