@@ -1492,6 +1492,23 @@ Eq.~\ref{eq:half_step_NHC_integrator} just before the $\exp\left(iL_1
 and then using some algebra tricks to solve for some quantities are
 required before they are actually calculated~\cite{Holian95}.
 
+\subsubsection{Special Nos{\'e}-Hoover thermostat for polarizable simulations}
+
+Under the extended Lagrangian approach for polarizable simulations (see~\ssecref{drudemd}),
+real atoms and Drude oscillators are coupled to separate thermostats at different temperatures.
+The only thermostat that can be used for this approach is a modified Nos{\'e}-Hoover
+thermostat that couples each of these groups (real atoms and Drude oscillators) at
+different temperatures.  The equations of motion are of the same form as the normal
+Nos{\'e}-Hoover thermostat, but velocity scaling of atoms is done with respect to the center of
+mass of the Drude-atom pair and scaling of Drude oscillators is done with respect to the
+displacement of the Drude from their parent atoms, not their absolute coordinates.
+See~\cite{Lamoureux2003a} for more details. {\bf Note} that when running simulations
+with this thermostat and the extended Lagrangian algorithm that the reported system temperature
+will generally be too low by approximately 33\%.  For instance, for a box of water with 
+$T = 300 K$ and $T_{\star} = 1 K$ (see section~\ssecref{drudemd}), the reported temperature
+of the system will be approximately 200 K.  However, if one analyzes each group temperature
+individually, the atoms will indeed be at 300 K on average.
+
 % }
 
 \subsubsection{Group temperature coupling}\index{temperature-coupling group}%
@@ -1949,16 +1966,25 @@ format. All the other tools can read and write this format. See
 to have {\tt mdrun} use this feature.
 
 % \ifthenelse{\equal{\gmxlite}{1}}{}{
-\section{Shell molecular dynamics}
+\section{Simulations with polarizable force fields}
+\label{sec:polarize}
 {\gromacs} can simulate \normindex{polarizability} using the 
-\normindex{shell model} of Dick and Overhauser~\cite{Dick58}. In such models
-a shell particle representing the electronic degrees of freedom is
-attached to a nucleus by a spring. The potential energy is minimized with
-respect to the shell position  at every step of the simulation (see below).
-Successful applications of shell models in {\gromacs} have been published
+\normindex{shell model} of Dick and Overhauser~\cite{Dick58} or the
+\normindex{extended Lagrangian} approach of Lamoureux and Roux~\cite{Lamoureux2003a}. 
+In such models, an auxiliary particle ("shell" or "Drude oscillator") representing 
+the electronic degrees of freedom is attached to a nucleus by a spring. 
+Using the self-consistent field (SCF) approach of Dick and Overhauser, the 
+potential energy is minimized with respect to the shell position 
+at every step of the simulation (see section~\ssecref{shellscf}).  Under the extended Lagrangian approach,
+the Drude oscillators have mass and their positions are integrated on equal footing
+as the normal atoms in the system (see section~\ssecref{drudemd}).
+Successful applications of polarizable models in {\gromacs} have been published
 for $N_2$~\cite{Jordan95} and water~\cite{Maaren2001a}.
 
-\subsection{Optimization of the shell positions}
+%TODO: add publication for extended Lagrangian implementation in GROMACS
+
+\subsection{Optimization of the shell positions using SCF}
+\label{subsec:shellscf}
 The force \ve{F}$_S$ on a shell particle $S$ can be decomposed into two
 components
 \begin{equation}
@@ -1995,6 +2021,50 @@ of shell positions
 \begin{equation}
 \ve{x}_S(n+1) ~=~ \ve{x}_S(n) + \ve{F}_S/k_b.
 \end{equation}
+
+\subsection{Extended Lagrangian integration of Drude oscillators}
+\label{subsec:drudemd}
+As an approximation to the SCF approach, each Drude oscillator is assigned a small mass
+($m_D$, generally $\leq 0.4$~amu) that is subtracted from the parent atom.  These auxiliary 
+particles are then updated by integrating their positions in a separate step from the 
+remaining atoms of the system, thus reflecting an instantaneous response to the dynamics of the system.  
+
+The Drude oscillators in these simulations are ``thermalized,'' held at a temperature 
+($T_{\star}$) significantly below that of the normal atoms of the system, $T_{\star} \ll T$.
+Separate Nos\'e-Hoover thermostats are assigned to atoms and Drude oscillators.  The thermostat
+controlling the temperature of the Drude oscillators is coupled to their motion relative to their
+parent nuclei, $\{{\ve{\dot d}}\}$, not their absolute positions, $\{{\ve{\dot r}_D}\}$.  If one defines
+\ve{R}$_i$ as the center of mass of each Drude-atom pair, the equations of motion in the
+extended Lagrangian algorithm are
+\begin{equation}
+m_i \ve{\ddot{R}}_i = \ve{F}_{\ve{R},i} - m_i \ve{\dot R}_i \dot{\eta}
+\end{equation}
+
+\begin{equation}
+m_i^\prime \ve{\ddot{d}}_i = \ve{F}_{\ve{d},i} - m_i^\prime \ve{\dot d}_i \dot{\eta}_{\star} 
+\end{equation}
+
+\begin{equation}
+Q {\ddot \eta} = \sum_{j} m_j {\dot R}_j^2 - N_f k_B T
+\end{equation}
+
+\begin{equation}
+Q_{\star} {\ddot \eta}_{\star} = \sum_{j} m_j^\prime {\dot d}_j^2 - N_{f \star} k_B T_{\star}
+\end{equation}
+
+The term $m_i^\prime$ is the reduced mass of the atom-Drude pair, $m_i^\prime = m_D\left(1-m_D/m_i\right)$. 
+For any nonpolarizable atoms in the system, \ve{R}$_i$ is the same as the atomic coordinates, \ve{r}$_i$
+and $m_i^\prime$ is zero.  $N_f$ and $N_{f \star}$ are the number of degrees of freedom associated
+with atomic and Drude oscillator motion, respectively.  $Q$ and $Q_{\star}$ are the inertia
+factors associated with the Nos\'e-Hoover thermostats, related to characteristic time
+scales $\tau_T$ and $\tau_{T \star}$ by $Q \equiv N_f k_B T \tau^2$ and 
+$Q_{\star} \equiv N_{f \star} k_B T_{\star} \tau_{\star}^2$.
+The ``velocities'' ${\dot \eta}$ and ${\dot \eta}_{\star}$ act as friction coefficients and are
+driven by forces on the thermostats.
+
+The extended Lagrangian algorithm is computationally more efficient than the SCF approach, and
+thus is attractive for simulations of large systems over long time scales. {\bf Note} that the
+extended Lagrangian approach cannot be used with massless shells. 
 % } % Brace matches ifthenelse test for gmxlite
 
 \section{Constraint algorithms\index{constraint algorithms}}

@@ -49,7 +49,7 @@ energy state, and the $B$ state corresponds to the final state.
 In some cases, the end state can also be defined in some cases without
 altering the topology, solely through the {\tt .mdp} file, through the use
 of the {\tt couple-moltype},{\tt couple-lambda0}, {\tt couple-lambda1}, and
-{\tt couple-intramol} mdp keywords.  Any molecule type selected in
+{\tt couple-intramol} {\tt .mdp} keywords.  Any molecule type selected in
 {\tt couple-moltype} will automatically have a $B$ state implicitly
 constructed (and the $A$ state redefined) according to the {\tt couple-lambda}
 keywords. {\tt couple-lambda0} and {\tt couple-lambda1} define the non-bonded
@@ -59,7 +59,7 @@ and the $B$ state ({\tt couple-lambda1}).  The choices are 'q','vdw', and
 that are turned on in the respective state.
 
 Once the end states are defined, then the path between the end states
-has to be defined. This path is defined solely in the .mdp file.
+has to be defined. This path is defined solely in the {\tt .mdp} file.
 Starting in 4.6, $\lambda$ is a vector of components, with Coulombic,
 van der Waals, bonded, restraint, and mass components all able to be
 adjusted independently.  This makes it possible to turn off the
@@ -2122,6 +2122,89 @@ and IMD client. Setting the keep rate loads every $N^\mathrm{th}$ frame into VMD
 of discarding them when a new one is received. The displayed energies are in SI units
 in contrast to energies displayed from NAMD simulations.
 
+\section{\normindex{Polarizable Simulations with the Extended Lagrangian}}
+The integration of Drude oscillators using the extended Lagrangian method of
+Lamoureux and Roux~\cite{Lamoureux2003a} requires only few special considerations
+for running the simulation.  Input files containing protein and/or DNA are processed
+normally by {\tt \normindex{pdb2gmx}}, which will add Drude particles and lone
+pairs according to the {\tt .rtp} entries for the constituent residues.  To use
+the CHARMM Drude polarizable force field~\cite{Lopes2013,Savelyev2014a,Savelyev2014b}
+included in {\gromacs}, the user must supply the {\tt -charmmdrude} option to 
+trigger all the necessary functions.  {\bf Note} that no other force field will 
+work properly with the {\tt -charmmdrude} option and it will not add 
+polarizability to additive force fields.
+
+Solvation and addition of ions are done as usual with {\tt gmx solvate} and 
+{\tt gmx genion}, respectively.  {\tt gmx genion} has a {\tt -charmmdrude} option
+that must be used in order to add polarizable ions.  The only water models that should
+be used in conjunction with this force field are SWM4-NDP~\cite{Lamoureux2006} or
+SWM6~\cite{Yu2013}.
+
+For energy minimization, the {\tt drude-mode} option must be set to {\tt SCF}.
+
+For running MD simulations with the extended Lagrangian, several considerations
+must be taken into account.  The only compatible integrator is {\tt md-vv} 
+and {\tt dt} should be set no larger than 0.001 ps.  For temperature coupling,
+the {\tt tc-grps} must be set up in a specific way.  Atoms and Drudes must
+be in separate groups for a proper thermostat setup, and must appear in a specific 
+order.  That is, in {\tt tc-grps}, the atoms of a group must be listed first, before
+the Drudes.  Lone pairs should be assigned to the group of atoms, though their 
+velocities will be set to zero, anyway.  An example for a protein in water would
+be:
+
+\begin{verbatim}
+tcoupl  = Nose-Hoover
+tc-grps = Protein-Atoms Protein-Drudes Water-Atoms Water-Drudes
+ref-t   = 298.15        1.0            298.15      1.0
+tau-t   = 0.1           0.005          0.1         0.005
+\end{verbatim}
+
+All Drude atoms are prefixed with the letter `D' so creating these groups with 
+{\tt \normindex{make_ndx}} is very simple.
+
+\begin{verbatim}
+> Protein & ! a D*
+> Protein & a D*
+> SOL & ! a D*
+> SOL & a D*
+\end{verbatim}
+
+These commands to {\tt \normindex{make_ndx}} will create the groups needed as shown
+in the example above (after suitable renaming).
+
+At present, pressure coupling is {\bf not} supported for polarizable simulations with
+the extended Lagrangian algorithm.  Further work within the code is necessary to enable
+this feature.  If you require an $NPT$ ensemble for your simulations, please use the 
+SCF optimization algorithm ({\tt drude-mode = SCF}).
+
+The required options for using the hardwall restraint (see section~\ssecref{hardwall}) 
+are {\tt drude-hardwall} and {\tt drude-r}, which define whether or not the hardwall 
+is used, and at what distance the wall takes effect.  A complete list of Drude-specific {\tt .mdp} 
+settings for running a simulation with the extended Lagrangian are as follows:
+
+\begin{verbatim}
+drude           = yes
+drude-t         = 1.0   ; must be the same as in ref-t
+drude-tau-t     = 0.005 ; must be the same as in tau-t
+drude-hardwall  = yes
+drude-r         = 0.02
+drude-tsteps    = 20
+\end{verbatim}
+
+If using the hardwall restraint, the anharmonic restraint potential specified using
+{\tt drude-khyp} is not necessary, as the hardwall is more stable and effective at
+preventing polarization catastrophe.  The anharmonic restraint is available in the
+code in case someone might find it useful, though in general it is discouraged in
+favor of the hardwall.
+
+One feature that is present in CHARMM and NAMD that is not yet available in
+{\gromacs} is so-called ``nonbonded Thole screening'' that applies Thole dipole
+screening (see section~\ssecref{thole}) to nonbonded pairs.  
+It is only relevant in the case of interactions
+between water and divalent metal ions.  The code for this feature is not yet
+complete, and as such, the {\gromacs} implementation of the CHARMM Drude force
+field {\bf does not} support divalent metal ions.  Support for this feature will
+be added in the near future.
 
 % LocalWords:  PMF pmf kJ mol Jarzynski BT bilayer rup mdp AFM fepmf fecalc rb
 % LocalWords:  posre grompp fs Verlet dihedrals hydrogens hydroxyl sulfhydryl

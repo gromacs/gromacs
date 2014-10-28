@@ -646,7 +646,7 @@ angle $\tijk$ and a harmonic correction term on the distance between
 the atoms $i$ and $k$. Although this can be easily written as a simple
 sum of two terms, it is convenient to have it as a single entry in the
 topology file and in the output as a separate energy term. It is used mainly
-in the CHARMm force field~\cite{BBrooks83}. The energy is given by:
+in the CHARMM force field~\cite{BBrooks83}. The energy is given by:
 
 \beq
 V_a(\tijk) = \half k^{\theta}_{ijk}(\tijk-\tijk^0)^2 + \half k^{UB}_{ijk}(r_{ik}-r_{ik}^0)^2
@@ -1646,19 +1646,44 @@ force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Polarization}
-Polarization can be treated by {\gromacs} by attaching
+Polarization can be treated in {\gromacs} by attaching
 \normindex{shell} (\normindex{Drude}) particles to atoms and/or
-virtual sites. The energy of the shell particle is then minimized at
-each time step in order to remain on the Born-Oppenheimer surface.
+virtual sites. When using the self-consistent field (SCF) approach (section~\ssecref{shellscf})
+for solving shell positions, the energy of the shell particle is then minimized at
+each time step in order to remain on the Born-Oppenheimer surface.  Mass-bearing
+Drude particles can have their positions integrated using the extended Lagrangian
+algorithm developed in the Roux laboratory (see section~\ssecref{drudemd}).
 
 \subsection{Simple polarization}
+\label{subsec:polarize}
 This is merely a harmonic potential with equilibrium distance 0.
+Simple polarization is isotropic.
+
+\subsection{Anisotropic polarization}
+\label{subsec:anisopol}
+{\gromacs} supports anisotropic polarization, which allows for independent
+polarization in all three spatial dimensions, based on a local molecular
+reference frame, as described in~\cite{Harder2006}.  The harmonic self-energy
+of a Drude oscillator ($U_{self}$) is given as
+
+\bea
+U_{self} &=& \frac{1}{2} \ve{d} \cdot \ve{K}^{(D)} \cdot \ve{d} \\
+U_{self} &=& \frac{1}{2} \left(\left[\ve{K}_{11}^{(D)}\right] d_{1}^{2} +
+                               \left[\ve{K}_{22}^{(D)}\right] d_{2}^{2} +
+                               \left[\ve{K}_{33}^{(D)}\right] d_{3}^{2} \right)
+\eea
+
+where $d_1$, $d_2$, and $d_3$ are projections of the Drude displacement vector
+\ve{d}.  The axes are defined by construction from the local molecular reference
+frame.
 
 \subsection{Water polarization}
+\label{subsec:wpol}
 A special potential for water that allows anisotropic polarization of
 a single shell particle~\cite{Maaren2001a}.
 
-\subsection{Thole polarization}
+\subsection{Thole screening of dipoles}
+\label{subsec:thole}
 Based on early work by \normindex{Thole}~\cite{Thole81}, Roux and
 coworkers have implemented potentials for molecules like
 ethanol~\cite{Lamoureux2003a,Lamoureux2003b,Noskov2005a}. Within such
@@ -1676,6 +1701,21 @@ V_{thole} ~=~ \frac{q_i q_j}{r_{ij}}\left[1-\left(1+\frac{\rbij}{2}\right){\rm e
 where $a$ is a magic (dimensionless) constant, usually chosen to be
 2.6~\cite{Noskov2005a}; $\alpha_i$ and $\alpha_j$ are the polarizabilities
 of the respective shell particles.
+
+\subsection{Avoiding polarization catastrophe}
+\label{subsec:hardwall}
+Polarizable simultions may become unstable if the auxiliary particle strays far
+from its parent nucleus.  Due to this fact, the time step, $\delta t$, of the simulation
+is generally limited to very small values (0.1 - 0.5 fs), even with anharmonic (quartic)
+restraining potentials.  A remedy to this situation has recently been developed~\cite{Chowdhary2013}.  
+This so-called ``hardwall'' restraint prevents a Drude oscillator from moving beyond a 
+user-specified distance from the parent nucleus.  If the Drude oscillator reaches this
+distance (the ``wall''), its position is reflected along the Drude-atom bond, and 
+the velocities of both the atom and the Drude are scaled.  The hardwall restraint feature is
+only available when using the extended Lagrangian algorithm (see~\ssecref{drudemd}) for 
+simulating polarizable systems, since the SCF approach (see~\ssecref{shellscf}) sets all 
+velocities on shell particles to zero.  Using the hardwall restraint allows simulations to
+be carried out stably at $\delta t$ = 1 fs.
 
 %} % Brace matches ifthenelse test for gmxlite
 
@@ -2960,11 +3000,19 @@ protein-membrane model for which the membrane was derived from structure-based
 coarse-graining~\cite{wang_jpcb10}.  A {\gromacs} implementation can be found at
 \href{http://code.google.com/p/plumx/}{code.google.com/p/plumx}. 
 
+\subsection{Polarizable force fields\index{Polarizable force fields}}
+
+{\gromacs} supports simulations using polarizable force fields.  Provided in the
+{\gromacs} distribution is the Drude polarizable force field for proteins~\cite{Lopes2013} and
+DNA~\cite{Savelyev2014a,Savelyev2014b} developed in the MacKerell and Roux laboratories.  
+The SWM4-NDP~\cite{Lamoureux2006} and SWM6~\cite{Yu2013} water models are supported.
+See~\secref{polarize} for details on how to use these force fields. 
+
 % LocalWords:  dihedrals centro ij dV dr LJ lj rcl jj Bertelot OPLS bh bham rf
 % LocalWords:  coul defunits grompp crf vcrf fcrf Tironi Debye kgrf cgrf krf dx
 % LocalWords:  PPPM der Waals erfc lr elstat chirality bstretch bondpot kT kJ
 % LocalWords:  anharmonic morse mol betaij expminx SPC timestep fs FENE ijk kj
-% LocalWords:  anglepot CHARMm UB ik rr substituents ijkl Ryckaert Bellemans rb
+% LocalWords:  anglepot CHARMM UB ik rr substituents ijkl Ryckaert Bellemans rb
 % LocalWords:  alkanes pdb gmx IUPAC IUB jkl cis rbdih crb kcal cubicspline xvg
 % LocalWords:  topfile mdrun posres ar dihr lcllll NMR nmr lcllllll NOEs lclll
 % LocalWords:  rav preprocessor ccccccccc ai aj fac disre mdp multi topol tpr

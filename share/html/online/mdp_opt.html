@@ -18,7 +18,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init-step, comm-mode, nstcomm, comm-grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd-fric, ld-seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
-<li><a HREF="#shellmd"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
+<li><a HREF="#shellmd"><b>polarizable simulations</b></a>(drude,drude-mode,emtol,niter,fcstep,drude-t,drude-tau-t,drude-hardwall,drude-r,drude-khyp,drude-tsteps)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxout-compressed, compressed-x-precision, compressed-x-grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-tolerance, rlist, rlistlong)
@@ -281,20 +281,43 @@ number is (at least theoretically) more accurate, but slower.</dd>
 
 <A NAME="shellmd"><br>
 <hr>
-<h3>Shell Molecular Dynamics<!--QuietIdx-->shell molecular dynamics<!--EQuietIdx--></h3>
-When shells or
+<h3>Polarizable simulations<!--QuietIdx-->polarizable simulations<!--EQuietIdx--></h3>
+When shells (Drudes) or
 flexible constraints are present in the system the positions of the shells
-and the lengths of the flexible constraints are optimized at
+(Drudes) and the lengths of the flexible constraints are updated using either
+a self-consistent field (SCF) approach, in which positions are optimized at
 every time step until either the RMS force on the shells and constraints
-is less than emtol, or a maximum number of iterations (niter) has been reached
+is less than emtol, or a maximum number of iterations (niter) has been reached,
+or using the extended Lagrangian algorithm in which the Drude particles are
+integrated on equal footing with the normal atoms in the system
 <dl>
+<dt><b>drude: (no)</b></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>There are no shells/Drudes in the system. All options related to
+polarizability are ignored.</dd>
+<dt><b>yes</b></dt>
+<dd>The system is polarizable.</dd>
+</dl>
+</dd>
+<dt><b>drude-mode:</b></dt>
+<dd><dl compact>
+<dt><b>SCF</b></dt>
+<dd>Use the self-consistent field optimization algorithm for updating 
+shell/Drude positions</dd>
+<dt><b>Lagrangian</b></dt>
+<dd>Use the extended Lagrangian algorithm for integrating shell/Drude 
+positions and velocities</dd>
+</dl></dd>
 <dt><b>emtol: (10.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
 <dd>the minimization is converged when the maximum force is smaller than 
 this value. For shell MD this value should be 1.0 at most, but since the
-variable is used for energy minimization as well the default is 10.0.</dd>
+variable is used for energy minimization as well the default is 10.0.
+This option is only meaningful when <b>drude-mode</b> is set to <b>SCF</b></dd>
 <dt><b>niter: (20)</b></dt>
 <dd>maximum number of iterations for optimizing the shell positions
-and the flexible constraints.</dd>
+and the flexible constraints. This option is only meaningful when <b>drude-mode</b>
+is set to <b>SCF</b></dd>
 <dt><b>fcstep: (0) [ps<sup>2</sup>]</b></dt>
 <dd>the step size for optimizing the flexible constraints.
 Should be chosen as mu/(d<sup>2</sup>V/dq<sup>2</sup>)
@@ -303,7 +326,33 @@ and d<sup>2</sup>V/dq<sup>2</sup> is the second derivative of the potential
 in the constraint direction. Hopefully this number does not differ too
 much between the flexible constraints, as the number of iterations
 and thus the runtime is very sensitive to <tt>fcstep</tt>.
-Try several values!</dd>
+Try several values! This option is only meaningful when <b>drude-mode</b>
+is set to <b>SCF</b></dd>
+<dt><b>drude-t: (1.0) [K]</b></dt>
+<dd>The temperature for Drude particle velocity generation.  Only meaningful when
+<b>drude-mode</b> is set to <b>Lagrangian</b></dd>
+<dt><b>drude-tau-t: (0.005) [ps]</b></dt>
+<dd>The characteristic response time for any thermostat coupled to Drude oscillators.
+Only meaningful when <b>drude-mode</b> is set to <b>Lagrangian</b></dd>
+<dt><b>drude-hardwall: (yes)</b></dt>
+<dd><dl compact>
+<dt><b>yes</b></dt>
+<dd>The hardwall restraint described by Chowdhary et al. (see manual) will be applied
+to avoid polarization catastrophe.</dd>
+<dt><b>no</b></dt>
+<dd>No hardwall restraint will be applied.  Simulations may be unstable and the value
+of <b>dt</b> should be set no larger than 0.0005.</dd>
+</dl></dd>
+<dt><b>drude-r: (0.02) [nm]</b></dt>
+<dd>The distance limit for Drude-atom bonds, at which point the hardwall restraint is imposed.</dd>
+<dt><b>drude-khyp: (418400.0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
+<dd>The force constant for using an anharmonic potential (quartic restraint).  Anharmonic
+restraints are less stable than using the hardwall restraint, and <b>dt</b> is still
+limited in most cases to 0.0005.</dd>
+<dt><b>drude-tsteps: (20)</b></dt>
+<dd>The number of subdivided time steps for updating thermostat and barostat variables.
+A value of 20 is generally recommended, though values as low as 5 can be stable and
+more efficient.</dd>
 </dl>
 
 <A NAME="tpi"><br>
