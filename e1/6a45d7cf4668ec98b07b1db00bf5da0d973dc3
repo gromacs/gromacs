@@ -1,0 +1,7 @@
+Verified+2: Jenkins Buildbot
+Code-Review+2: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Wed, 29 Oct 2014 19:45:20 +0100
+Reviewed-on: https://gerrit.gromacs.org/4117
+Project: gromacs
+Branch: refs/heads/release-5-0
