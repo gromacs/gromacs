@@ -265,17 +265,18 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
     gmx::SelectionParserParameterList::iterator asparam = ++params->begin();
     if (asparam != params->end() && asparam->name() == sm_same.param[1].name)
     {
-        gmx::SelectionParserParameterList    kwparams;
-        gmx::SelectionParserValueListPointer values(
-                new gmx::SelectionParserValueList(asparam->values()));
-        kwparams.push_back(
-                gmx::SelectionParserParameter::create(NULL, move(values)));
-
+        const gmx::SelectionParserValueList &asvalues = asparam->values();
+        if (asvalues.size() != 1 || !asvalues.front().hasExpressionValue())
+        {
+            _gmx_selparser_error(scanner, "'same ... as' should be followed by a single expression");
+            return -1;
+        }
+        const gmx::SelectionTreeElementPointer &child = asvalues.front().expr;
         /* Create a second keyword evaluation element for the keyword given as
          * the first parameter, evaluating the keyword in the group given by the
          * second parameter. */
         gmx::SelectionTreeElementPointer kwelem
-            = _gmx_sel_init_keyword_evaluator(kwmethod, kwparams, scanner);
+            = _gmx_sel_init_keyword_evaluator(kwmethod, child, scanner);
         // FIXME: Use exceptions.
         if (!kwelem)
         {

@@ -398,7 +398,10 @@ const char *const SyntaxHelpText::text[] = {
     "evaluation order.[BR]",
     "3. [TT]ATOM_EXPR[tt] expressions can be converted into [TT]POS_EXPR[tt]",
     "expressions in various ways, see the \"positions\" subtopic for more",
-    "details.[PAR]",
+    "details.[BR]",
+    "4. [TT]POS_EXPR[tt] can be converted into [TT]NUM_EXPR[tt] using syntax",
+    "like \"x of POS_EXPR\". Currently, this is only supported for single",
+    "positions like in expression \"x of cog of ATOM_EXPR\".[PAR]",
 
     "Some keywords select atoms based on string values such as the atom name.",
     "For these keywords, it is possible to use wildcards ([TT]name \"C*\"[tt])",
