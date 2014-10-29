@@ -1808,7 +1808,10 @@ int gmx_grompp(int argc, char *argv[])
         /* Drude will not work with anything other than EM or VV */
         if (!(EI_ENERGY_MINIMIZATION(ir->eI) || (EI_VV(ir->eI))))
         {
-            gmx_fatal(FARGS, "Cannot run Drude simulation with integrator = %s.", ei_names[ir->eI]);
+            if (!(ir->drude->drudemode == edrudeSCF))
+            {
+                gmx_fatal(FARGS, "Cannot run Drude simulation with integrator = %s.", ei_names[ir->eI]);
+            }
         }
 
         /* Drude and freezing are incompatible for now, can be added later */
@@ -1821,6 +1824,12 @@ int gmx_grompp(int argc, char *argv[])
         if (ir->drude->drudemode == edrudeLagrangian && ir->etc != etcNOSEHOOVER)
         {
             gmx_fatal(FARGS, "With extended Lagrangian, only Nose-Hoover is acceptable as thermostat.\n");
+        }
+
+        /* Pressure coupling is currently not supported with extended Lagrangian */
+        if (ir->drude->drudemode == edrudeLagrangian && ir->epc != epcNO)
+        {
+            gmx_fatal(FARGS, "Pressure coupling is not yet supported with extended Lagrangian.\n");
         }
 
         /* note issues with multiple NH chains */
