@@ -50,8 +50,10 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/selection/position.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/smalloc.h"
@@ -363,26 +365,66 @@ free_data_kweval(void *data);
 /** Initializes frame evaluation for keyword evaluation in an arbitrary group. */
 static void
 init_frame_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
-/** Evaluates keywords in an arbitrary group. */
+/*! \brief
+ * Evaluates keywords in an arbitrary group.
+ *
+ * See sel_updatefunc() for description of the parameters.
+ * \p data should point to a \c t_methoddata_kweval.
+ *
+ * Calls the evaluation function of the wrapped keyword with the given
+ * parameters, with the exception of using \c t_methoddata_kweval::g for the
+ * evaluation group.
+ */
 static void
-evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data);
+evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, gmx_ana_index_t *g,
+                gmx_ana_selvalue_t *out, void *data);
+/*! \brief
+ * Evaluates keywords in an arbitrary set of positions.
+ *
+ * See sel_updatefunc() for description of the parameters.
+ * \p data should point to a \c t_methoddata_kweval.
+ *
+ * Calls the evaluation function of the wrapped keyword with the given
+ * parameters, with the exception of using \c t_methoddata_kweval::p for the
+ * evaluation positions.
+ */
+static void
+evaluate_kweval_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc, gmx_ana_index_t *g,
+                    gmx_ana_selvalue_t *out, void *data);
 
 /*! \internal \brief
  * Data structure for keyword evaluation in arbitrary groups.
  */
-typedef struct
+struct t_methoddata_kweval
 {
-    /** Wrapped keyword method for evaluating the values. */
+    //! Initialize new keyword evaluator for the given keyword.
+    t_methoddata_kweval(gmx_ana_selmethod_t *method, void *data)
+        : kwmethod(method), kwmdata(data)
+    {
+        gmx_ana_index_clear(&g);
+    }
+    ~t_methoddata_kweval()
+    {
+        _gmx_selelem_free_method(kwmethod, kwmdata);
+    }
+
+    //! Wrapped keyword method for evaluating the values.
     gmx_ana_selmethod_t  *kwmethod;
-    /** Method data for \p kwmethod. */
+    //! Method data for \p kwmethod.
     void                 *kwmdata;
-    /** Group in which \p kwmethod should be evaluated. */
+    //! Group in which \p kwmethod should be evaluated.
     gmx_ana_index_t       g;
-} t_methoddata_kweval;
+    //! Positions for which \p kwmethod should be evaluated.
+    gmx_ana_pos_t         p;
+};
 
 /** Parameters for keyword evaluation in an arbitrary group. */
-static gmx_ana_selparam_t smparams_kweval[] = {
+static gmx_ana_selparam_t smparams_kweval_group[] = {
     {NULL,   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
+};
+/** Parameters for keyword evaluation from positions. */
+static gmx_ana_selparam_t smparams_kweval_pos[] = {
+    {NULL,   {POS_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
 };
 
 
@@ -635,7 +677,7 @@ evaluate_keyword_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* p
 static void
 init_kweval(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
-    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+    t_methoddata_kweval *d = static_cast<t_methoddata_kweval *>(data);
 
     d->kwmethod->init(top, 0, NULL, d->kwmdata);
 }
@@ -643,7 +685,7 @@ init_kweval(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, v
 static void
 init_output_kweval(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+    t_methoddata_kweval *d = static_cast<t_methoddata_kweval *>(data);
 
     out->nr = d->g.isize;
     _gmx_selvalue_reserve(out, out->nr);
@@ -657,10 +699,9 @@ init_output_kweval(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
 static void
 free_data_kweval(void *data)
 {
-    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+    t_methoddata_kweval *d = static_cast<t_methoddata_kweval *>(data);
 
-    _gmx_selelem_free_method(d->kwmethod, d->kwmdata);
-    sfree(d);
+    delete d;
 }
 
 /*!
@@ -676,69 +717,65 @@ free_data_kweval(void *data)
 static void
 init_frame_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 {
-    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+    t_methoddata_kweval *d = static_cast<t_methoddata_kweval *>(data);
 
     d->kwmethod->init_frame(top, fr, pbc, d->kwmdata);
 }
 
-/*!
- * See sel_updatefunc() for description of the parameters.
- * \p data should point to a \c t_methoddata_kweval.
- *
- * Calls the evaluation function of the wrapped keyword with the given
- * parameters, with the exception of using \c t_methoddata_kweval::g for the
- * evaluation group.
- */
 static void
 evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+    t_methoddata_kweval *d = static_cast<t_methoddata_kweval *>(data);
 
     d->kwmethod->update(top, fr, pbc, &d->g, out, d->kwmdata);
 }
 
-/*!
+static void
+evaluate_kweval_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                    gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data)
+{
+    t_methoddata_kweval *d = static_cast<t_methoddata_kweval *>(data);
+
+    d->kwmethod->pupdate(top, fr, pbc, &d->p, out, d->kwmdata);
+}
+
+/*! \brief
+ * Initializes a selection element for evaluating a keyword in a given group.
+ *
  * \param[in]   method  Keyword selection method to evaluate.
- * \param[in]   params  Parameter that gives the group to evaluate \p method in.
+ * \param[in]   params  Parameters to pass to initialization (the child group).
  * \param[in]   scanner Scanner data structure.
  * \returns     Pointer to the created selection element (NULL on error).
  *
- * Creates a \ref SEL_EXPRESSION selection element that evaluates the keyword
- * method given by \p method in the group given by \p param.
- *
- * The name of \p param should be empty.
+ * Implements _gmx_sel_init_keyword_evaluator() for \ref GROUP_VALUE input
+ * selections.
  */
-gmx::SelectionTreeElementPointer
-_gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t                     *method,
-                                const gmx::SelectionParserParameterList &params,
-                                void                                    *scanner)
+static gmx::SelectionTreeElementPointer
+init_evaluator_group(gmx_ana_selmethod_t                     *method,
+                     const gmx::SelectionParserParameterList &params,
+                     void                                    *scanner)
 {
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[1024];
-    sprintf(buf, "In evaluation of '%s'", method->name);
-    gmx::MessageStringContext   context(errors, buf);
-
     if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
         || method->outinit || method->pupdate)
     {
-        GMX_THROW(gmx::InternalError(
-                          "Unsupported keyword method for arbitrary group evaluation"));
+        std::string message = gmx::formatString(
+                    "Keyword '%s' cannot be evaluated in this context",
+                    method->name);
+        GMX_THROW(gmx::InvalidInputError(message));
     }
 
     gmx::SelectionTreeElementPointer sel(
             new gmx::SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(sel, method, scanner);
 
-    t_methoddata_kweval  *data;
-    snew(data, 1);
-    data->kwmethod = sel->u.expr.method;
-    data->kwmdata  = sel->u.expr.mdata;
-    gmx_ana_index_clear(&data->g);
+    t_methoddata_kweval *data
+        = new t_methoddata_kweval(sel->u.expr.method, sel->u.expr.mdata);
 
     snew(sel->u.expr.method, 1);
-    memcpy(sel->u.expr.method, data->kwmethod, sizeof(gmx_ana_selmethod_t));
-    sel->u.expr.method->flags       |= SMETH_VARNUMVAL;
+    sel->u.expr.method->name         = data->kwmethod->name;
+    sel->u.expr.method->type         = data->kwmethod->type;
+    sel->u.expr.method->flags        = data->kwmethod->flags | SMETH_VARNUMVAL;
     sel->u.expr.method->init_data    = NULL;
     sel->u.expr.method->set_poscoll  = NULL;
     sel->u.expr.method->init         = method->init ? &init_kweval : NULL;
@@ -747,8 +784,8 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t                     *method,
     sel->u.expr.method->init_frame   = method->init_frame ? &init_frame_kweval : NULL;
     sel->u.expr.method->update       = &evaluate_kweval;
     sel->u.expr.method->pupdate      = NULL;
-    sel->u.expr.method->nparams      = asize(smparams_kweval);
-    sel->u.expr.method->param        = smparams_kweval;
+    sel->u.expr.method->nparams      = asize(smparams_kweval_group);
+    sel->u.expr.method->param        = smparams_kweval_group;
     _gmx_selelem_init_method_params(sel, scanner);
     sel->u.expr.mdata = data;
 
@@ -760,4 +797,90 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t                     *method,
         return gmx::SelectionTreeElementPointer();
     }
     return sel;
+}
+
+/*! \brief
+ * Initializes a selection element for evaluating a keyword in given positions.
+ *
+ * \param[in]   method  Keyword selection method to evaluate.
+ * \param[in]   params  Parameters to pass to initialization (the child positions).
+ * \param[in]   scanner Scanner data structure.
+ * \returns     Pointer to the created selection element (NULL on error).
+ *
+ * Implements _gmx_sel_init_keyword_evaluator() for \ref POS_VALUE input
+ * selections.
+ */
+static gmx::SelectionTreeElementPointer
+init_evaluator_pos(gmx_ana_selmethod_t                     *method,
+                   const gmx::SelectionParserParameterList &params,
+                   void                                    *scanner)
+{
+    if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
+        || method->outinit || method->pupdate == NULL)
+    {
+        std::string message = gmx::formatString(
+                    "Keyword '%s' cannot be evaluated in this context",
+                    method->name);
+        GMX_THROW(gmx::InvalidInputError(message));
+    }
+
+    gmx::SelectionTreeElementPointer sel(
+            new gmx::SelectionTreeElement(SEL_EXPRESSION));
+    _gmx_selelem_set_method(sel, method, scanner);
+
+    t_methoddata_kweval *data
+        = new t_methoddata_kweval(sel->u.expr.method, sel->u.expr.mdata);
+
+    snew(sel->u.expr.method, 1);
+    sel->u.expr.method->name         = data->kwmethod->name;
+    sel->u.expr.method->type         = data->kwmethod->type;
+    sel->u.expr.method->flags        = data->kwmethod->flags | SMETH_SINGLEVAL;
+    sel->u.expr.method->init_data    = NULL;
+    sel->u.expr.method->set_poscoll  = NULL;
+    sel->u.expr.method->init         = method->init ? &init_kweval : NULL;
+    sel->u.expr.method->outinit      = NULL;
+    sel->u.expr.method->free         = &free_data_kweval;
+    sel->u.expr.method->init_frame   = method->init_frame ? &init_frame_kweval : NULL;
+    sel->u.expr.method->update       = &evaluate_kweval_pos;
+    sel->u.expr.method->pupdate      = NULL;
+    sel->u.expr.method->nparams      = asize(smparams_kweval_pos);
+    sel->u.expr.method->param        = smparams_kweval_pos;
+    _gmx_selelem_init_method_params(sel, scanner);
+    sel->u.expr.mdata = data;
+
+    sel->u.expr.method->param[0].val.u.p = &data->p;
+
+    if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
+                               sel->u.expr.method->param, sel, scanner))
+    {
+        return gmx::SelectionTreeElementPointer();
+    }
+    return sel;
+}
+
+gmx::SelectionTreeElementPointer
+_gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t                    *method,
+                                const gmx::SelectionTreeElementPointer &child,
+                                void                                   *scanner)
+{
+    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[1024];
+    sprintf(buf, "In evaluation of '%s'", method->name);
+    gmx::MessageStringContext            context(errors, buf);
+
+    gmx::SelectionParserParameterList    params;
+    params.push_back(
+            gmx::SelectionParserParameter::createFromExpression(NULL, child));
+    if (child->v.type == GROUP_VALUE)
+    {
+        return init_evaluator_group(method, params, scanner);
+    }
+    else if (child->v.type == POS_VALUE)
+    {
+        return init_evaluator_pos(method, params, scanner);
+    }
+    else
+    {
+        GMX_THROW(gmx::InvalidInputError("Invalid expression for keyword evaluation group"));
+    }
 }

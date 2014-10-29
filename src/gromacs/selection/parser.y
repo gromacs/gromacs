@@ -501,6 +501,14 @@ num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
                  CHECK_SEL($$);
                  END_ACTION;
              }
+           | pos_mod KEYWORD_NUMERIC OF pos_expr
+             {
+                 BEGIN_ACTION;
+                 scoped_guard_sfree posmodGuard($1);
+                 set($$, _gmx_sel_init_keyword_of($2, get($4), $1, scanner));
+                 CHECK_SEL($$);
+                 END_ACTION;
+             }
            | pos_mod METHOD_NUMERIC method_params
              {
                  BEGIN_ACTION;

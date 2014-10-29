@@ -129,8 +129,10 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
         /* Keyword */
         switch (method->type)
         {
-            case INT_VALUE:   return KEYWORD_NUMERIC;
-            case REAL_VALUE:  return KEYWORD_NUMERIC;
+            case INT_VALUE:
+            case REAL_VALUE:
+                state->bMatchOf = true;
+                return KEYWORD_NUMERIC;
             case STR_VALUE:   return KEYWORD_STR;
             case GROUP_VALUE: return KEYWORD_GROUP;
             default:
