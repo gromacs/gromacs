@@ -340,8 +340,8 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
                     sfree(attp);
                     attp = NULL;
                 }
-                sfree(aid);
             }
+            sfree(aid);
         }
         sfree(other_ndx);
     }
