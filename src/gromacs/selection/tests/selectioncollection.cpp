@@ -1137,6 +1137,16 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForMethods)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesKeywordOfPositions)
+{
+    static const char * const selections[] = {
+        "x < y of cog of resnr 2"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
 {
     static const char * const selections[] = {

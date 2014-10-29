@@ -748,6 +748,30 @@ _gmx_sel_init_keyword_strmatch(gmx_ana_selmethod_t *method,
 
 /*!
  * \param[in]  method Method to use for initialization.
+ * \param[in]  group  Selection in which the keyword should be evaluated.
+ * \param[in]  rpost  Reference position type to use (NULL = default).
+ * \param[in]  scanner Scanner data structure.
+ * \returns    The created selection element.
+ *
+ * This function handles the creation of a gmx::SelectionTreeElement object for
+ * expressions like "z of ...".
+ */
+SelectionTreeElementPointer
+_gmx_sel_init_keyword_of(gmx_ana_selmethod_t                    *method,
+                         const gmx::SelectionTreeElementPointer &group,
+                         const char *rpost, yyscan_t scanner)
+{
+    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[128];
+    sprintf(buf, "In '%s of'", method->name);
+    gmx::MessageStringContext    context(errors, buf);
+
+    GMX_UNUSED_VALUE(rpost);
+    return _gmx_sel_init_keyword_evaluator(method, group, scanner);
+}
+
+/*!
+ * \param[in]  method Method to use for initialization.
  * \param[in]  params Pointer to the first parameter.
  * \param[in]  rpost  Reference position type to use (NULL = default).
  * \param[in]  scanner Scanner data structure.

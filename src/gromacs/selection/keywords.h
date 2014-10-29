@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,10 +83,23 @@ _gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t                    **me
                               const gmx::SelectionParserParameterListPointer &params,
                               void                                           *scanner);
 
-/** Initializes a selection element for evaluating a keyword in a given group. */
+/*! \brief
+ * Initializes a selection element for evaluating a keyword in a given group.
+ *
+ * \param[in]   method  Keyword selection method to evaluate.
+ * \param[in]   child   The group/positions to evaluate \p method in.
+ * \param[in]   scanner Scanner data structure.
+ * \returns     Pointer to the created selection element (NULL on error).
+ *
+ * Creates a \ref SEL_EXPRESSION selection element that evaluates the keyword
+ * method given by \p method in the group/positions given by \p child.
+ *
+ * \p child should be a selection tree that evaluates to \ref GROUP_VALUE or
+ * \ref POS_VALUE.
+ */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t              *method,
-                                const gmx::SelectionParserParameterList &params,
+                                const gmx::SelectionTreeElementPointer  &child,
                                 void                                    *scanner);
 
 #endif
