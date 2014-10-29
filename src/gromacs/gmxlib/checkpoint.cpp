@@ -2046,13 +2046,13 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
     if (ret)
     {
         cp_error();
     }
 
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
     if (ret)
     {
         cp_error();
