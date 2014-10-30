@@ -926,13 +926,18 @@ void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
     enerd->term[F_DVDL_BONDED]     = 0.0;
     enerd->term[F_DVDL_RESTRAINT]  = 0.0;
     enerd->term[F_DKDL]            = 0.0;
-    if (enerd->n_lambda > 0)
+
+    if (fr->efep != efepNO)
     {
-        for (i = 0; i < enerd->n_lambda; i++)
+        if (enerd->n_lambda > 0)
         {
-            enerd->enerpart_lambda[i] = 0.0;
+            for (i = 0; i < enerd->n_lambda; i++)
+            {
+                enerd->enerpart_lambda[i] = 0.0;
+            }
         }
+
+        /* reset foreign energy data - separate function since we also call it elsewhere */
+        reset_foreign_enerdata(enerd);
     }
-    /* reset foreign energy data - separate function since we also call it elsewhere */
-    reset_foreign_enerdata(enerd);
 }
