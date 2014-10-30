@@ -113,6 +113,25 @@ static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
 static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
 
 
+/* Pair search box lower and upper corner in x,y,z.
+ * Store this in 4 iso 3 reals, which is useful with 4-wide SIMD.
+ * To avoid complicating the code we also use 4 without 4-wide SIMD.
+ */
+#define NNBSBB_C         4
+/* Pair search box lower and upper bound in z only. */
+#define NNBSBB_D         2
+/* Pair search box lower and upper corner x,y,z indices, entry 3 is unused */
+#define BB_X  0
+#define BB_Y  1
+#define BB_Z  2
+
+/* Bounding box for a nbnxn atom cluster */
+typedef struct {
+    float lower[NNBSBB_C];
+    float upper[NNBSBB_C];
+} nbnxn_bb_t;
+
+
 #ifdef __cplusplus
 }
 #endif
