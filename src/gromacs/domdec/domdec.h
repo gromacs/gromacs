@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,7 +135,7 @@ gmx_domdec_t *
 init_domain_decomposition(FILE *fplog,
                           t_commrec *cr,
                           unsigned long Flags,
-                          ivec nc,
+                          ivec nc, int nPmeRanks,
                           real comm_distance_min, real rconstr,
                           const char *dlb_opt, real dlb_scale,
                           const char *sizex, const char *sizey, const char *sizez,
@@ -366,6 +366,7 @@ real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox);
 real dd_choose_grid(FILE *fplog,
                     t_commrec *cr, gmx_domdec_t *dd, t_inputrec *ir,
                     gmx_mtop_t *mtop, matrix box, gmx_ddbox_t *ddbox,
+                    int nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds);
