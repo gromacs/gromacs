@@ -49,6 +49,8 @@
 
 #include <cmath>
 
+#include <algorithm>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
@@ -608,7 +610,13 @@ static real optimize_ncells(FILE *fplog,
     real     limit;
     ivec     itry;
 
-    limit  = cellsize_limit;
+    limit      = cellsize_limit;
+
+    if (ir->cutoff_scheme == ecutsVERLET)
+    {
+        /* The Verlet scheme does not support multiple comm. pulses */
+        limit  = std::max(limit, ir->rlist);
+    }
 
     dd->nc[XX] = 1;
     dd->nc[YY] = 1;
@@ -641,7 +649,7 @@ static real optimize_ncells(FILE *fplog,
     /* Add a margin for DLB and/or pressure scaling */
     if (bDynLoadBal)
     {
-        if (dlb_scale >= 1.0)
+        if (dlb_scale > 1.0)
         {
             gmx_fatal(FARGS, "The value for option -dds should be smaller than 1");
         }
