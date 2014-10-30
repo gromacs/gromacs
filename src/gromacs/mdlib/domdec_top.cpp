@@ -58,6 +58,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "domdec_internal.h"
+
 /* for dd_init_local_state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
 
@@ -1058,7 +1060,9 @@ static void make_la2lc(gmx_domdec_t *dd)
     }
 }
 
-static real dd_dist2(t_pbc *pbc_null, rvec *cg_cm, const int *la2lc, int i, int j)
+/* TODO: When we remove the group cut-off scheme, this function should go */
+static real gmx_inline
+dd_dist2_cg(t_pbc *pbc_null, rvec *cg_cm, const int *la2lc, int i, int j)
 {
     rvec dx;
 
@@ -1069,6 +1073,23 @@ static real dd_dist2(t_pbc *pbc_null, rvec *cg_cm, const int *la2lc, int i, int 
     else
     {
         rvec_sub(cg_cm[la2lc[i]], cg_cm[la2lc[j]], dx);
+    }
+
+    return norm2(dx);
+}
+
+static real gmx_inline
+dd_dist2(const t_pbc *pbc_null, const rvec *x, int i, int j)
+{
+    rvec dx;
+
+    if (pbc_null)
+    {
+        pbc_dx_aiuc(pbc_null, x[i], x[j], dx);
+    }
+    else
+    {
+        rvec_sub(x[i], x[j], dx);
     }
 
     return norm2(dx);
@@ -1342,8 +1363,12 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                             tiatoms[2] = a_loc;
                             /* If necessary check the cgcm distance */
                             if (bRCheck2B &&
-                                dd_dist2(pbc_null, cg_cm, la2lc,
-                                         tiatoms[1], tiatoms[2]) >= rc2)
+                                ((!dd->comm->bCGs &&
+                                  dd_dist2(pbc_null, cg_cm,
+                                           tiatoms[1], tiatoms[2]) >= rc2) ||
+                                 (dd->comm->bCGs &&
+                                  dd_dist2_cg(pbc_null, cg_cm, la2lc,
+                                              tiatoms[1], tiatoms[2]) >= rc2)))
                             {
                                 bUse = FALSE;
                             }
@@ -1401,8 +1426,12 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              */
                             if (rcheck[d] &&
                                 k_plus[d] &&
-                                dd_dist2(pbc_null, cg_cm, la2lc,
-                                         tiatoms[k_zero[d]], tiatoms[k_plus[d]]) >= rc2)
+                                ((!dd->comm->bCGs &&
+                                  dd_dist2(pbc_null, cg_cm,
+                                           tiatoms[k_zero[d]], tiatoms[k_plus[d]]) >= rc2) ||
+                                 (dd->comm->bCGs &&
+                                  dd_dist2_cg(pbc_null, cg_cm, la2lc,
+                                              tiatoms[k_zero[d]], tiatoms[k_plus[d]]) >= rc2)))
                             {
                                 bUse = FALSE;
                             }
@@ -1430,13 +1459,13 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
     return nbonded_local;
 }
 
-static void set_no_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
+static void set_no_exclusions_zone(gmx_domdec_zones_t *zones,
                                    int iz, t_blocka *lexcls)
 {
     int  a0, a1, a;
 
-    a0 = dd->cgindex[zones->cg_range[iz]];
-    a1 = dd->cgindex[zones->cg_range[iz+1]];
+    a0 = zones->at_range[iz];
+    a1 = zones->at_range[iz+1];
 
     for (a = a0+1; a < a1+1; a++)
     {
@@ -1444,14 +1473,17 @@ static void set_no_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     }
 }
 
-static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
-                                const gmx_moltype_t *moltype,
-                                gmx_bool bRCheck, real rc2,
-                                int *la2lc, t_pbc *pbc_null, rvec *cg_cm,
-                                const int *cginfo,
-                                t_blocka *lexcls,
-                                int iz,
-                                int cg_start, int cg_end)
+/* TODO: When we remove the group cut-off scheme, this function should go;
+ * it is replaced by the nearly indentical make_exclusions_zone below.
+ */
+static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
+                                   const gmx_moltype_t *moltype,
+                                   gmx_bool bRCheck, real rc2,
+                                   int *la2lc, t_pbc *pbc_null, rvec *cg_cm,
+                                   const int *cginfo,
+                                   t_blocka *lexcls,
+                                   int iz,
+                                   int cg_start, int cg_end)
 {
     int             n, count, jla0, jla1, jla;
     int             cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
@@ -1536,7 +1568,7 @@ static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                             }
                             else if (jla >= jla0 && jla < jla1 &&
                                      (!bRCheck ||
-                                      dd_dist2(pbc_null, cg_cm, la2lc, la, jla) < rc2))
+                                      dd_dist2_cg(pbc_null, cg_cm, la2lc, la, jla) < rc2))
                             {
                                 /* jla > la, since jla0 > la */
                                 lexcls->a[n++] = jla;
@@ -1582,6 +1614,120 @@ static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     return count;
 }
 
+static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
+                                const gmx_moltype_t *moltype,
+                                gmx_bool bRCheck, real rc2,
+                                t_pbc *pbc_null, const rvec *x,
+                                const int *cginfo,
+                                t_blocka *lexcls,
+                                int iz,
+                                int at_start, int at_end)
+{
+    int             n, count, jla0, jla1, jla;
+    int             la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
+    const t_blocka *excls;
+    gmx_ga2la_t     ga2la;
+    int             cell;
+
+    ga2la = dd->ga2la;
+
+    jla0 = zones->izone[iz].jat0;
+    jla1 = zones->izone[iz].jat1;
+
+    /* We set the end index, but note that we might not start at zero here */
+    lexcls->nr = at_end;
+
+    n     = lexcls->nra;
+    count = 0;
+    for (la = at_start; la < at_end; la++)
+    {
+        /* Here we assume the number of exclusions of one atom
+         * is never larger than 1000.
+         */
+        if (n+1000 > lexcls->nalloc_a)
+        {
+            lexcls->nalloc_a = over_alloc_large(n+1000);
+            srenew(lexcls->a, lexcls->nalloc_a);
+        }
+        if (GET_CGINFO_EXCL_INTER(cginfo[la]))
+        {
+            lexcls->index[la] = n;
+            a_gl              = dd->gatindex[la];
+            global_atomnr_to_moltype_ind(dd->reverse_top, a_gl, &mb, &mt, &mol, &a_mol);
+            excls = &moltype[mt].excls;
+            for (j = excls->index[a_mol]; j < excls->index[a_mol+1]; j++)
+            {
+                aj_mol = excls->a[j];
+                if (aj_mol == a_mol)
+                {
+                    /* This is a self exclusion. We can skip
+                     *  the global indexing and distance checking.
+                     */
+                    /* Self exclusions are only required
+                     * for the home zone.
+                     */
+                    if (iz == 0)
+                    {
+                        lexcls->a[n++] = la;
+                        /* We don't count the self exclusions */
+                    }
+                }
+                else
+                {
+                    /* This is a non-self exclusion */
+                    /* Since exclusions are pair interactions,
+                     * just like non-bonded interactions,
+                     * they can be assigned properly up
+                     * to the DD cutoff (not cutoff_min as
+                     * for the other bonded interactions).
+                     */
+                    if (ga2la_get(ga2la, a_gl+aj_mol-a_mol, &jla, &cell))
+                    {
+                        if (iz == 0 && cell == 0)
+                        {
+                            lexcls->a[n++] = jla;
+                            /* Check to avoid double counts */
+                            if (jla > la)
+                            {
+                                count++;
+                            }
+                        }
+                        else if (jla >= jla0 && jla < jla1 &&
+                                 (!bRCheck ||
+                                  dd_dist2(pbc_null, x, la, jla) < rc2))
+                        {
+                            /* jla > la, since jla0 > la */
+                            lexcls->a[n++] = jla;
+                            count++;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* There is only a self exclusion for this atom.
+             * These exclusions are only required for zone 0,
+             * since other zones do not see themselves.
+             */
+            if (iz == 0)
+            {
+                lexcls->index[la] = n;
+                lexcls->a[n++]    = la;
+            }
+            else
+            {
+                lexcls->index[la] = n;
+            }
+        }
+    }
+
+    lexcls->index[lexcls->nr] = n;
+    lexcls->nra               = n;
+
+    return count;
+}
+
 static void check_alloc_index(t_blocka *ba, int nindex_max)
 {
     if (nindex_max+1 > ba->nalloc_index)
@@ -1597,7 +1743,7 @@ static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     int nr;
     int thread;
 
-    nr = dd->cgindex[zones->izone[zones->nizone-1].cg1];
+    nr = zones->izone[zones->nizone-1].at1;
 
     check_alloc_index(lexcls, nr);
 
@@ -1612,14 +1758,14 @@ static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 {
     int la0, la;
 
-    lexcls->nr = dd->cgindex[zones->izone[zones->nizone-1].cg1];
+    lexcls->nr = zones->izone[zones->nizone-1].at1;
 
     if (dd->n_intercg_excl == 0)
     {
         /* There are no exclusions involving non-home charge groups,
          * but we need to set the indices for neighborsearching.
          */
-        la0 = dd->cgindex[zones->izone[0].cg1];
+        la0 = zones->izone[0].at1;
         for (la = la0; la < lexcls->nr; la++)
         {
             lexcls->index[la] = lexcls->nra;
@@ -1628,7 +1774,7 @@ static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
         /* nr is only used to loop over the exclusions for Ewald and RF,
          * so we can set it to the number of home atoms for efficiency.
          */
-        lexcls->nr = dd->cgindex[zones->izone[0].cg1];
+        lexcls->nr = zones->izone[0].at1;
     }
 }
 
@@ -1705,6 +1851,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 #pragma omp parallel for num_threads(rt->nthread) schedule(static)
         for (thread = 0; thread < rt->nthread; thread++)
         {
+            int       at0t, at1t;
             int       cg0t, cg1t;
             t_idef   *idef_t;
             int     **vsite_pbc;
@@ -1713,6 +1860,17 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 
             cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
             cg1t = cg0 + ((cg1 - cg0)*(thread+1))/rt->nthread;
+
+            if (!dd->comm->bCGs)
+            {
+                at0t = cg0t;
+                at1t = cg1t;
+            }
+            else
+            {
+                at0t = dd->cgindex[cg0t];
+                at1t = dd->cgindex[cg1t];
+            }
 
             if (thread == 0)
             {
@@ -1751,7 +1909,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                   idef_t,
                                   vsite_pbc, vsite_pbc_nalloc,
                                   iz, zones->n,
-                                  dd->cgindex[cg0t], dd->cgindex[cg1t]);
+                                  at0t, at1t);
 
             if (iz < nzone_excl)
             {
@@ -1766,13 +1924,26 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                     excl_t->nra = 0;
                 }
 
-                rt->excl_count_thread[thread] =
-                    make_exclusions_zone(dd, zones,
-                                         mtop->moltype, bRCheck2B, rc2,
-                                         la2lc, pbc_null, cg_cm, cginfo,
-                                         excl_t,
-                                         iz,
-                                         cg0t, cg1t);
+                if (!dd->comm->bCGs)
+                {
+                    rt->excl_count_thread[thread] =
+                        make_exclusions_zone(dd, zones,
+                                             mtop->moltype, bRCheck2B, rc2,
+                                             pbc_null, cg_cm, cginfo,
+                                             excl_t,
+                                             iz,
+                                             cg0t, cg1t);
+                }
+                else
+                {
+                    rt->excl_count_thread[thread] =
+                        make_exclusions_zone_cg(dd, zones,
+                                                mtop->moltype, bRCheck2B, rc2,
+                                                la2lc, pbc_null, cg_cm, cginfo,
+                                                excl_t,
+                                                iz,
+                                                cg0t, cg1t);
+                }
             }
         }
 
@@ -1806,7 +1977,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
      */
     for (iz = nzone_excl; iz < zones->nizone; iz++)
     {
-        set_no_exclusions_zone(dd, zones, iz, lexcls);
+        set_no_exclusions_zone(zones, iz, lexcls);
     }
 
     finish_local_exclusions(dd, zones, lexcls);
@@ -1859,36 +2030,61 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
         }
 
         /* Should we check cg_cm distances when assigning bonded interactions? */
-        for (d = 0; d < DIM; d++)
+        if (fr->cutoff_scheme == ecutsVERLET)
         {
-            rcheck[d] = FALSE;
-            /* Only need to check for dimensions where the part of the box
-             * that is not communicated is smaller than the cut-off.
-             */
-            if (d < npbcdim && dd->nc[d] > 1 &&
-                (dd->nc[d] - npulse[d])*cellsize_min[d] < 2*rc)
+            for (d = 0; d < DIM; d++)
             {
-                if (dd->nc[d] == 2)
+                rcheck[d] = dd->comm->rCheckBonded[d];
+                if (rcheck[d] == 1)
                 {
-                    rcheck[d] = TRUE;
+                    bRCheck2B = TRUE;
                     bRCheckMB = TRUE;
                 }
-                /* Check for interactions between two atoms,
-                 * where we can allow interactions up to the cut-off,
-                 * instead of up to the smallest cell dimension.
-                 */
-                bRCheck2B = TRUE;
+                if (debug)
+                {
+                    fprintf(debug, "dim %d bonded rcheck[%d] = %d\n",
+                            d, d, rcheck[d]);
+                }
             }
-            if (debug)
+        }
+        else
+        {
+            for (d = 0; d < DIM; d++)
             {
-                fprintf(debug,
-                        "dim %d cellmin %f bonded rcheck[%d] = %d, bRCheck2B = %d\n",
-                        d, cellsize_min[d], d, rcheck[d], bRCheck2B);
+                rcheck[d] = FALSE;
+                /* Only need to check for dimensions where the part of the box
+                 * that is not communicated is smaller than the bonded cut-off.
+                 * So of the smallest possible (combination of) cell(s) we
+                 * communicate rc and the rest should not be smaller than rc.
+                 */
+                if (d < npbcdim && dd->nc[d] > 1 &&
+                    (dd->nc[d] - npulse[d])*cellsize_min[d] < 2*rc)
+                {
+                    if (dd->nc[d] == 2)
+                    {
+                        rcheck[d] = TRUE;
+                        bRCheckMB = TRUE;
+                    }
+                    /* Check for interactions between two atoms,
+                     * where we can allow interactions up to the cut-off,
+                     * instead of up to the smallest cell dimension.
+                     */
+                    bRCheck2B = TRUE;
+                }
+                if (debug)
+                {
+                    fprintf(debug,
+                            "dim %d cellmin %f bonded rcheck[%d] = %d, bRCheck2B = %d\n",
+                            d, cellsize_min[d], d, rcheck[d], bRCheck2B);
+                }
             }
         }
         if (bRCheckMB || bRCheck2B)
         {
-            make_la2lc(dd);
+            if (dd->comm->bCGs)
+            {
+                make_la2lc(dd);
+            }
             if (fr->bMolPBC)
             {
                 set_pbc_dd(&pbc, fr->ePBC, dd, TRUE, box);
