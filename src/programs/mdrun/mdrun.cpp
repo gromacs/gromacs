@@ -295,7 +295,7 @@ int gmx_mdrun(int argc, char *argv[])
     { NULL, "auto", "on", "off", NULL };
     const char       *nbpu_opt[] =
     { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
-    real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
+    real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.9, pforce = -1;
     char             *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
     real              cpt_period            = 15.0, max_hours = -1;
     gmx_bool          bTryToAppendFiles     = TRUE;
