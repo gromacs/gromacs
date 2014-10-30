@@ -278,7 +278,7 @@ int gmx_mdrun(int argc, char *argv[])
     { NULL, "auto", "on", "off", NULL };
     const char     *nbpu_opt[] =
     { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
-    real            rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
+    real            rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.9, pforce = -1;
     char           *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
     real            cpt_period            = 15.0, max_hours = -1;
     gmx_bool        bAppendFiles          = TRUE;
@@ -440,12 +440,7 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
 
-    /* we set these early because they might be used in init_multisystem()
-       Note that there is the potential for npme>nnodes until the number of
-       threads is set later on, if there's thread parallelization. That shouldn't
-       lead to problems. */
     dd_node_order = nenum(ddno_opt);
-    cr->npmenodes = npme;
 
     hw_opt.thread_affinity = nenum(thread_aff_opt);
 
@@ -579,7 +574,7 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
-                  nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
+                  nstglobalcomm, ddxyz, dd_node_order, npme, rdd, rconstr,
                   dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
                   nbpu_opt[0], nstlist,
                   nsteps, nstepout, resetstep,

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,10 +51,11 @@ typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
-    ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU_NB,
-    ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
+    ewcDDCOMMBOUND, ewcVSITECONSTR,
+    ewcPP_PMESENDX, ewcNS, ewcINITCOMMX, ewcLAUNCH_GPU_NB,
+    ewcMOVEX, ewcGB, ewcFORCE, ewcINITCOMMF, ewcMOVEF, ewcPMEMESH,
     ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcLJPME, ewcPME_SOLVE,
-    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcWAIT_GPU_NB_L_EST, ewcNB_XF_BUF_OPS,
+    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
     ewcVSITESPREAD, ewcPULLPOT,
     ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcSWAP, ewcIMD,
     ewcTEST, ewcNR
