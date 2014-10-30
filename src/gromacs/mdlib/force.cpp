@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -926,13 +926,18 @@ void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
     enerd->term[F_DVDL_BONDED]     = 0.0;
     enerd->term[F_DVDL_RESTRAINT]  = 0.0;
     enerd->term[F_DKDL]            = 0.0;
-    if (enerd->n_lambda > 0)
+
+    if (fr->efep != efepNO)
     {
-        for (i = 0; i < enerd->n_lambda; i++)
+        if (enerd->n_lambda > 0)
         {
-            enerd->enerpart_lambda[i] = 0.0;
+            for (i = 0; i < enerd->n_lambda; i++)
+            {
+                enerd->enerpart_lambda[i] = 0.0;
+            }
         }
+
+        /* reset foreign energy data - separate function since we also call it elsewhere */
+        reset_foreign_enerdata(enerd);
     }
-    /* reset foreign energy data - separate function since we also call it elsewhere */
-    reset_foreign_enerdata(enerd);
 }
