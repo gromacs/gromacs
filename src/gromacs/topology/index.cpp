@@ -167,7 +167,8 @@ static gmx_bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
 }
 
 static void
-p_status(const char **restype, int nres, const char **typenames, int ntypes)
+p_status(const char *const *restype, int nres,
+         const char *const *typenames, int ntypes)
 {
     int   i, j;
     int * counter;
@@ -238,7 +239,7 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
     restp_t *restp = NULL;
     char   **attp  = NULL;
     char    *rname, *aname;
-    atom_id *other_ndx, *aid, *aaid;
+    atom_id *aid, *aaid;
     int      i, j, k, l, resind, naid, naaid, natp, nrestp = 0;
 
     for (i = 0; (i < atoms->nres); i++)
@@ -255,7 +256,6 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
         {
             printf("Analysing residues not classified as Protein/DNA/RNA/Water and splitting into groups...\n");
         }
-        snew(other_ndx, atoms->nr);
         for (k = 0; (k < atoms->nr); k++)
         {
             resind = atoms->atom[k].resind;
@@ -278,7 +278,6 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
                     restp[nrestp].bNeg  = FALSE;
                     restp[nrestp].gname = gmx_strdup(rname);
                     nrestp++;
-
                 }
             }
         }
@@ -342,8 +341,10 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
                 }
             }
             sfree(aid);
+            sfree(restp[i].rname);
+            sfree(restp[i].gname);
         }
-        sfree(other_ndx);
+        sfree(restp);
     }
 }
 
@@ -581,7 +582,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
     int               nra;
     int               i, k;
     int               ntypes;
-    const char     ** p_typename;
+    char           ** p_typename;
     int               iwater, iion;
     int               nwater, nion;
     int               found;
@@ -675,6 +676,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
             sfree(aid);
             analyse_other(restype, atoms, gb, gn, bASK, bVerb);
         }
+        sfree(p_typename[k]);
     }
 
     sfree(p_typename);
