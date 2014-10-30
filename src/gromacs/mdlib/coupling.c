@@ -396,7 +396,13 @@ void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[
                 fprintf(debug, "REL TSTAT: reltv[%d] b4 scale = %f %f %f\n", i, reltv[i][XX], reltv[i][YY], reltv[i][ZZ]);
             }
             /* scale by mass, i.e. multiply by inverse mass */
-            svmul((1.0/grpmass[i]), reltv[i], reltv[i]);
+            /* TODO: in DD, if the system is heterogeneous, some cells will not have
+             * atoms from all of the tc-grps, so it is possible that grpmass[i] == 0
+             * in some cells, so we have to guard against that */
+            if (grpmass[i] != 0)
+            {
+                svmul((1.0/grpmass[i]), reltv[i], reltv[i]);
+            }
             if (debug)
             {
                 fprintf(debug, "REL TSTAT: reltv[%d] after scale = %f %f %f\n", i, reltv[i][XX], reltv[i][YY], reltv[i][ZZ]);
@@ -405,7 +411,11 @@ void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[
             /* total absolute velocity */
             for (m = 0; m < DIM; m++)
             {
-                absv[m] += reltv[i][m] * grpmass[i];
+                /* Same as above, guard against nonsensical stuff */
+                if (grpmass[i] != 0)
+                {
+                    absv[m] += reltv[i][m] * grpmass[i];
+                }
             }
         }
 
@@ -415,7 +425,7 @@ void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[
             fprintf(debug, "REL TSTAT: b4 scale, absv = %f %f %f\n", absv[XX], absv[YY], absv[ZZ]);
         }
 
-        /* scale by total system mass */
+        /* scale by total mass (mass of system or mass within DD cell */
         svmul((1.0/mtot), absv, absv);
 
         if (debug)
@@ -519,6 +529,14 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
             {
                 grpmass[i] += md->massT[j];
             }
+        }
+    }
+
+    if (debug)
+    {
+        for (i=0; i<opts->ngtc; i++)
+        {
+            printf(debug, "NOSE KE: grpmass[%d] = %.3f\n", i, grpmass[i]);
         }
     }
 
@@ -765,6 +783,14 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
             {
                 grpmass[i] += md->massT[j];
             }
+        }
+    }
+
+    if (debug)
+    {
+        for (i=0; i<opts->ngtc; i++)
+        {
+            printf(debug, "DRUDE TFP: grpmass[%d] = %.3f\n", i, grpmass[i]);
         }
     }
 
