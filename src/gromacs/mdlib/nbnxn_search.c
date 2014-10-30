@@ -59,6 +59,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 
@@ -2590,7 +2591,7 @@ static real nonlocal_vol2(const gmx_domdec_zones_t *zones, rvec ls, real r)
                 {
                     cl += 0.5*ls[d];
                     ca *= ls[d];
-                    za *= zones->size[z].x1[d] - zones->size[z].x0[d];
+                    za *= r;
                 }
             }
 
@@ -3081,7 +3082,14 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
      * zone boundaries with 3D domain decomposition. At the same time
      * the blocks will not become too small.
      */
-    ci_block = (gridi->nc*ci_block_enum)/(ci_block_denom*gridi->ncx*nth);
+    if (gridi->ncx > 0)
+    {
+        ci_block = (gridi->nc*ci_block_enum)/(ci_block_denom*gridi->ncx*nth);
+    }
+    else
+    {
+        ci_block = 1;
+    }
 
     /* Ensure the blocks are not too small: avoids cache invalidation */
     if (ci_block*gridi->na_sc < ci_block_min_atoms)

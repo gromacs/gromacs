@@ -58,7 +58,10 @@ typedef struct gmx_domdec_master *gmx_domdec_master_p_t;
 typedef struct {
     int  j0;     /* j-zone start               */
     int  j1;     /* j-zone end                 */
+    int  at1;    /* i-atom end                 */
     int  cg1;    /* i-charge-group end         */
+    int  jat0;   /* j-atom start               */
+    int  jat1;   /* j-atom end                 */
     int  jcg0;   /* j-charge-group start       */
     int  jcg1;   /* j-charge-group end         */
     ivec shift0; /* Minimum shifts to consider */
@@ -77,6 +80,8 @@ struct gmx_domdec_zones_t {
     int                    n;
     /* The shift of the zones with respect to the home zone */
     ivec                   shift[DD_MAXZONE];
+    /* The atom boundaries for the zones */
+    int                    at_range[DD_MAXZONE+1];
     /* The charge group boundaries for the zones */
     int                    cg_range[DD_MAXZONE+1];
     /* The number of neighbor search zones with i-particles */
@@ -85,8 +90,6 @@ struct gmx_domdec_zones_t {
     gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
     /* Boundaries of the zones */
     gmx_domdec_zone_size_t size[DD_MAXZONE];
-    /* The cg density of the home zone */
-    real                   dens_zone0;
 };
 
 typedef struct gmx_ga2la *gmx_ga2la_t;
