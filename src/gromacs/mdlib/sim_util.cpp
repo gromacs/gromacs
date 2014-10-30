@@ -1405,18 +1405,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* Communicate the forces */
         wallcycle_start(wcycle, ewcMOVEF);
         dd_move_f(cr->dd, f, fr->fshift);
-        /* Do we need to communicate the separate force array
-         * for terms that do not contribute to the single sum virial?
-         * Position restraints and electric fields do not introduce
-         * inter-cg forces, only full electrostatics methods do.
-         * When we do not calculate the virial, fr->f_novirsum = f,
-         * so we have already communicated these forces.
-         */
-        if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
-            (flags & GMX_FORCE_VIRIAL))
-        {
-            dd_move_f(cr->dd, fr->f_novirsum, NULL);
-        }
         if (bSepLRF)
         {
             /* We should not update the shift forces here,
@@ -1521,7 +1509,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
-         * we sum fr->f_novirum=f later.
+         * we sum fr->f_novirsum=f later.
          */
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
@@ -1996,7 +1984,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
-         * we sum fr->f_novirum=f later.
+         * we sum fr->f_novirsum=f later.
          */
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {

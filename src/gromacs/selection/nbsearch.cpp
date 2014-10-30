@@ -628,7 +628,6 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
     testIndex_ = testIndex;
     if (testIndex_ >= 0 && testIndex_ < static_cast<int>(testPositions_.size()))
     {
-        copy_rvec(testPositions_[testIndex_], xtest_);
         if (search_.bGrid_)
         {
             search_.mapPointToGridCell(testPositions_[testIndex], testcell_, xtest_);
