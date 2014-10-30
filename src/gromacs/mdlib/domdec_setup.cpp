@@ -39,6 +39,7 @@
 #include <stdio.h>
 
 #include <cmath>
+#include <algorithm>
 
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/names.h"
@@ -576,7 +577,13 @@ static real optimize_ncells(FILE *fplog,
     real     limit;
     ivec     itry;
 
-    limit  = cellsize_limit;
+    limit      = cellsize_limit;
+
+    if (ir->cutoff_scheme == ecutsVERLET)
+    {
+        /* The Verlet scheme does not support multiple comm. pulses */
+        limit  = std::max(limit, ir->rlistlong);
+    }
 
     dd->nc[XX] = 1;
     dd->nc[YY] = 1;
@@ -679,6 +686,7 @@ static real optimize_ncells(FILE *fplog,
 real dd_choose_grid(FILE *fplog,
                     t_commrec *cr, gmx_domdec_t *dd, t_inputrec *ir,
                     gmx_mtop_t *mtop, matrix box, gmx_ddbox_t *ddbox,
+                    int nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds)
@@ -691,24 +699,24 @@ real dd_choose_grid(FILE *fplog,
         nnodes_div = cr->nnodes;
         if (EEL_PME(ir->coulombtype))
         {
-            if (cr->npmenodes > 0)
+            if (nPmeRanks > 0)
             {
                 if (cr->nnodes <= 2)
                 {
                     gmx_fatal(FARGS,
                               "Cannot have separate PME ranks with 2 or fewer ranks");
                 }
-                if (cr->npmenodes >= cr->nnodes)
+                if (nPmeRanks >= cr->nnodes)
                 {
                     gmx_fatal(FARGS,
                               "Cannot have %d separate PME ranks with just %d total ranks",
-                              cr->npmenodes, cr->nnodes);
+                              nPmeRanks, cr->nnodes);
                 }
 
                 /* If the user purposely selected the number of PME nodes,
                  * only check for large primes in the PP node count.
                  */
-                nnodes_div -= cr->npmenodes;
+                nnodes_div -= nPmeRanks;
             }
         }
         else
@@ -729,7 +737,7 @@ real dd_choose_grid(FILE *fplog,
 
         if (EEL_PME(ir->coulombtype))
         {
-            if (cr->npmenodes < 0)
+            if (nPmeRanks < 0)
             {
                 /* Use PME nodes when the number of nodes is more than 16 */
                 if (cr->nnodes <= 18)
@@ -751,6 +759,8 @@ real dd_choose_grid(FILE *fplog,
             }
             else
             {
+                /* We check above that nPmeRanks is a valid number */
+                cr->npmenodes = nPmeRanks;
                 if (fplog)
                 {
                     fprintf(fplog, "Using %d separate PME ranks, per user request\n", cr->npmenodes);
