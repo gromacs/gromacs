@@ -51,6 +51,11 @@
 
 /*! \cond INTERNAL */
 
+/* \brief Struct for storing charge group indices for halo communication
+ *        along one dimension
+ *
+ * TODO: remove when the group scheme is removed
+ */
 typedef struct
 {
     /* The numbers of charge groups to send and receive for each cell
@@ -67,6 +72,11 @@ typedef struct
     int  cell2at1[DD_MAXIZONE];
 } gmx_domdec_ind_t;
 
+/* \brief Struct for storing charge group indices for halo communication
+ *        along all DD dimensions
+ *
+ * TODO: remove when the group scheme is removed
+ */
 typedef struct
 {
     int               np;       /* Number of grid pulses in this dimension */
@@ -171,6 +181,10 @@ typedef struct
     int      maxshift;  /**< The maximum shift for coordinate redistribution in PME */
 } gmx_ddpme_t;
 
+/*! \brief Struct for halo cell and zone sizes, only used with the group scheme
+ *
+ * TODO: remove when the group scheme is removed
+ */
 typedef struct
 {
     real min0;    /* The minimum bottom of this zone                        */
@@ -181,6 +195,49 @@ typedef struct
     real p1_0;    /* The bottom value of the first cell in this zone        */
     real p1_1;    /* The top value of the first cell in this zone           */
 } gmx_ddzone_t;
+
+/*! \brief The zone to zone atoms and pair-search grid communication setup
+ *
+ * In this struct we put all non-pointer elements at the start,
+ * so we can communicate them with one MPI call.
+ */
+typedef struct {
+    int      rank;              /**< The rank we communicate with */
+    gmx_bool bPBC;              /**< Do we communicate over PBC? */
+    gmx_bool bScrew;            /**< Do we need screw PBC? */
+    int      shift_ind;         /**< Shift vector index for PBC */
+    int      ncx;               /**< Grid size along x */
+    int      ncy;               /**< Grid size along y */
+    int      natoms;            /**< The number of atoms to communicate */
+    ivec     rCheckBonded;      /**< The receiver should check bonded distances */
+    rvec     corner0;           /**< Lower grid corner */
+    rvec     corner1;           /**< Upper grid corner */
+    real     size_x;            /**< Grid cell sizes along x */
+    real     size_y;            /**< Grid cell sizes along y */
+    int     *cxy_natoms;        /**< The number of atoms per grid column */
+    int      ncolumn;           /**< The number of columns to send */
+    int     *column_atom_range; /**< The atom range per column, size: 2 * \p ncolumn */
+    int     *index_gl;          /**< Global atom indices */
+    int     *atominfo;          /**< Atom information flags */
+    rvec    *at_buf;            /**< Atom vector send+recv buffer */
+    int      cxy_nalloc;        /**< Allocation size of cxy_natoms, column_atom_range */
+    int      at_nalloc;         /**< Allocation size of index_gl, at_buf */
+} zone_comm_t;
+
+/*! \brief MPI zone communication struct, needed to group MPI requests */
+typedef struct {
+#ifdef GMX_MPI
+    /** We store the requests of all zones in one array to pass to MPI_Waitall */
+    MPI_Request req[DD_MAXZONE];
+#endif
+    int         nreq; /**< The number of outstanding requests */
+} zones_mpi_dir_t;
+
+/*! \brief MPI zone communication struct, needed to group MPI requests */
+typedef struct {
+    zones_mpi_dir_t recv; /**< MPI receive requests */
+    zones_mpi_dir_t send; /**< MPI send requests */
+} zones_mpi_t;
 
 typedef struct
 {
@@ -275,6 +332,12 @@ typedef struct gmx_domdec_comm
     /** The communication setup and charge group boundaries for the zones */
     gmx_domdec_zones_t zones;
 
+    /* The eighth shell x/f communication, backward & forward along the grid */
+    zone_comm_t  zone_bw[DD_MAXZONE]; /**< Setup for communicating x backward */
+    zone_comm_t  zone_fw[DD_MAXZONE]; /**< Setup for communicating f forward */
+    zones_mpi_t  zones_mpi_x;         /**< MPI data for x communication */
+    zones_mpi_t  zones_mpi_f;         /**< MPI data for f communication */
+
     /* The zone limits for DD dimensions 1 and 2 (not 0), determined from
      * cell boundaries of neighboring cells for staggered grids when using
      * dynamic load balancing.
@@ -286,6 +349,11 @@ typedef struct gmx_domdec_comm
     gmx_domdec_comm_dim_t cd[DIM];
     /** The maximum number of cells to communicate with in one dimension */
     int                   maxpulse;
+
+    /** Should we check distances when assigning bonded interactions?
+     *  This is checked by the ranks we communicate with and reduced.
+     */
+    ivec rCheckBonded;
 
     /** Which cg distribution is stored on the master node,
      *  stored as DD partitioning call count.
@@ -395,6 +463,23 @@ static const int zone_reorder_cartesian[DD_MAXZONE] = { 0, 1, 3, 2, 5, 4, 6, 7 }
 /* dd_zo and dd_zp3 is set up such that i zones with non-zero
  * components see only j zones with that component 0.
  */
+
+/*! /brief The DD zone order, zones given as x, y,z offset */
+static const ivec dd_zo[DD_MAXZONE] =
+{{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0, 1, 1}, {0, 0, 1}, {1, 0, 1}, {1, 1, 1}};
+
+/*! /brief The non-bonded zone-pair setup for domain decomposition
+ *
+ * The first number is the i-zone, the second number the first j-zone seen by
+ * this i-zone, the third number the last+1 j-zone seen by this i-zone.
+ * As is, this is for 3D decomposition, where there are 4 i-zones.
+ * With 2D decomposition use only the first 2 i-zones and a last+1 j-zone of 4.
+ * With 1D decomposition use only the first i-zone and a last+1 j-zone of 2.
+ */
+static const ivec dd_zp3[DD_MAXIZONE] = {{0, 0, 8},
+                                         {1, 3, 6},
+                                         {2, 5, 6},
+                                         {3, 5, 7}};
 
 /*! \brief Returns the DD cut-off distance for multi-body interactions */
 real dd_cutoff_multibody(const gmx_domdec_t *dd);
