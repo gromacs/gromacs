@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,8 +108,6 @@
 
 #include "nbnxn_gpu.h"
 
-static const bool useCuda   = GMX_GPU == GMX_GPU_CUDA;
-static const bool useOpenCL = GMX_GPU == GMX_GPU_OPENCL;
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -756,12 +754,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
     gmx_bool            bDiffKernels = FALSE;
-    rvec                vzero, box_diag;
     float               cycles_pme, cycles_force, cycles_wait_gpu;
-    /* TODO To avoid loss of precision, float can't be used for a
-     * cycle count. Build an object that can do this right and perhaps
-     * also be used by gmx_wallcycle_t */
-    gmx_cycles_t        cycleCountBeforeLocalWorkCompletes = 0;
     nonbonded_verlet_t *nbv;
 
     cycles_force    = 0;
@@ -884,20 +877,23 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             mk_mshift(fplog, graph, fr->ePBC, box, x);
         }
 
-        clear_rvec(vzero);
-        box_diag[XX] = box[XX][XX];
-        box_diag[YY] = box[YY][YY];
-        box_diag[ZZ] = box[ZZ][ZZ];
+        nbnxn_grid_corners_density_t corners_density;
+        clear_rvec(corners_density.corner0);
+        corners_density.corner1[XX]  = box[XX][XX];
+        corners_density.corner1[YY]  = box[YY][YY];
+        corners_density.corner1[ZZ]  = box[ZZ][ZZ];
+        corners_density.atom_density = -1;
 
         wallcycle_start(wcycle, ewcNS);
         if (!fr->bDomDec)
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_LOCAL);
             nbnxn_put_on_grid(nbv->nbs, fr->ePBC, box,
-                              0, vzero, box_diag,
-                              0, mdatoms->homenr, -1, fr->cginfo, x,
+                              0, &corners_density,
+                              0, mdatoms->homenr, fr->cginfo, x,
                               0, NULL,
                               nbv->grp[eintLocal].kernel_type,
+                              ic->rlist,
                               nbv->grp[eintLocal].nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_LOCAL);
         }
@@ -925,6 +921,22 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                nbv->nbs, mdatoms, fr->cginfo);
         }
         wallcycle_stop(wcycle, ewcNS);
+    }
+    else
+    {
+        /* No NS */
+        if (DOMAINDECOMP(cr))
+        {
+            /* Without NS we initiate the coordinate communication here.
+             * With NS we have already communicated x during DD repartitioning.
+             * For maximum overlap between calc. and comm. we could initiate
+             * the recv already the previous step, but that gets messy.
+             */
+            wallcycle_start(wcycle, ewcINITCOMMX);
+            dd_halo_initiate_recv_x(cr->dd, x);
+            dd_halo_initiate_send_x(cr->dd, box, x);
+            wallcycle_stop(wcycle, ewcINITCOMMX);
+        }
     }
 
     /* initialize the GPU atom data and copy shift vector */
@@ -1040,7 +1052,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         else
         {
             wallcycle_start(wcycle, ewcMOVEX);
-            dd_move_x(cr->dd, box, x);
+            dd_halo_complete_recv_x(cr->dd);
+            dd_halo_complete_send_x(cr->dd);
 
             /* When we don't need the total dipole we sum it in global_stat */
             if (bStateChanged && inputrecNeedMutot(inputrec))
@@ -1056,6 +1069,15 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
             cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
+
+        /* Initiate the force receive.
+         * We could initiate it already at the beginning of the step
+         * (or the previous step), but that will not improve the performance
+         * much and it will lead to more MPI calls in flight.
+         */
+        wallcycle_start(wcycle, ewcINITCOMMF);
+        dd_halo_initiate_recv_f(cr->dd);
+        wallcycle_stop(wcycle, ewcINITCOMMF);
 
         if (bUseGPU && !bDiffKernels)
         {
@@ -1317,77 +1339,29 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces && DOMAINDECOMP(cr))
     {
-        if (bUseGPU && useCuda)
-        {
-            /* We are done with the CPU compute, but the GPU local non-bonded
-             * kernel can still be running while we communicate the forces.
-             * We start a counter here, so we can, hopefully, time the rest
-             * of the GPU kernel execution and data transfer.
-             */
-            cycleCountBeforeLocalWorkCompletes = gmx_cycles_read();
-        }
-
-        /* Communicate the forces */
-        wallcycle_start(wcycle, ewcMOVEF);
-        dd_move_f(cr->dd, f, fr->fshift);
-        wallcycle_stop(wcycle, ewcMOVEF);
+        /* We now have all the non-local forces: initiate the force send */
+        wallcycle_start(wcycle, ewcINITCOMMF);
+        dd_halo_initiate_send_f(cr->dd, f);
+        wallcycle_stop(wcycle, ewcINITCOMMF);
     }
 
     if (bUseOrEmulGPU)
     {
         /* wait for local forces (or calculate in emulation mode) */
-        if (bUseGPU && useCuda)
-        {
-            float       cycles_tmp, cycles_wait_est;
-            const float cuda_api_overhead_margin = 50000.0f; /* cycles */
-
-            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   flags, eatLocal,
-                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                   fr->fshift);
-            cycles_tmp      = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-
-            if (bDoForces && DOMAINDECOMP(cr))
-            {
-                cycles_wait_est = gmx_cycles_read() - cycleCountBeforeLocalWorkCompletes;
-
-                if (cycles_tmp < cuda_api_overhead_margin)
-                {
-                    /* We measured few cycles, it could be that the kernel
-                     * and transfer finished earlier and there was no actual
-                     * wait time, only API call overhead.
-                     * Then the actual time could be anywhere between 0 and
-                     * cycles_wait_est. As a compromise, we use half the time.
-                     */
-                    cycles_wait_est *= 0.5f;
-                }
-            }
-            else
-            {
-                /* No force communication so we actually timed the wait */
-                cycles_wait_est = cycles_tmp;
-            }
-            /* Even though this is after dd_move_f, the actual task we are
-             * waiting for runs asynchronously with dd_move_f and we usually
-             * have nothing to balance it with, so we can and should add
-             * the time to the force time for load balancing.
-             */
-            cycles_force    += cycles_wait_est;
-            cycles_wait_gpu += cycles_wait_est;
-        }
-        else if (bUseGPU && useOpenCL)
-        {
-
-            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   flags, eatLocal,
-                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                   fr->fshift);
-            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-        }
         if (bUseGPU)
         {
+            float cycles_tmp;
+
+            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
+            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                                   flags, eatLocal,
+                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                   fr->fshift);
+
+            cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            cycles_force    += cycles_tmp;
+            cycles_wait_gpu += cycles_tmp;
+
             /* now clear the GPU outputs while we finish the step on the CPU */
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
@@ -1411,6 +1385,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (DOMAINDECOMP(cr))
     {
+        if (bDoForces)
+        {
+            /* We are done calculating all forces, complete the communication
+             * so we can use the forces for the integration.
+             */
+            wallcycle_start(wcycle, ewcMOVEF);
+            dd_halo_complete_recv_f(cr->dd, f, fr->fshift);
+            dd_halo_complete_send_f(cr->dd);
+            wallcycle_stop(wcycle, ewcMOVEF);
+        }
+
         dd_force_flop_stop(cr->dd, nrnb);
         if (wcycle)
         {
@@ -1426,7 +1411,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         if (inputrecElecField(inputrec))
         {
-            /* Compute forces due to electric field */
+            /* Compute forces due to electric field.
+             * TODO: This should be higher up for more calc/comm overlap,
+             */
             calc_f_el(MASTER(cr) ? field : NULL,
                       start, homenr, mdatoms->chargeA, fr->f_novirsum,
                       inputrec->ex, inputrec->et, t);

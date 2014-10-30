@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,8 @@
 #include <stdio.h>
 
 #include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -609,7 +611,13 @@ static real optimize_ncells(FILE *fplog,
     real     limit;
     ivec     itry;
 
-    limit  = cellsize_limit;
+    limit      = cellsize_limit;
+
+    if (ir->cutoff_scheme == ecutsVERLET)
+    {
+        /* The Verlet scheme does not support multiple comm. pulses */
+        limit  = std::max(limit, ir->rlist);
+    }
 
     dd->nc[XX] = 1;
     dd->nc[YY] = 1;
@@ -642,7 +650,7 @@ static real optimize_ncells(FILE *fplog,
     /* Add a margin for DLB and/or pressure scaling */
     if (bDynLoadBal)
     {
-        if (dlb_scale >= 1.0)
+        if (dlb_scale > 1.0)
         {
             gmx_fatal(FARGS, "The value for option -dds should be smaller than 1");
         }

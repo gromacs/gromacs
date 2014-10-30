@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,10 +52,6 @@
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/utility/gmxmpi.h"
-
-
-/*! \brief Returns the MPI rank of the domain decomposition master rank */
-#define DDMASTERRANK(dd)   (dd->masterrank)
 
 
 void dd_sendrecv_int(const struct gmx_domdec_t gmx_unused *dd,
@@ -239,7 +235,7 @@ void dd_bcast(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unuse
         {
 #endif
         MPI_Bcast(data, nbytes, MPI_BYTE,
-                  DDMASTERRANK(dd), dd->mpi_comm_all);
+                  dd->masterrank, dd->mpi_comm_all);
 #ifdef GMX_BLUEGENE
     }
 #endif
@@ -261,7 +257,7 @@ void dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
         {
 #endif
         MPI_Bcast(dest, nbytes, MPI_BYTE,
-                  DDMASTERRANK(dd), dd->mpi_comm_all);
+                  dd->masterrank, dd->mpi_comm_all);
 #ifdef GMX_BLUEGENE
     }
 #endif
@@ -276,7 +272,7 @@ void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unu
     {
         MPI_Scatter(src, nbytes, MPI_BYTE,
                     dest, nbytes, MPI_BYTE,
-                    DDMASTERRANK(dd), dd->mpi_comm_all);
+                    dd->masterrank, dd->mpi_comm_all);
     }
     else
 #endif
@@ -294,7 +290,7 @@ void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unus
 #ifdef GMX_MPI
     MPI_Gather(src, nbytes, MPI_BYTE,
                dest, nbytes, MPI_BYTE,
-               DDMASTERRANK(dd), dd->mpi_comm_all);
+               dd->masterrank, dd->mpi_comm_all);
 #endif
 }
 
@@ -314,7 +310,7 @@ void dd_scatterv(gmx_domdec_t gmx_unused *dd,
         }
         MPI_Scatterv(sbuf, scounts, disps, MPI_BYTE,
                      rbuf, rcount, MPI_BYTE,
-                     DDMASTERRANK(dd), dd->mpi_comm_all);
+                     dd->masterrank, dd->mpi_comm_all);
     }
     else
 #endif
@@ -341,6 +337,6 @@ void dd_gatherv(gmx_domdec_t gmx_unused *dd,
     }
     MPI_Gatherv(sbuf, scount, MPI_BYTE,
                 rbuf, rcounts, disps, MPI_BYTE,
-                DDMASTERRANK(dd), dd->mpi_comm_all);
+                dd->masterrank, dd->mpi_comm_all);
 #endif
 }

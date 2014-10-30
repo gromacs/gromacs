@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -282,7 +282,125 @@ void reset_dd_statistics_counters(struct gmx_domdec_t *dd);
 /*! \brief Print statistics for domain decomposition communication */
 void print_dd_statistics(struct t_commrec *cr, t_inputrec *ir, FILE *fplog);
 
-/* In domdec_con.c */
+
+/* Halo communication in domdec_halo.cpp */
+
+/*! \brief Initiate a non-blocking halo coordinate receive.
+ *
+ * Iniatiate the non-blocking receive of the halo coordinates \p x.
+ * Should be called as early as possible for fast communication.
+ *
+ * \param[in]  dd Pointer to the domain decomposition setup.
+ * \param[out] x  Pointer to the start of the coordinate array.
+ */
+void dd_halo_initiate_recv_x(gmx_domdec_t *dd, rvec *x);
+
+/*! \brief Initiate a non-blocking halo coordinate send.
+ *
+ * Initiate the non-blocking send of the halo coordinates \p x.
+ * Should be called as early as possible when \p x is ready.
+ *
+ * \param[in]  dd  Pointer to the domain decomposition setup.
+ * \param[in]  box Unit-cell matrix.
+ * \param[in]  x   Pointer to the start of the coordinate array.
+ */
+void dd_halo_initiate_send_x(gmx_domdec_t *dd, matrix box, rvec x[]);
+
+/*! \brief Ensures that the coordinates have been received.
+ *
+ * Needs to be called after dd_halo_initiate_recv_x.
+ * Call as late as possible.
+ *
+ * \param[in]  dd Pointer to the domain decomposition setup.
+ */
+void dd_halo_complete_recv_x(gmx_domdec_t *dd);
+
+/*! \brief Ensures that the coordinates have been received.
+ *
+ * Needs to be called after dd_halo_initiate_send_x.
+ * Call as late as possible.
+ *
+ * \param[in]  dd Pointer to the domain decomposition setup.
+ */
+void dd_halo_complete_send_x(gmx_domdec_t *dd);
+
+/*! \brief Send and receive the halo coordinates.
+ *
+ * Internally calls:
+ * \p dd_halo_initiate_recv_x
+ * \p dd_halo_initiate_send_x
+ * \p dd_halo_complete_recv_x
+ * \p dd_halo_complete_send_x
+ * Only call this for infrequent use. For frequent use calls the four
+ * functions separately and put computation between the initiate
+ * and complete calls to overlap calculation and communication.
+ *
+ * \param[in]     dd  Pointer to the domain decomposition setup.
+ * \param[in]     box Unit-cell matrix.
+ * \param[in,out] x   Pointer to the start of the coordinate array.
+ */
+void dd_halo_move_x(gmx_domdec_t *dd, matrix box, rvec *x);
+
+/*! \brief Initiate a non-blocking halo force receive.
+ *
+ * Iniatiate the non-blocking receive of the halo forces.
+ * Should be called as early as possible for fast communication.
+ *
+ * \param[in]  dd Pointer to the domain decomposition setup.
+ */
+void dd_halo_initiate_recv_f(gmx_domdec_t *dd);
+
+/*! \brief Initiate a non-blocking halo force send.
+ *
+ * Initiate the non-blocking send of the halo forces \p f
+ * Should be called as early as possible when \p f is ready.
+ *
+ * \param[in]  dd  Pointer to the domain decomposition setup.
+ * \param[in]  f   Pointer to the start of the force array.
+ */
+void dd_halo_initiate_send_f(gmx_domdec_t *dd, rvec *f);
+
+/*! \brief Ensures that the forces have been received and reduces the forces.
+ *
+ * If \p fshift!=NULL, also updates the shift forces \p fshift.
+ * Needs to be called after dd_halo_initiate_recv_f.
+ * Call as late as possible.
+ *
+ * \param[in]     dd     Pointer to the domain decomposition setup.
+ * \param[in,out] f      Pointer to the start of the force array.
+ * \param[in,out] fshift Pointer to the start of the shift force array.
+ */
+void dd_halo_complete_recv_f(gmx_domdec_t *dd, rvec *f, rvec *fshift);
+
+/*! \brief Completes the force send.
+ *
+ * Needs to be called after dd_halo_initiate_send_f.
+ * Call as late as possible.
+ *
+ * \param[in]  dd Pointer to the domain decomposition setup.
+ */
+void dd_halo_complete_send_f(gmx_domdec_t *dd);
+
+/*! \brief Communicates and reduces the halo forces.
+ *
+ * If \p fshift!=NULL, also updates the shift forces.
+ * Internally calls:
+ * \p dd_halo_initiate_recv_f
+ * \p dd_halo_initiate_send_f
+ * \p dd_halo_complete_recv_f
+ * \p dd_halo_complete_send_f
+ * Only call this for infrequent use. For frequent use calls the four
+ * functions separately and put computation between the initiate
+ * and complete calls to overlap calculation and communication.
+ *
+ * \param[in]     dd     Pointer to the domain decomposition setup.
+ * \param[in,out] f      Pointer to the start of the force array.
+ * \param[in,out] fshift Pointer to the start of the shift force array.
+ */
+void dd_halo_move_f(gmx_domdec_t *dd, rvec *f, rvec *fshift);
+
+
+/* Constraint functions in domdec_con.cpp */
 
 /*! \brief Communicates the virtual site forces, reduces the shift forces when \p fshift != NULL */
 void dd_move_f_vsites(struct gmx_domdec_t *dd, rvec *f, rvec *fshift);
