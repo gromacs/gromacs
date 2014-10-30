@@ -1115,6 +1115,27 @@ TEST_F(SelectionCollectionDataTest, HandlesEmptySelectionWithUnevaluatedExpressi
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForKeywords)
+{
+    static const char * const selections[] = {
+        "res_cog x > 2",
+        "name CB and res_cog y > 2.5"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForMethods)
+{
+    static const char * const selections[] = {
+        "res_cog distance from cog of resnr 1 < 2"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
 {
     static const char * const selections[] = {
