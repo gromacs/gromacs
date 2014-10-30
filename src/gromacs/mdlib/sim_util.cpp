@@ -83,6 +83,7 @@
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
+#include "gromacs/mdlib/domdec_halo.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -94,6 +95,8 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
+
+#include "gromacs/timing/cyclecounter.h"
 
 #include "adress.h"
 
@@ -805,7 +808,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     int                 start, homenr;
     double              mu[2*DIM];
     gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
-    gmx_bool            bDoLongRange, bDoForces, bSepLRF, bUseGPU, bUseOrEmulGPU;
+    gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
     gmx_bool            bDiffKernels = FALSE;
     rvec                vzero, box_diag;
     float               cycles_pme, cycles_force, cycles_wait_gpu;
@@ -837,11 +840,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll == FALSE);
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
-    bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DO_LR));
     bDoForces     = (flags & GMX_FORCE_FORCES);
-    bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
     bUseGPU       = fr->nbv->bUseGPU;
     bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbnxnk8x8x8_PlainC);
+
+    /* Twin-range forces are not implemented (yet) with the Verlet scheme.
+     * The communication is easy to implement, but the nbnxn setup is harder.
+     */
+    assert(!fr->bTwinRange);
 
     if (bStateChanged)
     {
@@ -975,6 +981,20 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         wallcycle_stop(wcycle, ewcNS);
     }
+    else
+    {
+        /* No NS */
+        if (DOMAINDECOMP(cr))
+        {
+            /* Without NS we initiate the coordinate communication here.
+             * With NS we have already communicated x during DD repartitioning.
+             */
+            wallcycle_start(wcycle, ewcINITCOMMX);
+            dd_halo_initiate_recv_x(cr->dd, x);
+            dd_halo_initiate_send_x(cr->dd, box, x);
+            wallcycle_stop(wcycle, ewcINITCOMMX);
+        }
+    }
 
     /* initialize the GPU atom data and copy shift vector */
     if (bUseGPU)
@@ -1089,7 +1109,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         else
         {
             wallcycle_start(wcycle, ewcMOVEX);
-            dd_move_x(cr->dd, box, x);
+            dd_halo_complete_recv_x(cr->dd);
+            dd_halo_complete_send_x(cr->dd);
 
             /* When we don't need the total dipole we sum it in global_stat */
             if (bStateChanged && NEED_MUTOT(*inputrec))
@@ -1105,6 +1126,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
             cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
+
+        /* Initiate the force receive */
+        wallcycle_start(wcycle, ewcINITCOMMF);
+        dd_halo_initiate_recv_f(cr->dd);
+        wallcycle_stop(wcycle, ewcINITCOMMF);
 
         if (bUseGPU && !bDiffKernels)
         {
@@ -1215,10 +1241,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         /* Clear the short- and long-range forces */
         clear_rvecs(fr->natoms_force_constr, f);
-        if (bSepLRF && do_per_step(step, inputrec->nstcalclr))
-        {
-            clear_rvecs(fr->natoms_force_constr, fr->f_twin);
-        }
 
         clear_rvec(fr->vir_diag_posres);
     }
@@ -1327,22 +1349,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
+                      x, hist, f, f, enerd, fcd, top, fr->born,
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
-
-    if (bSepLRF)
-    {
-        if (do_per_step(step, inputrec->nstcalclr))
-        {
-            /* Add the long range forces to the short range forces */
-            for (i = 0; i < fr->natoms_force_constr; i++)
-            {
-                rvec_add(fr->f_twin[i], f[i], f[i]);
-            }
-        }
-    }
 
     cycles_force += wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1392,39 +1402,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces && DOMAINDECOMP(cr))
     {
-        if (bUseGPU)
-        {
-            /* We are done with the CPU compute, but the GPU local non-bonded
-             * kernel can still be running while we communicate the forces.
-             * We start a counter here, so we can, hopefully, time the rest
-             * of the GPU kernel execution and data transfer.
-             */
-            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L_EST);
-        }
-
-        /* Communicate the forces */
-        wallcycle_start(wcycle, ewcMOVEF);
-        dd_move_f(cr->dd, f, fr->fshift);
-        /* Do we need to communicate the separate force array
-         * for terms that do not contribute to the single sum virial?
-         * Position restraints and electric fields do not introduce
-         * inter-cg forces, only full electrostatics methods do.
-         * When we do not calculate the virial, fr->f_novirsum = f,
-         * so we have already communicated these forces.
-         */
-        if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
-            (flags & GMX_FORCE_VIRIAL))
-        {
-            dd_move_f(cr->dd, fr->f_novirsum, NULL);
-        }
-        if (bSepLRF)
-        {
-            /* We should not update the shift forces here,
-             * since f_twin is already included in f.
-             */
-            dd_move_f(cr->dd, fr->f_twin, NULL);
-        }
-        wallcycle_stop(wcycle, ewcMOVEF);
+        /* We now have all the non-local forces: initiate the force send */
+        wallcycle_start(wcycle, ewcINITCOMMF);
+        dd_halo_initiate_send_f(cr->dd, f);
+        wallcycle_stop(wcycle, ewcINITCOMMF);
     }
 
     if (bUseOrEmulGPU)
@@ -1432,8 +1413,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
-            float       cycles_tmp, cycles_wait_est;
-            const float cuda_api_overhead_margin = 50000.0f; /* cycles */
+            float cycles_tmp;
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_cuda_wait_gpu(nbv->cu_nbv,
@@ -1441,38 +1421,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 flags, eatLocal,
                                 enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                 fr->fshift);
-            cycles_tmp      = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-
-            if (bDoForces && DOMAINDECOMP(cr))
-            {
-                cycles_wait_est = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L_EST);
-
-                if (cycles_tmp < cuda_api_overhead_margin)
-                {
-                    /* We measured few cycles, it could be that the kernel
-                     * and transfer finished earlier and there was no actual
-                     * wait time, only API call overhead.
-                     * Then the actual time could be anywhere between 0 and
-                     * cycles_wait_est. As a compromise, we use half the time.
-                     */
-                    cycles_wait_est *= 0.5f;
-                }
-            }
-            else
-            {
-                /* No force communication so we actually timed the wait */
-                cycles_wait_est = cycles_tmp;
-            }
-            /* Even though this is after dd_move_f, the actual task we are
-             * waiting for runs asynchronously with dd_move_f and we usually
-             * have nothing to balance it with, so we can and should add
-             * the time to the force time for load balancing.
-             */
-            cycles_force    += cycles_wait_est;
-            cycles_wait_gpu += cycles_wait_est;
+            cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            cycles_force    += cycles_tmp;
+            cycles_wait_gpu += cycles_tmp;
 
             /* now clear the GPU outputs while we finish the step on the CPU */
-
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             nbnxn_cuda_clear_outputs(nbv->cu_nbv, flags);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
@@ -1499,6 +1452,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (DOMAINDECOMP(cr))
     {
+        if (bDoForces)
+        {
+            wallcycle_start(wcycle, ewcMOVEF);
+            dd_halo_complete_recv_f(cr->dd, f, fr->fshift);
+            dd_halo_complete_send_f(cr->dd);
+            wallcycle_stop(wcycle, ewcMOVEF);
+        }
+
         dd_force_flop_stop(cr->dd, nrnb);
         if (wcycle)
         {
@@ -1529,15 +1490,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
-
-            if (bSepLRF)
-            {
-                wallcycle_start(wcycle, ewcVSITESPREAD);
-                spread_vsite_f(vsite, x, fr->f_twin, NULL, FALSE, NULL,
-                               nrnb,
-                               &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
-                wallcycle_stop(wcycle, ewcVSITESPREAD);
-            }
         }
 
         if (flags & GMX_FORCE_VIRIAL)
@@ -1996,7 +1948,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
-         * we sum fr->f_novirum=f later.
+         * we sum fr->f_novirsum=f later.
          */
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
