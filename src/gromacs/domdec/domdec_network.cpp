@@ -54,10 +54,6 @@
 #include "gromacs/utility/gmxmpi.h"
 
 
-/*! \brief Returns the MPI rank of the domain decomposition master rank */
-#define DDMASTERRANK(dd)   (dd->masterrank)
-
-
 void dd_sendrecv_int(const gmx_domdec_t gmx_unused *dd,
                      int gmx_unused ddimind, int gmx_unused direction,
                      int gmx_unused *buf_s, int gmx_unused n_s,
@@ -237,7 +233,7 @@ void dd_bcast(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unuse
     {
 #endif
     MPI_Bcast(data, nbytes, MPI_BYTE,
-              DDMASTERRANK(dd), dd->mpi_comm_all);
+              dd->masterrank, dd->mpi_comm_all);
 #ifdef GMX_BLUEGENE
 }
 #endif
@@ -256,7 +252,7 @@ void dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
     {
 #endif
     MPI_Bcast(dest, nbytes, MPI_BYTE,
-              DDMASTERRANK(dd), dd->mpi_comm_all);
+              dd->masterrank, dd->mpi_comm_all);
 #ifdef GMX_BLUEGENE
 }
 #endif
@@ -268,7 +264,7 @@ void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unu
 #ifdef GMX_MPI
     MPI_Scatter(src, nbytes, MPI_BYTE,
                 dest, nbytes, MPI_BYTE,
-                DDMASTERRANK(dd), dd->mpi_comm_all);
+                dd->masterrank, dd->mpi_comm_all);
 #endif
 }
 
@@ -277,7 +273,7 @@ void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unus
 #ifdef GMX_MPI
     MPI_Gather(src, nbytes, MPI_BYTE,
                dest, nbytes, MPI_BYTE,
-               DDMASTERRANK(dd), dd->mpi_comm_all);
+               dd->masterrank, dd->mpi_comm_all);
 #endif
 }
 
@@ -295,7 +291,7 @@ void dd_scatterv(gmx_domdec_t gmx_unused *dd,
     }
     MPI_Scatterv(sbuf, scounts, disps, MPI_BYTE,
                  rbuf, rcount, MPI_BYTE,
-                 DDMASTERRANK(dd), dd->mpi_comm_all);
+                 dd->masterrank, dd->mpi_comm_all);
 #endif
 }
 
@@ -313,6 +309,6 @@ void dd_gatherv(gmx_domdec_t gmx_unused *dd,
     }
     MPI_Gatherv(sbuf, scount, MPI_BYTE,
                 rbuf, rcounts, disps, MPI_BYTE,
-                DDMASTERRANK(dd), dd->mpi_comm_all);
+                dd->masterrank, dd->mpi_comm_all);
 #endif
 }
