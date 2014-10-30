@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,25 +73,6 @@ extern "C" {
 /* No alignment required, but set it so we can call the same routines */
 #define NBNXN_SEARCH_BB_MEM_ALIGN  32
 #endif
-
-
-/* Pair search box lower and upper corner in x,y,z.
- * Store this in 4 iso 3 reals, which is useful with 4-wide SIMD.
- * To avoid complicating the code we also use 4 without 4-wide SIMD.
- */
-#define NNBSBB_C         4
-/* Pair search box lower and upper bound in z only. */
-#define NNBSBB_D         2
-/* Pair search box lower and upper corner x,y,z indices, entry 3 is unused */
-#define BB_X  0
-#define BB_Y  1
-#define BB_Z  2
-
-/* Bounding box for a nbnxn atom cluster */
-typedef struct {
-    float lower[NNBSBB_C];
-    float upper[NNBSBB_C];
-} nbnxn_bb_t;
 
 
 /* A pair-search grid struct for one domain decomposition zone */
