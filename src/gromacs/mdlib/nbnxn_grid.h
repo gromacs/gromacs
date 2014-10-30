@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,25 @@
 
 struct gmx_domdec_zones_t;
 
+/* Struct for passing around the nbnxn grid corners and atom density */
+struct nbnxn_grid_corners_density_t {
+    rvec corner0;
+    rvec corner1;
+    real atom_density;
+};
+
+/* Struct for passing around all grid dimensions */
+struct nbnxn_grid_dims_t {
+    int  ncolumn_x;    /**< Grid size along x */
+    int  ncolumn_y;    /**< Grid size along y */
+    rvec corner0;      /**< Lower grid corner */
+    rvec corner1;      /**< Upper grid corner */
+    real size_x;       /**< Grid cell sizes along x */
+    real size_y;       /**< Grid cell sizes along y */
+    int  natoms;       /**< The number of atoms to communicate */
+    ivec work;         /**< Storage space used to communicate extra data during the DD halo communication setup */
+};
+
 /* Allocate and initialize ngrid pair search grids in nbs */
 void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
 
@@ -58,13 +77,13 @@ void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
 void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        int ePBC, matrix box,
                        int dd_zone,
-                       rvec corner0, rvec corner1,
+                       const nbnxn_grid_corners_density_t *corners_density,
                        int a0, int a1,
-                       real atom_density,
                        const int *atinfo,
                        rvec *x,
                        int nmoved, int *move,
                        int nb_kernel_type,
+                       real pairlist_cutoff,
                        nbnxn_atomdata_t *nbat);
 
 /* As nbnxn_put_on_grid, but for the non-local atoms
@@ -82,8 +101,37 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
 void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
                            nbnxn_atomdata_t *nbat);
 
-/* Return the number of x and y cells in the local grid */
-void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
+/* Return the dimensions of the local grid in dims */
+void nbnxn_get_local_grid_dimensions(nbnxn_search_t     nbs,
+                                     nbnxn_grid_dims_t *dims);
+
+/* Struct for returning all information about a single grid column */
+struct nbnxn_grid_column_t {
+    nbnxn_bb_t        column_bb;   /* Bounding box of the column */
+    int               bb_start;    /* Index of the first bounding box / cluster */
+    int               nbb;         /* Number of bounding boxes in bb */
+    const nbnxn_bb_t *bb;          /* Bounding boxes in this column are bb[0] - bb[nbb-1], is NULL with GPU grids */
+    const float      *bb_z;        /* Bounding boxes z-coordinates in this column are bbz[0] - bbz[nbb], is NULL with CPU grids */
+    int               atom_start;  /* First nbnxn atom index in this column */
+    int               bb_natoms;   /* Number of atoms per bounding box */
+    int               natoms;      /* Number of real atoms (not fillers) in this column */
+};
+
+/* Return the dimensions and contents of grid column with index cx, cy
+ * of the local pair search grid.
+ */
+void nbnxn_get_local_grid_column(nbnxn_search_t nbs, int cx, int cy,
+                                 nbnxn_grid_column_t *col);
+
+/* Set the grid dimensions and atom count for each column for domaon 'zone'
+ * in nbs.
+ * Note that this does not set the atom indices (not required for non-local)
+ * and the bounding boxes (need to be calculated later).
+ */
+void nbnxn_set_domain_grid(nbnxn_search_t           nbs,
+                           int                      zone,
+                           const nbnxn_grid_dims_t *dims,
+                           const int               *column_natoms);
 
 /* Return the order indices *a of the atoms on the ns grid, size n */
 void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n);

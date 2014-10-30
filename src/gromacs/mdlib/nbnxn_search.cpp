@@ -2533,7 +2533,8 @@ real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
-static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, rvec ls, real r)
+static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones,
+                          const rvec grid_size, const rvec cluster_size, real r)
 {
     real cl, ca, za;
     real vold_est;
@@ -2559,9 +2560,9 @@ static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, rvec ls, real 
             {
                 if (zones->shift[z][d] == 0)
                 {
-                    cl += 0.5*ls[d];
-                    ca *= ls[d];
-                    za *= zones->size[z].x1[d] - zones->size[z].x0[d];
+                    cl += 0.5*cluster_size[d];
+                    ca *= cluster_size[d];
+                    za *= grid_size[d];
                 }
             }
 
@@ -2592,7 +2593,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
      */
     const int           nsubpair_target_min = 36;
     const nbnxn_grid_t *grid;
-    rvec                ls;
+    rvec                cl_size;
     real                xy_diag2, r_eff_sup, vol_est, nsp_est, nsp_est_nl;
 
     grid = &nbs->grid[0];
@@ -2606,12 +2607,12 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         return;
     }
 
-    ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*GPU_NSUBCELL_X);
-    ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*GPU_NSUBCELL_Y);
-    ls[ZZ] = grid->na_c/(grid->atom_density*ls[XX]*ls[YY]);
+    cl_size[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*GPU_NSUBCELL_X);
+    cl_size[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*GPU_NSUBCELL_Y);
+    cl_size[ZZ] = grid->na_c/(grid->atom_density*cl_size[XX]*cl_size[YY]);
 
     /* The average squared length of the diagonal of a sub cell */
-    xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
+    xy_diag2 = norm2(cl_size);
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
     r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid->na_c - 1.0)/grid->na_c)*std::sqrt(xy_diag2/3);
@@ -2624,17 +2625,17 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     {
         nsp_est_nl =
             gmx::square(grid->atom_density/grid->na_c)*
-            nonlocal_vol2(nbs->zones, ls, r_eff_sup);
+            nonlocal_vol2(nbs->zones, grid->size, cl_size, r_eff_sup);
     }
 
     if (LOCAL_I(iloc))
     {
         /* Sub-cell interacts with itself */
-        vol_est  = ls[XX]*ls[YY]*ls[ZZ];
+        vol_est  = cl_size[XX]*cl_size[YY]*cl_size[ZZ];
         /* 6/2 rectangular volume on the faces */
-        vol_est += (ls[XX]*ls[YY] + ls[XX]*ls[ZZ] + ls[YY]*ls[ZZ])*r_eff_sup;
+        vol_est += (cl_size[XX]*cl_size[YY] + cl_size[XX]*cl_size[ZZ] + cl_size[YY]*cl_size[ZZ])*r_eff_sup;
         /* 12/2 quarter pie slices on the edges */
-        vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*gmx::square(r_eff_sup);
+        vol_est += 2*(cl_size[XX] + cl_size[YY] + cl_size[ZZ])*0.25*M_PI*gmx::square(r_eff_sup);
         /* 4 octants of a sphere */
         vol_est += 0.5*4.0/3.0*M_PI*gmx::power3(r_eff_sup);
 
@@ -3053,7 +3054,14 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
      * zone boundaries with 3D domain decomposition. At the same time
      * the blocks will not become too small.
      */
-    ci_block = (gridi->nc*ci_block_enum)/(ci_block_denom*gridi->ncx*nth);
+    if (gridi->ncx > 0)
+    {
+        ci_block = (gridi->nc*ci_block_enum)/(ci_block_denom*gridi->ncx*nth);
+    }
+    else
+    {
+        ci_block = 1;
+    }
 
     /* Ensure the blocks are not too small: avoids cache invalidation */
     if (ci_block*gridi->na_sc < ci_block_min_atoms)
