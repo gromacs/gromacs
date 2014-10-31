@@ -964,7 +964,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (!fr->bDomDec)
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_LOCAL);
-            nbnxn_put_on_grid(nbv->nbs, fr->ePBC, box,
+            nbnxn_put_on_grid(nbv->nbs, fr->ePBC,
                               0, vzero, box_diag,
                               0, mdatoms->homenr, -1, fr->cginfo, x,
                               0, NULL,

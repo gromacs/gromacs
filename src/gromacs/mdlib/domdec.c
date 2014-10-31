@@ -9627,7 +9627,7 @@ void dd_partition_system(FILE                *fplog,
             case ecutsVERLET:
                 set_zones_size(dd, state_local->box, &ddbox, 0, 1);
 
-                nbnxn_put_on_grid(fr->nbv->nbs, fr->ePBC, state_local->box,
+                nbnxn_put_on_grid(fr->nbv->nbs, fr->ePBC,
                                   0,
                                   comm->zones.size[0].bb_x0,
                                   comm->zones.size[0].bb_x1,
