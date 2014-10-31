@@ -275,14 +275,10 @@ evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc 
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
-    out->nr = pos->m.mapb.nra;
-    for (int b = 0; b < pos->count(); ++b)
+    out->nr = pos->count();
+    for (int i = 0; i < pos->count(); ++i)
     {
-        real dist = d->nbsearch.minimumDistance(pos->x[b]);
-        for (int i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
-        {
-            out->u.r[i] = dist;
-        }
+        out->u.r[i] = d->nbsearch.minimumDistance(pos->x[i]);
     }
 }
 

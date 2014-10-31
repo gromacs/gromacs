@@ -56,6 +56,8 @@
 
 #include <string.h>
 
+#include <algorithm>
+
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
@@ -249,6 +251,42 @@ class SelelemTemporaryValueAssigner
         void                           *old_ptr_;
         int                             old_nalloc_;
 };
+
+/*! \brief
+ * Expands a value array from one-per-position to one-per-atom.
+ *
+ * \param[in,out] value  Array to expand.
+ * \param[in,out] nr     Number of values in \p value.
+ * \param[in]     pos    Position data.
+ * \tparam        T      Value type of the array to expand.
+ *
+ * On input, \p value contains one value for each position in \p pos (and `*nr`
+ * must match).  On output, \p value will contain a value for each atom used to
+ * evaluate `pos`: each input value is replicated to all atoms that make up the
+ * corresponding position.
+ * The operation is done in-place.
+ *
+ * Does not throw.
+ */
+template <typename T>
+void expandValueForPositions(T value[], int *nr, gmx_ana_pos_t *pos)
+{
+    GMX_RELEASE_ASSERT(*nr == pos->count(),
+                       "Position update method did not return the correct number of values");
+    *nr = pos->m.mapb.nra;
+    // Loop over the positions in reverse order so that the expansion can be
+    // done in-place (assumes that each position has at least one atom, which
+    // should always be the case).
+    int outputIndex = pos->m.mapb.nra;
+    for (int i = pos->count() - 1; i >= 0; --i)
+    {
+        const int atomCount = pos->m.mapb.index[i + 1] - pos->m.mapb.index[i];
+        outputIndex -= atomCount;
+        GMX_ASSERT(outputIndex >= i,
+                   "In-place algorithm would overwrite data not yet used");
+        std::fill(&value[outputIndex], &value[outputIndex + atomCount], value[i]);
+    }
+}
 
 } // namespace
 
@@ -937,6 +975,18 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t                     *data,
         sel->u.expr.method->pupdate(data->top, data->fr, data->pbc,
                                     sel->u.expr.pos, &sel->v,
                                     sel->u.expr.mdata);
+        if ((sel->flags & SEL_ATOMVAL) && sel->v.nr < g->isize)
+        {
+            switch (sel->v.type)
+            {
+                case REAL_VALUE:
+                    expandValueForPositions(sel->v.u.r, &sel->v.nr,
+                                            sel->u.expr.pos);
+                    break;
+                default:
+                    GMX_RELEASE_ASSERT(false, "Unimplemented value type for position update method");
+            }
+        }
     }
     else
     {

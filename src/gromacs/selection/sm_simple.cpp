@@ -844,8 +844,7 @@ evaluate_betafactor(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Internal utility function for position keyword evaluation.
  *
  * \param[out] out  Output array.
- * \param[in]  pos  Position data to use instead of atomic coordinates
- *   (can be NULL).
+ * \param[in]  pos  Position data to use instead of atomic coordinates.
  * \param[in]  d    Coordinate index to evaluate (\p XX, \p YY or \p ZZ).
  *
  * This function is used internally by evaluate_x(), evaluate_y() and
@@ -854,13 +853,9 @@ evaluate_betafactor(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
 static void
 evaluate_coord(real out[], gmx_ana_pos_t *pos, int d)
 {
-    for (int b = 0; b < pos->count(); ++b)
+    for (int i = 0; i < pos->count(); ++i)
     {
-        const real v = pos->x[b][d];
-        for (int i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
-        {
-            out[i] = v;
-        }
+        out[i] = pos->x[i][d];
     }
     // TODO: Make this more efficient by directly extracting the coordinates
     // from the frame coordinates for atomic positions instead of going through
@@ -871,13 +866,13 @@ evaluate_coord(real out[], gmx_ana_pos_t *pos, int d)
  * See sel_updatefunc_pos() for description of the parameters.
  * \p data is not used.
  *
- * Returns the \p x coordinate for each atom in \p out->u.r.
+ * Returns the \p x coordinate for each position in \p out->u.r.
  */
 static void
 evaluate_x(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->m.mapb.nra;
+    out->nr = pos->count();
     evaluate_coord(out->u.r, pos, XX);
 }
 
@@ -885,13 +880,13 @@ evaluate_x(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
  * See sel_updatefunc() for description of the parameters.
  * \p data is not used.
  *
- * Returns the \p y coordinate for each atom in \p out->u.r.
+ * Returns the \p y coordinate for each position in \p out->u.r.
  */
 static void
 evaluate_y(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->m.mapb.nra;
+    out->nr = pos->count();
     evaluate_coord(out->u.r, pos, YY);
 }
 
@@ -899,12 +894,12 @@ evaluate_y(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
  * See sel_updatefunc() for description of the parameters.
  * \p data is not used.
  *
- * Returns the \p z coordinate for each atom in \p out->u.r.
+ * Returns the \p z coordinate for each position in \p out->u.r.
  */
 static void
 evaluate_z(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->m.mapb.nra;
+    out->nr = pos->count();
     evaluate_coord(out->u.r, pos, ZZ);
 }
