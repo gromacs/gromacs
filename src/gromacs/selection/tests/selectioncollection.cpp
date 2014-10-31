@@ -1129,7 +1129,8 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForKeywords)
 TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForMethods)
 {
     static const char * const selections[] = {
-        "res_cog distance from cog of resnr 1 < 2"
+        "res_cog distance from cog of resnr 1 < 2",
+        "res_cog within 2 of cog of resnr 1"
     };
     setFlags(TestFlags() | efTestEvaluation);
     runTest("simple.gro", selections);
