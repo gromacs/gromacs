@@ -72,7 +72,7 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
  * Without domain decomposition move will be NULL.
  */
 void nbnxn_put_on_grid(nbnxn_search_t nbs,
-                       int ePBC, matrix box,
+                       int ePBC,
                        int dd_zone,
                        rvec corner0, rvec corner1,
                        int a0, int a1,

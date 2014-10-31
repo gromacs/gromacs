@@ -1007,7 +1007,6 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
 
 /* Prints the average bb size, used for debug output */
 static void print_bbsizes_simple(FILE                *fp,
-                                 const nbnxn_search_t nbs,
                                  const nbnxn_grid_t  *grid)
 {
     int  c, d;
@@ -1023,19 +1022,18 @@ static void print_bbsizes_simple(FILE                *fp,
     }
     dsvmul(1.0/grid->nc, ba, ba);
 
-    fprintf(fp, "ns bb: %4.2f %4.2f %4.2f  %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
-            nbs->box[XX][XX]/grid->ncx,
-            nbs->box[YY][YY]/grid->ncy,
-            nbs->box[ZZ][ZZ]*grid->ncx*grid->ncy/grid->nc,
+    fprintf(fp, "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
+            grid->sx,
+            grid->sy,
+            grid->na_c/(grid->atom_density*grid->sx*grid->sy),
             ba[XX], ba[YY], ba[ZZ],
-            ba[XX]*grid->ncx/nbs->box[XX][XX],
-            ba[YY]*grid->ncy/nbs->box[YY][YY],
-            ba[ZZ]*grid->nc/(grid->ncx*grid->ncy*nbs->box[ZZ][ZZ]));
+            ba[XX]/grid->sx,
+            ba[YY]/grid->sy,
+            ba[ZZ]/(grid->na_c/(grid->atom_density*grid->sx*grid->sy)));
 }
 
 /* Prints the average bb size, used for debug output */
 static void print_bbsizes_supersub(FILE                *fp,
-                                   const nbnxn_search_t nbs,
                                    const nbnxn_grid_t  *grid)
 {
     int  ns, c, s;
@@ -1077,14 +1075,14 @@ static void print_bbsizes_supersub(FILE                *fp,
     }
     dsvmul(1.0/ns, ba, ba);
 
-    fprintf(fp, "ns bb: %4.2f %4.2f %4.2f  %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
-            nbs->box[XX][XX]/(grid->ncx*GPU_NSUBCELL_X),
-            nbs->box[YY][YY]/(grid->ncy*GPU_NSUBCELL_Y),
-            nbs->box[ZZ][ZZ]*grid->ncx*grid->ncy/(grid->nc*GPU_NSUBCELL_Z),
+    fprintf(fp, "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
+            grid->sx/GPU_NSUBCELL_X,
+            grid->sy/GPU_NSUBCELL_Y,
+            grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z),
             ba[XX], ba[YY], ba[ZZ],
-            ba[XX]*grid->ncx*GPU_NSUBCELL_X/nbs->box[XX][XX],
-            ba[YY]*grid->ncy*GPU_NSUBCELL_Y/nbs->box[YY][YY],
-            ba[ZZ]*grid->nc*GPU_NSUBCELL_Z/(grid->ncx*grid->ncy*nbs->box[ZZ][ZZ]));
+            ba[XX]*GPU_NSUBCELL_X/grid->sx,
+            ba[YY]*GPU_NSUBCELL_Y/grid->sy,
+            ba[ZZ]/(grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z)));
 }
 
 /* Potentially sorts atoms on LJ coefficients !=0 and ==0.
@@ -1332,7 +1330,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
         sort_atoms(ZZ, FALSE, dd_zone,
                    nbs->a+ash, na, x,
                    grid->c0[ZZ],
-                   1.0/nbs->box[ZZ][ZZ], ncz*grid->na_sc,
+                   1.0/grid->size[ZZ], ncz*grid->na_sc,
                    sort_work);
 
         /* Fill the ncz cells in this column */
@@ -1418,7 +1416,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
         sort_atoms(ZZ, FALSE, dd_zone,
                    nbs->a+ash, na, x,
                    grid->c0[ZZ],
-                   1.0/nbs->box[ZZ][ZZ], ncz*grid->na_sc,
+                   1.0/grid->size[ZZ], ncz*grid->na_sc,
                    sort_work);
 
         /* This loop goes over the supercells and subcells along z at once */
@@ -1742,14 +1740,14 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     {
         if (grid->bSimple)
         {
-            print_bbsizes_simple(debug, nbs, grid);
+            print_bbsizes_simple(debug, grid);
         }
         else
         {
             fprintf(debug, "ns non-zero sub-cells: %d average atoms %.2f\n",
                     grid->nsubc_tot, (a1-a0)/(double)grid->nsubc_tot);
 
-            print_bbsizes_supersub(debug, nbs, grid);
+            print_bbsizes_supersub(debug, grid);
         }
     }
 }
@@ -1776,7 +1774,7 @@ static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
  * Note that without domain decomposition there is only one domain.
  */
 void nbnxn_put_on_grid(nbnxn_search_t nbs,
-                       int ePBC, matrix box,
+                       int ePBC,
                        int dd_zone,
                        rvec corner0, rvec corner1,
                        int a0, int a1,
@@ -1820,7 +1818,6 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
     if (dd_zone == 0)
     {
         nbs->ePBC = ePBC;
-        copy_mat(box, nbs->box);
 
         /* Avoid zero density */
         if (atom_density > 0)
@@ -1910,7 +1907,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t            nbs,
             c1[d] = zones->size[zone].bb_x1[d];
         }
 
-        nbnxn_put_on_grid(nbs, nbs->ePBC, NULL,
+        nbnxn_put_on_grid(nbs, nbs->ePBC,
                           zone, c0, c1,
                           zones->cg_range[zone],
                           zones->cg_range[zone+1],
@@ -2623,7 +2620,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
     fprintf(fp, "nbl na_sc %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
             nbl->na_sc, rl, nbl->ncj, nbl->ncj/(double)grid->nc,
             nbl->ncj/(double)grid->nc*grid->na_sc,
-            nbl->ncj/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/det(nbs->box)));
+            nbl->ncj/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j cell list length %.1f\n",
             0.25*nbl->ncj/(double)nbl->nci);
@@ -2673,7 +2670,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     fprintf(fp, "nbl na_c %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
             nbl->na_ci, rl, nbl->nci_tot, nbl->nci_tot/(double)grid->nsubc_tot,
             nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c,
-            nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nsubc_tot*grid->na_c/det(nbs->box)));
+            nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nsubc_tot*grid->na_c/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j super cell list length %.1f\n",
             0.25*nbl->ncj4/(double)nbl->nsci);
@@ -4880,8 +4877,6 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
         gridj_flag = work->buffer_flags.flag;
     }
-
-    copy_mat(nbs->box, box);
 
     rl2 = nbl->rlist*nbl->rlist;
 
