@@ -87,17 +87,12 @@ static void low_mspeed(real tempi,
                 for (m = 0; (m < DIM); m++)
                 {
                     v[i][m] = sd*gmx_rng_gaussian_real(rng);
-                    /* TODO: does this belong here? */
-                    /* Drude T is not an absolute T and should not affect system T */
-                    /* ekin   += 0.5*mass*v[i][m]*v[i][m]; */
+                    /* Drude T is not an absolute T and should not affect system T so we do not add to ekin */
                 }
-                /* TODO: likewise, does this belong here? */
-                /* nrdf += DIM; */
             }
         }
     }
 
-    /* TODO: may need to adjust scaling to account for Drudes */ 
     temp = (2.0*ekin)/(nrdf*BOLTZ);
 
     if (temp > 0)
