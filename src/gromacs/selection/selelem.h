@@ -465,7 +465,19 @@ void
 _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
                        e_selvalue_t                            vtype);
 
-/** Frees the memory allocated for a selection method. */
+/*! \brief
+ * Frees the memory allocated for a selection method parameter.
+ *
+ * \param[in] param Parameter to free.
+ */
+void
+_gmx_selelem_free_param(struct gmx_ana_selparam_t *param);
+/*! \brief
+ * Frees the memory allocated for a selection method.
+ *
+ * \param[in] method Method to free.
+ * \param[in] mdata  Method data to free.
+ */
 void
 _gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata);
 

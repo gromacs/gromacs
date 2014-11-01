@@ -240,8 +240,7 @@ class SelelemTemporaryValueAssigner
                                "Can only assign one element with one instance");
             GMX_RELEASE_ASSERT(sel->v.type == vsource.v.type,
                                "Mismatching selection value types");
-            old_ptr_    = sel->v.u.ptr;
-            old_nalloc_ = sel->v.nalloc;
+            _gmx_selvalue_getstore_and_release(&sel->v, &old_ptr_, &old_nalloc_);
             _gmx_selvalue_setstore(&sel->v, vsource.v.u.ptr);
             sel_ = sel;
         }

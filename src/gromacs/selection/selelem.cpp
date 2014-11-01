@@ -195,21 +195,13 @@ void SelectionTreeElement::freeValues()
                 break;
         }
     }
-    if (v.nalloc > 0)
+    _gmx_selvalue_free(&v);
+    if (type == SEL_SUBEXPRREF && u.param != NULL)
     {
-        if (v.type == POS_VALUE)
-        {
-            delete [] v.u.p;
-        }
-        else
-        {
-            sfree(v.u.ptr);
-        }
-    }
-    _gmx_selvalue_setstore(&v, NULL);
-    if (type == SEL_SUBEXPRREF && u.param)
-    {
-        u.param->val.u.ptr = NULL;
+        // TODO: This is now called from two different locations.
+        // It is likely that one of them is unnecessary, but that requires
+        // extra analysis to clarify.
+        _gmx_selelem_free_param(u.param);
     }
 }
 
@@ -472,10 +464,22 @@ _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
     }
 }
 
-/*!
- * \param[in] method Method to free.
- * \param[in] mdata  Method data to free.
- */
+void
+_gmx_selelem_free_param(gmx_ana_selparam_t *param)
+{
+    if (param->val.u.ptr != NULL)
+    {
+        if (param->val.type == GROUP_VALUE)
+        {
+            for (int i = 0; i < param->val.nr; ++i)
+            {
+                gmx_ana_index_deinit(&param->val.u.g[i]);
+            }
+        }
+        _gmx_selvalue_free(&param->val);
+    }
+}
+
 void
 _gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata)
 {
@@ -493,37 +497,11 @@ _gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata)
      * access them. */
     if (method)
     {
-        int  i, j;
-
         /* Free the memory allocated for the parameters that are not managed
          * by the selection method itself. */
-        for (i = 0; i < method->nparams; ++i)
+        for (int i = 0; i < method->nparams; ++i)
         {
-            gmx_ana_selparam_t *param = &method->param[i];
-
-            if (param->val.u.ptr)
-            {
-                if (param->val.type == GROUP_VALUE)
-                {
-                    for (j = 0; j < param->val.nr; ++j)
-                    {
-                        gmx_ana_index_deinit(&param->val.u.g[j]);
-                    }
-                }
-                else if (param->val.type == POS_VALUE)
-                {
-                    if (param->val.nalloc > 0)
-                    {
-                        delete[] param->val.u.p;
-                        _gmx_selvalue_setstore(&param->val, NULL);
-                    }
-                }
-
-                if (param->val.nalloc > 0)
-                {
-                    sfree(param->val.u.ptr);
-                }
-            }
+            _gmx_selelem_free_param(&method->param[i]);
         }
         sfree(method->param);
         sfree(method);
@@ -632,7 +610,7 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
         fprintf(fp, " eval=");
         _gmx_sel_print_evalfunc_name(fp, sel.evaluate);
     }
-    if (!(sel.flags & SEL_ALLOCVAL))
+    if (sel.v.nalloc < 0)
     {
         fprintf(fp, " (ext)");
     }
@@ -673,6 +651,23 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
             fprintf(fp, "%*c COM", level*2+3, '*');
             fprintf(fp, "\n");
         }
+    }
+    else if (sel.type == SEL_SUBEXPRREF && sel.u.param != NULL)
+    {
+        fprintf(fp, "%*c param", level*2+1, ' ');
+        if (sel.u.param->name != NULL)
+        {
+            fprintf(fp, " \"%s\"", sel.u.param->name);
+        }
+        if (sel.u.param->val.nalloc < 0)
+        {
+            fprintf(fp, " (ext)");
+        }
+        else
+        {
+            fprintf(fp, " nalloc: %d", sel.u.param->val.nalloc);
+        }
+        fprintf(fp, "\n");
     }
 
     if (sel.cdata)

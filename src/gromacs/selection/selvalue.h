@@ -105,17 +105,79 @@ typedef struct gmx_ana_selvalue_t
     int                         nalloc;
 } gmx_ana_selvalue_t;
 
-/** Initializes an empty selection value structure. */
+/*! \brief
+ * Initializes an empty selection value structure.
+ *
+ * \param[out] val  Output structure
+ *
+ * The type of \p val is not touched.
+ * Any contents of \p val are discarded without freeing.
+ */
 void
 _gmx_selvalue_clear(gmx_ana_selvalue_t *val);
-/** Reserve memory for storing selection values. */
-int
+/*! \brief
+ * Frees memory allocated for a selection value structure.
+ *
+ * \param[in,out] val  Values to free.
+ *
+ * The type of \p val is not touched.
+ * If memory is not allocated, the value pointers are simply cleared without
+ * freeing.
+ */
+void
+_gmx_selvalue_free(gmx_ana_selvalue_t *val);
+/*! \brief
+ * Reserve memory for storing selection values.
+ *
+ * \param[in,out] val  Value structure to allocate.
+ * \param[in]     n    Maximum number of values needed.
+ *
+ * Reserves memory for the values within \p val to store at least \p n values,
+ * of the type specified in the \p val structure.
+ *
+ * If the type is \ref POS_VALUE or \ref GROUP_VALUE, memory is reserved for
+ * the data structures, but no memory is reserved inside these newly allocated
+ * data structures.
+ * Similarly, for \ref STR_VALUE values, the pointers are set to NULL.
+ * For other values, the memory is uninitialized.
+ */
+void
 _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n);
-/** Sets the memory for storing selection values. */
-int
+/*! \brief
+ * Gets and releases the memory pointer for storing selection values.
+ *
+ * \param[in,out] val    Value structure to release.
+ * \param[out]    ptr    Pointer where the values are stored.
+ * \param[out]    nalloc Pointer where the values are stored.
+ *
+ * Returns the pointer where values of \p val were stored in \p ptr and
+ * \p nalloc, and clears the memory in \p val.
+ */
+void
+_gmx_selvalue_getstore_and_release(gmx_ana_selvalue_t *val, void **ptr, int *nalloc);
+/*! \brief
+ * Sets the memory for storing selection values.
+ *
+ * \param[in,out] val    Value structure to set storage for.
+ * \param[in]     ptr    Pointer where the values should be stored.
+ *
+ * Automatic memory management is disabled for \p ptr.
+ * Asserts if \p val had a previous storage that it owned, as that would result
+ * in a memory leak.
+ */
+void
 _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr);
-/** Sets the memory for storing selection values and marks it for automatic freeing. */
-int
+/*! \brief
+ * Sets the memory for storing selection values and marks it for automatic freeing.
+ *
+ * \param[in,out] val    Value structure to set storage for.
+ * \param[in]     ptr    Pointer where the values should be stored.
+ * \param[in]     nalloc Number of values allocated for \p ptr.
+ *
+ * Asserts if \p val had a previous storage that it owned, as that would result
+ * in a memory leak.
+ */
+void
 _gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc);
 
 #endif
