@@ -255,6 +255,25 @@ using gmx::SelectionParserValue;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
+namespace
+{
+
+/*! \brief
+ * Formats context string for errors.
+ *
+ * The returned string is used as the context for errors reported during
+ * parsing.
+ */
+std::string
+formatCurrentErrorContext(yyscan_t scanner)
+{
+    return gmx::formatString(
+            "While parsing '%s'",
+            _gmx_sel_lexer_get_current_text(scanner).c_str());
+}
+
+} // namespace
+
 void
 _gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
 {
@@ -269,22 +288,58 @@ _gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
 }
 
 bool
-_gmx_selparser_handle_exception(yyscan_t scanner, const std::exception &ex)
+_gmx_selparser_handle_exception(yyscan_t scanner, std::exception *ex)
 {
-    if (dynamic_cast<const gmx::UserInputError *>(&ex) != NULL)
+    try
     {
-        // TODO: Consider whether also the non-interactive parser should
-        // postpone the exception such that the whole selection can be added as
-        // context.
+        bool                   canContinue = false;
+        gmx::GromacsException *gromacsException
+            = dynamic_cast<gmx::GromacsException *>(ex);
+        if (gromacsException != NULL)
+        {
+            gromacsException->prependContext(formatCurrentErrorContext(scanner));
+            canContinue = (dynamic_cast<gmx::UserInputError *>(ex) != NULL);
+        }
+        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+        return canContinue;
+    }
+    catch (const std::exception &)
+    {
+        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+        return false;
+    }
+}
+
+bool
+_gmx_selparser_handle_error(yyscan_t scanner)
+{
+    std::string context(gmx::formatString("In selection '%s'",
+                                          _gmx_sel_lexer_pselstr(scanner)));
+    // The only way to prepend context to the exception is to rethrow it.
+    try
+    {
+        _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
+    }
+    catch (gmx::UserInputError &ex)
+    {
+        ex.prependContext(context);
         if (_gmx_sel_is_lexer_interactive(scanner))
         {
-            // TODO: Handle exceptions that printing the message may produce.
             gmx::formatExceptionMessageToFile(stderr, ex);
             return true;
         }
+        throw;
     }
-    _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
-    return false;
+    catch (gmx::GromacsException &ex)
+    {
+        ex.prependContext(context);
+        throw;
+    }
+    // Do legacy processing for non-exception cases.
+    // This is only reached if there was no active exception.
+    _gmx_selparser_error(scanner, "Invalid selection '%s'",
+                         _gmx_sel_lexer_pselstr(scanner));
+    return _gmx_sel_is_lexer_interactive(scanner);
 }
 
 namespace gmx
@@ -604,7 +659,7 @@ _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,
                          const char *cmpop, yyscan_t scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx::MessageStringContext    context(errors, "In comparison initialization");
+    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
     SelectionTreeElementPointer  sel(new SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(sel, &sm_compare, scanner);
@@ -653,9 +708,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
     gmx_ana_selcollection_t     *sc = _gmx_sel_lexer_selcollection(scanner);
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[128];
-    sprintf(buf, "In keyword '%s'", method->name);
-    gmx::MessageStringContext  context(errors, buf);
+    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
     if (method->nparams > 0)
     {
@@ -762,9 +815,7 @@ _gmx_sel_init_keyword_of(gmx_ana_selmethod_t                    *method,
                          const char *rpost, yyscan_t scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[128];
-    sprintf(buf, "In '%s of'", method->name);
-    gmx::MessageStringContext    context(errors, buf);
+    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
     GMX_UNUSED_VALUE(rpost);
     return _gmx_sel_init_keyword_evaluator(method, group, scanner);
@@ -794,9 +845,7 @@ _gmx_sel_init_method(gmx_ana_selmethod_t                      *method,
     int                          rc;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[128];
-    sprintf(buf, "In keyword '%s'", method->name);
-    gmx::MessageStringContext  context(errors, buf);
+    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
     _gmx_sel_finish_method(scanner);
     /* The "same" keyword needs some custom massaging of the parameters. */
@@ -835,9 +884,7 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t                      *method,
                        yyscan_t                                  scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[128];
-    sprintf(buf, "In keyword '%s'", method->name);
-    gmx::MessageStringContext  context(errors, buf);
+    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
     _gmx_sel_finish_method(scanner);
     SelectionTreeElementPointer modifier(new SelectionTreeElement(SEL_MODIFIER));
@@ -883,11 +930,9 @@ _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
                        const char *type, yyscan_t scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[128];
-    sprintf(buf, "In position evaluation");
-    gmx::MessageStringContext   context(errors, buf);
+    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
-    SelectionTreeElementPointer root(new SelectionTreeElement(SEL_EXPRESSION));
+    SelectionTreeElementPointer  root(new SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(root, &sm_keyword_pos, scanner);
     _gmx_selelem_set_kwpos_type(root.get(), type);
     /* Create the parameters for the parameter parser. */

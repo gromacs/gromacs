@@ -84,9 +84,11 @@ extern int _gmx_sel_yydebug;
 #include "parsetree.h"
 #include "selelem.h"
 
+#define YYLTYPE ::gmx::SelectionLocation
+
 
 /* Line 2053 of yacc.c  */
-#line 90 "parser.h"
+#line 92 "parser.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -133,7 +135,7 @@ extern int _gmx_sel_yydebug;
 typedef union YYSTYPE
 {
 /* Line 2053 of yacc.c  */
-#line 81 "parser.y"
+#line 83 "parser.y"
 
     int                         i;
     real                        r;
@@ -150,11 +152,24 @@ typedef union YYSTYPE
 
 
 /* Line 2053 of yacc.c  */
-#line 154 "parser.h"
+#line 156 "parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
+#endif
+
+#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
+typedef struct YYLTYPE
+{
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+} YYLTYPE;
+# define yyltype YYLTYPE /* obsolescent; will be withdrawn */
+# define YYLTYPE_IS_DECLARED 1
+# define YYLTYPE_IS_TRIVIAL 1
 #endif
 
 
@@ -166,7 +181,7 @@ enum { YYPUSH_MORE = 4 };
 typedef struct _gmx_sel_yypstate _gmx_sel_yypstate;
 
 #if defined __STDC__ || defined __cplusplus
-int _gmx_sel_yypush_parse (_gmx_sel_yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, void *scanner);
+int _gmx_sel_yypush_parse (_gmx_sel_yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLTYPE *pushed_loc, void *scanner);
 #else
 int _gmx_sel_yypush_parse ();
 #endif

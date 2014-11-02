@@ -76,6 +76,8 @@ using gmx::SelectionTreeElementPointer;
 %code requires{
 #include "parsetree.h"
 #include "selelem.h"
+
+#define YYLTYPE ::gmx::SelectionLocation
 }
 
 %union{
@@ -185,6 +187,7 @@ using gmx::SelectionTreeElementPointer;
 %debug
 %pure-parser
 %define api.push-pull push
+%locations
 
 %name-prefix="_gmx_sel_yy"
 %parse-param { void *scanner }
@@ -196,7 +199,7 @@ commands:    /* empty */
              {
                  BEGIN_ACTION;
                  set_empty($$);
-                 END_ACTION;
+                 END_ACTION_TOPLEVEL;
              }
            | commands command
              {
@@ -204,7 +207,7 @@ commands:    /* empty */
                  set($$, _gmx_sel_append_selection(get($2), get($1), scanner));
                  if (_gmx_sel_parser_should_finish(scanner))
                      YYACCEPT;
-                 END_ACTION;
+                 END_ACTION_TOPLEVEL;
              }
 ;
 
@@ -213,20 +216,18 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
            | error CMD_SEP
              {
                  BEGIN_ACTION;
-                 _gmx_selparser_error(scanner, "invalid selection '%s'",
-                                      _gmx_sel_lexer_pselstr(scanner));
                  _gmx_sel_lexer_clear_method_stack(scanner);
-                 if (_gmx_sel_is_lexer_interactive(scanner))
+                 if (_gmx_selparser_handle_error(scanner))
                  {
-                     _gmx_sel_lexer_clear_pselstr(scanner);
                      yyerrok;
                  }
                  else
                  {
                      YYABORT;
                  }
+                 _gmx_sel_lexer_clear_pselstr(scanner);
                  set_empty($$);
-                 END_ACTION;
+                 END_ACTION_TOPLEVEL;
              }
 ;
 
