@@ -377,9 +377,48 @@ class SelectionParserParameter
 /** Error reporting function for the selection parser. */
 void
 _gmx_selparser_error(void *scanner, const char *fmt, ...);
-/** Handle exceptions caught within the Bison code. */
+/*! \brief
+ * Handles exceptions caught within the Bison code.
+ *
+ * \retval `true`  if the parser should attempt error recovery.
+ * \retval `false` if the parser should immediately abort.
+ *
+ * This function is called whenever an exception is caught within Bison
+ * actions.  Since exceptions cannot propagate through Bison code, the
+ * exception is saved (potentially with some extra context information) so that
+ * the caller of the parser can rethrow the exception.
+ *
+ * If it is possible to recover from the exception, then the function returns
+ * `true`, and Bison enters error recovery state.  At the end of the recovery,
+ * _gmx_selparser_handle_error() is called.
+ * If this function returns false, then Bison immediately aborts the parsing
+ * so that the caller can rethrow the exception.
+ */
 bool
-_gmx_selparser_handle_exception(void *scanner, const std::exception &ex);
+_gmx_selparser_handle_exception(void *scanner, std::exception *ex);
+/*! \brief
+ * Handles errors in the selection parser.
+ *
+ * \returns `true` if parsing can continue with the next selection.
+ * \throws  std::bad_alloc if out of memory during the error processing.
+ * \throws  unspecified    Can throw the stored exception if recovery from that
+ *     exception is not possible.
+ *
+ * This function is called during error recovery, after Bison has discarded all
+ * the symbols for the erroneous selection.
+ * At this point, the full selection that caused the error is known, and can be
+ * added to the error context.
+ *
+ * For an interactive parser, this function returns `true` to let the parsing
+ * continue with the next selection, or to let the user enter the next
+ * selection, if it was possible to recover from the exception.
+ * For other cases, this will either rethrow the original exception with added
+ * context, or return `false` after adding the context to the error reporter.
+ * Any exceptions thrown from this method are again caught by Bison and result
+ * in termination of the parsing; the caller can then rethrow them.
+ */
+bool
+_gmx_selparser_handle_error(void *scanner);
 
 /** Propagates the flags for selection elements. */
 void
