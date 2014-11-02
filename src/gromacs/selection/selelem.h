@@ -239,12 +239,31 @@ namespace gmx
 
 class ExceptionInitializer;
 
-/*! \brief
+/*! \internal \brief
  * Function pointer for evaluating a gmx::SelectionTreeElement.
  */
 typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t         *data,
                              const SelectionTreeElementPointer &sel,
                              gmx_ana_index_t                   *g);
+
+/*! \internal
+ * \brief
+ * Stores the location of a selection element in the selection text.
+ *
+ * The location is stored as a range in the pretty-printed selection text
+ * (where whitespace has been sanitized), and can be used to extract that text
+ * for error messages and other diagnostic purposes.
+ * During parsing, the extraction is done with _gmx_sel_lexer_get_text().
+ *
+ * This needs to be a plain C struct for Bison to properly deal with it.
+ */
+struct SelectionLocation
+{
+    //! Start index of the string where this element has been parsed from.
+    int  startIndex;
+    //! End index of the string where this element has been parsed from.
+    int  endIndex;
+};
 
 /*! \internal \brief
  * Represents an element of a selection expression.
