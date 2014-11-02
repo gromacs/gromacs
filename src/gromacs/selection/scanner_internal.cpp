@@ -113,16 +113,20 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
  * Processes a selection method token.
  */
 static int
-init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
-                  gmx_sel_lexer_t *state)
+init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
+                  const gmx::SelectionParserSymbol *symbol,
+                  bool bPosMod, gmx_sel_lexer_t *state)
 {
+    gmx_ana_selmethod_t *method = symbol->methodValue();
     /* If the previous token was not KEYWORD_POS, return EMPTY_POSMOD
      * before the actual method to work around a limitation in Bison. */
     if (!bPosMod && method->type != POS_VALUE)
     {
-        state->nextmethod = method;
+        state->nextMethodSymbol = symbol;
+        _gmx_sel_lexer_add_token(yylloc, NULL, 0, state);
         return EMPTY_POSMOD;
     }
+    _gmx_sel_lexer_add_token(yylloc, symbol->name().c_str(), -1, state);
     yylval->meth = method;
     if (!(method->flags & SMETH_MODIFIER) && method->nparams == 0)
     {
@@ -184,7 +188,8 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
 }
 
 int
-_gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
+_gmx_sel_lexer_process_pending(YYSTYPE *yylval, YYLTYPE *yylloc,
+                               gmx_sel_lexer_t *state)
 {
     if (state->nextparam)
     {
@@ -194,29 +199,30 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
         if (state->neom > 0)
         {
             --state->neom;
+            _gmx_sel_lexer_add_token(yylloc, NULL, 0, state);
             return END_OF_METHOD;
         }
         state->nextparam = NULL;
         state->bBoolNo   = false;
-        _gmx_sel_lexer_add_token(param->name, -1, state);
+        _gmx_sel_lexer_add_token(yylloc, param->name, -1, state);
         return init_param_token(yylval, param, bBoolNo);
     }
     if (state->prev_pos_kw > 0)
     {
         --state->prev_pos_kw;
     }
-    if (state->nextmethod)
+    if (state->nextMethodSymbol)
     {
-        gmx_ana_selmethod_t *method = state->nextmethod;
-
-        state->nextmethod = NULL;
-        return init_method_token(yylval, method, true, state);
+        const gmx::SelectionParserSymbol *symbol = state->nextMethodSymbol;
+        state->nextMethodSymbol = NULL;
+        return init_method_token(yylval, yylloc, symbol, true, state);
     }
     return 0;
 }
 
 int
-_gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
+_gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
+                                  char *yytext, size_t yyleng,
                                   gmx_sel_lexer_t *state)
 {
     /* Check if the identifier matches with a parameter name */
@@ -269,7 +275,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                 state->bBoolNo   = bBoolNo;
                 return END_OF_METHOD;
             }
-            _gmx_sel_lexer_add_token(param->name, -1, state);
+            _gmx_sel_lexer_add_token(yylloc, param->name, -1, state);
             return init_param_token(yylval, param, bBoolNo);
         }
     }
@@ -281,11 +287,16 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (!symbol)
     {
         yylval->str = gmx_strndup(yytext, yyleng);
-        _gmx_sel_lexer_add_token(yytext, yyleng, state);
+        _gmx_sel_lexer_add_token(yylloc, yytext, yyleng, state);
         return IDENTIFIER;
     }
-    _gmx_sel_lexer_add_token(symbol->name().c_str(), -1, state);
     gmx::SelectionParserSymbol::SymbolType symtype = symbol->type();
+    /* For method symbols, we need some extra processing. */
+    if (symtype == gmx::SelectionParserSymbol::MethodSymbol)
+    {
+        return init_method_token(yylval, yylloc, symbol, state->prev_pos_kw > 0, state);
+    }
+    _gmx_sel_lexer_add_token(yylloc, symbol->name().c_str(), -1, state);
     /* Reserved symbols should have been caught earlier */
     if (symtype == gmx::SelectionParserSymbol::ReservedSymbol)
     {
@@ -328,12 +339,6 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
         }
         /* This position should not be reached. */
     }
-    /* For method symbols, return the correct type */
-    if (symtype == gmx::SelectionParserSymbol::MethodSymbol)
-    {
-        gmx_ana_selmethod_t *method = symbol->methodValue();
-        return init_method_token(yylval, method, state->prev_pos_kw > 0, state);
-    }
     /* For position symbols, we need to return KEYWORD_POS, but we also need
      * some additional handling. */
     if (symtype == gmx::SelectionParserSymbol::PositionSymbol)
@@ -348,8 +353,10 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
 }
 
 void
-_gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
+_gmx_sel_lexer_add_token(YYLTYPE *yylloc, const char *str, int len,
+                         gmx_sel_lexer_t *state)
 {
+    yylloc->startIndex = yylloc->endIndex = state->pslen;
     /* Do nothing if the string is empty, or if it is a space and there is
      * no other text yet, or if there already is a space. */
     if (!str || len == 0 || strlen(str) == 0
@@ -373,6 +380,7 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
     strncpy(state->pselstr + state->pslen, str, len);
     state->pslen                += len;
     state->pselstr[state->pslen] = 0;
+    yylloc->endIndex             = state->pslen;
 }
 
 void
@@ -403,17 +411,17 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->nalloc_psel  = STRSTORE_ALLOCSTEP;
 
     snew(state->mstack, 20);
-    state->mstack_alloc = 20;
-    state->msp          = -1;
-    state->neom         = 0;
-    state->nextparam    = NULL;
-    state->nextmethod   = NULL;
-    state->prev_pos_kw  = 0;
-    state->bBoolNo      = false;
-    state->bMatchOf     = false;
-    state->bMatchBool   = false;
-    state->bCmdStart    = true;
-    state->bBuffer      = false;
+    state->mstack_alloc     = 20;
+    state->msp              = -1;
+    state->neom             = 0;
+    state->nextparam        = NULL;
+    state->nextMethodSymbol = NULL;
+    state->prev_pos_kw      = 0;
+    state->bBoolNo          = false;
+    state->bMatchOf         = false;
+    state->bMatchBool       = false;
+    state->bCmdStart        = true;
+    state->bBuffer          = false;
 
     _gmx_sel_yyset_extra(state, *scannerp);
 }
@@ -509,6 +517,35 @@ _gmx_sel_lexer_pselstr(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->pselstr;
+}
+
+void
+_gmx_sel_lexer_set_current_location(const gmx::SelectionParserLocation &location,
+                                    yyscan_t                            scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    state->currentLocation = location;
+}
+
+std::string
+_gmx_sel_lexer_get_current_text(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return _gmx_sel_lexer_get_text(state->currentLocation, scanner);
+}
+
+std::string
+_gmx_sel_lexer_get_text(const gmx::SelectionParserLocation &location,
+                        yyscan_t                            scanner)
+{
+    gmx_sel_lexer_t *state      = _gmx_sel_yyget_extra(scanner);
+    const int        startIndex = location.startIndex;
+    const int        endIndex   = location.endIndex;
+    if (startIndex >= endIndex)
+    {
+        return std::string();
+    }
+    return std::string(&state->pselstr[startIndex], endIndex - startIndex);
 }
 
 void

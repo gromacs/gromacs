@@ -50,9 +50,12 @@
 
 #include <exception>
 
+#include <boost/exception_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "parsetree.h"
 #include "scanner.h"
@@ -60,10 +63,41 @@
 
 //! Error handler needed by Bison.
 static void
-yyerror(yyscan_t scanner, char const *s)
+yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
 {
-    _gmx_selparser_error(scanner, "%s", s);
+    try
+    {
+        std::string            context(_gmx_sel_lexer_get_text(*location, scanner));
+        gmx::InvalidInputError ex(s);
+        // TODO: Examine how to show better context information.
+        if (!context.empty())
+        {
+            context = gmx::formatString("Near '%s'", context.c_str());
+            ex.prependContext(context);
+        }
+        _gmx_sel_lexer_set_exception(scanner, boost::copy_exception(ex));
+    }
+    catch (const std::exception &)
+    {
+        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+    }
 }
+
+//! Logic for computing the location of the output of Bison reduction.
+#define YYLLOC_DEFAULT(Current, Rhs, N)                          \
+    do {                                                         \
+        if (N != 0)                                              \
+        {                                                        \
+            (Current).startIndex = YYRHSLOC(Rhs, 1).startIndex;  \
+            (Current).endIndex   = YYRHSLOC(Rhs, N).endIndex;    \
+        }                                                        \
+        else                                                     \
+        {                                                        \
+            (Current).startIndex = (Current).endIndex =          \
+                    YYRHSLOC(Rhs, 0).endIndex;                   \
+        }                                                        \
+        _gmx_sel_lexer_set_current_location((Current), scanner); \
+    } while (0)
 
 /*! \name Exception handling macros for actions
  *
@@ -81,14 +115,26 @@ yyerror(yyscan_t scanner, char const *s)
 #define BEGIN_ACTION \
     try {
 //! Finishes an action that may throw exceptions.
-#define END_ACTION \
-    } \
-    catch (const std::exception &ex) \
-    { \
-        if (_gmx_selparser_handle_exception(scanner, ex)) { \
-            YYERROR; } \
-        else{ \
-            YYABORT; } \
+#define END_ACTION                                              \
+    }                                                           \
+    catch (std::exception &ex)                                  \
+    {                                                           \
+        if (_gmx_selparser_handle_exception(scanner, &ex))      \
+        {                                                       \
+            YYERROR;                                            \
+        }                                                       \
+        else                                                    \
+        {                                                       \
+            YYABORT;                                            \
+        }                                                       \
+    }
+//! Finishes an action that may throw exceptions and does not support resuming.
+#define END_ACTION_TOPLEVEL                                     \
+    }                                                           \
+    catch (const std::exception &)                              \
+    {                                                           \
+        _gmx_sel_lexer_set_exception(scanner, boost::current_exception()); \
+        YYABORT;                                                \
     }
 //!\}
 
