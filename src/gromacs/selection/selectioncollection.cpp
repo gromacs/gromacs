@@ -190,7 +190,8 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
     do
     {
         YYSTYPE value;
-        int     token = _gmx_sel_yylex(&value, scanner);
+        YYLTYPE location;
+        int     token = _gmx_sel_yylex(&value, &location, scanner);
         if (bInteractive)
         {
             if (token == 0)
@@ -206,7 +207,7 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
             }
             prevToken = token;
         }
-        status = _gmx_sel_yypush_parse(parserState, token, &value, scanner);
+        status = _gmx_sel_yypush_parse(parserState, token, &value, &location, scanner);
     }
     while (status == YYPUSH_MORE);
     _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
@@ -387,8 +388,11 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
                     errors.clear();
                 }
             }
-            status = _gmx_sel_yypush_parse(parserState.get(), 0, NULL,
-                                           scanner);
+            {
+                YYLTYPE location;
+                status = _gmx_sel_yypush_parse(parserState.get(), 0, NULL,
+                                               &location, scanner);
+            }
             _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
 early_termination:
             bOk = (status == 0);

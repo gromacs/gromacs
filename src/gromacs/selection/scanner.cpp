@@ -550,7 +550,7 @@ static yyconst flex_int16_t yy_chk[151] =
 
 // This macro makes the actions a bit shorter, since nearly every action needs
 // this call.
-#define ADD_TOKEN _gmx_sel_lexer_add_token(yytext, yyleng, state)
+#define ADD_TOKEN _gmx_sel_lexer_add_token(yylloc, yytext, yyleng, state)
 
 // Set YY_BREAK to an empty value to avoid warnings (for the PGI compiler)
 // when we have return statements followed by break. Instead, we add breaks
@@ -795,7 +795,7 @@ YY_DECL
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
     int              retval;
     /* Return a token if one is pending */
-    retval = _gmx_sel_lexer_process_pending(yylval, state);
+    retval = _gmx_sel_lexer_process_pending(yylval, yylloc, state);
     if (retval != 0)
     {
         return retval;
@@ -925,7 +925,7 @@ case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
 #line 136 "scanner.l"
-{ _gmx_sel_lexer_add_token(" ", 1, state); break; }
+{ _gmx_sel_lexer_add_token(yylloc, " ", 1, state); break; }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
@@ -940,7 +940,7 @@ YY_RULE_SETUP
                     }
                     else
                     {
-                        _gmx_sel_lexer_add_token(" ", 1, state);
+                        _gmx_sel_lexer_add_token(yylloc, " ", 1, state);
                     }
                     break;
                 }
@@ -1010,13 +1010,13 @@ YY_RULE_SETUP
 case 17:
 YY_RULE_SETUP
 #line 167 "scanner.l"
-{ return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
+{ return _gmx_sel_lexer_process_identifier(yylval, yylloc, yytext, yyleng, state); }
 	YY_BREAK
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
 #line 169 "scanner.l"
-{ _gmx_sel_lexer_add_token(" ", 1, state); break; }
+{ _gmx_sel_lexer_add_token(yylloc, " ", 1, state); break; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
