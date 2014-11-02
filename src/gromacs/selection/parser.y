@@ -76,6 +76,30 @@ using gmx::SelectionTreeElementPointer;
 %code requires{
 #include "parsetree.h"
 #include "selelem.h"
+
+namespace gmx
+{
+/*! \brief
+ * Stores the location of a parser token/element.
+ *
+ * The location is stored as a range in the pretty-printed selection text
+ * (where whitespace has been sanitized), and can be used to extract that text
+ * for error messages and other diagnostic purposes.
+ *
+ * This needs to be a plain C struct for Bison to properly deal with it.
+ *
+ * \see _gmx_sel_lexer_get_text()
+ */
+struct SelectionParserLocation
+{
+    //! Start index of the string where this element has been parsed from.
+    int  startIndex;
+    //! End index of the string where this element has been parsed from.
+    int  endIndex;
+};
+} // namespace
+
+#define YYLTYPE ::gmx::SelectionParserLocation
 }
 
 %union{
@@ -185,6 +209,7 @@ using gmx::SelectionTreeElementPointer;
 %debug
 %pure-parser
 %define api.push-pull push
+%locations
 
 %name-prefix="_gmx_sel_yy"
 %parse-param { void *scanner }
@@ -196,7 +221,7 @@ commands:    /* empty */
              {
                  BEGIN_ACTION;
                  set_empty($$);
-                 END_ACTION;
+                 END_ACTION_TOPLEVEL;
              }
            | commands command
              {
@@ -204,7 +229,7 @@ commands:    /* empty */
                  set($$, _gmx_sel_append_selection(get($2), get($1), scanner));
                  if (_gmx_sel_parser_should_finish(scanner))
                      YYACCEPT;
-                 END_ACTION;
+                 END_ACTION_TOPLEVEL;
              }
 ;
 
@@ -213,20 +238,18 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
            | error CMD_SEP
              {
                  BEGIN_ACTION;
-                 _gmx_selparser_error(scanner, "invalid selection '%s'",
-                                      _gmx_sel_lexer_pselstr(scanner));
                  _gmx_sel_lexer_clear_method_stack(scanner);
-                 if (_gmx_sel_is_lexer_interactive(scanner))
+                 if (_gmx_selparser_handle_error(scanner))
                  {
-                     _gmx_sel_lexer_clear_pselstr(scanner);
                      yyerrok;
                  }
                  else
                  {
                      YYABORT;
                  }
+                 _gmx_sel_lexer_clear_pselstr(scanner);
                  set_empty($$);
-                 END_ACTION;
+                 END_ACTION_TOPLEVEL;
              }
 ;
 
