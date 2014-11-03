@@ -71,11 +71,15 @@
 
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
 
-/* This is a heuristically determined parameter for the Fermi architecture for
- * the minimum size of ci lists by multiplying this constant with the # of
- * multiprocessors on the current device.
+/* This is a heuristically determined parameter for the Fermi, Kepler
+ * and Maxwell architectures for the minimum size of ci lists by multiplying
+ * this constant with the # of multiprocessors on the current device.
+ * Since the maximum number of blocks per multiprocessor is 16, the ideal
+ * count for small systems is 32 or 48 blocks per multiprocessor. Because
+ * there is a bit of fluctuations in the generated block counts, we use
+ * a target of 44 instead of the ideal value of 48.
  */
-static unsigned int gpu_min_ci_balanced_factor = 40;
+static unsigned int gpu_min_ci_balanced_factor = 44;
 
 /* Functions from nbnxn_cuda.cu */
 extern void nbnxn_cuda_set_cacheconfig(gmx_device_info_t *devinfo);
