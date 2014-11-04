@@ -67,6 +67,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
@@ -1735,6 +1736,21 @@ static void check_string(FILE *fplog, const char *type, const char *p,
     }
 }
 
+static void check_path(FILE *fplog, const char *type, const char *p,
+                       const char *f, gmx_bool *mm)
+{
+    FILE *fp = fplog ? fplog : stderr;
+
+    if (gmx::Path::isEquivalent(p, f) != 0)
+    {
+        fprintf(fp, "  %s mismatch,\n", type);
+        fprintf(fp, "    current program: %s\n", p);
+        fprintf(fp, "    checkpoint file: %s\n", f);
+        fprintf(fp, "\n");
+        *mm = TRUE;
+    }
+}
+
 static void check_match(FILE *fplog,
                         char *version,
                         char *btime, char *buser, char *bhost, int double_prec,
@@ -1767,7 +1783,7 @@ static void check_match(FILE *fplog,
     check_string(fplog, "Build user", BUILD_USER, buser, &mm);
     check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
     check_int   (fplog, "Double prec.", GMX_CPT_BUILD_DP, double_prec, &mm);
-    check_string(fplog, "Program name", Program(), fprog, &mm);
+    check_path  (fplog, "Program name", Program(), fprog, &mm);
 
     check_int   (fplog, "#ranks", cr->nnodes, npp_f+npme_f, &mm);
     if (cr->nnodes > 1)
