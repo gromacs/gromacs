@@ -252,7 +252,7 @@ std::string findDefaultLibraryDataPath(const std::string &binaryPath)
         // If running directly from the build tree, try to use the source
         // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
-        if (Path::startsWith(searchPath, CMAKE_BINARY_DIR))
+        if (Path::isEquivalent(Path::getParentPath(searchPath), CMAKE_BINARY_DIR))
         {
             std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
             if (isAcceptableLibraryPath(testPath))
@@ -340,7 +340,6 @@ void CommandLineProgramContext::Impl::findBinaryPath() const
     if (fullBinaryPath_.empty())
     {
         fullBinaryPath_ = findFullBinaryPath(invokedName_, *executableEnv_);
-        fullBinaryPath_ = Path::normalize(Path::resolveSymlinks(fullBinaryPath_));
         // TODO: Investigate/Consider using a dladdr()-based solution.
         // Potentially less portable, but significantly simpler, and also works
         // with user binaries even if they are located in some arbitrary location,
@@ -416,7 +415,7 @@ const char *CommandLineProgramContext::defaultLibraryDataPath() const
     {
         impl_->findBinaryPath();
         impl_->defaultLibraryDataPath_ =
-            Path::normalize(findDefaultLibraryDataPath(impl_->fullBinaryPath_));
+            findDefaultLibraryDataPath(impl_->fullBinaryPath_);
     }
     return impl_->defaultLibraryDataPath_.c_str();
 }
