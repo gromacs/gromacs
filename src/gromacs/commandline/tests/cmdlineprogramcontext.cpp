@@ -106,9 +106,8 @@ class CommandLineProgramContextTest : public ::testing::Test
             : env_(new TestExecutableEnvironment())
         {
             expectedExecutable_ =
-                Path::normalize(
-                        Path::join(env_->getWorkingDirectory(),
-                                   "bin/test-exe" EXECUTABLE_EXTENSION));
+                Path::join(env_->getWorkingDirectory(),
+                           "bin/test-exe" EXECUTABLE_EXTENSION);
         }
 
         void testBinaryPathSearch(const char *argv0)
