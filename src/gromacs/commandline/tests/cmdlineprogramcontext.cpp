@@ -106,16 +106,15 @@ class CommandLineProgramContextTest : public ::testing::Test
             : env_(new TestExecutableEnvironment())
         {
             expectedExecutable_ =
-                Path::normalize(
-                        Path::join(env_->getWorkingDirectory(),
-                                   "bin/test-exe" EXECUTABLE_EXTENSION));
+                Path::join(env_->getWorkingDirectory(),
+                           "bin/test-exe" EXECUTABLE_EXTENSION);
         }
 
         void testBinaryPathSearch(const char *argv0)
         {
             ASSERT_TRUE(env_.get() != NULL);
             gmx::CommandLineProgramContext  info(1, &argv0, env_);
-            EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
+            EXPECT_TRUE(Path::isEquivalent(expectedExecutable_, info.fullBinaryPath()));
         }
         void testBinaryPathSearch(const std::string &argv0)
         {

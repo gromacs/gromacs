@@ -56,16 +56,14 @@ class Path
         static bool containsDirectory(const std::string &path);
         static bool isAbsolute(const char *path);
         static bool isAbsolute(const std::string &path);
-        static bool startsWith(const std::string &path,
-                               const std::string &prefix);
+        static bool isEquivalent(const std::string &path1,
+                                 const std::string &path2);
 
         static std::string join(const std::string &path1,
                                 const std::string &path2);
         static std::string join(const std::string &path1,
                                 const std::string &path2,
                                 const std::string &path3);
-        //In most cases on should use resolveSymlinks
-        static std::string normalize(const std::string &path);
         static std::string getParentPath(const std::string &path);
         static std::string getFilename(const std::string &path);
         static bool hasExtension(const std::string &path);
