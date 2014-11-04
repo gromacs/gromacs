@@ -398,6 +398,7 @@ class NotImplementedError : public APIError
         GMX_THROW((e) << boost::errinfo_errno(stored_errno_) \
                   << boost::errinfo_api_function(syscall)); \
     } while (0)
+//TOOD: Add an equivalent macro for Windows GetLastError
 
 /*! \brief
  * Formats a standard fatal error message for reporting an exception.
