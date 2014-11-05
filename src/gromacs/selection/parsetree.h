@@ -139,25 +139,29 @@ class SelectionParserValue
         /*! \brief
          * Allocates and initializes a constant integer value.
          *
-         * \param[in] value  Integer value to assign to the value.
+         * \param[in] value    Integer value to assign to the value.
+         * \param[in] location Location of the value.
          * \returns   The newly created value.
          */
-        static SelectionParserValue createInteger(int value)
+        static SelectionParserValue
+        createInteger(int value, const SelectionLocation &location)
         {
-            SelectionParserValue result(INT_VALUE);
+            SelectionParserValue result(INT_VALUE, location);
             result.u.i.i1 = result.u.i.i2 = value;
             return result;
         }
         /*! \brief
          * Allocates and initializes a constant integer range value.
          *
-         * \param[in] from  Beginning of the range to assign to the value.
-         * \param[in] to    End of the range to assign to the value.
+         * \param[in] from     Beginning of the range to assign to the value.
+         * \param[in] to       End of the range to assign to the value.
+         * \param[in] location Location of the value.
          * \returns   The newly created value.
          */
-        static SelectionParserValue createIntegerRange(int from, int to)
+        static SelectionParserValue
+        createIntegerRange(int from, int to, const SelectionLocation &location)
         {
-            SelectionParserValue result(INT_VALUE);
+            SelectionParserValue result(INT_VALUE, location);
             result.u.i.i1 = from;
             result.u.i.i2 = to;
             return result;
@@ -165,25 +169,29 @@ class SelectionParserValue
         /*! \brief
          * Allocates and initializes a constant floating-point value.
          *
-         * \param[in] value  Floating-point value to assign to the value.
+         * \param[in] value    Floating-point value to assign to the value.
+         * \param[in] location Location of the value.
          * \returns   The newly created value.
          */
-        static SelectionParserValue createReal(real value)
+        static SelectionParserValue
+        createReal(real value, const SelectionLocation &location)
         {
-            SelectionParserValue result(REAL_VALUE);
+            SelectionParserValue result(REAL_VALUE, location);
             result.u.r.r1 = result.u.r.r2 = value;
             return result;
         }
         /*! \brief
          * Allocates and initializes a constant floating-point range value.
          *
-         * \param[in] from  Beginning of the range to assign to the value.
-         * \param[in] to    End of the range to assign to the value.
+         * \param[in] from     Beginning of the range to assign to the value.
+         * \param[in] to       End of the range to assign to the value.
+         * \param[in] location Location of the value.
          * \returns   The newly created value.
          */
-        static SelectionParserValue createRealRange(real from, real to)
+        static SelectionParserValue
+        createRealRange(real from, real to, const SelectionLocation &location)
         {
-            SelectionParserValue result(REAL_VALUE);
+            SelectionParserValue result(REAL_VALUE, location);
             result.u.r.r1 = from;
             result.u.r.r2 = to;
             return result;
@@ -191,28 +199,34 @@ class SelectionParserValue
         /*! \brief
          * Allocates and initializes a constant string value.
          *
-         * \param[in] value  String to assign to the value.
+         * \param[in] value    String to assign to the value.
+         * \param[in] location Location of the value.
          * \returns   The newly created value.
          */
-        static SelectionParserValue createString(const char *value)
+        static SelectionParserValue
+        createString(const char *value, const SelectionLocation &location)
         {
-            SelectionParserValue result(STR_VALUE);
+            SelectionParserValue result(STR_VALUE, location);
             result.str = value;
             return result;
         }
         /*! \brief
          * Allocates and initializes a constant position value.
          *
-         * \param[in] value  Position vector to assign to the value.
+         * \param[in] value    Position vector to assign to the value.
+         * \param[in] location Location of the value.
          * \returns   The newly created value.
          */
-        static SelectionParserValue createPosition(rvec value)
+        static SelectionParserValue
+        createPosition(rvec value, const SelectionLocation &location)
         {
-            SelectionParserValue result(POS_VALUE);
+            SelectionParserValue result(POS_VALUE, location);
             copy_rvec(value, result.u.x);
             return result;
         }
 
+        //! Returns the location of this value in the parsed selection text.
+        const SelectionLocation &location() const { return location_; }
         //! Returns true if the value comes from expression evaluation.
         bool hasExpressionValue() const { return static_cast<bool>(expr); }
 
@@ -255,15 +269,19 @@ class SelectionParserValue
         /*! \brief
          * Initializes a new value.
          *
-         * \param[in] type  Type for the new value.
+         * \param[in] type     Type for the new value.
+         * \param[in] location Location for the value.
          */
-        explicit SelectionParserValue(e_selvalue_t type);
+        SelectionParserValue(e_selvalue_t type, const SelectionLocation &location);
         /*! \brief
          * Initializes a new expression value.
          *
          * \param[in] expr  Expression for the value.
          */
         explicit SelectionParserValue(const gmx::SelectionTreeElementPointer &expr);
+
+        //! Location of the value in the parsed text.
+        SelectionLocation       location_;
 };
 
 class SelectionParserParameter;
@@ -292,27 +310,31 @@ class SelectionParserParameter
         /*! \brief
          * Allocates and initializes a parsed method parameter.
          *
-         * \param[in] name    Name for the new parameter (can be NULL).
-         * \param[in] values  List of values for the parameter.
+         * \param[in] name     Name for the new parameter (can be NULL).
+         * \param[in] values   List of values for the parameter.
+         * \param[in] location Location of the parameter.
          * \returns   Pointer to the newly allocated parameter.
          * \throws    std::bad_alloc if out of memory.
          */
         static SelectionParserParameter
-        create(const char *name, SelectionParserValueListPointer values)
+        create(const char *name, SelectionParserValueListPointer values,
+               const SelectionLocation &location)
         {
-            return SelectionParserParameter(name, move(values));
+            return SelectionParserParameter(name, move(values), location);
         }
-        //! \copydoc create(const char *, SelectionParserValueListPointer)
+        //! \copydoc create(const char *, SelectionParserValueListPointer, const SelectionLocation &)
         static SelectionParserParameter
-        create(const std::string &name, SelectionParserValueListPointer values)
+        create(const std::string &name, SelectionParserValueListPointer values,
+               const SelectionLocation &location)
         {
-            return SelectionParserParameter(name.c_str(), move(values));
+            return SelectionParserParameter(name.c_str(), move(values), location);
         }
         /*! \brief
          * Allocates and initializes a parsed method parameter.
          *
-         * \param[in] name    Name for the new parameter (can be NULL).
-         * \param[in] value   Value for the parameter.
+         * \param[in] name     Name for the new parameter (can be NULL).
+         * \param[in] value    Value for the parameter.
+         * \param[in] location Location of the parameter.
          * \returns   Pointer to the newly allocated parameter.
          * \throws    std::bad_alloc if out of memory.
          *
@@ -321,9 +343,10 @@ class SelectionParserParameter
          * is necessary.
          */
         static SelectionParserParameter
-        create(const char *name, const SelectionParserValue &value)
+        create(const char *name, const SelectionParserValue &value,
+               const SelectionLocation &location)
         {
-            return create(name, SelectionParserValue::createList(value));
+            return create(name, SelectionParserValue::createList(value), location);
         }
         /*! \brief
          * Allocates and initializes a parsed method parameter.
@@ -341,33 +364,45 @@ class SelectionParserParameter
         createFromExpression(const char                        *name,
                              const SelectionTreeElementPointer &expr)
         {
-            return create(name, SelectionParserValue::createExpr(expr));
+            return create(name, SelectionParserValue::createExpr(expr),
+                          expr->location());
         }
         //! \copydoc createFromExpression(const char *, const SelectionTreeElementPointer &)
         static SelectionParserParameter
         createFromExpression(const std::string                 &name,
                              const SelectionTreeElementPointer &expr)
         {
-            return create(name.c_str(), SelectionParserValue::createExpr(expr));
+            return create(name.c_str(), SelectionParserValue::createExpr(expr),
+                          expr->location());
         }
-
-        /*! \brief
-         * Initializes a parsed method parameter.
-         *
-         * \param[in] name    Name for the new parameter (can be NULL).
-         * \param[in] values  List of values for the parameter.
-         * \throws    std::bad_alloc if out of memory.
-         */
-        SelectionParserParameter(const char                     *name,
-                                 SelectionParserValueListPointer values);
 
         //! Returns the name of the parameter (may be empty).
         const std::string &name() const { return name_; }
+        //! Returns the location of this parameter in the parsed selection text.
+        const SelectionLocation        &location() const { return location_; }
         //! Returns the values for the parameter.
         const SelectionParserValueList &values() const { return *values_; }
 
+    private:
+        /*! \brief
+         * Initializes a parsed method parameter.
+         *
+         * \param[in] name     Name for the new parameter (can be NULL).
+         * \param[in] values   List of values for the parameter.
+         * \param[in] location Location of the parameter.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        SelectionParserParameter(const char                      *name,
+                                 SelectionParserValueListPointer  values,
+                                 const SelectionLocation         &location);
+
         //! Name of the parameter.
         std::string                     name_;
+        //! Location of the parameter in the parsed text.
+        SelectionLocation               location_;
+
+        // TODO: Make private, there is only one direct user.
+    public:
         //! Values for this parameter.
         SelectionParserValueListPointer values_;
 };
@@ -493,7 +528,7 @@ _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
 
 /** Creates a gmx::SelectionTreeElement for a constant position. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_const_position(real x, real y, real z);
+_gmx_sel_init_const_position(real x, real y, real z, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a index group expression using group name. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_group_by_name(const char *name, void *scanner);
@@ -502,7 +537,8 @@ gmx::SelectionTreeElementPointer
 _gmx_sel_init_group_by_id(int id, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a variable reference */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel);
+_gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel,
+                           void                                   *scanner);
 
 /** Creates a root gmx::SelectionTreeElement for a selection. */
 gmx::SelectionTreeElementPointer

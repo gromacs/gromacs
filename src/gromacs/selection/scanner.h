@@ -110,10 +110,21 @@ const char *
 _gmx_sel_lexer_pselstr(yyscan_t scanner);
 /*! \brief
  * Sets the current parser context location.
+ *
+ * This location is set while Bison reductions are being processed, and
+ * identifies the location of the current rule/reduction.
  */
 void
 _gmx_sel_lexer_set_current_location(yyscan_t                      scanner,
                                     const gmx::SelectionLocation &location);
+/*! \brief
+ * Returns the current parser context location.
+ *
+ * This returns the location last set with
+ * _gmx_sel_lexer_set_current_location().
+ */
+const gmx::SelectionLocation &
+_gmx_sel_lexer_get_current_location(yyscan_t scanner);
 /*! \brief
  * Returns the selection text for the current parser context.
  *

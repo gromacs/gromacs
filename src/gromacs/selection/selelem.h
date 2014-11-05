@@ -261,6 +261,13 @@ typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t         *data,
  */
 struct SelectionLocation
 {
+    //! Returns an empty location.
+    static SelectionLocation createEmpty()
+    {
+        SelectionLocation empty = {0, 0};
+        return empty;
+    }
+
     //! Start index of the string where this element has been parsed from.
     int  startIndex;
     //! End index of the string where this element has been parsed from.
@@ -276,7 +283,8 @@ class SelectionTreeElement
         /*! \brief
          * Allocates memory and performs common initialization.
          *
-         * \param[in] type Type of selection element to create.
+         * \param[in] type     Type of selection element to create.
+         * \param[in] location Location of the element.
          *
          * \a type is set to \p type,
          * \a v::type is set to \ref GROUP_VALUE for boolean and comparison
@@ -285,7 +293,7 @@ class SelectionTreeElement
          * is also set for \ref SEL_BOOLEAN elements).
          * All the pointers are set to NULL.
          */
-        explicit SelectionTreeElement(e_selelem_t type);
+        SelectionTreeElement(e_selelem_t type, const SelectionLocation &location);
         ~SelectionTreeElement();
 
         //! Frees the memory allocated for the \a v union.
@@ -324,6 +332,9 @@ class SelectionTreeElement
 
         //! Returns the name of the element.
         const std::string &name() const { return name_; }
+        //! Returns the location of the element.
+        const SelectionLocation &location() const { return location_; }
+
         /*! \brief
          * Sets the name of the element.
          *
@@ -462,9 +473,16 @@ class SelectionTreeElement
         /*! \brief
          * Name of the element.
          *
-         * This field is only used for informative purposes.
+         * This field is only used for diagnostic purposes.
          */
         std::string                         name_;
+        /*! \brief
+         * Location of the element in the selection text.
+         *
+         * This field is only used for diagnostic purposes (including error
+         * messages).
+         */
+        SelectionLocation                   location_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(SelectionTreeElement);
 };

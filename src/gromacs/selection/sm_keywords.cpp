@@ -765,8 +765,10 @@ init_evaluator_group(gmx_ana_selmethod_t                     *method,
         GMX_THROW(gmx::InvalidInputError(message));
     }
 
+    // TODO: For same ... as ..., some other location could be more intuitive.
     gmx::SelectionTreeElementPointer sel(
-            new gmx::SelectionTreeElement(SEL_EXPRESSION));
+            new gmx::SelectionTreeElement(
+                    SEL_EXPRESSION, _gmx_sel_lexer_get_current_location(scanner)));
     _gmx_selelem_set_method(sel, method, scanner);
 
     t_methoddata_kweval *data
@@ -825,7 +827,8 @@ init_evaluator_pos(gmx_ana_selmethod_t                     *method,
     }
 
     gmx::SelectionTreeElementPointer sel(
-            new gmx::SelectionTreeElement(SEL_EXPRESSION));
+            new gmx::SelectionTreeElement(
+                    SEL_EXPRESSION, _gmx_sel_lexer_get_current_location(scanner)));
     _gmx_selelem_set_method(sel, method, scanner);
 
     t_methoddata_kweval *data
