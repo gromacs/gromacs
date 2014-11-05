@@ -529,6 +529,13 @@ _gmx_sel_lexer_set_current_location(yyscan_t                      scanner,
     state->currentLocation = location;
 }
 
+const gmx::SelectionLocation &
+_gmx_sel_lexer_get_current_location(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->currentLocation;
+}
+
 std::string
 _gmx_sel_lexer_get_current_text(yyscan_t scanner)
 {

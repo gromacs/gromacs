@@ -59,6 +59,7 @@
 #include "selmethod.h"
 #include "selparam.h"
 
+using gmx::SelectionLocation;
 using gmx::SelectionParserValue;
 using gmx::SelectionParserValueList;
 using gmx::SelectionParserParameter;
@@ -151,7 +152,8 @@ convert_value(SelectionParserValue *value, e_selvalue_t type, void *scanner)
         if (value->type == INT_VALUE && type == REAL_VALUE)
         {
             *value = SelectionParserValue::createRealRange(value->u.i.i1,
-                                                           value->u.i.i2);
+                                                           value->u.i.i2,
+                                                           value->location());
             return 0;
         }
         /* Reals that are integer-valued can also be converted */
@@ -162,7 +164,7 @@ convert_value(SelectionParserValue *value, e_selvalue_t type, void *scanner)
             if (gmx_within_tol(value->u.r.r1, i1, GMX_REAL_EPS)
                 && gmx_within_tol(value->u.r.r2, i2, GMX_REAL_EPS))
             {
-                *value = SelectionParserValue::createIntegerRange(i1, i2);
+                *value = SelectionParserValue::createIntegerRange(i1, i2, value->location());
                 return 0;
             }
         }
@@ -559,7 +561,8 @@ parse_values_varnum(const SelectionParserValueList    &values,
      * other function. */
     if (param->val.type == STR_VALUE)
     {
-        SelectionTreeElementPointer child(new SelectionTreeElement(SEL_CONST));
+        SelectionTreeElementPointer child(
+                new SelectionTreeElement(SEL_CONST, SelectionLocation::createEmpty()));
         _gmx_selelem_set_vtype(child, STR_VALUE);
         child->setName(param->name);
         child->flags &= ~SEL_ALLOCVAL;
@@ -604,7 +607,8 @@ add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
     }
     else
     {
-        child.reset(new SelectionTreeElement(SEL_SUBEXPRREF));
+        // TODO: Initialize such that it includes the parameter.
+        child.reset(new SelectionTreeElement(SEL_SUBEXPRREF, expr->location()));
         _gmx_selelem_set_vtype(child, expr->v.type);
         child->child  = expr;
     }
@@ -1014,20 +1018,21 @@ convert_const_values(SelectionParserValueList *values)
         if (value->hasExpressionValue() && value->expr->v.type != GROUP_VALUE &&
             value->expr->type == SEL_CONST)
         {
-            SelectionTreeElementPointer expr = value->expr;
+            SelectionTreeElementPointer expr     = value->expr;
+            const SelectionLocation    &location = value->location();
             switch (expr->v.type)
             {
                 case INT_VALUE:
-                    *value = SelectionParserValue::createInteger(expr->v.u.i[0]);
+                    *value = SelectionParserValue::createInteger(expr->v.u.i[0], location);
                     break;
                 case REAL_VALUE:
-                    *value = SelectionParserValue::createReal(expr->v.u.r[0]);
+                    *value = SelectionParserValue::createReal(expr->v.u.r[0], location);
                     break;
                 case STR_VALUE:
-                    *value = SelectionParserValue::createString(expr->v.u.s[0]);
+                    *value = SelectionParserValue::createString(expr->v.u.s[0], location);
                     break;
                 case POS_VALUE:
-                    *value = SelectionParserValue::createPosition(expr->v.u.p->x[0]);
+                    *value = SelectionParserValue::createPosition(expr->v.u.p->x[0], location);
                     break;
                 default:
                     GMX_THROW(gmx::InternalError(

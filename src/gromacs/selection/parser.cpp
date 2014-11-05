@@ -2270,7 +2270,7 @@ yyreduce:
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg(get((yyvsp[(2) - (2)].sel)));
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_BOOLEAN));
+                        new SelectionTreeElement(SEL_BOOLEAN, (yyloc)));
                  sel->u.boolt = BOOL_NOT;
                  sel->child = arg;
                  set((yyval.sel), sel);
@@ -2285,7 +2285,7 @@ yyreduce:
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg1(get((yyvsp[(1) - (3)].sel))), arg2(get((yyvsp[(3) - (3)].sel)));
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_BOOLEAN));
+                        new SelectionTreeElement(SEL_BOOLEAN, (yyloc)));
                  sel->u.boolt = BOOL_AND;
                  sel->child = arg1; sel->child->next = arg2;
                  set((yyval.sel), sel);
@@ -2300,7 +2300,7 @@ yyreduce:
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg1(get((yyvsp[(1) - (3)].sel))), arg2(get((yyvsp[(3) - (3)].sel)));
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_BOOLEAN));
+                        new SelectionTreeElement(SEL_BOOLEAN, (yyloc)));
                  sel->u.boolt = BOOL_OR;
                  sel->child = arg1; sel->child->next = arg2;
                  set((yyval.sel), sel);
@@ -2443,7 +2443,7 @@ yyreduce:
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_CONST));
+                        new SelectionTreeElement(SEL_CONST, (yyloc)));
                  _gmx_selelem_set_vtype(sel, INT_VALUE);
                  _gmx_selvalue_reserve(&sel->v, 1);
                  sel->v.u.i[0] = (yyvsp[(1) - (1)].i);
@@ -2458,7 +2458,7 @@ yyreduce:
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_CONST));
+                        new SelectionTreeElement(SEL_CONST, (yyloc)));
                  _gmx_selelem_set_vtype(sel, REAL_VALUE);
                  _gmx_selvalue_reserve(&sel->v, 1);
                  sel->v.u.r[0] = (yyvsp[(1) - (1)].r);
@@ -2575,7 +2575,7 @@ yyreduce:
     {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_CONST));
+                        new SelectionTreeElement(SEL_CONST, (yyloc)));
                  _gmx_selelem_set_vtype(sel, STR_VALUE);
                  _gmx_selvalue_reserve(&sel->v, 1);
                  sel->v.u.s[0] = (yyvsp[(1) - (1)].str);
@@ -2601,7 +2601,7 @@ yyreduce:
 #line 594 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.sel), _gmx_sel_init_const_position((yyvsp[(2) - (7)].r), (yyvsp[(4) - (7)].r), (yyvsp[(6) - (7)].r)));
+                 set((yyval.sel), _gmx_sel_init_const_position((yyvsp[(2) - (7)].r), (yyvsp[(4) - (7)].r), (yyvsp[(6) - (7)].r), scanner));
                  END_ACTION;
              }
     break;
@@ -2640,7 +2640,7 @@ yyreduce:
 #line 631 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel))));
+                 set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel)), scanner));
                  END_ACTION;
              }
     break;
@@ -2650,7 +2650,7 @@ yyreduce:
 #line 639 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel))));
+                 set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel)), scanner));
                  END_ACTION;
              }
     break;
@@ -2660,7 +2660,7 @@ yyreduce:
 #line 647 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel))));
+                 set((yyval.sel), _gmx_sel_init_variable_ref(get((yyvsp[(1) - (1)].sel)), scanner));
                  END_ACTION;
              }
     break;
@@ -2705,7 +2705,7 @@ yyreduce:
     {
                  BEGIN_ACTION;
                  scoped_guard_sfree nameGuard((yyvsp[(1) - (2)].str));
-                 set((yyval.param), SelectionParserParameter::create((yyvsp[(1) - (2)].str), get((yyvsp[(2) - (2)].vlist))));
+                 set((yyval.param), SelectionParserParameter::create((yyvsp[(1) - (2)].str), get((yyvsp[(2) - (2)].vlist)), (yyloc)));
                  END_ACTION;
              }
     break;
@@ -2853,7 +2853,7 @@ yyreduce:
 #line 780 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.val), SelectionParserValue::createInteger((yyvsp[(1) - (1)].i)));
+                 set((yyval.val), SelectionParserValue::createInteger((yyvsp[(1) - (1)].i), (yyloc)));
                  END_ACTION;
              }
     break;
@@ -2863,7 +2863,7 @@ yyreduce:
 #line 786 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.val), SelectionParserValue::createReal((yyvsp[(1) - (1)].r)));
+                 set((yyval.val), SelectionParserValue::createReal((yyvsp[(1) - (1)].r), (yyloc)));
                  END_ACTION;
              }
     break;
@@ -2874,7 +2874,7 @@ yyreduce:
     {
                  BEGIN_ACTION;
                  scoped_guard_sfree stringGuard((yyvsp[(1) - (1)].str));
-                 set((yyval.val), SelectionParserValue::createString((yyvsp[(1) - (1)].str)));
+                 set((yyval.val), SelectionParserValue::createString((yyvsp[(1) - (1)].str), (yyloc)));
                  END_ACTION;
              }
     break;
@@ -2890,7 +2890,7 @@ yyreduce:
 #line 803 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.val), SelectionParserValue::createIntegerRange((yyvsp[(1) - (3)].i), (yyvsp[(3) - (3)].i)));
+                 set((yyval.val), SelectionParserValue::createIntegerRange((yyvsp[(1) - (3)].i), (yyvsp[(3) - (3)].i), (yyloc)));
                  END_ACTION;
              }
     break;
@@ -2900,7 +2900,7 @@ yyreduce:
 #line 809 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.val), SelectionParserValue::createRealRange((yyvsp[(1) - (3)].i), (yyvsp[(3) - (3)].r)));
+                 set((yyval.val), SelectionParserValue::createRealRange((yyvsp[(1) - (3)].i), (yyvsp[(3) - (3)].r), (yyloc)));
                  END_ACTION;
              }
     break;
@@ -2910,7 +2910,7 @@ yyreduce:
 #line 815 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.val), SelectionParserValue::createRealRange((yyvsp[(1) - (3)].r), (yyvsp[(3) - (3)].r)));
+                 set((yyval.val), SelectionParserValue::createRealRange((yyvsp[(1) - (3)].r), (yyvsp[(3) - (3)].r), (yyloc)));
                  END_ACTION;
              }
     break;

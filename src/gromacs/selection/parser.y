@@ -348,7 +348,7 @@ sel_expr:    NOT sel_expr
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg(get($2));
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_BOOLEAN));
+                        new SelectionTreeElement(SEL_BOOLEAN, @$));
                  sel->u.boolt = BOOL_NOT;
                  sel->child = arg;
                  set($$, sel);
@@ -359,7 +359,7 @@ sel_expr:    NOT sel_expr
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg1(get($1)), arg2(get($3));
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_BOOLEAN));
+                        new SelectionTreeElement(SEL_BOOLEAN, @$));
                  sel->u.boolt = BOOL_AND;
                  sel->child = arg1; sel->child->next = arg2;
                  set($$, sel);
@@ -370,7 +370,7 @@ sel_expr:    NOT sel_expr
                  BEGIN_ACTION;
                  SelectionTreeElementPointer arg1(get($1)), arg2(get($3));
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_BOOLEAN));
+                        new SelectionTreeElement(SEL_BOOLEAN, @$));
                  sel->u.boolt = BOOL_OR;
                  sel->child = arg1; sel->child->next = arg2;
                  set($$, sel);
@@ -473,7 +473,7 @@ num_expr:    TOK_INT
              {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_CONST));
+                        new SelectionTreeElement(SEL_CONST, @$));
                  _gmx_selelem_set_vtype(sel, INT_VALUE);
                  _gmx_selvalue_reserve(&sel->v, 1);
                  sel->v.u.i[0] = $1;
@@ -484,7 +484,7 @@ num_expr:    TOK_INT
              {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_CONST));
+                        new SelectionTreeElement(SEL_CONST, @$));
                  _gmx_selelem_set_vtype(sel, REAL_VALUE);
                  _gmx_selvalue_reserve(&sel->v, 1);
                  sel->v.u.r[0] = $1;
@@ -568,7 +568,7 @@ str_expr:    string
              {
                  BEGIN_ACTION;
                  SelectionTreeElementPointer sel(
-                        new SelectionTreeElement(SEL_CONST));
+                        new SelectionTreeElement(SEL_CONST, @$));
                  _gmx_selelem_set_vtype(sel, STR_VALUE);
                  _gmx_selvalue_reserve(&sel->v, 1);
                  sel->v.u.s[0] = $1;
@@ -593,7 +593,7 @@ str_expr:    string
 pos_expr:    '[' number ',' number ',' number ']'
              {
                  BEGIN_ACTION;
-                 set($$, _gmx_sel_init_const_position($2, $4, $6));
+                 set($$, _gmx_sel_init_const_position($2, $4, $6, scanner));
                  END_ACTION;
              }
 ;
@@ -630,7 +630,7 @@ pos_expr:    KEYWORD_POS OF sel_expr    %prec PARAM_REDUCT
 sel_expr:    VARIABLE_GROUP
              {
                  BEGIN_ACTION;
-                 set($$, _gmx_sel_init_variable_ref(get($1)));
+                 set($$, _gmx_sel_init_variable_ref(get($1), scanner));
                  END_ACTION;
              }
 ;
@@ -638,7 +638,7 @@ sel_expr:    VARIABLE_GROUP
 num_expr:    VARIABLE_NUMERIC
              {
                  BEGIN_ACTION;
-                 set($$, _gmx_sel_init_variable_ref(get($1)));
+                 set($$, _gmx_sel_init_variable_ref(get($1), scanner));
                  END_ACTION;
              }
 ;
@@ -646,7 +646,7 @@ num_expr:    VARIABLE_NUMERIC
 pos_expr:    VARIABLE_POS
              {
                  BEGIN_ACTION;
-                 set($$, _gmx_sel_init_variable_ref(get($1)));
+                 set($$, _gmx_sel_init_variable_ref(get($1), scanner));
                  END_ACTION;
              }
 ;
@@ -684,7 +684,7 @@ method_param:
              {
                  BEGIN_ACTION;
                  scoped_guard_sfree nameGuard($1);
-                 set($$, SelectionParserParameter::create($1, get($2)));
+                 set($$, SelectionParserParameter::create($1, get($2), @$));
                  END_ACTION;
              }
 ;
@@ -779,20 +779,20 @@ basic_value_item:
              integer_number      %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 set($$, SelectionParserValue::createInteger($1));
+                 set($$, SelectionParserValue::createInteger($1, @$));
                  END_ACTION;
              }
            | real_number         %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
-                 set($$, SelectionParserValue::createReal($1));
+                 set($$, SelectionParserValue::createReal($1, @$));
                  END_ACTION;
              }
            | string              %prec PARAM_REDUCT
              {
                  BEGIN_ACTION;
                  scoped_guard_sfree stringGuard($1);
-                 set($$, SelectionParserValue::createString($1));
+                 set($$, SelectionParserValue::createString($1, @$));
                  END_ACTION;
              }
            | value_item_range    { $$ = $1; }
@@ -802,19 +802,19 @@ value_item_range:
              integer_number TO integer_number
              {
                  BEGIN_ACTION;
-                 set($$, SelectionParserValue::createIntegerRange($1, $3));
+                 set($$, SelectionParserValue::createIntegerRange($1, $3, @$));
                  END_ACTION;
              }
            | integer_number TO real_number
              {
                  BEGIN_ACTION;
-                 set($$, SelectionParserValue::createRealRange($1, $3));
+                 set($$, SelectionParserValue::createRealRange($1, $3, @$));
                  END_ACTION;
              }
            | real_number TO number
              {
                  BEGIN_ACTION;
-                 set($$, SelectionParserValue::createRealRange($1, $3));
+                 set($$, SelectionParserValue::createRealRange($1, $3, @$));
                  END_ACTION;
              }
 ;
