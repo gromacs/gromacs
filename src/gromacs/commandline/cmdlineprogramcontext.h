@@ -127,14 +127,14 @@ class CommandLineProgramContext : public ProgramContextInterface
          * The constructed object works as if the command line consisted of
          * only of the binary name.
          */
-        explicit CommandLineProgramContext(const char *binaryName);
+        //TODO explicit CommandLineProgramContext(char *binaryName);
         /*! \brief
          * Initializes a program context object based on command line.
          *
          * \param[in] argc  argc value passed to main().
          * \param[in] argv  argv array passed to main().
          */
-        CommandLineProgramContext(int argc, const char *const argv[]);
+        CommandLineProgramContext(int &argc, char ** &argv);
         /*! \brief
          * Initializes a program context object based on command line.
          *
@@ -151,7 +151,7 @@ class CommandLineProgramContext : public ProgramContextInterface
          * into a non-Gromacs executable (with possible extensions in
          * ExecutableEnvironmentInterface).
          */
-        CommandLineProgramContext(int argc, const char *const argv[],
+        CommandLineProgramContext(int &argc, char ** &argv,
                                   ExecutableEnvironmentPointer env);
         virtual ~CommandLineProgramContext();
 

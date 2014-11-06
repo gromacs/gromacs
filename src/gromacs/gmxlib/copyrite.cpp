@@ -214,26 +214,26 @@ static void printCopyright(FILE *fp)
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
-    fprintf(fp, "GROMACS is written by:\n");
+    gmx::fprintf(fp, "GROMACS is written by:\n");
     for (int i = 0; i < NCONTRIBUTORS; )
     {
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
         {
-            fprintf(fp, "%-18s ", Contributors[i]);
+            gmx::fprintf(fp, "%-18s ", Contributors[i]);
         }
-        fprintf(fp, "\n");
+        gmx::fprintf(fp, "\n");
     }
-    fprintf(fp, "and the project leaders:\n");
-    fprintf(fp, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel\n");
-    fprintf(fp, "\n");
+    gmx::fprintf(fp, "and the project leaders:\n");
+    gmx::fprintf(fp, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel\n");
+    gmx::fprintf(fp, "\n");
     for (int i = 0; i < NCR; ++i)
     {
-        fprintf(fp, "%s\n", CopyrightText[i]);
+        gmx::fprintf(fp, "%s\n", CopyrightText[i]);
     }
-    fprintf(fp, "\n");
+    gmx::fprintf(fp, "\n");
     for (int i = 0; i < NLICENSE; ++i)
     {
-        fprintf(fp, "%s\n", LicenseText[i]);
+        gmx::fprintf(fp, "%s\n", LicenseText[i]);
     }
 }
 
@@ -248,11 +248,11 @@ void gmx_thanx(FILE *fp)
 
     if (cqnum >= 0)
     {
-        fprintf(fp, "\ngcq#%d: %s\n\n", cqnum, cq);
+        gmx::fprintf(fp, "\ngcq#%d: %s\n\n", cqnum, cq);
     }
     else
     {
-        fprintf(fp, "\n%s\n\n", cq);
+        gmx::fprintf(fp, "\n%s\n\n", cq);
     }
 }
 
@@ -586,24 +586,24 @@ void please_cite(FILE *fp, const char *key)
         ;
     }
 
-    fprintf(fp, "\n++++ PLEASE READ AND CITE THE FOLLOWING REFERENCE ++++\n");
+    gmx::fprintf(fp, "\n++++ PLEASE READ AND CITE THE FOLLOWING REFERENCE ++++\n");
     if (index < NSTR)
     {
         /* Insert newlines */
         author = wrap_lines(citedb[index].author, LINE_WIDTH, 0, FALSE);
         title  = wrap_lines(citedb[index].title, LINE_WIDTH, 0, FALSE);
-        fprintf(fp, "%s\n%s\n%s %d (%d) pp. %s\n",
-                author, title, citedb[index].journal,
-                citedb[index].volume, citedb[index].year,
-                citedb[index].pages);
+        gmx::fprintf(fp, "%s\n%s\n%s %d (%d) pp. %s\n",
+                     author, title, citedb[index].journal,
+                     citedb[index].volume, citedb[index].year,
+                     citedb[index].pages);
         sfree(author);
         sfree(title);
     }
     else
     {
-        fprintf(fp, "Entry %s not found in citation database\n", key);
+        gmx::fprintf(fp, "Entry %s not found in citation database\n", key);
     }
-    fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
+    gmx::fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
     fflush(fp);
 }
 
@@ -640,105 +640,105 @@ extern void gmx_print_version_info_gpu(FILE *fp);
 
 static void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Gromacs version:    %s\n", gmx_version());
+    gmx::fprintf(fp, "Gromacs version:    %s\n", gmx_version());
     const char *const git_hash = gmx_version_git_full_hash();
     if (git_hash[0] != '\0')
     {
-        fprintf(fp, "GIT SHA1 hash:      %s\n", git_hash);
+        gmx::fprintf(fp, "GIT SHA1 hash:      %s\n", git_hash);
     }
     const char *const base_hash = gmx_version_git_central_base_hash();
     if (base_hash[0] != '\0')
     {
-        fprintf(fp, "Branched from:      %s\n", base_hash);
+        gmx::fprintf(fp, "Branched from:      %s\n", base_hash);
     }
 
 #ifdef GMX_DOUBLE
-    fprintf(fp, "Precision:          double\n");
+    gmx::fprintf(fp, "Precision:          double\n");
 #else
-    fprintf(fp, "Precision:          single\n");
+    gmx::fprintf(fp, "Precision:          single\n");
 #endif
-    fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
+    gmx::fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
 
 #ifdef GMX_THREAD_MPI
-    fprintf(fp, "MPI library:        thread_mpi\n");
+    gmx::fprintf(fp, "MPI library:        thread_mpi\n");
 #elif defined(GMX_MPI)
-    fprintf(fp, "MPI library:        MPI\n");
+    gmx::fprintf(fp, "MPI library:        MPI\n");
 #else
-    fprintf(fp, "MPI library:        none\n");
+    gmx::fprintf(fp, "MPI library:        none\n");
 #endif
 #ifdef GMX_OPENMP
-    fprintf(fp, "OpenMP support:     enabled\n");
+    gmx::fprintf(fp, "OpenMP support:     enabled\n");
 #else
-    fprintf(fp, "OpenMP support:     disabled\n");
+    gmx::fprintf(fp, "OpenMP support:     disabled\n");
 #endif
 #ifdef GMX_GPU
-    fprintf(fp, "GPU support:        enabled\n");
+    gmx::fprintf(fp, "GPU support:        enabled\n");
 #else
-    fprintf(fp, "GPU support:        disabled\n");
+    gmx::fprintf(fp, "GPU support:        disabled\n");
 #endif
     /* A preprocessor trick to avoid duplicating logic from vec.h */
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
-    fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
+    gmx::fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
 #ifndef __MIC__
-    fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
+    gmx::fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
 #else
-    fprintf(fp, "SIMD instructions:  %s\n", "Intel MIC");
+    gmx::fprintf(fp, "SIMD instructions:  %s\n", "Intel MIC");
 #endif
 
-    fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
+    gmx::fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP
-    fprintf(fp, "RDTSCP usage:       enabled\n");
+    gmx::fprintf(fp, "RDTSCP usage:       enabled\n");
 #else
-    fprintf(fp, "RDTSCP usage:       disabled\n");
+    gmx::fprintf(fp, "RDTSCP usage:       disabled\n");
 #endif
 #ifdef GMX_CXX11
-    fprintf(fp, "C++11 compilation:  enabled\n");
+    gmx::fprintf(fp, "C++11 compilation:  enabled\n");
 #else
-    fprintf(fp, "C++11 compilation:  disabled\n");
+    gmx::fprintf(fp, "C++11 compilation:  disabled\n");
 #endif
 #ifdef GMX_USE_TNG
-    fprintf(fp, "TNG support:        enabled\n");
+    gmx::fprintf(fp, "TNG support:        enabled\n");
 #else
-    fprintf(fp, "TNG support:        disabled\n");
+    gmx::fprintf(fp, "TNG support:        disabled\n");
 #endif
 #ifdef HAVE_EXTRAE
     unsigned major, minor, revision;
     Extrae_get_version(&major, &minor, &revision);
-    fprintf(fp, "Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision);
+    gmx::fprintf(fp, "Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision);
 #else
-    fprintf(fp, "Tracing support:    disabled\n");
+    gmx::fprintf(fp, "Tracing support:    disabled\n");
 #endif
 
 
-    fprintf(fp, "Built on:           %s\n", BUILD_TIME);
-    fprintf(fp, "Built by:           %s\n", BUILD_USER);
-    fprintf(fp, "Build OS/arch:      %s\n", BUILD_HOST);
-    fprintf(fp, "Build CPU vendor:   %s\n", BUILD_CPU_VENDOR);
-    fprintf(fp, "Build CPU brand:    %s\n", BUILD_CPU_BRAND);
-    fprintf(fp, "Build CPU family:   %d   Model: %d   Stepping: %d\n",
-            BUILD_CPU_FAMILY, BUILD_CPU_MODEL, BUILD_CPU_STEPPING);
+    gmx::fprintf(fp, "Built on:           %s\n", BUILD_TIME);
+    gmx::fprintf(fp, "Built by:           %s\n", BUILD_USER);
+    gmx::fprintf(fp, "Build OS/arch:      %s\n", BUILD_HOST);
+    gmx::fprintf(fp, "Build CPU vendor:   %s\n", BUILD_CPU_VENDOR);
+    gmx::fprintf(fp, "Build CPU brand:    %s\n", BUILD_CPU_BRAND);
+    gmx::fprintf(fp, "Build CPU family:   %d   Model: %d   Stepping: %d\n",
+                 BUILD_CPU_FAMILY, BUILD_CPU_MODEL, BUILD_CPU_STEPPING);
     /* TODO: The below strings can be quite long, so it would be nice to wrap
      * them. Can wait for later, as the master branch has ready code to do all
      * that. */
-    fprintf(fp, "Build CPU features: %s\n", BUILD_CPU_FEATURES);
-    fprintf(fp, "C compiler:         %s\n", BUILD_C_COMPILER);
-    fprintf(fp, "C compiler flags:   %s\n", BUILD_CFLAGS);
-    fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
-    fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
+    gmx::fprintf(fp, "Build CPU features: %s\n", BUILD_CPU_FEATURES);
+    gmx::fprintf(fp, "C compiler:         %s\n", BUILD_C_COMPILER);
+    gmx::fprintf(fp, "C compiler flags:   %s\n", BUILD_CFLAGS);
+    gmx::fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
+    gmx::fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
-            __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
+    gmx::fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
+                 __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
 #endif
 #ifdef GMX_EXTERNAL_BOOST
     const bool bExternalBoost = true;
 #else
     const bool bExternalBoost = false;
 #endif
-    fprintf(fp, "Boost version:      %d.%d.%d%s\n", BOOST_VERSION / 100000,
-            BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
-            bExternalBoost ? " (external)" : " (internal)");
+    gmx::fprintf(fp, "Boost version:      %d.%d.%d%s\n", BOOST_VERSION / 100000,
+                 BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
+                 bExternalBoost ? " (external)" : " (internal)");
 #ifdef GMX_GPU
     gmx_print_version_info_gpu(fp);
 #endif
@@ -784,7 +784,7 @@ void printBinaryInformation(FILE                            *fp,
     const char *const name = programContext.displayName();
     if (settings.bGeneratedByHeader_)
     {
-        fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
+        gmx::fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
     }
     if (settings.bCopyright_)
     {
@@ -798,35 +798,35 @@ void printBinaryInformation(FILE                            *fp,
         // TODO: It would be nice to know here whether we are really running a
         // Gromacs binary or some other binary that is calling Gromacs; we
         // could then print "%s is part of GROMACS" or some alternative text.
-        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
-                gmx_version(), precisionString, suffix);
-        fprintf(fp, "\n");
+        gmx::fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
+                     gmx_version(), precisionString, suffix);
+        gmx::fprintf(fp, "\n");
         printCopyright(fp);
-        fprintf(fp, "\n");
+        gmx::fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
-            gmx_version(), precisionString, suffix);
+    gmx::fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
+                 gmx_version(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
     if (binaryPath != NULL && binaryPath[0] != '\0')
     {
-        fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
+        gmx::fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
     }
     const char *const libraryPath = programContext.defaultLibraryDataPath();
     if (libraryPath != NULL && libraryPath[0] != '\0')
     {
-        fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
+        gmx::fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
     }
     const char *const commandLine = programContext.commandLine();
     if (commandLine != NULL && commandLine[0] != '\0')
     {
-        fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
-                prefix, suffix, prefix, commandLine, suffix);
+        gmx::fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
+                     prefix, suffix, prefix, commandLine, suffix);
     }
     if (settings.bExtendedInfo_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
                            "Prefix/suffix not supported with extended info");
-        fprintf(fp, "\n");
+        gmx::fprintf(fp, "\n");
         gmx_print_version_info(fp);
     }
 }

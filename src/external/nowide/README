@@ -1,0 +1,1 @@
+This contains the nowide folder from nowide_standalone excluding iostream.hpp filebuf.hpp fstream.hpp scoped_ptr.hpp.

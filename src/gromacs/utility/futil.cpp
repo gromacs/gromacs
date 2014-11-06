@@ -68,6 +68,7 @@
 #include <windows.h>
 #endif
 
+#include <nowide/convert.hpp>
 #include "thread_mpi/threads.h"
 
 #include "gromacs/utility/cstringutil.h"
@@ -982,3 +983,49 @@ void gmx_getcwd(char *buffer, size_t size)
                   strerror(errno));
     }
 }
+
+namespace gmx
+{
+int vfprintf(FILE *f, const char *fmt, va_list ap)
+{
+    int ret;
+#ifdef GMX_NATIVE_WINDOWS
+    if (f == stdout || f == stderr)
+    {
+        // this requires the FILE to be in _O_U8TEXT mode (no encoding doesn't work for stdout/stderr for some bizare reason)
+        std::string s = vformatString(fmt, ap);
+        ret = fputws(nowide::widen(s).c_str(), f);
+        if (ret >= 0)
+        {
+            ret = s.length();
+        }
+    }
+    else
+#endif
+    {
+        //this requires the FILE to be in _O_TEXT mode (default)
+        ret = std::vfprintf(f, fmt, ap);
+    }
+    return ret;
+}
+
+int fprintf(FILE *f, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int     ret = gmx::vfprintf(f, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+int printf(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int     ret = gmx::vfprintf(stdout, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+}
+
+//TODO: if we also want to use gmx::fprintf from C code we could add a gmx_fprintf which just wraps it in GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

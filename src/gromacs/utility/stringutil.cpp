@@ -96,9 +96,8 @@ std::string stripString(const std::string &str)
     return std::string(start, end);
 }
 
-std::string formatString(const char *fmt, ...)
+std::string vformatString(const char *fmt, va_list ap)
 {
-    va_list           ap;
     char              staticBuf[1024];
     int               length = 1024;
     std::vector<char> dynamicBuf;
@@ -108,9 +107,10 @@ std::string formatString(const char *fmt, ...)
     // provides their own way of doing things...
     while (1)
     {
-        va_start(ap, fmt);
-        int n = vsnprintf(buf, length, fmt, ap);
-        va_end(ap);
+        va_list aq;
+        va_copy(aq, ap);
+        int     n = vsnprintf(buf, length, fmt, aq);
+        va_end(aq);
         if (n > -1 && n < length)
         {
             std::string result(buf);
@@ -127,6 +127,15 @@ std::string formatString(const char *fmt, ...)
         dynamicBuf.resize(length);
         buf = &dynamicBuf[0];
     }
+}
+
+std::string formatString(const char *fmt, ...)
+{
+    va_list     ap;
+    va_start(ap, fmt);
+    std::string r = vformatString(fmt, ap);
+    va_end(ap);
+    return r;
 }
 
 std::vector<std::string> splitString(const std::string &str)

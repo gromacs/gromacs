@@ -257,6 +257,13 @@ void gmx_getcwd(char *buffer, size_t size);
 
 #ifdef __cplusplus
 }
-#endif
 
+namespace gmx
+{
+int vfprintf(FILE *f, const char *fmt, va_list ap);
+int fprintf(FILE *f, const char *fmt, ...);
+int printf(const char *fmt, ...);
+}
+
+#endif
 #endif

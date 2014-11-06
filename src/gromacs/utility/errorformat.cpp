@@ -50,6 +50,7 @@
 #include <cstring>
 
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -74,8 +75,8 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     {
     }
 
-    std::fprintf(fp, "\n-------------------------------------------------------\n");
-    std::fprintf(fp, "Program:     %s, %s\n", programName, gmx_version());
+    gmx::fprintf(fp, "\n-------------------------------------------------------\n");
+    gmx::fprintf(fp, "Program:     %s, %s\n", programName, gmx_version());
     if (file != NULL)
     {
         // TODO: Check whether this works on Windows. If it doesn't, perhaps
@@ -88,14 +89,14 @@ void printFatalErrorHeader(FILE *fp, const char *title,
                 ++file;
             }
         }
-        std::fprintf(fp, "Source file: %s (line %d)\n", file, line);
+        gmx::fprintf(fp, "Source file: %s (line %d)\n", file, line);
     }
     if (func != NULL)
     {
-        std::fprintf(fp, "Function:    %s\n", func);
+        gmx::fprintf(fp, "Function:    %s\n", func);
     }
-    std::fprintf(fp, "\n");
-    std::fprintf(fp, "%s:\n", title);
+    gmx::fprintf(fp, "\n");
+    gmx::fprintf(fp, "%s:\n", title);
 }
 
 void printFatalErrorMessageLine(FILE *fp, const char *text, int indent)
@@ -112,17 +113,17 @@ void printFatalErrorMessageLine(FILE *fp, const char *text, int indent)
         {
             --lineLength;
         }
-        std::fprintf(fp, "%*s%.*s\n", indent, "", lineLength, text + lineStart);
+        gmx::fprintf(fp, "%*s%.*s\n", indent, "", lineLength, text + lineStart);
         lineStart = nextLineStart;
     }
 }
 
 void printFatalErrorFooter(FILE *fp)
 {
-    std::fprintf(fp, "\n");
-    std::fprintf(fp, "For more information and tips for troubleshooting, please check the GROMACS\n"
+    gmx::fprintf(fp, "\n");
+    gmx::fprintf(fp, "For more information and tips for troubleshooting, please check the GROMACS\n"
                  "website at http://www.gromacs.org/Documentation/Errors");
-    std::fprintf(fp, "\n-------------------------------------------------------\n");
+    gmx::fprintf(fp, "\n-------------------------------------------------------\n");
 }
 
 }   // namespace internal

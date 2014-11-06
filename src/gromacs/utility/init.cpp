@@ -45,12 +45,16 @@
 
 #include "config.h"
 
+#ifdef GMX_NATIVE_WINDOWS
+#include <stdio.h>
+#include <fcntl.h>
+#include <io.h>
+#endif
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #ifdef GMX_LIB_MPI
 #include "gromacs/utility/gmxmpi.h"
 #endif
-
 namespace gmx
 {
 
@@ -64,6 +68,10 @@ int g_initializationCounter = 0;
 
 void init(int *argc, char ***argv)
 {
+#ifdef GMX_NATIVE_WINDOWS //TODO: should this be here or in cmdlineprogramcontext?
+    _setmode(fileno(stdout), _O_U8TEXT);
+    _setmode(fileno(stderr), _O_U8TEXT);
+#endif
 #ifdef GMX_LIB_MPI
     int isInitialized = 0, isFinalized = 0;
     MPI_Finalized(&isFinalized);
@@ -88,7 +96,6 @@ void init(int *argc, char ***argv)
     }
     // Bump the counter to record this initialization event
     g_initializationCounter++;
-
 #else
     GMX_UNUSED_VALUE(argc);
     GMX_UNUSED_VALUE(argv);

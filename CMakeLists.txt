@@ -532,6 +532,7 @@ endif()
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/nowide)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 

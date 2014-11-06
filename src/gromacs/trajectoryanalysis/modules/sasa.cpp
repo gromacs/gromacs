@@ -163,7 +163,7 @@ void do_conect(const char *fn, int n, rvec x[])
     rvec      dx;
     real      d2;
 
-    fprintf(stderr, "Building CONECT records\n");
+    gmx::fprintf(stderr, "Building CONECT records\n");
     snew(c, n);
     for (i = 0; (i < n); i++)
     {
@@ -185,9 +185,9 @@ void do_conect(const char *fn, int n, rvec x[])
     {
         if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
         {
-            fprintf(stderr, "Warning dot %d has no conections\n", i+1);
+            gmx::fprintf(stderr, "Warning dot %d has no conections\n", i+1);
         }
-        fprintf(fp, "CONECT%5d%5d%5d\n", i+1, c[i].aa+1, c[i].ab+1);
+        gmx::fprintf(fp, "CONECT%5d%5d%5d\n", i+1, c[i].aa+1, c[i].ab+1);
     }
     gmx_ffclose(fp);
     sfree(c);
@@ -506,18 +506,18 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (solsize_ < 0)
     {
         solsize_ = 1e-3;
-        fprintf(stderr, "Probe size too small, setting it to %g\n", solsize_);
+        gmx::fprintf(stderr, "Probe size too small, setting it to %g\n", solsize_);
     }
     if (ndots_ < 20)
     {
         ndots_ = 20;
-        fprintf(stderr, "Ndots too small, setting it to %d\n", ndots_);
+        gmx::fprintf(stderr, "Ndots too small, setting it to %d\n", ndots_);
     }
 
     please_cite(stderr, "Eisenhaber95");
     //if ((top.ePBC() != epbcXYZ) || (TRICLINIC(fr.box)))
     //{
-    //    fprintf(stderr, "\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
+    //    gmx::fprintf(stderr, "\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
     //            "Analysis based on vacuum simulations (with the possibility of evaporation)\n"
     //            "will certainly crash the analysis.\n\n");
     //}
@@ -536,7 +536,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
             }
             else
             {
-                printf("Free energy of solvation predictions:\n");
+                gmx::printf("Free energy of solvation predictions:\n");
                 please_cite(stdout, "Eisenberg86a");
             }
         }
@@ -592,7 +592,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (ndefault > 0)
     {
-        fprintf(stderr, "WARNING: could not find a Van der Waals radius for %d atoms\n", ndefault);
+        gmx::fprintf(stderr, "WARNING: could not find a Van der Waals radius for %d atoms\n", ndefault);
     }
     gmx_atomprop_destroy(aps);
 
@@ -1030,7 +1030,7 @@ Sasa::finishAnalysis(int /*nframes*/)
     //if (bITP)
     //{
     //    fp3 = ftp2FILE(efITP, nfile, fnm, "w");
-    //    fprintf(fp3, "[ position_restraints ]\n"
+    //    gmx::fprintf(fp3, "[ position_restraints ]\n"
     //            "#define FCX 1000\n"
     //            "#define FCY 1000\n"
     //            "#define FCZ 1000\n"
@@ -1039,7 +1039,7 @@ Sasa::finishAnalysis(int /*nframes*/)
     //    {
     //        if (atom_area[i] > minarea)
     //        {
-    //            fprintf(fp3, "%5d   1     FCX  FCX  FCZ\n", ii+1);
+    //            gmx::fprintf(fp3, "%5d   1     FCX  FCX  FCZ\n", ii+1);
     //        }
     //    }
     //    ffclose(fp3);

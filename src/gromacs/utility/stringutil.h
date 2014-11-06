@@ -119,6 +119,13 @@ std::string stripString(const std::string &str);
 std::string formatString(const char *fmt, ...);
 
 /*! \brief
+ * Identical to formatString but takes a va_list as argument.
+ *
+ * \throws  std::bad_alloc if out of memory.
+ */
+std::string vformatString(const char *fmt, va_list ap);
+
+/*! \brief
  * Splits a string to whitespace separated tokens.
  *
  * \param[in] str  String to process.

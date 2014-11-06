@@ -61,6 +61,7 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
@@ -551,7 +552,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         FILE *out = optionsHolder.startupInfoFile();
         printBinaryInformation(out, impl_->programContext_,
                                optionsHolder.binaryInfoSettings());
-        fprintf(out, "\n");
+        gmx::fprintf(out, "\n");
     }
     if (module == NULL)
     {
@@ -572,7 +573,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         }
         filename.append(".debug");
 
-        fprintf(stderr, "Will write debug log file: %s\n", filename.c_str());
+        gmx::fprintf(stderr, "Will write debug log file: %s\n", filename.c_str());
         gmx_init_debug(optionsHolder.debugLevel(), filename.c_str());
     }
     // Set the nice level unless disabled in the configuration.

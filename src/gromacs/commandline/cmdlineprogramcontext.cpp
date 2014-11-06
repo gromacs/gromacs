@@ -52,6 +52,7 @@
 #include <vector>
 
 #include <boost/scoped_ptr.hpp>
+#include <nowide/args.hpp>
 
 #include "thread_mpi/mutex.h"
 
@@ -291,7 +292,7 @@ class CommandLineProgramContext::Impl
 {
     public:
         Impl();
-        Impl(int argc, const char *const argv[],
+        Impl(int &argc, char ** &argv,
              ExecutableEnvironmentPointer env);
 
         /*! \brief
@@ -312,6 +313,7 @@ class CommandLineProgramContext::Impl
         mutable std::string           fullBinaryPath_;
         mutable std::string           defaultLibraryDataPath_;
         mutable tMPI::mutex           binaryPathMutex_;
+        nowide::args                  argStorage_;
 };
 
 CommandLineProgramContext::Impl::Impl()
@@ -319,9 +321,9 @@ CommandLineProgramContext::Impl::Impl()
 {
 }
 
-CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
+CommandLineProgramContext::Impl::Impl(int &argc, char ** &argv,
                                       ExecutableEnvironmentPointer env)
-    : executableEnv_(env)
+    : executableEnv_(env), argStorage_(argc, argv)
 {
     invokedName_ = (argc != 0 ? argv[0] : "");
     programName_ = Path::getFilename(invokedName_);
@@ -357,19 +359,20 @@ CommandLineProgramContext::CommandLineProgramContext()
 {
 }
 
-CommandLineProgramContext::CommandLineProgramContext(const char *binaryName)
+/* TODO
+   CommandLineProgramContext::CommandLineProgramContext(char *binaryName)
     : impl_(new Impl(1, &binaryName, DefaultExecutableEnvironment::create()))
-{
-}
-
+   {
+   }
+ */
 CommandLineProgramContext::CommandLineProgramContext(
-        int argc, const char *const argv[])
+        int &argc, char ** &argv)
     : impl_(new Impl(argc, argv, DefaultExecutableEnvironment::create()))
 {
 }
 
 CommandLineProgramContext::CommandLineProgramContext(
-        int argc, const char *const argv[], ExecutableEnvironmentPointer env)
+        int &argc, char ** &argv, ExecutableEnvironmentPointer env)
     : impl_(new Impl(argc, argv, env))
 {
 }

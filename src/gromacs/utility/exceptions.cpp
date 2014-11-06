@@ -58,6 +58,7 @@
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -295,11 +296,11 @@ class MessageWriterFileNoThrow : public MessageWriterInterface
         virtual void writeErrNoInfo(int errorNumber, const char *funcName,
                                     int indent)
         {
-            std::fprintf(fp_, "%*sReason: %s\n", indent, "",
+            gmx::fprintf(fp_, "%*sReason: %s\n", indent, "",
                          std::strerror(errorNumber));
             if (funcName != NULL)
             {
-                std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n",
+                gmx::fprintf(fp_, "%*s(call to %s() returned error code %d)\n",
                              indent, "", funcName, errorNumber);
             }
         }
@@ -493,7 +494,7 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
                                     linePtr != NULL ? *linePtr : 0);
     if (bPrintType)
     {
-        std::fprintf(fp, "(exception type: %s)\n", typeid(ex).name());
+        gmx::fprintf(fp, "(exception type: %s)\n", typeid(ex).name());
     }
     MessageWriterFileNoThrow writer(fp);
     formatExceptionMessageInternal(&writer, ex, 0);

@@ -60,6 +60,7 @@
 #endif
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -249,7 +250,7 @@ bool File::readLineWithTrailingSpace(std::string *line)
 
 void File::writeString(const char *str)
 {
-    if (fprintf(handle(), "%s", str) < 0)
+    if (gmx::fprintf(handle(), "%s", str) < 0)
     {
         GMX_THROW_WITH_ERRNO(FileIOError("Writing to file failed"),
                              "fprintf", errno);
