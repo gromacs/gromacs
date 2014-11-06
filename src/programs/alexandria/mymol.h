@@ -101,7 +101,7 @@ class MyMol : public MolProp
 
         //! Generate virtual sites
         void MakeVsites(unsigned int flags);
-        
+
     public:
         rvec           *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix          box;

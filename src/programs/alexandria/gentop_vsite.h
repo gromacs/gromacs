@@ -30,7 +30,7 @@
 #include "poldata.h"
 
 #define egvtNO           0
-#define egvtLINEAR       1 
+#define egvtLINEAR       1
 #define egvtPLANAR       2
 #define egvtRING_PLANAR  4
 #define egvtOUT_OF_PLANE 8
@@ -55,84 +55,87 @@ typedef struct {
     int nb[6];
 } gv_ringplanar;
 
-class GentopVsites 
+class GentopVsites
 {
- private:
-    //! The type of vsites we are storing
-    unsigned int               gvt_;
-    //! The linear vsites
-    std::vector<gv_linear>     linear_;
-    //! The planar vsites
-    std::vector<gv_planar>     planar_;
-    //! The out-of-plane vsites
-    std::vector<gv_planar>     outofplane_;
-    //! The ring-planar vsites
-    std::vector<gv_ringplanar> ringplanar_;
+    private:
+        //! The type of vsites we are storing
+        unsigned int               gvt_;
+        //! The linear vsites
+        std::vector<gv_linear>     linear_;
+        //! The planar vsites
+        std::vector<gv_planar>     planar_;
+        //! The out-of-plane vsites
+        std::vector<gv_planar>     outofplane_;
+        //! The ring-planar vsites
+        std::vector<gv_ringplanar> ringplanar_;
 
- public:
-    //! Default constructor
-    GentopVsites() { gvt_ = egvtNO; };
-    
-    //! Default destructor
-    ~GentopVsites() {};
-    
-    void setVsitesType(unsigned int gvt) { gvt_ = gvt; }
-    
-    unsigned int getVsitesType() { return gvt_; }
+    public:
+        //! Default constructor
+        GentopVsites() { gvt_ = egvtNO; };
 
-    bool bHaveVsites() { return ((linear_.size() > 0) ||
-                                 (planar_.size() > 0) ||
-                                 (outofplane_.size() > 0) ||
-                                 (ringplanar_.size() > 0)); }
-    
-    /*! \brief Add a linear vsite
-     *
-     * param[in] a1 first atom
-     * param[in] a2 second atom
-     * param[in] a3 atom number of the vsite
-     */
-    void addLinear(int a1, int a2, int a3);
-    
-    /*! \brief Merge linear sites
-     *
-     * \param[in] bGenVsites
-     */
-    void mergeLinear(bool bGenVsites);
-    
-    /*! \brief Add a planar vsite
-     *
-     * param[in] a1 first atom
-     * param[in] a2 second atom
-     * param[in] a3 third atom
-     * param[in] a4 atom number of the vsite
-     * param[in] nbonds number of bonds for each of the atoms
-     */
-    void addPlanar(int a1, int a2, int a3, int a4, int nbonds[]);
-    
-    /*! \brief Add an out of plane vsite
-     *
-     * param[in] a1 first atom
-     * param[in] a2 second atom
-     * param[in] a3 third atom
-     * param[in] a4 atom number of the vsite
-     * param[in] nbonds number of bonds for each of the atoms
-     */
-    void addOutOfPlane(int a1, int a2, int a3, int a4, int nbonds[]);
-    
-    /*! \brief Add a ring-planar vsite
-     *
-     * param[in] natom number of atoms in the ring
-     * param[in] a the ring atoms
-     * param[in] nbonds number of bonds for each of the atoms
-     */
-    void addRingPlanar(int natom, int a[], int nbonds[]);
-    
-    //! The fun stuff
-    void generateSpecial(bool bGenVsites,
-                         t_atoms *atoms, rvec **x,
-                         t_params plist[],
-                         t_symtab *symtab, gpp_atomtype_t atype,
-                         t_excls **excls, gmx_poldata_t pd);
+        //! Default destructor
+        ~GentopVsites() {};
+
+        void setVsitesType(unsigned int gvt) { gvt_ = gvt; }
+
+        unsigned int getVsitesType() { return gvt_; }
+
+        bool bHaveVsites()
+        {
+            return ((linear_.size() > 0) ||
+                    (planar_.size() > 0) ||
+                    (outofplane_.size() > 0) ||
+                    (ringplanar_.size() > 0));
+        }
+
+        /*! \brief Add a linear vsite
+         *
+         * param[in] a1 first atom
+         * param[in] a2 second atom
+         * param[in] a3 atom number of the vsite
+         */
+        void addLinear(int a1, int a2, int a3);
+
+        /*! \brief Merge linear sites
+         *
+         * \param[in] bGenVsites
+         */
+        void mergeLinear(bool bGenVsites);
+
+        /*! \brief Add a planar vsite
+         *
+         * param[in] a1 first atom
+         * param[in] a2 second atom
+         * param[in] a3 third atom
+         * param[in] a4 atom number of the vsite
+         * param[in] nbonds number of bonds for each of the atoms
+         */
+        void addPlanar(int a1, int a2, int a3, int a4, int nbonds[]);
+
+        /*! \brief Add an out of plane vsite
+         *
+         * param[in] a1 first atom
+         * param[in] a2 second atom
+         * param[in] a3 third atom
+         * param[in] a4 atom number of the vsite
+         * param[in] nbonds number of bonds for each of the atoms
+         */
+        void addOutOfPlane(int a1, int a2, int a3, int a4, int nbonds[]);
+
+        /*! \brief Add a ring-planar vsite
+         *
+         * param[in] natom number of atoms in the ring
+         * param[in] a the ring atoms
+         * param[in] nbonds number of bonds for each of the atoms
+         */
+        void addRingPlanar(int natom, int a[], int nbonds[]);
+
+        //! The fun stuff
+        void generateSpecial(bool bGenVsites,
+                             t_atoms *atoms, rvec **x,
+                             t_params plist[],
+                             t_symtab *symtab, gpp_atomtype_t atype,
+                             t_excls **excls, gmx_poldata_t pd);
 };
 
 }

@@ -459,13 +459,13 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
 
 void MyMol::MakeVsites(unsigned int flags)
 {
-    std::vector<std::vector<unsigned int>> bonds;
+    std::vector < std::vector < unsigned int>> bonds;
     std::vector<int> nbonds;
-    t_pbc  pbc;
-    matrix box;
-    real   th_toler = 5;
-    real   ph_toler = 5;
-    
+    t_pbc            pbc;
+    matrix           box;
+    real             th_toler = 5;
+    real             ph_toler = 5;
+
     clear_mat(box);
     set_pbc(&pbc, epbcNONE, box);
 
@@ -483,7 +483,7 @@ void MyMol::MakeVsites(unsigned int flags)
     {
         /* Now test initial geometry */
         printf("Testing geometry for atom %d\n", i);
-        if ((bonds[i].size() == 2) && 
+        if ((bonds[i].size() == 2) &&
             is_linear(x_[i], x_[bonds[i][0]], x_[bonds[i][1]],
                       &pbc, th_toler))
         {
@@ -1087,7 +1087,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
          */
         /* Generate virtual sites */
         MakeVsites(0);
-        
+
         /* Move the plist_ to the correct function */
         if (true)
         {

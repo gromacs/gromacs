@@ -35,7 +35,7 @@
 #include "poldata.h"
 #include "gentop_vsite.h"
 
-namespace alexandria 
+namespace alexandria
 {
 
 void GentopVsites::addLinear(int ai, int aj, int ak)
@@ -82,7 +82,7 @@ void GentopVsites::addPlanar(int ai, int aj, int ak, int al, int nbonds[])
     if (i == planar_.size())
     {
         gv_planar p;
-        
+
         p.a[0] = ai;
         p.a[1] = aj;
         p.a[2] = ak;
@@ -95,7 +95,7 @@ void GentopVsites::addPlanar(int ai, int aj, int ak, int al, int nbonds[])
     }
 }
 
-void GentopVsites::addOutOfPlane(int ai, int aj, int ak, int al, 
+void GentopVsites::addOutOfPlane(int ai, int aj, int ak, int al,
                                  int nbonds[])
 {
     unsigned int i;
@@ -113,7 +113,7 @@ void GentopVsites::addOutOfPlane(int ai, int aj, int ak, int al,
     if (i == outofplane_.size())
     {
         gv_planar p;
-        
+
         p.a[0] = ai;
         p.a[1] = aj;
         p.a[2] = ak;
@@ -502,11 +502,11 @@ void GentopVsites::generateSpecial(bool bGenVsites,
     int     ftb, fta, ftp, fti;
 
     mergeLinear(bGenVsites);
-    
-    ftb = gmx_poldata_get_bond_ftype(pd);
-    fta = gmx_poldata_get_angle_ftype(pd);
-    ftp = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
-    fti = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
+
+    ftb     = gmx_poldata_get_bond_ftype(pd);
+    fta     = gmx_poldata_get_angle_ftype(pd);
+    ftp     = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
+    fti     = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
     nlin_at = 0;
     for (unsigned int i = 0; (i < linear_.size()); i++)
     {
