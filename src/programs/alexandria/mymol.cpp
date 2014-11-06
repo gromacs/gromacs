@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "gromacs/utility/futil.h"
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
@@ -37,9 +37,11 @@
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/mtop_util.h"
@@ -427,6 +429,73 @@ static void detect_rings(t_params *bonds, int natom, gmx_bool bRing[])
                     }
                 }
             }
+        }
+    }
+}
+
+static bool is_planar(rvec xi, rvec xj, rvec xk, rvec xl, t_pbc *pbc,
+                      real phi_toler)
+{
+    int  t1, t2, t3;
+    rvec r_ij, r_kj, r_kl, m, n;
+    real sign, phi;
+
+    phi = RAD2DEG*dih_angle(xi, xj, xk, xl, pbc, r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
+
+    return (fabs(phi) < phi_toler);
+}
+
+static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
+                      real th_toler)
+{
+    int  t1, t2;
+    rvec r_ij, r_kj;
+    real costh, th;
+
+    th = fabs(RAD2DEG*bond_angle(xi, xj, xk, pbc, r_ij, r_kj, &costh, &t1, &t2));
+
+    return (th > th_toler) || (th < 180-th_toler);
+}
+
+void MyMol::MakeVsites(unsigned int flags)
+{
+    std::vector<std::vector<unsigned int>> bonds;
+    std::vector<int> nbonds;
+    t_pbc  pbc;
+    matrix box;
+    real   th_toler = 5;
+    real   ph_toler = 5;
+    
+    clear_mat(box);
+    set_pbc(&pbc, epbcNONE, box);
+
+    bonds.resize(topology_->atoms.nr);
+    for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
+    {
+        bonds[bi->GetAi() - 1].push_back(bi->GetAj() - 1);
+    }
+    nbonds.resize(topology_->atoms.nr);
+    for (int i = 0; (i < topology_->atoms.nr); i++)
+    {
+        nbonds[i] = bonds[i].size();
+    }
+    for (int i = 0; (i < topology_->atoms.nr); i++)
+    {
+        /* Now test initial geometry */
+        printf("Testing geometry for atom %d\n", i);
+        if ((bonds[i].size() == 2) && 
+            is_linear(x_[i], x_[bonds[i][0]], x_[bonds[i][1]],
+                      &pbc, th_toler))
+        {
+            gvt.addLinear(bonds[i][0], i, bonds[i][1]);
+        }
+        else if ((bonds[i].size() == 3) &&
+                 is_planar(x_[i], x_[bonds[i][0]],
+                           x_[bonds[i][1]], x_[bonds[i][2]],
+                           &pbc, ph_toler))
+        {
+            gvt.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
+                          &nbonds[0]);
         }
     }
 }
@@ -933,7 +1002,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
                                   bool                  bPol,
                                   int                   nexcl)
 {
-    alexandria::BondIterator bi;
     immStatus                imm = immOK;
     int                      ftb;
     t_param                  b;
@@ -986,7 +1054,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
         /* Store bonds in harmonic potential list first, update type later */
         ftb = F_BONDS;
         memset(&b, 0, sizeof(b));
-        for (bi = BeginBond(); (bi < EndBond()); bi++)
+        for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
         {
             b.a[0] = bi->GetAi() - 1;
             b.a[1] = bi->GetAj() - 1;
@@ -1017,6 +1085,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
            sfree(rtp);
            done_nnb(&nnb);
          */
+        /* Generate virtual sites */
+        MakeVsites(0);
+        
         /* Move the plist_ to the correct function */
         if (true)
         {
@@ -1530,8 +1601,8 @@ void MyMol::GenerateVsitesShells(gmx_poldata_t pd, bool bGenVSites, bool bAddShe
     {
         int anr = topology_->atoms.nr;
 
-        gentop_vsite_generate_special(gvt, bGenVSites, &topology_->atoms, &x_, plist_,
-                                      symtab_, atype_, &excls, pd);
+        gvt.generateSpecial(bGenVSites, &topology_->atoms, &x_, plist_,
+                            symtab_, atype_, &excls, pd);
         bHaveVSites_ = (topology_->atoms.nr > anr);
     }
     if (!bPairs)

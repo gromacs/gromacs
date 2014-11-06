@@ -35,134 +35,122 @@
 #include "poldata.h"
 #include "gentop_vsite.h"
 
-typedef struct {
-    int nline; /* Must be 3 or 4 */
-    int a[4];
-} gv_linear;
-
-typedef struct {
-    int a[4];
-    int nb[4];
-} gv_planar;
-
-typedef struct {
-    int natom;
-    int a[6];
-    int nb[6];
-} gv_ringplanar;
-
-typedef struct gentop_vsite
+namespace alexandria 
 {
-    int            egvt;
-    int            nlinear;
-    gv_linear     *lin;
-    int            nplanar;
-    gv_planar     *plan;
-    int            nringplanar;
-    gv_ringplanar *rplan;
-} gentop_vsite;
 
-gentop_vsite_t gentop_vsite_init(int egvt)
+void GentopVsites::addLinear(int ai, int aj, int ak)
 {
-    gentop_vsite_t gvt;
+    unsigned int i;
 
-    snew(gvt, 1);
-    gvt->egvt = egvt;
-    if ((egvt < egvtNO) || (egvt >= egvtNR))
+    printf("addLinear: %d %d %d\n", ai, aj, ak);
+    for (i = 0; (i < linear_.size()); i++)
     {
-        gvt->egvt = egvtNO;
-    }
-
-    return gvt;
-}
-
-void gentop_vsite_done(gentop_vsite_t *gvt)
-{
-    sfree((*gvt)->lin);
-    sfree((*gvt)->plan);
-    sfree(*gvt);
-    *gvt = NULL;
-}
-
-void gentop_vsite_add_linear(gentop_vsite_t gvt, int ai, int aj, int ak)
-{
-    int i;
-
-    for (i = 0; (i < gvt->nlinear); i++)
-    {
-        if (gvt->lin[i].a[1] == aj)
+        if (linear_[i].a[1] == aj)
         {
-            if (((gvt->lin[i].a[0] == ai)  && (gvt->lin[i].a[2] == ak)) ||
-                ((gvt->lin[i].a[0] == aj)  && (gvt->lin[i].a[2] == ai)))
+            if (((linear_[i].a[0] == ai)  && (linear_[i].a[2] == ak)) ||
+                ((linear_[i].a[0] == aj)  && (linear_[i].a[2] == ai)))
             {
                 break;
             }
         }
     }
-    if (i == gvt->nlinear)
+    if (i == linear_.size())
     {
-        srenew(gvt->lin, ++gvt->nlinear);
-        gvt->lin[i].nline = NOTSET;
-        gvt->lin[i].a[0]  = ai;
-        gvt->lin[i].a[1]  = aj;
-        gvt->lin[i].a[2]  = ak;
+        gv_linear l;
+        l.nline = NOTSET;
+        l.a[0]  = ai;
+        l.a[1]  = aj;
+        l.a[2]  = ak;
+        linear_.push_back(l);
     }
 }
 
-void gentop_vsite_add_planar(gentop_vsite_t gvt, int ai, int aj, int ak, int al, int nbonds[])
+void GentopVsites::addPlanar(int ai, int aj, int ak, int al, int nbonds[])
 {
-    int i, j;
+    unsigned int i;
 
-    for (i = 0; (i < gvt->nplanar); i++)
+    for (i = 0; (i < planar_.size()); i++)
     {
-        if (((gvt->plan[i].a[0] == ai) && (gvt->plan[i].a[1] == aj)  &&
-             (gvt->plan[i].a[2] == ak) && (gvt->plan[i].a[3] == al)) ||
-            ((gvt->plan[i].a[0] == al) && (gvt->plan[i].a[1] == ak)  &&
-             (gvt->plan[i].a[2] == aj) && (gvt->plan[i].a[3] == ai)))
+        if (((planar_[i].a[0] == ai) && (planar_[i].a[1] == aj)  &&
+             (planar_[i].a[2] == ak) && (planar_[i].a[3] == al)) ||
+            ((planar_[i].a[0] == al) && (planar_[i].a[1] == ak)  &&
+             (planar_[i].a[2] == aj) && (planar_[i].a[3] == ai)))
         {
             break;
         }
     }
-    if (i == gvt->nplanar)
+    if (i == planar_.size())
     {
-        srenew(gvt->plan, ++gvt->nplanar);
-        gvt->plan[i].a[0] = ai;
-        gvt->plan[i].a[1] = aj;
-        gvt->plan[i].a[2] = ak;
-        gvt->plan[i].a[3] = al;
-        for (j = 0; (j < 4); j++)
+        gv_planar p;
+        
+        p.a[0] = ai;
+        p.a[1] = aj;
+        p.a[2] = ak;
+        p.a[3] = al;
+        for (unsigned int j = 0; (j < 4); j++)
         {
-            gvt->plan[i].nb[j] = nbonds[gvt->plan[i].a[j]];
+            p.nb[j] = nbonds[p.a[j]];
         }
+        planar_.push_back(p);
     }
 }
 
-void gentop_vsite_add_ring_planar(gentop_vsite_t gvt,
-                                  int natom, int aa[], int nbonds[])
+void GentopVsites::addOutOfPlane(int ai, int aj, int ak, int al, 
+                                 int nbonds[])
 {
-    int      i, j;
-    gmx_bool bSame;
+    unsigned int i;
 
-    for (i = 0; (i < gvt->nringplanar); i++)
+    for (i = 0; (i < outofplane_.size()); i++)
     {
-        bSame = TRUE;
-        for (j = 0; (j < natom); j++)
+        if (((outofplane_[i].a[0] == ai) && (outofplane_[i].a[1] == aj)  &&
+             (outofplane_[i].a[2] == ak) && (outofplane_[i].a[3] == al)) ||
+            ((outofplane_[i].a[0] == al) && (outofplane_[i].a[1] == ak)  &&
+             (outofplane_[i].a[2] == aj) && (outofplane_[i].a[3] == ai)))
         {
-            bSame = bSame && (gvt->rplan[i].a[j] == aa[j]);
+            break;
+        }
+    }
+    if (i == outofplane_.size())
+    {
+        gv_planar p;
+        
+        p.a[0] = ai;
+        p.a[1] = aj;
+        p.a[2] = ak;
+        p.a[3] = al;
+        for (unsigned int j = 0; (j < 4); j++)
+        {
+            p.nb[j] = nbonds[p.a[j]];
+        }
+        outofplane_.push_back(p);
+    }
+}
+
+void GentopVsites::addRingPlanar(int natom, int aa[], int nbonds[])
+{
+    unsigned int i;
+
+    for (i = 0; (i < ringplanar_.size()); i++)
+    {
+        bool bSame = true;
+        for (int j = 0; (j < natom); j++)
+        {
+            bSame = bSame && (ringplanar_[i].a[j] == aa[j]);
         }
         if (bSame)
         {
             break;
         }
     }
-    if (i == gvt->nringplanar)
+    if (i == ringplanar_.size())
     {
-        srenew(gvt->rplan, ++gvt->nringplanar);
-        for (j = 0; (j < natom); j++)
+        gv_ringplanar rp;
+        for (int j = 0; (j < natom); j++)
         {
-            gvt->rplan[i].a[j]  = aa[j];
-            gvt->rplan[i].nb[j] = nbonds[gvt->plan[i].a[j]];
+            rp.a[j]  = aa[j];
+            rp.nb[j] = nbonds[rp.a[j]];
         }
+        ringplanar_.push_back(rp);
     }
 }
 
@@ -413,13 +401,13 @@ static void calc_vsite2parm(t_atoms *atoms, t_params plist[], rvec **x,
     }
 }
 
-void gentop_vsite_merge_linear(gentop_vsite_t gvt, gmx_bool bGenVsites)
+void GentopVsites::mergeLinear(bool bGenVsites)
 {
-    int i, j, k, l, ai, aj, ndbl;
+    int k, l, ai, aj, ndbl;
 
-    for (i = 0; (i < gvt->nlinear); i++)
+    for (unsigned int i = 0; (i < linear_.size()); i++)
     {
-        gvt->lin[i].nline = 3;
+        linear_[i].nline = 3;
     }
 
     if (!bGenVsites)
@@ -427,17 +415,17 @@ void gentop_vsite_merge_linear(gentop_vsite_t gvt, gmx_bool bGenVsites)
         return;
     }
 
-    for (i = 0; (i < gvt->nlinear); i++)
+    for (unsigned int i = 0; (i < linear_.size()); i++)
     {
-        for (j = i+1; (j < gvt->nlinear); j++)
+        for (unsigned int j = i+1; (j < linear_.size()); j++)
         {
             ndbl = 0;
-            for (k = 0; (k < gvt->lin[i].nline); k++)
+            for (k = 0; (k < linear_[i].nline); k++)
             {
-                ai = gvt->lin[i].a[k];
-                for (l = 0; (l < gvt->lin[j].nline); l++)
+                ai = linear_[i].a[k];
+                for (l = 0; (l < linear_[j].nline); l++)
                 {
-                    aj = gvt->lin[j].a[l];
+                    aj = linear_[j].a[l];
                     if (ai == aj)
                     {
                         ndbl++;
@@ -452,31 +440,31 @@ void gentop_vsite_merge_linear(gentop_vsite_t gvt, gmx_bool bGenVsites)
                 if (NULL != debug)
                 {
                     fprintf(debug, "Linear group j");
-                    for (l = 0; (l < gvt->lin[j].nline); l++)
+                    for (l = 0; (l < linear_[j].nline); l++)
                     {
-                        fprintf(debug, " %d", gvt->lin[j].a[l]);
+                        fprintf(debug, " %d", linear_[j].a[l]);
                     }
                     fprintf(debug, "\n");
                     fprintf(debug, "Linear group i");
-                    for (k = 0; (k < gvt->lin[i].nline); k++)
+                    for (k = 0; (k < linear_[i].nline); k++)
                     {
-                        fprintf(debug, " %d", gvt->lin[i].a[k]);
+                        fprintf(debug, " %d", linear_[i].a[k]);
                     }
                     fprintf(debug, "\n");
                 }
-                if ((gvt->lin[j].a[0] == gvt->lin[i].a[1]) &&
-                    (gvt->lin[j].a[1] == gvt->lin[i].a[2]))
+                if ((linear_[j].a[0] == linear_[i].a[1]) &&
+                    (linear_[j].a[1] == linear_[i].a[2]))
                 {
-                    gvt->lin[i].a[3]  = gvt->lin[j].a[2];
-                    gvt->lin[i].nline = 4;
-                    gvt->lin[j].nline = 0;
+                    linear_[i].a[3]  = linear_[j].a[2];
+                    linear_[i].nline = 4;
+                    linear_[j].nline = 0;
                 }
-                else if ((gvt->lin[i].a[0] == gvt->lin[j].a[1]) &&
-                         (gvt->lin[i].a[1] == gvt->lin[j].a[2]))
+                else if ((linear_[i].a[0] == linear_[j].a[1]) &&
+                         (linear_[i].a[1] == linear_[j].a[2]))
                 {
-                    gvt->lin[j].a[3]  = gvt->lin[i].a[2];
-                    gvt->lin[j].nline = 4;
-                    gvt->lin[i].nline = 0;
+                    linear_[j].a[3]  = linear_[i].a[2];
+                    linear_[j].nline = 4;
+                    linear_[i].nline = 0;
                 }
                 else
                 {
@@ -485,15 +473,15 @@ void gentop_vsite_merge_linear(gentop_vsite_t gvt, gmx_bool bGenVsites)
                 if (NULL != debug)
                 {
                     fprintf(debug, "Linear group j");
-                    for (l = 0; (l < gvt->lin[j].nline); l++)
+                    for (l = 0; (l < linear_[j].nline); l++)
                     {
-                        fprintf(debug, " %d", gvt->lin[j].a[l]);
+                        fprintf(debug, " %d", linear_[j].a[l]);
                     }
                     fprintf(debug, "\n");
                     fprintf(debug, "Linear group i");
-                    for (k = 0; (k < gvt->lin[i].nline); k++)
+                    for (k = 0; (k < linear_[i].nline); k++)
                     {
-                        fprintf(debug, " %d", gvt->lin[i].a[k]);
+                        fprintf(debug, " %d", linear_[i].a[k]);
                     }
                     fprintf(debug, "\n");
                 }
@@ -502,26 +490,27 @@ void gentop_vsite_merge_linear(gentop_vsite_t gvt, gmx_bool bGenVsites)
     }
 }
 
-void gentop_vsite_generate_special(gentop_vsite_t gvt, gmx_bool bGenVsites,
+void GentopVsites::generateSpecial(bool bGenVsites,
                                    t_atoms *atoms, rvec **x,
                                    t_params plist[], t_symtab *symtab,
                                    gpp_atomtype_t atype, t_excls **excls,
                                    gmx_poldata_t pd)
 {
-    int     i, j, nlin_at;
+    int     j, nlin_at;
     int     a[MAXATOMLIST], aa[2];
     t_param pp;
     int     ftb, fta, ftp, fti;
 
+    mergeLinear(bGenVsites);
+    
     ftb = gmx_poldata_get_bond_ftype(pd);
     fta = gmx_poldata_get_angle_ftype(pd);
     ftp = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
     fti = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
-    gentop_vsite_merge_linear(gvt, bGenVsites);
     nlin_at = 0;
-    for (i = 0; (i < gvt->nlinear); i++)
+    for (unsigned int i = 0; (i < linear_.size()); i++)
     {
-        nlin_at += gvt->lin[i].nline;
+        nlin_at += linear_[i].nline;
     }
 
     if (NULL != debug)
@@ -535,9 +524,9 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt, gmx_bool bGenVsites,
         {
             fprintf(debug, "angles");
         }
-        fprintf(debug, " and %d impropers\n", gvt->nplanar);
+        fprintf(debug, " and %d impropers\n", (int)planar_.size());
     }
-    if ((gvt->egvt == egvtLINEAR) || (gvt->egvt == egvtALL))
+    if ((gvt_ == egvtLINEAR) || (gvt_ == egvtALL))
     {
         /* If we use vsites (discouraged) each triplet of atoms in a linear arrangement
          * is described by
@@ -547,11 +536,11 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt, gmx_bool bGenVsites,
          * particles for each linear group.
          * In case we use the special linear angle terms, life gets a lot easier!
          */
-        for (i = 0; (i < gvt->nlinear); i++)
+        for (unsigned int i = 0; (i < linear_.size()); i++)
         {
-            for (j = 0; (j < gvt->lin[i].nline); j++)
+            for (j = 0; (j < linear_[i].nline); j++)
             {
-                a[j] = gvt->lin[i].a[j];
+                a[j] = linear_[i].a[j];
             }
             for (; (j < MAXATOMLIST); j++)
             {
@@ -564,7 +553,7 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt, gmx_bool bGenVsites,
             if (bGenVsites)
             {
                 /* Complicated algorithm, watch out */
-                for (j = 0; (j < gvt->lin[i].nline-1); j++)
+                for (j = 0; (j < linear_[i].nline-1); j++)
                 {
                     aa[0] = a[j+0];
                     aa[1] = a[j+1];
@@ -572,7 +561,7 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt, gmx_bool bGenVsites,
                 }
 
                 /* Compute details for the new masses and vsites, and update everything */
-                calc_vsite2parm(atoms, plist, x, &gvt->lin[i], symtab, atype);
+                calc_vsite2parm(atoms, plist, x, &linear_[i], symtab, atype);
                 srenew((*excls), atoms->nr);
                 for (j = atoms->nr-2; (j <= atoms->nr-1); j++)
                 {
@@ -593,44 +582,44 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt, gmx_bool bGenVsites,
             }
         }
     }
-    if ((gvt->egvt == egvtPLANAR) || (gvt->egvt == egvtALL))
+    if ((gvt_ == egvtPLANAR) || (gvt_ == egvtALL))
     {
-        for (i = 0; (i < gvt->nplanar); i++)
+        for (unsigned int i = 0; (i < planar_.size()); i++)
         {
             /* First delete superfluous dihedrals */
-            a[1] = gvt->plan[i].a[0];
+            a[1] = planar_[i].a[0];
             a[3] = -1;
             for (j = 1; (j < 4); j++)
             {
-                if (gvt->plan[i].nb[j] == 1)
+                if (planar_[i].nb[j] == 1)
                 {
                     if (j == 1)
                     {
-                        a[0] = gvt->plan[i].a[1];
-                        a[2] = gvt->plan[i].a[2];
+                        a[0] = planar_[i].a[1];
+                        a[2] = planar_[i].a[2];
                         delete_params(plist, ftp, a);
                         delete_params(plist, fti, a);
-                        a[2] = gvt->plan[i].a[3];
+                        a[2] = planar_[i].a[3];
                         delete_params(plist, ftp, a);
                         delete_params(plist, fti, a);
                     }
                     else if (j == 2)
                     {
-                        a[0] = gvt->plan[i].a[2];
-                        a[2] = gvt->plan[i].a[1];
+                        a[0] = planar_[i].a[2];
+                        a[2] = planar_[i].a[1];
                         delete_params(plist, ftp, a);
                         delete_params(plist, fti, a);
-                        a[2] = gvt->plan[i].a[3];
+                        a[2] = planar_[i].a[3];
                         delete_params(plist, ftp, a);
                         delete_params(plist, fti, a);
                     }
                     else if (j == 3)
                     {
-                        a[0] = gvt->plan[i].a[3];
-                        a[2] = gvt->plan[i].a[1];
+                        a[0] = planar_[i].a[3];
+                        a[2] = planar_[i].a[1];
                         delete_params(plist, ftp, a);
                         delete_params(plist, fti, a);
-                        a[2] = gvt->plan[i].a[2];
+                        a[2] = planar_[i].a[2];
                         delete_params(plist, ftp, a);
                         delete_params(plist, fti, a);
                     }
@@ -640,9 +629,11 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt, gmx_bool bGenVsites,
             memset(&pp, 0, sizeof(pp));
             for (j = 0; (j < 4); j++)
             {
-                pp.a[j] = gvt->plan[i].a[j];
+                pp.a[j] = planar_[i].a[j];
             }
             add_param_to_list(&(plist[fti]), &pp);
         }
     }
+}
+
 }

@@ -546,7 +546,7 @@ int nm2type(FILE *fp, const char *molname, gmx_poldata_t pd, gmx_atomprop_t aps,
             t_symtab *tab, t_atoms *atoms, gmx_bool bRing[], double bondorder[],
             gpp_atomtype_t atype, int *nbonds, t_params *bonds,
             char **gt_atoms, rvec x[], t_pbc *pbc, real th_toler, real phi_toler,
-            gentop_vsite_t gvt)
+            alexandria::GentopVsites gvt)
 {
     int      i, j, nonebond, nresolved;
     int      ai, aj;
@@ -615,13 +615,11 @@ int nm2type(FILE *fp, const char *molname, gmx_poldata_t pd, gmx_atomprop_t aps,
     {
         /* Now test initial geometry */
         ats[i].geom = egmTetrahedral;
+        printf("Testing geometry for atom %d\n", i);
         if ((ats[i].nb == 2) && is_linear(x[i], x[ats[i].bbb[0]], x[ats[i].bbb[1]], pbc, th_toler))
         {
             ats[i].geom = egmLinear;
-            if (NULL != gvt)
-            {
-                gentop_vsite_add_linear(gvt, ats[i].bbb[0], i, ats[i].bbb[1]);
-            }
+            gvt.addLinear(ats[i].bbb[0], i, ats[i].bbb[1]);
         }
         else if ((ats[i].nb == 3) && is_planar(x[i], x[ats[i].bbb[0]],
                                                x[ats[i].bbb[1]], x[ats[i].bbb[2]],
@@ -633,11 +631,8 @@ int nm2type(FILE *fp, const char *molname, gmx_poldata_t pd, gmx_atomprop_t aps,
             }
 
             ats[i].geom = egmPlanar;
-            if (NULL != gvt)
-            {
-                gentop_vsite_add_planar(gvt, i, ats[i].bbb[0], ats[i].bbb[1], ats[i].bbb[2],
-                                        nbonds);
-            }
+            gvt.addPlanar(i, ats[i].bbb[0], ats[i].bbb[1], ats[i].bbb[2],
+                          nbonds);
         }
     }
     /* Iterate geometry test to look for rings. In a six-ring the information
@@ -725,7 +720,7 @@ gpp_atomtype_t set_atom_type(FILE *fp, const char *molname,
                              int nbonds[], gmx_bool bRing[], double bondorder[],
                              char **smnames, gmx_poldata_t pd,
                              gmx_atomprop_t aps, rvec x[], t_pbc *pbc, real th_toler,
-                             real ph_toler, gentop_vsite_t gvt)
+                             real ph_toler, alexandria::GentopVsites gvt)
 {
     gpp_atomtype_t atype;
     int            nresolved;

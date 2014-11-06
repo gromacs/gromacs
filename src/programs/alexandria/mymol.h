@@ -75,7 +75,7 @@ class MyMol : public MolProp
         int            *symmetric_charges_;
         int            *cgnr_;
         t_excls        *excls;
-        gentop_vsite_t  gvt;
+        GentopVsites    gvt;
         immStatus       immAtoms_, immCharges_, immTopology_;
         std::string     forcefield_;
         bool            bHaveShells_, bHaveVSites_;
@@ -99,6 +99,9 @@ class MyMol : public MolProp
         //! Generate angles, dihedrals, exclusions etc.
         void MakeAngles();
 
+        //! Generate virtual sites
+        void MakeVsites(unsigned int flags);
+        
     public:
         rvec           *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix          box;
