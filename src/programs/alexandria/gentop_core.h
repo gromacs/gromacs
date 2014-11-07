@@ -32,10 +32,6 @@
 #include "gentop_nm2type.h"
 #include "poldata.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC, matrix box);
 
 real calc_dip(t_atoms *atoms, rvec x[]);
@@ -51,9 +47,10 @@ void add_shells(gmx_poldata_t pd, int maxatom, t_atoms *atoms,
                 gpp_atomtype_t atype, t_params plist[],
                 rvec *x, t_symtab *symtab, t_excls **excls);
 
-int *symmetrize_charges(gmx_bool bQsym,
+void symmetrize_charges(gmx_bool bQsym,
                         t_atoms *atoms, t_params *bonds, gmx_poldata_t pd,
-                        gmx_atomprop_t aps, const char *symm_string);
+                        gmx_atomprop_t aps, const char *symm_string,
+                        std::vector<int> &sym_charges);
 
 enum eChargeGroup {
     ecgAtom, ecgGroup, ecgNeutral, ecgNR
@@ -68,8 +65,5 @@ void sort_on_charge_groups(int *cgnr, t_atoms *atoms, t_params plist[],
                            rvec x[], t_excls excls[],
                            const char *ndxout,
                            int nmol);
-#ifdef __cplusplus
-}
-#endif
 
 #endif

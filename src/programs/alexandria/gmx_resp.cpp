@@ -287,7 +287,8 @@ bool gmx_resp_add_atom_info(gmx_resp_t gr, t_atoms *atoms, gmx_poldata_t pd)
     return true;
 }
 
-void gmx_resp_summary(FILE *fp, gmx_resp_t gr, int *symmetric_atoms)
+void gmx_resp_summary(FILE *fp, gmx_resp_t gr, 
+                      std::vector<int> &symmetric_atoms)
 {
     int i;
 
@@ -338,7 +339,8 @@ void gmx_resp_add_param(gmx_resp_t gr, int atom, eParm eparm, int zz)
     }
 }
 
-void gmx_resp_add_atom_symmetry(gmx_resp_t gr, int *symmetric_atoms)
+void gmx_resp_add_atom_symmetry(gmx_resp_t gr, 
+                                std::vector<int> &symmetric_atoms)
 {
     int        i, k, zz;
 
@@ -350,71 +352,68 @@ void gmx_resp_add_atom_symmetry(gmx_resp_t gr, int *symmetric_atoms)
     /* Map the symmetric atoms */
     for (i = 0; (i < gr->natom); i++)
     {
-        if (NULL != symmetric_atoms)
+        if (0 == i)
         {
-            if (0 == i)
+            /* The first charge is not a free variable, it follows from the total charge.
+             * Only add the zeta values here.
+             */
+            for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
             {
-                /* The first charge is not a free variable, it follows from the total charge.
-                 * Only add the zeta values here.
-                 */
-                for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
-                {
-                    gmx_resp_add_param(gr, i, eparmZ, zz);
-                }
+                gmx_resp_add_param(gr, i, eparmZ, zz);
             }
-            else if (symmetric_atoms[i] == i)
-            {
-                gmx_resp_add_param(gr, i, eparmQ, gr->ra[i].nZeta-1);
+        }
+        else if (symmetric_atoms[i] == i)
+        {
+            gmx_resp_add_param(gr, i, eparmQ, gr->ra[i].nZeta-1);
 
-                if (gr->bZatype)
+            if (gr->bZatype)
+            {
+                for (k = 0; (k < i); k++)
                 {
-                    for (k = 0; (k < i); k++)
+                    if (gr->ra[i].atype == gr->ra[k].atype)
                     {
-                        if (gr->ra[i].atype == gr->ra[k].atype)
-                        {
-                            break;
-                        }
-                    }
-                    if (k == i)
-                    {
-                        for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
-                        {
-                            gmx_resp_add_param(gr, i, eparmZ, zz);
-                        }
-                    }
-                    else
-                    {
-                        for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
-                        {
-                            gr->ra[i].iz[zz] = gr->ra[k].iz[zz];
-                        }
+                        break;
                     }
                 }
-                else
+                if (k == i)
                 {
                     for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
                     {
                         gmx_resp_add_param(gr, i, eparmZ, zz);
                     }
                 }
+                else
+                {
+                    for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
+                    {
+                        gr->ra[i].iz[zz] = gr->ra[k].iz[zz];
+                    }
+                }
             }
-            else if (symmetric_atoms[i] > i)
+            else
             {
-                gmx_fatal(FARGS, "The symmetric_atoms array can not point to larger atom numbers");
-            }
-            else if (gr->ra[i].nZeta > 0)
-            {
-                gr->ra[i].iq[gr->ra[i].nZeta-1] =
-                    gr->ra[symmetric_atoms[i]].iq[gr->ra[i].nZeta-1];
                 for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
                 {
-                    gr->ra[i].iz[zz] = gr->ra[symmetric_atoms[i]].iz[zz];
+                    gmx_resp_add_param(gr, i, eparmZ, zz);
                 }
-                if (debug)
-                {
-                    fprintf(debug, "Atom %d is a copy of atom %d\n",
-                            i+1, symmetric_atoms[i]+1);
-                }
+            }
+        }
+        else if (symmetric_atoms[i] > i)
+        {
+            gmx_fatal(FARGS, "The symmetric_atoms array can not point to larger atom numbers");
+        }
+        else if (gr->ra[i].nZeta > 0)
+        {
+            gr->ra[i].iq[gr->ra[i].nZeta-1] =
+                gr->ra[symmetric_atoms[i]].iq[gr->ra[i].nZeta-1];
+            for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
+            {
+                gr->ra[i].iz[zz] = gr->ra[symmetric_atoms[i]].iz[zz];
+            }
+            if (debug)
+            {
+                fprintf(debug, "Atom %d is a copy of atom %d\n",
+                        i+1, symmetric_atoms[i]+1);
             }
         }
         else
@@ -427,7 +426,7 @@ void gmx_resp_add_atom_symmetry(gmx_resp_t gr, int *symmetric_atoms)
             {
                 gmx_resp_add_param(gr, i, eparmQ, gr->ra[i].nZeta-1);
             }
-
+            
             for (k = 0; (k < gr->ra[i].nZeta); k++)
             {
                 gmx_resp_add_param(gr, i, eparmZ, k);
@@ -444,7 +443,7 @@ void gmx_resp_add_atom_symmetry(gmx_resp_t gr, int *symmetric_atoms)
                 maxz = gr->ra[i].nZeta;
             }
         }
-
+        
         fprintf(debug, "GRQ: %3s %5s", "nr", "type");
         for (i = 0; (i < maxz); i++)
         {

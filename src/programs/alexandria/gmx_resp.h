@@ -82,7 +82,8 @@ gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
 
 void gmx_resp_statistics(gmx_resp_t gr, int len, char buf[]);
 
-void gmx_resp_summary(FILE *gp, gmx_resp_t gr, int *symmetric_atoms);
+void gmx_resp_summary(FILE *gp, gmx_resp_t gr, 
+                      std::vector<int> &symmetric_atoms);
 
 void gmx_resp_update_atomtypes(gmx_resp_t gr, t_atoms *atoms);
 
@@ -101,7 +102,7 @@ void gmx_resp_get_atom_info(gmx_resp_t gr, t_atoms *atoms,
 const char *gmx_resp_get_stoichiometry(gmx_resp_t gr);
 
 void gmx_resp_add_atom_symmetry(gmx_resp_t gr,
-                                int       *symmetric_atoms);
+                                std::vector<int> &symmetric_atoms);
 
 void gmx_resp_add_point(gmx_resp_t gr, double x, double y,
                         double z, double V);

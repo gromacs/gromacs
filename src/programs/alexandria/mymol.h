@@ -71,8 +71,9 @@ class MyMol : public MolProp
 {
     private:
         //! Gromacs structures
-        int             nexcl_;
-        int            *symmetric_charges_;
+        int              nexcl_;
+        //! List of symmetric charges
+        std::vector<int> symmetric_charges_;
         int            *cgnr_;
         t_excls        *excls;
         GentopVsites    gvt;

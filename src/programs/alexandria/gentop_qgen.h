@@ -25,7 +25,6 @@
 #define GENTOP_QGEN_H
 
 #include <stdio.h>
-//#include "gromacs/gmxpreprocess/grompp.h"
 #include "poldata.h"
 #include "gmx_resp.h"
 

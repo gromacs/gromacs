@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -548,21 +582,21 @@ void add_shells(gmx_poldata_t pd, int maxatom, t_atoms *atoms,
     sfree(shell_atom);
 }
 
-int *symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
+void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         t_params *bonds, gmx_poldata_t pd,
-                        gmx_atomprop_t aps, const char *symm_string)
+                        gmx_atomprop_t aps, const char *symm_string,
+                        std::vector<int> &sym_charges)
 {
     char  *central, *attached;
     int    nattached, i, j, nh, ai, aj, anri, anrj;
     int    anr_central, anr_attached, nrq;
     int    hs[8];
     double qaver, qsum;
-    int   *sc, hsmin;
+    int    hsmin;
 
-    snew(sc, atoms->nr);
     for (i = 0; (i < atoms->nr); i++)
     {
-        sc[i] = i;
+        sym_charges.push_back(i);
     }
     if (bQsym)
     {
@@ -578,7 +612,7 @@ int *symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             for (std::vector<std::string>::iterator is = ss.begin();
                  (is < ss.end()); ++is)
             {
-                sc[ii] = atoi(is->c_str());
+                sym_charges[ii] = atoi(is->c_str());
                 ii++;
             }
         }
@@ -619,7 +653,7 @@ int *symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         {
                             for (j = 0; (j < nattached); j++)
                             {
-                                sc[hs[j]] = hsmin;
+                                sym_charges[hs[j]] = hsmin;
                             }
                         }
                     }
@@ -633,7 +667,7 @@ int *symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             nrq  = 0;
             for (j = 0; (j < atoms->nr); j++)
             {
-                if (sc[j] == sc[i])
+                if (sym_charges[j] == sym_charges[i])
                 {
                     qsum += atoms->atom[j].q;
                     nrq++;
@@ -644,7 +678,7 @@ int *symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                 qaver = qsum/nrq;
                 for (j = 0; (j < atoms->nr); j++)
                 {
-                    if (sc[j] == sc[i])
+                    if (sym_charges[j] == sym_charges[i])
                     {
                         atoms->atom[j].q = qaver;
                     }
@@ -652,7 +686,6 @@ int *symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             }
         }
     }
-    return sc;
 }
 
 static int *generate_cg_neutral(t_atoms *atoms, gmx_bool bUsePDBcharge)
