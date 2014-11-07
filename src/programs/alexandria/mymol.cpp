@@ -1034,6 +1034,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
     if (bPol)
     {
         printf("I forgot to implement generating polarizabilities for %s.\n", GetMolname().c_str());
+        fflush(stdout);
     }
     ftb    = bts[ebtsBONDS];
     nexcl_ = nexcl;
@@ -1483,7 +1484,9 @@ static void write_top2(FILE *out, char *molname,
     }
 }
 
-void MyMol::PrintTopology(const char *fn, ChargeGenerationModel iModel, bool bVerbose)
+void MyMol::PrintTopology(const char *fn, 
+                          ChargeGenerationModel iModel, 
+                          bool bVerbose)
 {
     FILE   *fp;
     t_mols  printmol;
@@ -1618,12 +1621,10 @@ void MyMol::GenerateVsitesShells(gmx_poldata_t pd, bool bGenVSites, bool bAddShe
     {
         int nalloc = topology_->atoms.nr*2+2;
         srenew(x_, nalloc);
-        //srenew(smnames,nalloc);
         srenew(excls, nalloc);
         add_shells(pd, nalloc, &topology_->atoms, atype_, plist_, x_, symtab_, &excls);
         bHaveShells_ = true;
     }
-    //real mu = calc_dip(&topology_->atoms,x);
 }
 
 immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge,

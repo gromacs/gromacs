@@ -444,7 +444,7 @@ void add_shells(gmx_poldata_t pd, int maxatom, t_atoms *atoms,
         }
     }
     renum[atoms->nr] = atoms->nr + ns;
-
+    printf("added %d shells\n", ns);
     if (ns > 0)
     {
         /* Make new atoms and x arrays */
