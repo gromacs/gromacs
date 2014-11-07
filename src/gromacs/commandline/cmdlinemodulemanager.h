@@ -44,7 +44,7 @@
 #define GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
 
 #include "gromacs/onlinehelp/helptopicinterface.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
@@ -82,7 +82,7 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
        catch (const std::exception &ex)
        {
            gmx::printFatalErrorMessage(stderr, ex);
-           return gmx::processExceptionAtExit(ex);
+           return gmx::processExceptionAtExitForCommandLine(ex);
        }
    }
  * \endcode

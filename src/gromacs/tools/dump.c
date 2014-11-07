@@ -43,10 +43,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"

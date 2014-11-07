@@ -32,13 +32,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(gmxCustomCommandUtilities)
 include(gmxOptionUtilities)
 
 find_package(Doxygen QUIET)
 if (DOXYGEN_FOUND)
     # This logic closely follows that found in FindDoxygen.cmake for dot,
     # except that the PATH variable is not cached.
-    FIND_PROGRAM(DOXYGEN_MSCGEN_EXECUTABLE
+    find_program(DOXYGEN_MSCGEN_EXECUTABLE
         NAMES mscgen
         DOC "Message sequence chart renderer tool (http://www.mcternan.me.uk/mscgen/)")
     if (DOXYGEN_MSCGEN_EXECUTABLE)
@@ -61,64 +62,144 @@ if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
     set(USE_PYTHON_SCRIPTS ON)
 endif()
 
-add_custom_target(find-installed-headers
-    COMMAND ${CMAKE_COMMAND}
-        -D SRCDIR=${CMAKE_SOURCE_DIR}
-        -D BUILDDIR=${CMAKE_BINARY_DIR}
-        -D OUTFILE=${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/getInstalledHeaders.cmake
-    COMMENT "Generating installed headers list" VERBATIM)
+# Note that if you relocate this file, you also need to change gmxtree.py.
+# TODO: Try to find a solution where this would be hard-coded here, completely
+# separate from the logic that generates it.
+set(INSTALLED_HEADERS_FILE ${PROJECT_BINARY_DIR}/src/gromacs/installed-headers.txt)
 
 ########################################################################
 # Doxygen configuration
-########################################################################
+#
 if (DOXYGEN_FOUND)
-    FILE(GLOB NB_KERNEL_DIRS
+    # Generate Doxygen input configuration files
+    file(GLOB NB_KERNEL_DIRS
          ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/nonbonded/nb_kernel_*/)
-    LIST(REMOVE_ITEM NB_KERNEL_DIRS
+    list(REMOVE_ITEM NB_KERNEL_DIRS
          ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/nonbonded/nb_kernel_c)
-    FOREACH(NB_KERNEL_DIR ${NB_KERNEL_DIRS})
+    foreach (dir ${NB_KERNEL_DIRS})
         SET(NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN
-            "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${NB_KERNEL_DIR}")
-    ENDFOREACH(NB_KERNEL_DIR)
+            "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${dir}")
+    endforeach()
+    set(DEPGRAPH_DIR ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
     set(DOXYGEN_SECTIONS "")
-    CONFIGURE_FILE(Doxyfile-common.cmakein Doxyfile-common)
-    CONFIGURE_FILE(Doxyfile-full.cmakein Doxyfile-full)
-    CONFIGURE_FILE(Doxyfile-lib.cmakein Doxyfile-lib)
-    CONFIGURE_FILE(Doxyfile-user.cmakein Doxyfile-user)
-    CONFIGURE_FILE(Doxyfile-xml.cmakein Doxyfile-xml)
-
+    set(DOXYGEN_EXTRA_SETTINGS "")
     if (GMX_COMPACT_DOXYGEN)
-        FILE(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
-             "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact\n")
+        set(DOXYGEN_EXTRA_SETTINGS "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact")
     endif()
+    configure_file(Doxyfile-common.cmakein Doxyfile-common)
+    configure_file(Doxyfile-full.cmakein Doxyfile-full)
+    configure_file(Doxyfile-lib.cmakein Doxyfile-lib)
+    configure_file(Doxyfile-user.cmakein Doxyfile-user)
+    configure_file(Doxyfile-xml.cmakein Doxyfile-xml)
 
     configure_file(RunDoxygen.cmake.cmakein RunDoxygen.cmake @ONLY)
     gmx_configure_version_file(Doxyfile-version.cmakein Doxyfile-version
                                TARGET doxygen-version)
-    add_custom_target(doc-full
-        ${CMAKE_COMMAND} -DDOCTYPE=full -P RunDoxygen.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating full documentation with Doxygen" VERBATIM)
-    add_custom_target(doc-lib
-        ${CMAKE_COMMAND} -DDOCTYPE=lib -P RunDoxygen.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating library documentation with Doxygen" VERBATIM)
-    add_custom_target(doc-user
-        ${CMAKE_COMMAND} -DDOCTYPE=user -P RunDoxygen.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating public API documentation with Doxygen" VERBATIM)
-    add_custom_target(doc-xml
-        ${CMAKE_COMMAND} -DDOCTYPE=xml -P RunDoxygen.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Extracting Doxygen documentation to XML" VERBATIM)
-    add_custom_target(doc-all)
-    add_dependencies(doc-all doc-full doc-lib doc-user)
-    add_dependencies(doc-full doxygen-version)
-    add_dependencies(doc-lib  doxygen-version)
-    add_dependencies(doc-user doxygen-version)
-    add_dependencies(doc-xml  doxygen-version)
 
+    # Add a stamp that gets updated whenever a source file that contributes to
+    # Doxygen is updated.  All Doxygen targets can then depend on this stamp,
+    # instead of each specifying this massive set of dependencies.
+    # TODO: The set of files that affects Doxygen is not exactly the same as
+    # that which affects the dependency graphs, and neither is captured
+    # perfectly with this set, but this can be improved if it becomes a real
+    # issue (the differences are mainly in the generated group kernel files,
+    # but there are some minor other differences as well).
+    if (SOURCE_IS_GIT_REPOSITORY AND GIT_FOUND)
+        gmx_get_files_with_gitattribute(doxygen_sources gmx-doxygen)
+        # Add also common configuration files that influence the generation.
+        set(doxygen_deps
+            ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
+            ${CMAKE_CURRENT_BINARY_DIR}/RunDoxygen.cmake)
+        if (GMX_COMPACT_DOXYGEN)
+            list(APPEND doxygen_deps ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-compact)
+        endif()
+        gmx_add_custom_output_target(doxygen-source-timestamp
+            OUTPUT STAMP
+            DEPENDS_FILE_LIST doxygen_sources
+            DEPENDS ${doxygen_deps}
+            COMMENT "Updating Doxygen source timestamp")
+    else()
+        # If there is no git, we just update the stamp every time, and the
+        # builds are triggered every time.  This should be rare enough, but
+        # this case still needs to be supported for the Jenkins job that builds
+        # the documentation for a release from the release tarball.
+        gmx_add_custom_output_target(doxygen-source-timestamp
+            RUN_ALWAYS OUTPUT STAMP
+            COMMENT "Updating Doxygen source timestamp")
+    endif()
+
+    # Helper function to create a Doxygen build target
+    function (add_doxygen_target TARGET TYPE COMMENT)
+        set(_deps doxygen-source-timestamp doxygen-version
+            ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-${TYPE})
+        set(_fast_arg "")
+        if ("${ARGN}" STREQUAL "DEPGRAPHS")
+            set(_fast_arg "ADD_FAST_TARGET")
+            if (TARGET dep-graphs-dot)
+                list(APPEND _deps dep-graphs-dot)
+            endif()
+        endif()
+        gmx_add_custom_output_target(${TARGET} OUTPUT STAMP ${_fast_arg}
+            # Ensure the directory exists to avoid spurious warnings
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPGRAPH_DIR}
+            COMMAND ${CMAKE_COMMAND} -DDOCTYPE=${TYPE} -P RunDoxygen.cmake
+            DEPENDS ${_deps}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "${COMMENT}")
+        if (_fast_arg)
+            add_dependencies(${TARGET}-fast doxygen-version)
+        endif()
+    endfunction()
+
+    # The XML target is necessary for the dependency graphs
+    add_doxygen_target(doc-xml xml "Extracting Doxygen documentation to XML")
+
+    # Add targets for generating the dependency graphs; they are necessary for
+    # the full and lib variants of the documentation.
+    if (USE_PYTHON_SCRIPTS)
+        # Add target that generates .dot files for the dependency graphs.
+        # The output also depends on the Doxygen source files, but the
+        # dependency on doc-xml takes care of that transitively.
+        gmx_add_custom_output_target(dep-graphs-dot ADD_FAST_TARGET
+            OUTPUT STAMP
+            COMMAND ${PYTHON_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
+                -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
+                --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
+                -o ${DEPGRAPH_DIR}
+            DEPENDS doc-xml ${INSTALLED_HEADER_FILE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/doxygenxml.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/gmxtree.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
+            COMMENT "Generating include dependency graphs for dot")
+
+        # Add separate targets for converting the .dot files to .png.
+        # These are not needed by the Doxygen targets, but are useful for
+        # investigating just the graphs.
+        set(dep_graphs_command_dot
+            ${CMAKE_COMMAND} -DGRAPHDIR=${DEPGRAPH_DIR}
+            -DDOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/generateGraphs.cmake)
+        add_custom_target(dep-graphs      COMMAND ${dep_graphs_command_dot}
+            COMMENT "Generating PNG include dependency graphs" VERBATIM)
+        add_custom_target(dep-graphs-fast COMMAND ${dep_graphs_command_dot}
+            COMMENT "Generating PNG include dependency graphs" VERBATIM)
+        add_dependencies(dep-graphs      dep-graphs-dot)
+        add_dependencies(dep-graphs-fast dep-graphs-dot-fast)
+    endif()
+
+    # Create the actual targets to build the documentation.
+    add_doxygen_target(doc-full full "Generating full documentation with Doxygen" DEPGRAPHS)
+    add_doxygen_target(doc-lib  lib  "Generating library documentation with Doxygen" DEPGRAPHS)
+    add_doxygen_target(doc-user user "Generating public API documentation with Doxygen")
+    # Convenience targets to build all the documentation flavors.
+    add_custom_target(doc-all)
+    add_custom_target(doc-all-fast)
+    add_dependencies(doc-all      doc-full doc-lib doc-user)
+    add_dependencies(doc-all-fast doc-full-fast doc-lib-fast doc-user)
+
+    # Finally, create the doc-check target.
     if (USE_PYTHON_SCRIPTS)
         # TODO: Consider whether this is the best name and location for this
         # code, since not all of it is Doxygen-specific (but nearly all of it
@@ -126,40 +207,14 @@ if (DOXYGEN_FOUND)
         set(doc_check_command
             ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-check.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
-            --installed ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
             -l ${CMAKE_CURRENT_BINARY_DIR}/doxygen-check.log
             --exitcode
             --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
             --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt)
-        add_custom_target(doc-check COMMAND ${doc_check_command}
+        add_custom_target(doc-check      COMMAND ${doc_check_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
-        add_dependencies(doc-check doc-xml find-installed-headers)
-
-        set(graphdir ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
-        set(dep_graphs_command_python
-            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
-            -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
-            --installed ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
-            --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
-            -o ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
-        set(dep_graphs_command_dot
-            ${CMAKE_COMMAND} -DGRAPHDIR=${graphdir}
-            -DDOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
-            -P ${CMAKE_CURRENT_SOURCE_DIR}/generateGraphs.cmake)
-        add_custom_target(dep-graphs
-            COMMAND ${dep_graphs_command_python}
-            COMMAND ${dep_graphs_command_dot}
-            COMMENT "Generating include dependency graphs" VERBATIM)
-        add_dependencies(dep-graphs doc-xml find-installed-headers)
-
-        # These targets are the same as above, but they don't rerun the
-        # dependencies each time, making it faster and more convenient for
-        # testing.
         add_custom_target(doc-check-fast COMMAND ${doc_check_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
-        add_custom_target(dep-graphs-fast
-            COMMAND ${dep_graphs_command_python}
-            COMMAND ${dep_graphs_command_dot}
-            COMMENT "Generating include dependency graphs" VERBATIM)
+        add_dependencies(doc-check      doc-xml)
     endif()
 endif()

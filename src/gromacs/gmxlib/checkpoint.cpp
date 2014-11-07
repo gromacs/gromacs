@@ -44,18 +44,9 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include <fcntl.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #ifdef GMX_NATIVE_WINDOWS
-/* _chsize_s */
 #include <io.h>
 #include <sys/locking.h>
 #endif
@@ -72,12 +63,12 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -156,33 +147,6 @@ const char *edfh_names[edfhNR] =
     "bEquilibrated", "N_at_state", "Wang-Landau Histogram", "Wang-Landau Delta", "Weights", "Free Energies", "minvar", "variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
-
-#ifdef GMX_NATIVE_WINDOWS
-static int
-gmx_wintruncate(const char *filename, __int64 size)
-{
-#ifdef GMX_FAHCORE
-    /*we do this elsewhere*/
-    return 0;
-#else
-    FILE *fp;
-
-    fp = fopen(filename, "rb+");
-
-    if (fp == NULL)
-    {
-        return -1;
-    }
-
-#ifdef _MSC_VER
-    return _chsize_s( fileno(fp), size);
-#else
-    return _chsize( fileno(fp), size);
-#endif
-#endif
-}
-#endif
-
 
 enum {
     ecprREAL, ecprRVEC, ecprMATRIX
@@ -1502,7 +1466,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     int                  double_prec;
     char                *fprog;
     char                *fntemp; /* the temporary checkpoint file name */
-    time_t               now;
     char                 timebuf[STRLEN];
     int                  nppnodes, npmenodes;
     char                 buf[1024], suffix[5+STEPSTRSIZE], sbuf[STEPSTRSIZE];
@@ -1538,8 +1501,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     snew(fntemp, strlen(fn));
     strcpy(fntemp, fn);
 #endif
-    time(&now);
-    gmx_ctime_r(&now, timebuf, STRLEN);
+    gmx_format_current_time(timebuf, STRLEN);
 
     if (fplog)
     {
@@ -2084,13 +2046,13 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
     if (ret)
     {
         cp_error();
     }
 
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2246,15 +2208,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
             if (i != 0) /*log file is already seeked to correct position */
             {
-#ifdef GMX_NATIVE_WINDOWS
-                rc = gmx_wintruncate(outputfiles[i].filename, outputfiles[i].offset);
-#else
-                rc = truncate(outputfiles[i].filename, outputfiles[i].offset);
-#endif
+#if !defined(GMX_NATIVE_WINDOWS) || !defined(GMX_FAHCORE)
+                /* For FAHCORE, we do this elsewhere*/
+                rc = gmx_truncate(outputfiles[i].filename, outputfiles[i].offset);
                 if (rc != 0)
                 {
                     gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfiles[i].filename);
                 }
+#endif
             }
         }
     }

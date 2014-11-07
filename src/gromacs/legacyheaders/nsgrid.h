@@ -49,7 +49,7 @@ extern "C" {
  * bad approximation for 4x1x1 up to 4x2x2.
  *
  * \todo It would be nicer to use sqrt(3) here, when all code that
- * #includes this file is in C++, which will let us cope with the
+ * includes this file is in C++, which will let us cope with the
  * std::sqrt<T> on Windows. */
 static const real GRID_STDDEV_FAC = 1.73205080757;
 

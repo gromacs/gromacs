@@ -38,15 +38,8 @@
 
 #include "xvgr.h"
 
-#include "config.h"
-
 #include <ctype.h>
 #include <string.h>
-#include <time.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -57,6 +50,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
@@ -238,12 +232,10 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
                  const output_env_t oenv)
 {
     char   pukestr[100], buf[STRLEN];
-    time_t t;
 
     if (output_env_get_print_xvgr_codes(oenv))
     {
-        time(&t);
-        gmx_ctime_r(&t, buf, STRLEN);
+        gmx_format_current_time(buf, STRLEN);
         fprintf(fp, "# This file was created %s", buf);
         try
         {
@@ -501,24 +493,25 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
 
 static int wordcount(char *ptr)
 {
-    int i, n, is[2];
+    int i, n = 0, is[2];
     int cur = 0;
 #define prev (1-cur)
 
-    if (strlen(ptr) == 0)
+    if (NULL != ptr)
     {
-        return 0;
-    }
-    /* fprintf(stderr,"ptr='%s'\n",ptr); */
-    n = 1;
-    for (i = 0; (ptr[i] != '\0'); i++)
-    {
-        is[cur] = isspace(ptr[i]);
-        if ((i > 0)  && (is[cur] && !is[prev]))
+        for (i = 0; (ptr[i] != '\0'); i++)
         {
-            n++;
+            is[cur] = isspace(ptr[i]);
+            if ((0 == i) && !is[cur])
+            {
+                n++;
+            }
+            else if ((i > 0)  && (!is[cur] && is[prev]))
+            {
+                n++;
+            }
+            cur = prev;
         }
-        cur = prev;
     }
     return n;
 }
@@ -690,6 +683,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
 
     *y = yy;
     sfree(tmpbuf);
+    sfree(base);
+    sfree(fmt);
 
     if (legend_nalloc > 0)
     {

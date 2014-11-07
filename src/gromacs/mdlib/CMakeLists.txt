@@ -39,3 +39,6 @@ if(GMX_GPU)
 endif()
 
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

@@ -51,9 +51,7 @@ endif()
 set(LIBGROMACS_SOURCES
     ${LIBGROMACS_SOURCES} ${FFT_SOURCES} ${FFT_SPECIFIC_SOURCES} PARENT_SCOPE)
 
-set(FFT_PUBLIC_HEADERS
-    fft.h)
-gmx_install_headers(fft ${FFT_PUBLIC_HEADERS})
+gmx_install_headers(fft.h)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -34,7 +34,7 @@
 
 include(CheckCXXSourceCompiles)
 MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
-    if(WIN32)
+    if(WIN32 AND NOT MINGW)
         set(CXX11_FLAG "/Qstd=c++0x")
     elseif(CYGWIN)
         set(CXX11_FLAG "-std=gnu++0x") #required for strdup
@@ -59,6 +59,7 @@ struct VarList {
   typedef VarList<Tail...> VarListTail;
   typedef std::pair<Head, typename VarListTail::ListType> ListType;
 };
+class a { explicit operator bool() {return true;} };
 int main() {
   typedef std::unique_ptr<int> intPointer;
   intPointer p(new int(10));

@@ -43,10 +43,10 @@ macro(gmx_use_clang_as_with_gnu_compilers_on_osx)
     # does not support AVX, so we need to tell the linker to use the clang
     # compilers assembler instead - and this has to happen before we detect AVX
     # flags.
-    if(APPLE AND ${CMAKE_C_COMPILER_ID} STREQUAL "GNU")
+    if(APPLE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
         gmx_test_cflag(GNU_C_USE_CLANG_AS "-Wa,-q" SIMD_C_FLAGS)
     endif()
-    if(APPLE AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    if(APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         gmx_test_cxxflag(GNU_CXX_USE_CLANG_AS "-Wa,-q" SIMD_CXX_FLAGS)
     endif()
 endmacro()
@@ -179,8 +179,8 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return _mm_movemask_ps(x);
     # We don't have the full compiler version string yet (BUILD_C_COMPILER),
     # so we can't distinguish vanilla from Apple clang versions, but catering for a few rare AMD
     # hackintoshes is not worth the effort.
-    if (APPLE AND (${CMAKE_C_COMPILER_ID} STREQUAL "Clang" OR
-                ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+    if (APPLE AND ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR
+                "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
         message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA SIMD. As we cannot work around this bug on OS X, you will have to select a different compiler or SIMD instruction set.")
     endif()
 
@@ -312,6 +312,46 @@ elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
     else()
         message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics. If you are compiling for BlueGene/Q with the XL compilers, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-C' to set up the tool chain.")
     endif()
+
+elseif(${GMX_SIMD} STREQUAL "IBM_VMX")
+
+    gmx_find_cflag_for_source(CFLAGS_IBM_VMX "C compiler IBM VMX SIMD flag"
+                              "#include<altivec.h>
+                              int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                              SIMD_C_FLAGS
+                              "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VMX "C++ compiler IBM VMX SIMD flag"
+                                "#include<altivec.h>
+                                int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                                SIMD_CXX_FLAGS
+                                "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+
+    if(NOT CFLAGS_IBM_VMX OR NOT CXXFLAGS_IBM_VMX)
+        message(FATAL_ERROR "Cannot find IBM VMX SIMD compiler flag. Use a newer compiler, or disable VMX SIMD.")
+    endif()
+
+    set(GMX_SIMD_IBM_VMX 1)
+    set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions")
+
+elseif(${GMX_SIMD} STREQUAL "IBM_VSX")
+
+    gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
+                              "#include<altivec.h>
+                              int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                              SIMD_C_FLAGS
+                              "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VSX "C++ compiler IBM VSX SIMD flag"
+                                "#include<altivec.h>
+                                int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+                                SIMD_CXX_FLAGS
+                                "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
+
+    if(NOT CFLAGS_IBM_VSX OR NOT CXXFLAGS_IBM_VSX)
+        message(FATAL_ERROR "Cannot find IBM VSX SIMD compiler flag. Use a newer compiler, or disable VSX SIMD.")
+    endif()
+
+    set(GMX_SIMD_IBM_VSX 1)
+    set(SIMD_STATUS_MESSAGE "Enabling IBM VSX SIMD instructions")
 
 elseif(${GMX_SIMD} STREQUAL "SPARC64_HPC_ACE")
 

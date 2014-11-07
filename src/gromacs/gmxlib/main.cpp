@@ -44,7 +44,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -52,7 +51,6 @@
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -216,7 +214,6 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
 {
     int    pid;
     char   host[256];
-    time_t t;
     char   timebuf[STRLEN];
     FILE  *fp = *fplog;
 
@@ -231,10 +228,8 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
 
     /* Get some machine parameters */
     gmx_gethostname(host, 256);
-
-    time(&t);
-
     pid = gmx_getpid();
+    gmx_format_current_time(timebuf, STRLEN);
 
     if (bAppendFiles)
     {
@@ -246,8 +241,6 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
                 "\n"
                 );
     }
-
-    gmx_ctime_r(&t, timebuf, STRLEN);
 
     fprintf(fp,
             "Log file opened on %s"

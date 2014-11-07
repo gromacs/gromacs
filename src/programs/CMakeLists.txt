@@ -79,17 +79,21 @@ else()
     ########################
     # Completion generation
 
+    include(gmxCustomCommandUtilities)
+
     set(COMPLETION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/completion)
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/completion)
-    add_custom_target(completion
-        gmx -quiet help -export completion
-        COMMENT "Generating command-line completions for programs"
-        WORKING_DIRECTORY completion
-        VERBATIM)
     # Using GMX_BUILD_HELP here is somewhat confusing, but the conditions when
     # this can be done are exactly the same (ability to run the compiled
     # binaries).
     if (GMX_BUILD_HELP)
+        gmx_add_custom_output_target(completion OUTPUT STAMP
+            COMMAND ${CMAKE_COMMAND}
+                -D GMX_EXECUTABLE=$<TARGET_FILE:gmx>
+                -D ERRORS_ARE_FATAL=${GMX_BUILD_HELP_FORCE}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildCompletions.cmake
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            DEPENDS gmx ${CMAKE_CURRENT_SOURCE_DIR}/BuildCompletions.cmake
+            COMMENT "Generating command-line completions for programs")
         set_target_properties(completion PROPERTIES EXCLUDE_FROM_ALL OFF)
         set_directory_properties(PROPERTIES
             ADDITIONAL_MAKE_CLEAN_FILES "completion")
@@ -97,12 +101,13 @@ else()
     endif()
     if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
         install(DIRECTORY ${COMPLETION_DIR}/
-                DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
+                DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime OPTIONAL)
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
              "complete -o nospace -F _gmx_compl ${BINARY_NAME}")
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
                 DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
     endif()
+    gmx_cpack_add_generated_source_directory(completion)
 
     if (GMX_SYMLINK_OLD_BINARY_NAMES)
         configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)

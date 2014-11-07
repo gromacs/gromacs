@@ -123,6 +123,12 @@
 /* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
 #cmakedefine GMX_SIMD_IBM_QPX
 
+/* IBM VMX was selected as SIMD instructions (Power 6 and later) */
+#cmakedefine GMX_SIMD_IBM_VMX
+
+/* IBM VSX was selected as SIMD instructions (Power 7 and later) */
+#cmakedefine GMX_SIMD_IBM_VSX
+ 
 /* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
 #cmakedefine GMX_SIMD_SPARC64_HPC_ACE
 
@@ -163,14 +169,11 @@
 /* Use OpenMP multithreading */
 #cmakedefine GMX_OPENMP
 
-/* Ignore calls to nice(3) */
-#cmakedefine GMX_NO_NICE
+/* Can and should use nice(3) to set priority */
+#cmakedefine GMX_USE_NICE
 
 /* Use if can't rename checkpoints */
 #cmakedefine GMX_NO_RENAME
-
-/* Ignore calls to system(3) */
-#cmakedefine GMX_NO_SYSTEM
 
 /* Use (modified) Gamess-UK for QM-MM calculations */
 #cmakedefine GMX_QMMM_GAMESS

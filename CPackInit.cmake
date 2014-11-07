@@ -32,9 +32,22 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-#TODO: add check that source doesn't contain any untracked files
-if(NOT CPACK_INSTALL_CMAKE_PROJECTS) #building source package
+set(BUILDING_SOURCE_PACKAGE OFF)
+# The essential difference in building a source package is that install() rules
+# from the CMake project are not considered when deciding what to package.
+# Instead, only the listed directories are packaged (and the listed directories
+# contain the source tree).
+if (NOT CPACK_INSTALL_CMAKE_PROJECTS)
+    set(BUILDING_SOURCE_PACKAGE ON)
+endif()
+
+if (BUILDING_SOURCE_PACKAGE)
+    # TODO: add check that source doesn't contain any untracked files
     get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
+    # TODO: The list could be generated at the same time as the list of
+    # directories to include to keep the probe file names at the same place.
+    # And this does not detect if things have been built in the past, but are
+    # outdated.
     if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/man1/gmx-view.1" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/docs/install-guide/final/INSTALL" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/online.html" OR
@@ -48,6 +61,11 @@ if(NOT CPACK_INSTALL_CMAKE_PROJECTS) #building source package
             "GMX_BUILD_HELP=ON to automatically build the HTML parts.")
     endif()
 else()
+    # TODO: If GMX_BUILD_HELP is AUTO, it may happen that the generation fails,
+    # and things are silently left out.
+    # Also, it is currently impossible to get these files into the binary
+    # package for cross-compilation.  However, binary packages are not
+    # currently used much, either...
     if (NOT CPACK_GMX_BUILD_HELP)
         message(WARNING
             "To create a complete binary package, bash completions, and "

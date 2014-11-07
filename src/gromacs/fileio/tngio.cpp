@@ -38,10 +38,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #ifdef GMX_USE_TNG
 #include "tng/tng_io.h"
 #endif
@@ -52,11 +48,11 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/sysinfo.h"
 
 static const char *modeToVerb(char mode)
 {
@@ -90,10 +86,7 @@ void gmx_tng_open(const char       *filename,
      */
     if (mode == 'w')
     {
-#ifndef GMX_FAHCORE
-        /* only make backups for normal gromacs */
         make_backup(filename);
-#endif
     }
 
     /* tng must not be pointing at already allocated memory.
@@ -149,9 +142,8 @@ void gmx_tng_open(const char       *filename,
 //             tng_last_program_name_set(*tng, programInfo);
 //         }
 
-#if defined(HAVE_UNISTD_H) && !defined(__MINGW32__)
         char username[256];
-        if (!getlogin_r(username, 256))
+        if (!gmx_getusername(username, 256))
         {
             if (mode == 'w')
             {
@@ -164,7 +156,6 @@ void gmx_tng_open(const char       *filename,
 //         {
 //             tng_last_user_name_set(*tng, username);
 //         }
-#endif
     }
 #else
     gmx_file("GROMACS was compiled without TNG support, cannot handle this file type");

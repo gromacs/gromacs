@@ -1005,7 +1005,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
     s = 0;
 
     /*lin: x,y,z*/
-    if (plan->flags&FFT5D_DEBUG && thread == 0)
+    if ((plan->flags&FFT5D_DEBUG) && thread == 0)
     {
         print_localdata(lin, "%d %d: copy in lin\n", s, plan);
     }
@@ -1065,7 +1065,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
             time_fft += MPI_Wtime()-time;
         }
 #endif
-        if (plan->flags&FFT5D_DEBUG && thread == 0)
+        if ((plan->flags&FFT5D_DEBUG) && thread == 0)
         {
             print_localdata(lout, "%d %d: FFT %d\n", s, plan);
         }
@@ -1186,7 +1186,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
             time_local += MPI_Wtime()-time;
         }
 #endif
-        if (plan->flags&FFT5D_DEBUG && thread == 0)
+        if ((plan->flags&FFT5D_DEBUG) && thread == 0)
         {
             print_localdata(lin, "%d %d: tranposed %d\n", s+1, plan);
         }
@@ -1230,7 +1230,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
     }
 #endif
 
-    if (plan->flags&FFT5D_DEBUG && thread == 0)
+    if ((plan->flags&FFT5D_DEBUG) && thread == 0)
     {
         print_localdata(lout, "%d %d: FFT %d\n", s, plan);
     }

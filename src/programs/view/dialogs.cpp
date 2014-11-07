@@ -106,15 +106,10 @@ static void shell_comm(const char *title, const char *script, int nsleep)
     fprintf(stderr, "command: %s\n", command);
 #endif
 
-#ifdef GMX_NO_SYSTEM
-    printf("Warning-- No calls to system(3) supported on this platform.");
-    printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
-#else
     if (0 != system(command))
     {
         gmx_fatal(FARGS, "Failed to execute command: %s", command);
     }
-#endif
 
 #ifdef DEBUG
     unlink(tmp)

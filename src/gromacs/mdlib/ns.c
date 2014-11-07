@@ -427,6 +427,14 @@ static gmx_inline void close_i_nblist(t_nblist *nlist)
         nlist->jindex[nri+1] = nlist->nrj;
 
         len = nlist->nrj -  nlist->jindex[nri];
+        /* If there are no j-particles we have to reduce the
+         * number of i-particles again, to prevent errors in the
+         * kernel functions.
+         */
+        if ((len == 0) && (nlist->nri > 0))
+        {
+            nlist->nri--;
+        }
     }
 }
 

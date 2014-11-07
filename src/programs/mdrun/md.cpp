@@ -38,47 +38,64 @@
 
 #include "config.h"
 
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-#include "gromacs/fileio/confio.h"
+#include "thread_mpi/threads.h"
+
+#include "gromacs/ewald/pme-load-balancing.h"
+#include "gromacs/ewald/pme.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/mdoutf.h"
 #include "gromacs/fileio/trajectory_writing.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/compute_io.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/bonded-threading.h"
-#include "gromacs/legacyheaders/calcmu.h"
-#include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/coulomb.h"
-#include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/domdec_network.h"
+#include "gromacs/legacyheaders/ebin.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/md_support.h"
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/mdebin.h"
 #include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/pme.h"
-#include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/sighandler.h"
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/constr.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/globsig.h"
+#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/iteratedconstraints.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/legacyheaders/types/nlistheuristics.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/legacyheaders/types/shellfc.h"
+#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -86,14 +103,18 @@
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"
 #include "membed.h"
-#include "pme_loadbal.h"
 #include "repl_ex.h"
 
 #ifdef GMX_FAHCORE
@@ -1881,6 +1902,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     }
                     dd_bcast(cr->dd, sizeof(gmx_bool), &bPMETuneRunning);
 
+                    if (bPMETuneRunning &&
+                        use_GPU(fr->nbv) && DOMAINDECOMP(cr) &&
+                        !(cr->duty & DUTY_PME))
+                    {
+                        /* Lock DLB=auto to off (does nothing when DLB=yes/no).
+                         * With GPUs + separate PME ranks, we don't want DLB.
+                         * This could happen when we scan coarse grids and
+                         * it would then never be turned off again.
+                         * This would hurt performance at the final, optimal
+                         * grid spacing, where DLB almost never helps.
+                         * Also, DLB can limit the cut-off for PME tuning.
+                         */
+                        dd_dlb_set_lock(cr->dd, TRUE);
+                    }
+
                     if (bPMETuneRunning || step_rel > ir->nstlist*50)
                     {
                         bPMETuneTry     = FALSE;
@@ -1910,6 +1946,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     if (ir->eDispCorr != edispcNO)
                     {
                         calc_enervirdiff(NULL, ir->eDispCorr, fr);
+                    }
+
+                    if (!bPMETuneRunning &&
+                        DOMAINDECOMP(cr) &&
+                        dd_dlb_is_locked(cr->dd))
+                    {
+                        /* Unlock the DLB=auto, DLB is allowed to activate
+                         * (but we don't expect it to activate in most cases).
+                         */
+                        dd_dlb_set_lock(cr->dd, FALSE);
                     }
                 }
                 cycles_pmes = 0;

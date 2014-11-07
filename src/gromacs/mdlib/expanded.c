@@ -54,7 +54,6 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/update.h"

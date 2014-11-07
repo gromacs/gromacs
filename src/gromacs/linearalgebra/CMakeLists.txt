@@ -48,8 +48,8 @@ set(LINEARALGEBRA_SOURCES
 set(LIBGROMACS_SOURCES
     ${LIBGROMACS_SOURCES} ${LINEARALGEBRA_SOURCES} PARENT_SCOPE)
 
-set(LINEARALGEBRA_PUBLIC_HEADERS
+gmx_install_headers(
     eigensolver.h
     matrix.h
-    sparsematrix.h)
-gmx_install_headers(linearalgebra ${LINEARALGEBRA_PUBLIC_HEADERS})
+    sparsematrix.h
+    )

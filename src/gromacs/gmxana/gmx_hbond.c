@@ -41,14 +41,16 @@
 #include <math.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/crosscorr.h"
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxana/correl.h"
 #include "gromacs/gmxana/geminate.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
@@ -62,6 +64,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "geminate.h"
 
 /*#define HAVE_NN_LOOPS*/
 
@@ -2374,9 +2378,10 @@ static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
 static void smooth_tail(int n, real t[], real c[], real sigma_c[], real start,
                         const output_env_t oenv)
 {
-    FILE *fp;
-    real  e_1, fitparm[4];
-    int   i;
+    FILE  *fp;
+    real   e_1;
+    double fitparm[4];
+    int    i;
 
     e_1 = exp(-1);
     for (i = 0; (i < n); i++)
@@ -2395,7 +2400,8 @@ static void smooth_tail(int n, real t[], real c[], real sigma_c[], real start,
         fitparm[0] = 10;
     }
     fitparm[1] = 0.95;
-    do_lmfit(n, c, sigma_c, 0, t, start, t[n-1], oenv, bDebugMode(), effnEXP2, fitparm, 0);
+    do_lmfit(n, c, sigma_c, 0, t, start, t[n-1], oenv, bDebugMode(),
+             effnEXP2, fitparm, 0);
 }
 
 void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
@@ -3386,7 +3392,7 @@ static void dump_hbmap(t_hbdata *hb,
         for (i = 0; i < isize[grp]; i++)
         {
             fprintf(fp, (i%15) ? " " : "\n");
-            fprintf(fp, " %4u", index[grp][i]+1);
+            fprintf(fp, " %4d", index[grp][i]+1);
         }
         fprintf(fp, "\n");
         /*
@@ -3402,7 +3408,7 @@ static void dump_hbmap(t_hbdata *hb,
                 {
                     for (j = 0; (j < hb->d.nhydro[i]); j++)
                     {
-                        fprintf(fp, " %4u %4u", hb->d.don[i]+1,
+                        fprintf(fp, " %4d %4d", hb->d.don[i]+1,
                                 hb->d.hydro[i][j]+1);
                     }
                     fprintf(fp, "\n");
@@ -3415,7 +3421,7 @@ static void dump_hbmap(t_hbdata *hb,
                 if (hb->a.grp[i] == grp)
                 {
                     fprintf(fp, (i%15 && !first) ? " " : "\n");
-                    fprintf(fp, " %4u", hb->a.acc[i]+1);
+                    fprintf(fp, " %4d", hb->a.acc[i]+1);
                     first = FALSE;
                 }
             }
@@ -3446,7 +3452,7 @@ static void dump_hbmap(t_hbdata *hb,
                     sprintf(as, "%s", mkatomname(atoms, aaa));
                     if (bContact)
                     {
-                        fprintf(fp, " %6u %6u\n", ddd+1, aaa+1);
+                        fprintf(fp, " %6d %6d\n", ddd+1, aaa+1);
                         if (fplog)
                         {
                             fprintf(fplog, "%12s  %12s\n", ds, as);
@@ -3456,7 +3462,7 @@ static void dump_hbmap(t_hbdata *hb,
                     {
                         hhh = hb->d.hydro[i][m];
                         sprintf(hs, "%s", mkatomname(atoms, hhh));
-                        fprintf(fp, " %6u %6u %6u\n", ddd+1, hhh+1, aaa+1);
+                        fprintf(fp, " %6d %6d %6d\n", ddd+1, hhh+1, aaa+1);
                         if (fplog)
                         {
                             fprintf(fplog, "%12s  %12s  %12s\n", ds, hs, as);

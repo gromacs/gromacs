@@ -55,11 +55,12 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -334,7 +335,7 @@ void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)
     {
         defName = ftp2defnm(fnm->ftp);
     }
-    else if (std::strchr(defName, '.') != NULL)
+    else if (Path::hasExtension(defName))
     {
         defType = fn2ftp(defName);
         GMX_RELEASE_ASSERT(defType != efNR,

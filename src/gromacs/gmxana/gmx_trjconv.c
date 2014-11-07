@@ -36,15 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -375,7 +369,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             {
                 if (debug)
                 {
-                    fprintf(debug, "\nShifting position of residue %d (atoms %u-%u) "
+                    fprintf(debug, "\nShifting position of residue %d (atoms %d-%d) "
                             "by %g,%g,%g\n", atom[res_start].resind+1,
                             res_start+1, res_end+1, shift[XX], shift[YY], shift[ZZ]);
                 }
@@ -474,7 +468,6 @@ void check_trn(const char *fn)
     }
 }
 
-#ifndef GMX_NATIVE_WINDOWS
 void do_trunc(const char *fn, real t0)
 {
     t_fileio        *in;
@@ -530,7 +523,7 @@ void do_trunc(const char *fn, real t0)
             {
                 fprintf(stderr, "Once again, I'm gonna DO this...\n");
                 close_trn(in);
-                if (0 != truncate(fn, fpos))
+                if (0 != gmx_truncate(fn, fpos))
                 {
                     gmx_fatal(FARGS, "Error truncating file %s", fn);
                 }
@@ -547,7 +540,6 @@ void do_trunc(const char *fn, real t0)
         }
     }
 }
-#endif
 
 /*! \brief Read a full molecular topology if useful and available.
  *
@@ -827,11 +819,9 @@ int gmx_trjconv(int argc, char *argv[])
           { &bVels }, "Read and write velocities if possible" },
         { "-force", FALSE, etBOOL,
           { &bForce }, "Read and write forces if possible" },
-#ifndef GMX_NATIVE_WINDOWS
         { "-trunc", FALSE, etTIME,
           { &ttrunc },
           "Truncate input trajectory file after this time (%t)" },
-#endif
         { "-exec", FALSE, etSTR,
           { &exec_command },
           "Execute command for every output frame with the "
@@ -939,9 +929,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     if (ttrunc != -1)
     {
-#ifndef GMX_NATIVE_WINDOWS
         do_trunc(in_file, ttrunc);
-#endif
     }
     else
     {
@@ -1849,7 +1837,7 @@ int gmx_trjconv(int argc, char *argv[])
                                         }
                                         write_g96_conf(out, &frout, -1, NULL);
                                 }
-                                if (bSeparate)
+                                if (bSeparate || bSplitHere)
                                 {
                                     gmx_ffclose(out);
                                     out = NULL;
@@ -1869,15 +1857,10 @@ int gmx_trjconv(int argc, char *argv[])
                             char c[255];
                             sprintf(c, "%s  %d", exec_command, file_nr-1);
                             /*fprintf(stderr,"Executing '%s'\n",c);*/
-#ifdef GMX_NO_SYSTEM
-                            printf("Warning-- No calls to system(3) supported on this platform.");
-                            printf("Warning-- Skipping execution of 'system(\"%s\")'.", c);
-#else
                             if (0 != system(c))
                             {
                                 gmx_fatal(FARGS, "Error executing command: %s", c);
                             }
-#endif
                         }
                         outframe++;
                     }

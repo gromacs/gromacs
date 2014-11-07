@@ -81,33 +81,9 @@ if(CMAKE_CONFIGURATION_TYPES)
         "List of configuration types"
         FORCE)
 endif()
-set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
+set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
 
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
-set(CPACK_PACKAGE_NAME "gromacs")
-set(CPACK_PACKAGE_VERSION_MAJOR ${GMX_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${GMX_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${GMX_VERSION_PATCH})
-set(CPACK_PACKAGE_VERSION       ${GMX_VERSION_STRING})
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
-set(CPACK_PACKAGE_VENDOR "gromacs.org")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance molecular simulation")
-set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
-# Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
-set(CPACK_SOURCE_IGNORE_FILES "\\\\.isreposource$;\\\\.git/;\\\\.gitignore$;\\\\.gitattributes;")
-set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
-# CPack source archives include only the directories we list here.
-# This variable is a list of pairs of names of source and destination
-# directories. Most of these are used for content GROMACS generates as
-# part of the configuration or build.
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/docs/man/man1;docs/man/man1;${CMAKE_BINARY_DIR}/docs/man/man7;docs/man/man7;${CMAKE_BINARY_DIR}/docs/old-html/final;docs/old-html/final;${CMAKE_BINARY_DIR}/docs/install-guide/final;/")
-set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
-set(CPACK_GMX_BUILD_HELP "${GMX_BUILD_HELP}") #Works even though GMX_BUILD_HELP is defined later because it is off by default.
-
-#must come after all cpack settings!
-include(CPack)
 
 # Set a default valgrind suppression file.
 # This unfortunately needs to duplicate information from CTest to work as
@@ -117,6 +93,9 @@ set(MEMORYCHECK_SUPPRESSIONS_FILE
     CACHE FILEPATH
     "File that contains suppressions for the memory checker")
 include(CTest)
+
+include(gmxCPackUtilities)
+gmx_cpack_init()
 
 # Variables that accumulate stuff influencing the installed headers
 set(INSTALLED_HEADER_INCLUDE_DIRS "")
@@ -211,7 +190,7 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_SIMD}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 ARM_NEON ARM_NEON_ASIMD IBM_QPX Sparc64_HPC_ACE Reference)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
@@ -336,7 +315,7 @@ if(GMX_SOFTWARE_INVSQRT)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
 endif()
 
-if(WIN32 AND NOT CYGWIN)
+if(WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
     add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
@@ -375,6 +354,7 @@ check_function_exists(sysconf           HAVE_SYSCONF)
 check_function_exists(rsqrt             HAVE_RSQRT)
 check_function_exists(rsqrtf            HAVE_RSQRTF)
 check_function_exists(sqrtf             HAVE_SQRTF)
+check_function_exists(nice              HAVE_NICE)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -385,6 +365,11 @@ test_sched_affinity(HAVE_SCHED_AFFINITY)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
+
+set(GMX_USE_NICE 0)
+if (HAVE_UNISTD_H AND HAVE_NICE)
+    set(GMX_USE_NICE 1)
+endif()
 
 # Management of GROMACS options for specific toolchains should go
 # here. Because the initial settings for some of the main options have
@@ -530,7 +515,7 @@ if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif()
 
-if(WIN32 AND NOT CYGWIN)
+if(WIN32)
     set(GMX_NATIVE_WINDOWS 1)
     # This makes windows.h not declare min/max as macros that would break
     # C++ code using std::min/std::max.
@@ -692,15 +677,14 @@ include(gmxManageLinearAlgebraLibraries)
 set(GMX_USE_PLUGINS OFF)
 
 if(GMX_LOAD_PLUGINS)
-  if(CYGWIN OR NOT WIN32)
+  if(NOT WIN32)
     # Native Windows does not have, nor need dlopen
-    # Note that WIN32 is set with Cygwin, but Cygwin needs dlopen to use plug-ins
     include(gmxTestdlopen)
     gmx_test_dlopen(HAVE_DLOPEN)
   endif()
 
   # so, should we use plug-ins?
-  if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
+  if(WIN32 OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
     if(NOT VMD_QUIETLY)
       MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
     endif()
@@ -731,7 +715,8 @@ option(GMX_NACL "Configure for Native Client builds" OFF)
 if (GMX_NACL)
   list(APPEND GMX_EXTRA_LIBRARIES nosys)
   set(GMX_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lnosys")
-  set(GMX_NO_NICE 1)
+  # TODO: Is this still necessary with the check for its presence?
+  set(GMX_USE_NICE 0)
   set(GMX_NO_RENAME 1)
 endif()
 mark_as_advanced(GMX_NACL)
@@ -742,14 +727,18 @@ if(GMX_FAHCORE)
   include_directories(${COREWRAP_INCLUDE_DIR})
 endif()
 
-option(GMX_BUILD_HELP "Build man pages, HTML help, and completions automatically (requires that compiled binaries can be executed on the build host)" OFF)
+# Value of AUTO tries to generate things, but will only produce warnings if
+# that fails.
+set(build_help_default AUTO)
+if (SOURCE_IS_SOURCE_DISTRIBUTION)
+    set(build_help_default OFF)
+endif()
+gmx_option_trivalue(GMX_BUILD_HELP "Build man pages, HTML help, and completions automatically (requires that compiled binaries can be executed on the build host)" ${build_help_default})
 mark_as_advanced(GMX_BUILD_HELP)
-if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND
-    "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
-
+if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
     message(FATAL_ERROR
-        "Rebuilding HTML and man pages is not supported for in-source "
-        "builds from a source distribution. "
+        "Rebuilding HTML and man pages or shell completions is not supported "
+        "for in-source builds from a source distribution. "
         "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
 endif()
 
@@ -909,6 +898,8 @@ add_subdirectory(src)
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+
+gmx_cpack_write_config()
 
 # Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
 # Don't bother the user after the first configure pass.

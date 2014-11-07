@@ -40,6 +40,7 @@
 #include "atomprop.h"
 
 #include <ctype.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "gromacs/fileio/strdb.h"

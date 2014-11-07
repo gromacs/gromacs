@@ -33,7 +33,6 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if (DOT_EXECUTABLE)
-    message("Running dot...")
     file(GLOB DOT_INPUT_FILES ${GRAPHDIR}/*.dot)
     execute_process(COMMAND ${DOT_EXECUTABLE} -Tpng -O ${DOT_INPUT_FILES})
 endif()

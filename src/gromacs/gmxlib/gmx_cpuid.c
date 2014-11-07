@@ -34,6 +34,7 @@
  */
 #include "gmxpre.h"
 
+/*! \cond */
 #include "gromacs/legacyheaders/gmx_cpuid.h"
 
 #ifdef HAVE_CONFIG_H
@@ -81,7 +82,7 @@ gmx_cpuid_vendor_string[GMX_CPUID_NVENDORS] =
     "GenuineIntel",
     "AuthenticAMD",
     "Fujitsu",
-    "IBM",
+    "IBM", /* Used on Power and BlueGene/Q */
     "ARM"
 };
 
@@ -93,7 +94,7 @@ gmx_cpuid_vendor_string_alternative[GMX_CPUID_NVENDORS] =
     "GenuineIntel",
     "AuthenticAMD",
     "Fujitsu",
-    "ibm", /* Used on BlueGene/Q */
+    "ibm", /* Used on Power and BlueGene/Q */
     "AArch64"
 };
 
@@ -136,7 +137,10 @@ gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
     "x2apic",
     "xop",
     "arm_neon",
-    "arm_neon_asimd"
+    "arm_neon_asimd",
+    "QPX",
+    "VMX",
+    "VSX"
 };
 
 const char *
@@ -152,6 +156,8 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
     "AVX2_256",
     "Sparc64 HPC-ACE",
     "IBM_QPX",
+    "IBM_VMX",
+    "IBM_VSX",
     "ARM_NEON",
     "ARM_NEON_ASIMD"
 };
@@ -250,6 +256,10 @@ static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_ARM_NEON_ASIMD;
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
 #elif defined GMX_SIMD_IBM_QPX
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_QPX;
+#elif defined GMX_SIMD_IBM_VMX
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_VMX;
+#elif defined GMX_SIMD_IBM_VSX
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_VSX;
 #elif defined GMX_SIMD_REFERENCE
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_REFERENCE;
 #else
@@ -842,6 +852,59 @@ cpuid_check_arm(gmx_cpuid_t                cpuid)
 }
 
 
+static int
+cpuid_check_ibm(gmx_cpuid_t                cpuid)
+{
+#if defined(__linux__) || defined(__linux)
+    FILE *fp;
+    char  buffer[GMX_CPUID_STRLEN], before_colon[GMX_CPUID_STRLEN], after_colon[GMX_CPUID_STRLEN];
+
+    if ( (fp = fopen("/proc/cpuinfo", "r")) != NULL)
+    {
+        while ( (fgets(buffer, sizeof(buffer), fp) != NULL))
+        {
+            chomp_substring_before_colon(buffer, before_colon, GMX_CPUID_STRLEN);
+            chomp_substring_after_colon(buffer, after_colon, GMX_CPUID_STRLEN);
+
+            if (!strcmp(before_colon, "cpu") || !strcmp(before_colon, "Processor"))
+            {
+                strncpy(cpuid->brand, after_colon, GMX_CPUID_STRLEN);
+            }
+            if (!strcmp(before_colon, "model name") ||
+                !strcmp(before_colon, "model") ||
+                !strcmp(before_colon, "Processor") ||
+                !strcmp(before_colon, "cpu"))
+            {
+                if (strstr(after_colon, "altivec"))
+                {
+                    cpuid->feature[GMX_CPUID_FEATURE_IBM_VMX] = 1;
+
+                    if (!strstr(after_colon, "POWER6") && !strstr(after_colon, "Power6") &&
+                        !strstr(after_colon, "power6"))
+                    {
+                        cpuid->feature[GMX_CPUID_FEATURE_IBM_VSX] = 1;
+                    }
+                }
+            }
+        }
+    }
+    fclose(fp);
+
+    if (strstr(cpuid->brand, "A2"))
+    {
+        /* BlueGene/Q */
+        cpuid->feature[GMX_CPUID_FEATURE_IBM_QPX] = 1;
+    }
+#else
+    strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_STRLEN);
+    cpuid->feature[GMX_CPUID_FEATURE_IBM_QPX] = 0;
+    cpuid->feature[GMX_CPUID_FEATURE_IBM_VMX] = 0;
+    cpuid->feature[GMX_CPUID_FEATURE_IBM_VSX] = 0;
+#endif
+    return 0;
+}
+
+
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
  */
@@ -883,7 +946,7 @@ cpuid_check_vendor(void)
         while ( (vendor == GMX_CPUID_VENDOR_UNKNOWN) && (fgets(buffer, sizeof(buffer), fp) != NULL))
         {
             chomp_substring_before_colon(buffer, before_colon, sizeof(before_colon));
-            /* Intel/AMD use "vendor_id", IBM "vendor"(?) or "model". Fujitsu "manufacture".
+            /* Intel/AMD use "vendor_id", IBM "vendor", "model", or "cpu". Fujitsu "manufacture".
              * On ARM there does not seem to be a vendor, but ARM or AArch64 is listed in the Processor string.
              * Add others if you have them!
              */
@@ -891,7 +954,8 @@ cpuid_check_vendor(void)
                 || !strcmp(before_colon, "vendor")
                 || !strcmp(before_colon, "manufacture")
                 || !strcmp(before_colon, "model")
-                || !strcmp(before_colon, "Processor"))
+                || !strcmp(before_colon, "Processor")
+                || !strcmp(before_colon, "cpu"))
             {
                 chomp_substring_after_colon(buffer, after_colon, sizeof(after_colon));
                 for (i = GMX_CPUID_VENDOR_UNKNOWN; i < GMX_CPUID_NVENDORS; i++)
@@ -904,6 +968,15 @@ cpuid_check_vendor(void)
                     {
                         vendor = i;
                     }
+                }
+                /* If we did not find vendor yet, check if it is IBM:
+                 * On some Power/PowerPC systems it only says power, not IBM.
+                 */
+                if (vendor == GMX_CPUID_VENDOR_UNKNOWN &&
+                    ((strstr(after_colon, "POWER") || strstr(after_colon, "Power") ||
+                      strstr(after_colon, "power"))))
+                {
+                    vendor = GMX_CPUID_VENDOR_IBM;
                 }
             }
         }
@@ -1016,6 +1089,9 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
 #endif
         case GMX_CPUID_VENDOR_ARM:
             cpuid_check_arm(cpuid);
+            break;
+        case GMX_CPUID_VENDOR_IBM:
+            cpuid_check_ibm(cpuid);
             break;
         default:
             /* Default value */
@@ -1172,9 +1248,18 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
     }
     else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_IBM)
     {
-        if (strstr(gmx_cpuid_brand(cpuid), "A2"))
+        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_IBM_QPX))
         {
             tmpsimd = GMX_CPUID_SIMD_IBM_QPX;
+        }
+        else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_IBM_VSX))
+        {
+            /* VSX is better than VMX, so we check it first */
+            tmpsimd = GMX_CPUID_SIMD_IBM_VSX;
+        }
+        else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_IBM_VMX))
+        {
+            tmpsimd = GMX_CPUID_SIMD_IBM_VMX;
         }
     }
     else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_ARM)
@@ -1321,3 +1406,5 @@ main(int argc, char **argv)
 }
 
 #endif
+
+/*! \endcond */

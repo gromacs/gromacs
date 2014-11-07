@@ -40,12 +40,12 @@
 #include <math.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"

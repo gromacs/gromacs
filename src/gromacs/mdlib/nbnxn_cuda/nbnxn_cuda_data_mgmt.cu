@@ -57,7 +57,7 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -579,7 +579,7 @@ void nbnxn_cuda_init(FILE                 *fplog,
          * priorities, because we are querying the priority range which in this
          * case will be a single value.
          */
-#if CUDA_VERSION >= 5500
+#if CUDA_VERSION >= 5050
         {
             int highest_priority;
             stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);

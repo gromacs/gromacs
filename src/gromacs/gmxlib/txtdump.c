@@ -1411,7 +1411,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
                 j++;
                 for (k = 0; k < interaction_function[ftype].nratoms; k++)
                 {
-                    (void) fprintf(fp, " %u", *(iatoms++));
+                    (void) fprintf(fp, " %d", *(iatoms++));
                 }
                 (void) fprintf(fp, "\n");
                 i += 1+interaction_function[ftype].nratoms;

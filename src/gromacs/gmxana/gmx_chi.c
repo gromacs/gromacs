@@ -41,6 +41,7 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -59,6 +60,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gmx_ana.h"
 
 static gmx_bool bAllowed(real phi, real psi)
 {

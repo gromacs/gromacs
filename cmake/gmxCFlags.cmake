@@ -64,7 +64,7 @@ function(gmx_set_cmake_compiler_flags)
         # be set up elsewhere and passed to this function, but it is
         # inconvenient in CMake to pass more than one list, and such a
         # list is only used here.
-        foreach(build_type RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
+        foreach(build_type RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
             set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
         endforeach()
         # Copy the flags that are only used by the real Release build
@@ -85,9 +85,12 @@ function(gmx_set_cmake_compiler_flags)
             endif()
 
             # Append to the variables for the given build type for
-            # each language, in the parent scope.
+            # each language, in the parent scope. We add our new variables at the end, so
+            # compiler-specific choices are more likely to override default CMake choices.
+            # This is for instance useful for RelWithDebInfo builds, where we want to use the full
+            # set of our optimization flags detected in this file, rather than having -O2 override them.
             set(CMAKE_${language}_FLAGS${punctuation}${build_type}
-                "${GMXC_${language}FLAGS${punctuation}${build_type}} ${CMAKE_${language}_FLAGS${punctuation}${build_type}}"
+                "${CMAKE_${language}_FLAGS${punctuation}${build_type}} ${GMXC_${language}FLAGS${punctuation}${build_type}}"
                 PARENT_SCOPE)
         endforeach()
     endforeach()
@@ -140,16 +143,49 @@ MACRO(gmx_c_flags)
     if (CMAKE_C_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
             if(NOT GMX_OPENMP)
-                GMX_TEST_CFLAG(CFLAGS_PRAGMA "-wd161" GMXC_CFLAGS)
+                if(CMAKE_C_COMPILER_VERSION VERSION_GREATER 13.99.99)
+# 3180: unrecognized OpenMP #pragma
+                    GMX_TEST_CFLAG(CFLAGS_PRAGMA "-wd3180" GMXC_CFLAGS)
+                else()
+# 161: unrecognized #pragma
+                    GMX_TEST_CFLAG(CFLAGS_PRAGMA "-wd161" GMXC_CFLAGS)
+                endif()
             endif()
-            GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd111 -wd177 -wd181 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346" GMXC_CFLAGS)
+# 177: function/variable ".." was declared but never referenced
+# 193: zero used for undefined preprocessing identifier ".."
+# 271: trailing comma is nonstandard
+# 304: access control not specified ("public" by default)
+# 383: value copied to temporary, reference to temporary used
+# 424: extra ";" ignored
+# 444: destructor for base class ".." is not virtual
+# 522: function ".." redeclared "inline" after being called
+# 593: variable ".." was set but never used
+# 869: parameter ".." was never referenced
+# 981: operands are evaluated in unspecified order
+#1418: external function definition with no prior declaration
+#1419: external declaration in primary source file
+#1572: floating-point equality and inequality comparisons are unreliable
+#1599: declaration hides variable ".."
+#2259: non-pointer conversion from ".." to ".." may lose significant bits
+#2415: variable ".." of static storage duration was declared but never referenced
+#2547: ".." was specified as both a system and non-system include directory
+#2557: comparison between signed and unsigned operands
+#3280: declaration hides member ".."
+#3346: dynamic exception specifications are deprecated
+#11074: Inlining inhibited by limit max-size(/max-total-size)
+#11076: To get full report use -opt-report=3 -opt-report-phase ipo (shown for previous remark)
+            GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CFLAGS_RELEASE)
         else()
             if(NOT GMX_OPENMP)
-                GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd161" GMXC_CFLAGS)
+                if(CMAKE_C_COMPILER_VERSION VERSION_GREATER 13.99.99)
+                    GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
+                else()
+                    GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd161" GMXC_CFLAGS)
+                endif()
             endif()
-            GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd111 /wd177 /wd181 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
     endif()
@@ -157,15 +193,26 @@ MACRO(gmx_c_flags)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
             if(NOT GMX_OPENMP)
-                GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd161" GMXC_CXXFLAGS)
+                if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 13.99.99)
+                    GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd3180" GMXC_CXXFLAGS)
+                else()
+                    GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd161" GMXC_CXXFLAGS)
+                endif()
             endif()
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd111 -wd177 -wd181 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd1782" GMXC_CXXFLAGS)
+#All but the following warnings are identical for the C-compiler (see above)
+#1782: #pragma once is obsolete
+#2282: unrecognized GCC pragma
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076 -wd1782 -wd2282" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CXXFLAGS_RELEASE)
         else()
             if(NOT GMX_OPENMP)
-                GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd161" GMXC_CXXFLAGS)
+                if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 13.99.99)
+                    GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
+                else()
+                    GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd161" GMXC_CXXFLAGS)
+                endif()
             endif()
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd111 /wd177 /wd181 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782 /wd2282" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
     endif()

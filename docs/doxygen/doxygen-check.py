@@ -55,21 +55,48 @@ them to the script.
 import sys
 from optparse import OptionParser
 
+import gmxtree
 from gmxtree import GromacsTree, DocType
+from includesorter import IncludeSorter
 from reporter import Reporter
 
 def check_file(fileobj, reporter):
     """Check file-level issues."""
-    if fileobj.is_source_file() and not fileobj.is_external() and \
-            fileobj.get_relpath().startswith('src/'):
+    if not fileobj.is_external() and fileobj.get_relpath().startswith('src/'):
         includes = fileobj.get_includes()
-        if includes:
-            firstinclude = includes[0].get_file()
-            if not firstinclude or firstinclude.get_name() != "gmxpre.h":
-                reporter.code_issue(includes[0],
-                                    "does not include \"gmxpre.h\" first")
+        if fileobj.is_source_file():
+            if includes:
+                firstinclude = includes[0].get_file()
+                if not firstinclude or firstinclude.get_name() != "gmxpre.h":
+                    reporter.code_issue(includes[0],
+                                        "does not include \"gmxpre.h\" first")
+            else:
+                reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
+        includes_config_h = False
+        includes_gmx_header_config_h = False
+        for include in includes:
+            includedfile = include.get_file()
+            if includedfile:
+                if includedfile.get_name() == 'config.h':
+                    includes_config_h = True
+                if includedfile.get_name() == 'gmx_header_config.h':
+                    includes_gmx_header_config_h = True
+        if includes_config_h:
+            if not fileobj.get_used_config_h_defines():
+                reporter.code_issue(fileobj,
+                        "includes \"config.h\" unnecessarily")
+        elif includes_gmx_header_config_h:
+            if not fileobj.get_used_config_h_defines():
+                if fileobj.get_name() != 'config.h':
+                    reporter.code_issue(fileobj,
+                            "includes \"gmx_header_config.h\" unnecessarily")
+            # Hard-code logic for gmx_header_config.h contents for simplicity.
+            elif len(fileobj.get_used_config_h_defines()) > 1 or \
+                    'GMX_NATIVE_WINDOWS' not in fileobj.get_used_config_h_defines():
+                reporter.code_issue(fileobj, "should include \"config.h\"")
         else:
-            reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
+            if fileobj.get_used_config_h_defines():
+                reporter.code_issue(fileobj, "should include \"config.h\"")
 
     if not fileobj.is_documented():
         # TODO: Add rules for required documentation
@@ -335,6 +362,27 @@ class ModuleDependencyGraph(object):
         summary = 'module-level cyclic dependency: ' + modulelist
         reporter.cyclic_issue(summary)
 
+def check_all(tree, reporter, check_ignored):
+    """Do all checks for the GROMACS tree."""
+    includesorter = IncludeSorter()
+    for fileobj in tree.get_files():
+        if isinstance(fileobj, gmxtree.GeneratorSourceFile):
+            continue
+        check_file(fileobj, reporter)
+        for includedfile in fileobj.get_includes():
+            check_include(fileobj, includedfile, reporter)
+        if fileobj.should_includes_be_sorted() \
+                and not includesorter.check_sorted(fileobj):
+            reporter.code_issue(fileobj, "include style/order is not consistent")
+
+    for classobj in tree.get_classes():
+        check_class(classobj, reporter)
+
+    for memberobj in tree.get_members():
+        check_member(memberobj, reporter, check_ignored)
+
+    check_cycles(ModuleDependencyGraph(tree), reporter)
+
 def main():
     """Run the checking script."""
     parser = OptionParser()
@@ -342,8 +390,6 @@ def main():
                       help='Source tree root directory')
     parser.add_option('-B', '--build-root',
                       help='Build tree root directory')
-    parser.add_option('--installed',
-                      help='Read list of installed files from given file')
     parser.add_option('-l', '--log',
                       help='Write issues into a given log file in addition to stderr')
     parser.add_option('--ignore',
@@ -358,12 +404,6 @@ def main():
                       help='Return non-zero exit code if there are warnings')
     options, args = parser.parse_args()
 
-    installedlist = []
-    if options.installed:
-        with open(options.installed, 'r') as outfile:
-            for line in outfile:
-                installedlist.append(line.strip())
-
     reporter = Reporter(options.log)
     if options.ignore:
         reporter.load_filters(options.ignore)
@@ -371,10 +411,15 @@ def main():
     if not options.quiet:
         sys.stderr.write('Scanning source tree...\n')
     tree = GromacsTree(options.source_root, options.build_root, reporter)
-    tree.set_installed_file_list(installedlist)
+    tree.load_git_attributes()
+    tree.load_installed_file_list()
     if not options.quiet:
         sys.stderr.write('Reading source files...\n')
-    tree.scan_files()
+    # TODO: The checking should be possible without storing everything in memory
+    tree.scan_files(keep_contents=True)
+    if not options.quiet:
+        sys.stderr.write('Finding config.h uses...\n')
+    tree.find_config_h_uses()
     if options.ignore_cycles:
         tree.load_cycle_suppression_list(options.ignore_cycles)
     if not options.quiet:
@@ -386,18 +431,7 @@ def main():
     if not options.quiet:
         sys.stderr.write('Checking...\n')
 
-    for fileobj in tree.get_files():
-        check_file(fileobj, reporter)
-        for includedfile in fileobj.get_includes():
-            check_include(fileobj, includedfile, reporter)
-
-    for classobj in tree.get_classes():
-        check_class(classobj, reporter)
-
-    for memberobj in tree.get_members():
-        check_member(memberobj, reporter, options.check_ignored)
-
-    check_cycles(ModuleDependencyGraph(tree), reporter)
+    check_all(tree, reporter, options.check_ignored)
 
     reporter.write_pending()
     reporter.report_unused_filters()

@@ -35,7 +35,7 @@
 file(GLOB SELECTION_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SELECTION_SOURCES} PARENT_SCOPE)
 
-set(SELECTION_PUBLIC_HEADERS
+gmx_install_headers(
     nbsearch.h
     indexutil.h
     position.h
@@ -43,8 +43,8 @@ set(SELECTION_PUBLIC_HEADERS
     selectioncollection.h
     selectionenums.h
     selectionoption.h
-    selectionoptionmanager.h)
-gmx_install_headers(selection ${SELECTION_PUBLIC_HEADERS})
+    selectionoptionmanager.h
+    )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

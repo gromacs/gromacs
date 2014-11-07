@@ -36,15 +36,8 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <math.h>
 #include <string.h>
-#include <time.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -66,6 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 int gmx_covar(int argc, char *argv[])
 {
@@ -139,7 +133,6 @@ int gmx_covar(int argc, char *argv[])
     int             d, dj, nfit;
     atom_id        *index, *ifit;
     gmx_bool        bDiffMass1, bDiffMass2;
-    time_t          now;
     char            timebuf[STRLEN];
     t_rgb           rlo, rmi, rhi;
     real           *eigenvectors;
@@ -600,8 +593,7 @@ int gmx_covar(int argc, char *argv[])
 
     out = gmx_ffopen(logfile, "w");
 
-    time(&now);
-    gmx_ctime_r(&now, timebuf, STRLEN);
+    gmx_format_current_time(timebuf, STRLEN);
     fprintf(out, "Covariance analysis log, written %s\n", timebuf);
 
     fprintf(out, "Program: %s\n", argv[0]);

@@ -44,18 +44,78 @@
 #ifndef GMX_UTILITY_SYSINFO_H
 #define GMX_UTILITY_SYSINFO_H
 
+#include <stddef.h>
+#include <time.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*! \addtogroup module_utility
+ * \{
+ */
+
+/*! \brief
+ * Gets the hostname as given by gethostname(), if available.
+ *
+ * \param[out] buf  Buffer to receive the hostname.
+ * \param[in]  len  Length of buffer \p buf (must be >= 8).
+ * \returns 0 on success, -1 on error.
+ *
+ * If the value is not available, "unknown" is returned.
+ * \p name should have at least size \p len.
+ *
+ * Does not throw.
+ */
+int gmx_gethostname(char *buf, size_t len);
 
 /*! \brief
  * Returns the process ID of the current process.
  *
  * Does not throw.
- *
- * \ingroup module_utility
  */
-int gmx_getpid();
+int gmx_getpid(void);
+/*! \brief
+ * Returns the current user ID, or -1 if not available.
+ *
+ * Does not throw.
+ */
+int gmx_getuid(void);
+/*! \brief
+ * Gets the current user name, if available.
+ *
+ * \param[out] buf  Buffer to receive the username.
+ * \param[in]  len  Length of buffer \p buf (must be >= 8).
+ * \returns 0 on success, -1 on error.
+ *
+ * Does not throw.
+ */
+int gmx_getusername(char *buf, size_t len);
+
+/*! \brief
+ * Portable version of ctime_r.
+ *
+ * Does not throw.
+ */
+char *gmx_ctime_r(const time_t *clock, char *buf, size_t len);
+/*! \brief
+ * Gets the current time as a string.
+ *
+ * \param[out] buf  Buffer to receive the string.
+ * \param[in]  len  Length of buffer \p buf (26 characters should be sufficient).
+ *
+ * Does not throw.
+ */
+void gmx_format_current_time(char *buf, size_t len);
+
+/*! \brief
+ * Wrapper for nice().
+ *
+ * Does not throw.
+ */
+int gmx_set_nice(int level);
+
+/*! \} */
 
 #ifdef __cplusplus
 }

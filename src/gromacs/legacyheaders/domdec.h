@@ -36,10 +36,25 @@
 #ifndef _domdec_h
 #define _domdec_h
 
-#include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include <stdio.h>
+
 #include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/legacyheaders/types/constr.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/legacyheaders/types/shellfc.h"
+#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -138,6 +153,12 @@ void change_dd_dlb_cutoff_limit(t_commrec *cr);
  * limits the DLB such that using the currently set cut-off should still be
  * possible after subsequently setting a shorter cut-off with change_dd_cutoff.
  */
+
+gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd);
+/* Return if the DLB lock is set */
+
+void dd_dlb_set_lock(gmx_domdec_t *dd, gmx_bool bValue);
+/* Set a lock such that with DLB=auto DLB can (not) get turned on */
 
 void dd_setup_dlb_resource_sharing(t_commrec           *cr,
                                    const gmx_hw_info_t *hwinfo,

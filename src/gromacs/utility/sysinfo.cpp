@@ -45,12 +45,52 @@
 
 #include "config.h"
 
+#include <string.h>
+#include <time.h>
+
+#include <sys/types.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #ifdef GMX_NATIVE_WINDOWS
+#include <Windows.h>
 #include <process.h>
+#endif
+#ifdef HAVE_PWD_H
+#include <pwd.h>
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
+
+namespace
+{
+//! Static return value for cases when a string value is not available.
+const char c_unknown[] = "unknown";
+} // namespace
+
+int gmx_gethostname(char *buf, size_t len)
+{
+    GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
+#ifdef GMX_NATIVE_WINDOWS
+    DWORD  dlen = len;
+    if (GetComputerName(buf, &dlen))
+    {
+        return 0;
+    }
+#elif defined(HAVE_UNISTD_H) && !defined(__native_client__)
+    if (gethostname(buf, len-1) == 0)
+    {
+        buf[len-1] = '\0';
+        return 0;
+    }
+#endif
+    strcpy(buf, c_unknown);
+    return -1;
+}
 
 int gmx_getpid()
 {
@@ -59,4 +99,78 @@ int gmx_getpid()
 #else
     return getpid();
 #endif
+}
+
+int gmx_getuid()
+{
+#if defined(HAVE_UNISTD_H) && !defined(__MINGW32__)
+    return getuid();
+#else
+    return -1;
+#endif
+}
+
+int gmx_getusername(char *buf, size_t len)
+{
+    GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
+    // TODO: nice_header() used getpwuid() instead; consider using getpwuid_r()
+    // here.  If not, get rid of HAVE_PWD_H completely.
+#ifdef GMX_NATIVE_WINDOWS
+    DWORD  dlen = len;
+    if (GetUserName(buf, &dlen))
+    {
+        return 0;
+    }
+#elif defined(HAVE_UNISTD_H)
+    if (!getlogin_r(buf, len))
+    {
+        buf[len-1] = '\0';
+        return 0;
+    }
+#endif
+    strcpy(buf, c_unknown);
+    return -1;
+}
+
+char *
+gmx_ctime_r(const time_t *clock, char *buf, size_t len)
+{
+#ifdef _MSC_VER
+    /* Windows */
+    ctime_s(buf, len, clock);
+#elif defined(GMX_NATIVE_WINDOWS)
+    char *tmpbuf = ctime(clock);
+    strncpy(buf, tmpbuf, len-1);
+    buf[len-1] = '\0';
+#elif (defined(__sun))
+    /*Solaris*/
+    ctime_r(clock, buf, len);
+#else
+    char tmpbuf[30];
+    ctime_r(clock, tmpbuf);
+    strncpy(buf, tmpbuf, len-1);
+    buf[len-1] = '\0';
+#endif
+    return buf;
+}
+
+void gmx_format_current_time(char *buf, size_t len)
+{
+    time_t clock = time(NULL);
+    gmx_ctime_r(&clock, buf, len);
+}
+
+int gmx_set_nice(int level)
+{
+#ifdef GMX_USE_NICE
+    // TODO: This may not be reliable, but currently the return value is not
+    // used.
+    if (nice(level) != -1)
+    {
+        return 0;
+    }
+#else
+    GMX_UNUSED_VALUE(level);
+#endif
+    return -1;
 }

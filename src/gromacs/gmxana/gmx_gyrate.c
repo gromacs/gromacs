@@ -40,6 +40,7 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -56,6 +57,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gmx_ana.h"
 
 real calc_gyro(rvec x[], int gnx, atom_id index[], t_atom atom[], real tm,
                rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)

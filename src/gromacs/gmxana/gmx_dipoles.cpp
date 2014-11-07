@@ -41,14 +41,13 @@
 
 #include <algorithm>
 
-#include "gromacs/bonded/bonded.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/calcmu.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -56,6 +55,7 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"

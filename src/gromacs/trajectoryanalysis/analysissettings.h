@@ -45,7 +45,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/options/timeunitmanager.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 struct t_topology;
 

@@ -160,7 +160,7 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
 #else
@@ -246,7 +246,7 @@ class WeightedSimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static WeightedSimpleInputData singleton;
             return singleton.data_;
 #else
@@ -283,7 +283,7 @@ class WeightedDataSetInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static WeightedDataSetInputData singleton;
             return singleton.data_;
 #else
@@ -455,7 +455,7 @@ class AverageInputData
     public:
         static const AnalysisDataTestInput &get()
         {
-#ifndef INTEL_STATIC_ANON_NAMESPACE_BUG
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static AverageInputData singleton;
             return singleton.data_;
 #else
@@ -520,6 +520,24 @@ TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
     gmx::AverageHistogramPointer copy2(data.clone());
     ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, copy2.get()));
     ASSERT_NO_THROW_GMX(copy2->done());
+}
+
+
+TEST_F(AbstractAverageHistogramTest, ComputesCumulativeHistogram)
+{
+    const AnalysisDataTestInput &input = AverageInputData::get();
+    MockAverageHistogram         data(
+            gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
+    setupArrayData(input, &data);
+
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(data.done());
+
+    gmx::AverageHistogramPointer cumulative(data.clone());
+    cumulative->makeCumulative();
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("CumulativeHistogram", cumulative.get()));
+    ASSERT_NO_THROW_GMX(cumulative->done());
 }
 
 

@@ -42,9 +42,13 @@
 #include "gromacs/legacyheaders/types/genborn.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/qmmmrec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

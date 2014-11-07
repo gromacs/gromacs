@@ -40,41 +40,17 @@
 
 #include "config.h"
 
-#include <cctype>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-#include <algorithm>
 #include <exception>
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
-
-int gmx_gethostname(char *name, size_t len)
-{
-    if (len < 8)
-    {
-        gmx_incons("gmx_gethostname called with len<8");
-    }
-#if defined(HAVE_UNISTD_H) && !defined(__native_client__) && !defined(__MINGW32__)
-    if (gethostname(name, len-1) != 0)
-    {
-        std::strncpy(name, "unknown", 8);
-        return -1;
-    }
-    return 0;
-#else
-    std::strncpy(name, "unknown", 8);
-    return -1;
-#endif
-}
 
 gmx_bool gmx_mpi_initialized(void)
 {

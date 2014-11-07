@@ -49,7 +49,7 @@
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selectionenums.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
 struct t_topology;

@@ -14,14 +14,18 @@
    fun:make_unsp
    fun:nsc_dclm_pbc
 }
-
+{
+   libgomp
+   Memcheck:Leak
+   ...
+   obj:*/libgomp.so*
+}
 {
    ctime_r
    Memcheck:Leak
    ...
    fun:ctime_r
 }
-
 {
    libz
    Memcheck:Cond
@@ -163,6 +167,14 @@
 }
 
 {
+   printf
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:vfprintf_l
+}
+
+{
    strtof
    Memcheck:Leak
    fun:malloc
@@ -264,3 +276,4 @@
    ...
    fun:__kmpc_global_thread_num
 }
+

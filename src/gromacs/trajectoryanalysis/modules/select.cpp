@@ -70,7 +70,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/scoped_ptr_sfree.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -652,11 +652,11 @@ Select::writeOutput()
     {
         GMX_RELEASE_ASSERT(top_->hasTopology(),
                            "Topology should have been loaded or an error given earlier");
-        t_atoms          atoms;
+        t_atoms            atoms;
         atoms = top_->topology()->atoms;
-        t_pdbinfo       *pdbinfo;
+        t_pdbinfo         *pdbinfo;
         snew(pdbinfo, atoms.nr);
-        scoped_ptr_sfree pdbinfoGuard(pdbinfo);
+        scoped_guard_sfree pdbinfoGuard(pdbinfo);
         if (atoms.pdbinfo != NULL)
         {
             std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));

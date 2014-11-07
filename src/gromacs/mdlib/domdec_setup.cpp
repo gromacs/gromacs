@@ -36,8 +36,9 @@
 #include "gmxpre.h"
 
 #include <assert.h>
-#include <cmath>
 #include <stdio.h>
+
+#include <cmath>
 
 #include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/names.h"
@@ -248,13 +249,13 @@ static int div_up(int n, int f)
 real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox)
 {
     int  i, j, k;
-    rvec bt, nw;
+    rvec nw;
     real comm_vol;
 
     for (i = 0; i < DIM; i++)
     {
-        bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
-        nw[i] = dd_nc[i]*cutoff/bt[i];
+        real bt = ddbox->box_size[i]*ddbox->skew_fac[i];
+        nw[i] = dd_nc[i]*cutoff/bt;
     }
 
     comm_vol = 0;

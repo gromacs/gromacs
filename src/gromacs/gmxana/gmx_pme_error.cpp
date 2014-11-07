@@ -39,12 +39,12 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/calcgrid.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdatoms.h"
@@ -59,7 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* We use the same defines as in mvdata.c here */
+/* We use the same defines as in broadcaststructs.cpp here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 #define nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
 #define   snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}

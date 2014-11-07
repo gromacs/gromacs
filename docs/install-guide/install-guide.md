@@ -75,6 +75,9 @@ architectures including x86, AMD64/x86-64, PPC, ARM v7 and SPARC VIII.
 
 Technically, GROMACS can be compiled on any platform with an ANSI C99
 and C++98 compiler, and their respective standard C/C++ libraries.
+We use only a few C99 features, but note that the C++ compiler also needs to
+support these C99 features (notably, int64_t and related things), which are not
+part of the C++98 standard.
 Getting good performance on an OS and architecture requires choosing a
 good compiler. In practice, many compilers struggle to do a good job
 optimizing the GROMACS architecture-optimized SIMD kernels.
