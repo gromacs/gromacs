@@ -27,7 +27,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
-#include "gromacs/bonded/bonded.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/futil.h"
@@ -1041,7 +1041,7 @@ double OptParam::CalcDeviation()
     {
         _ener[j] = 0;
     }
-    flags = GMX_FORCE_NS | GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES | GMX_FORCE_ENERGY | GMX_FORCE_STATECHANGED;
+    flags = GMX_FORCE_NS | GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES | GMX_FORCE_ENERGY | GMX_FORCE_STATECHANGED;
     flags = ~0;
     for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin(); (mymol < _mymol.end()); mymol++)
     {

@@ -34,7 +34,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/bonded/bonded.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"

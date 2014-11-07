@@ -25,6 +25,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -33,9 +34,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/legacyheaders/coulomb.h"
 #include "coulombintegrals/coulombintegrals.h"
 #include "gromacs/utility/cstringutil.h"
 #include "poldata.h"

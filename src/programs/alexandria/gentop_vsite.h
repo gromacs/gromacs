@@ -24,7 +24,8 @@
 #ifndef GENTOP_VSITE_H
 #define GENTOP_VSITE_H
 
-#include <algorithm>
+//#include <algorithm>
+#include <vector>
 
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "poldata.h"

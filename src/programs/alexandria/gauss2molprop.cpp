@@ -29,7 +29,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/bonded/bonded.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/filenm.h"

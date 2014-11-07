@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "gromacs/bonded/bonded.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
@@ -459,7 +459,7 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
 
 void MyMol::MakeVsites(unsigned int flags)
 {
-    std::vector < std::vector < unsigned int>> bonds;
+    std::vector < std::vector < unsigned int> > bonds;
     std::vector<int> nbonds;
     t_pbc            pbc;
     matrix           box;
