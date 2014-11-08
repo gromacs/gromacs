@@ -409,9 +409,6 @@ class SelectionParserParameter
 
 } // namespace gmx
 
-/** Error reporting function for the selection parser. */
-void
-_gmx_selparser_error(void *scanner, const char *fmt, ...);
 /*! \brief
  * Handles exceptions caught within the Bison code.
  *

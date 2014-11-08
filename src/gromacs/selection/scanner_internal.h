@@ -47,7 +47,6 @@
 
 namespace gmx
 {
-class MessageStringCollector;
 class SelectionParserSymbol;
 }
 
@@ -73,8 +72,6 @@ typedef struct gmx_sel_lexer_t
 {
     //! Selection collection to put parsed selections in.
     struct gmx_ana_selcollection_t  *sc;
-    //! Error reporter object.
-    gmx::MessageStringCollector     *errors;
     //! Stores an exception that occurred during parsing.
     boost::exception_ptr             exception;
     //! Whether external index groups have been set.

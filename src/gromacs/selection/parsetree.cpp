@@ -233,7 +233,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -274,19 +273,6 @@ formatCurrentErrorContext(yyscan_t scanner)
 }
 
 } // namespace
-
-void
-_gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
-{
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    // FIXME: Use an arbitrary length buffer.
-    char    buf[1024];
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, 1024, fmt, ap);
-    va_end(ap);
-    errors->append(buf);
-}
 
 bool
 _gmx_selparser_handle_exception(yyscan_t scanner, std::exception *ex)
@@ -659,9 +645,6 @@ _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,
                          const gmx::SelectionTreeElementPointer &right,
                          const char *cmpop, yyscan_t scanner)
 {
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
-
     SelectionTreeElementPointer  sel(
             new SelectionTreeElement(
                     SEL_EXPRESSION, _gmx_sel_lexer_get_current_location(scanner)));
@@ -709,9 +692,6 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
                       const char *rpost, yyscan_t scanner)
 {
     gmx_ana_selcollection_t     *sc = _gmx_sel_lexer_selcollection(scanner);
-
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
     if (method->nparams > 0)
     {
@@ -818,9 +798,7 @@ _gmx_sel_init_keyword_of(gmx_ana_selmethod_t                    *method,
                          const gmx::SelectionTreeElementPointer &group,
                          const char *rpost, yyscan_t scanner)
 {
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
-
+    // TODO Provide an error if rpost is provided.
     GMX_UNUSED_VALUE(rpost);
     return _gmx_sel_init_keyword_evaluator(method, group, scanner);
 }
@@ -846,9 +824,6 @@ _gmx_sel_init_method(gmx_ana_selmethod_t                      *method,
                      const char *rpost, yyscan_t scanner)
 {
     gmx_ana_selcollection_t     *sc = _gmx_sel_lexer_selcollection(scanner);
-
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
     _gmx_sel_finish_method(scanner);
     /* The "same" keyword needs some custom massaging of the parameters. */
@@ -881,9 +856,6 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t                      *method,
                        const gmx::SelectionTreeElementPointer   &sel,
                        yyscan_t                                  scanner)
 {
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
-
     _gmx_sel_finish_method(scanner);
     SelectionTreeElementPointer modifier(
             new SelectionTreeElement(
@@ -926,9 +898,6 @@ SelectionTreeElementPointer
 _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
                        const char *type, yyscan_t scanner)
 {
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
-
     SelectionTreeElementPointer  root(
             new SelectionTreeElement(
                     SEL_EXPRESSION, _gmx_sel_lexer_get_current_location(scanner)));

@@ -63,7 +63,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -338,11 +337,7 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
     gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
     gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
 
-    MessageStringCollector   errors;
-    _gmx_sel_set_lexer_error_reporter(scanner, &errors);
-
-    size_t oldCount = sc->sel.size();
-    bool   bOk      = false;
+    size_t                   oldCount = sc->sel.size();
     {
         boost::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
@@ -382,40 +377,33 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
                     // error/warning if some input was ignored.
                     goto early_termination;
                 }
-                if (!errors.isEmpty() && bInteractive)
-                {
-                    fprintf(stderr, "%s", errors.toString().c_str());
-                    errors.clear();
-                }
             }
             {
                 YYLTYPE location;
                 status = _gmx_sel_yypush_parse(parserState.get(), 0, NULL,
                                                &location, scanner);
             }
+            // TODO: Remove added selections from the collection if parsing failed?
             _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
 early_termination:
-            bOk = (status == 0);
+            GMX_RELEASE_ASSERT(status == 0,
+                               "Parser errors should have resulted in an exception");
         }
         else
         {
             int status = runParserLoop(scanner, parserState.get(), false);
-            bOk = (status == 0);
+            GMX_RELEASE_ASSERT(status == 0,
+                               "Parser errors should have resulted in an exception");
         }
     }
     scannerGuard.reset();
     int nr = sc->sel.size() - oldCount;
     if (maxnr > 0 && nr != maxnr)
     {
-        bOk = false;
-        errors.append("Too few selections provided");
-    }
-
-    // TODO: Remove added selections from the collection if parsing failed?
-    if (!bOk || !errors.isEmpty())
-    {
-        GMX_ASSERT(!bOk && !errors.isEmpty(), "Inconsistent error reporting");
-        GMX_THROW(InvalidInputError(errors.toString()));
+        std::string message
+            = formatString("Too few selections provided; got %d, expected %d",
+                           nr, maxnr);
+        GMX_THROW(InvalidInputError(message));
     }
 
     SelectionList                     result;

@@ -63,7 +63,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -398,7 +397,6 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     gmx_sel_lexer_t *state = new gmx_sel_lexer_t;
 
     state->sc        = sc;
-    state->errors    = NULL;
     state->bGroups   = bGroups;
     state->grps      = grps;
     state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
@@ -444,14 +442,6 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 }
 
 void
-_gmx_sel_set_lexer_error_reporter(yyscan_t                     scanner,
-                                  gmx::MessageStringCollector *errors)
-{
-    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
-    state->errors = errors;
-}
-
-void
 _gmx_sel_lexer_set_exception(yyscan_t                    scanner,
                              const boost::exception_ptr &ex)
 {
@@ -483,14 +473,6 @@ _gmx_sel_lexer_selcollection(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->sc;
-}
-
-gmx::MessageStringCollector *
-_gmx_sel_lexer_error_reporter(yyscan_t scanner)
-{
-    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
-    GMX_RELEASE_ASSERT(state->errors != NULL, "Error reporter not set");
-    return state->errors;
 }
 
 bool
