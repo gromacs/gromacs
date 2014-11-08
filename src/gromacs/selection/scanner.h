@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,11 +51,6 @@
 
 #include "parser.h"
 
-namespace gmx
-{
-class MessageStringCollector;
-}
-
 struct gmx_ana_indexgrps_t;
 struct gmx_ana_selcollection_t;
 
@@ -72,10 +67,6 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 /** Frees memory allocated for the selection scanner. */
 void
 _gmx_sel_free_lexer(yyscan_t scanner);
-/** Sets the error reporter object for the selection scanner. */
-void
-_gmx_sel_set_lexer_error_reporter(yyscan_t                     scanner,
-                                  gmx::MessageStringCollector *errors);
 /** Stores an exception that is caught during parsing. */
 void
 _gmx_sel_lexer_set_exception(yyscan_t                    scanner,
@@ -92,9 +83,6 @@ _gmx_sel_is_lexer_interactive(yyscan_t scanner);
 /** Returns the selection collection for the scanner. */
 struct gmx_ana_selcollection_t *
 _gmx_sel_lexer_selcollection(yyscan_t scanner);
-/** Returns the error reporter for the scanner. */
-gmx::MessageStringCollector *
-_gmx_sel_lexer_error_reporter(yyscan_t scanner);
 /** Returns true if the external index groups for the scanner are set. */
 bool
 _gmx_sel_lexer_has_groups_set(yyscan_t scanner);

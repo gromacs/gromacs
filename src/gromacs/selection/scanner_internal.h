@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,6 @@
 
 namespace gmx
 {
-class MessageStringCollector;
 class SelectionParserSymbol;
 }
 
@@ -73,8 +72,6 @@ typedef struct gmx_sel_lexer_t
 {
     //! Selection collection to put parsed selections in.
     struct gmx_ana_selcollection_t  *sc;
-    //! Error reporter object.
-    gmx::MessageStringCollector     *errors;
     //! Stores an exception that occurred during parsing.
     boost::exception_ptr             exception;
     //! Whether external index groups have been set.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxregex.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -861,11 +860,6 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t                    *method,
                                 const gmx::SelectionTreeElementPointer &child,
                                 void                                   *scanner)
 {
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[1024];
-    sprintf(buf, "In evaluation of '%s'", method->name);
-    gmx::MessageStringContext            context(errors, buf);
-
     gmx::SelectionParserParameterList    params;
     params.push_back(
             gmx::SelectionParserParameter::createFromExpression(NULL, child));
