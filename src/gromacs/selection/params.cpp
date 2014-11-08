@@ -837,16 +837,15 @@ parse_values_std(const SelectionParserValueList &values,
             switch (value->type)
             {
                 case INT_VALUE:
+                {
+                    bool bTooManyValues;
                     if (value->u.i.i1 <= value->u.i.i2)
                     {
                         for (j = value->u.i.i1; j <= value->u.i.i2 && i < param->val.nr; ++j)
                         {
                             param->val.u.i[i++] = j;
                         }
-                        if (j != value->u.i.i2 + 1)
-                        {
-                            _gmx_selparser_error(scanner, "extra values skipped");
-                        }
+                        bTooManyValues = (j != value->u.i.i2 + 1);
                     }
                     else
                     {
@@ -854,13 +853,20 @@ parse_values_std(const SelectionParserValueList &values,
                         {
                             param->val.u.i[i++] = j;
                         }
-                        if (j != value->u.i.i2 - 1)
-                        {
-                            _gmx_selparser_error(scanner, "extra values skipped");
-                        }
+                        bTooManyValues = (j != value->u.i.i2 - 1);
+                    }
+                    if (bTooManyValues)
+                    {
+                        std::string text(_gmx_sel_lexer_get_text(scanner, value->location()));
+                        std::string message
+                            = formatString("Range ('%s') produces more values than is "
+                                           "accepted in this context",
+                                           text.c_str());
+                        GMX_THROW(InvalidInputError(message));
                     }
                     --i;
                     break;
+                }
                 case REAL_VALUE:
                     if (value->u.r.r1 != value->u.r.r2)
                     {

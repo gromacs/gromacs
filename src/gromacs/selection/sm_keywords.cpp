@@ -55,7 +55,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxregex.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -861,11 +860,6 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t                    *method,
                                 const gmx::SelectionTreeElementPointer &child,
                                 void                                   *scanner)
 {
-    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    char  buf[1024];
-    sprintf(buf, "In evaluation of '%s'", method->name);
-    gmx::MessageStringContext            context(errors, buf);
-
     gmx::SelectionParserParameterList    params;
     params.push_back(
             gmx::SelectionParserParameter::createFromExpression(NULL, child));

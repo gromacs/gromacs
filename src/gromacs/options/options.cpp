@@ -48,7 +48,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "options-impl.h"

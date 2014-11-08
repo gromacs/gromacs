@@ -151,6 +151,7 @@ void SelectionOptionStorage::processAll()
 void SelectionOptionStorage::setAllowedValueCount(int count)
 {
     // TODO: It should be possible to have strong exception safety here.
+    // TODO: Use ExceptionInitializer here.
     MessageStringCollector errors;
     errors.startContext("In option '" + name() + "'");
     if (count >= 0)
