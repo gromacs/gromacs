@@ -314,7 +314,7 @@ _gmx_selparser_handle_exception(yyscan_t scanner, std::exception *ex)
 bool
 _gmx_selparser_handle_error(yyscan_t scanner)
 {
-    std::string context(gmx::formatString("In selection '%s'",
+    std::string context(gmx::formatString("Invalid selection '%s'",
                                           _gmx_sel_lexer_pselstr(scanner)));
     // The only way to prepend context to the exception is to rethrow it.
     try
@@ -336,11 +336,8 @@ _gmx_selparser_handle_error(yyscan_t scanner)
         ex.prependContext(context);
         throw;
     }
-    // Do legacy processing for non-exception cases.
-    // This is only reached if there was no active exception.
-    _gmx_selparser_error(scanner, "Invalid selection '%s'",
-                         _gmx_sel_lexer_pselstr(scanner));
-    return _gmx_sel_is_lexer_interactive(scanner);
+    GMX_RELEASE_ASSERT(false, "All parsing errors should result in a captured exception");
+    return false; // Some compilers will not believe that the above never returns.
 }
 
 namespace gmx
@@ -594,13 +591,11 @@ _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
  * \param[in,out] pcc    Position calculation collection to use.
  * \param[in,out] sel    Selection element to initialize.
  * \param[in]     rpost  Reference position type to use (NULL = default).
- * \param[in]     scanner Scanner data structure.
- * \returns       0 on success, a non-zero error code on error.
  */
 static void
 set_refpos_type(gmx::PositionCalculationCollection *pcc,
-                const SelectionTreeElementPointer &sel,
-                const char *rpost, yyscan_t scanner)
+                const SelectionTreeElementPointer  &sel,
+                const char                         *rpost)
 {
     if (!rpost)
     {
@@ -615,9 +610,10 @@ set_refpos_type(gmx::PositionCalculationCollection *pcc,
     }
     else
     {
-        // TODO: Should this be treated as a real error?
-        _gmx_selparser_error(scanner, "modifier '%s' is not applicable for '%s'",
-                             rpost, sel->u.expr.method->name);
+        std::string message
+            = gmx::formatString("Position modifiers ('%s') is not applicable for '%s'",
+                                rpost, sel->u.expr.method->name);
+        GMX_THROW(gmx::InvalidInputError(message));
     }
 }
 
@@ -686,11 +682,8 @@ _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,
             SelectionParserParameter::create(
                     "op", SelectionParserValue::createString(cmpop, location),
                     location));
-    if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
-                               sel->u.expr.method->param, sel, scanner))
-    {
-        return SelectionTreeElementPointer();
-    }
+    _gmx_sel_parse_params(params, sel->u.expr.method->nparams,
+                          sel->u.expr.method->param, sel, scanner);
 
     return sel;
 }
@@ -759,13 +752,10 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
                 SelectionParserParameter::createFromExpression(NULL, child));
         params.push_back(
                 SelectionParserParameter::create(NULL, move(args), location));
-        if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
-                                   root->u.expr.method->param, root, scanner))
-        {
-            return SelectionTreeElementPointer();
-        }
+        _gmx_sel_parse_params(params, root->u.expr.method->nparams,
+                              root->u.expr.method->param, root, scanner);
     }
-    set_refpos_type(&sc->pcc, child, rpost, scanner);
+    set_refpos_type(&sc->pcc, child, rpost);
 
     return root;
 }
@@ -856,29 +846,21 @@ _gmx_sel_init_method(gmx_ana_selmethod_t                      *method,
                      const char *rpost, yyscan_t scanner)
 {
     gmx_ana_selcollection_t     *sc = _gmx_sel_lexer_selcollection(scanner);
-    int                          rc;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     gmx::MessageStringContext    context(errors, formatCurrentErrorContext(scanner));
 
     _gmx_sel_finish_method(scanner);
     /* The "same" keyword needs some custom massaging of the parameters. */
-    rc = _gmx_selelem_custom_init_same(&method, params, scanner);
-    if (rc != 0)
-    {
-        return SelectionTreeElementPointer();
-    }
+    _gmx_selelem_custom_init_same(&method, params, scanner);
     SelectionTreeElementPointer root(
             new SelectionTreeElement(
                     SEL_EXPRESSION, _gmx_sel_lexer_get_current_location(scanner)));
     _gmx_selelem_set_method(root, method, scanner);
     /* Process the parameters */
-    if (!_gmx_sel_parse_params(*params, root->u.expr.method->nparams,
-                               root->u.expr.method->param, root, scanner))
-    {
-        return SelectionTreeElementPointer();
-    }
-    set_refpos_type(&sc->pcc, root, rpost, scanner);
+    _gmx_sel_parse_params(*params, root->u.expr.method->nparams,
+                          root->u.expr.method->param, root, scanner);
+    set_refpos_type(&sc->pcc, root, rpost);
 
     return root;
 }
@@ -925,11 +907,8 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t                      *method,
         root = modifier;
     }
     /* Process the parameters */
-    if (!_gmx_sel_parse_params(*params, modifier->u.expr.method->nparams,
-                               modifier->u.expr.method->param, modifier, scanner))
-    {
-        return SelectionTreeElementPointer();
-    }
+    _gmx_sel_parse_params(*params, modifier->u.expr.method->nparams,
+                          modifier->u.expr.method->param, modifier, scanner);
 
     return root;
 }
@@ -959,11 +938,8 @@ _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
     SelectionParserParameterList params;
     params.push_back(SelectionParserParameter::createFromExpression(NULL, expr));
     /* Parse the parameters. */
-    if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
-                               root->u.expr.method->param, root, scanner))
-    {
-        return SelectionTreeElementPointer();
-    }
+    _gmx_sel_parse_params(params, root->u.expr.method->nparams,
+                          root->u.expr.method->param, root, scanner);
 
     return root;
 }
