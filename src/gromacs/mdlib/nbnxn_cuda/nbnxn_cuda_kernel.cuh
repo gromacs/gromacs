@@ -70,8 +70,8 @@
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
-    - #threads  = CL_SIZE^2
-    - shmem     = CL_SIZE^2 * sizeof(float)
+    - #threads  = NTHREAD_Z * CL_SIZE^2
+    - shmem     = see nbnxn_cuda.cu:calc_shmem_required()
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
