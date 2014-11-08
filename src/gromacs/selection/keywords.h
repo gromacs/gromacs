@@ -78,7 +78,7 @@ _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
                                   gmx::SelectionStringMatchType           matchType);
 
 /** Does custom processing for parameters of the \c same selection method. */
-int
+void
 _gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t                    **method,
                               const gmx::SelectionParserParameterListPointer &params,
                               void                                           *scanner);
@@ -89,7 +89,7 @@ _gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t                    **me
  * \param[in]   method  Keyword selection method to evaluate.
  * \param[in]   child   The group/positions to evaluate \p method in.
  * \param[in]   scanner Scanner data structure.
- * \returns     Pointer to the created selection element (NULL on error).
+ * \returns     Pointer to the created selection element.
  *
  * Creates a \ref SEL_EXPRESSION selection element that evaluates the keyword
  * method given by \p method in the group/positions given by \p child.
