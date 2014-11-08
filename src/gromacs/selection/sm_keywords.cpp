@@ -219,9 +219,10 @@ class StringKeywordMatchItem
             {
                 if (!gmx::Regex::isSupported())
                 {
-                    GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                                                             "No regular expression support, "
-                                                             "cannot match \"%s\"", str)));
+                    std::string message
+                        = gmx::formatString("No regular expression support, "
+                                            "cannot match \"%s\"", str);
+                    GMX_THROW(gmx::InvalidInputError(message));
                 }
                 regex_.reset(new gmx::Regex(str));
             }
@@ -746,7 +747,7 @@ evaluate_kweval_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \param[in]   method  Keyword selection method to evaluate.
  * \param[in]   params  Parameters to pass to initialization (the child group).
  * \param[in]   scanner Scanner data structure.
- * \returns     Pointer to the created selection element (NULL on error).
+ * \returns     Pointer to the created selection element.
  *
  * Implements _gmx_sel_init_keyword_evaluator() for \ref GROUP_VALUE input
  * selections.
@@ -759,9 +760,9 @@ init_evaluator_group(gmx_ana_selmethod_t                     *method,
     if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
         || method->outinit || method->pupdate)
     {
-        std::string message = gmx::formatString(
-                    "Keyword '%s' cannot be evaluated in this context",
-                    method->name);
+        std::string message
+            = gmx::formatString("Keyword '%s' cannot be evaluated in this context",
+                                method->name);
         GMX_THROW(gmx::InvalidInputError(message));
     }
 
@@ -793,11 +794,8 @@ init_evaluator_group(gmx_ana_selmethod_t                     *method,
 
     sel->u.expr.method->param[0].val.u.g = &data->g;
 
-    if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
-                               sel->u.expr.method->param, sel, scanner))
-    {
-        return gmx::SelectionTreeElementPointer();
-    }
+    _gmx_sel_parse_params(params, sel->u.expr.method->nparams,
+                          sel->u.expr.method->param, sel, scanner);
     return sel;
 }
 
@@ -807,7 +805,7 @@ init_evaluator_group(gmx_ana_selmethod_t                     *method,
  * \param[in]   method  Keyword selection method to evaluate.
  * \param[in]   params  Parameters to pass to initialization (the child positions).
  * \param[in]   scanner Scanner data structure.
- * \returns     Pointer to the created selection element (NULL on error).
+ * \returns     Pointer to the created selection element.
  *
  * Implements _gmx_sel_init_keyword_evaluator() for \ref POS_VALUE input
  * selections.
@@ -820,9 +818,9 @@ init_evaluator_pos(gmx_ana_selmethod_t                     *method,
     if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
         || method->outinit || method->pupdate == NULL)
     {
-        std::string message = gmx::formatString(
-                    "Keyword '%s' cannot be evaluated in this context",
-                    method->name);
+        std::string message
+            = gmx::formatString("Keyword '%s' cannot be evaluated in this context",
+                                method->name);
         GMX_THROW(gmx::InvalidInputError(message));
     }
 
@@ -853,11 +851,8 @@ init_evaluator_pos(gmx_ana_selmethod_t                     *method,
 
     sel->u.expr.method->param[0].val.u.p = &data->p;
 
-    if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
-                               sel->u.expr.method->param, sel, scanner))
-    {
-        return gmx::SelectionTreeElementPointer();
-    }
+    _gmx_sel_parse_params(params, sel->u.expr.method->nparams,
+                          sel->u.expr.method->param, sel, scanner);
     return sel;
 }
 
@@ -884,6 +879,10 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t                    *method,
     }
     else
     {
-        GMX_THROW(gmx::InvalidInputError("Invalid expression for keyword evaluation group"));
+        std::string text(_gmx_sel_lexer_get_text(scanner, child->location()));
+        std::string message
+            = gmx::formatString("Expression '%s' cannot be used to evaluate keywords",
+                                text.c_str());
+        GMX_THROW(gmx::InvalidInputError(message));
     }
 }

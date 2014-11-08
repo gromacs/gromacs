@@ -231,12 +231,11 @@ init_data_same(int /* npar */, gmx_ana_selparam_t *param)
  * \param[in,out] method  The method to initialize.
  * \param[in,out] params  Pointer to the first parameter.
  * \param[in]     scanner Scanner data structure.
- * \returns       0 on success, a non-zero error code on error.
  *
- * If \p *method is not a \c same method, this function returns zero
+ * If \p *method is not a \c same method, this function returns
  * immediately.
  */
-int
+void
 _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **method,
                               const gmx::SelectionParserParameterListPointer &params,
                               void                                           *scanner)
@@ -245,15 +244,14 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
     /* Do nothing if this is not a same method. */
     if (!*method || (*method)->name != sm_same.name || params->empty())
     {
-        return 0;
+        return;
     }
 
     const gmx::SelectionParserValueList &kwvalues = params->front().values();
     if (kwvalues.size() != 1 || !kwvalues.front().hasExpressionValue()
         || kwvalues.front().expr->type != SEL_EXPRESSION)
     {
-        _gmx_selparser_error(scanner, "'same' should be followed by a single keyword");
-        return -1;
+        GMX_THROW(gmx::InvalidInputError("'same' should be followed by a single keyword"));
     }
     gmx_ana_selmethod_t *kwmethod = kwvalues.front().expr->u.expr.method;
     if (kwmethod->type == STR_VALUE)
@@ -268,8 +266,8 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
         const gmx::SelectionParserValueList &asvalues = asparam->values();
         if (asvalues.size() != 1 || !asvalues.front().hasExpressionValue())
         {
-            _gmx_selparser_error(scanner, "'same ... as' should be followed by a single expression");
-            return -1;
+            // TODO: Think about providing more informative context.
+            GMX_THROW(gmx::InvalidInputError("'same ... as' should be followed by a single expression"));
         }
         const gmx::SelectionTreeElementPointer &child = asvalues.front().expr;
         /* Create a second keyword evaluation element for the keyword given as
@@ -277,16 +275,10 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
          * second parameter. */
         gmx::SelectionTreeElementPointer kwelem
             = _gmx_sel_init_keyword_evaluator(kwmethod, child, scanner);
-        // FIXME: Use exceptions.
-        if (!kwelem)
-        {
-            return -1;
-        }
         /* Replace the second parameter with one with a value from \p kwelem. */
         std::string pname = asparam->name();
         *asparam = gmx::SelectionParserParameter::createFromExpression(pname, kwelem);
     }
-    return 0;
 }
 
 static void
