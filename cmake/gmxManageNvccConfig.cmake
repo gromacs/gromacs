@@ -139,17 +139,24 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
 
     # Set the CUDA GPU architectures to compile for:
     # - with CUDA >v4.2 compute capability 2.0, 2.1 is, but 3.0 is not supported:
-    #     => compile sm_20, sm_21 cubin, and compute_20 PTX
-    # - with CUDA >=4.2 compute capability <=3.0 is supported:
-    #     => compile sm_20, sm_21, sm_30 cubin, and compute_30 PTX
-    # - with CUDA 5.0 and later compute capability 3.5 is supported
-    #     => compile sm_20, sm_21, sm_30, sm_35 cubin, and compute_35 PTX
+    #     => compile sm_20 cubin, and compute_20 PTX
+    # - with CUDA >=4.2 CC <=3.0 is supported:
+    #     => compile sm_20, sm_30 cubin, and compute_30 PTX
+    # - with CUDA 5.0 and later CC <=3.5 is supported
+    #     => compile sm_20, sm_30, sm_35 cubin, and compute_35 PTX
+    # - with CUDA 6.5 and later compute capability <=3.5 and 5.0 are supported
+    #     => compile sm_20, sm_30, sm_35, sm_5.0, cubin, and compute_50 PTX
+    #   Note that CUDA 6.5.19 second patch release supports cc 5.2 too, but it
+    #   CUDA_VERSION does not have patch version and having PTX 5.0 JIT-ed is
+    #   equally fast anyway.
     if(CUDA_VERSION VERSION_LESS "4.2")
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_20,code=compute_20")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=compute_20")
     elseif(CUDA_VERSION VERSION_LESS "5.0")
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_30,code=compute_30")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_30,code=compute_30")
+    elseif(CUDA_VERSION VERSION_LESS "6.5")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
     else()
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_50,code=compute_50;")
     endif()
 
     # finally set the damn flags
