@@ -55,6 +55,7 @@
 #include <sys/stat.h>
 
 #ifdef GMX_NATIVE_WINDOWS
+#include <Windows.h>
 #include <direct.h>
 #else
 #ifdef HAVE_UNISTD_H
@@ -62,6 +63,7 @@
 #endif
 #endif
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -127,9 +129,124 @@ bool Path::isAbsolute(const std::string &path)
     return isAbsolute(path.c_str());
 }
 
-bool Path::startsWith(const std::string &path, const std::string &prefix)
+#ifdef GMX_NATIVE_WINDOWS
+namespace
 {
-    return gmx::startsWith(normalize(path), normalize(prefix));
+struct handle_wrapper
+{
+    HANDLE handle;
+    handle_wrapper(HANDLE h)
+        : handle(h){}
+    ~handle_wrapper()
+    {
+        if (handle != INVALID_HANDLE_VALUE)
+        {
+            ::CloseHandle(handle);
+        }
+    }
+};
+}
+#endif
+
+bool Path::isEquivalent(const std::string &path1, const std::string &path2)
+{
+    //based on boost_1_56_0/libs/filesystem/src/operations.cpp under BSL
+#ifdef GMX_NATIVE_WINDOWS
+    // Note well: Physical location on external media is part of the
+    // equivalence criteria. If there are no open handles, physical location
+    // can change due to defragmentation or other relocations. Thus handles
+    // must be held open until location information for both paths has
+    // been retrieved.
+
+    // p2 is done first, so any error reported is for p1
+    // FixME: #1635
+    handle_wrapper h2(
+            CreateFile(
+                    path2.c_str(),
+                    0,
+                    FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    0,
+                    OPEN_EXISTING,
+                    FILE_FLAG_BACKUP_SEMANTICS,
+                    0));
+
+    handle_wrapper h1(
+            CreateFile(
+                    path1.c_str(),
+                    0,
+                    FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    0,
+                    OPEN_EXISTING,
+                    FILE_FLAG_BACKUP_SEMANTICS,
+                    0));
+
+    if (h1.handle == INVALID_HANDLE_VALUE
+        || h2.handle == INVALID_HANDLE_VALUE)
+    {
+        // if one is invalid and the other isn't, then they aren't equivalent,
+        // but if both are invalid then it is an error
+        if (h1.handle == INVALID_HANDLE_VALUE
+            && h2.handle == INVALID_HANDLE_VALUE)
+        {
+            GMX_THROW(FileIOError("Path::isEquivalent called with two invalid files"));
+        }
+
+        return false;
+    }
+
+    // at this point, both handles are known to be valid
+
+    BY_HANDLE_FILE_INFORMATION info1, info2;
+
+    if (!GetFileInformationByHandle(h1.handle, &info1))
+    {
+        GMX_THROW(FileIOError("Path::isEquivalent: GetFileInformationByHandle failed"));
+    }
+
+    if (!GetFileInformationByHandle(h2.handle, &info2))
+    {
+        GMX_THROW(FileIOError("Path::isEquivalent: GetFileInformationByHandle failed"));
+    }
+
+    // In theory, volume serial numbers are sufficient to distinguish between
+    // devices, but in practice VSN's are sometimes duplicated, so last write
+    // time and file size are also checked.
+    return
+        info1.dwVolumeSerialNumber == info2.dwVolumeSerialNumber
+        && info1.nFileIndexHigh == info2.nFileIndexHigh
+        && info1.nFileIndexLow == info2.nFileIndexLow
+        && info1.nFileSizeHigh == info2.nFileSizeHigh
+        && info1.nFileSizeLow == info2.nFileSizeLow
+        && info1.ftLastWriteTime.dwLowDateTime
+        == info2.ftLastWriteTime.dwLowDateTime
+        && info1.ftLastWriteTime.dwHighDateTime
+        == info2.ftLastWriteTime.dwHighDateTime;
+#else
+    struct stat s1, s2;
+    int         e1 = stat(path1.c_str(), &s1);
+    int         e2 = stat(path2.c_str(), &s2);
+
+    if (e1 != 0 || e2 != 0)
+    {
+        // if one is invalid and the other isn't then they aren't equivalent,
+        // but if both are invalid then it is an error. Might be better an exception
+        // but function is also called from C.
+        if (e1 != 0 && e2 != 0)
+        {
+            GMX_THROW_WITH_ERRNO(
+                    FileIOError("Path::isEquivalent called with two invalid files"),
+                    "stat", errno);
+        }
+        return false;
+    }
+
+    // both stats now known to be valid
+    return s1.st_dev == s2.st_dev && s1.st_ino == s2.st_ino
+           // According to the POSIX stat specs, "The st_ino and st_dev fields
+           // taken together uniquely identify the file within the system."
+           // Just to be sure, size and mod time are also checked.
+           && s1.st_size == s2.st_size && s1.st_mtime == s2.st_mtime;
+#endif
 }
 
 std::string Path::join(const std::string &path1,
@@ -150,6 +267,8 @@ std::string Path::join(const std::string &path1,
 
 std::string Path::getParentPath(const std::string &path)
 {
+    /* Expects that the path doesn't contain "." or "..". If used on a path for
+     * which this isn't guaranteed realpath needs to be called first. */
     size_t pos = path.find_last_of(cDirSeparators);
     if (pos == std::string::npos)
     {
@@ -188,17 +307,10 @@ std::string Path::stripExtension(const std::string &path)
 std::string Path::normalize(const std::string &path)
 {
     std::string result(path);
-    // TODO: Remove . and .. entries.
     if (DIR_SEPARATOR != '/')
     {
         std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
     }
-#ifdef GMX_NATIVE_WINDOWS
-    if (std::isalpha(result[0]) && result[1] == ':')
-    {
-        result[0] = std::toupper(result[0]);
-    }
-#endif
     return result;
 }
 
@@ -251,6 +363,9 @@ std::vector<std::string> Path::getExecutablePaths()
 
 std::string Path::resolveSymlinks(const std::string &path)
 {
+    /* Does not fully resolve the path like realpath/boost::canonical would.
+     * I doesn't resolve path elements (including "." or ".."), but only
+     * resolves the entire path (it does that recursively). */
     std::string result(path);
 #ifndef GMX_NATIVE_WINDOWS
     char        buf[GMX_PATH_MAX];
