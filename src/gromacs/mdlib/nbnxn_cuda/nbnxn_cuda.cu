@@ -81,21 +81,31 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 /* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
  * warp-pairs per block.
  *
- * On current architectures NTHREAD_Z == 1, translating to 64 th/block with 16
+ * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
  * blocks/multiproc, is the fastest even though this setup gives low occupancy.
  * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
  * per multiprocessor is reduced proportionally to get the original number of max
- * threads in flight.
+ * threads in flight (and slightly lower performance).
+ * - On CC 3.7 there are enough registers to double the number of threads; using
+ * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
+ * with low-register use).
  *
  * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
  * shuffle-based reduction, hence CC >= 3.0.
  */
-#define NTHREAD_Z           (1)
-/* Kernel launch bounds as function of NTHREAD_Z. On current architectures (up to
- * CC 3.5/5.2) the (64, 16) bounds are always is used.
+
+/* Kernel launch bounds as function of NTHREAD_Z.
+ * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
  */
+#if __CUDA_ARCH__ == 370
+#define NTHREAD_Z           (2)
+#define MIN_BLOCKS_PER_MP   (16)
+#else
+#define NTHREAD_Z           (1)
+#define MIN_BLOCKS_PER_MP   (16)
+#endif
 #define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
-#define MIN_BLOCKS_PER_MP   (16/NTHREAD_Z)
 
 
 /***** The kernels come here *****/
