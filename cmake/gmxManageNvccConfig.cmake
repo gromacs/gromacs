@@ -156,7 +156,7 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
     elseif(CUDA_VERSION VERSION_LESS "6.5")
         set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
     else()
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_50,code=compute_50;")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_50,code=compute_50;")
     endif()
 
     # finally set the damn flags
