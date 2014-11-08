@@ -56,8 +56,8 @@ class Path
         static bool containsDirectory(const std::string &path);
         static bool isAbsolute(const char *path);
         static bool isAbsolute(const std::string &path);
-        static bool startsWith(const std::string &path,
-                               const std::string &prefix);
+        static bool isEquivalent(const std::string &path1,
+                                 const std::string &path2);
 
         static std::string join(const std::string &path1,
                                 const std::string &path2);

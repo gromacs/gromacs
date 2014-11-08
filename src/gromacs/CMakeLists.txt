@@ -195,6 +195,10 @@ else()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
+#pass CMAKE_CFG_INTDIR to cmdlineprogramcontext. As a build-time variable cannot be stored in config.h.
+set_source_files_properties(commandline/cmdlineprogramcontext.cpp PROPERTIES
+                            COMPILE_DEFINITIONS CMAKE_CFG_INTDIR="${CMAKE_CFG_INTDIR}")
+
 target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
