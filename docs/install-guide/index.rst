@@ -546,6 +546,18 @@ If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 need to specify manually which of your C++ compilers should be used,
 e.g. with the advanced option ``CUDA_HOST_COMPILER``.
 
+By default, optimized code will be generated for CUDA architectures
+supported by the nvcc compiler (and the |Gromacs| build system). 
+However, it can be beneficial to manually pick the specific CUDA architecture(s)
+to generate code for either to reduce compilation time (and binary size) or to
+target a new architecture not yet supported by the |GROMACS| build system.
+Setting the desired CUDA architecture(s) and virtual architecture(s)
+can be done using the ``GMX_CUDA_TARGET_SM`` and ``GMX_CUDA_TARGET_COMPUTE``
+variables, respectively. These take a semicolon delimited string with 
+the two digit suffixes of CUDA (virtual) architectures names
+(for details see the "Options for steering GPU code generation" section of the
+nvcc man / help or Chapter 6. of the nvcc manual).
+
 The GPU acceleration has been tested on AMD64/x86-64 platforms with
 Linux, Mac OS X and Windows operating systems, but Linux is the
 best-tested and supported of these. Linux running on ARM v7 (32 bit)
