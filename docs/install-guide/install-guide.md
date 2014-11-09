@@ -146,11 +146,11 @@ required, e.g. Fermi or Kepler cards. You are strongly recommended to
 get the latest CUDA version and driver supported by your hardware, but
 beware of possible performance regressions in newer CUDA versions on
 older hardware. Note that while some CUDA compilers (nvcc) might not
-officially support recent versions of gcc as the back-end compiler, we
+officially support recent versions of gcc as host compiler, we
 still recommend that you at least use a gcc version recent enough to
 get the best SIMD support for your CPU, since GROMACS always runs some
 code on the CPU. It is most reliable to use the same C++ compiler
-version for GROMACS code as used as the back-end compiler for nvcc,
+version for GROMACS code as used as the host compiler for nvcc,
 but it could be faster to mix compiler versions to suit particular
 contexts.
 
@@ -265,7 +265,7 @@ Intel's MKL documentation for your system.
 
 ## Optional build components ##
 
-* Compiling to run on NVIDIA GPUs requires CUDA
+* Compiling to run on NVIDIA GPUs requires the CUDA Toolkit
 * An external Boost library can be used to provide better
   implementation support for smart pointers and exception handling,
   but the GROMACS source bundles a subset of Boost 1.55.0 as a fallback
@@ -522,6 +522,14 @@ If you have the CUDA Toolkit installed, you can use `cmake` with:
 (or whichever path has your installation). In some cases, you might
 need to specify manually which of your C++ compilers should be used,
 e.g. with the advanced option `CUDA_HOST_COMPILER`.
+
+In a default build optimized code will be generated for the all CUDA architectures
+supported by the nvcc compiler used. However, it is sometimes beneficial to
+manually pick the CUDA architectures to generate optimized code for either
+to reduce binary size and compilation time or to enable compiler optimizations
+for an architecture not supported by the GROMACS build system. This can be
+achieved using the `GMX_CUDA_TARGET_SM` and `GMX_CUDA_TARGET_COMPUTE` variables
+that set the CUDA architecture and virtual architecture to compile for, respectively.
 
 The GPU acceleration has been tested on AMD64/x86-64 platforms with
 Linux, Mac OS X and Windows operating systems, but Linux is the
