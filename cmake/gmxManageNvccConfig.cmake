@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -44,121 +44,174 @@
 # Note that from CMake 2.8.10 FindCUDA defines CUDA_HOST_COMPILER internally,
 # so we won't set it ourselves, but hope that the module does a good job.
 
-if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
-    set(CUDA_NVCC_FLAGS_SET TRUE CACHE INTERNAL "True if NVCC flags have been set" FORCE)
+gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CUDA_HOST_COMPILER)
 
-    # Explicitly set the host compiler for nvcc if the current compiler is
-    # supported and it's not an MPI compiler wrapper, otherwise warn the user.
-    #
-    # Note that even though nvcc compiles host code as C++, we use the
-    # CMAKE_C_COMPILER as host compiler. We do this because CUDA versions
-    # preceding 5.0 only recognize icc, but not icpc. However, both gcc and icc
-    # (i.e. all supported compilers) happily compile C++ code.
-    #
-    # Also note that with MSVC nvcc sets the -compiler-bindir option behind the
-    # scenes; to avoid conflicts we don't set -ccbin automatically.
+# CUDA_HOST_COMPILER changed hence it is not auto-set anymore
+if (CUDA_HOST_COMPILER_CHANGED AND CUDA_HOST_COMPILER_AUTOSET)
+    unset(CUDA_HOST_COMPILER_AUTOSET CACHE)
+endif()
 
-    if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
-        if (NOT CMAKE_COMPILER_IS_GNUCC AND
-            NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND UNIX AND NOT APPLE))
+# Explicitly set the host compiler for nvcc if the current compiler is
+# supported and it's not an MPI compiler wrapper, otherwise warn the user.
+#
+# Note that even though nvcc compiles host code as C++, we use the
+# CMAKE_C_COMPILER as host compiler. We do this because CUDA versions
+# preceding 5.0 only recognize icc, but not icpc. However, both gcc and icc
+# (i.e. all supported compilers) happily compile C++ code.
+#
+# Also note that with MSVC nvcc sets the -compiler-bindir option behind the
+# scenes; to avoid conflicts we don't set -ccbin automatically.
+#
+# This will be executed only with cmake <v2.8.10 as later versions set the
+# host compiler in FindCUDA.
+if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
+    if (NOT CMAKE_COMPILER_IS_GNUCC AND
+        NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND UNIX AND NOT APPLE))
+        message(WARNING "
+        Will not set the nvcc host compiler because the current C compiler is not
+        compatible with nvcc:
+        ${CMAKE_C_COMPILER} (ID: ${CMAKE_C_COMPILER_ID})
+        Compatible compilers are: gcc on Linux and Mac OS X, the Intel Compiler on 64-bit
+        Linux and MSVC on Windows. Note that with newer CUDA releases this might change,
+        for up-to-date compatibility information check the NVIDIA documentation.
+        If nothing specified, nvcc will automatically pick the platform-default compiler;
+        Note that mixing compilers can cause errors.
+        To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
+        setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
+        ")
+    else()
+        # do not use MPI compiler wrappers, as these are prone to brake nvcc
+        if (GMX_MPI AND
+            NOT "${${MPI_PREFIX}_FOUND}") # FindMPI-based detection
             message(WARNING "
-            Will not set the nvcc host compiler because the current C compiler is not
-            compatible with nvcc:
-            ${CMAKE_C_COMPILER} (ID: ${CMAKE_C_COMPILER_ID})
-            Compatible compilers are: gcc on Linux and Mac OS X, the Intel Compiler on 64-bit
-            Linux and MSVC on Windows. Note that with newer CUDA releases this might change,
-            for up-to-date compatibility information check the NVIDIA documentation.
-            If nothing specified, nvcc will automatically pick the platform-default compiler;
-            Note that mixing compilers can cause errors.
-            To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-            setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
-            ")
+        Will not set the nvcc host compiler because the current C compiler is an MPI
+        compiler wrapper: ${CMAKE_C_COMPILER}
+        MPI compiler wrappers are prone to not work with nvcc. You might get lucky,
+        but the safest is to use the C compiler that the MPI compiler wrapper uses
+        (if this is compatible).
+        To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
+        setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
+        ")
         else()
-            # do not use MPI compiler wrappers, as these are prone to break nvcc
-            if (GMX_MPI AND NOT "${${MPI_PREFIX}_FOUND}") # FindMPI-based detection
-                message(WARNING "
-            Will not set the nvcc host compiler because the current C compiler is an MPI
-            compiler wrapper: ${CMAKE_C_COMPILER}
-            MPI compiler wrappers are prone to not work with nvcc. You might get lucky,
-            but the safest is to use the C compiler that the MPI compiler wrapper uses
-            (if this is compatible).
-            To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-            setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
-            ")
-            else()
-                set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
-                set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
-                    "True if CUDA_HOST_COMPILER is automatically set" FORCE)
-            endif()
+            set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
+            set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
+                "True if CUDA_HOST_COMPILER is automatically set")
         endif()
     endif()
+endif()
 
-    if(DEFINED CUDA_HOST_COMPILER)
-        # FindCUDA in CMake 2.8.10 sets the host compiler internally
-        if (CMAKE_VERSION VERSION_LESS "2.8.10")
-            message(STATUS "Setting the nvcc host compiler to: ${CUDA_HOST_COMPILER}")
-            set(CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER}
-                CACHE PATH "Host compiler for nvcc (do not edit!)" FORCE)
-            set(_HOST_COMPILER_OPTION_STRING "-ccbin=${CUDA_HOST_COMPILER};")
+# set up host compiler and its options
+if(CUDA_HOST_COMPILER_CHANGED)
+    # FindCUDA in CMake 2.8.10 sets the host compiler internally
+    if (CMAKE_VERSION VERSION_LESS "2.8.10")
+        message(STATUS "Setting the nvcc host compiler to: ${CUDA_HOST_COMPILER}")
+        set(CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER}
+            CACHE PATH "Host compiler for nvcc")
+    endif()
+
+    # On *nix force icc in gcc 4.4 compatibility mode with CUDA 3.2/4.0 and
+    # gcc 4.5 compatibility mode with later CUDA versions. This is needed
+    # as even with icc used as host compiler, when icc's gcc compatibility
+    # mode is higher than the max gcc version officially supported by CUDA,
+    # nvcc will freak out.
+    set(CUDA_HOST_COMPILER_OPTIONS "")
+    if (UNIX AND
+            ((CMAKE_C_COMPILER_ID MATCHES "Intel" AND
+              CUDA_HOST_COMPILER_AUTOSET OR ${CMAKE_C_COMPILER} MATCHES ${CUDA_HOST_COMPILER}) OR
+            (CMAKE_CXX_COMPILER_ID MATCHES "Intel" AND ${CMAKE_CXX_COMPILER} MATCHES ${CUDA_HOST_COMPILER}))
+        )
+        if (CUDA_VERSION VERSION_LESS "4.1")
+            message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.4 for nvcc host compilation")
+            list(APPEND CUDA_HOST_COMPILER_OPTIONS "-Xcompiler;-gcc-version=440")
+        else()
+            message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.5 for nvcc host compilation")
+            list(APPEND CUDA_HOST_COMPILER_OPTIONS "-Xcompiler;-gcc-version=450")
         endif()
-
-        # On *nix force icc in gcc 4.4 compatibility mode with CUDA 3.2/4.0 and
-        # gcc 4.5 compatibility mode with later CUDA versions. This is needed
-        # as even with icc used as host compiler, when icc's gcc compatibility
-        # mode is higher than the max gcc version officially supported by CUDA,
-        # nvcc will freak out.
-        if (UNIX AND CMAKE_C_COMPILER_ID MATCHES "Intel" AND
-            CUDA_HOST_COMPILER_AUTOSET)
-            if (CUDA_VERSION VERSION_LESS "4.1")
-                message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.4 for nvcc host compilation")
-                set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS};-Xcompiler;-gcc-version=440;")
-            else()
-                message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.5 for nvcc host compilation")
-                set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS};-Xcompiler;-gcc-version=450;")
-            endif()
-        endif()
-        set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}"
-            CACHE STRING "Options for nvcc host compiler (do not edit!)." FORCE)
-
-        mark_as_advanced(CUDA_HOST_COMPILER CUDA_HOST_COMPILER_OPTIONS)
     endif()
 
     if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "GNU")
         # Some versions of gcc-4.8 and gcc-4.9 produce errors (in particular on OS X)
         # if we do not use -D__STRICT_ANSI__. It is harmless, so we might as well add it for all versions.
-        set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}-D__STRICT_ANSI__;")
+        list(APPEND CUDA_HOST_COMPILER_OPTIONS "-D__STRICT_ANSI__")
     endif()
 
-    # the legacy CUDA kernels have been dropped, warn with CUDA 4.0
-    if (CUDA_VERSION VERSION_EQUAL "4.0")
-        message(WARNING "The legacy GPU kernels optimized for older CUDA compilers, including the detected version 4.0, have been removed. To avoid performance loss, we strongly recommend upgrading to a newer CUDA toolkit.
-        ")
-    endif()
+    set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}"
+        CACHE STRING "Options for nvcc host compiler (do not edit!).")
 
+    mark_as_advanced(CUDA_HOST_COMPILER CUDA_HOST_COMPILER_OPTIONS)
+endif()
+
+# the legacy CUDA kernels have been dropped, warn with CUDA 4.0
+if (CUDA_VERSION VERSION_EQUAL "4.0")
+    message(WARNING "The legacy GPU kernels optimized for older CUDA compilers, including the detected version 4.0, have been removed. To avoid performance loss, we strongly recommend upgrading to a newer CUDA toolkit.
+    ")
+endif()
+
+# If any of these manual override variables for target CUDA GPU architectures
+# or virtual architecture is set, parse the values and assemble the nvcc
+# command line for these. Otherwise use our defaults.
+# Note that the manual override variables require a semicolon separated
+# architectures codes.
+if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
+    set(GMX_CUDA_NVCC_GENCODE_FLAGS)
+    set(_target_sm_list ${GMX_CUDA_TARGET_SM})
+    foreach(_target ${_target_sm_list})
+        list(APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_${_target},code=sm_${_target}")
+    endforeach()
+    set(_target_compute_list ${GMX_CUDA_TARGET_COMPUTE})
+    foreach(_target ${_target_compute_list})
+        list(APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_${_target},code=compute_${_target}")
+    endforeach()
+else()
     # Set the CUDA GPU architectures to compile for:
-    # - with CUDA >v4.2 compute capability 2.0, 2.1 is, but 3.0 is not supported:
+    # - with CUDA  <4.2:        compute capability 2.x supported (compiling for sm_2.1 does not help):
     #     => compile sm_20 cubin, and compute_20 PTX
-    # - with CUDA >=4.2 CC <=3.0 is supported:
+    # - with CUDA  =4.2 <5.0:   CC <=3.0 is supported:
     #     => compile sm_20, sm_30 cubin, and compute_30 PTX
-    # - with CUDA 5.0 and later CC <=3.5 is supported
+    # - with CUDA >=5.0 <6.5:   CC <=3.5 is supported
     #     => compile sm_20, sm_30, sm_35 cubin, and compute_35 PTX
-    # - with CUDA 6.5 and later compute capability <=3.5 and 5.0 are supported
-    #     => compile sm_20, sm_30, sm_35, sm_5.0, cubin, and compute_50 PTX
+    # - with CUDA >=6.5:        CC <=3.7 and 5.0 are supported
+    #     => compile sm_20, sm_30, sm_35, sm_37 sm_50, cubin, and compute_50 PTX
+    #
     #   Note that CUDA 6.5.19 second patch release supports cc 5.2 too, but
     #   CUDA_VERSION does not contain patch version and having PTX 5.0 JIT-ed is
-    #   equally fast anyway.
-    if(CUDA_VERSION VERSION_LESS "4.2")
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=compute_20")
-    elseif(CUDA_VERSION VERSION_LESS "5.0")
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_30,code=compute_30")
-    elseif(CUDA_VERSION VERSION_LESS "6.5")
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
-    else()
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_50,code=compute_50;")
+    #   equally fast as compiling with sm_5.2 anyway.
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_20,code=sm_20")
+    if(CUDA_VERSION VERSION_GREATER "4.1990") # >= 4.2
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER "4.999") # >= 5.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=sm_35")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER "6.4999") # >= 6.5
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_37,code=sm_37")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=sm_50")
     endif()
 
-    # finally set the damn flags
-    set(CUDA_NVCC_FLAGS
-        "${_CUDA_ARCH_STR};-use_fast_math;${_HOST_COMPILER_OPTION_STRING}${CUDA_HOST_COMPILER_OPTIONS}"
-        CACHE STRING "Compiler flags for nvcc." FORCE)
+    if(CUDA_VERSION VERSION_LESS "4.2")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_20,code=compute_20")
+    elseif(CUDA_VERSION VERSION_LESS "5.0")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=compute_30")
+    elseif(CUDA_VERSION VERSION_LESS "6.5")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=compute_35")
+    else() # version >= 6.5
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=compute_50")
+    endif()
 endif()
+
+gmx_dependent_cache_variable(GMX_CUDA_TARGET_SM "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)" STRING "" GMX_CUDA_TARGET_SM)
+gmx_dependent_cache_variable(GMX_CUDA_TARGET_COMPUTE "List of CUDA virtual architecture codes to compile for (without the compute_ prefix)" STRING "" GMX_CUDA_TARGET_COMPUTE)
+
+# assemble the CUDA flags
+list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
+list(APPEND GMX_CUDA_NVCC_FLAGS "-use_fast_math")
+
+# assemble the CUDA host compiler flags
+# with CMake <2.8.10 the host compiler needs to be set on the nvcc command line
+if (CMAKE_VERSION VERSION_LESS "2.8.10")
+    list(APPEND GMX_CUDA_NVCC_FLAGS "-ccbin=${CUDA_HOST_COMPILER}")
+endif()
+list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
+
+# finally set the damn flags
+set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS}" CACHE STRING "Compiler flags for nvcc." FORCE)
