@@ -45,6 +45,7 @@
 #include "molprop_tables.h"
 #include "molprop_util.h"
 #include "composition.h"
+#include "stringutil.h"
 
 class pType 
 {
@@ -144,11 +145,11 @@ bool check_matrix(double **a, double *x, unsigned int nrow,
     return nrownew;
 }
 
-static bool bZeroPol(const char *ptype, const char *zeropol)
+static bool bZeroPol(const char *ptype, std::vector<std::string> zeropol)
 {
-    if (NULL != zeropol)
+    for(std::vector<std::string>::iterator si = zeropol.begin(); (si < zeropol.end()); si++)
     {
-        if (NULL != strstr(zeropol, ptype))
+        if (si->compare(ptype) == 0)
         {
             return true;
         }
@@ -237,7 +238,7 @@ static int decompose_frag(FILE *fplog,
                           gmx_bool bZero, gmx_bool bForceFit,
                           int nBootStrap, real fractionBootStrap,
                           int seed,
-                          const char *zeropol,
+                          std::vector<std::string> zeropol,
                           output_env_t oenv)
 {
     double             *x, *atx, *fpp;
@@ -545,21 +546,28 @@ static int decompose_frag(FILE *fplog,
     }
     fprintf(stderr, "\n");
     FILE *xp = xvgropen(hisfn, "Polarizability distribution", "alpha (A\\S3\\N)", "", oenv);
-    //xvgr_legend(xp, ptypes.size(), (const char **)ptypes, oenv);
+    {
+        std::vector<const char *> legend;
+        for (std::vector<pType>::iterator i=ptypes.begin(); (i<ptypes.end()); ++i)
+        {
+            legend.push_back(i->name().c_str());
+        }
+        xvgr_legend(xp, ptypes.size(), &legend[0], oenv);
+    }
 
-    for (unsigned int i = 0; (i < ptypes.size()); i++)
+    for (std::vector<pType>::iterator i=ptypes.begin(); (i<ptypes.end()); ++i)
     {
         int  result1, result2;
         real aver, sigma;
         // Extract data from statistics
-        if ((estatsOK == (result1 = gmx_stats_get_average(ptypes[i].stats(), &aver))) &&
-            (estatsOK == (result2 = gmx_stats_get_sigma(ptypes[i].stats(), &sigma))))
+        if ((estatsOK == (result1 = gmx_stats_get_average(i->stats(), &aver))) &&
+            (estatsOK == (result2 = gmx_stats_get_sigma(i->stats(), &sigma))))
         {
-            gmx_poldata_set_ptype_polarizability(pd, ptypes[i].name().c_str(), aver, sigma);
-            fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", ptypes[i].name().c_str(), aver, sigma);
+            gmx_poldata_set_ptype_polarizability(pd, i->name().c_str(), aver, sigma);
+            fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", i->name().c_str(), aver, sigma);
             int   nbins = 1+sqrt(nBootStrap);
             real *my_x, *my_y;
-            gmx_stats_make_histogram(ptypes[i].stats(), 0, &nbins,
+            gmx_stats_make_histogram(i->stats(), 0, &nbins,
                                      ehistoY, 1, &my_x, &my_y);
             fprintf(xp, "@type xy\n");
             for (int ll = 0; (ll < nbins); ll++)
@@ -573,7 +581,7 @@ static int decompose_frag(FILE *fplog,
         else
         {
             fprintf(stderr, "Could not determine polarizability for %s\n",
-                    ptypes[i].name().c_str());
+                    i->name().c_str());
         }
     }
     fclose(xp);
@@ -713,11 +721,13 @@ int alex_tune_pol(int argc, char *argv[])
     }
     gms               = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
     FILE *fplog       = opt2FILE("-g", NFILE, fnm, "w");
+    std::vector<std::string> zpol = split(zeropol, ' ');
+    
     nalexandria_atypes = decompose_frag(fplog, opt2fn("-his", NFILE, fnm),
                                         pd, mp, bQM, lot, mindata,
                                         gms, bZero, bForceFit,
                                         nBootStrap, fractionBootStrap, seed,
-                                        zeropol, oenv);
+                                        zpol, oenv);
     fprintf(fplog, "There are %d alexandria atom types\n", nalexandria_atypes);
 
     const char *pdout = opt2fn("-do", NFILE, fnm);
