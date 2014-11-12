@@ -75,8 +75,6 @@ typedef void nbnxn_free_t (void *ptr);
 typedef struct {
     int          cj;    /* The j-cluster                    */
     unsigned int excl;  /* The exclusion (interaction) bits */
-    /* Indices into the arrays of SIMD interaction masks. */
-    char         interaction_mask_indices[4];
 } nbnxn_cj_t;
 
 /* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
