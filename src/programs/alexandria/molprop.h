@@ -1285,12 +1285,6 @@ class MolProp
         MolecularComposition *LastMolecularComposition()   { return &(_mol_comp.back()); }
 
         //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
-        MolecularCompositionIterator SearchMolecularComposition(const char *str)
-        {
-            std::string _str(str); return SearchMolecularComposition(_str);
-        }
-
-        //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
         MolecularCompositionIterator SearchMolecularComposition(std::string str);
 
         //! Return number of atoms in the first composition if present, or 0 otherwise

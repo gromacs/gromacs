@@ -595,7 +595,8 @@ MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str
 
     for (i = BeginMolecularComposition(); (i < EndMolecularComposition()); i++)
     {
-        if (i->GetCompName().compare(str) == 0)
+        std::string s = i->GetCompName();
+        if (s.compare(str) == 0)
         {
             break;
         }
