@@ -456,7 +456,7 @@ int gmx_vanhove(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     if (otfile)
@@ -471,7 +471,7 @@ int gmx_vanhove(int argc, char *argv[])
         {
             fprintf(fp, "%g %g\n", f*dt, (real)pt[f]/(tcount[f]*isize));
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     do_view(oenv, matfile, NULL);

@@ -865,7 +865,7 @@ static void ehisto(const char *fh, int n, real **enerT, const output_env_t oenv)
         }
         fprintf(fp, "\n");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 int gmx_sham(int argc, char *argv[])

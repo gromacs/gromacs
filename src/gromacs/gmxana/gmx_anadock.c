@@ -196,7 +196,7 @@ static void analyse_em_all(int npdb, t_pdbfile *pdbf[], const char *edocked,
         {
             fprintf(fp, "%12lf\n", bFreeSort ? pdbf[i]->efree : pdbf[i]->edocked);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 }
 

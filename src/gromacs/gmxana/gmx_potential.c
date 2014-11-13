@@ -398,9 +398,9 @@ void plot_potential(double *potential[], double *charge[], double *field[],
         fprintf(fie, "\n");
     }
 
-    gmx_ffclose(pot);
-    gmx_ffclose(cha);
-    gmx_ffclose(fie);
+    xvgrclose(pot);
+    xvgrclose(cha);
+    xvgrclose(fie);
 }
 
 int gmx_potential(int argc, char *argv[])

@@ -187,7 +187,7 @@ int gmx_sigeps(int argc, char *argv[])
         oldx = x;
 
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
 

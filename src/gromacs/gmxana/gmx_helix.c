@@ -289,10 +289,10 @@ int gmx_helix(int argc, char *argv[])
 
     for (i = 0; (i < efhNR); i++)
     {
-        gmx_ffclose(xf[i].fp);
+        xvgrclose(xf[i].fp);
         if (xf[i].bfp2)
         {
-            gmx_ffclose(xf[i].fp2);
+            xvgrclose(xf[i].fp2);
         }
         do_view(oenv, xf[i].filenm, "-nxy");
     }
