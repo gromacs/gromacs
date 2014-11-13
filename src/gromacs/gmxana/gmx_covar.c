@@ -564,7 +564,7 @@ int gmx_covar(int argc, char *argv[])
     {
         fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
 
     if (bFit)
     {

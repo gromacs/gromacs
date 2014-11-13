@@ -511,8 +511,8 @@ int gmx_helixorient(int argc, char *argv[])
 
     gmx_ffclose(fpaxis);
     gmx_ffclose(fpcenter);
-    gmx_ffclose(fptilt);
-    gmx_ffclose(fprotation);
+    xvgrclose(fptilt);
+    xvgrclose(fprotation);
     gmx_ffclose(fprise);
     gmx_ffclose(fpradius);
     gmx_ffclose(fptwist);

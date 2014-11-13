@@ -464,7 +464,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
             fprintf(fp, "%-5d  %10.3f  %10.3f  %10.3f\n", 1+i,
                     sum[index[i]][XX], sum[index[i]][YY], sum[index[i]][ZZ]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         max  = 0;
         maxi = 0;
         for (i = 0; i < isize; i++)
@@ -584,7 +584,7 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
     {
         fprintf(fp, "%10.3e  %10d\n", i*binwidth, histo[i]);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 int gmx_traj(int argc, char *argv[])
@@ -1055,7 +1055,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (bOX)
     {
-        gmx_ffclose(outx);
+        xvgrclose(outx);
     }
     if (bOXT)
     {
@@ -1063,27 +1063,27 @@ int gmx_traj(int argc, char *argv[])
     }
     if (bOV)
     {
-        gmx_ffclose(outv);
+        xvgrclose(outv);
     }
     if (bOF)
     {
-        gmx_ffclose(outf);
+        xvgrclose(outf);
     }
     if (bOB)
     {
-        gmx_ffclose(outb);
+        xvgrclose(outb);
     }
     if (bOT)
     {
-        gmx_ffclose(outt);
+        xvgrclose(outt);
     }
     if (bEKT)
     {
-        gmx_ffclose(outekt);
+        xvgrclose(outekt);
     }
     if (bEKR)
     {
-        gmx_ffclose(outekr);
+        xvgrclose(outekr);
     }
 
     if (bVD)
