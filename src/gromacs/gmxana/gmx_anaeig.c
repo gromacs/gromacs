@@ -484,7 +484,7 @@ static void overlap(const char *outfile, int natoms,
         fprintf(out, "%5d  %5.3f\n", eignr2[x]+1, overlap/noutvec);
     }
 
-    gmx_ffclose(out);
+    xvgrclose(out);
 }
 
 static void project(const char *trajfile, t_topology *top, int ePBC, matrix topbox,
@@ -670,7 +670,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             }
             fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec-1][i]);
         }
-        gmx_ffclose(xvgrout);
+        xvgrclose(xvgrout);
     }
 
     if (threedplotfile)

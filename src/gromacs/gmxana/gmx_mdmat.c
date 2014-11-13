@@ -394,7 +394,7 @@ int gmx_mdmat(int argc, char *argv[])
             fprintf(fp, "%3d  %8.3f  %3d  %8.3f  %3d  %8.3f\n",
                     i+1, ratio, tot_n[i], mean_n[i], natm[i], mean_n[i]/natm[i]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     return 0;

@@ -102,7 +102,7 @@ void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
             }
         }
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static void average_residues(double f[], double **U, int uind,
@@ -497,7 +497,7 @@ int gmx_rmsf(int argc, char *argv[])
                         pdb_bfac);
             }
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     else
     {
@@ -511,7 +511,7 @@ int gmx_rmsf(int argc, char *argv[])
                         bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, sqrt(rmsf[i]));
             }
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     for (i = 0; i < isize; i++)
@@ -540,7 +540,7 @@ int gmx_rmsf(int argc, char *argv[])
                         bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, sqrt(rmsf[i]));
             }
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     if (opt2bSet("-oq", NFILE, fnm))

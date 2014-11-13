@@ -306,7 +306,7 @@ int gmx_sans(int argc, char *argv[])
                 fprintf(fp, "%10.6f%10.6f\n", prframecurrent->r[i], prframecurrent->gr[i]);
             }
             done_filenms(NFILE, fnmdup);
-            fclose(fp);
+            xvgrclose(fp);
             sfree(hdr);
             sfree(suffix);
             sfree(fnmdup);
@@ -327,7 +327,7 @@ int gmx_sans(int argc, char *argv[])
                 fprintf(fp, "%10.6f%10.6f\n", sqframecurrent->q[i], sqframecurrent->s[i]);
             }
             done_filenms(NFILE, fnmdup);
-            fclose(fp);
+            xvgrclose(fp);
             sfree(hdr);
             sfree(suffix);
             sfree(fnmdup);

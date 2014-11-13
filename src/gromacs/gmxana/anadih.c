@@ -70,7 +70,7 @@ void print_one(const output_env_t oenv, const char *base, const char *name,
     {
         fprintf(fp, "%10g  %10g\n", time[k], data[k]);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static int calc_RBbin(real phi, int gmx_unused multiplicity, real gmx_unused core_frac)
@@ -300,7 +300,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
         {
             fprintf(fp, "%10.3f  %10d\n", time[j], tr_f[j]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     /* Compute histogram from # transitions per dihedral */
@@ -330,7 +330,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
                 fprintf(fp, "%10.3f  %10d\n", ttime/i, tr_f[i]);
             }
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     sfree(tr_f);
@@ -588,7 +588,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
                     }
                 }
                 fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
-                gmx_ffclose(fp);
+                xvgrclose(fp);
             }
 
             /* and finally print out occupancies to a single file */
@@ -615,7 +615,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
     }
 
     sfree(chi_prtrj);
-    gmx_ffclose(fpall);
+    xvgrclose(fpall);
     fprintf(stderr, "\n");
 
 }

@@ -1201,7 +1201,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
     }
 
 #ifdef DEBUG_SWITCH
-    gmx_fio_fclose(fp);
+    xvgrclose(fp);
 #endif
 }
 
@@ -1535,7 +1535,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
                 evaluate_table(table.data, 4*k, 12, table.scale, x0, &y0, &yp);
                 fprintf(fp, "%15.10e  %15.10e  %15.10e\n", x0, y0, yp);
             }
-            gmx_fio_fclose(fp);
+            xvgrclose(fp);
         }
         done_tabledata(&(td[k]));
     }
@@ -1645,7 +1645,7 @@ t_forcetable make_gb_table(const output_env_t oenv,
             fprintf(fp, "%15.10e  %15.10e  %15.10e\n", x0, y0, yp);
 
         }
-        gmx_fio_fclose(fp);
+        xvgrclose(fp);
     }
 
     /*
@@ -1784,7 +1784,7 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
             fprintf(fp, "%15.10e  %15.10e  %15.10e\n", x0, y0, yp);
 
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     done_tabledata(&(td[0]));

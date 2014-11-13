@@ -704,7 +704,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
         }
         if (debug)
         {
-            gmx_ffclose(gp);
+            xvgrclose(gp);
         }
         if (nitem > 1)
         {
@@ -717,7 +717,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
     }
     if (fp)
     {
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     sfree(fit);
 }

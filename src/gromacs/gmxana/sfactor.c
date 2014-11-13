@@ -594,7 +594,7 @@ extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
         }
     }
 
-    gmx_ffclose (fp);
+    xvgrclose (fp);
 }
 
 

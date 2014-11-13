@@ -933,13 +933,13 @@ int gmx_disre(int argc, char *argv[])
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres,
                           j, &top->idef, &mtop, max_dr, nlevels, bThird);
-        gmx_ffclose(out);
-        gmx_ffclose(aver);
-        gmx_ffclose(numv);
-        gmx_ffclose(maxxv);
+        xvgrclose(out);
+        xvgrclose(aver);
+        xvgrclose(numv);
+        xvgrclose(maxxv);
         if (isize > 0)
         {
-            gmx_ffclose(xvg);
+            xvgrclose(xvg);
             do_view(oenv, opt2fn("-dr", NFILE, fnm), "-nxy");
         }
         do_view(oenv, opt2fn("-dn", NFILE, fnm), "-nxy");
