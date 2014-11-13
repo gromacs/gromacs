@@ -3184,3 +3184,16 @@ void do_edsam(t_inputrec     *ir,
 
     ed->bFirst = FALSE;
 }
+
+void done_ed(gmx_edsam_t *ed)
+{
+    if (*ed)
+    {
+        /* ed->edo is opened sometimes with xvgropen, sometimes with
+         * gmx_fio_fopen, so we use the least common denominator for
+         * closing. */
+        gmx_fio_fclose((*ed)->edo);
+    }
+
+    /* TODO deallocate ed and set pointer to NULL */
+}
