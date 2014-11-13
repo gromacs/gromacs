@@ -136,11 +136,6 @@ typedef struct {
     int *nb;
 } t_nnb;
 
-void pr_energy(FILE *fp, real e)
-{
-    fprintf(fp, "Energy: %8.4f\n", e);
-}
-
 void cp_index(int nn, int from[], int to[])
 {
     int i;
@@ -280,7 +275,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
 
     if (NULL != fp)
     {
-        fclose(fp);
+        xvgrclose(fp);
     }
 }
 
@@ -995,7 +990,7 @@ static void ana_trans(t_clusters *clust, int nf,
         {
             fprintf(fp, "%5d %5d\n", i+1, ntrans[i]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     sfree(ntrans);
     for (i = 0; i < clust->ncl; i++)
@@ -1104,10 +1099,11 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         {
             fprintf(fp, "%8g %8d\n", time[i], clust->cl[i]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     if (sizefn)
     {
+        /* FIXME: This file is never closed. */
         fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
@@ -1305,6 +1301,16 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (trxsfn)
     {
         sfree(trxsfn);
+    }
+
+    if (clustidfn)
+    {
+        xvgrclose(fp);
+    }
+
+    if (sizefn)
+    {
+        xvgrclose(fp);
     }
 }
 
@@ -1870,7 +1876,7 @@ int gmx_cluster(int argc, char *argv[])
             {
                 fprintf(fp, "%10d  %10g\n", i, eigenvalues[i]);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
             break;
         case m_monte_carlo:
             orig     = init_mat(rms->nn, FALSE);

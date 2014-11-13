@@ -213,7 +213,7 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
         }
         fprintf(out, "\n");
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
 }
 
 /* called from corr_loop, to do the main calculations */
@@ -607,7 +607,7 @@ void printmol(t_corr *curr, const char *fn,
             }
         }
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
     do_view(oenv, fn, "-graphtype bar");
 
     /* Compute variance, stddev and error */

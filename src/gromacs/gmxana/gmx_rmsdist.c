@@ -798,7 +798,7 @@ int gmx_rmsdist(int argc, char *argv[])
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     close_trj(status);
 

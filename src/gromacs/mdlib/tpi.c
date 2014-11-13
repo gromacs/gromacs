@@ -834,7 +834,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     if (fp_tpi != NULL)
     {
-        gmx_fio_fclose(fp_tpi);
+        xvgrclose(fp_tpi);
     }
 
     if (fplog != NULL)
@@ -869,7 +869,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                     (int)(bin[i]+0.5),
                     bin[i]*exp(-bUlogV)*V_all/VembU_all);
         }
-        gmx_fio_fclose(fp_tpi);
+        xvgrclose(fp_tpi);
     }
     sfree(bin);
 

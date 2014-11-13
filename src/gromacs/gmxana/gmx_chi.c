@@ -709,7 +709,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         for (i = 0; (i < NJC); i++)
         {
             sfree(leg[i]);
@@ -809,7 +809,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                     }
                 }
                 fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
-                gmx_ffclose(fp);
+                xvgrclose(fp);
                 if (bSSHisto)
                 {
                     for (k = 0; (k < 3); k++)
@@ -940,7 +940,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
             {
                 gmx_ffclose(gp);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
             if (bOm)
             {
                 sprintf(fn, "ramomega%s.xpm", dlist[i].name);
@@ -997,7 +997,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
             {
                 fprintf(fp, "%10g  %10g\n", RAD2DEG*dih[Xi1][j], RAD2DEG*dih[Xi2][j]);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
         }
         else
         {
@@ -1058,7 +1058,7 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
         /* fprintf(fp,"%12s\n",dlist[i].name);  this confuses xmgrace */
         fprintf(fp, "\n");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static void order_params(FILE *log,
@@ -1136,7 +1136,7 @@ static void order_params(FILE *log,
         fprintf(fp, "\n");
         /* fprintf(fp,"%12s\n",dlist[i].name);  this confuses xmgrace */
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     if (NULL != pdbfn)
     {
