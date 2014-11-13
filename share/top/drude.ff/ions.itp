@@ -141,7 +141,7 @@ F       1
 [ atoms ]
 ; id    type    resnr   resname     at name         cg nr      charge
    1    FAD     1       F           F               1          1.31913
-   2    D       1       F           DF              1         -2.31913
+   2    D       1       F           DF              2         -2.31913
 
 [ bonds ]
 ; i  j  func

@@ -94,6 +94,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -293,6 +295,8 @@
   CAT    LPOB
   DCAT   LPOA
   DCAT   LPOB
+ [ exclusions ]
+  ; ai  aj
   CAY 	 CY  
   CAY 	 DCY 
   DCAY	 CY  
@@ -515,6 +519,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -740,6 +746,8 @@
   ND2   LPDB
   DND2  LPDA
   DND2  LPDB
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -1190,6 +1198,8 @@
   CB    LP2B
   DCB   LP2A
   DCB   LP2B
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -1280,6 +1290,110 @@
 	   BA   DBA
   [ thole_polarization ]
   ; ai   dai    aj   daj    alpha_i    alpha_j  thole_i  thole_j
+
+[ BENZ ]
+  [ atoms ]
+	   CG CD2R6A    2.09471   0
+	  DCG      D   -2.20531   1
+	   HG  HDR6A    0.11060   2
+	  CD1 CD2R6A    2.09471   3
+	 DCD1      D   -2.20531   4
+	  HD1  HDR6A    0.11060   5
+	  CD2 CD2R6A    2.09471   6
+	 DCD2      D   -2.20531   7
+	  HD2  HDR6A    0.11060   8
+	  CE1 CD2R6A    2.09471   9
+	 DCE1      D   -2.20531  10
+	  HE1  HDR6A    0.11060  11
+	  CE2 CD2R6A    2.09471  12
+	 DCE2      D   -2.20531  13
+	  HE2  HDR6A    0.11060  14
+	   CZ CD2R6A    2.09471  15
+	  DCZ      D   -2.20531  16
+	   HZ  HDR6A    0.11060  17
+  [ bonds ]
+	   CG   DCG
+	  CD1  DCD1
+	  CD2  DCD2
+	  CE1  DCE1
+	  CE2  DCE2
+	   CZ   DCZ
+	  CD1    CG
+	  CD2    CG
+	  CE1   CD1
+	  CE2   CD2
+	   CZ   CE1
+	   CZ   CE2
+	   CG    HG
+	  CD1   HD1
+	  CD2   HD2
+	  CE1   HE1
+	  CE2   HE2
+	   CZ    HZ
+  [ thole_polarization ]
+  ; ai   dai    aj   daj    alpha_i    alpha_j  thole_i  thole_j
+   CD1  DCD1    CG   DCG   0.001615   0.001615   1.1950   1.1950
+   CD2  DCD2    CG   DCG   0.001615   0.001615   1.1950   1.1950
+   CE1  DCE1   CD1  DCD1   0.001615   0.001615   1.1950   1.1950
+   CE2  DCE2   CD2  DCD2   0.001615   0.001615   1.1950   1.1950
+    CZ   DCZ   CE1  DCE1   0.001615   0.001615   1.1950   1.1950
+    CZ   DCZ   CE2  DCE2   0.001615   0.001615   1.1950   1.1950
+   CD1  DCD1   CD2  DCD2   0.001615   0.001615   1.1950   1.1950
+   CE1  DCE1    CG   DCG   0.001615   0.001615   1.1950   1.1950
+   CE2  DCE2    CG   DCG   0.001615   0.001615   1.1950   1.1950
+    CZ   DCZ   CD1  DCD1   0.001615   0.001615   1.1950   1.1950
+    CZ   DCZ   CD2  DCD2   0.001615   0.001615   1.1950   1.1950
+   CE2  DCE2   CE1  DCE1   0.001615   0.001615   1.1950   1.1950
+ [ exclusions ]
+  ; ai  aj
+  CD1 	 CG  
+  CD1 	 DCG 
+  DCD1	 CG  
+  DCD1	 DCG 
+  CD2 	 CG  
+  CD2 	 DCG 
+  DCD2	 CG  
+  DCD2	 DCG 
+  CE1 	 CD1 
+  CE1 	 DCD1
+  DCE1	 CD1 
+  DCE1	 DCD1
+  CE2 	 CD2 
+  CE2 	 DCD2
+  DCE2	 CD2 
+  DCE2	 DCD2
+  CZ  	 CE1 
+  CZ  	 DCE1
+  DCZ 	 CE1 
+  DCZ 	 DCE1
+  CZ  	 CE2 
+  CZ  	 DCE2
+  DCZ 	 CE2 
+  DCZ 	 DCE2
+  CD1 	 CD2 
+  CD1 	 DCD2
+  DCD1	 CD2 
+  DCD1	 DCD2
+  CE1 	 CG  
+  CE1 	 DCG 
+  DCE1	 CG  
+  DCE1	 DCG 
+  CE2 	 CG  
+  CE2 	 DCG 
+  DCE2	 CG  
+  DCE2	 DCG 
+  CZ  	 CD1 
+  CZ  	 DCD1
+  DCZ 	 CD1 
+  DCZ 	 DCD1
+  CZ  	 CD2 
+  CZ  	 DCD2
+  DCZ 	 CD2 
+  DCZ 	 DCD2
+  CE2 	 CE1 
+  CE2 	 DCE1
+  DCE2	 CE1 
+  DCE2	 DCE1
 
 [ BR ]
   [ atoms ]
@@ -1576,6 +1690,8 @@
   CA    LPGB
   DCA   LPGA
   DCA   LPGB
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -1782,6 +1898,8 @@
   NE2   LPEB
   DNE2  LPEA
   DNE2  LPEB
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -2272,6 +2390,8 @@
   CG    LP2B
   DCG   LP2A
   DCG   LP2B
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -2431,6 +2551,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -2620,6 +2742,8 @@
   ND1   LPE2
   DND1  LPE2
   HD1   LPE2
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -2870,6 +2994,8 @@
   CD2   LPD1
   DCD2  LPD1
   HD2   LPD1
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -3104,6 +3230,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -3328,6 +3456,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -3517,6 +3647,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -3724,6 +3856,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -3941,6 +4075,8 @@
   CB    LP1B
   DCB   LP1A
   DCB   LP1B
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -4162,6 +4298,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -4387,6 +4525,8 @@
   CD    -DC
   DCD   -C
   DCD   -DCD
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -4574,6 +4714,8 @@
   CA    LPGB
   DCA   LPGA
   DCA   LPGB
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -4809,6 +4951,8 @@
   CA    LPGB
   DCA   LPGA
   DCA   LPGB
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -5038,6 +5182,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -5352,6 +5498,8 @@
   CE2   LP1B
   DCE2  LP1A
   DCE2  LP1B
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
@@ -5583,6 +5731,8 @@
   +CA   DC
   +DCA  C
   +DCA  DC
+ [ exclusions ]
+  ; ai  aj
   N   	 CA  
   N   	 DCA 
   DN  	 CA  
