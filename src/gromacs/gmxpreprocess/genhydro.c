@@ -64,6 +64,15 @@ static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
     *atoms2->atomname[a2] = strdup(*atoms1->atomname[a1]);
 }
 
+static void copy_atom_drude(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2, const char *dname)
+{
+    atoms2->atom[a2].type = 'D';
+    atoms2->atom[a2].ptype = eptShell;
+    atoms2->atom[a2].resind = atoms1->atom[a1].resind;
+    snew(atoms2->atomname[a2], 1);
+    *atoms2->atomname[a2] = strdup(dname);
+}
+
 static atom_id pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
                                const char *searchtype, gmx_bool bAllowMissing)
 {
@@ -909,26 +918,33 @@ int protonate(t_atoms **atomsptr, rvec **xptr, t_protonate *protdata)
 void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
 {
 
-    int         i, j, natoms;
+    int         i, j, natoms, nadd;
     char       *dname;              /* Drude name, created from heavy atom */
     rvec       *xn;                 /* new atom positions */
-    gmx_bool    bHeavy = FALSE;     /* if an atom is a heavy atom (non-H, non-Drude, non-LP) */
-    gmx_bool    bPresent = FALSE;   /* flag to check if Drude is already present in input pdba */
+    gmx_bool   *bHeavy;             /* if an atom is a heavy atom (non-H, non-Drude, non-LP) */
+    gmx_bool   *bPresent;           /* flag to check if Drude is already present in input pdba */
     t_atoms    *newpdba = NULL, *pdba = NULL;
 
     pdba = *pdbaptr;
     natoms = pdba->nr;
 
     snew(xn, natoms);
+    snew(newpdba, 1);
+    snew(bHeavy, natoms);
+    snew(bPresent, natoms);
 
+    nadd = 0;
     /* loop over all atoms, identify heavy atoms for adding Drudes */
     for (i=0; i<natoms; i++)
     {
+        bPresent[i] = FALSE;
+        bHeavy[i] = FALSE;
+
         /* Step 1. If we have a heavy atom, look for its associated Drude */
         if (!is_hydrogen(*pdba->atomname[i]) && !is_drude(*pdba->atomname[i])
             && !is_lonepair(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i]))
         {
-            bHeavy = TRUE;
+            bHeavy[i] = TRUE;
             /* build name of associated Drude */
             /* snew(dname, strlen((*pdba->atomname[i])+1)); */
             snew(dname, 8);     /* TODO: ugly hack for the moment - names should be <5 char */
@@ -945,56 +961,90 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
             {
                 if (strcmp(dname, *pdba->atomname[j])==0)
                 {
-                    bPresent = TRUE;
-                } 
+                    bPresent[i] = TRUE;
+                    continue;
+                }
+                else
+                {
+                    /* we need to add a Drude */
+                    bPresent[i] = FALSE;
+                }
+            }
+            if (!bPresent[i])
+            {
+                nadd++;
             }
         }
-        else
+    }
+
+    /* set up structures for adding atoms */
+    srenew(xn, natoms+nadd);
+    init_t_atoms(newpdba, natoms+nadd, FALSE);
+    newpdba->nres = pdba->nres;
+    sfree(newpdba->resinfo);
+    newpdba->resinfo = pdba->resinfo;
+
+    if (nadd > 0)
+    {
+        if (debug)
         {
-            bHeavy = FALSE;
+            fprintf(debug, "ADD DRUDES: need to add %d Drudes\n", nadd);
         }
+        srenew(newpdba->atom, natoms+nadd);
+        srenew(newpdba->atomname, natoms+nadd); 
+    }
 
-        /* Step 2. If Drude not found, increase the size of newpdba by one atom */
-        if (bHeavy)
+    /* TODO: WIP */
+    /* Loop through pdba to either copy atoms to newpdba or add to newpdba */
+    j = 0;
+    for (i=0; i<natoms; i++)
+    {
+        /* If Drude is not present, add it */
+        if (bHeavy[i])
         {
-            snew(newpdba, 1);
-            init_t_atoms(newpdba, natoms, FALSE);
-            newpdba->nres = pdba->nres;
-            sfree(newpdba->resinfo);
-            newpdba->resinfo = pdba->resinfo;
-
-            if (!bPresent)
+            if (debug)
             {
-                /* we need to add a Drude, so increase natoms */
-                natoms++;
+                fprintf(debug, "ADD DRUDES: heavy atom %s (%d) found in adding step\n", *pdba->atomname[i], i);
+            }
+            if (!bPresent[i]) /* the Drude on atom i is not already present */
+            {
+                /* keep the heavy atom */
+                copy_atom(pdba, i, newpdba, i+j);
+                /* add the Drude to newpdba */
+                snew(dname, 8);     /* TODO: same ugly hack as above */ 
+                strcpy(dname, "D");
+                strcat(dname, *pdba->atomname[i]);
+                if (debug)
+                {
+                    fprintf(debug, "ADD DRUDES: adding Drude %s to newpdba at %d\n", dname, i+j+1);
+                }
+                copy_atom_drude(pdba, i, newpdba, i+j+1, dname);
 
-                /* Step 3. Add Drude to newpdba */
-                srenew(newpdba->atom, natoms);
-                srenew(newpdba->atomname, natoms); 
-
-                /* add atom and Drude back to pdba */
-                copy_atom(pdba, i, newpdba, i);
-                copy_atom(pdba, i+1, newpdba, i+1);
-
-                /* Step 4. Copy coords of heavy atom to Drude */
-                srenew(xn, natoms+1);
-                copy_rvec((*xptr)[i], xn[i]);   /* preserve heavy atom coords */
-                copy_rvec((*xptr)[i], xn[i+1]); /* use heavy atom coords for Drude */
+                /* Copy coords of heavy atom to Drude */
+                copy_rvec((*xptr)[i], xn[i+j]);   /* preserve heavy atom coords */
+                copy_rvec((*xptr)[i], xn[i+j+1]); /* use heavy atom coords for Drude */
+                j++;    /* if we make an addition, shift indices */
             }
             else    /* the Drude is already there, so just copy to new structures */
             {
-                copy_atom(pdba, i, newpdba, i);
-                copy_rvec((*xptr)[i], xn[i]);
+                copy_atom(pdba, i, newpdba, i+j);
+                copy_rvec((*xptr)[i], xn[i+j]);
             }
         }
         else    /* not a heavy atom, thus no Drude, either */
         {
-            copy_atom(pdba, i, newpdba, i);
-            copy_rvec((*xptr)[i], xn[i]);
+            copy_atom(pdba, i, newpdba, i+j);
+            copy_rvec((*xptr)[i], xn[i+j]);
         }
     }
 
     /* update coords */
     sfree(*xptr);
     *xptr = xn;
+
+    /* update pdba */
+    *pdbaptr = newpdba;
+
+    sfree(bHeavy);
+    sfree(bPresent);
 }
