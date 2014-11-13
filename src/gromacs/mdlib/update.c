@@ -1344,6 +1344,23 @@ void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, t_idef *idef, 
                   gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
+    /* TODO: remove */
+    int         i, ngtc;
+    t_grpopts  *opts;
+    opts = &(ir->opts);
+    ngtc = opts->ngtc;
+
+    /* TODO: remove */
+    if (debug)
+    {
+        for (i=0; i<ngtc; i++)
+        {
+            fprintf(debug, "GLOBALS: start of calc_ke_part, ekinh[%d] = %f, ekinf[%d] = %f\n", i,
+                    trace(ekind->tcstat[i].ekinh),
+                    i, trace(ekind->tcstat[i].ekinf));
+        }
+    }
+
     if (ekind->cosacc.cos_accel == 0)
     {
         if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
@@ -1359,6 +1376,17 @@ void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
     else
     {
         calc_ke_part_visc(state->box, state->x, state->v, &(ir->opts), md, ekind, nrnb, bEkinAveVel);
+    }
+
+    /* TODO: remove */
+    if (debug)
+    {
+        for (i=0; i<ngtc; i++)
+        {
+            fprintf(debug, "GLOBALS: end of calc_ke_part, ekinh[%d] = %f, ekinf[%d] = %f\n", i,
+                    trace(ekind->tcstat[i].ekinh),
+                    i, trace(ekind->tcstat[i].ekinf));
+        }
     }
 }
 

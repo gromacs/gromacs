@@ -536,7 +536,7 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
     {
         for (i=0; i<opts->ngtc; i++)
         {
-            printf(debug, "NOSE KE: grpmass[%d] = %.3f\n", i, grpmass[i]);
+            fprintf(debug, "NOSE KE: grpmass[%d] = %.3f\n", i, grpmass[i]);
         }
     }
 
@@ -790,7 +790,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
     {
         for (i=0; i<opts->ngtc; i++)
         {
-            printf(debug, "DRUDE TFP: grpmass[%d] = %.3f\n", i, grpmass[i]);
+            fprintf(debug, "DRUDE TFP: grpmass[%d] = %.3f\n", i, grpmass[i]);
         }
     }
 

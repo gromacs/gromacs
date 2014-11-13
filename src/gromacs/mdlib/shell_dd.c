@@ -109,6 +109,7 @@ static void spread_shell(t_iatom ia[],
     }
 }
 
+#if 0
 static void spread_shell_f_thread(gmx_shellfc_t shell,
                                   rvec x[], rvec f[], rvec *fshift,
                                   gmx_bool VirCorr, matrix dxdf,
@@ -177,7 +178,9 @@ static void spread_shell_f_thread(gmx_shellfc_t shell,
         }
     }
 }
+#endif
 
+#if 0
 void spread_shell_f(gmx_shellfc_t shell,
                     rvec x[], rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
@@ -292,7 +295,7 @@ void spread_shell_f(gmx_shellfc_t shell,
     /* TODO: check */
     inc_nrnb(nrnb, eNR_POLARIZE, shell->nshell_gl);
 }
-
+#endif
 
 static int *atom2cg(t_block *cgs)
 {
@@ -395,28 +398,30 @@ static int **get_shell_pbc(t_ilist *ilist,
         }
     }
 
-    /* TODO: check this */
-    /* 2 possible functions for shells/Drudes - F_BONDS and F_POLARIZATION */
-    snew(shell_pbc, 2);
+    /* There are several possible interactions for shells/Drudes, including
+     * F_BONDS, which is why we allocate an extra +2 here instead of +1 
+     *(F_BONDS plus everything from F_POLARIZATION..F_ANHARM_POL, inclusive) */
+    snew(shell_pbc, F_ANHARM_POL-F_POLARIZATION+2);
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (ftype == F_BONDS || ftype == F_POLARIZATION)
+        /* TODO: it would probably be useful to have an IF_SHELL flag or something... */
+        if (ftype == F_BONDS || ftype == F_POLARIZATION || ftype == F_ANISO_POL ||
+            ftype == F_WATER_POL || ftype == F_THOLE_POL || ftype == F_ANHARM_POL)
         {
             nral = NRAL(ftype);
             il   = &ilist[ftype];
             ia   = il->iatoms;
 
-            /* TODO: check!!! */ 
             if (ftype == F_BONDS)
             {
                 snew(shell_pbc[0], il->nr/(1+nral));
                 shell_pbc_f = shell_pbc[0];
             }
-            else /* F_POLARIZATION */
+            else /* F_POLARIZATION and onward */
             {
-                snew(shell_pbc[1], il->nr/(1+nral));
-                shell_pbc_f = shell_pbc[1];
+                snew(shell_pbc[ftype-F_POLARIZATION+1], il->nr/(1+nral));
+                shell_pbc_f = shell_pbc[ftype-F_POLARIZATION+1];
             }
 
             i = 0;
@@ -581,10 +586,8 @@ gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
             sfree(a2cg);
         }
 
-        /* TODO: check this */
-        /* 2 possible functions that hold shells/Drudes - F_BONDS and F_POLARIZATION */
-        snew(shfc->shell_pbc_loc_nalloc, 2);
-        snew(shfc->shell_pbc_loc, 2);
+        snew(shfc->shell_pbc_loc_nalloc, (F_ANHARM_POL-F_POLARIZATION+2));
+        snew(shfc->shell_pbc_loc, (F_ANHARM_POL-F_POLARIZATION+2));
     }
 
     if (bSerial_NoPBC)

@@ -281,6 +281,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        t_forcerec *fr,
                        rvec *cgcm_or_x,
                        gmx_vsite_t *vsite,
+                       gmx_shellfc_t shellfc,
                        gmx_mtop_t *top, gmx_localtop_t *ltop);
 
 void dd_sort_local_top(gmx_domdec_t *dd, t_mdatoms *mdatoms,

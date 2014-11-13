@@ -9678,7 +9678,7 @@ void dd_partition_system(FILE                *fplog,
                       comm->cellsize_min, np,
                       fr,
                       fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x,
-                      vsite, /* shellfc, */ top_global, top_local);
+                      vsite, shellfc, top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 
