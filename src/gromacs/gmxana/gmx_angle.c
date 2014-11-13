@@ -305,7 +305,7 @@ int gmx_g_angle(int argc, char *argv[])
             }
             fprintf(out, "\n");
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
     if (opt2bSet("-or", NFILE, fnm))
     {
@@ -323,7 +323,7 @@ int gmx_g_angle(int argc, char *argv[])
             fprintf(out, "%10.5f  %10.3f\n", time[i], trans_frac[i]);
             tfrac += trans_frac[i];
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
 
         tfrac /= nframes;
         fprintf(stderr, "Average trans fraction: %g\n", tfrac);
@@ -465,7 +465,7 @@ int gmx_g_angle(int argc, char *argv[])
         fprintf(out, "%10g  %10f\n", 180.0, angstat[0]*norm_fac);
     }
 
-    gmx_ffclose(out);
+    xvgrclose(out);
 
     do_view(oenv, opt2fn("-od", NFILE, fnm), "-nxy");
     if (bAver)

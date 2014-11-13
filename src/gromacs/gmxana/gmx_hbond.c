@@ -2233,7 +2233,7 @@ static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bC
         integral += x1;
     }
     integral *= dt;
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     printf("%s lifetime = %.2f ps\n", bContact ? "Contact" : "HB", integral);
     printf("Note that the lifetime obtained in this manner is close to useless\n");
     printf("Use the -ac option instead and check the Forward lifetime\n");
@@ -3273,7 +3273,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                 fprintf(fp, "%10g  %10g  %10g  %10g  %10g\n",
                         hb->time[j]-hb->time[0], ct[j], cct[j], ght[j], kt[j]);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
 
             analyse_corr(nn, hb->time, ct, ght, kt, NULL, NULL, NULL,
                          fit_start, temp, smooth_tail_start, oenv);
@@ -4448,9 +4448,16 @@ int gmx_hbond(int argc, char *argv[])
     free_grid(ngrid, &grid);
 
     close_trj(status);
+
+    /* Close the file opened by analyse_donor_props with -don option */
+    if (hb != NULL)
+    {
+        xvgrclose(fp);
+    }
+
     if (fpnhb)
     {
-        gmx_ffclose(fpnhb);
+        xvgrclose(fpnhb);
     }
 
     /* Compute maximum possible number of different hbonds */
@@ -4516,7 +4523,7 @@ int gmx_hbond(int argc, char *argv[])
         aver_nhb  += hb->nhb[i];
         aver_dist += hb->ndist[i];
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     aver_nhb  /= nframes;
     aver_dist /= nframes;
     /* Print HB distance distribution */
@@ -4539,7 +4546,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             fprintf(fp, "%10g %10g\n", (i+0.5)*rbin, rdist[i]/(rbin*(real)sum));
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     /* Print HB angle distribution */
@@ -4560,7 +4567,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             fprintf(fp, "%10g %10g\n", (i+0.5)*abin, adist[i]/(abin*(real)sum));
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     /* Print HB in alpha-helix */
@@ -4578,7 +4585,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     if (!bNN)
     {
@@ -4775,7 +4782,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     return 0;

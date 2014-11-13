@@ -786,6 +786,8 @@ int gmx_disre(int argc, char *argv[])
 
     if (ftp2bSet(efNDX, NFILE, fnm))
     {
+        /* TODO: Nothing is written to this file if -c is provided, but it is
+         * still opened... */
         rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
         xvg = xvgropen(opt2fn("-dr", NFILE, fnm), "Individual Restraints", "Time (ps)",
                        "nm", oenv);
@@ -933,19 +935,22 @@ int gmx_disre(int argc, char *argv[])
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres,
                           j, &top->idef, &mtop, max_dr, nlevels, bThird);
-        gmx_ffclose(out);
-        gmx_ffclose(aver);
-        gmx_ffclose(numv);
-        gmx_ffclose(maxxv);
-        if (isize > 0)
-        {
-            gmx_ffclose(xvg);
-            do_view(oenv, opt2fn("-dr", NFILE, fnm), "-nxy");
-        }
+        xvgrclose(out);
+        xvgrclose(aver);
+        xvgrclose(numv);
+        xvgrclose(maxxv);
         do_view(oenv, opt2fn("-dn", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-da", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-ds", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-dm", NFILE, fnm), "-nxy");
+    }
+    if (isize > 0)
+    {
+        xvgrclose(xvg);
+        if (!clust)
+        {
+            do_view(oenv, opt2fn("-dr", NFILE, fnm), "-nxy");
+        }
     }
 
     gmx_log_close(fplog);

@@ -197,7 +197,7 @@ int gmx_morph(int argc, char *argv[])
 
     if (bRMS)
     {
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         do_view(oenv, opt2fn("-or", NFILE, fnm), "-nxy");
     }
 

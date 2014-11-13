@@ -3182,5 +3182,10 @@ void do_edsam(t_inputrec     *ir,
 
     } /* END of loop over ED groups */
 
+    /* ed->edo is opened sometimes with xvgropen, sometimes with
+     * gmx_fio_fopen, so we use the least common denominator for closing.
+     */
+    gmx_fio_fclose(ed->edo);
+
     ed->bFirst = FALSE;
 }
