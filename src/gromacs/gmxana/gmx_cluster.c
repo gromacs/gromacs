@@ -136,11 +136,6 @@ typedef struct {
     int *nb;
 } t_nnb;
 
-void pr_energy(FILE *fp, real e)
-{
-    fprintf(fp, "Energy: %8.4f\n", e);
-}
-
 void cp_index(int nn, int from[], int to[])
 {
     int i;
@@ -1018,7 +1013,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              gmx_bool bFit, FILE *log, t_rgb rlo, t_rgb rhi,
                              const output_env_t oenv)
 {
-    FILE        *fp = NULL;
+    FILE        *size_fp = NULL;
     char         buf[STRLEN], buf1[40], buf2[40], buf3[40], *trxsfn;
     t_trxstatus *trxout  = NULL;
     t_trxstatus *trxsout = NULL;
@@ -1093,7 +1088,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 
     if (clustidfn)
     {
-        fp = xvgropen(clustidfn, "Clusters", output_env_get_xvgr_tlabel(oenv), "Cluster #", oenv);
+        FILE *fp = xvgropen(clustidfn, "Clusters", output_env_get_xvgr_tlabel(oenv), "Cluster #", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fp, "@    s0 symbol 2\n");
@@ -1108,11 +1103,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     }
     if (sizefn)
     {
-        /* FIXME: This file is never closed. */
-        fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
+        size_fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
-            fprintf(fp, "@g%d type %s\n", 0, "bar");
+            fprintf(size_fp, "@g%d type %s\n", 0, "bar");
         }
     }
     snew(structure, nf);
@@ -1161,7 +1155,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         }
         if (sizefn)
         {
-            fprintf(fp, "%8d %8d\n", cl, nstr);
+            fprintf(size_fp, "%8d %8d\n", cl, nstr);
         }
         clrmsd  = 0;
         midstr  = 0;
@@ -1306,6 +1300,11 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (trxsfn)
     {
         sfree(trxsfn);
+    }
+
+    if (size_fp)
+    {
+        xvgrclose(size_fp);
     }
 }
 

@@ -3328,22 +3328,31 @@ static void init_hbframe(t_hbdata *hb, int nframes, real t)
     /*set_hb(hb->hbmap[i][j]->h[m],nframes-hb->hbmap[i][j]->n0,HB_NO);*/
 }
 
-static void analyse_donor_props(const char *fn, t_hbdata *hb, int nframes, real t,
-                                const output_env_t oenv)
+static FILE *open_donor_properties_file(const char        *fn,
+                                        t_hbdata          *hb,
+                                        const output_env_t oenv)
 {
-    static FILE *fp    = NULL;
-    const char  *leg[] = { "Nbound", "Nfree" };
-    int          i, j, k, nbound, nb, nhtot;
+    FILE       *fp    = NULL;
+    const char *leg[] = { "Nbound", "Nfree" };
 
-    if (!fn)
+    if (!fn || !hb)
+    {
+        return NULL;
+    }
+
+    fp = xvgropen(fn, "Donor properties", output_env_get_xvgr_tlabel(oenv), "Number", oenv);
+    xvgr_legend(fp, asize(leg), leg, oenv);
+
+    return fp;
+}
+
+static void analyse_donor_properties(FILE *fp, t_hbdata *hb, int nframes, real t)
+{
+    int i, j, k, nbound, nb, nhtot;
+
+    if (!fp || !hb)
     {
         return;
-    }
-    if (!fp)
-    {
-        // TODO: This file is never closed...
-        fp = xvgropen(fn, "Donor properties", output_env_get_xvgr_tlabel(oenv), "Number", oenv);
-        xvgr_legend(fp, asize(leg), leg, oenv);
     }
     nbound = 0;
     nhtot  = 0;
@@ -3689,7 +3698,7 @@ int gmx_hbond(int argc, char *argv[])
     int                   grp, nabin, nrbin, bin, resdist, ihb;
     char                **leg;
     t_hbdata             *hb, *hbptr;
-    FILE                 *fp, *fpins = NULL, *fpnhb = NULL;
+    FILE                 *fp, *fpins = NULL, *fpnhb = NULL, *donor_properties = NULL;
     t_gridcell         ***grid;
     t_ncell              *icell, *jcell, *kcell;
     ivec                  ngrid;
@@ -3947,6 +3956,8 @@ int gmx_hbond(int argc, char *argv[])
     printf("Found %d donors and %d acceptors\n", hb->d.nrd, hb->a.nra);
     /*if (bSelected)
        snew(donors[gr0D], dons[gr0D].nrd);*/
+
+    donor_properties = open_donor_properties_file(opt2fn_null("-don", NFILE, fnm), hb, oenv);
 
     if (bHBmap)
     {
@@ -4376,10 +4387,7 @@ int gmx_hbond(int argc, char *argv[])
 #pragma omp barrier
 #pragma omp single
                 {
-                    if (hb != NULL)
-                    {
-                        analyse_donor_props(opt2fn_null("-don", NFILE, fnm), hb, k, t, oenv);
-                    }
+                    analyse_donor_properties(donor_properties, hb, k, t);
                 }
 
 #pragma omp single
@@ -4449,6 +4457,12 @@ int gmx_hbond(int argc, char *argv[])
     free_grid(ngrid, &grid);
 
     close_trj(status);
+
+    if (donor_properties)
+    {
+        xvgrclose(donor_properties);
+    }
+
     if (fpnhb)
     {
         xvgrclose(fpnhb);
