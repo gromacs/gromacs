@@ -456,7 +456,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_error(wi, "nstcalclr must be a positive number (divisor of nstcalclr), or -1 to follow nstlist.");
     }
 
-    if (EEL_PME(ir->coulombtype) && ir->rcoulomb > ir->rvdw && ir->nstcalclr > 1)
+    if (EEL_PME(ir->coulombtype) && ir->rcoulomb > ir->rlist && ir->nstcalclr > 1)
     {
         warning_error(wi, "When used with PME, the long-range component of twin-range interactions must be updated every step (nstcalclr)");
     }
@@ -2399,6 +2399,22 @@ void get_ir(const char *mdparin, const char *mdparout,
         if (ir->bSimTemp) /* done after fep params */
         {
             do_simtemp_params(ir);
+        }
+
+        /* Because sc-coul (=FALSE by default) only acts on the lambda state
+         * setup and not on the old way of specifying the free-energy setup,
+         * we should check for using soft-core when not needed, since that
+         * can complicate the sampling significantly.
+         * Note that we only check for the automated coupling setup.
+         * If the (advanced) user does FEP through manual topology changes,
+         * this check will not be triggered.
+         */
+        if (ir->efep != efepNO && ir->fepvals->n_lambda == 0 &&
+            ir->fepvals->sc_alpha != 0 &&
+            ((opts->couple_lam0 == ecouplamVDW  && opts->couple_lam0 == ecouplamVDWQ) ||
+             (opts->couple_lam1 == ecouplamVDWQ && opts->couple_lam1 == ecouplamVDW)))
+        {
+            warning(wi, "You are using soft-core interactions while the Van der Waals interactions are not decoupled (note that the sc-coul option is only active when using lambda states). Although this will not lead to errors, you will need much more sampling than without soft-core interactions. Consider using sc-alpha=0.");
         }
     }
     else
