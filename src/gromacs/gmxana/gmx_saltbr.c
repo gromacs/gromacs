@@ -244,7 +244,7 @@ int gmx_saltbr(int argc, char *argv[])
                     {
                         fprintf(fp, "%10g  %10g\n", time[k], cgdist[i][j][k]);
                     }
-                    gmx_ffclose(fp);
+                    xvgrclose(fp);
                 }
             }
         }
@@ -326,7 +326,7 @@ int gmx_saltbr(int argc, char *argv[])
         }
         for (m = 0; (m < 3); m++)
         {
-            gmx_ffclose(out[m]);
+            xvgrclose(out[m]);
             if (nset[m] == 0)
             {
                 remove(fn[m]);

@@ -425,7 +425,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     fprintf(fp, "\n");
 
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     sfree(leg);
     sfree(count);
 }
@@ -682,7 +682,7 @@ int gmx_do_dssp(int argc, char *argv[])
     close_trj(status);
     if (fTArea)
     {
-        gmx_ffclose(fTArea);
+        xvgrclose(fTArea);
     }
     gmx_rmpbc_done(gpbc);
 
@@ -731,7 +731,7 @@ int gmx_do_dssp(int argc, char *argv[])
             {
                 fprintf(acc, "%5d  %10g %10g\n", i+1, av_area[i], norm_av_area[i]);
             }
-            gmx_ffclose(acc);
+            xvgrclose(acc);
         }
     }
 

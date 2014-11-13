@@ -581,7 +581,7 @@ int gmx_enemat(int argc, char *argv[])
             }
             fprintf(out, "\n");
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
     else
     {

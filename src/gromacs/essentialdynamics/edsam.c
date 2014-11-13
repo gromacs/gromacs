@@ -1202,6 +1202,7 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm
         init_edsamstate(ed, EDstate);
 
         /* The master opens the ED output file */
+        /* TODO This file is never closed... */
         if (Flags & MD_APPENDFILES)
         {
             ed->edo = gmx_fio_fopen(opt2fn("-eo", nfile, fnm), "a+");
