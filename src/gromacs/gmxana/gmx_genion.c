@@ -268,11 +268,11 @@ void sort_ions(int nsa, int nw, int repl[], atom_id index[],
             {
                 if (bDrude)
                 {
-                    j = starta+np+(2*nni);
+                    j = starta+(2*npi)+(2*nni);
                 }
                 else
                 {
-                    j = starta+np+nni;
+                    j = starta+npi+nni;
                 }
                 k = startr+np+nni;
 
