@@ -257,6 +257,7 @@ static int decompose_frag(FILE *fplog,
         char *ptype;
         while (1 == gmx_poldata_get_ptype(pd, &ptype, NULL, NULL, NULL, NULL))
         {
+            
             if (!bZeroPol(ptype, zeropol))
             {
                 ptypes.push_back(pType(ptype, false, 0));
@@ -721,7 +722,11 @@ int alex_tune_pol(int argc, char *argv[])
     }
     gms               = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
     FILE *fplog       = opt2FILE("-g", NFILE, fnm, "w");
-    std::vector<std::string> zpol = split(zeropol, ' ');
+    std::vector<std::string> zpol;
+    if (NULL != zeropol)
+    {
+        zpol = split(zeropol, ' ');
+    }
     
     nalexandria_atypes = decompose_frag(fplog, opt2fn("-his", NFILE, fnm),
                                         pd, mp, bQM, lot, mindata,
