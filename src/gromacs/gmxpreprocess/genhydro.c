@@ -946,7 +946,6 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
         {
             bHeavy[i] = TRUE;
             /* build name of associated Drude */
-            /* snew(dname, strlen((*pdba->atomname[i])+1)); */
             snew(dname, 8);     /* TODO: ugly hack for the moment - names should be <5 char */
             strcpy(dname, "D");
             strcat(dname, *pdba->atomname[i]);
@@ -1045,6 +1044,7 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
     /* update pdba */
     *pdbaptr = newpdba;
 
+    sfree(dname);
     sfree(bHeavy);
     sfree(bPresent);
 }
