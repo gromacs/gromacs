@@ -137,7 +137,6 @@ class MyMol : public MolProp
                                    gmx_poldata_t         pd,
                                    const char           *lot,
                                    ChargeGenerationModel iModel,
-                                   bool                  bPol,
                                    int                   nexcl);
         //! Generate Charges
         immStatus GenerateCharges(gmx_poldata_t pd, gmx_atomprop_t ap,

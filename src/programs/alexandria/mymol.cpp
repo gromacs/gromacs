@@ -1008,7 +1008,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
                                   gmx_poldata_t         pd,
                                   const char           *lot,
                                   ChargeGenerationModel iModel,
-                                  bool                  bPol,
                                   int                   nexcl)
 {
     immStatus                imm = immOK;
@@ -1040,11 +1039,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
     bts[ebtsCMAP]  = F_CMAP;
     bts[ebtsEXCLS] = 0;
 
-    if (bPol)
-    {
-        printf("I forgot to implement generating polarizabilities for %s.\n", GetMolname().c_str());
-        fflush(stdout);
-    }
     ftb    = bts[ebtsBONDS];
     nexcl_ = nexcl;
     GenerateComposition(pd);

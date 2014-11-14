@@ -466,7 +466,7 @@ int alex_gentop(int argc, char *argv[])
     mymol.Merge(*mpi);
     mymol.SetForceField(forcefield);
 
-    imm = mymol.GenerateTopology(aps, pd, lot, iModel, bAddShells, nexcl);
+    imm = mymol.GenerateTopology(aps, pd, lot, iModel, nexcl);
 
     if ((immOK == imm)  && (eqgRESP == iModel))
     {

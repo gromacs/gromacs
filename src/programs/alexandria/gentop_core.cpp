@@ -428,7 +428,7 @@ void add_shells(gmx_poldata_t pd, int maxatom, t_atoms *atoms,
 {
     int      i, j, k, ai, aj, iat, shell, ns = 0;
     int     *renum;
-    char     buf[32], **newname, *gt_type;
+    char     buf[32], **newname;
     t_param  p;
     t_atom  *shell_atom;
     t_atoms *newa;
@@ -447,9 +447,8 @@ void add_shells(gmx_poldata_t pd, int maxatom, t_atoms *atoms,
     for (i = 0; (i < atoms->nr); i++)
     {
         renum[i] = i+ns;
-        gt_type  = gmx_poldata_get_type(pd, *atoms->atomtype[i]);
-        if ((NULL != gt_type) &&
-            (1 == gmx_poldata_get_atype_pol(pd, gt_type, &pol, &sigpol)))
+        if (1 == gmx_poldata_get_atype_pol(pd, *atoms->atomtype[i],
+                                           &pol, &sigpol))
         {
             ns++;
             p.a[0] = renum[i];
