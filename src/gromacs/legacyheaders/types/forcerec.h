@@ -475,6 +475,9 @@ typedef struct {
     int         red_nblock;
     f_thread_t *f_t;
 
+    /* Maximum thread count for uniform distribution of bondeds over threads */
+    int   bonded_max_nthread_uniform;
+
     /* Exclusion load distribution over the threads */
     int  *excl_load;
 } t_forcerec;
