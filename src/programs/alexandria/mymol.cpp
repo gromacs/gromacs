@@ -1062,7 +1062,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
     if (immOK == imm)
     {
         /* Store bonds in harmonic potential list first, update type later */
-        ftb = F_BONDS;
+        //ftb = F_BONDS;
         memset(&b, 0, sizeof(b));
         for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
         {
@@ -1119,6 +1119,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
 
         ltop_ = gmx_mtop_generate_local_top(mtop_, inputrec_);
     }
+    static bool bOpt[ebtsNR] = { true, false, false, false, false, false };
+
+    //    UpdateIdef(pd, bOpt);
 
     return imm;
 }
@@ -1501,7 +1504,6 @@ void MyMol::PrintTopology(const char           *fn,
     t_mols  printmol;
     bool    bITP;
     int     i, bts2[ebtsNR];
-
     if (GetMolname().size() > 0)
     {
         printmol.name = strdup(GetMolname().c_str());
