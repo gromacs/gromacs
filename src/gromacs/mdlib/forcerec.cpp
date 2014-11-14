@@ -64,6 +64,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
@@ -1534,32 +1535,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
     }
 
     return bAllvsAll;
-}
-
-
-static void init_forcerec_f_threads(t_forcerec *fr, int nenergrp)
-{
-    int t, i;
-
-    /* These thread local data structures are used for bondeds only */
-    fr->nthreads = gmx_omp_nthreads_get(emntBonded);
-
-    if (fr->nthreads > 1)
-    {
-        snew(fr->f_t, fr->nthreads);
-        /* Thread 0 uses the global force and energy arrays */
-        for (t = 1; t < fr->nthreads; t++)
-        {
-            fr->f_t[t].f        = NULL;
-            fr->f_t[t].f_nalloc = 0;
-            snew(fr->f_t[t].fshift, SHIFTS);
-            fr->f_t[t].grpp.nener = nenergrp*nenergrp;
-            for (i = 0; i < egNR; i++)
-            {
-                snew(fr->f_t[t].grpp.ener[i], fr->f_t[t].grpp.nener);
-            }
-        }
-    }
 }
 
 
@@ -3227,7 +3202,7 @@ void init_forcerec(FILE              *fp,
     }
 
     /* Initialize the thread working data for bonded interactions */
-    init_forcerec_f_threads(fr, mtop->groups.grps[egcENER].nr);
+    init_bonded_threading(fp, fr, mtop->groups.grps[egcENER].nr);
 
     snew(fr->excl_load, fr->nthreads+1);
 
