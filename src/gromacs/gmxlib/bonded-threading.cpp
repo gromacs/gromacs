@@ -48,10 +48,14 @@
 
 static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
 {
-    int ftype;
-    int nat1;
-    int t;
-    int il_nr_thread;
+    int      ftype[F_NRE];
+    t_ilist *il[F_NRE];
+    int      nat[F_NRE], ind[F_NRE];
+    int      nat_tot, nat_sum;
+    int      f, ntype;
+    int      t;
+
+    assert(nthreads > 0);
 
     idef->nthreads = nthreads;
 
@@ -61,44 +65,122 @@ static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
         snew(idef->il_thread_division, idef->il_thread_division_nalloc);
     }
 
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    ntype   = 0;
+    nat_tot = 0;
+    for (f = 0; f < F_NRE; f++)
     {
-        if (ftype_is_bonded_potential(ftype))
+        if (!ftype_is_bonded_potential(f))
         {
-            nat1 = interaction_function[ftype].nratoms + 1;
+            continue;
+        }
+
+        if (idef->il[f].nr == 0)
+        {
+            /* No interactions, avoid all the integer math below */
+            for (t = 0; t <= nthreads; t++)
+            {
+                idef->il_thread_division[f*(nthreads+1)+t] = 0;
+            }
+        }
+        else if (nthreads <= 4 || f == F_DISRES)
+        {
+            /* On up to 4 threads, load balancing the bonded work
+             * is more important than minimizing the reduction cost.
+             */
+            int nat1, nr_t;
+
+            nat1 = 1 + NRAL(f);
 
             for (t = 0; t <= nthreads; t++)
             {
-                /* Divide the interactions equally over the threads.
-                 * When the different types of bonded interactions
-                 * are distributed roughly equally over the threads,
-                 * this should lead to well localized output into
-                 * the force buffer on each thread.
-                 * If this is not the case, a more advanced scheme
-                 * (not implemented yet) will do better.
-                 */
-                il_nr_thread = (((idef->il[ftype].nr/nat1)*t)/nthreads)*nat1;
+                /* Divide equally over the threads */
+                nr_t = (((idef->il[f].nr/nat1)*t)/nthreads)*nat1;
 
-                /* Ensure that distance restraint pairs with the same label
-                 * end up on the same thread.
-                 * This is slighlty tricky code, since the next for iteration
-                 * may have an initial il_nr_thread lower than the final value
-                 * in the previous iteration, but this will anyhow be increased
-                 * to the approriate value again by this while loop.
-                 */
-                while (ftype == F_DISRES &&
-                       il_nr_thread > 0 &&
-                       il_nr_thread < idef->il[ftype].nr &&
-                       idef->iparams[idef->il[ftype].iatoms[il_nr_thread]].disres.label ==
-                       idef->iparams[idef->il[ftype].iatoms[il_nr_thread-nat1]].disres.label)
+                if (f == F_DISRES)
                 {
-                    il_nr_thread += nat1;
+                    /* Ensure that distance restraint pairs with the same label
+                     * end up on the same thread.
+                     */
+                    while (nr_t > 0 && nr_t < idef->il[f].nr &&
+                           idef->iparams[idef->il[f].iatoms[nr_t]].disres.label ==
+                           idef->iparams[idef->il[f].iatoms[nr_t-nat1]].disres.label)
+                    {
+                        nr_t += nat1;
+                    }
                 }
 
-                idef->il_thread_division[ftype*(nthreads+1)+t] = il_nr_thread;
+                idef->il_thread_division[f*(nthreads+1)+t] = nr_t;
             }
         }
+        else
+        {
+            /* Add this ftype to the list to be distributed */
+            ftype[ntype] = f;
+            il[ntype]    = &idef->il[f];
+            nat[ntype]   = NRAL(f);
+            ind[ntype]   = 0;
+            nat_tot     += il[ntype]->nr/(nat[ntype] + 1)*nat[ntype];
+
+            /* The first index for the thread division is always 0 */
+            idef->il_thread_division[ftype[ntype]*(nthreads+1)] = 0;
+
+            ntype++;
+        }
     }
+
+    nat_sum = 0;
+    for (t = 1; t <= nthreads; t++)
+    {
+        int nat_thread;
+
+        /* Here we assume that the computational cost is proportional
+         * to the number of atoms in the interaction. This is a rough
+         * measure, but roughly correct. Usually there are very few
+         * interactions anyhow and there are distributed relatively
+         * uniformly. Proper and RB dihedrals are often distributed
+         * non-uniformly, but their cost is roughly equal.
+         */
+        nat_thread = (nat_tot*t)/nthreads;
+
+        while (nat_sum < nat_thread)
+        {
+            /* To divide bonds based on atom order, we compare
+             * the index of the first atom in the bonded interaction.
+             * This works well, since the domain decomposition generates
+             * bondeds in order of the atoms by looking up interactions
+             * which are linked to the first atom in each interaction.
+             * It usually also works well without DD, since then the atoms
+             * in bonded interactions are usually in increasing order.
+             */
+            int f_min, a_min = 0;
+
+            f_min = -1;
+            for (f = 0; f < ntype; f++)
+            {
+                if (ind[f] < il[f]->nr && (f_min == -1 ||
+                                           il[f]->iatoms[ind[f]+1] < a_min))
+                {
+                    f_min = f;
+                    a_min = il[f]->iatoms[ind[f]+1];
+                }
+            }
+            assert(f_min >= 0);
+
+            ind[f_min] += nat[f_min] + 1;
+            nat_sum    += nat[f_min];
+        }
+
+        for (f = 0; f < ntype; f++)
+        {
+            idef->il_thread_division[ftype[f]*(nthreads+1) + t] = ind[f];
+        }
+    }
+
+    for (f = 0; f < ntype; f++)
+    {
+        assert(ind[f] == il[f]->nr);
+    }
+
 }
 
 static unsigned
