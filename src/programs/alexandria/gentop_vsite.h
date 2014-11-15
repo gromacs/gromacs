@@ -131,8 +131,12 @@ class GentopVsites
          */
         void addRingPlanar(int natom, int a[], int nbonds[]);
 
-        //! The fun stuff
-        void generateSpecial(bool bGenVsites,
+        /*! \brief Does checks on vsites and more
+         *
+         * Generate linear angles and merges linear vsites in case
+         * there are more than 1 in a row.
+         */
+        void generateSpecial(bool bUseVsites,
                              t_atoms *atoms, rvec **x,
                              t_params plist[],
                              t_symtab *symtab, gpp_atomtype_t atype,

@@ -569,7 +569,8 @@ int alex_bastat(int argc, char *argv[])
                 printf("Empty molname for molecule with formula %s\n", mmi.GetFormula().c_str());
                 continue;
             }
-            immStatus imm = mmi.GenerateTopology(aps, pd, lot, iModel, 2);
+            immStatus imm = mmi.GenerateTopology(aps, pd, lot, iModel, 2,
+                                                 false, false, edihNo);
 
             if (immOK != imm)
             {

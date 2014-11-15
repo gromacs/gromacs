@@ -43,10 +43,6 @@ void reset_q(t_atoms *atoms);
 void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
                t_params plist[], int cgnr[], int nbts, int bts[]);
 
-void add_shells(gmx_poldata_t pd, int maxatom, t_atoms *atoms,
-                gpp_atomtype_t atype, t_params plist[],
-                rvec *x, t_symtab *symtab, t_excls **excls);
-
 void symmetrize_charges(gmx_bool bQsym,
                         t_atoms *atoms, t_params *bonds, gmx_poldata_t pd,
                         gmx_atomprop_t aps, const char *symm_string,

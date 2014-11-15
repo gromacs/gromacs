@@ -205,8 +205,9 @@ int alex_gentop(int argc, char *argv[])
         FALSE;
 #endif
     static gmx_bool    bRemoveDih    = FALSE, bQsym = TRUE, bZatype = TRUE, bFitCube = FALSE;
-    static gmx_bool    bParam        = FALSE, bH14 = TRUE, bRound = TRUE, bITP, bAddShells = FALSE;
-    static gmx_bool    bPairs        = TRUE, bPBC = TRUE;
+    static gmx_bool    bParam        = FALSE, bH14 = TRUE, bRound = TRUE, bITP;
+    static const char *polaropt[]    = { NULL, "No", "AllAtom", "UnitedAtom", NULL };
+    static gmx_bool    bPairs        = FALSE, bPBC = TRUE;
     static gmx_bool    bUsePDBcharge = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
     static gmx_bool    bCONECT       = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = TRUE, bEntropy = FALSE;
     static gmx_bool    bGenVSites    = FALSE, bSkipVSites = TRUE;
@@ -237,7 +238,7 @@ int alex_gentop(int argc, char *argv[])
           "Use the OpenBabel engine to process gaussian input files" },
 #endif
         { "-nexcl", FALSE, etINT,  {&nexcl},
-          "Number of exclusions" },
+          "HIDDENNumber of exclusions. Check consistency of this option with the [TT]-pairs[tt] flag." },
         { "-H14",    FALSE, etBOOL, {&bH14},
           "HIDDENUse 3rd neighbour interactions for hydrogen atoms" },
         { "-dih",    FALSE, etSTR,  {dihopt},
@@ -245,7 +246,7 @@ int alex_gentop(int argc, char *argv[])
         { "-remdih", FALSE, etBOOL, {&bRemoveDih},
           "HIDDENRemove dihedrals on the same bond as an improper" },
         { "-pairs",  FALSE, etBOOL, {&bPairs},
-          "Output 1-4 interactions (pairs) in topology file" },
+          "HIDDENOutput 1-4 interactions (pairs) in topology file. Check consistency of your option with the [TT]-nexcl[tt] flag." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-iupac",   FALSE, etSTR,  {&iupac},
@@ -263,7 +264,7 @@ int alex_gentop(int argc, char *argv[])
         { "-conect", FALSE, etBOOL, {&bCONECT},
           "HIDDENUse CONECT records in an input pdb file to signify bonds" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
-          "HIDDENGenerate virtual sites for linear groups. Check and double check." },
+          "Generate virtual sites for linear groups. Check and double check." },
         { "-skipvsites", FALSE, etBOOL, {&bSkipVSites},
           "HIDDENSkip virtual sites in the input file" },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
@@ -314,8 +315,8 @@ int alex_gentop(int argc, char *argv[])
           "Round off measured values for distances and angles" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
-        { "-polar",  FALSE, etBOOL, {&bAddShells},
-          "Add polarizable particles to the topology" },
+        { "-polar",  FALSE, etENUM, {&polaropt},
+          "Add polarizable particles to the topology by specifying AllAtom or UnitedAtom (every atom except H)" },
         { "-qtol",   FALSE, etREAL, {&qtol},
           "Tolerance for assigning charge generation algorithm" },
         { "-maxiter", FALSE, etINT, {&maxiter},
@@ -349,7 +350,6 @@ int alex_gentop(int argc, char *argv[])
     {
         return 0;
     }
-    printf("argc = %d\n", argc);
 
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
@@ -393,6 +393,7 @@ int alex_gentop(int argc, char *argv[])
     /* Check command line options of type enum */
     eDih                  edih = (eDih) get_option(dihopt);
     eChargeGroup          ecg  = (eChargeGroup) get_option(cgopt);
+    ePolar                epol = (ePolar) get_option(polaropt);
     ChargeGenerationModel iModel;
     if ((iModel = name2eemtype(cqgen[0])) == eqgNR)
     {
@@ -466,7 +467,8 @@ int alex_gentop(int argc, char *argv[])
     mymol.Merge(*mpi);
     mymol.SetForceField(forcefield);
 
-    imm = mymol.GenerateTopology(aps, pd, lot, iModel, nexcl);
+    imm = mymol.GenerateTopology(aps, pd, lot, iModel, nexcl,
+                                 bGenVSites, bPairs, edih);
 
     if ((immOK == imm)  && (eqgRESP == iModel))
     {
@@ -507,7 +509,7 @@ int alex_gentop(int argc, char *argv[])
     }
     if (immOK == imm)
     {
-        mymol.GenerateVsitesShells(pd, bGenVSites, bAddShells, bPairs, edih);
+        mymol.AddShells(pd, epol);
     }
     if (immOK == imm)
     {

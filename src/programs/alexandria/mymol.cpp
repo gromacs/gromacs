@@ -101,15 +101,11 @@ static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *ato
             n = 0;
             for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
             {
-                if ((pi->length() > 0) && (n < MAXFORCEPARAM))
+                if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
                 {
                     plist[ft].param[j].c[1+n] = atof(pi->c_str());
                     n++;
                 }
-            }
-            for (; (n < MAXFORCEPARAM); n++)
-            {
-                plist[ft].param[j].c[n] = NOTSET;
             }
         }
     }
@@ -127,15 +123,11 @@ static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *ato
             n = 0;
             for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
             {
-                if ((pi->length() > 0) && (n < MAXFORCEPARAM))
+                if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
                 {
                     plist[ft].param[j].c[1+n] = atof(pi->c_str());
                     n++;
                 }
-            }
-            for (; (n < MAXFORCEPARAM); n++)
-            {
-                plist[ft].param[j].c[n] = NOTSET;
             }
         }
     }
@@ -156,15 +148,11 @@ static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *ato
                 n = 0;
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    if ((pi->length() > 0) && (n < MAXFORCEPARAM))
+                    if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
                     {
                         plist[ft].param[j].c[1+n] = atof(pi->c_str());
                         n++;
                     }
-                }
-                for (; (n < MAXFORCEPARAM); n++)
-                {
-                    plist[ft].param[j].c[n] = NOTSET;
                 }
             }
         }
@@ -472,7 +460,7 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     return (th > th_toler) || (th < 180-th_toler);
 }
 
-void MyMol::MakeVsites(unsigned int flags)
+void MyMol::MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd)
 {
     std::vector < std::vector < unsigned int> > bonds;
     std::vector<int> nbonds;
@@ -488,6 +476,7 @@ void MyMol::MakeVsites(unsigned int flags)
     for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
     {
         bonds[bi->GetAi() - 1].push_back(bi->GetAj() - 1);
+        bonds[bi->GetAj() - 1].push_back(bi->GetAi() - 1);
     }
     nbonds.resize(topology_->atoms.nr);
     for (int i = 0; (i < topology_->atoms.nr); i++)
@@ -497,7 +486,6 @@ void MyMol::MakeVsites(unsigned int flags)
     for (int i = 0; (i < topology_->atoms.nr); i++)
     {
         /* Now test initial geometry */
-        printf("Testing geometry for atom %d\n", i);
         if ((bonds[i].size() == 2) &&
             is_linear(x_[i], x_[bonds[i][0]], x_[bonds[i][1]],
                       &pbc, th_toler))
@@ -513,6 +501,11 @@ void MyMol::MakeVsites(unsigned int flags)
                           &nbonds[0]);
         }
     }
+    int anr = topology_->atoms.nr;
+
+    gvt.generateSpecial(bUseVsites, &topology_->atoms, &x_, plist_,
+                        symtab_, atype_, &excls_, pd);
+    bHaveVSites_ = (topology_->atoms.nr > anr);
 }
 
 void MyMol::MakeAngles()
@@ -521,7 +514,7 @@ void MyMol::MakeAngles()
     t_restp  rtp;
 
     /* Make Angles and Dihedrals */
-    snew(excls, topology_->atoms.nr);
+    snew(excls_, topology_->atoms.nr);
     init_nnb(&nnb, topology_->atoms.nr, nexcl_+2);
     gen_nnb(&nnb, plist_);
     //detect_rings(&plist_[F_BONDS],topology_->atoms.nr,bRing);
@@ -531,8 +524,8 @@ void MyMol::MakeAngles()
     rtp.bRemoveDihedralIfWithImproper = TRUE;
     rtp.bGenerateHH14Interactions     = TRUE;
     rtp.nrexcl = nexcl_;
-    gen_pad(&nnb, &(topology_->atoms), &rtp, plist_, excls, NULL, FALSE);
-    generate_excls(&nnb, nexcl_, excls);
+    gen_pad(&nnb, &(topology_->atoms), &rtp, plist_, excls_, NULL, FALSE);
+    generate_excls(&nnb, nexcl_, excls_);
     done_nnb(&nnb);
 }
 
@@ -652,7 +645,7 @@ static void do_init_mtop(gmx_poldata_t pd,
     init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
 }
 
-static void excls_to_blocka(int natom, t_excls excls[], t_blocka *blocka)
+static void excls__to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
 {
     int i, j, k, nra;
 
@@ -663,18 +656,18 @@ static void excls_to_blocka(int natom, t_excls excls[], t_blocka *blocka)
     nra = 0;
     for (i = 0; (i < natom); i++)
     {
-        nra += excls[i].nr;
+        nra += excls_[i].nr;
     }
     snew(blocka->a, nra+1);
     nra = 0;
     for (i = j = 0; (i < natom); i++)
     {
         blocka->index[i] = nra;
-        for (k = 0; (k < excls[i].nr); k++)
+        for (k = 0; (k < excls_[i].nr); k++)
         {
-            blocka->a[j++] = excls[i].e[k];
+            blocka->a[j++] = excls_[i].e[k];
         }
-        nra += excls[i].nr;
+        nra += excls_[i].nr;
     }
     blocka->index[natom] = nra;
     blocka->nr           = natom;
@@ -1008,7 +1001,10 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
                                   gmx_poldata_t         pd,
                                   const char           *lot,
                                   ChargeGenerationModel iModel,
-                                  int                   nexcl)
+                                  int                   nexcl,
+                                  bool                  bUseVsites,
+                                  bool                  bPairs,
+                                  eDih                  edih)
 {
     immStatus                imm = immOK;
     int                      ftb;
@@ -1056,7 +1052,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
     if (immOK == imm)
     {
         /* Store bonds in harmonic potential list first, update type later */
-        //ftb = F_BONDS;
+        ftb = F_BONDS;
         memset(&b, 0, sizeof(b));
         for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
         {
@@ -1071,34 +1067,27 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
     }
     if (immOK == imm)
     {
-        /* Make Angles and Dihedrals */
+        /* Make Angles and Dihedrals. This needs the bonds to be F_BONDS. */
         MakeAngles();
-        /*        snew(excls,natom);
-           init_nnb(&nnb,natom,nexcl_+2);
-           gen_nnb(&nnb,plist_);*/
-        //detect_rings(&plist_[F_BONDS],topology_->atoms.nr,bRing);
-        //nbonds = plist_[F_BONDS].nr;
-        /*        print_nnb(&nnb,"NNB");
-           snew(rtp,1);
-           rtp->bKeepAllGeneratedDihedrals = TRUE;
-           rtp->bRemoveDihedralIfWithImproper = TRUE;
-           rtp->bGenerateHH14Interactions = TRUE;
-           rtp->nrexcl = nexcl_;
-           generate_excls(&nnb,nexcl_,excls);
-           gen_pad(&nnb,&(topology_->atoms),rtp,plist_,excls,NULL,FALSE);
-           sfree(rtp);
-           done_nnb(&nnb);
-         */
-        /* Generate virtual sites */
-        MakeVsites(0);
+
+        /* Linear angles and or vsites etc. */
+        MakeSpecialInteractions(bUseVsites, pd);
+
+        if (!bPairs)
+        {
+            /* Check whether this is the right index */
+            plist_[F_LJ14].nr = 0;
+        }
+
+        if (edih == edihNo)
+        {
+            /* Check whether this is the right index */
+            plist_[F_PDIHS].nr = 0;
+        }
 
         /* Move the plist_ to the correct function */
-        if (true)
-        {
-            mv_plists(pd, plist_, true);
-        }
+        mv_plists(pd, plist_, true);
     }
-
     if (immOK == imm)
     {
         get_force_constants(pd, plist_, &topology_->atoms);
@@ -1108,14 +1097,11 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
         do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms);
 
         plist_to_mtop(pd, plist_, mtop_);
-        excls_to_blocka(topology_->atoms.nr, excls,
-                        &(mtop_->moltype[0].excls));
+        excls__to_blocka(topology_->atoms.nr, excls_,
+                         &(mtop_->moltype[0].excls));
 
         ltop_ = gmx_mtop_generate_local_top(mtop_, inputrec_);
     }
-    static bool bOpt[ebtsNR] = { true, false, false, false, false, false };
-
-    //    UpdateIdef(pd, bOpt);
 
     return imm;
 }
@@ -1169,7 +1155,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     char      qgen_msg[STRLEN];
     immStatus imm = immOK;
 
-    qgen_ = gentop_qgen_init(pd, &topology_->atoms, ap, x_, 
+    qgen_ = gentop_qgen_init(pd, &topology_->atoms, ap, x_,
                              iModel, hfac, GetCharge(), epsr);
 
     if (iModel == eqgNone)
@@ -1455,6 +1441,40 @@ static void write_zeta_q2(gentop_qgen_t qgen, gpp_atomtype_t atype,
     fclose(fp);
 }
 
+static void print_bondeds2(FILE     *out,
+                           directive d,
+                           int       ftype,
+                           int       subtype,
+                           t_params  p[])
+{
+    if (p[ftype].nr == 0)
+    {
+        return;
+    }
+    fprintf(out, "[ %s ]\n", dir2str(d));
+    fprintf(out, ";atom i");
+    for (int j = 1; (j < NRAL(ftype)); j++)
+    {
+        fprintf(out, "  %5c", j+'i');
+    }
+    fprintf(out, "   type  parameters\n");
+
+    for (int i = 0; (i < p[ftype].nr); i++)
+    {
+        for (int j = 0; (j < NRAL(ftype)); j++)
+        {
+            fprintf(out, "  %5d", 1+p[ftype].param[i].a[j]);
+        }
+        fprintf(out, "  %5d", 1+subtype);
+        for (int j = 0; (j < NRFPA(ftype)); j++)
+        {
+            fprintf(out, "  %10g", p[ftype].param[i].c[j]);
+        }
+        fprintf(out, "\n");
+    }
+    fprintf(out, "\n");
+}
+
 static void write_top2(FILE *out, char *molname,
                        t_atoms *at, gmx_bool bRTPresname,
                        int bts[], t_params plist_[], t_excls excls[],
@@ -1468,24 +1488,24 @@ static void write_top2(FILE *out, char *molname,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds(out, at->nr, d_bonds,      bts[ebtsBONDS], 0, plist_);
-        print_bondeds(out, at->nr, d_constraints, F_CONSTR,   0,              plist_);
-        print_bondeds(out, at->nr, d_constraints, F_CONSTRNC, 0,              plist_);
-        print_bondeds(out, at->nr, d_pairs,      F_LJ14,     0,              plist_);
+        print_bondeds2(out, d_bonds,    F_MORSE,  bts[ebtsBONDS],   plist_);
+        print_bondeds2(out, d_constraints, F_CONSTR,   0,              plist_);
+        print_bondeds2(out, d_constraints, F_CONSTRNC, 0,              plist_);
+        print_bondeds2(out, d_pairs,      F_LJ14,     0,              plist_);
         print_excl(out, at->nr, excls);
-        print_bondeds(out, at->nr, d_angles,     bts[ebtsANGLES], 0, plist_);
-        print_bondeds(out, at->nr, d_dihedrals,  bts[ebtsPDIHS], 0, plist_);
-        print_bondeds(out, at->nr, d_dihedrals,  bts[ebtsIDIHS], 0, plist_);
-        print_bondeds(out, at->nr, d_cmap,       bts[ebtsCMAP],  0, plist_);
-        print_bondeds(out, at->nr, d_polarization, F_POLARIZATION,   0,       plist_);
-        print_bondeds(out, at->nr, d_thole_polarization, F_THOLE_POL, 0,       plist_);
-        print_bondeds(out, at->nr, d_vsites2,    F_VSITE2,   0,              plist_);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3,   0,              plist_);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FD, 0,              plist_);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FAD, 0,              plist_);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3OUT, 0,              plist_);
-        print_bondeds(out, at->nr, d_vsites4,    F_VSITE4FD, 0,              plist_);
-        print_bondeds(out, at->nr, d_vsites4,    F_VSITE4FDN, 0,             plist_);
+        print_bondeds2(out, d_angles,     bts[ebtsANGLES], 0, plist_);
+        print_bondeds2(out, d_dihedrals,  bts[ebtsPDIHS], 0, plist_);
+        print_bondeds2(out, d_dihedrals,  bts[ebtsIDIHS], 0, plist_);
+        print_bondeds2(out, d_cmap,       bts[ebtsCMAP],  0, plist_);
+        print_bondeds2(out, d_polarization, F_POLARIZATION,   0,       plist_);
+        print_bondeds2(out, d_thole_polarization, F_THOLE_POL, 0,       plist_);
+        print_bondeds2(out, d_vsites2,    F_VSITE2,   0,              plist_);
+        print_bondeds2(out, d_vsites3,    F_VSITE3,   0,              plist_);
+        print_bondeds2(out, d_vsites3,    F_VSITE3FD, 0,              plist_);
+        print_bondeds2(out, d_vsites3,    F_VSITE3FAD, 0,              plist_);
+        print_bondeds2(out, d_vsites3,    F_VSITE3OUT, 0,              plist_);
+        print_bondeds2(out, d_vsites4,    F_VSITE4FD, 0,              plist_);
+        print_bondeds2(out, d_vsites4,    F_VSITE4FDN, 0,             plist_);
 
     }
 }
@@ -1574,7 +1594,7 @@ void MyMol::PrintTopology(const char           *fn,
         //write_zeta_q2(qgen,atype,&topology_->atoms,pd,iModel);
     }
     // mv_plist_s(pd,plist_,false);
-    write_top2(fp, printmol.name, &topology_->atoms, FALSE, bts, plist_, excls, atype_, cgnr_, nexcl_);
+    write_top2(fp, printmol.name, &topology_->atoms, FALSE, bts, plist_, excls_, atype_, cgnr_, nexcl_);
     // mv_plist_s(pd,plist_,true);
     if (!bITP)
     {
@@ -1602,34 +1622,278 @@ void MyMol::PrintRTPEntry(const char *fn)
               &topology_->atoms, plist_, cgnr_, asize(bts), bts);
 }
 
-void MyMol::GenerateVsitesShells(gmx_poldata_t pd, bool bGenVSites, bool bAddShells,
-                                 bool bPairs, eDih edih)
+static void add_excl(t_excls *excls, atom_id e)
 {
-    if (bGenVSites)
-    {
-        int anr = topology_->atoms.nr;
+    int i;
 
-        gvt.generateSpecial(bGenVSites, &topology_->atoms, &x_, plist_,
-                            symtab_, atype_, &excls, pd);
-        bHaveVSites_ = (topology_->atoms.nr > anr);
-    }
-    if (!bPairs)
+    for (i = 0; (i < excls->nr); i++)
     {
-        plist_[F_LJ14].nr = 0;
+        if (excls->e[i] == e)
+        {
+            return;
+        }
     }
-    if (edih == edihNo)
+    srenew(excls->e, excls->nr+1);
+    excls->e[excls->nr++] = e;
+}
+
+static void remove_excl(t_excls *excls, int remove)
+{
+    int i;
+
+    for (i = remove+1; i < excls->nr; i++)
     {
-        plist_[bts[ebtsPDIHS]].nr = 0;
+        excls->e[i-1] = excls->e[i];
     }
 
-    if (bAddShells)
+    excls->nr--;
+}
+
+static void prune_excl(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype)
+{
+    int i, k, ak;
+
+    for (i = 0; (i < atoms->nr); i++)
     {
-        int nalloc = topology_->atoms.nr*2+2;
-        srenew(x_, nalloc);
-        srenew(excls, nalloc);
-        add_shells(pd, nalloc, &topology_->atoms, atype_, plist_, x_, symtab_, &excls);
-        bHaveShells_ = true;
+        if (get_atomtype_ptype(atoms->atom[i].type, atype) != eptShell)
+        {
+            for (k = 0; (k < excls[i].nr); )
+            {
+                ak = excls[i].e[k];
+                if (get_atomtype_ptype(atoms->atom[ak].type, atype) != eptShell)
+                {
+                    remove_excl(&(excls[i]), k);
+                }
+                else
+                {
+                    k++;
+                }
+            }
+        }
     }
+}
+
+static void copy_atoms(t_atoms *src, t_atoms *dest)
+{
+    int i;
+
+    if (dest->nr < src->nr)
+    {
+        srenew(dest->atom, src->nr);
+        srenew(dest->atomname, src->nr);
+        if (NULL != src->atomtype)
+        {
+            srenew(dest->atomtype, src->nr);
+        }
+        else if (NULL != dest->atomtype)
+        {
+            sfree(dest->atomtype);
+            dest->atomtype = NULL;
+        }
+        if (NULL != src->atomtypeB)
+        {
+            srenew(dest->atomtypeB, src->nr);
+        }
+        else if (NULL != dest->atomtypeB)
+        {
+            sfree(dest->atomtypeB);
+            dest->atomtypeB = NULL;
+        }
+    }
+    dest->nr = src->nr;
+    for (i = 0; (i < src->nr); i++)
+    {
+        dest->atom[i]      = src->atom[i];
+        dest->atomname[i]  = src->atomname[i];
+        if (NULL != src->atomtype)
+        {
+            dest->atomtype[i]  = src->atomtype[i];
+        }
+        if (NULL != src->atomtypeB)
+        {
+            dest->atomtypeB[i] = src->atomtypeB[i];
+        }
+    }
+    if (dest->nres < src->nres)
+    {
+        srenew(dest->resinfo, src->nres);
+    }
+
+    if (NULL != src->pdbinfo)
+    {
+        srenew(dest->pdbinfo, src->nres);
+    }
+    else if (NULL != dest->pdbinfo)
+    {
+        sfree(dest->pdbinfo);
+        dest->pdbinfo = NULL;
+    }
+    dest->nres = src->nres;
+    for (i = 0; (i < src->nres); i++)
+    {
+        dest->resinfo[i] = src->resinfo[i];
+        if (NULL != src->pdbinfo)
+        {
+            dest->pdbinfo[i] = src->pdbinfo[i];
+        }
+    }
+}
+
+void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
+{
+    int      i, j, k, ai, aj, iat, shell, ns = 0;
+    int     *renum;
+    char     buf[32], **newname;
+    t_param  p;
+    t_atom  *shell_atom;
+    t_atoms *newa;
+    t_excls *newexcls;
+    rvec    *newx;
+    double   pol, sigpol;
+
+    int      maxatom = topology_->atoms.nr*2+2;
+    srenew(x_, maxatom);
+    srenew(excls_, maxatom);
+    snew(shell_atom, 1);
+    shell_atom->ptype = eptShell;
+    memset(&p, 0, sizeof(p));
+    snew(renum, maxatom);
+    for (i = 0; (i < topology_->atoms.nr); i++)
+    {
+        renum[i] = i+ns;
+        if (1 == gmx_poldata_get_atype_pol(pd, *topology_->atoms.atomtype[i],
+                                           &pol, &sigpol))
+        {
+            ns++;
+            p.a[0] = renum[i];
+            p.a[1] = renum[i]+1;
+            p.c[0] = 0.001*pol;
+            add_param_to_list(&(plist_[F_POLARIZATION]), &p);
+        }
+    }
+    renum[topology_->atoms.nr] = topology_->atoms.nr + ns;
+    printf("added %d shells\n", ns);
+    if (ns > 0)
+    {
+        /* Make new atoms and x arrays */
+        snew(newa, 1);
+        init_t_atoms(newa, topology_->atoms.nr+ns, TRUE);
+        snew(newa->atomtype, topology_->atoms.nr+ns);
+        snew(newa->atomtypeB, topology_->atoms.nr+ns);
+        newa->nres = topology_->atoms.nres;
+        snew(newx, newa->nr);
+        snew(newname, newa->nr);
+
+        /* Make new exclusion array, and put the shells in it */
+        snew(newexcls, newa->nr);
+        for (j = 0; (j < plist_[F_POLARIZATION].nr); j++)
+        {
+            ai = plist_[F_POLARIZATION].param[j].a[0];
+            aj = plist_[F_POLARIZATION].param[j].a[1];
+            add_excl(&newexcls[ai], aj);
+            add_excl(&newexcls[aj], ai);
+        }
+        for (i = 0; (i < topology_->atoms.nr); i++)
+        {
+            newa->atom[renum[i]]      = topology_->atoms.atom[i];
+            newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
+            newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
+            newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
+            copy_rvec(x_[i], newx[renum[i]]);
+            newname[renum[i]] = *topology_->atoms.atomtype[i];
+            t_atoms_set_resinfo(newa, renum[i], symtab_,
+                                *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
+                                topology_->atoms.atom[i].resind, ' ', 1, ' ');
+        }
+
+        for (i = 0; (i < topology_->atoms.nr); i++)
+        {
+            iat = renum[i];
+            for (k = 0; (k < excls_[i].nr); k++)
+            {
+                add_excl(&(newexcls[iat]), renum[excls_[i].e[k]]);
+            }
+            for (j = iat+1; (j < renum[i+1]); j++)
+            {
+                newa->atom[j]            = topology_->atoms.atom[i];
+                newa->atom[iat].q        = 0;
+                newa->atom[iat].qB       = 0;
+                newa->atom[j].m          = 0;
+                newa->atom[j].mB         = 0;
+                newa->atom[j].atomnumber = 0;
+                sprintf(buf, "%ss", get_atomtype_name(topology_->atoms.atom[i].type,
+                                                      atype_));
+                newname[j] = strdup(buf);
+                shell      = add_atomtype(atype_, symtab_, shell_atom, buf, &p,
+                                          0, 0, 0, 0, 0, 0, 0);
+                newa->atom[j].type      = shell;
+                newa->atom[j].typeB     = shell;
+                newa->atomtype[j]       =
+                    newa->atomtypeB[j]  = put_symtab(symtab_, buf);
+                newa->atom[j].ptype     = eptShell;
+                newa->atom[j].resind    = topology_->atoms.atom[i].resind;
+                sprintf(buf, "%ss", *(topology_->atoms.atomname[i]));
+                newa->atomname[j] = put_symtab(symtab_, buf);
+                copy_rvec(x_[i], newx[j]);
+                for (k = 0; (k < excls_[i].nr); k++)
+                {
+                    ai = j;
+                    aj = renum[excls_[i].e[k]];
+                    if (ai != aj)
+                    {
+                        add_excl(&(newexcls[ai]), aj);
+                        add_excl(&(newexcls[aj]), ai);
+                    }
+                }
+            }
+        }
+        for (i = 0; (i < topology_->atoms.nr); i++)
+        {
+            iat = renum[i];
+            for (j = iat+1; (j < renum[i+1]); j++)
+            {
+                for (k = 0; (k < newexcls[iat].nr); k++)
+                {
+                    ai = j;
+                    aj = newexcls[iat].e[k];
+                    if (ai != aj)
+                    {
+                        add_excl(&(newexcls[ai]), aj);
+                        add_excl(&(newexcls[aj]), ai);
+                    }
+                }
+            }
+        }
+        prune_excl(newexcls, newa, atype_);
+        /* Copy newa to atoms */
+        copy_atoms(newa, &topology_->atoms);
+        /* Copy coordinates and smnames */
+        for (i = 0; (i < newa->nr); i++)
+        {
+            copy_rvec(newx[i], x_[i]);
+            topology_->atoms.atomtype[i] = put_symtab(symtab_, newname[i]);
+        }
+        sfree(newx);
+        sfree(newname);
+        /* Copy exclusions, may need to empty the original first */
+        excls_ = newexcls;
+
+        for (i = 0; (i < F_NRE); i++)
+        {
+            if (i != F_POLARIZATION)
+            {
+                for (j = 0; (j < plist_[i].nr); j++)
+                {
+                    for (k = 0; (k < NRAL(i)); k++)
+                    {
+                        plist_[i].param[j].a[k] = renum[plist_[i].param[j].a[k]];
+                    }
+                }
+            }
+        }
+    }
+    sfree(renum);
+    sfree(shell_atom);
 }
 
 immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge,
@@ -1647,7 +1911,7 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge,
 
     if (ecg != ecgAtom)
     {
-        sort_on_charge_groups(cgnr_, &topology_->atoms, plist_, x_, excls, ndxfn, nmol);
+        sort_on_charge_groups(cgnr_, &topology_->atoms, plist_, x_, excls_, ndxfn, nmol);
     }
     return immOK;
 }

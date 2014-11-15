@@ -490,7 +490,7 @@ void GentopVsites::mergeLinear(bool bGenVsites)
     }
 }
 
-void GentopVsites::generateSpecial(bool bGenVsites,
+void GentopVsites::generateSpecial(bool bUseVsites,
                                    t_atoms *atoms, rvec **x,
                                    t_params plist[], t_symtab *symtab,
                                    gpp_atomtype_t atype, t_excls **excls,
@@ -501,7 +501,7 @@ void GentopVsites::generateSpecial(bool bGenVsites,
     t_param pp;
     int     ftb, fta, ftp, fti;
 
-    mergeLinear(bGenVsites);
+    mergeLinear(bUseVsites);
 
     ftb     = gmx_poldata_get_bond_ftype(pd);
     fta     = gmx_poldata_get_angle_ftype(pd);
@@ -516,7 +516,7 @@ void GentopVsites::generateSpecial(bool bGenVsites,
     if (NULL != debug)
     {
         fprintf(debug, "Generating %d linear ", nlin_at);
-        if (bGenVsites)
+        if (bUseVsites)
         {
             fprintf(debug, "vsites");
         }
@@ -550,7 +550,7 @@ void GentopVsites::generateSpecial(bool bGenVsites,
             delete_params(plist, ftp, a);
             delete_params(plist, fti, a);
 
-            if (bGenVsites)
+            if (bUseVsites)
             {
                 /* Complicated algorithm, watch out */
                 for (j = 0; (j < linear_[i].nline-1); j++)

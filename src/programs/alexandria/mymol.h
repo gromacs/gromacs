@@ -51,6 +51,10 @@ enum eDih {
     edihNo, edihOne, edihAll, edihNR
 };
 
+enum ePolar {
+    epolNo, epolAllAtom, epolUnited, epolNR
+};
+
 enum eSupport {
     eSupportNo, eSupportLocal, eSupportRemote, eSupportNR
 };
@@ -74,12 +78,12 @@ class MyMol : public MolProp
         int              nexcl_;
         //! List of symmetric charges
         std::vector<int> symmetric_charges_;
-        int            *cgnr_;
-        t_excls        *excls;
-        GentopVsites    gvt;
-        immStatus       immAtoms_, immCharges_, immTopology_;
-        std::string     forcefield_;
-        bool            bHaveShells_, bHaveVSites_;
+        int             *cgnr_;
+        t_excls         *excls_;
+        GentopVsites     gvt;
+        immStatus        immAtoms_, immCharges_, immTopology_;
+        std::string      forcefield_;
+        bool             bHaveShells_, bHaveVSites_;
 
         //! Determine whether a molecule has symmetry (within a certain tolerance)
         bool IsSymmetric(real toler);
@@ -100,8 +104,8 @@ class MyMol : public MolProp
         //! Generate angles, dihedrals, exclusions etc.
         void MakeAngles();
 
-        //! Generate virtual sites
-        void MakeVsites(unsigned int flags);
+        //! Generate virtual sites or linear angles
+        void MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd);
 
     public:
         rvec           *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
@@ -137,7 +141,10 @@ class MyMol : public MolProp
                                    gmx_poldata_t         pd,
                                    const char           *lot,
                                    ChargeGenerationModel iModel,
-                                   int                   nexcl);
+                                   int                   nexcl,
+                                   bool                  bUseVsites,
+                                   bool                  bPairs,
+                                   eDih                  edih);
         //! Generate Charges
         immStatus GenerateCharges(gmx_poldata_t pd, gmx_atomprop_t ap,
                                   ChargeGenerationModel iModel, real hfac, real epsr,
@@ -172,8 +179,7 @@ class MyMol : public MolProp
 
         void CalcMultipoles();
 
-        void GenerateVsitesShells(gmx_poldata_t pd, bool bGenVsites, bool bAddShells,
-                                  bool bPairs, eDih edih);
+        void AddShells(gmx_poldata_t pd, ePolar epol);
 
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge,
                                        const char *ndxfn, int nmol);

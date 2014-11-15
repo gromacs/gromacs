@@ -568,7 +568,8 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
                 mpnew.Merge(*mpi);
 
-                imm = mpnew.GenerateTopology(_atomprop, _pd, lot, _iModel, nexcl);
+                imm = mpnew.GenerateTopology(_atomprop, _pd, lot, _iModel, nexcl,
+                                             false, false, edihNo);
 
                 if (_iModel != eqgNone)
                 {
@@ -697,7 +698,8 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 fflush(debug);
             }
 
-            imm = mpnew.GenerateTopology(_atomprop, _pd, lot, _iModel, nexcl);
+            imm = mpnew.GenerateTopology(_atomprop, _pd, lot, _iModel, nexcl,
+                                         false, false, edihNo);
 
             if (immOK == imm)
             {
