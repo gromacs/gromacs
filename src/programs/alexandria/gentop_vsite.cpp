@@ -68,6 +68,7 @@ void GentopVsites::addPlanar(int ai, int aj, int ak, int al, int nbonds[])
 {
     unsigned int i;
 
+    printf("addPlanar %d %d %d %d\n", ai, aj, ak, al);
     for (i = 0; (i < planar_.size()); i++)
     {
         if (((planar_[i].a[0] == ai) && (planar_[i].a[1] == aj)  &&
@@ -489,6 +490,43 @@ void GentopVsites::mergeLinear(bool bGenVsites)
     }
 }
 
+static void set_linear_angle_params(int a[], int ftb,
+                                    t_params plist[], real ktheta)
+{
+    t_param pp;
+    real b0 = 0, b1 = 0;
+    
+    for(int i = 0; (i < plist[ftb].nr); i++)
+    {
+        if (((plist[ftb].param[i].a[0] == a[0]) && (plist[ftb].param[i].a[1] == a[1])) ||
+            ((plist[ftb].param[i].a[0] == a[1]) && (plist[ftb].param[i].a[1] == a[0])))
+        {
+            b0 = plist[ftb].param[i].c[0];
+        }
+        else if (((plist[ftb].param[i].a[0] == a[2]) && (plist[ftb].param[i].a[1] == a[1])) ||
+            ((plist[ftb].param[i].a[0] == a[1]) && (plist[ftb].param[i].a[1] == a[2])))
+        {
+            b1 = plist[ftb].param[i].c[0];
+        }
+    }
+    if ((b0 > 0) && (b1 > 0))
+    {
+        memset(&pp, 0, sizeof(pp));
+        for (int j = 0; (j < 3); j++)
+        {
+            pp.a[j] = a[j];
+        }
+        pp.c[0] = (b1/(b0+b1));
+        pp.c[1] = ktheta;
+        add_param_to_list(&(plist[F_LINEAR_ANGLES]), &pp);
+    }
+    else
+    {
+        gmx_fatal(FARGS, "Can not find bonds in linear angle %d-%d-%d, b0=%g b1=%g",
+                  a[0], a[1], a[2], b0, b1);
+    }
+}
+
 void GentopVsites::generateSpecial(bool bUseVsites,
                                    t_atoms *atoms, rvec **x,
                                    t_params plist[], t_symtab *symtab,
@@ -559,7 +597,9 @@ void GentopVsites::generateSpecial(bool bUseVsites,
                     delete_params(plist, ftb, aa);
                 }
 
-                /* Compute details for the new masses and vsites, and update everything */
+                /* Compute details for the new masses and vsites, 
+                 * and update everything 
+                 */
                 calc_vsite2parm(atoms, plist, x, &linear_[i], symtab, atype);
                 srenew((*excls), atoms->nr);
                 for (j = atoms->nr-2; (j <= atoms->nr-1); j++)
@@ -571,13 +611,9 @@ void GentopVsites::generateSpecial(bool bUseVsites,
             }
             else
             {
-                /* Linear angles */
-                memset(&pp, 0, sizeof(pp));
-                for (j = 0; (j < 3); j++)
-                {
-                    pp.a[j] = a[j];
-                }
-                add_param_to_list(&(plist[F_LINEAR_ANGLES]), &pp);
+                /* Need to add parameters here! */
+                real kth = 400;
+                set_linear_angle_params(a, ftb, plist, kth);
             }
         }
     }

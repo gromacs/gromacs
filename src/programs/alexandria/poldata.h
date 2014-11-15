@@ -277,7 +277,8 @@ extern char *gmx_poldata_get_angle_function(gmx_poldata_t pd);
 extern int gmx_poldata_get_angle_ftype(gmx_poldata_t pd);
 
 /* Return 1 on success, 0 otherwise */
-extern int gmx_poldata_add_angle(gmx_poldata_t pd, char *atom1, char *atom2,
+extern int gmx_poldata_add_angle(gmx_poldata_t pd, 
+                                 char *atom1, char *atom2,
                                  char *atom3, double angle, double sigma,
                                  int ntrain, char *params);
 

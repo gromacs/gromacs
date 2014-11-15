@@ -394,12 +394,12 @@ void dump_histo(t_bonds *b, double bspacing, double aspacing, output_env_t oenv)
 
 static void round_numbers(real *av, real *sig)
 {
-    *av  = ((int)(*av*10))/10.0;
-    *sig = ((int)(*sig*10+5))/10.0;
+    *av  = ((int)(*av*100))/100.0;
+    *sig = ((int)(*sig*100+50))/100.0;
 }
 
 void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
-               real Dm, real beta, real kt, real kp)
+               real Dm, real beta, real kt, real klin, real kp)
 {
     int    i, N;
     real   av, sig;
@@ -427,10 +427,18 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         gmx_stats_get_average(b->angle[i].lsq, &av);
         gmx_stats_get_sigma(b->angle[i].lsq, &sig);
         gmx_stats_get_npoints(b->angle[i].lsq, &N);
-        sprintf(pbuf, "%g", kt);
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        gmx_poldata_add_angle(pd, b->angle[i].a1, b->angle[i].a2,
+        if ((av > 175) || (av < 5))
+        {
+            sprintf(pbuf, "%g", kt);
+        }
+        else
+        {
+            sprintf(pbuf, "%g", klin);
+        }
+        gmx_poldata_add_angle(pd, 
+                              b->angle[i].a1, b->angle[i].a2,
                               b->angle[i].a3, av, sig, N, pbuf);
         fprintf(fp, "angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
                 b->angle[i].a1, b->angle[i].a2, b->angle[i].a3, av, sig, N,
@@ -484,7 +492,7 @@ int alex_bastat(int argc, char *argv[])
 #define NFILE asize(fnm)
     static int            compress = 0;
     static gmx_bool       bHisto   = FALSE, bBondOrder = TRUE;
-    static real           Dm       = 400, kt = 400, kp = 5, beta = 20;
+    static real           Dm       = 400, kt = 400, kp = 5, beta = 20, klin = 20;
     static char          *lot      = (char *)"B3LYP/aug-cc-pVTZ";
     static char          *qgen[]   = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     t_pargs               pa[]     = {
@@ -496,6 +504,8 @@ int alex_bastat(int argc, char *argv[])
           "Steepness of the Morse potential (1/nm)" },
         { "-kt",    FALSE, etREAL, {&kt},
           "Angle force constant (kJ/mol/rad^2)" },
+        { "-klin",  FALSE, etREAL, {&klin},
+          "Linear angle force constant (kJ/mol/nm^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
           "Dihedral angle force constant (kJ/mol/rad^2)" },
         { "-histo", FALSE, etBOOL, {&bHisto},
@@ -722,7 +732,7 @@ int alex_bastat(int argc, char *argv[])
     {
         dump_histo(b, bspacing, aspacing, oenv);
     }
-    update_pd(fp, b, pd, Dm, beta, kt, kp);
+    update_pd(fp, b, pd, Dm, beta, kt, klin, kp);
 
     gmx_poldata_write(opt2fn("-o", NFILE, fnm), pd, compress);
 

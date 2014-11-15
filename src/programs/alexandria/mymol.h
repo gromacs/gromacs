@@ -80,7 +80,7 @@ class MyMol : public MolProp
         std::vector<int> symmetric_charges_;
         int             *cgnr_;
         t_excls         *excls_;
-        GentopVsites     gvt;
+        GentopVsites     gvt_;
         immStatus        immAtoms_, immCharges_, immTopology_;
         std::string      forcefield_;
         bool             bHaveShells_, bHaveVSites_;
@@ -93,14 +93,6 @@ class MyMol : public MolProp
                                 const char           *lot,
                                 ChargeGenerationModel iModel);
 
-        //! Read atoms?
-
-        //! Generate bonds between atoms
-        /*int MakeBonds(gmx_poldata_t pd,
-                      gmx_conect gc,
-                      gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
-                      gmx_bool bMovePlists);
-         */
         //! Generate angles, dihedrals, exclusions etc.
         void MakeAngles();
 

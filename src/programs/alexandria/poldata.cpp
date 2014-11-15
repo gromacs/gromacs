@@ -1576,7 +1576,8 @@ int gmx_poldata_set_angle_params(gmx_poldata_t pd, char *atom1, char *atom2,
     return 0;
 }
 
-int gmx_poldata_add_angle(gmx_poldata_t pd, char *atom1, char *atom2,
+int gmx_poldata_add_angle(gmx_poldata_t pd,
+                          char *atom1, char *atom2,
                           char *atom3, double angle, double sigma,
                           int ntrain, char *params)
 {

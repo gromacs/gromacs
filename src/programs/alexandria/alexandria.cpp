@@ -61,6 +61,7 @@ main(int argc, char *argv[])
         printf("Read more at http://www.gnu.org/licenses/gpl-2.0.html\n\n");
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
+        printf("\nThanks for using Alexandria\n");
         return rc;
     }
     catch (const std::exception &ex)

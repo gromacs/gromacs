@@ -72,12 +72,10 @@ class GentopVsites
 
     public:
         //! Default constructor
-        GentopVsites() { gvt_ = egvtNO; };
+        GentopVsites(unsigned int gvt) { gvt_ = gvt; }
 
         //! Default destructor
         ~GentopVsites() {};
-
-        void setVsitesType(unsigned int gvt) { gvt_ = gvt; }
 
         unsigned int getVsitesType() { return gvt_; }
 

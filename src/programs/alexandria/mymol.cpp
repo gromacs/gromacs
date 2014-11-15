@@ -456,8 +456,12 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     real costh, th;
 
     th = fabs(RAD2DEG*bond_angle(xi, xj, xk, pbc, r_ij, r_kj, &costh, &t1, &t2));
-
-    return (th > th_toler) || (th < 180-th_toler);
+    if ((th > th_toler) || (th < 180-th_toler))
+    {
+        printf("Angle is %g, th_toler is %g\n", th, th_toler);
+        return true;
+    }
+    return false;
 }
 
 void MyMol::MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd)
@@ -466,7 +470,7 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd)
     std::vector<int> nbonds;
     t_pbc            pbc;
     matrix           box;
-    real             th_toler = 5;
+    real             th_toler = 175;
     real             ph_toler = 5;
 
     clear_mat(box);
@@ -475,6 +479,7 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd)
     bonds.resize(topology_->atoms.nr);
     for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
     {
+        // Store bonds bidirectionally to get the number correct
         bonds[bi->GetAi() - 1].push_back(bi->GetAj() - 1);
         bonds[bi->GetAj() - 1].push_back(bi->GetAi() - 1);
     }
@@ -490,21 +495,26 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd)
             is_linear(x_[i], x_[bonds[i][0]], x_[bonds[i][1]],
                       &pbc, th_toler))
         {
-            gvt.addLinear(bonds[i][0], i, bonds[i][1]);
+            printf("found linear angle %s-%s-%s in %s\n",
+                   *topology_->atoms.atomtype[bonds[i][0]],
+                   *topology_->atoms.atomtype[i],    
+                   *topology_->atoms.atomtype[bonds[i][1]],
+                   GetMolname().c_str());
+            gvt_.addLinear(bonds[i][0], i, bonds[i][1]);
         }
         else if ((bonds[i].size() == 3) &&
                  is_planar(x_[i], x_[bonds[i][0]],
                            x_[bonds[i][1]], x_[bonds[i][2]],
                            &pbc, ph_toler))
         {
-            gvt.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
-                          &nbonds[0]);
+            gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
+                           &nbonds[0]);
         }
     }
     int anr = topology_->atoms.nr;
 
-    gvt.generateSpecial(bUseVsites, &topology_->atoms, &x_, plist_,
-                        symtab_, atype_, &excls_, pd);
+    gvt_.generateSpecial(bUseVsites, &topology_->atoms, &x_, plist_,
+                         symtab_, atype_, &excls_, pd);
     bHaveVSites_ = (topology_->atoms.nr > anr);
 }
 
@@ -826,7 +836,7 @@ static void fill_inputrec(t_inputrec *ir)
     snew(ir->fepvals, 1);
 }
 
-MyMol::MyMol() //: MolProp()
+MyMol::MyMol():gvt_(egvtALL)
 {
     bHaveShells_       = false;
     bHaveVSites_       = false;
@@ -1070,9 +1080,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
         /* Make Angles and Dihedrals. This needs the bonds to be F_BONDS. */
         MakeAngles();
 
-        /* Linear angles and or vsites etc. */
-        MakeSpecialInteractions(bUseVsites, pd);
-
         if (!bPairs)
         {
             /* Check whether this is the right index */
@@ -1091,6 +1098,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
     if (immOK == imm)
     {
         get_force_constants(pd, plist_, &topology_->atoms);
+
+        /* Linear angles and or vsites etc. */
+        MakeSpecialInteractions(bUseVsites, pd);
 
         char **molnameptr = put_symtab(symtab_, GetMolname().c_str());
         snew(mtop_, 1);
@@ -1494,6 +1504,7 @@ static void write_top2(FILE *out, char *molname,
         print_bondeds2(out, d_pairs,      F_LJ14,     0,              plist_);
         print_excl(out, at->nr, excls);
         print_bondeds2(out, d_angles,     bts[ebtsANGLES], 0, plist_);
+        print_bondeds2(out, d_angles,     F_LINEAR_ANGLES, 0, plist_);
         print_bondeds2(out, d_dihedrals,  bts[ebtsPDIHS], 0, plist_);
         print_bondeds2(out, d_dihedrals,  bts[ebtsIDIHS], 0, plist_);
         print_bondeds2(out, d_cmap,       bts[ebtsCMAP],  0, plist_);
@@ -1751,6 +1762,10 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
     rvec    *newx;
     double   pol, sigpol;
 
+    if (epol == epolNo)
+    {
+        return;
+    }
     int      maxatom = topology_->atoms.nr*2+2;
     srenew(x_, maxatom);
     srenew(excls_, maxatom);
@@ -2085,7 +2100,6 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
 {
     int     i, m, np;
     double  poltot, pol, sigpol, sptot;
-    char   *gt_type;
     rvec    mu;
 
     poltot = 0;
@@ -2109,9 +2123,9 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
     int    qq    = GetCharge();
     double mm    = GetMass();
     double mutot = ENM2DEBYE*norm(mu);
-    fprintf(fp, "Total charge is %d, total mass is %g, dipole is %f D\n",
+    fprintf(fp, "Total charge is %d, total mass is %g, dipole is %.3f D\n",
             qq, mm, mutot);
-    fprintf(fp, "Polarizability is %g +/- %g A^3.\n", poltot, sqrt(sptot/topology_->atoms.nr));
+    fprintf(fp, "Polarizability is %.2f +/- %.2f A^3.\n", poltot, sqrt(sptot/topology_->atoms.nr));
 }
 
 void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
