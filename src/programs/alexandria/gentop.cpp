@@ -64,7 +64,6 @@
 #include "poldata_xml.h"
 #include "gmx_resp.h"
 #include "gentop_vsite.h"
-#include "gentop_nm2type.h"
 #include "gentop_core.h"
 #include "gentop_qgen.h"
 #include "molprop_util.h"

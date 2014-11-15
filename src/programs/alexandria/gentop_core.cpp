@@ -63,7 +63,6 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "poldata.h"
-#include "gentop_nm2type.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
 #include "stringutil.h"

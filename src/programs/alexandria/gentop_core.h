@@ -25,11 +25,11 @@
 #define GENTOP_CORE_H
 
 #include <stdio.h>
+#include <vector>
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gentop_nm2type.h"
 #include "poldata.h"
 
 void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC, matrix box);

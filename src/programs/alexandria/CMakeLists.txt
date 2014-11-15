@@ -72,7 +72,6 @@ set(ALEXANDRIA_SOURCES
 	gmx_resp.cpp
 	gentop_qgen.cpp
 	gentop_core.cpp
-	gentop_nm2type.cpp
 	gentop_vsite.cpp
 	molprop.cpp
 	molprop_util.cpp

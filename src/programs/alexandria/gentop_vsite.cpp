@@ -42,7 +42,6 @@ void GentopVsites::addLinear(int ai, int aj, int ak)
 {
     unsigned int i;
 
-    printf("addLinear: %d %d %d\n", ai, aj, ak);
     for (i = 0; (i < linear_.size()); i++)
     {
         if (linear_[i].a[1] == aj)

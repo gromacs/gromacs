@@ -705,24 +705,6 @@ char *gmx_poldata_get_desc(gmx_poldata_t pd, char *atype)
     return NULL;
 }
 
-char *gmx_poldata_get_type(gmx_poldata_t pd, char *gt_brule)
-{
-    int i;
-
-    if (gt_brule)
-    {
-        for (i = 0; (i < pd->nbrule); i++)
-        {
-            if (strcmp(pd->brule[i].rule, gt_brule) == 0)
-            {
-                return pd->brule[i].type;
-            }
-        }
-    }
-
-    return NULL;
-}
-
 static gmx_bool strcasestr_start(char *needle, char *haystack)
 {
     char *ptr;

@@ -147,8 +147,6 @@ extern char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
 
 extern char *gmx_poldata_get_geometry(gmx_poldata_t pd, char *gt_brule);
 
-extern char *gmx_poldata_get_type(gmx_poldata_t pd, char *gt_brule);
-
 extern char *gmx_poldata_get_desc(gmx_poldata_t pd, char *atype);
 
 /* Get the charge from the gentop.dat file */

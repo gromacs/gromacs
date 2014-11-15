@@ -42,7 +42,6 @@
 #include "coulombintegrals/coulombintegrals.h"
 #include "molprop.h"
 #include "poldata.h"
-#include "gentop_nm2type.h"
 #include "gentop_qgen.h"
 #include "gmx_resp.h"
 

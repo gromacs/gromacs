@@ -392,6 +392,12 @@ void dump_histo(t_bonds *b, double bspacing, double aspacing, output_env_t oenv)
     }
 }
 
+static void round_numbers(real *av, real *sig)
+{
+    *av  = ((int)(*av*10))/10.0;
+    *sig = ((int)(*sig*10+5))/10.0;
+}
+
 void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
                real Dm, real beta, real kt, real kp)
 {
@@ -408,6 +414,8 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         gmx_stats_get_npoints(b->bond[i].lsq, &N);
         sprintf(pbuf, "%g  %g", Dm, beta);
         bondorder = b->bond[i].order;
+        // Rounding the numbers to 1/10 pm and 1/10 degree
+        round_numbers(&av, &sig);
         gmx_poldata_add_bond(pd, b->bond[i].a1, b->bond[i].a2, av, sig, N, bondorder, pbuf);
         fprintf(fp, "bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
                 b->bond[i].a1, b->bond[i].a2, av, sig, N,
@@ -420,6 +428,8 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         gmx_stats_get_sigma(b->angle[i].lsq, &sig);
         gmx_stats_get_npoints(b->angle[i].lsq, &N);
         sprintf(pbuf, "%g", kt);
+        // Rounding the numbers to 1/10 pm and 1/10 degree
+        round_numbers(&av, &sig);
         gmx_poldata_add_angle(pd, b->angle[i].a1, b->angle[i].a2,
                               b->angle[i].a3, av, sig, N, pbuf);
         fprintf(fp, "angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
@@ -432,6 +442,8 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         gmx_stats_get_sigma(b->dih[i].lsq, &sig);
         gmx_stats_get_npoints(b->dih[i].lsq, &N);
         sprintf(pbuf, "%g  1", kp);
+        // Rounding the numbers to 1/10 pm and 1/10 degree
+        round_numbers(&av, &sig);
         gmx_poldata_add_dihedral(pd, egdPDIHS,
                                  b->dih[i].a1, b->dih[i].a2,
                                  b->dih[i].a3, b->dih[i].a4, av, sig, N, pbuf);
@@ -444,6 +456,8 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         gmx_stats_get_sigma(b->imp[i].lsq, &sig);
         gmx_stats_get_npoints(b->imp[i].lsq, &N);
         sprintf(pbuf, "%g", kp);
+        // Rounding the numbers to 1/10 pm and 1/10 degree
+        round_numbers(&av, &sig);
         gmx_poldata_add_dihedral(pd, egdIDIHS,
                                  b->imp[i].a1, b->imp[i].a2,
                                  b->imp[i].a3, b->imp[i].a4, av, sig, N, pbuf);

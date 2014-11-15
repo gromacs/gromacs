@@ -2094,9 +2094,8 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
     clear_rvec(mu);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        gt_type = gmx_poldata_get_type(pd, *topology_->atoms.atomtype[i]);
-        if ((NULL != gt_type) &&
-            gmx_poldata_get_atype_pol(pd, gt_type, &pol, &sigpol))
+        if (1 == 
+            gmx_poldata_get_atype_pol(pd, *topology_->atoms.atomtype[i], &pol, &sigpol))
         {
             np++;
             poltot += pol;
