@@ -108,6 +108,12 @@ static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *ato
                 }
             }
         }
+        if ((NULL != debug) && (plist[ft].param[j].c[0] == 0))
+        {
+            fprintf(debug, "Could not find bonding parameters for %s - %s.\n",
+                    ATP(plist[ft].param[j].a[0]),
+                    ATP(plist[ft].param[j].a[1]));
+        }
     }
     ft = gmx_poldata_get_angle_ftype(pd);
     for (j = 0; (j < plist[ft].nr); j++)
@@ -2125,7 +2131,8 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
     double mutot = ENM2DEBYE*norm(mu);
     fprintf(fp, "Total charge is %d, total mass is %g, dipole is %.3f D\n",
             qq, mm, mutot);
-    fprintf(fp, "Polarizability is %.2f +/- %.2f A^3.\n", poltot, sqrt(sptot/topology_->atoms.nr));
+    fprintf(fp, "Polarizability is %.2f +/- %.2f A^3.\n", 
+            poltot, sqrt(sptot/topology_->atoms.nr));
 }
 
 void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])

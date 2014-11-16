@@ -40,8 +40,39 @@
 #include <string>
 #include <sstream>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include "stringutil.h"
+
+int get_option(const char **opts)
+{
+    int val = 0;
+
+    if (!opts)
+    {
+        return -1;
+    }
+    if (opts[val] != NULL)
+    {
+        for (val = 1; (opts[val] != NULL); val++)
+        {
+            if (strcasecmp(opts[0], opts[val]) == 0)
+            {
+                break;
+            }
+        }
+    }
+    if (opts[val] == NULL)
+    {
+        val = 0;
+    }
+    else
+    {
+        val--;
+    }
+
+    return val;
+}
 
 std::vector<std::string> &split(const std::string        &s,
                                 char                      delim,

@@ -46,6 +46,7 @@
 #include "poldata_xml.h"
 #include "mymol.h"
 #include "molprop_util.h"
+#include "stringutil.h"
 
 #define STRLEN 256
 
@@ -495,7 +496,8 @@ int alex_bastat(int argc, char *argv[])
     static real           Dm       = 400, kt = 400, kp = 5, beta = 20, klin = 20;
     static char          *lot      = (char *)"B3LYP/aug-cc-pVTZ";
     static char          *qgen[]   = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
-    t_pargs               pa[]     = {
+    static const char    *edihnames[] = { NULL, (char *)"No", (char *)"One", (char *)"All", NULL };
+    t_pargs               pa[]     = { 
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
         { "-Dm",    FALSE, etREAL, {&Dm},
@@ -508,6 +510,8 @@ int alex_bastat(int argc, char *argv[])
           "Linear angle force constant (kJ/mol/nm^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
           "Dihedral angle force constant (kJ/mol/rad^2)" },
+        { "-dih",   FALSE, etENUM, {edihnames},
+          "Generate proper dihedral terms, select one of No, One (per bond), All (all possible)" },
         { "-histo", FALSE, etBOOL, {&bHisto},
           "Print (hundreds of) xvg files containing histograms for bonds, angles and dihedrals" },
         { "-compress", FALSE, etBOOL, {&compress},
@@ -580,7 +584,7 @@ int alex_bastat(int argc, char *argv[])
     ftd = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
     fti = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
     snew(b, 1);
-
+    eDih ed = (eDih) get_option(edihnames);
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         if (gmx_molselect_status(gms, mpi->GetIupac().c_str()) == imsTrain)
@@ -594,7 +598,7 @@ int alex_bastat(int argc, char *argv[])
                 continue;
             }
             immStatus imm = mmi.GenerateTopology(aps, pd, lot, iModel, 2,
-                                                 false, false, edihNo);
+                                                 false, false, ed);
 
             if (immOK != imm)
             {

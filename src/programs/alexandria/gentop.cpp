@@ -70,36 +70,7 @@
 #include "molprop_xml.h"
 #include "gauss_io.h"
 #include "mymol.h"
-
-static int get_option(const char **opts)
-{
-    int val = 0;
-
-    if (!opts)
-    {
-        return NOTSET;
-    }
-    if (opts[val] != NULL)
-    {
-        for (val = 1; (opts[val] != NULL); val++)
-        {
-            if (strcasecmp(opts[0], opts[val]) == 0)
-            {
-                break;
-            }
-        }
-    }
-    if (opts[val] == NULL)
-    {
-        val = 0;
-    }
-    else
-    {
-        val--;
-    }
-
-    return val;
-}
+#include "stringutil.h"
 
 static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
 {

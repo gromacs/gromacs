@@ -520,10 +520,10 @@ static void set_linear_angle_params(int a[], int ftb,
         pp.c[1] = ktheta;
         add_param_to_list(&(plist[F_LINEAR_ANGLES]), &pp);
     }
-    else
+    else if (NULL != debug)
     {
-        gmx_fatal(FARGS, "Can not find bonds in linear angle %d-%d-%d, b0=%g b1=%g",
-                  a[0], a[1], a[2], b0, b1);
+        fprintf(debug, "Can not find bonds in linear angle %d-%d-%d, b0=%g b1=%g",
+                a[0], a[1], a[2], b0, b1);
     }
 }
 

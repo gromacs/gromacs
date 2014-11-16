@@ -39,6 +39,13 @@
 #include <vector>
 
 /*! \brief
+ * Return the index of the selected term
+ * \param[in] opts List of strings to select from
+ * \returns the index or -1 if not found
+ */
+extern int get_option(const char **opts);
+
+/*! \brief
  * Split a string into substrings separated by a delimiter character
  * \param[in] s The string to be split
  * \parin[in] delim The delimiting character
