@@ -1647,30 +1647,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
     else if (inputrec->drude->drudemode==edrudeLagrangian) 
     {
-        /* TODO: REMOVE ALL OF THIS, just calculate forces */
-        /* Modify update_coords to handle Drudes */
-        /* Move hardwall into main MD function in md.cpp */
-
-#if 0
-        /* Step 1. Apply forces to Drudes and update their velocities */
-        update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
-                      f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
-                      ekind, NULL, upd, bInitStep, etrtVELOCITY1,
-                      cr, nrnb, constr, idef, TRUE);
-
-        /* Step 2. Update Drude positions */
-        update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
-                      f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
-                      ekind, NULL, upd, bInitStep, etrtPOSITION,
-                      cr, nrnb, constr, idef, TRUE);
-
-        /* Step 3. Apply hard wall, if requested, to make sure the Drude hasn't gone too far */
-        if (inputrec->drude->bHardWall)
-        {
-            apply_drude_hardwall(cr, idef, inputrec, md, state, f, force_vir);
-        }
-#endif
-
         /* Here, all we need to do is calculate forces; updates will be done in
          * the main MD loop */
         do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle,
