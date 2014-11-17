@@ -1020,7 +1020,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
                                   int                   nexcl,
                                   bool                  bUseVsites,
                                   bool                  bPairs,
-                                  eDih                  edih)
+                                  bool                  bDih)
 {
     immStatus                imm = immOK;
     int                      ftb;
@@ -1092,7 +1092,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
             plist_[F_LJ14].nr = 0;
         }
 
-        if (edih == edihNo)
+        if (!bDih)
         {
             /* Check whether this is the right index */
             plist_[F_PDIHS].nr = 0;

@@ -132,7 +132,7 @@ int alex_gentop(int argc, char *argv[])
     gmx_poldata_t                    pd;
     gmx_bool                         bRTP, bTOP;
     char                             forcefield[STRLEN], ffdir[STRLEN];
-    char                             ffname[STRLEN], gentopdat[STRLEN];
+    char                             ffname[STRLEN];
     std::vector<alexandria::MolProp> mps;
     alexandria::MolPropIterator      mpi;
     alexandria::MyMol                mymol;

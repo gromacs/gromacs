@@ -136,7 +136,7 @@ class MyMol : public MolProp
                                    int                   nexcl,
                                    bool                  bUseVsites,
                                    bool                  bPairs,
-                                   eDih                  edih);
+                                   bool                  bDih);
         //! Generate Charges
         immStatus GenerateCharges(gmx_poldata_t pd, gmx_atomprop_t ap,
                                   ChargeGenerationModel iModel, real hfac, real epsr,
