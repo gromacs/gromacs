@@ -1842,7 +1842,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
                 newa->atom[j].m          = 0;
                 newa->atom[j].mB         = 0;
                 newa->atom[j].atomnumber = 0;
-                sprintf(buf, "%ss", get_atomtype_name(topology_->atoms.atom[i].type,
+                sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type,
                                                       atype_));
                 newname[j] = strdup(buf);
                 shell      = add_atomtype(atype_, symtab_, shell_atom, buf, &p,
