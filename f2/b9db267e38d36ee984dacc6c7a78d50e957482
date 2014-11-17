@@ -1,0 +1,9 @@
+Code-Review+2: Berk Hess <hess@kth.se>
+Code-Review+1: Jiri Kraus <jkraus@nvidia.com>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Verified+2: Jenkins Buildbot
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Mon, 17 Nov 2014 15:23:35 +0100
+Reviewed-on: https://gerrit.gromacs.org/4219
+Project: gromacs
+Branch: refs/heads/master
