@@ -104,8 +104,7 @@ void update_coords(FILE             *fplog,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
                    t_nrnb           *nrnb,
                    gmx_constr_t      constr,
-                   t_idef           *idef,
-                   gmx_bool          bUpdateDrude);
+                   t_idef           *idef);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 

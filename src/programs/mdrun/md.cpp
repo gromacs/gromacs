@@ -1109,7 +1109,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
                           f, bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                           ekind, M, upd, bInitStep, etrtVELOCITY1,
-                          cr, nrnb, constr, &top->idef, FALSE);
+                          cr, nrnb, constr, &top->idef);
 
             if (bIterativeCase && do_per_step(step-1, ir->nstpcouple) && !bInitStep)
             {
@@ -1538,7 +1538,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                                   ekind, M, upd, FALSE, etrtVELOCITY2,
-                                  cr, nrnb, constr, &top->idef, FALSE);
+                                  cr, nrnb, constr, &top->idef);
                 }
 
                 /* Above, initialize just copies ekinh into ekin,
@@ -1554,7 +1554,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                               bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr: NULL, fcd,
-                              ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef, FALSE);
+                              ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
                 update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
@@ -1562,6 +1562,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    FALSE, bCalcVir, state->veta);
+
+                if (ir->drude->bHardWall)
+                {
+                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f, force_vir);
+                }
 
                 if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
                 {
@@ -1595,7 +1600,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
-                                  ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef, FALSE);
+                                  ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                     wallcycle_stop(wcycle, ewcUPDATE);
 
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
@@ -1609,6 +1614,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        cr, nrnb, wcycle, upd, NULL,
                                        FALSE, bCalcVir,
                                        state->veta);
+
+                    if (ir->drude->bHardWall)
+                    {
+                        apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f, force_vir);
+                    }
+
                 }
                 if (!bOK)
                 {

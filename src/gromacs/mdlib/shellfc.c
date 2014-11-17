@@ -944,8 +944,8 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * limit and the velocities along the bond vector are scaled 
  * down according to the Drude temperature set in the .mdp file
  */
-static void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md, 
-                                 t_state *state, rvec f[], tensor force_vir)
+void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md, 
+                          t_state *state, rvec f[], tensor force_vir)
 {
 
     int     i, j, m, n;
@@ -1647,6 +1647,11 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
     else if (inputrec->drude->drudemode==edrudeLagrangian) 
     {
+        /* TODO: REMOVE ALL OF THIS, just calculate forces */
+        /* Modify update_coords to handle Drudes */
+        /* Move hardwall into main MD function in md.cpp */
+
+#if 0
         /* Step 1. Apply forces to Drudes and update their velocities */
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
                       f, FALSE, fr->f_twin, &fr->vir_twin_constr, fcd,
@@ -1662,32 +1667,18 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         /* Step 3. Apply hard wall, if requested, to make sure the Drude hasn't gone too far */
         if (inputrec->drude->bHardWall)
         {
-            /* apply_drude_hardwall(cr, shell, nshell, inputrec, md, state, f, force_vir); */
-            apply_drude_hardwall(cr, idef, /*shfc,*/ inputrec, md, state, f, force_vir);
+            apply_drude_hardwall(cr, idef, inputrec, md, state, f, force_vir);
         }
+#endif
 
-        /* At this point, Drude positions have been updated and then 
-         * corrected using hard wall (if requested), so we evaluate
-         * the forces again so integration of heavy atoms can proceed
-         */
+        /* Here, all we need to do is calculate forces; updates will be done in
+         * the main MD loop */
         do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle,
                  top, groups, state->box, state->x, &state->hist,
                  f, force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
                  force_flags);
-
-        if (debug)
-        {
-            /* check to make sure everything is OK after do_force() */
-            fprintf(debug, "RELAX SHELL FLEXCON: after do_force()\n");
-            for (i=0; i<md->nr; i++)
-            {
-                fprintf(debug, "RELAX SHELL FLEXCON: v of atom %d: %f %f %f\n", i, state->v[i][XX],
-                        state->v[i][YY], state->v[i][ZZ]);
-            }
-        }
-
     }
     else
     {

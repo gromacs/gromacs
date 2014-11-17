@@ -146,6 +146,9 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_ekindata_t *ekind);
 
 /* functions for DD */
+void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md,       
+                          t_state *state, rvec f[], tensor force_vir);
+
 static void spread_shell(t_iatom ia[],
                          rvec x[], rvec f[], rvec fshift[],
                          t_pbc *pbc, t_graph *g);
