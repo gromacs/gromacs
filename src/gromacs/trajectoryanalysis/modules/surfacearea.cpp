@@ -44,6 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
+
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -330,7 +332,7 @@ int ico_dot_dod(int densit) /* densit...required dots per unit sphere */
     real *xus = NULL;
     /* calculate tesselation level */
     a     = sqrt((((real) densit)-2.)/30.);
-    tess  = max((int) ceil(a), 1);
+    tess  = std::max((int) ceil(a), 1);
     n_dot = 30*tess*tess+2;
     if (n_dot < densit)
     {
@@ -579,7 +581,7 @@ int make_unsp(int densit, int mode, int * num_dot, int cubus)
         {
             i++;
         }
-        ico_cube = max(i-1, 0);
+        ico_cube = std::max(i-1, 0);
     }
     ico_cube_cb = ico_cube*ico_cube*ico_cube;
     del_cube    = 2./((real)ico_cube);
@@ -587,17 +589,17 @@ int make_unsp(int densit, int mode, int * num_dot, int cubus)
     xus = xpunsp;
     for (l = 0; l < ndot; l++)
     {
-        i = max((int) floor((1.+xus[3*l])/del_cube), 0);
+        i = std::max((int) floor((1.+xus[3*l])/del_cube), 0);
         if (i >= ico_cube)
         {
             i = ico_cube-1;
         }
-        j = max((int) floor((1.+xus[1+3*l])/del_cube), 0);
+        j = std::max((int) floor((1.+xus[1+3*l])/del_cube), 0);
         if (j >= ico_cube)
         {
             j = ico_cube-1;
         }
-        k = max((int) floor((1.+xus[2+3*l])/del_cube), 0);
+        k = std::max((int) floor((1.+xus[2+3*l])/del_cube), 0);
         if (k >= ico_cube)
         {
             k = ico_cube-1;
@@ -681,7 +683,7 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     /* Added DvdS 2006-07-19 */
     t_pbc       pbc;
     rvec        ddx, *x = NULL;
-    int         iat_xx, jat_xx;
+    int         iat_xx;
 
     distribution = unsp_type(densit);
     if (distribution != -last_unsp || last_cubus != 4 ||
@@ -746,7 +748,7 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     for (iat_xx = 1; (iat_xx < nat); iat_xx++)
     {
         iat    = index[iat_xx];
-        ra2max = max(ra2max, radius[iat]);
+        ra2max = std::max(ra2max, radius[iat]);
     }
     ra2max = 2*ra2max;
 
@@ -762,9 +764,9 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
             copy_rvec(coords[iat], x[i]);
         }
         put_atoms_in_triclinic_unitcell(ecenterTRIC, box, nat, x);
-        nxbox = max(1, floor(norm(box[XX])/ra2max));
-        nybox = max(1, floor(norm(box[YY])/ra2max));
-        nzbox = max(1, floor(norm(box[ZZ])/ra2max));
+        nxbox = std::max(1, static_cast<int>(floor(norm(box[XX])/ra2max)));
+        nybox = std::max(1, static_cast<int>(floor(norm(box[YY])/ra2max)));
+        nzbox = std::max(1, static_cast<int>(floor(norm(box[ZZ])/ra2max)));
         if (debug)
         {
             fprintf(debug, "nbox = %d, %d, %d\n", nxbox, nybox, nzbox);
@@ -782,9 +784,9 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
         {
             iat  = index[iat_xx];
             pco  = coords[iat];
-            xmin = min(xmin, *pco);     xmax = max(xmax, *pco);
-            ymin = min(ymin, *(pco+1)); ymax = max(ymax, *(pco+1));
-            zmin = min(zmin, *(pco+2)); zmax = max(zmax, *(pco+2));
+            xmin = std::min(xmin, *pco);     xmax = std::max(xmax, *pco);
+            ymin = std::min(ymin, *(pco+1)); ymax = std::max(ymax, *(pco+1));
+            zmin = std::min(zmin, *(pco+2)); zmax = std::max(zmax, *(pco+2));
             xs   = xs+ *pco; ys = ys+ *(pco+1); zs = zs+ *(pco+2);
         }
         xs = xs/ (real) nat;
@@ -795,15 +797,15 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
             fprintf(debug, "nsc_dclm: n_dot=%5d ra2max=%9.3f %9.3f\n", n_dot, ra2max, dotarea);
         }
 
-        d    = xmax-xmin; nxbox = (int) max(ceil(d/ra2max), 1.);
+        d    = xmax-xmin; nxbox = (int)std::max<real>(ceil(d/ra2max), 1.);
         d    = (((real)nxbox)*ra2max-d)/2.;
-        xmin = xmin-d; xmax = xmax+d;
-        d    = ymax-ymin; nybox = (int) max(ceil(d/ra2max), 1.);
+        xmin = xmin-d;
+        d    = ymax-ymin; nybox = (int)std::max<real>(ceil(d/ra2max), 1.);
         d    = (((real)nybox)*ra2max-d)/2.;
-        ymin = ymin-d; ymax = ymax+d;
-        d    = zmax-zmin; nzbox = (int) max(ceil(d/ra2max), 1.);
+        ymin = ymin-d;
+        d    = zmax-zmin; nzbox = (int)std::max<real>(ceil(d/ra2max), 1.);
         d    = (((real)nzbox)*ra2max-d)/2.;
-        zmin = zmin-d; zmax = zmax+d;
+        zmin = zmin-d;
     }
     /* Help variables */
     nxy  = nxbox*nybox;
@@ -819,7 +821,7 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     {
         matrix box_1;
         rvec   x_1;
-        int    ix, iy, iz, m;
+        int    ix, iy, iz;
         m_inv(box, box_1);
         for (i = 0; (i < nat); i++)
         {
@@ -845,12 +847,12 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
         {
             iat           = index[iat_xx];
             pco           = coords[iat];
-            i             = (int) max(floor((pco[XX]-xmin)/ra2max), 0);
-            i             = min(i, nxbox-1);
-            j             = (int) max(floor((pco[YY]-ymin)/ra2max), 0);
-            j             = min(j, nybox-1);
-            l             = (int) max(floor((pco[ZZ]-zmin)/ra2max), 0);
-            l             = min(l, nzbox-1);
+            i             = (int)std::max<real>(floor((pco[XX]-xmin)/ra2max), 0.0);
+            i             = std::min(i, nxbox-1);
+            j             = (int)std::max<real>(floor((pco[YY]-ymin)/ra2max), 0.0);
+            j             = std::min(j, nybox-1);
+            l             = (int)std::max<real>(floor((pco[ZZ]-zmin)/ra2max), 0.0);
+            l             = std::min(l, nzbox-1);
             i             = i+j*nxbox+l*nxy;
             wkat1[iat_xx] = i;
             wkbox[i]++;
@@ -861,7 +863,7 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     j = wkbox[0];
     for (i = 1; i < nxyz; i++)
     {
-        j = max(wkbox[i], j);
+        j = std::max(wkbox[i], j);
     }
     for (i = 1; i <= nxyz; i++)
     {
@@ -869,7 +871,7 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     }
 
     /* maxnei = (int) floor(ra2max*ra2max*ra2max*0.5); */
-    maxnei = min(nat, 27*j);
+    maxnei = std::min(nat, 27*j);
     snew(wknb, maxnei);
     for (iat_xx = 0; iat_xx < nat; iat_xx++)
     {
@@ -907,12 +909,12 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
         if (box)
         {
             izs = iz-1;
-            ize = min(iz+2, izs+nzbox);
+            ize = std::min(iz+2, izs+nzbox);
         }
         else
         {
-            izs = max(iz-1, 0);
-            ize = min(iz+2, nzbox);
+            izs = std::max(iz-1, 0);
+            ize = std::min(iz+2, nzbox);
         }
         for (iy = 0; iy < nybox; iy++)
         {
@@ -920,12 +922,12 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
             if (box)
             {
                 iys = iy-1;
-                iye = min(iy+2, iys+nybox);
+                iye = std::min(iy+2, iys+nybox);
             }
             else
             {
-                iys = max(iy-1, 0);
-                iye = min(iy+2, nybox);
+                iys = std::max(iy-1, 0);
+                iye = std::min(iy+2, nybox);
             }
             for (ix = 0; ix < nxbox; ix++)
             {
@@ -939,12 +941,12 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
                 if (box)
                 {
                     ixs = ix-1;
-                    ixe = min(ix+2, ixs+nxbox);
+                    ixe = std::min(ix+2, ixs+nxbox);
                 }
                 else
                 {
-                    ixs = max(ix-1, 0);
-                    ixe = min(ix+2, nxbox);
+                    ixs = std::max(ix-1, 0);
+                    ixe = std::min(ix+2, nxbox);
                 }
                 iiat = 0;
                 /* make intermediate atom list */

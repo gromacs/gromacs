@@ -10,8 +10,7 @@
    Memcheck:Leak
    fun:calloc
    fun:save_calloc
-   fun:ico_dot_dod
-   fun:make_unsp
+   ...
    fun:nsc_dclm_pbc
 }
 {
