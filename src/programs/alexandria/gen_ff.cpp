@@ -37,54 +37,19 @@
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-static int maxline = 30;
-
-static void begin_table(FILE *tp, const char *caption, const char *label,
-                        const char *colinfo, const char *hbuf)
+void print_atypes_tex(FILE *tp, gmx_poldata_t pd, gmx_atomprop_t aps)
 {
-    fprintf(tp, "\\begin{table}[H]\n\\centering\n");
-    fprintf(tp, "\\caption{%s}\n", caption);
-    fprintf(tp, "\\label{%s}\n", label);
-    fprintf(tp, "\\begin{tabular}{%s}\n\\hline\n", colinfo);
-    fprintf(tp, "%s\\\\\n\\hline\n", hbuf);
-}
-
-static void end_table(FILE *tp)
-{
-    fprintf(tp, "\\hline\n\\end{tabular}\n\\end{table}\n\n");
-}
-
-static void do_atypes(FILE *fp, FILE *tp, gmx_poldata_t pd, gmx_atomprop_t aps)
-{
-    char  hbuf[1024], colinfo[1024];
     char *elem, *desc, *gt_type, *ptype, *btype, *gt_old;
     char *vdwparams;
     int   atomnumber, nline, npage, nr;
     real  mass;
 
-    strcpy(hbuf, "Nr. & Type & Description & Elem & $\\alpha$ & Van der Waals");
-    strcpy(colinfo, "cclccc");
-    begin_table(tp, "Atom types defined by the Alexandria force field",
-                "atypes", colinfo, hbuf);
-
-    fprintf(fp, "[ defaults ]\n");
-    fprintf(fp, "; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ\n");
-    const char *ff = gmx_poldata_get_vdw_function(pd);
-    if (strcasecmp(ff, "LJ_SR") == 0)
-    {
-        ff = "LJ";
-    }
-    fprintf(fp, "%s              %s              yes             %lf     %lf\n\n",
-            ff,
-            gmx_poldata_get_combination_rule(pd),
-            gmx_poldata_get_fudgeLJ(pd),
-            gmx_poldata_get_fudgeQQ(pd));
-
-    fprintf(fp, "[ atomtypes ]\n");
-    fprintf(fp, "%-7s%-6s  %6s  %12s  %10s  %5s  %-s\n",
-            "; atype", "btype", "at.num", "mass", "charge", "ptype",
-            "Van der Waals");
-
+    fprintf(tp, "\\begin{longtable}{cclccc}\n\\hline\n");
+    fprintf(tp, "\\caption{Atom types defined by the Alexandria force field}\n", caption);
+    fprintf(tp, "\\label{atypes}\\\\\n\hline\n", label);
+    fprintf(tp, "Nr. & Type & Description & Elem & $\\alpha$ & Van der Waals\\\\\n");
+    fprintf(tp, "\\hline\n");
+    
     gt_old = NULL;
     nline  = 2;
     npage  = 0;
@@ -99,25 +64,8 @@ static void do_atypes(FILE *fp, FILE *tp, gmx_poldata_t pd, gmx_atomprop_t aps)
     {
         if (gmx_atomprop_query(aps, epropMass, "", elem, &mass))
         {
-            atomnumber = gmx_atomprop_atomnumber(aps, elem);
             if ((NULL == gt_old) || (strcmp(gt_old, gt_type) != 0))
             {
-                char sgt_type[32];
-                snprintf(sgt_type, 32, "%s_s", gt_type);
-                fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A     %-s\n",
-                        gt_type, btype, atomnumber, mass, 0.0, vdwparams);
-                fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
-                        sgt_type, "MW", 0, 0.0, 0.0);
-                if (0 == (nline % maxline))
-                {
-                    end_table(tp);
-                    fprintf(tp, "\\addtocounter{table}{-1}\n");
-                    npage++;
-                    nline = 1;
-                    begin_table(tp, "Atom types, continued",
-                                gmx_itoa(npage).c_str(),
-                                colinfo, hbuf);
-                }
                 fprintf(tp, "%d & %s & %s & %s & %s & %s & %s\\\\\n",
                         nr++, gt_type, desc, elem, ptype, btype, vdwparams);
                 nline++;
@@ -125,7 +73,7 @@ static void do_atypes(FILE *fp, FILE *tp, gmx_poldata_t pd, gmx_atomprop_t aps)
         }
         gt_old = gt_type;
     }
-    end_table(tp);
+    fprintf(tp, "\\hline\n\\end{longtable}\n\n");
 }
 
 static void do_brule(FILE *tp, gmx_poldata_t pd)

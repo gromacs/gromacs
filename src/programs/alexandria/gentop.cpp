@@ -494,7 +494,8 @@ int alex_gentop(int argc, char *argv[])
         {
             mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) :
                                 ftp2fn(efTOP, NFILE, fnm),
-                                iModel, bVerbose);
+                                iModel, bVerbose,
+                                pd, aps);
         }
         else if (bRTP)
         {
