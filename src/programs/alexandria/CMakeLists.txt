@@ -93,7 +93,7 @@ set(ALEXANDRIA_SOURCES
         poldata_test.cpp
         molprop_test.cpp
         stringutil.cpp
-        gen_ff.cpp
+#        gen_ff.cpp
         gen_table.cpp
         alex_modules.cpp
 	)

@@ -152,7 +152,9 @@ class MyMol : public MolProp
         //! fp is a File pointer opened previously.
         void PrintTopology(const char           *fn,
                            ChargeGenerationModel iModel,
-                           bool                  bVerbose);
+                           bool                  bVerbose,
+                           gmx_poldata_t         pd,
+                           gmx_atomprop_t        aps);
 
         //! Print some info about the molecule to a file
         void PrintQPol(FILE *fp, gmx_poldata_t pd);
