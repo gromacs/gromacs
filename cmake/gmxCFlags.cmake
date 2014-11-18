@@ -206,7 +206,9 @@ MACRO(gmx_c_flags)
 #All but the following warnings are identical for the C-compiler (see above)
 #1782: #pragma once is obsolete
 #2282: unrecognized GCC pragma
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd111 -wd177 -wd181 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076 -wd1782 -wd2282" GMXC_CXXFLAGS)
+#10120: overriding '-xCORE-AVX-I' with '-mavx' (apparently Cray wrapper compilers like trying to be helpful here)
+#10121: overriding '-xCORE-AVX-I' with '-march=core-avx2' (same)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd111 -wd177 -wd181 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd10120 -wd10121 -wd11074 -wd11076 -wd1782 -wd2282" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CXXFLAGS_RELEASE)
         else()
             if(NOT GMX_OPENMP)
