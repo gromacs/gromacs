@@ -40,10 +40,10 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/nrnb.h"

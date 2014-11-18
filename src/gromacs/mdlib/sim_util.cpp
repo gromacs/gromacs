@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
@@ -55,7 +56,6 @@
 #include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
