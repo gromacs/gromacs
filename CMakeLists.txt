@@ -465,9 +465,9 @@ include(gmxManageMPI)
 
 
 ########################################################################
-#Process shared/static library settings
+# Process linking options, e.g. shared/static library settings
 ########################################################################
-include(gmxManageSharedLibraries)
+include(gmxManageLinking)
 
 
 ########################################################################
@@ -867,6 +867,11 @@ include(gmxManageSuffixes)
 # was added.
 if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
    ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
+    if(GMX_LINK_STATIC_BINARIES)
+        # Don't set RPATH for a binary that is intended to be
+        # statically linked.
+        set(CMAKE_SKIP_RPATH TRUE)
+    endif()
     # The build folder always has bin/ and lib/; if we are also going to
     # install to lib/, then the installation RPATH works also in the build
     # tree.  This makes installation slightly faster (no need to rewrite the
