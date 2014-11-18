@@ -42,9 +42,9 @@
 #include <math.h>
 #include <string.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/ewald-util.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"

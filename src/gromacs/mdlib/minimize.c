@@ -42,6 +42,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
@@ -49,7 +50,6 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/bonded-threading.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"

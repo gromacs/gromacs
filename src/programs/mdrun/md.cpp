@@ -44,6 +44,8 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_network.h"
 #include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/filenm.h"
@@ -55,8 +57,6 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/bonded-threading.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/domdec_network.h"
 #include "gromacs/legacyheaders/ebin.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/md_logging.h"

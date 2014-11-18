@@ -35,7 +35,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/domdec_network.h"
+#include "domdec_network.h"
 
 #include "config.h"
 

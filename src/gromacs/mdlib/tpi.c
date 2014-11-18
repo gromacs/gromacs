@@ -41,6 +41,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -49,7 +50,6 @@
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdatoms.h"
