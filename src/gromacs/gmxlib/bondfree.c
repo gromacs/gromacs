@@ -1129,7 +1129,7 @@ real thole_pol(int nbonds,
         if (debug)
         {
             fprintf(debug, "THOLE: a1 = %d, da1 = %d, a2 = %d, da2 = %d, q1 = %f, q2 = %f\n", a1, da1, a2, da2, q1, q2);
-            fprintf(debug, "THOLE: a = %f, al1 = %f, al2 = %f, qq = %f, afac = %f\n", a, al1, al2, qq, afac);
+            fprintf(debug, "THOLE: a = %f, al1 = %f, al2 = %f, afac = %f\n", a, al1, al2, afac);
         }
         /* atom 1 - atom 2 */
         qq    = q1*q2;

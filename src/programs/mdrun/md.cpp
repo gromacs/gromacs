@@ -1044,8 +1044,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, bBornRadii, t, mu_tot,
                                 &bConverged, vsite,
-                                mdoutf_get_fp_field(outf), &count,
-                                bInitStep, upd, ekind);
+                                mdoutf_get_fp_field(outf), &count);
             tcount += count;
 
             if (bConverged)
