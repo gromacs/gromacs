@@ -40,7 +40,7 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/perf_est.h"

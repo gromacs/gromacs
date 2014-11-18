@@ -38,9 +38,9 @@
 
 #include "config.h"
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/legacyheaders/calcgrid.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
