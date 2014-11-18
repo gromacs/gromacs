@@ -46,6 +46,7 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/ewald-util.h"
 #include "gromacs/ewald/pme.h"
@@ -54,7 +55,6 @@
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"

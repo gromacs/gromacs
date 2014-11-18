@@ -45,12 +45,12 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdrun.h"

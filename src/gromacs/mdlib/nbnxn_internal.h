@@ -36,7 +36,7 @@
 #ifndef _nbnxn_internal_h
 #define _nbnxn_internal_h
 
-#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdlib/nbnxn_simd.h"

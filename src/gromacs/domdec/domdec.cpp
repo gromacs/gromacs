@@ -35,7 +35,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/domdec.h"
+#include "domdec.h"
 
 #include "config.h"
 
@@ -48,6 +48,7 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec_network.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -55,7 +56,6 @@
 #include "gromacs/legacyheaders/bonded-threading.h"
 #include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/domdec_network.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"

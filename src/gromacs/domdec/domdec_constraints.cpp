@@ -39,9 +39,9 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_network.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/domdec_network.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/gmx_hash.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"

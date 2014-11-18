@@ -41,9 +41,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdatoms.h"
