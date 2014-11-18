@@ -48,7 +48,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "BlueGene.*static")
     # performance reasons. So unless information to the contrary ever
     # comes to light, we should not mess about giving the user options
     # that are useless when they've already selected a static toolchain.
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Static BlueGene build toolchain selected, so shared libraries are disabled" FORCE)
+    set(GMX_LINK_STATIC_BINARIES ON CACHE BOOL "Use fully static build on BlueGene" FORCE)
 endif()
 
 set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene")

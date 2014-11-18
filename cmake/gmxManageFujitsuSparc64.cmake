@@ -36,7 +36,7 @@
 # For now this is mainly used for K computer.
 message(STATUS "Configuring for Fujitsu Sparc64")
 
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Use static linking by default on Fujitsu Sparc64" FORCE)
+set(GMX_LINK_STATIC_BINARIES ON CACHE BOOL "Use fully static build on Fujitsu Sparc64" FORCE)
 set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on Fujitsu Sparc64" FORCE)
 
 set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Use native 1.0/sqrt(x) on Fujitsu Sparc64" FORCE)
