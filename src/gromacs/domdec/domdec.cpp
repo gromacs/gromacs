@@ -107,6 +107,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "domdec_constraints.h"
+#include "domdec_internal.h"
+
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
@@ -2337,22 +2340,6 @@ void get_pme_nnodes(const gmx_domdec_t *dd,
         *npmenodes_x = 1;
         *npmenodes_y = 1;
     }
-}
-
-gmx_bool gmx_pmeonlynode(t_commrec *cr, int sim_nodeid)
-{
-    gmx_bool bPMEOnlyNode;
-
-    if (DOMAINDECOMP(cr))
-    {
-        bPMEOnlyNode = (dd_simnode2pmenode(cr, sim_nodeid) == -1);
-    }
-    else
-    {
-        bPMEOnlyNode = FALSE;
-    }
-
-    return bPMEOnlyNode;
 }
 
 void get_pme_ddnodes(t_commrec *cr, int pmenodeid,

@@ -33,6 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief This file defines functions used by the domdec module
+ * in its initial setup phase.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_domdec
+ */
+
 #include "gmxpre.h"
 
 #include <assert.h>
@@ -49,9 +58,16 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Margin for setting up the DD grid */
+/*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
 
+/*! \brief Factorize \p n.
+ *
+ * \param[in]    n     Value to factorize
+ * \param[out]   fac   Pointer to array of factors (to be allocated in this function)
+ * \param[out]   mfac  Pointer to array of the number of times each factor repeats in the factorization (to be allocated in this function)
+ * \return             The number of unique factors
+ */
 static int factorize(int n, int **fac, int **mfac)
 {
     int d, ndiv;
@@ -84,6 +100,7 @@ static int factorize(int n, int **fac, int **mfac)
     return ndiv;
 }
 
+/*! \brief Find largest divisor of \p n smaller than \p n*/
 static gmx_bool largest_divisor(int n)
 {
     int ndiv, *div, *mdiv, ldiv;
@@ -96,6 +113,7 @@ static gmx_bool largest_divisor(int n)
     return ldiv;
 }
 
+/*! \brief Compute largest common divisor of \p n1 and \b n2 */
 static int lcd(int n1, int n2)
 {
     int d, i;
@@ -112,11 +130,13 @@ static int lcd(int n1, int n2)
     return d;
 }
 
+/*! \brief TODO */
 static gmx_bool fits_pme_ratio(int nnodes, int npme, float ratio)
 {
     return ((double)npme/(double)nnodes > 0.95*ratio);
 }
 
+/*! \brief TODO */
 static gmx_bool fits_pp_pme_perf(int nnodes, int npme, float ratio)
 {
     int ndiv, *div, *mdiv, ldiv;
@@ -154,6 +174,7 @@ static gmx_bool fits_pp_pme_perf(int nnodes, int npme, float ratio)
     return fits_pme_ratio(nnodes, npme, ratio);
 }
 
+/*! \brief Make a guess for the numer of PME ranks to use. */
 static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                       int nnodes)
 {
@@ -241,6 +262,7 @@ static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
     return npme;
 }
 
+/*! \brief Return \p n divided by \p f rounded up to the next integer. */
 static int div_up(int n, int f)
 {
     return (n + f - 1)/f;
@@ -284,13 +306,23 @@ real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox)
     return comm_vol;
 }
 
+/*! \brief Return whether the DD inhomogeneous in the z direction */
 static gmx_bool inhomogeneous_z(const t_inputrec *ir)
 {
     return ((EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD) &&
             ir->ePBC == epbcXYZ && ir->ewald_geometry == eewg3DC);
 }
 
-/* Avoid integer overflows */
+/*! \brief Estimate cost of PME FFT communication
+ *
+ * This only takes the communication into account and not imbalance
+ * in the calculation. But the imbalance in communication and calculation
+ * are similar and therefore these formulas also prefer load balance
+ * in the FFT and pme_solve calculation.
+ *
+ * \todo There was a comment here "Need to avoid integer overflows"
+ * but I can see no relevant issue.
+ */
 static float comm_pme_cost_vol(int npme, int a, int b, int c)
 {
     float comm_vol;
@@ -303,6 +335,7 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
     return comm_vol;
 }
 
+/*! \brief Estimate cost of communication for a possible domain decomposition. */
 static float comm_cost_est(real limit, real cutoff,
                            matrix box, gmx_ddbox_t *ddbox,
                            int natoms, t_inputrec *ir,
@@ -462,12 +495,6 @@ static float comm_cost_est(real limit, real cutoff,
         }
     }
 
-    /* PME FFT communication volume.
-     * This only takes the communication into account and not imbalance
-     * in the calculation. But the imbalance in communication and calculation
-     * are similar and therefore these formulas also prefer load balance
-     * in the FFT and pme_solve calculation.
-     */
     comm_pme += comm_pme_cost_vol(npme[YY], ir->nky, ir->nkz, ir->nkx);
     comm_pme += comm_pme_cost_vol(npme[XX], ir->nkx, ir->nky, ir->nkz);
 
@@ -498,6 +525,7 @@ static float comm_cost_est(real limit, real cutoff,
     return 3*natoms*(comm_vol + cost_pbcdx) + comm_pme;
 }
 
+/*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
 static void assign_factors(gmx_domdec_t *dd,
                            real limit, real cutoff,
                            matrix box, gmx_ddbox_t *ddbox,
@@ -560,6 +588,7 @@ static void assign_factors(gmx_domdec_t *dd,
     }
 }
 
+/*! \brief Determine the optimal distribution of DD cells for the simulation system and number of MPI ranks */
 static real optimize_ncells(FILE *fplog,
                             int nnodes_tot, int npme_only,
                             gmx_bool bDynLoadBal, real dlb_scale,
