@@ -37,5 +37,6 @@
 
 include(BlueGeneQ-base)
 set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
+option(GMX_LINK_STATIC_BINARIES "Build fully static Gromacs binaries" ON)
 set(CMAKE_FIND_LIBRARY_PREFIXES "lib")
 set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")

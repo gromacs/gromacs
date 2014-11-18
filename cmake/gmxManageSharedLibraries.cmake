@@ -39,14 +39,16 @@
 ########################################################################
 # Determine the defaults (this block has no effect if the variables have
 # already been set)
-if((APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU") AND NOT GMX_BUILD_MDRUN_ONLY)
-    # Maybe Solaris should be here? Patch this if you know!
-    SET(SHARED_LIBS_DEFAULT ON)
-elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
+if(GMX_LINK_STATIC_BINARIES OR WIN32)
     # Support for shared libs on native Windows is a bit new. Its
-    # default might change later if/when we sort things out. Also,
-    # Cray should go here. What variable value can detect it?
-    SET(SHARED_LIBS_DEFAULT OFF)
+    # default might change later if/when we sort things out.
+    set(SHARED_LIBS_DEFAULT OFF)
+    set(DISABLE_SHARED_LINKING ON)
+elseif((APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU") AND NOT GMX_BUILD_MDRUN_ONLY)
+    # Platforms where we are confident about the usefulness of shared
+    # linking go here. Maybe Solaris should be here? Patch this if you
+    # know!
+    SET(SHARED_LIBS_DEFAULT ON)
 else()
     if (NOT DEFINED BUILD_SHARED_LIBS)
         message(STATUS "Defaulting to building static libraries")
@@ -60,8 +62,18 @@ if (GMX_PREFER_STATIC_LIBS)
     set(SHARED_LIBS_DEFAULT OFF)
 endif()
 set(GMX_PREFER_STATIC_LIBS_DEFAULT OFF)
-if (WIN32 AND NOT CYGWIN AND NOT BUILD_SHARED_LIBS)
+if (GMX_LINK_STATIC_BINARIES OR
+        (WIN32 AND NOT CYGWIN AND NOT BUILD_SHARED_LIBS))
     set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
+endif()
+if(DISABLE_SHARED_LINKING)
+    foreach(lang C CXX)
+        # Some toolchains fill this with -rdynamic by default (see
+        # http://www.cmake.org/Bug/view.php?id=9985), which we should
+        # suppress if the user or platform dictate the use of static
+        # linking
+        set(CMAKE_SHARED_LIBRARY_LINK_${lang}_FLAGS "")
+    endforeach()
 endif()
 
 # Declare the user-visible options

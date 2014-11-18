@@ -38,6 +38,7 @@ set(CMAKE_SYSTEM_NAME Linux CACHE STRING "Cross-compiling for Fujitsu Sparc64")
 set(CMAKE_SYSTEM_PROCESSOR "s64fx")
 
 set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
+option(GMX_LINK_STATIC_BINARIES "Build fully static Gromacs binaries" ON)
 
 # set the compiler
 set(CMAKE_C_COMPILER fccpx)
