@@ -43,8 +43,8 @@
 
 #include <math.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"

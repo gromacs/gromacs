@@ -37,9 +37,9 @@
 
 #include <string.h>
 
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_network.h"
 #include "gromacs/legacyheaders/chargegroup.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/domdec_network.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"

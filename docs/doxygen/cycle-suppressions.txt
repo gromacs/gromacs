@@ -1,8 +1,13 @@
+domdec -> imd
+domdec -> ewald
+domdec -> fileio
+domdec -> mdlib
+domdec -> pulling
+domdec -> swap
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
-mdlib -> swap
 legacyheaders -> swap
 legacyheaders -> fileio
 timing -> legacyheaders

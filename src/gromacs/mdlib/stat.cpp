@@ -39,12 +39,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/md_support.h"
 #include "gromacs/legacyheaders/mdrun.h"

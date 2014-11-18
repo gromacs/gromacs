@@ -35,8 +35,8 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/domdec.h"
-#include "gromacs/legacyheaders/domdec_network.h"
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_network.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nsgrid.h"
 #include "gromacs/legacyheaders/typedefs.h"

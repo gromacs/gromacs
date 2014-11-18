@@ -36,6 +36,7 @@
 
 #include "mdoutf.h"
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trajectory_writing.h"
 #include "gromacs/fileio/trnio.h"
@@ -43,7 +44,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
