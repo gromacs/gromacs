@@ -32,21 +32,29 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Manage the Gromacs shared library setup.
+# This file manages the Gromacs linking setup - whether and what kinds
+# of libraries should be linked.
 
-########################################################################
-# Shared/static library settings
-########################################################################
+option(GMX_LINK_STATIC_BINARIES "Build fully static Gromacs binaries (but that won't necessarily succeed)" OFF)
+mark_as_advanced(GMX_LINK_STATIC_BINARIES)
+
 # Determine the defaults (this block has no effect if the variables have
 # already been set)
-if((APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU") AND NOT GMX_BUILD_MDRUN_ONLY)
-    # Maybe Solaris should be here? Patch this if you know!
+if(GMX_LINK_STATIC_BINARIES)
+    set(SHARED_LIBS_DEFAULT OFF)
+    set(DISABLE_SHARED_LINKING ON)
+elseif((APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU") AND NOT GMX_BUILD_MDRUN_ONLY)
+    # Platforms where we are confident about the usefulness of shared
+    # linking go here. Maybe Solaris should be here? Patch this if you
+    # know!
     SET(SHARED_LIBS_DEFAULT ON)
-elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
+elseif(WIN32)
+    # Treat native Windows here. TODO in master branch: take care that
+    # Cygwin and Mingw can't get in here.
+    #
     # Support for shared libs on native Windows is a bit new. Its
-    # default might change later if/when we sort things out. Also,
-    # Cray should go here. What variable value can detect it?
-    SET(SHARED_LIBS_DEFAULT OFF)
+    # default might change later if/when we sort things out.
+    set(SHARED_LIBS_DEFAULT OFF)
 else()
     if (NOT DEFINED BUILD_SHARED_LIBS)
         message(STATUS "Defaulting to building static libraries")
@@ -60,8 +68,23 @@ if (GMX_PREFER_STATIC_LIBS)
     set(SHARED_LIBS_DEFAULT OFF)
 endif()
 set(GMX_PREFER_STATIC_LIBS_DEFAULT OFF)
-if (WIN32 AND NOT BUILD_SHARED_LIBS)
+if (GMX_LINK_STATIC_BINARIES OR
+        (WIN32 AND NOT CYGWIN AND NOT BUILD_SHARED_LIBS))
     set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
+endif()
+if(DISABLE_SHARED_LINKING)
+    foreach(lang C CXX)
+        # Some toolchains fill this with -rdynamic by default (see
+        # http://www.cmake.org/Bug/view.php?id=9985), which we should
+        # suppress if the user or platform dictate the use of static
+        # linking
+        set(CMAKE_SHARED_LIBRARY_LINK_${lang}_FLAGS "")
+    endforeach()
+    # On Linux .a is the static library suffix, on Mac OS X .lib can
+    # also be used, and on Windows .lib is used. Deliberately
+    # overriding the CMake default is good because it stops find_*()
+    # packages picking up shared libraries
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a")
 endif()
 
 # Declare the user-visible options
@@ -77,12 +100,15 @@ elseif (WIN32)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static system libraries (MT instead of MD)")
 endif()
+# TODO Refactor this variable to have three options (off, on, or
+# always; and probably a new name), so that DISABLE_SHARED_LINKING has
+# a clear way to be implemented
 option(GMX_PREFER_STATIC_LIBS "${GMX_PREFER_STATIC_LIBS_DESCRIPTION}"
        ${GMX_PREFER_STATIC_LIBS_DEFAULT})
 mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 
 # Act on the set values
-if (UNIX AND GMX_PREFER_STATIC_LIBS)
+if (UNIX AND GMX_PREFER_STATIC_LIBS AND NOT DISABLE_SHARED_LINKING)
     if(BUILD_SHARED_LIBS)
         # Warn the user about the combination. But don't overwrite the request.
         message(WARNING "Searching for static libraries requested, and building shared Gromacs libraries requested. This might cause problems linking later.")

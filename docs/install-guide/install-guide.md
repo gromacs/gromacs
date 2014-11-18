@@ -534,23 +534,35 @@ smaller disk footprint when installed, and so is the default on
 platforms where we believe it has been tested repeatedly and found to work.
 In general, this includes Linux, Windows, Mac OS X and BSD systems.
 Static binaries take much more space, but on some hardware and/or under
-some conditions they are necessary, most commonly when you are running a parallel
+some conditions they are recommended, most commonly when you are running a parallel
 simulation using MPI libraries (e.g. BlueGene, Cray).
 
+* On BlueGene and Fujitsu-Sparc64 systems, these issues are handled by
+  the platform files that Gromacs provides. Please see the respective
+  sections for details.
+* To otherwise direct the compilation and linking of fully static
+  GROMACS binaries, set `-DGMX_LINK_STATIC_BINARIES=ON`. This will
+  only succeed if all dependencies are available to be used with
+  static linking. You may need to arrange your `CMAKE_PREFIX_PATH`
+  accordingly. This option sets the options below to be consistent
+  with a fully static build.
 * To link GROMACS binaries
-statically against the internal GROMACS libraries, set
-`-DBUILD_SHARED_LIBS=OFF`.
+  statically against the internal GROMACS libraries, set
+  `-DBUILD_SHARED_LIBS=OFF`.
 * To link statically against external (non-system) libraries as well,
-the `-DGMX_PREFER_STATIC_LIBS=ON` option can be used. Note, that in
-general `cmake` picks up whatever is available, so this option only
-instructs `cmake` to prefer static libraries when both static and
-shared are available. If no static version of an external library is
-available, even when the aforementioned option is `ON`, the shared
-library will be used. Also note, that the resulting binaries will
-still be dynamically linked against system libraries on platforms
-where that is the default. To use static system libraries, additional
-compiler/linker flags are necessary, e.g. `-static-libgcc
--static-libstdc++`.
+  the `-DGMX_PREFER_STATIC_LIBS=ON` option can be used. Note, that in
+  general `cmake` picks up whatever is available, so this option only
+  instructs `cmake` to prefer static libraries when both static and
+  shared are available. If no static version of an external library is
+  available, even when the aforementioned option is `ON`, the shared
+  library will be used. Also note, that the resulting binaries will
+  still be dynamically linked against system libraries on platforms
+  where that is the default. To use static system libraries,
+  additional compiler/linker flags are necessary, e.g. `-static-libgcc
+  -static-libstdc++`.
+* Dynamic linking embeds a file path to be used when searching for
+  libraries to link. These are not useful with static linking, and
+  so you may need to use `-DCMAKE_SKIP_RPATH=YES`.
 
 ### Portability aspects ###
 
@@ -884,6 +896,9 @@ the right tools get used.
 ## Building on Cray ##
 
 GROMACS builds mostly out of the box on modern Cray machines, but
+some particular issues on Cray machines include that
+* you may need to specify a [fully static build](#static-linking)
+  of GROMACS,
 * you may need to specify the use of static or dynamic libraries
   (depending on the machine) with `-DBUILD_SHARED_LIBS=off`,
 * you may need to set the F77 environmental variable to `ftn` when
