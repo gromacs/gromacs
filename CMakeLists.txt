@@ -458,6 +458,10 @@ if(GMX_TARGET_FUJITSU_SPARC64)
     include(gmxManageFujitsuSparc64)
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES Cray-static)
+    set(GMX_LINK_STATIC_BINARIES ON CACHE BOOL "Use fully static build with Cray-static toolchain" FORCE)
+endif()
+
 ########################################################################
 #Process MPI settings
 ########################################################################

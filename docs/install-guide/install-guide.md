@@ -873,14 +873,29 @@ the right tools get used.
 
 ## Building on Cray ##
 
-GROMACS builds mostly out of the box on modern Cray machines, but
-* you may need to specify the use of static or dynamic libraries
+On Cray systems, you should use the Cray wrapper compilers around
+either the GNU or Intel compilers. Note that the wrapper compilers
+typically default to the Cray base compiler, which does not give good
+performance with GROMACS.
+
+Some particular issues on Cray machines include that
+* you may wish to specify a [fully static build](#static-linking)
+  of GROMACS
+* you may wish to specify the use of static or dynamic libraries
   (depending on the machine) with `-DBUILD_SHARED_LIBS=off`,
-* you may need to set the F77 environmental variable to `ftn` when
-  compiling FFTW,
-* you may need to use `-DCMAKE_SKIP_RPATH=YES`, and
-* you may need to modify the CMakeLists.txt files to specify the
-  `BUILD_SEARCH_END_STATIC` target property.
+* you may need to set the F77 environmental variable to `ftn`
+  (or use --disable-fortran) when compiling FFTW.
+* For static linking with the Intel compiler used as a base compiler
+  for the Cray wrapper compiler, a known problem exists with the way
+  CMake constructs linking command lines. In this case (only), use the
+  GROMACS-specific toolchain file with
+  `-DCMAKE_TOOLCHAIN_FILE=Platform/Toolchain-Cray-static-Intel`.  This
+  also defaults to `GMX_LINK_STATIC_BINARIES=ON` (see [static
+  linking](#static-linking)). Unfortunately, CMake now thinks
+  cross-compilation is taking place, so the detection of CPU type is
+  not allowed to run. You will need to set `-DGMX_SIMD` to the value
+  appropriate for your compute nodes (see [SIMD
+  support](#simd-support) for more details).
 
 ## Building on BlueGene ##
 
