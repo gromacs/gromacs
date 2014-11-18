@@ -33,6 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief This file defines functions for (mostly) the domdec module
+ * to use MPI functionality
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_domdec
+ */
+
 #include "gmxpre.h"
 
 #include "domdec_network.h"
@@ -45,6 +54,7 @@
 #include "gromacs/utility/gmxmpi.h"
 
 
+/*! \brief TODO */
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
 

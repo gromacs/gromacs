@@ -33,7 +33,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief This file implements functions for domdec to use
+ * while managing inter-atomic constraints.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_domdec
+ */
+
 #include "gmxpre.h"
+
+#include "domdec_constraints.h"
 
 #include <assert.h>
 
@@ -67,7 +78,9 @@ typedef struct {
     int  n;
 } ind_req_t;
 
+/*! \brief TODO, also fields */
 typedef struct gmx_domdec_specat_comm {
+    //! @cond Doxygen_Suppress
     /* The number of indices to receive during the setup */
     int              nreq[DIM][2][2];
     /* The atoms to send */
@@ -90,9 +103,12 @@ typedef struct gmx_domdec_specat_comm {
      */
     int        nthread;
     ind_req_t *ireq;
+    //! @endcond
 } gmx_domdec_specat_comm_t;
 
+/*! \brief TODO, also fields */
 typedef struct gmx_domdec_constraints {
+    //! @cond Doxygen_Suppress
     int       *molb_con_offset;
     int       *molb_ncon_mol;
     /* The fully local and connected constraints */
@@ -109,9 +125,11 @@ typedef struct gmx_domdec_constraints {
     /* Multi-threading stuff */
     int      nthread;
     t_ilist *ils;
+    //! @endcond
 } gmx_domdec_constraints_t;
 
 
+/*! \brief TODO */
 static void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                              rvec *f, rvec *fshift)
 {
@@ -240,6 +258,7 @@ void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f)
     }
 }
 
+/*! \brief TODO */
 static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                              matrix box,
                              rvec *x0,
@@ -476,6 +495,7 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
     }
 }
 
+/*! \brief TODO */
 static int setup_specat_communication(gmx_domdec_t             *dd,
                                       ind_req_t                *ireq,
                                       gmx_domdec_specat_comm_t *spac,
@@ -742,6 +762,7 @@ static int setup_specat_communication(gmx_domdec_t             *dd,
     return nat_tot_specat;
 }
 
+/*! \brief TODO */
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      int ncon1, const t_iatom *ia1, const t_iatom *ia2,
                      const t_blocka *at2con,
@@ -839,6 +860,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
     }
 }
 
+/*! \brief TODO */
 static void atoms_to_settles(gmx_domdec_t *dd,
                              const gmx_mtop_t *mtop,
                              const int *cginfo,
@@ -941,6 +963,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
     gmx_mtop_atomlookup_destroy(alook);
 }
 
+/*! \brief TODO */
 static void atoms_to_constraints(gmx_domdec_t *dd,
                                  const gmx_mtop_t *mtop,
                                  const int *cginfo,
@@ -1345,6 +1368,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
     return at_end;
 }
 
+/*! \brief TODO */
 static gmx_domdec_specat_comm_t *specat_comm_init(int nthread)
 {
     gmx_domdec_specat_comm_t *spac;
