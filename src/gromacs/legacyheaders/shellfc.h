@@ -140,10 +140,7 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_bool *bConverged,
                         gmx_vsite_t *vsite,
                         FILE *fp_field,
-                        int *count,
-                        gmx_bool bInitStep,
-                        gmx_update_t upd,
-                        gmx_ekindata_t *ekind);
+                        int *count);
 
 /* functions for DD */
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md,       
