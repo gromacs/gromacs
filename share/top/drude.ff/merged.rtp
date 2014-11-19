@@ -4805,7 +4805,6 @@
 	  OH2  DOH2
 	  OH2    H1
 	  OH2    H2
-	   H1    H2
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -4824,7 +4823,6 @@
 	  OH2  DOH2
 	  OH2    H1
 	  OH2    H2
-	   H1    H2
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
