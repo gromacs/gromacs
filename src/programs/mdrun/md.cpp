@@ -1033,7 +1033,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
         }
 
-        if (shellfc)
+        /* TODO */
+        /* if (shellfc) */
+        if (ir->bDrude && ir->drude->drudemode == edrudeSCF)
         {
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, bVerbose, step,
@@ -1562,7 +1564,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    cr, nrnb, wcycle, upd, constr,
                                    FALSE, bCalcVir, state->veta);
 
-                if (ir->drude->bHardWall)
+                if (ir->bDrude && ir->drude->bHardWall)
                 {
                     apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f, force_vir);
                 }
@@ -1614,7 +1616,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        FALSE, bCalcVir,
                                        state->veta);
 
-                    if (ir->drude->bHardWall)
+                    if (ir->bDrude && ir->drude->bHardWall)
                     {
                         apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f, force_vir);
                     }

@@ -1642,6 +1642,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         memcpy(state->x, pos[Min], nat*sizeof(state->x[0]));
         memcpy(f, force[Min], nat*sizeof(f[0]));
     }
+/* jal 11/20/2014 - no longer necessary since call in mdrun is different */
+#if 0
     else if (inputrec->drude->drudemode==edrudeLagrangian) 
     {
         /* Here, all we need to do is calculate forces; updates will be done in
@@ -1653,6 +1655,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                  fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
                  force_flags);
     }
+#endif
     else
     {
         /* something has gone horribly wrong */
