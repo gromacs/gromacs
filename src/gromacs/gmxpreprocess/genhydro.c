@@ -522,10 +522,13 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
         bUpdate_pdba = TRUE;
         /* first get all the hackblocks for each residue: */
         hb = get_hackblocks(pdba, nah, ah, nterpairs, ntdb, ctdb, rN, rC);
+#if 0
         if (debug)
         {
+            /* TODO: BROKEN */
             dump_hb(debug, pdba->nres, hb);
         }
+#endif
 
         /* expand the hackblocks to atom level */
         snew(nab, natoms);
@@ -919,14 +922,19 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
 {
 
     int         i, j, natoms, nadd;
+    int         resnr;
     char       *dname;              /* Drude name, created from heavy atom */
     rvec       *xn;                 /* new atom positions */
     gmx_bool   *bHeavy;             /* if an atom is a heavy atom (non-H, non-Drude, non-LP) */
-    gmx_bool   *bPresent;           /* flag to check if Drude is already present in input pdba */
+    gmx_bool   *bPresent;           /* flag to check if Drude is already present on its parent heavy atom in input pdba */
+                                    /* NOTE that the indices in this array are for heavy atoms, not that index == Drude */
     t_atoms    *newpdba = NULL, *pdba = NULL;
 
     pdba = *pdbaptr;
     natoms = pdba->nr;
+
+    /* ugly hack - names should be <5 char */
+    snew(dname, 8);
 
     snew(xn, natoms);
     snew(newpdba, 1);
@@ -945,8 +953,15 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
             && !is_lonepair(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i]))
         {
             bHeavy[i] = TRUE;
+            resnr = pdba->resinfo[pdba->atom[i].resind].nr;
+
+            if (debug)
+            {
+                fprintf(debug, "ADD DRUDES: looking for Drude on atom %s, i = %d, res = %d\n", 
+                        *pdba->atomname[i], i, resnr); 
+            }
+
             /* build name of associated Drude */
-            snew(dname, 8);     /* TODO: ugly hack for the moment - names should be <5 char */
             strcpy(dname, "D");
             strcat(dname, *pdba->atomname[i]);
 
@@ -955,22 +970,40 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
                 fprintf(debug, "ADD DRUDES: Searching for Drude on atom %i, dname = %s aname = %s\n", i, dname, *pdba->atomname[i]);
             }
 
-            /* Look to see if the Drude is already in the input coordinates */
-            for (j=0; j<natoms; j++)
+            /* If H are added to a structure with Drudes, the Drude will no longer be located at
+             * i+1 since the H follow consecutively after atom i.  So we need to loop over the residue
+             * to find any instance of dname.  It will be pretty uncommon for an input structure to
+             * have Drudes but not H, but this method is still much more robust than making assumptions */
+            j = 0;
+            while ((j<natoms) && (!bPresent[i]))
             {
-                if (strcmp(dname, *pdba->atomname[j])==0)
+                if ((strcmp(dname, *pdba->atomname[j])==0) && (pdba->resinfo[pdba->atom[j].resind].nr == resnr))
                 {
-                    bPresent[i] = TRUE;
-                    continue;
+                    if (debug)
+                    {
+                        fprintf(debug, "ADD DRUDES: %s (%s) found for atom %d, res %d\n",
+                                        dname, *pdba->atomname[j], j, pdba->resinfo[pdba->atom[j].resind].nr);
+                    }
+
+                    bPresent[i] = TRUE; /* exit the loop */
                 }
                 else
                 {
-                    /* we need to add a Drude */
+                    if (debug)
+                    {
+                        fprintf(debug, "ADD DRUDES: %s (%s) is not a match at atom %d, res %d\n",
+                                        dname, *pdba->atomname[j], j, pdba->resinfo[pdba->atom[j].resind].nr);
+                    }
+
+                    /* we need to add a Drude to this heavy atom */
                     bPresent[i] = FALSE;
+                    j++;    /* keep looking */
                 }
             }
+
             if (!bPresent[i])
             {
+                /* we have a Drude that needs to be added */
                 nadd++;
             }
         }
@@ -993,7 +1026,6 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
         srenew(newpdba->atomname, natoms+nadd); 
     }
 
-    /* TODO: WIP */
     /* Loop through pdba to either copy atoms to newpdba or add to newpdba */
     j = 0;
     for (i=0; i<natoms; i++)
@@ -1010,7 +1042,6 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
                 /* keep the heavy atom */
                 copy_atom(pdba, i, newpdba, i+j);
                 /* add the Drude to newpdba */
-                snew(dname, 8);     /* TODO: same ugly hack as above */ 
                 strcpy(dname, "D");
                 strcat(dname, *pdba->atomname[i]);
                 if (debug)
@@ -1048,3 +1079,63 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
     sfree(bHeavy);
     sfree(bPresent);
 }
+
+/* TODO */
+#if 0
+/* Adding lone pairs is a bit different from H and Drudes, but since the Drude function
+ * is here, I will just keep everything in one place - jal */
+void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp *rtp, int nrtp)
+{
+
+    int         i, j, natoms, nadd, bt;
+    rvec       *xn;                 /* new lone pair positions */
+    char       *rname;              /* residue name */
+    char       *vname;              /* name of virtual site (LP) */
+    t_atoms    *newpdba = NULL, *pdba = NULL;
+    t_bonded   *bvsite;
+    t_restp    *rtp_tmp;
+
+    pdba = *pdbaptr;
+    natoms = pdba->nr;
+
+    snew(xn, natoms);
+    snew(newpdba, 1);
+
+    nadd = 0;
+    /* find all of the lone pairs specified in the .rtp entries */
+    for (i=0; i < pdba->nres; i++)
+    {
+        rname = strdup(*pdba->resinfo[i].rtp);
+        if (debug)
+        {
+            fprintf(debug, "ADD LP: Residue %d name %s...\n", i, rname);
+        }
+        /* Find .rtp entry for this residue */
+        for (j=0; j<nrtp; j++)
+        {
+            if (strcmp(rname, *rtp[j]->resname)==0)
+            {
+                rtp_tmp = rtp[j];
+            }
+        }
+        /* Search .rtp entry for this residue for any ebtsVSITE, increment nadd
+         * for each vsite found if it is not present in pdba */
+        for (bt = ebtsVSITE2; bt <= ebtsVSITE4; bt++)
+        {
+            /* only do this if there are vsites... */
+            /* WRONG: i is index for residue in pdba */
+            if (rtp_tmp.rb[bt].nb > 0)
+            {
+                bvsite = rtp_tmp.rb[bt]->b;
+            }
+        }
+
+
+    }
+
+    /* Match atom names for constructing atoms and get their indices,
+     * then pull their coordinates.  Pass coordinates and LP name to
+     * an appropriate constructing function and return coordinates for
+     * the LP. */  
+}
+#endif
