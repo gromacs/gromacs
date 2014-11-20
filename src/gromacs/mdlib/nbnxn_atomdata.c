@@ -53,6 +53,7 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
@@ -158,7 +159,7 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
     if (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
         nb_kernel_type == nbnxnk4xN_SIMD_2xNN)
     {
-        cj_size  = nbnxn_kernel_to_cj_size(nb_kernel_type);
+        cj_size  = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
         out->nVS = nenergrp*nenergrp*stride*(cj_size>>1)*cj_size;
         ma((void **)&out->VSvdw, out->nVS*sizeof(*out->VSvdw));
         ma((void **)&out->VSc, out->nVS*sizeof(*out->VSc  ));
@@ -717,7 +718,7 @@ void nbnxn_atomdata_init(FILE *fp,
         if (bSIMD)
         {
             pack_x = max(NBNXN_CPU_CLUSTER_I_SIZE,
-                         nbnxn_kernel_to_cj_size(nb_kernel_type));
+                         nbnxn_kernel_to_cluster_j_size(nb_kernel_type));
             switch (pack_x)
             {
                 case 4:
