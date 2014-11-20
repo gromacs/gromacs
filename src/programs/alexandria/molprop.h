@@ -407,6 +407,90 @@ class MolecularQuadrupole : public GenericProperty
 typedef std::vector<MolecularQuadrupole>::iterator MolecularQuadrupoleIterator;
 
 /*! \brief
+ * Contains the elements of the molecular polarizability tensor
+ *
+ * The six elements of the upper diagonal of a polarizability tensor are stored
+ * along with the average molecular polarizability and the error if known. 
+ * The values are dependent on the orientation of the molecule.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class MolecularPolarizability : public GenericProperty
+{
+    private:
+        double _xx, _yy, _zz, _xy, _xz, _yz, _average, _error;
+    public:
+        //! Empty constructor
+        MolecularPolarizability() {}
+
+        //! Constructor initiating all elements of the quadrupole tensor
+        MolecularPolarizability(std::string type, std::string unit, double xx, double yy, double zz, 
+                                double xy, double xz, double yz, 
+                                double average, double error) : GenericProperty(type, unit) { Set(xx, yy, zz, xy, xz, yz, average, error); };
+
+        //! Destructor
+        ~MolecularPolarizability() {};
+
+        //! Set all the elements of the polarizability tensor
+        void Set(double xx, double yy, double zz, 
+                 double xy, double xz, double yz, 
+                 double average, double error);
+                                          
+        //! Get all the elements of the polarizability tensor
+        void Get(double *xx, double *yy, double *zz, 
+                 double *xy, double *xz, double *yz, 
+                 double *average, double *error) { 
+            *xx = _xx; *yy = _yy; *zz = _zz; 
+            *xy = _xy; *xz = _xz; *yz = _yz; 
+            *average = _average; *error = _error; }
+
+        //! Return the XX component of the polarizability tensor
+        double GetXX() { return _xx; }
+
+        //! Return the YY component of the polarizability tensor
+        double GetYY() { return _yy; }
+
+        //! Return the ZZ component of the polarizability tensor
+        double GetZZ() { return _zz; }
+
+        //! Return the XY component of the polarizability tensor
+        double GetXY() { return _xy; }
+
+        //! Return the XZ component of the polarizability tensor
+        double GetXZ() { return _xz; }
+
+        //! Return the YZ component of the polarizability tensor
+        double GetYZ() { return _yz; }
+
+        //! Return the average of the polarizability tensor
+        double GetAverage() { return _average; }
+
+        //! Return the error in the polarizability tensor
+        double GetError() { return _error; }
+
+        /*! \brief
+         * Sends this object over an MPI connection
+         *
+         * \param[in] commrec   GROMACS data structure for MPI communication
+         * \param[in] dest      Destination processor
+         * \return the CommunicationStatus of the operation
+         */
+        CommunicationStatus Send(t_commrec *cr, int dest);
+
+        /*! \brief
+         * Receives this object over an MPI connection
+         *
+         * \param[in] commrec   GROMACS data structure for MPI communication
+         * \param[in] src       Source processor
+         * \return the CommunicationStatus of the operation
+         */
+        CommunicationStatus Receive(t_commrec *cr, int src);
+};
+//! Iterates over MolecularPolarizability items
+typedef std::vector<MolecularPolarizability>::iterator MolecularPolarizabilityIterator;
+
+/*! \brief
  * Contains a molecular energy
  *
  * Different energy terms associated with a molecule can be stored based
@@ -473,48 +557,48 @@ class MolecularEnergy : public GenericProperty
 typedef std::vector<MolecularEnergy>::iterator MolecularEnergyIterator;
 
 /*! \brief
- * Contains either a dipole vector, or the diagonal of the polarizability tensor.
+ * Contains the dipole vector
  *
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class MolecularDipPolar : public GenericProperty
+class MolecularDipole : public GenericProperty
 {
     private:
         double _x, _y, _z;
         double _aver, _error;
     public:
         //! Empty constructor
-        MolecularDipPolar() {}
+        MolecularDipole() {}
 
-        //! Constructor storing all properties related to this dipole/polarizability
-        MolecularDipPolar(char *type, char *unit, double x, double y, double z, double aver, double error) : GenericProperty(type, unit) { Set(x, y, z, aver, error); }
+        //! Constructor storing all properties related to this dipole
+        MolecularDipole(char *type, char *unit, double x, double y, double z, double aver, double error) : GenericProperty(type, unit) { Set(x, y, z, aver, error); }
 
-        //! Constructor storing all properties related to this dipole/polarizability
-        MolecularDipPolar(std::string type, std::string unit, double x, double y, double z, double aver, double error) : GenericProperty(type, unit) { Set(x, y, z, aver, error); }
+        //! Constructor storing all properties related to this dipole
+        MolecularDipole(std::string type, std::string unit, double x, double y, double z, double aver, double error) : GenericProperty(type, unit) { Set(x, y, z, aver, error); }
 
         //! Destructor
-        ~MolecularDipPolar() {};
+        ~MolecularDipole() {};
 
-        //! Set all properties related to this dipole/polarizability
+        //! Set all properties related to this dipole
         void Set(double x, double y, double z, double aver, double error) { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
 
-        //! Return all properties of this dipole/polarizability
+        //! Return all properties of this dipole
         void Get(double *x, double *y, double *z, double *aver, double *error) { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
 
-        //! Return the average dipole/polarizability value
+        //! Return the average dipole value
         double GetAver() { return _aver; }
 
-        //! Return the error in the average dipole/polarizability
+        //! Return the error in the average dipole
         double GetError() { return _error; }
 
-        //! Return the X component of the dipole/polarizability
+        //! Return the X component of the dipole
         double GetX() { return _x; }
 
-        //! Return the Y component of the dipole/polarizability
+        //! Return the Y component of the dipole
         double GetY() { return _y; }
 
-        //! Return the Z component of the dipole/polarizability
+        //! Return the Z component of the dipole
         double GetZ() { return _z; }
 
         /*! \brief
@@ -535,8 +619,8 @@ class MolecularDipPolar : public GenericProperty
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
-//! Iterates over a vector of MolecularDipPolar
-typedef std::vector<MolecularDipPolar>::iterator MolecularDipPolarIterator;
+//! Iterates over a vector of MolecularDipole
+typedef std::vector<MolecularDipole>::iterator MolecularDipoleIterator;
 
 /*! \brief
  * Contains the electrostatic potential in a coordinate close to a molecule.
@@ -855,10 +939,11 @@ typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
 class Experiment
 {
     private:
-        std::string                      _reference, _conformation;
-        std::vector<MolecularDipPolar>   _polar, _dipole;
-        std::vector<MolecularEnergy>     _energy;
-        std::vector<MolecularQuadrupole> _quadrupole;
+        std::string                          _reference, _conformation;
+        std::vector<MolecularDipole>         _dipole;
+        std::vector<MolecularEnergy>         _energy;
+        std::vector<MolecularQuadrupole>     _quadrupole;
+        std::vector<MolecularPolarizability> _polar;
 
     public:
         //! Empty constructor
@@ -882,14 +967,14 @@ class Experiment
         //! Dump the contents of this object to a file
         void Dump(FILE *fp);
 
-        //! Add a MolecularDipPolar element containing polarizability data
-        void AddPolar(MolecularDipPolar mdp) { _polar.push_back(mdp); }
+        //! Add a MolecularDipole element containing polarizability data
+        void AddPolar(MolecularPolarizability mdp) { _polar.push_back(mdp); }
 
         //! Return Begin Iterator over polarizability elements
-        MolecularDipPolarIterator BeginPolar() { return _polar.begin(); }
+        MolecularPolarizabilityIterator BeginPolar() { return _polar.begin(); }
 
         //! Return End Iterator over polarizability elements
-        MolecularDipPolarIterator EndPolar()   { return _polar.end(); }
+        MolecularPolarizabilityIterator EndPolar()   { return _polar.end(); }
 
         //! Number of polarizability values
         int NPolar() { return _polar.size(); }
@@ -897,14 +982,14 @@ class Experiment
         //! Number of dipole values
         int NDipole() { return _dipole.size(); }
 
-        //! Add a MolecularDipPolar element containing dipole data
-        void AddDipole(MolecularDipPolar mdp) { _dipole.push_back(mdp); }
+        //! Add a MolecularDipole element containing dipole data
+        void AddDipole(MolecularDipole mdp) { _dipole.push_back(mdp); }
 
         //! Return Begin Iterator over dipole elements
-        MolecularDipPolarIterator BeginDipole() { return _dipole.begin(); }
+        MolecularDipoleIterator BeginDipole() { return _dipole.begin(); }
 
         //! Return End Iterator over dipole elements
-        MolecularDipPolarIterator EndDipole()   { return _dipole.end(); }
+        MolecularDipoleIterator EndDipole()   { return _dipole.end(); }
 
         //! Number of quadrupole values
         int NQuadrupole() { return _quadrupole.size(); }

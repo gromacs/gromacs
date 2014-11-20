@@ -1158,7 +1158,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                 switch (mpo)
                 {
                     case MPO_DIPOLE:
-                        for (alexandria::MolecularDipPolarIterator mdi = ei->BeginDipole(); (mdi < ei->EndDipole()); mdi++)
+                        for (alexandria::MolecularDipoleIterator mdi = ei->BeginDipole(); (mdi < ei->EndDipole()); mdi++)
                         {
                             ed.push_back(ExpData(mdi->GetAver(),
                                                  mdi->GetError(),
@@ -1168,9 +1168,9 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                         }
                         break;
                     case MPO_POLARIZABILITY:
-                        for (alexandria::MolecularDipPolarIterator mdi = ei->BeginPolar(); (mdi < ei->EndPolar()); mdi++)
+                        for (alexandria::MolecularPolarizabilityIterator mdi = ei->BeginPolar(); (mdi < ei->EndPolar()); mdi++)
                         {
-                            ed.push_back(ExpData(mdi->GetAver(),
+                            ed.push_back(ExpData(mdi->GetAverage(),
                                                  mdi->GetError(),
                                                  ei->GetReference(),
                                                  ei->GetConformation(),

@@ -308,13 +308,17 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                         case exmlPOLARIZABILITY:
                             process_children(tree->children, xbuf);
                             if (NN(xbuf[exmlTYPE])  && NN(xbuf[exmlUNIT]) &&
-                                NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]))
+                                ((NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR])) ||
+                                 (NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]))))
                             {
-                                alexandria::MolecularDipPolar mdp(xbuf[exmlTYPE], xbuf[exmlUNIT],
-                                                                  NN(xbuf[exmlXX]) ? my_atof(xbuf[exmlXX]) : 0,
-                                                                  NN(xbuf[exmlYY]) ? my_atof(xbuf[exmlYY]) : 0,
-                                                                  NN(xbuf[exmlZZ]) ? my_atof(xbuf[exmlZZ]) : 0,
-                                                                  my_atof(xbuf[exmlAVERAGE]), my_atof(xbuf[exmlERROR]));
+                                alexandria::MolecularPolarizability mdp(xbuf[exmlTYPE], xbuf[exmlUNIT],
+                                                                        NN(xbuf[exmlXX]) ? my_atof(xbuf[exmlXX]) : 0,
+                                                                        NN(xbuf[exmlYY]) ? my_atof(xbuf[exmlYY]) : 0,
+                                                                        NN(xbuf[exmlZZ]) ? my_atof(xbuf[exmlZZ]) : 0,
+                                                                        NN(xbuf[exmlXY]) ? my_atof(xbuf[exmlXY]) : 0,
+                                                                        NN(xbuf[exmlXZ]) ? my_atof(xbuf[exmlXZ]) : 0,
+                                                                        NN(xbuf[exmlYZ]) ? my_atof(xbuf[exmlYZ]) : 0,
+                                                                        my_atof(xbuf[exmlAVERAGE]), my_atof(xbuf[exmlERROR]));
                                 if (*bExperiment)
                                 {
                                     mpt->LastExperiment()->AddPolar(mdp);
@@ -344,7 +348,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
                                 NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]))
                             {
-                                alexandria::MolecularDipPolar mdp(xbuf[exmlTYPE], xbuf[exmlUNIT],
+                                alexandria::MolecularDipole mdp(xbuf[exmlTYPE], xbuf[exmlUNIT],
                                                                   NN(xbuf[exmlX]) ? my_atof(xbuf[exmlX]) : 0,
                                                                   NN(xbuf[exmlY]) ? my_atof(xbuf[exmlY]) : 0,
                                                                   NN(xbuf[exmlZ]) ? my_atof(xbuf[exmlZ]) : 0,
@@ -570,7 +574,7 @@ static void add_exper_properties(xmlNodePtr              exp,
         add_xml_string(child, exml_names[exmlUNIT], me_it->GetUnit());
     }
 
-    for (alexandria::MolecularDipPolarIterator mdp_it = exper.BeginDipole();
+    for (alexandria::MolecularDipoleIterator mdp_it = exper.BeginDipole();
          (mdp_it < exper.EndDipole()); mdp_it++)
     {
         mdp_it->Get(&x, &y, &z, &value, &error);
@@ -593,9 +597,9 @@ static void add_exper_properties(xmlNodePtr              exp,
         }
     }
 
-    for (alexandria::MolecularDipPolarIterator mdp_it = exper.BeginPolar(); (mdp_it < exper.EndPolar()); mdp_it++)
+    for (alexandria::MolecularPolarizabilityIterator mdp_it = exper.BeginPolar(); (mdp_it < exper.EndPolar()); mdp_it++)
     {
-        mdp_it->Get(&x, &y, &z, &value, &error);
+        mdp_it->Get(&xx, &yy, &zz, &xy, &xz, &yz, &value, &error);
 
         child = add_xml_child(exp, exml_names[exmlPOLARIZABILITY]);
         add_xml_string(child, exml_names[exmlTYPE], mdp_it->GetType());
@@ -604,14 +608,23 @@ static void add_exper_properties(xmlNodePtr              exp,
         add_xml_child_val(child, exml_names[exmlAVERAGE], ptr);
         ptr = gmx_ftoa(error).c_str();
         add_xml_child_val(child, exml_names[exmlERROR], ptr);
-        if ((x != 0) || (y != 0) || (z != 0))
+        if ((xx != 0) || (yy != 0) || (zz != 0))
         {
-            ptr = gmx_ftoa(x).c_str();
+            ptr = gmx_ftoa(xx).c_str();
             add_xml_child_val(child, exml_names[exmlXX], ptr);
-            ptr = gmx_ftoa(y).c_str();
+            ptr = gmx_ftoa(yy).c_str();
             add_xml_child_val(child, exml_names[exmlYY], ptr);
-            ptr = gmx_ftoa(z).c_str();
+            ptr = gmx_ftoa(zz).c_str();
             add_xml_child_val(child, exml_names[exmlZZ], ptr);
+        }
+        if ((xy != 0) || (xz != 0) || (yz != 0))
+        {
+            ptr = gmx_ftoa(xy).c_str();
+            add_xml_child_val(child, exml_names[exmlXY], ptr);
+            ptr = gmx_ftoa(xz).c_str();
+            add_xml_child_val(child, exml_names[exmlXZ], ptr);
+            ptr = gmx_ftoa(yz).c_str();
+            add_xml_child_val(child, exml_names[exmlYZ], ptr);
         }
     }
 

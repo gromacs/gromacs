@@ -224,11 +224,12 @@ void ReadSqlite3(const char                       *sqlite_file,
                             alexandria::Experiment exper(ref, "minimum");
                             if (strcasecmp(prop, "Polarizability") == 0)
                             {
-                                exper.AddPolar(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                                exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, 0, 0, 0, 0, 0, 0, value, 0));
+                                
                             }
                             else if (strcasecmp(prop, "dipole") == 0)
                             {
-                                exper.AddDipole(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                                exper.AddDipole(alexandria::MolecularDipole(prop, unit, 0, 0, 0, value, error));
                             }
                             else if (strcasecmp(prop, "DHf(298.15K)") == 0)
                             {
@@ -243,11 +244,12 @@ void ReadSqlite3(const char                       *sqlite_file,
                                                          "unknown" );
                             if (strcasecmp(prop, "Polarizability") == 0)
                             {
-                                calc.AddPolar(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                                alexandria::MolecularPolarizability mp(prop, unit, 0, 0, 0, 0, 0, 0, value, 0);
+                                calc.AddPolar(mp);
                             }
                             else if (strcasecmp(prop, "dipole") == 0)
                             {
-                                calc.AddDipole(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                                calc.AddDipole(alexandria::MolecularDipole(prop, unit, 0, 0, 0, value, error));
                             }
                             else if (strcasecmp(prop, "DHf(298.15K)") == 0)
                             {

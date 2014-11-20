@@ -462,7 +462,7 @@ static void gmx_molprop_read_babel(const char *g98,
     if (NULL != dipole)
     {
         OpenBabel::vector3            v3 = dipole->GetData();
-        alexandria::MolecularDipPolar dp("electronic",
+        alexandria::MolecularDipole dp("electronic",
                                          unit2string(eg2cDebye),
                                          v3.GetX(), v3.GetY(), v3.GetZ(),
                                          v3.length(), 0.0);
@@ -499,9 +499,9 @@ static void gmx_molprop_read_babel(const char *g98,
         //cout << "fac = " << fac << "\n";
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
 
-        alexandria::MolecularDipPolar mdp("electronic",
+        alexandria::MolecularPolarizability mdp("electronic",
                                           unit2string(eg2cAngstrom3),
-                                          mm[0], mm[4], mm[8], alpha, 0);
+                                                mm[0], mm[4], mm[8], mm[1], mm[2], mm[5], alpha, 0);
         mpt.LastCalculation()->AddPolar(mdp);
     }
 
@@ -986,15 +986,16 @@ static void gmx_molprop_read_log(const char *fn,
                                      reference, conformation, fn);
         if (bPolar)
         {
-            alexandria::MolecularDipPolar mdi(unit2string(eg2cElectron),
-                                              unit2string(eg2cAngstrom3),
-                                              polar[XX][XX], polar[YY][YY], polar[ZZ][ZZ],
-                                              trace(polar)/3.0, 0);
+            alexandria::MolecularPolarizability mdi(unit2string(eg2cElectron),
+                                                    unit2string(eg2cAngstrom3),
+                                                    polar[XX][XX], polar[YY][YY], polar[ZZ][ZZ], 
+                                                    polar[XX][YY], polar[XX][ZZ], polar[YY][ZZ], 
+                                                    0, 0);
             calc.AddPolar(mdi);
         }
         if (bDipole)
         {
-            alexandria::MolecularDipPolar mdi(unit2string(eg2cElectron),
+            alexandria::MolecularDipole mdi(unit2string(eg2cElectron),
                                               unit2string(eg2cDebye),
                                               dipole[XX], dipole[YY], dipole[ZZ],
                                               norm(dipole), 0);

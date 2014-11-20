@@ -156,6 +156,24 @@ void MolecularComposition::AddAtom(AtomNum an)
     }
 }
 
+void MolecularPolarizability::Set(double xx, double yy, double zz, 
+                                  double xy, double xz, double yz, 
+                                  double average, double error) 
+{
+    _xx = xx; _yy = yy; _zz = zz; 
+    _xy = xy; _xz = xz; _yz = yz; 
+    _average = average; _error = error; 
+    if (_average == 0) 
+    { 
+        // Compute average as the 1/3 the trace of the diagonal 
+        _average = (_xx + _yy + _zz)/3.0;
+    }
+    else if ((_xx == 0) && (_yy == 0) && (_zz == 0)) { 
+        // Estimate tensor as the 1/3 the trace of the diagonal 
+        _xx = _yy = _zz = _average;
+    } 
+}
+        
 int MolProp::NAtom()
 {
     if (_mol_comp.size() > 0)
@@ -327,33 +345,30 @@ void Experiment::Merge(Experiment &src)
 
 void Experiment::MergeLow(Experiment *src)
 {
-    alexandria::MolecularEnergyIterator     mei;
-    alexandria::MolecularDipPolarIterator   dpi;
-    alexandria::MolecularQuadrupoleIterator mqi;
-
-    for (mei = src->BeginEnergy(); (mei < src->EndEnergy()); mei++)
+    for (alexandria::MolecularEnergyIterator mei = src->BeginEnergy(); (mei < src->EndEnergy()); ++mei)
     {
         alexandria::MolecularEnergy me(mei->GetType(), mei->GetUnit(), mei->GetValue(), mei->GetError());
         AddEnergy(me);
     }
 
-    for (dpi = src->BeginDipole(); (dpi < src->EndDipole()); dpi++)
+    for (alexandria::MolecularDipoleIterator dpi = src->BeginDipole(); (dpi < src->EndDipole()); ++dpi)
     {
-        alexandria::MolecularDipPolar dp(dpi->GetType(), dpi->GetUnit(),
+        alexandria::MolecularDipole dp(dpi->GetType(), dpi->GetUnit(),
                                          dpi->GetX(), dpi->GetY(), dpi->GetZ(),
                                          dpi->GetAver(), dpi->GetError());
         AddDipole(dp);
     }
 
-    for (dpi = src->BeginPolar(); (dpi < src->EndPolar()); dpi++)
+    for (alexandria::MolecularPolarizabilityIterator mpi = src->BeginPolar(); (mpi < src->EndPolar()); ++mpi)
     {
-        alexandria::MolecularDipPolar dp(dpi->GetType(), dpi->GetUnit(),
-                                         dpi->GetX(), dpi->GetY(), dpi->GetZ(),
-                                         dpi->GetAver(), dpi->GetError());
-        AddPolar(dp);
+        alexandria::MolecularPolarizability mp(mpi->GetType(), mpi->GetUnit(),
+                                               mpi->GetXX(), mpi->GetYY(), mpi->GetZZ(),
+                                               mpi->GetXY(), mpi->GetXZ(), mpi->GetYZ(),
+                                               mpi->GetAverage(), mpi->GetError());
+        AddPolar(mp);
     }
 
-    for (mqi = src->BeginQuadrupole(); (mqi < src->EndQuadrupole()); mqi++)
+    for (alexandria::MolecularQuadrupoleIterator mqi = src->BeginQuadrupole(); (mqi < src->EndQuadrupole()); ++mqi)
     {
         alexandria::MolecularQuadrupole mq(mqi->GetType(), mqi->GetUnit(),
                                            mqi->GetXX(), mqi->GetYY(), mqi->GetZZ(),
@@ -820,7 +835,7 @@ bool MolProp::HasComposition(std::string composition)
 
 bool Experiment::GetVal(const char *type, MolPropObservable mpo,
                         double *value, double *error, double vec[3],
-                        tensor quadrupole)
+                        tensor quad_polar)
 {
     bool   done = false;
     double x, y, z;
@@ -838,7 +853,7 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
             }
             break;
         case MPO_DIPOLE:
-            for (MolecularDipPolarIterator mdp = BeginDipole(); !done && (mdp < EndDipole()); mdp++)
+            for (MolecularDipoleIterator mdp = BeginDipole(); !done && (mdp < EndDipole()); mdp++)
             {
                 if ((NULL == type) || (strcasecmp(mdp->GetType().c_str(), type) == 0))
                 {
@@ -851,14 +866,21 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
             }
             break;
         case MPO_POLARIZABILITY:
-            for (MolecularDipPolarIterator mdp = BeginPolar(); !done && (mdp < EndPolar()); mdp++)
+            for (MolecularPolarizabilityIterator mdp = BeginPolar(); !done && (mdp < EndPolar()); mdp++)
             {
                 if ((NULL == type) || (strcasecmp(mdp->GetType().c_str(), type) == 0))
                 {
-                    mdp->Get(&x, &y, &z, value, error);
-                    vec[XX] = x;
-                    vec[YY] = y;
-                    vec[ZZ] = z;
+                    double xx, yy, zz, xy, xz, yz;
+                    mdp->Get(&xx, &yy, &zz, &xy, &xz, &yz, value, error);
+                    quad_polar[XX][XX] = xx;
+                    quad_polar[XX][YY] = xy;
+                    quad_polar[XX][ZZ] = xz;
+                    quad_polar[YY][XX] = 0;
+                    quad_polar[YY][YY] = yy;
+                    quad_polar[YY][ZZ] = yz;
+                    quad_polar[ZZ][XX] = 0;
+                    quad_polar[ZZ][YY] = 0;
+                    quad_polar[ZZ][ZZ] = zz;
                     done    = true;
                 }
             }
@@ -870,15 +892,15 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
                 {
                     double xx, yy, zz, xy, xz, yz;
                     mqi->Get(&xx, &yy, &zz, &xy, &xz, &yz);
-                    quadrupole[XX][XX] = xx;
-                    quadrupole[XX][YY] = xy;
-                    quadrupole[XX][ZZ] = xz;
-                    quadrupole[YY][XX] = 0;
-                    quadrupole[YY][YY] = yy;
-                    quadrupole[YY][ZZ] = yz;
-                    quadrupole[ZZ][XX] = 0;
-                    quadrupole[ZZ][YY] = 0;
-                    quadrupole[ZZ][ZZ] = zz;
+                    quad_polar[XX][XX] = xx;
+                    quad_polar[XX][YY] = xy;
+                    quad_polar[XX][ZZ] = xz;
+                    quad_polar[YY][XX] = 0;
+                    quad_polar[YY][YY] = yy;
+                    quad_polar[YY][ZZ] = yz;
+                    quad_polar[ZZ][XX] = 0;
+                    quad_polar[ZZ][YY] = 0;
+                    quad_polar[ZZ][ZZ] = zz;
                     done               = true;
                 }
             }
@@ -892,7 +914,7 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
 bool MolProp::GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
                          const char *conf, const char *type, double *value, double *error,
                          char **ref, char **mylot,
-                         double vec[3], tensor quadrupole)
+                         double vec[3], tensor quad_polar)
 {
     alexandria::ExperimentIterator  ei;
     alexandria::CalculationIterator ci;
@@ -908,7 +930,7 @@ bool MolProp::GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
 
             if ((NULL == conf) || (strcasecmp(conf, expconf.c_str()) == 0))
             {
-                done = ei->GetVal(type, mpo, value, error, vec, quadrupole);
+                done = ei->GetVal(type, mpo, value, error, vec, quad_polar);
             }
             if (done)
             {
@@ -942,7 +964,7 @@ bool MolProp::GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
 
                 if ((NULL == conf) || (strcasecmp(conf, conformation.c_str()) == 0))
                 {
-                    done = ci->GetVal(type, mpo, value, error, vec, quadrupole);
+                    done = ci->GetVal(type, mpo, value, error, vec, quad_polar);
                 }
                 if (done && (NULL != ref))
                 {
@@ -996,7 +1018,7 @@ CalculationIterator MolProp::GetLotPropType(const char       *lot,
                         done = ci->NPotential() > 0;
                         break;
                     case MPO_DIPOLE:
-                        for (MolecularDipPolarIterator mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
+                        for (MolecularDipoleIterator mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
                         {
                             done =  ((NULL == type) ||
                                      (strcasecmp(type, mdp->GetType().c_str()) == 0));
@@ -1010,7 +1032,7 @@ CalculationIterator MolProp::GetLotPropType(const char       *lot,
                         }
                         break;
                     case MPO_POLARIZABILITY:
-                        for (MolecularDipPolarIterator mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
+                        for (MolecularPolarizabilityIterator mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
                         {
                             done =  ((NULL == type) ||
                                      (strcasecmp(type, mdp->GetType().c_str()) == 0));
@@ -1153,6 +1175,62 @@ CommunicationStatus MolecularQuadrupole::Receive(t_commrec *cr, int src)
     return cs;
 }
 
+CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+
+    cs = GenericProperty::Send(cr, dest);
+    if (CS_OK == cs)
+    {
+        cs = gmx_send_data(cr, dest);
+    }
+    if (CS_OK == cs)
+    {
+        gmx_send_double(cr, dest, _xx);
+        gmx_send_double(cr, dest, _yy);
+        gmx_send_double(cr, dest, _zz);
+        gmx_send_double(cr, dest, _xy);
+        gmx_send_double(cr, dest, _xz);
+        gmx_send_double(cr, dest, _yz);
+        gmx_send_double(cr, dest, _average);
+        gmx_send_double(cr, dest, _error);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send MolecularQuadrupole, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
+CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+
+    cs = GenericProperty::Receive(cr, src);
+    if (CS_OK == cs)
+    {
+        cs = gmx_recv_data(cr, src);
+    }
+    if (CS_OK == cs)
+    {
+        _xx      = gmx_recv_double(cr, src);
+        _yy      = gmx_recv_double(cr, src);
+        _zz      = gmx_recv_double(cr, src);
+        _xy      = gmx_recv_double(cr, src);
+        _xz      = gmx_recv_double(cr, src);
+        _yz      = gmx_recv_double(cr, src);
+        _average = gmx_recv_double(cr, src);
+        _error   = gmx_recv_double(cr, src);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to received MolecularQuadrupole, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
 CommunicationStatus MolecularEnergy::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
@@ -1235,7 +1313,7 @@ CommunicationStatus Bond::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularDipPolar::Send(t_commrec *cr, int dest)
+CommunicationStatus MolecularDipole::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
 
@@ -1254,13 +1332,13 @@ CommunicationStatus MolecularDipPolar::Send(t_commrec *cr, int dest)
     }
     else if (NULL != debug)
     {
-        fprintf(debug, "Trying to send MolecularDipPolar, status %s\n", cs_name(cs));
+        fprintf(debug, "Trying to send MolecularDipole, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
 }
 
-CommunicationStatus MolecularDipPolar::Receive(t_commrec *cr, int src)
+CommunicationStatus MolecularDipole::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -1279,7 +1357,7 @@ CommunicationStatus MolecularDipPolar::Receive(t_commrec *cr, int src)
     }
     else if (NULL != debug)
     {
-        fprintf(debug, "Trying to receive MolecularDipPolar, status %s\n", cs_name(cs));
+        fprintf(debug, "Trying to receive MolecularDipole, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
@@ -1301,7 +1379,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
         //! Receive polarizabilities
         do
         {
-            MolecularDipPolar mdp;
+            MolecularPolarizability mdp;
 
             cs = mdp.Receive(cr, src);
             if (CS_OK == cs)
@@ -1314,7 +1392,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
         //! Receive dipoles
         do
         {
-            MolecularDipPolar mdp;
+            MolecularDipole mdp;
 
             cs = mdp.Receive(cr, src);
             if (CS_OK == cs)
@@ -1359,14 +1437,14 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, _conformation.c_str());
 
         //! Send polarizabilities
-        for (MolecularDipPolarIterator dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
+        for (MolecularPolarizabilityIterator dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
         {
             cs = dpi->Send(cr, dest);
         }
         cs = gmx_send_done(cr, dest);
 
         //! Send dipoles
-        for (MolecularDipPolarIterator dpi = BeginDipole(); (CS_OK == cs) && (dpi < EndDipole()); dpi++)
+        for (MolecularDipoleIterator dpi = BeginDipole(); (CS_OK == cs) && (dpi < EndDipole()); dpi++)
         {
             cs = dpi->Send(cr, dest);
         }

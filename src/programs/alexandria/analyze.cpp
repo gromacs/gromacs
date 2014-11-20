@@ -125,13 +125,13 @@ static void calc_frag_miller(gmx_poldata_t                     pd,
                             alexandria::Calculation calc1(program, type, (char *)"ahc",
                                                           ref, minimum, nofile);
                             ahc = 4*sqr(ahc)/Nelec;
-                            alexandria::MolecularDipPolar md1(empirical, ang3, 0, 0, 0, ahc, 0);
+                            alexandria::MolecularPolarizability md1(empirical, ang3, 0, 0, 0, 0, 0, 0, ahc, 0);
                             calc1.AddPolar(md1);
                             mpi->AddCalculation(calc1);
 
                             alexandria::Calculation       calc2(program, type, (char *)"ahp",
                                                                 ref, minimum, nofile);
-                            alexandria::MolecularDipPolar md2(empirical, ang3, 0, 0, 0, ahp, 0);
+                            alexandria::MolecularPolarizability md2(empirical, ang3, 0, 0, 0, 0, 0, 0, ahp, 0);
                             calc2.AddPolar(md2);
                             mpi->AddCalculation(calc2);
                         }
@@ -139,7 +139,7 @@ static void calc_frag_miller(gmx_poldata_t                     pd,
                         {
                             alexandria::Calculation       calc(program, type, minus,
                                                                ref, minimum, nofile);
-                            alexandria::MolecularDipPolar md(empirical, ang3, 0, 0, 0, p, sp);
+                            alexandria::MolecularPolarizability md(empirical, ang3, 0, 0, 0, 0, 0, 0, p, sp);
                             calc.AddPolar(md);
                             mpi->AddCalculation(calc);
                             if (NULL != debug)
