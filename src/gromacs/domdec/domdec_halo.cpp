@@ -56,7 +56,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
