@@ -48,8 +48,8 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
+#include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -124,8 +124,8 @@ void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
     if (bGPU)
     {
         /* The CUDA kernels split the j-clusters in two halves */
-        list_setup->cluster_size_i = nbnxn_kernel_to_ci_size(nbnxnk8x8x8_GPU);
-        list_setup->cluster_size_j = nbnxn_kernel_to_cj_size(nbnxnk8x8x8_GPU)/2;
+        list_setup->cluster_size_i = nbnxn_kernel_to_cluster_i_size(nbnxnk8x8x8_GPU);
+        list_setup->cluster_size_j = nbnxn_kernel_to_cluster_j_size(nbnxnk8x8x8_GPU)/2;
     }
     else
     {
@@ -145,8 +145,8 @@ void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
         }
 #endif
 
-        list_setup->cluster_size_i = nbnxn_kernel_to_ci_size(kernel_type);
-        list_setup->cluster_size_j = nbnxn_kernel_to_cj_size(kernel_type);
+        list_setup->cluster_size_i = nbnxn_kernel_to_cluster_i_size(kernel_type);
+        list_setup->cluster_size_j = nbnxn_kernel_to_cluster_j_size(kernel_type);
     }
 }
 
