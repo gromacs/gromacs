@@ -3372,7 +3372,7 @@
 	 HG11  HDA2A    0.07800  22
 	 HG12  HDA2A    0.07800  23
 	   CD  CD33A    2.30823  24
-	 DCD1      D   -2.48523  25
+	  DCD      D   -2.48523  25
 	  HD1  HDA3A    0.05900  26
 	  HD2  HDA3A    0.05900  27
 	  HD3  HDA3A    0.05900  28
@@ -3384,7 +3384,7 @@
 	   CB   DCB
 	  CG2  DCG2
 	  CG1  DCG1
-	   CD  DCD1
+	   CD   DCD
 	    N    CA
 	   CA     C
 	    C    +N
@@ -3421,7 +3421,7 @@
     CA   DCA    CB   DCB   0.000960   0.001302   1.0780   1.3000
     CB   DCB   CG1  DCG1   0.001302   0.001660   1.3000   1.3000
     CB   DCB   CG2  DCG2   0.001302   0.002051   1.3000   1.3000
-   CG1  DCG1    CD  DCD1   0.001660   0.002051   1.3000   1.3000
+   CG1  DCG1    CD   DCD   0.001660   0.002051   1.3000   1.3000
      N    DN     C    DC   0.001942   0.000675   0.2500   0.2950
      N    DN    CB   DCB   0.001942   0.001302   0.2500   1.3000
     CA   DCA    +N   +DN   0.000960   0.001942   1.0780   0.2500
@@ -3431,7 +3431,7 @@
     CA   DCA   CG1  DCG1   0.000960   0.001660   1.0780   1.3000
     CA   DCA   CG2  DCG2   0.000960   0.002051   1.0780   1.3000
    CG2  DCG2   CG1  DCG1   0.002051   0.001660   1.3000   1.3000
-    CB   DCB    CD  DCD1   0.001302   0.002051   1.3000   1.3000
+    CB   DCB    CD   DCD   0.001302   0.002051   1.3000   1.3000
      C    DC   +CA  +DCA   0.000675   0.000960   0.2950   1.0780
  [ exclusions ]
   ; ai  aj
@@ -3487,9 +3487,9 @@
   DCB 	 CG2 
   DCB 	 DCG2
   CG1 	 CD  
-  CG1 	 DCD1
+  CG1 	 DCD 
   DCG1	 CD  
-  DCG1	 DCD1
+  DCG1	 DCD 
   N   	 C   
   N   	 DC  
   DN  	 C   
@@ -3527,9 +3527,9 @@
   DCG2	 CG1 
   DCG2	 DCG1
   CB  	 CD  
-  CB  	 DCD1
+  CB  	 DCD 
   DCB 	 CD  
-  DCB 	 DCD1
+  DCB 	 DCD 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
