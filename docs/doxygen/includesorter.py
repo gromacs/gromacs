@@ -47,7 +47,7 @@ scripts.  In the latter case, the IncludeSorter provides the main interface.
 
 The sorting assumes some conventions (e.g., that system headers are included
 with angle brackets instead of quotes).  Generally, these conventions are
-checked by the doxygen-check.py script.
+checked by the check-source.py script.
 """
 
 import os.path

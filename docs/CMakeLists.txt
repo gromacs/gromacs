@@ -301,5 +301,5 @@ if(HTML_BUILD_IS_POSSIBLE)
            ${extra_webpage_dependencies}
         VERBATIM
         )
-    add_dependencies(webpage webpage-html doc-all)
+    add_dependencies(webpage webpage-html doxygen-all)
 endif()

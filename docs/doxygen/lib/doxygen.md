@@ -89,11 +89,11 @@ This file contains settings that are shared between all the input files.
 
 You can run Doxygen directly with one of the generated files (all output will
 be produced under the current working directory), or build one of the
-`doc-user`, `doc-lib`, and `doc-full` targets.  The targets run Doxygen in a
-quieter mode and only show the warnings if there were any, and put the output
-under `docs/html/doxygen/` in the build tree, so that the Doxygen build
-cooperates with the broader `webpage` target.  The `doc-all` target builds all three
-targets with less typing.
+`doxygen-user`, `doxygen-lib`, and `doxygen-full` targets.  The targets run
+Doxygen in a quieter mode and only show the warnings if there were any, and put
+the output under `docs/html/doxygen/` in the build tree, so that the Doxygen
+build cooperates with the broader `webpage` target.
+The `doxygen-all` target builds all three targets with less typing.
 
 The generated documentation is put under `html-user/`, `html-lib/`, and/or
 `html-full/`.  Open `index.xhtml` file from one of
