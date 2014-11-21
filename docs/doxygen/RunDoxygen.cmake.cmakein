@@ -69,7 +69,7 @@ if (DOXYGEN_WARNINGS)
     # Add a note to the warnings that identify the documentation type that
     # produces them.  This makes it easier to see in Jenkins if a warning type
     # is produced only from some documentation types.
-    string(REGEX REPLACE "\n" " (in doc-${DOCTYPE})\n"
+    string(REGEX REPLACE "\n" " (in doxygen-${DOCTYPE})\n"
            DOXYGEN_WARNINGS "${DOXYGEN_WARNINGS}")
     file(WRITE doxygen-${DOCTYPE}.log "${DOXYGEN_WARNINGS}")
 endif ()

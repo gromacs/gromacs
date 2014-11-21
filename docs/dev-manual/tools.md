@@ -109,7 +109,7 @@ checks): \ref section_dev_includesorter.</dd>
 <dt>include directive checker</dt>
 <dd>In its present form, the above include sorter script cannot be conveniently
 applied in `uncrustify.sh`.  To check for issues, it is instead integrated into
-a `doc-check` build target.  When this target is built, it also checks for
+a `check-source` build target.  When this target is built, it also checks for
 include formatting issues.  Internally, it uses the sorter script.  This check
 is run in Jenkins as part of the Documentation job.
 Details for the checking mechanism are on a separate page (common for several
@@ -159,7 +159,7 @@ and missing graphs.</dd>
 <dd>Doxygen produces warnings about some incorrect uses and wrong
 documentation, but there are many common mistakes that it does not detect.
 \Gromacs uses an additional, custom Python script to check for such issues.
-This is most easily invoked through a `doc-check` target in the build system.
+This is most easily invoked through a `check-source` target in the build system.
 The script also checks that documentation for a header matches its use in the
 source code (e.g., that a header documented as internal to a module is not
 actually used from outside the module).  These checks are run in Jenkins as
