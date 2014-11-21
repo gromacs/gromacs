@@ -152,14 +152,14 @@ if (DOXYGEN_FOUND)
     endfunction()
 
     # The XML target is necessary for the dependency graphs
-    add_doxygen_target(doc-xml xml "Extracting Doxygen documentation to XML")
+    add_doxygen_target(doxygen-xml xml "Extracting Doxygen documentation to XML")
 
     # Add targets for generating the dependency graphs; they are necessary for
     # the full and lib variants of the documentation.
     if (USE_PYTHON_SCRIPTS)
         # Add target that generates .dot files for the dependency graphs.
         # The output also depends on the Doxygen source files, but the
-        # dependency on doc-xml takes care of that transitively.
+        # dependency on doxygen-xml takes care of that transitively.
         gmx_add_custom_output_target(dep-graphs-dot ADD_FAST_TARGET
             OUTPUT STAMP
             COMMAND ${PYTHON_EXECUTABLE}
@@ -167,7 +167,7 @@ if (DOXYGEN_FOUND)
                 -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
                 --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
                 -o ${DEPGRAPH_DIR}
-            DEPENDS doc-xml ${INSTALLED_HEADER_FILE}
+            DEPENDS doxygen-xml ${INSTALLED_HEADER_FILE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/doxygenxml.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/gmxtree.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
@@ -190,31 +190,37 @@ if (DOXYGEN_FOUND)
     endif()
 
     # Create the actual targets to build the documentation.
-    add_doxygen_target(doc-full full "Generating full documentation with Doxygen" DEPGRAPHS)
-    add_doxygen_target(doc-lib  lib  "Generating library documentation with Doxygen" DEPGRAPHS)
-    add_doxygen_target(doc-user user "Generating public API documentation with Doxygen")
+    add_doxygen_target(doxygen-full full "Generating full documentation with Doxygen" DEPGRAPHS)
+    add_doxygen_target(doxygen-lib  lib  "Generating library documentation with Doxygen" DEPGRAPHS)
+    add_doxygen_target(doxygen-user user "Generating public API documentation with Doxygen")
     # Convenience targets to build all the documentation flavors.
-    add_custom_target(doc-all)
-    add_custom_target(doc-all-fast)
-    add_dependencies(doc-all      doc-full doc-lib doc-user)
-    add_dependencies(doc-all-fast doc-full-fast doc-lib-fast doc-user)
+    add_custom_target(doxygen-all)
+    add_custom_target(doxygen-all-fast)
+    add_dependencies(doxygen-all      doxygen-full doxygen-lib doxygen-user)
+    add_dependencies(doxygen-all-fast doxygen-full-fast doxygen-lib-fast doxygen-user)
 
-    # Finally, create the doc-check target.
+    # Finally, create the check-source target.
     if (USE_PYTHON_SCRIPTS)
-        # TODO: Consider whether this is the best name and location for this
-        # code, since not all of it is Doxygen-specific (but nearly all of it
+        # TODO: Consider whether this is the best location for this code,
+        # since not all of it is Doxygen-specific (but nearly all of it
         # relies on the Doxygen XML documentation).
-        set(doc_check_command
-            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-check.py
+        # The output .log file currently needs to be here, since Jenkins
+        # expects that.
+        set(check_source_command
+            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check-source.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
-            -l ${CMAKE_CURRENT_BINARY_DIR}/doxygen-check.log
+            -l ${CMAKE_CURRENT_BINARY_DIR}/check-source.log
             --exitcode
             --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
             --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt)
-        add_custom_target(doc-check      COMMAND ${doc_check_command}
+        add_custom_target(check-source      COMMAND ${check_source_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
-        add_custom_target(doc-check-fast COMMAND ${doc_check_command}
+        add_custom_target(check-source-fast COMMAND ${check_source_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
-        add_dependencies(doc-check      doc-xml)
+        add_dependencies(check-source       doxygen-xml)
+        # Add a backwards-compatibility target for Jenkins, until we can assume
+        # that all changes in Gerrit have been rebased past the rename.
+        add_custom_target(doc-check)
+        add_dependencies(doc-check check-source)
     endif()
 endif()

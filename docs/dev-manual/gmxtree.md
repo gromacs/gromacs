@@ -26,9 +26,9 @@ This representation is then used for various purposes:
    checked style
  * Generating dependency graphs between modules and for files within modules
 
-The checks are run as part of a single `doc-check` target, but are described
+The checks are run as part of a single `check-source` target, but are described
 in separate sections below.  In addition to printing the issues to `stderr`,
-the script also writes them into `docs/doxygen/doxygen-check.log` for later
+the script also writes them into `docs/doxygen/check-source.log` for later
 inspection.  Jenkins runs the checks as part of the Documentation job, and the
 build is marked unstable if any issues are found.
 
@@ -49,7 +49,7 @@ source files under `docs/doxygen/`.
 Checker details
 ===============
 
-The `doc-check` target currently checks for a few different types of issues.
+The `check-source` target currently checks for a few different types of issues.
 These are listed in detail below, mainly related to documentation and include
 dependencies.  Note in particular that the include dependency checks are much
 stricter for code in modules/directories that are documented with a
@@ -167,7 +167,7 @@ source tree, one can also use:
 For the sorter to work correctly, the build tree should contain up-to-date list
 of installed files and Doxygen XML documentation.  The former is created
 automatically when `cmake` is run, and the latter can be built using the
-`doc-xml` target.
+`doxygen-xml` target.
 
 Note that currently, the sorter script does not change between angle brackets
 and quotes in include statements.
