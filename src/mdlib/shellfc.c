@@ -1007,11 +1007,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        if (inputrec->cutoff_scheme == ecutsVERLET)
-        {
-            put_atoms_in_box_omp(fr->ePBC, state->box, md->homenr, state->x);
-        }
-        else
+        if (inputrec->cutoff_scheme == ecutsGROUP)
         {
             if (PARTDECOMP(cr))
             {
@@ -1183,7 +1179,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                  force[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
-                 force_flags);
+                 force_flags & ~GMX_FORCE_NS & ~GMX_FORCE_STATECHANGED);
 
         if (gmx_debug_at)
         {
