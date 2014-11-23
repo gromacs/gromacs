@@ -48,6 +48,10 @@ is up to the author of the code to put the headers in proper order in such
 cases.  Trailing comments on the same line as \#include statements are
 preserved and do not affect the checker/sorter.
 
+The guidelines are enforced by an automatic checker script that can also
+sort/reformat include statements to follow the guidelines.
+See \ref page_dev_gmxtree for details.
+
 Enforcing a consistent order and style has a few advantages:
  * It makes it easy at a quick glance to find the dependencies of a file,
    without scanning through a long list of unorganized \#includes.
@@ -63,7 +67,3 @@ Enforcing a consistent order and style has a few advantages:
  * An automatic script can be used to re-establish clean code after
    semi-automatic refactoring like renaming an include file with `sed`, without
    causing other unnecessary changes.
-
-The guidelines are enforced by an automatic checker script that can also
-sort/reformat include statements to follow the guidelines.
-See \ref page_dev_gmxtree for details.
