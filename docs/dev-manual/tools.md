@@ -66,7 +66,7 @@ newer).  The build system provides a `cppcheck` target (produced from
 
 </dl>
 
-Code formatting and style
+Code formatting and style {#section_dev_formattingtools}
 =========================
 
 The tools and scripts listed below are used to automatically check/apply
@@ -77,9 +77,10 @@ formatting that follows \Gromacs style guidelines described on a separate page:
 
 <dt>uncrustify</dt>
 <dd>Uncrustify (<http://uncrustify.sourceforge.net>) is used for automatic
-indentation and other formatting of the source code.  All code must remain
-invariant under uncrustify with the config at `admin/uncrustify.cfg`.
-A patched version of uncrustify is used.</dd>
+indentation and other formatting of the source code to follow
+\ref page_devstyle_formatting.  All code must remain invariant under uncrustify
+with the config at `admin/uncrustify.cfg`.  A patched version of uncrustify is
+used.  See \ref page_dev_uncrustify for details.</dd>
 
 <dt>`admin/copyright.py`</dt>
 <dd>This Python script adds and formats copyright headers in source files.
@@ -92,13 +93,14 @@ files that have local changes and checks that they conform to the prescribed
 style.  Optionally, the script can also apply changes to make the files
 conform.
 This script is automatically run by Jenkins to ensure that all commits adhere
-to the formatting guidelines.  If the uncrustify job does not succeed, it means
-that this script has something to complain.</dd>
+to \ref page_devstyle_formatting.  If the uncrustify job does not succeed, it
+means that this script has something to complain.
+See \ref page_dev_uncrustify for details.</dd>
 
 <dt>`admin/git-pre-commit`</dt>
 <dd>This sample git pre-commit hook can be used if one wants to apply
 `uncrustify.sh` automatically before every commit to check for formatting
-issues.</dd>
+issues.  See \ref page_dev_uncrustify for details.</dd>
 
 <dt>`docs/doxygen/includesorter.py`</dt>
 <dd>This Python script sorts and reformats \#include directives according to
@@ -119,7 +121,7 @@ checkers): \subpage page_dev_gmxtree.</dd>
 <dd>This `bash` script runs uncrustify/`copyright.py`/include sorter
 on all relevant files in the source tree (or in a particular directory).
 The script can also produce the list of files where these scripts are applied,
-for use with other scripts.</dd>
+for use with other scripts.  See \ref page_dev_uncrustify for details.</dd>
 
 <dt>git attributes</dt>
 <dd>git attributes (specified in `.gitattributes` files) are used to annotate
@@ -128,6 +130,9 @@ reformatting by the above scripts).  See `man gitattributes` for an overview of
 the mechanism.  We use the `filter` attribute to specify the type of automatic
 checking/formatting to apply.  Custom attributes are used for specifying some
 build system dependencies for easier processing in CMake.</dd>
+
+<dt>include-what-you-use</dt>
+<dd></dd>
 
 </dl>
 

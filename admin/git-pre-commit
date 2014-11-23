@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,28 +37,18 @@
 # changes through some formatting check.  Currently, it runs uncrustify and
 # checks copyright headers.
 #
-# By default, it does nothing.  To enable the script after copying it to
-# .git/hooks/pre-commit, you need to set
-#   git config hooks.uncrustifymode check
+# It needs to be copied as .git/hooks/pre-commit and configured with
 #   git config hooks.uncrustifypath /path/to/uncrustify
-# With this configuration, all source files modified in the commit are run
-# through uncrustify and checked for correct copyright headers
-# (see admin/uncrustify.sh for how this set of files is determined).
-# If any file is changed by uncrustify or has other problems, the names of
-# those files are reported and the commit is prevented.  The issues can be
-# fixed by running admin/uncrustify.sh manually.
+#   git config hooks.uncrustifymode check
+#   git config hooks.copyrightmode update
 #
-# To disable the hook, you can set
-#   git config hooks.uncrustifymode off
-# To disable it temporarily for a commit, set NO_FORMAT_CHECK environment
+# To disable the hook temporarily for a commit, set NO_FORMAT_CHECK environment
 # variable.  For example,
 #   NO_FORMAT_CHECK=1 git commit -a
 # You can also run git commit --no-verify, but that also disables other hooks,
-# such as the Change-Id hook used by gerrit.
+# such as the Change-Id hook used by Gerrit.
 #
-# The actual work is done by the admin/uncrustify.sh script, which gets
-# run with the 'check-index' action.
-# See the comments in that script for more information.
+# See docs/dev-manual/uncrustify.md for more details.
 
 if [ ! -z "$NO_FORMAT_CHECK" ]
 then
