@@ -33,6 +33,12 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# This script runs uncrustify, copyright header checks, or include sorter on
+# all applicable files in the source tree.
+#
+# See `reformat_all.sh -h` for a brief usage, and docs/dev-manual/uncrustify.md
+# for more details (docs/dev-manual/gmxtree.md for include sorter).
+
 function usage() {
     echo "usage: reformat_all.sh [-f|--force]"
     echo "           [--filter=(uncrustify|copyright|includesort)]"
@@ -56,6 +62,9 @@ for arg in "$@" ; do
         builddir=${arg#-B=}
     elif [[ "$arg" == "-f" || "$arg" == "--force" ]] ; then
         force=1
+    elif [[ "$arg" == "-h" || "$arg" == "--help" ]] ; then
+        usage
+        exit 0
     else
         echo "Unknown option: $arg"
         echo
