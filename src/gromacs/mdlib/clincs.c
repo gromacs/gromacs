@@ -464,7 +464,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
 
     if (dvdlambda != NULL)
     {
-#pragma omp barrier
+#pragma omp critical
         for (b = b0; b < b1; b++)
         {
             *dvdlambda -= sol[b]*lincsd->ddist[b];
