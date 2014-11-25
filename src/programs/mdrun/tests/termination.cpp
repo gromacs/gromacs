@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,43 +32,54 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MDLIB_MAIN_H
-#define GMX_MDLIB_MAIN_H
 
-#include <stdio.h>
-
-#include "gromacs/utility/basedefinitions.h"
-
-struct gmx_multisim_t;
-struct t_commrec;
-struct t_filenm;
-
-void gmx_log_open(const char *fn, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE**);
-/* Open the log file, if necessary (nprocs > 1) the logfile name is
- * communicated around the ring.
+/*! \internal \file
+ * \brief
+ * Tests for the mdrun termination functionality
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdrun_integration_tests
  */
+#include "gmxpre.h"
 
-void gmx_log_close(FILE *fp);
-/* Close the log file */
+#include <gtest/gtest.h>
 
-void check_multi_int(FILE *log, const gmx_multisim_t *ms,
-                     int val, const char *name,
-                     gmx_bool bQuiet);
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       gmx_int64_t val, const char *name,
-                       gmx_bool bQuiet);
-/* Check if val is the same on all processors for a mdrun -multi run
- * The string name is used to print to the log file and in a fatal error
- * if the val's don't match. If bQuiet is true and the check passes,
- * no output is written.
- */
+#include "testutils/testfilemanager.h"
 
-void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
-                      int nfile, const t_filenm fnm[]);
-/* Splits the communication into nsim separate simulations
- * and creates a communication structure between the master
- * these simulations.
- */
+#include "moduletest.h"
+#include "terminationhelper.h"
 
-#endif
+namespace gmx
+{
+namespace test
+{
+
+//! Build a simple .mdp file
+void organizeMdpFile(SimulationRunner *runner)
+{
+    // Make sure -maxh has a chance to propagate
+    runner->useStringAsMdpFile("nsteps = 100\n"
+                               "tcoupl = v-rescale\n"
+                               "tc-grps = System\n"
+                               "tau-t = 1\n"
+                               "ref-t = 298\n");
+}
+
+//! Convenience typedef
+typedef MdrunTestFixture MdrunTerminationTest;
+
+TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
+{
+    CommandLine       mdrunCaller;
+    mdrunCaller.append("mdrun");
+    TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
+
+    organizeMdpFile(&runner_);
+    EXPECT_EQ(0, runner_.callGrompp());
+
+    helper.runFirstMdrun(runner_.cptFileName_);
+    helper.runSecondMdrun();
+}
+
+} // namespace
+} // namespace

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,56 +34,54 @@
  */
 
 /*! \internal \file
- * \brief
- * Tests for the mdrun replica-exchange functionality
+ * \brief Defines functionality used to test mdrun termination
+ * functionality under different conditions
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "terminationhelper.h"
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/path.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "testutils/testfilemanager.h"
-
-#include "multisimtest.h"
 
 namespace gmx
 {
 namespace test
 {
 
-//! Convenience typedef
-typedef MultiSimTest ReplicaExchangeEnsembleTest;
-
-TEST_P(ReplicaExchangeEnsembleTest, ExitsNormally)
+TerminationHelper::TerminationHelper(TestFileManager  *fileManager,
+                                     CommandLine      *mdrunCaller,
+                                     SimulationRunner *runner)
+    : mdrunCaller_(mdrunCaller), runner_(runner)
 {
-    mdrunCaller_->addOption("-replex", 1);
-    runExitsNormallyTest();
+    runner_->cptFileName_ = fileManager->getTemporaryFilePath(".cpt");
+    runner_->useTopGroAndNdxFromDatabase("spc2");
 }
 
-/* Note, not all preprocessor implementations nest macro expansions
-   the same way / at all, if we would try to duplicate less code. */
-#if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables, ReplicaExchangeEnsembleTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
-#else
-INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables, ReplicaExchangeEnsembleTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
-#endif
-
-//! Convenience typedef
-typedef MultiSimTest ReplicaExchangeTerminationTest;
-
-TEST_F(ReplicaExchangeTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
+void TerminationHelper::runFirstMdrun(const std::string &expectedCptFileName)
 {
-    mdrunCaller_->addOption("-replex", 1);
-    runMaxhTest();
+    CommandLine firstPart(*mdrunCaller_);
+    // Stop after 0.036 ms, which should be short enough that
+    // numSteps isn't reached first.
+    firstPart.addOption("-maxh", 1e-7);
+    firstPart.addOption("-nstlist", 1);
+    firstPart.addOption("-cpo", runner_->cptFileName_);
+    ASSERT_EQ(0, runner_->callMdrun(firstPart));
+    EXPECT_EQ(true, File::exists(expectedCptFileName, File::returnFalseOnError)) << expectedCptFileName << " was not found";
+}
+
+void TerminationHelper::runSecondMdrun()
+{
+    CommandLine secondPart(*mdrunCaller_);
+    secondPart.addOption("-cpi", runner_->cptFileName_);
+    secondPart.addOption("-nsteps", 2);
+    ASSERT_EQ(0, runner_->callMdrun(secondPart));
 }
 
 } // namespace
