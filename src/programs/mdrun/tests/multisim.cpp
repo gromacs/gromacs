@@ -38,7 +38,7 @@
  * Tests for the mdrun multi-simulation functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 
@@ -72,6 +72,11 @@ namespace test
  * it is parameterized. */
 TEST_P(MultiSimTest, ExitsNormally)
 {
+    runExitsNormallyTest();
+}
+
+TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
+{
     if (size_ <= 1)
     {
         /* Can't test multi-sim without multiple ranks. */
@@ -79,13 +84,16 @@ TEST_P(MultiSimTest, ExitsNormally)
     }
 
     const char *pcoupl = GetParam();
-    organizeMdpFile(pcoupl);
+    // Do some different small numbers of steps in each simulation
+    int         numSteps = rank_ % 4;
+    organizeMdpFile(pcoupl, numSteps);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
     EXPECT_EQ(0, runner_.callGromppOnThisRank());
 
     // mdrun names the files without the rank suffix
     runner_.tprFileName_ = mdrunTprFileName_;
+    // TODO it would be preferable to be able to assert no error was given
     ASSERT_EQ(0, runner_.callMdrun(*mdrunCaller_));
 }
 
@@ -99,6 +107,14 @@ INSTANTIATE_TEST_CASE_P(InNvt, MultiSimTest,
 INSTANTIATE_TEST_CASE_P(DISABLED_InNvt, MultiSimTest,
                             ::testing::Values("pcoupl = no"));
 #endif
+
+//! Convenience typedef
+typedef MultiSimTest MultiSimTerminationTest;
+
+TEST_F(MultiSimTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
+{
+    runMaxhTest();
+}
 
 } // namespace
 } // namespace
