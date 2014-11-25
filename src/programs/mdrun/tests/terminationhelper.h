@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MDRUN_TESTS_MULTISIMTEST_H
-#define GMX_MDRUN_TESTS_MULTISIMTEST_H
 
 /*! \internal \file
- * \brief
- * Declares test fixture for the mdrun multi-simulation functionality
+ * \brief Declares functionality used to test mdrun termination
+ * functionality under different conditions
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
  */
-
-#include <memory>
-#include <string>
-
-#include <gtest/gtest.h>
+#ifndef GMX_MDRUN_TESTS_TERMINATIONHELPER_H
+#define GMX_MDRUN_TESTS_TERMINATIONHELPER_H
 
 #include "testutils/cmdlinetest.h"
 
@@ -57,49 +52,42 @@ namespace gmx
 namespace test
 {
 
-//! Convenience typedef
-typedef std::unique_ptr<CommandLine> CommandLinePointer;
-
-/*! \brief Test fixture for multi-sim functionality.
+/*! \brief Help test mdrun termination behaviour
  *
- * This is intended to be re-used also for tests of functionality that
- * are derived from multi-sim, e.g. REMD.
+ * This helper class provides re-usable code to ensure that some
+ * termination behaviour of mdrun works. It runs a simulation that
+ * stops after a very short -maxh time, writes a checkpoint, checks
+ * that the checkpoint exists, and then restarts with it (probably
+ * doing no MD steps in the restart).
+ *
+ * \todo This approach is not very elegant, but "stuff doesn't
+ * segfault or give a fatal error" is a useful result. We can improve
+ * it when we can mock out more do_md() functionality. Before that,
+ * we'd probably prefer not to run this test case in per-patchset
+ * verification, but this is the best we can do for now.
  *
  * \ingroup module_mdrun_integration_tests
  */
-class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
+class TerminationHelper
 {
     public:
         //! Constructor
-        MultiSimTest();
-
-        /*! \brief Organize the .mdp file for this rank
+        TerminationHelper(TestFileManager  *fileManager,
+                          CommandLine      *mdrunCaller,
+                          SimulationRunner *runner);
+        /*! \brief Do a short simulation, likely terminated by -maxh
          *
-         * For testing multi-simulation, this .mdp file is more
-         * complicated than it needs to be, but it does little harm,
-         * and doing it this way allows this function to be re-used
-         * for testing replica-exchange.
-         *
-         * \param controlVariable Allows parameterization to work with
-         * T, P or (later) lambda as the control variable, by passing a
-         * string with "mdp-param = value" such that different paths
-         * in init_replica_exchange() are followed.
-         * \param numSteps        Number of MD steps to perform.
-         */
-        void organizeMdpFile(const char *controlVariable,
-                             int         numSteps = 2);
-        //! Test that a basic simulation works
-        void runExitsNormallyTest();
-        //! Test that mdrun -maxh and restart works
-        void runMaxhTest();
-        //! Number of MPI ranks
-        int                size_;
-        //! MPI rank of this process
-        int                rank_;
-        //! Object for building the mdrun command line
-        CommandLinePointer mdrunCaller_;
-        //! Name of .tpr file to be used by mdrun
-        std::string        mdrunTprFileName_;
+         * \param[in] expectedCptFileName The name of the checkpoint
+         * file that mdrun will write (which has to be customizable,
+         * if we are testing a multi-simulation). */
+        void runFirstMdrun(const std::string &expectedCptFileName);
+        //! Check that the restart works, but don't do any more MD steps.
+        void runSecondMdrun();
+    protected:
+        //! Object to help call mdrun
+        CommandLine      *mdrunCaller_;
+        //! Object to coordinate running a simulation
+        SimulationRunner *runner_;
 };
 
 } // namespace
