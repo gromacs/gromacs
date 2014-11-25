@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,64 +36,51 @@
  */
 /*! \internal \file
  *
- * \brief This file defines functions for inter-rank signalling by mdrun.
+ * \brief This file defines functions for inter- and intra-simulation
+ * signalling by mdrun.
  *
  * This handles details of responding to termination conditions,
  * coordinating checkpoints, and coordinating multi-simulations.
  *
  * \author Berk Hess <hess@kth.se>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdlib
+ * \ingroup module_mdrunutility
  */
 
 #include "gmxpre.h"
 
-#include "mdrun_signalling.h"
+#include "signal.h"
 
 #include <algorithm>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-void init_global_signals(struct gmx_signalling_t *gs, const t_commrec *cr,
-                         const t_inputrec *ir, int repl_ex_nst)
+namespace gmx
 {
-    int i;
 
-    if (MULTISIM(cr))
-    {
-        gs->nstms = multisim_nstsimsync(cr, ir, repl_ex_nst);
-        if (debug)
-        {
-            fprintf(debug, "Syncing simulations for checkpointing and termination every %d steps\n", gs->nstms);
-        }
-    }
-    else
-    {
-        gs->nstms = 1;
-    }
-
-    for (i = 0; i < eglsNR; i++)
-    {
-        gs->sig[i] = 0;
-        gs->set[i] = 0;
-    }
-}
+SimulationSignaller::SimulationSignaller(SimulationSignals *signals,
+                                         const t_commrec   *cr,
+                                         bool               doInterSim,
+                                         bool               doIntraSim)
+    : signals_(signals), cr_(cr),
+      doInterSim_(doInterSim),
+      doIntraSim_(doInterSim || doIntraSim),
+      mpiBuffer_ {}
+{}
 
 gmx::ArrayRef<real>
-prepareSignalBuffer(struct gmx_signalling_t *gs)
+SimulationSignaller::getCommunicationBuffer()
 {
-    if (gs)
+    if (doIntraSim_)
     {
-        gmx::ArrayRef<signed char> sig(gs->sig);
-        gmx::ArrayRef<real>        temp(gs->mpiBuffer);
+        gmx::ArrayRef<real> temp(std::begin(mpiBuffer_), std::end(mpiBuffer_));
 
-        std::copy(sig.begin(), sig.end(), temp.begin());
+        std::transform(std::begin(*signals_), std::end(*signals_), std::begin(temp),
+                       [](const SimulationSignals::value_type &s) { return s.sig; });
 
         return temp;
     }
@@ -104,44 +91,59 @@ prepareSignalBuffer(struct gmx_signalling_t *gs)
 }
 
 void
-handleSignals(struct gmx_signalling_t  *gs,
-              const t_commrec          *cr,
-              bool                      bInterSimGS)
+SimulationSignaller::signalInterSim()
 {
-    /* Is the signal in one simulation independent of other simulations? */
-    bool bIsSignalLocal[eglsNR] = { false, false, true };
+    if (!doInterSim_)
+    {
+        return;
+    }
+    // The situations that lead to doInterSim_ == true without a
+    // multi-simulation begin active should already have issued an
+    // error at mdrun time in release mode, so there's no need for a
+    // release-mode assertion.
+    GMX_ASSERT(MULTISIM(cr_) != nullptr, "Cannot do inter-simulation signalling without a multi-simulation");
+    if (MASTER(cr_))
+    {
+        // Communicate the signals between the simulations.
+        gmx_sum_sim(eglsNR, mpiBuffer_.data(), cr_->ms);
+    }
+    // Communicate the signals from the master to the others.
+    gmx_bcast(eglsNR*sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_);
+}
 
-    if (!gs)
+void SimulationSignaller::setSignals()
+{
+    if (!doIntraSim_)
     {
         return;
     }
 
-    if (MULTISIM(cr) && bInterSimGS)
+    SimulationSignals &s = *signals_;
+    for (size_t i = 0; i < s.size(); i++)
     {
-        if (MASTER(cr))
+        if (doInterSim_ || s[i].isLocal)
         {
-            /* Communicate the signals between the simulations */
-            gmx_sum_sim(eglsNR, gs->mpiBuffer, cr->ms);
-        }
-        /* Communicate the signals from the master to the others */
-        gmx_bcast(eglsNR*sizeof(gs->mpiBuffer[0]), gs->mpiBuffer, cr);
-    }
-    for (int i = 0; i < eglsNR; i++)
-    {
-        if (bInterSimGS || bIsSignalLocal[i])
-        {
+            // Floating-point reduction of integer values is always
+            // exact, so we can use a simple cast.
+            signed char gsi = static_cast<signed char>(mpiBuffer_[i]);
+
             /* Set the communicated signal only when it is non-zero,
-             * since signals might not be processed at each MD step.
-             */
-            signed char gsi = (gs->mpiBuffer[i] >= 0.0 ?
-                               static_cast<signed char>(gs->mpiBuffer[i] + 0.5) :
-                               static_cast<signed char>(gs->mpiBuffer[i] - 0.5));
+             * since a previously set signal might not have been
+             * handled immediately. */
             if (gsi != 0)
             {
-                gs->set[i] = gsi;
+                s[i].set = gsi;
             }
-            /* Turn off the local signal */
-            gs->sig[i] = 0;
+            // Turn off any local signal now that it has been processed.
+            s[i].sig = 0;
         }
     }
 }
+
+void SimulationSignaller::finalizeSignals()
+{
+    signalInterSim();
+    setSignals();
+}
+
+} // namespace
