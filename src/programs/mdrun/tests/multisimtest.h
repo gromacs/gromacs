@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,8 +77,10 @@ class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
          * T, P or (later) lambda as the control variable, by passing a
          * string with "mdp-param = value" such that different paths
          * in init_replica_exchange() are followed.
+         * \param numSteps        Number of MD steps to perform.
          */
-        void organizeMdpFile(const char *controlVariable);
+        void organizeMdpFile(const char *controlVariable,
+                             int         numSteps = 2);
 
         //! Number of MPI ranks
         int                size_;
