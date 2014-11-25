@@ -54,28 +54,13 @@
 
 #include "gromacs/legacyheaders/md_support.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-void init_global_signals(struct gmx_signalling_t *gs, const t_commrec *cr,
-                         const t_inputrec *ir, int repl_ex_nst)
+void init_mdrun_signals(struct gmx_signalling_t *gs)
 {
-    int i;
-
-    if (MULTISIM(cr))
-    {
-        gs->nstms = multisim_nstsimsync(cr, ir, repl_ex_nst);
-        if (debug)
-        {
-            fprintf(debug, "Syncing simulations for checkpointing and termination every %d steps\n", gs->nstms);
-        }
-    }
-    else
-    {
-        gs->nstms = 1;
-    }
-
-    for (i = 0; i < eglsNR; i++)
+    GMX_RELEASE_ASSERT(gs != NULL, "Attempted to initialize invalid signalling object");
+    for (int i = 0; i < eglsNR; i++)
     {
         gs->sig[i] = 0;
         gs->set[i] = 0;
@@ -83,11 +68,13 @@ void init_global_signals(struct gmx_signalling_t *gs, const t_commrec *cr,
 }
 
 real *
-prepareSignalBuffer(struct gmx_signalling_t *gs)
+prepareSignalBuffer(struct gmx_signalling_t *gs, bool bDoSignalling)
 {
     real *buffer = NULL;
 
-    if (gs)
+    GMX_RELEASE_ASSERT(gs != NULL, "Attempted to use invalid signalling object");
+
+    if (bDoSignalling)
     {
         std::copy(gs->sig, gs->sig + eglsNR, gs->mpiBuffer);
         buffer = gs->mpiBuffer;
@@ -97,19 +84,23 @@ prepareSignalBuffer(struct gmx_signalling_t *gs)
 }
 
 void
-handleSignals(struct gmx_signalling_t  *gs,
-              const t_commrec          *cr,
-              bool                      bInterSimGS)
+handleSignals(struct gmx_signalling_t *gs,
+              const t_commrec         *cr,
+              bool                     bIntraSimSignal,
+              bool                     bInterSimSignal)
 {
     /* Is the signal in one simulation independent of other simulations? */
     bool bIsSignalLocal[eglsNR] = { false, false, true };
+    bool bDoSignalling          = bIntraSimSignal || bInterSimSignal;
 
-    if (!gs)
+    if (!bDoSignalling)
     {
         return;
     }
 
-    if (MULTISIM(cr) && bInterSimGS)
+    GMX_RELEASE_ASSERT(gs != NULL, "Attempted to use invalid signalling object");
+
+    if (MULTISIM(cr) && bInterSimSignal)
     {
         if (MASTER(cr))
         {
@@ -121,7 +112,7 @@ handleSignals(struct gmx_signalling_t  *gs,
     }
     for (int i = 0; i < eglsNR; i++)
     {
-        if (bInterSimGS || bIsSignalLocal[i])
+        if (bInterSimSignal || (bIntraSimSignal && bIsSignalLocal[i]))
         {
             /* Set the communicated signal only when it is non-zero,
              * since signals might not be processed at each MD step.
