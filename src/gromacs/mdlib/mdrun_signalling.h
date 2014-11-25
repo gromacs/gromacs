@@ -51,7 +51,6 @@
 
 #include <vector>
 
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/utility/real.h"
 
 struct t_commrec;
@@ -68,21 +67,17 @@ enum {
 
 /*! \internal \brief Object used by mdrun ranks to signal to each other */
 struct gmx_signalling_t {
-    int nstms;       /**< The frequency for inter-simulation communication */
     int sig[eglsNR]; /**< The signal set by this rank in do_md */
     int set[eglsNR]; /**< The communicated signal, equal for all ranks once communication has occurred */
 };
 
 /*! \brief Construct a struct gmx_signalling_t */
-void init_global_signals(struct gmx_signalling_t *gs,
-                         const t_commrec         *cr,
-                         const t_inputrec        *ir,
-                         int                      repl_ex_nst);
+void init_mdrun_signals(struct gmx_signalling_t *gs);
 
 /*! \brief Construct a vector of reals in which inter- and
     intra-simulation signals will be communicated. */
 std::vector<real>
-prepareSignalBuffer(const struct gmx_signalling_t *gs);
+prepareSignalBuffer(const struct gmx_signalling_t *gs, bool bDoSignalling);
 
 /*! \brief Handle intra- and inter-simulation signals recieved
  *
@@ -93,9 +88,10 @@ prepareSignalBuffer(const struct gmx_signalling_t *gs);
  * Then, set the flags that mdrun will use to respond to the signals
  * received. */
 void
-handleSignals(struct gmx_signalling_t  *gs,
-              const t_commrec          *cr,
-              bool                      bInterSimGS,
-              std::vector<real>        *buffer);
+handleSignals(struct gmx_signalling_t *gs,
+              const t_commrec         *cr,
+              bool                     bIntraSimSignal,
+              bool                     bInterSimSignal,
+              std::vector<real>       *buffer);
 
 #endif
