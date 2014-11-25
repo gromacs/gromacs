@@ -76,12 +76,12 @@
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
+#include "gromacs/mdlib/signal.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
@@ -123,6 +123,8 @@
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
+
+using gmx::SimulationSignaller;
 
 /*! \brief Check whether bonded interactions are missing, if appropriate
  *
@@ -229,7 +231,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD,
                     bFirstStep, startingFromCheckpoint, bInitStep, bLastStep = FALSE,
-                    bBornRadii;
+                    bBornRadii, bUsingEnsembleRestraints;
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
                       bForceUpdate = FALSE, bCPT;
@@ -252,7 +254,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_global_stat_t gstat;
     gmx_update_t     *upd   = NULL;
     t_graph          *graph = NULL;
-    gmx_signalling_t  gs;
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind;
     gmx_shellfc_t    *shellfc;
@@ -273,9 +274,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int             **trotter_seq;
     char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
     int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
-    gmx_int64_t       multisim_nsteps        = -1;                 /* number of steps to do  before first multisim
-                                                                          simulation stops. If equal to zero, don't
-                                                                          communicate any more between multisims.*/
+
+
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t *pme_loadbal      = NULL;
     gmx_bool              bPMETune         = FALSE;
@@ -295,8 +295,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
        code. So we do that alongside the first global energy reduction
        after a new DD is made. These variables handle whether the
        check happens, and the result it returns. */
-    bool shouldCheckNumberOfBondedInteractions = false;
-    int  totalNumberOfBondedInteractions       = -1;
+    bool              shouldCheckNumberOfBondedInteractions = false;
+    int               totalNumberOfBondedInteractions       = -1;
+
+    SimulationSignals signals;
+    // Most global communnication stages don't propagate mdrun
+    // signals, and will use this object to achieve that.
+    SimulationSignaller nullSignaller(nullptr, nullptr, false, false);
 
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
@@ -592,7 +597,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                     NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                    constr, NULL, FALSE, state->box,
+                    constr, &nullSignaller, state->box,
                     &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags
                     | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
@@ -608,7 +613,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, NULL, FALSE, state->box,
+                        constr, &nullSignaller, state->box,
                         NULL, &bSumEkinhOld,
                         cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
     }
@@ -759,22 +764,42 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
+    // TODO This implementation of ensemble orientation restraints is nasty because
+    // a user can't just do multi-sim with single-sim orientation restraints.
+    bUsingEnsembleRestraints = (fcd->disres.nsystems > 1) || (cr->ms && fcd->orires.nr);
 
-    init_global_signals(&gs, cr, ir, repl_ex_nst);
+    // TODO ensemble restraints should act here also
+    {
+        bool checkpointIsLocal    = (repl_ex_nst <= 0) || bUsingEnsembleRestraints;
+        bool stopConditionIsLocal = (repl_ex_nst <= 0) || bUsingEnsembleRestraints;
+        bool resetCountersIsLocal = true;
+        signals[eglsCHKPT]         =  SimulationSignal(checkpointIsLocal);
+        signals[eglsSTOPCOND]      = SimulationSignal(stopConditionIsLocal);
+        signals[eglsRESETCOUNTERS] = SimulationSignal(resetCountersIsLocal);
+    }
 
     step     = ir->init_step;
     step_rel = 0;
 
-    if (MULTISIM(cr) && (repl_ex_nst <= 0 ))
+    // TODO extract this to new multi-simulation module
+    if (MASTER(cr) && MULTISIM(cr) && (repl_ex_nst <= 0 ))
     {
-        /* check how many steps are left in other sims */
-        multisim_nsteps = get_multisim_nsteps(cr, ir->nsteps);
+        if (!multisim_int_all_are_equal(cr->ms, ir->nsteps))
+        {
+            md_print_info(cr, fplog,
+                          "Note: The number of steps is not consistent across multi simulations,\n"
+                          "but we are proceeding anyway!\n");
+        }
+        if (!multisim_int_all_are_equal(cr->ms, ir->init_step))
+        {
+            md_print_info(cr, fplog,
+                          "Note: The initial step is not consistent across multi simulations,\n"
+                          "but we are proceeding anyway!\n");
+        }
     }
 
-
     /* and stop now if we should */
-    bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
-                 ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
+    bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep)
     {
 
@@ -817,6 +842,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             t         = t0 + step*ir->delta_t;
         }
 
+        // TODO Refactor this, so that nstfep does not need a default value of zero
         if (ir->efep != efepNO || ir->bSimTemp)
         {
             /* find and set the current lambdas.  If rerunning, we either read in a state, or a lambda value,
@@ -902,7 +928,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             /* for rerun MD always do Neighbour Searching */
             bNS      = (bFirstStep || ir->nstlist != 0);
-            bNStList = bNS;
         }
         else
         {
@@ -910,30 +935,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
         }
 
-        /* check whether we should stop because another simulation has
-           stopped. */
-        if (MULTISIM(cr))
-        {
-            if ( (multisim_nsteps >= 0) &&  (step_rel >= multisim_nsteps)  &&
-                 (multisim_nsteps != ir->nsteps) )
-            {
-                if (bNS)
-                {
-                    if (MASTER(cr))
-                    {
-                        fprintf(stderr,
-                                "Stopping simulation %d because another one has finished\n",
-                                cr->ms->sim);
-                    }
-                    bLastStep         = TRUE;
-                    gs.sig[eglsCHKPT] = 1;
-                }
-            }
-        }
-
-        /* < 0 means stop after this step, > 0 means stop at next NS step */
-        if ( (gs.set[eglsSTOPCOND] < 0) ||
-             ( (gs.set[eglsSTOPCOND] > 0) && (bNStList || ir->nstlist == 0) ) )
+        /* < 0 means stop at next step, > 0 means stop at next NS step */
+        if ( (signals[eglsSTOPCOND].set < 0) ||
+             ( (signals[eglsSTOPCOND].set > 0 ) && ( bNS || ir->nstlist == 0)))
         {
             bLastStep = TRUE;
         }
@@ -1011,7 +1015,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
-                            constr, NULL, FALSE, state->box,
+                            constr, &nullSignaller, state->box,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
             checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
@@ -1025,12 +1029,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        bCPT = (((gs.set[eglsCHKPT] && (bNS || ir->nstlist == 0)) ||
+        bCPT = (((signals[eglsCHKPT].set && (bNS || ir->nstlist == 0)) ||
                  (bLastStep && (Flags & MD_CONFOUT))) &&
                 step > ir->init_step && !bRerunMD);
         if (bCPT)
         {
-            gs.set[eglsCHKPT] = 0;
+            signals[eglsCHKPT].set = 0;
         }
 
         /* Determine the energy and pressure:
@@ -1168,7 +1172,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 wallcycle_stop(wcycle, ewcUPDATE);
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, NULL, FALSE, state->box,
+                                constr, &nullSignaller, state->box,
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | CGLO_ENERGY
@@ -1216,7 +1220,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     /* This may not be quite working correctly yet . . . . */
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                     wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
-                                    constr, NULL, FALSE, state->box,
+                                    constr, &nullSignaller, state->box,
                                     NULL, &bSumEkinhOld,
                                     CGLO_GSTAT | CGLO_TEMPERATURE);
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1295,18 +1299,18 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             int nsteps_stop = -1;
 
-            /* this is just make gs.sig compatible with the hack
-               of sending signals around by MPI_Reduce with together with
+            /* this just makes signals[].sig compatible with the hack
+               of sending signals around by MPI_Reduce together with
                other floats */
             if (gmx_get_stop_condition() == gmx_stop_cond_next_ns)
             {
-                gs.sig[eglsSTOPCOND] = 1;
-                nsteps_stop          = std::max(ir->nstlist, 2*nstglobalcomm);
+                signals[eglsSTOPCOND].sig = 1;
+                nsteps_stop               = std::max(ir->nstlist, 2*nstglobalcomm);
             }
             if (gmx_get_stop_condition() == gmx_stop_cond_next)
             {
-                gs.sig[eglsSTOPCOND] = -1;
-                nsteps_stop          = nstglobalcomm + 1;
+                signals[eglsSTOPCOND].sig = -1;
+                nsteps_stop               = nstglobalcomm + 1;
             }
             if (fplog)
             {
@@ -1323,10 +1327,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && elapsed_time > max_hours*60.0*60.0*0.99) &&
-                 gs.sig[eglsSTOPCOND] == 0 && gs.set[eglsSTOPCOND] == 0)
+                 signals[eglsSTOPCOND].sig == 0 && signals[eglsSTOPCOND].set == 0)
         {
             /* Signal to terminate the run */
-            gs.sig[eglsSTOPCOND] = 1;
+            signals[eglsSTOPCOND].sig = 1;
             if (fplog)
             {
                 fprintf(fplog, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n", gmx_step_str(step, sbuf), max_hours*0.99);
@@ -1338,7 +1342,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             elapsed_time > max_hours*60.0*60.0*0.495)
         {
             /* Set flag that will communicate the signal to all ranks in the simulation */
-            gs.sig[eglsRESETCOUNTERS] = 1;
+            signals[eglsRESETCOUNTERS].sig = 1;
         }
 
         /* In parallel we only have to check for checkpointing in steps
@@ -1349,9 +1353,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                            cpt_period >= 0 &&
                            (cpt_period == 0 ||
                             elapsed_time >= nchkpt*cpt_period*60.0)) &&
-            gs.set[eglsCHKPT] == 0)
+            signals[eglsCHKPT].set == 0)
         {
-            gs.sig[eglsCHKPT] = 1;
+            signals[eglsCHKPT].sig = 1;
         }
 
         /* #########   START SECOND UPDATE STEP ################# */
@@ -1441,7 +1445,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* just compute the kinetic energy at the half step to perform a trotter step */
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, NULL, FALSE, lastbox,
+                                constr, &nullSignaller, lastbox,
                                 NULL, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
                                 );
@@ -1519,11 +1523,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          */
         if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)))
         {
+            // Organize to do signalling on steps if and when algorithms require it.
+            bool                doInterSimSignal = (step_rel > 0 && bDoReplEx) || bUsingEnsembleRestraints;
+            bool                doIntraSimSignal = (0 == step_rel % nstglobalcomm);
+
+            SimulationSignaller signaller(&signals, cr, doInterSimSignal, doIntraSimSignal);
+
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                            constr, &gs,
-                            (step_rel % gs.nstms == 0) &&
-                            (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
+                            constr, &signaller,
                             lastbox,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             (bGStat ? CGLO_GSTAT : 0)
@@ -1740,7 +1748,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* If it is time to reset counters, set a flag that remains
            true until counters actually get reset */
         if (step_rel == wcycle_get_reset_counters(wcycle) ||
-            gs.set[eglsRESETCOUNTERS] != 0)
+            signals[eglsRESETCOUNTERS].set != 0)
         {
             if (pme_loadbal_is_active(pme_loadbal))
             {
@@ -1769,9 +1777,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* Correct max_hours for the elapsed time */
             max_hours                -= elapsed_time/(60.0*60.0);
             /* If mdrun -maxh -resethway was active, it can only trigger once */
-            bResetCountersHalfMaxH    = FALSE; /* TODO move this to where gs.sig[eglsRESETCOUNTERS] is set */
+            bResetCountersHalfMaxH    = FALSE; /* TODO move this to where signals[eglsRESETCOUNTERS].sig is set */
             /* Reset can only happen once, so clear the triggering flag. */
-            gs.set[eglsRESETCOUNTERS] = 0;
+            signals[eglsRESETCOUNTERS].set = 0;
         }
 
         /* If bIMD is TRUE, the master updates the IMD energy record and sends positions to VMD client */

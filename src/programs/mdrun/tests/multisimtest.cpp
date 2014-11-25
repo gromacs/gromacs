@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,12 +89,13 @@ MultiSimTest::MultiSimTest() : size_(gmx_node_num()),
     mdrunCaller_->addOption("-multi", size_);
 }
 
-void MultiSimTest::organizeMdpFile(const char *controlVariable)
+void MultiSimTest::organizeMdpFile(const char *controlVariable,
+                                   int         numSteps)
 {
     const real  baseTemperature = 298;
     const real  basePressure    = 1;
     std::string mdpFileContents =
-        formatString("nsteps = 2\n"
+        formatString("nsteps = %d\n"
                      "nstlog = 1\n"
                      "nstcalcenergy = 1\n"
                      "tcoupl = v-rescale\n"
@@ -110,6 +111,7 @@ void MultiSimTest::organizeMdpFile(const char *controlVariable)
                      "gen-temp = %f\n"
                      // control variable specification
                      "%s\n",
+                     numSteps,
                      baseTemperature + 0.0001*rank_,
                      basePressure * std::pow(1.01, rank_),
                      /* Set things up so that the initial KE decreases with

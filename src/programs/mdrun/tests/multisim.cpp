@@ -89,6 +89,28 @@ TEST_P(MultiSimTest, ExitsNormally)
     ASSERT_EQ(0, runner_.callMdrun(*mdrunCaller_));
 }
 
+TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
+{
+    if (size_ <= 1)
+    {
+        /* Can't test multi-sim without multiple ranks. */
+        return;
+    }
+
+    const char *pcoupl = GetParam();
+    // Do some different small numbers of steps in each simulation
+    int         numSteps = rank_ % 4;
+    organizeMdpFile(pcoupl, numSteps);
+    /* Call grompp on every rank - the standard callGrompp() only runs
+       grompp on rank 0. */
+    EXPECT_EQ(0, runner_.callGromppOnThisRank());
+
+    // mdrun names the files without the rank suffix
+    runner_.tprFileName_ = mdrunTprFileName_;
+    // TODO it would be preferable to be able to assert no error was given
+    ASSERT_EQ(0, runner_.callMdrun(*mdrunCaller_));
+}
+
 /* Note, not all preprocessor implementations nest macro expansions
    the same way / at all, if we would try to duplicate less code. */
 #if GMX_LIB_MPI

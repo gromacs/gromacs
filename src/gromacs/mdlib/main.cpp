@@ -100,6 +100,7 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     }
 }
 
+// TODO move this to multi-sim module
 void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
                      const char *name,
                      gmx_bool bQuiet)
@@ -151,6 +152,7 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
     sfree(ibuf);
 }
 
+// TODO move this to multi-sim module
 void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
                        gmx_int64_t val, const char *name,
                        gmx_bool bQuiet)
@@ -189,6 +191,8 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     }
     else
     {
+        // TODO Part of this error message would also be good to go to
+        // stderr (from one rank of one sim only)
         if (NULL != log)
         {
             fprintf(log, "\n%s is not equal for all subsystems\n", name);
@@ -267,6 +271,7 @@ void gmx_log_close(FILE *fp)
     }
 }
 
+// TODO move this to multi-sim module
 void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
                       int nfile, const t_filenm fnm[], gmx_bool bParFn)
 {

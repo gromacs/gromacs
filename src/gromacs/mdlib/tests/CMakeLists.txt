@@ -34,4 +34,5 @@
 
 gmx_add_unit_test(MdlibUnitTest mdlib-test
                   settle.cpp
-                  shake.cpp)
+                  shake.cpp
+                  signal.cpp)
