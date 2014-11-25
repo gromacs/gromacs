@@ -176,59 +176,56 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
                     bFirstStep, bStateFromCP, bStateFromTPX, bInitStep, bLastStep,
                     bBornRadii, bStartingFromCpt;
-    gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
-    gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
-                      bForceUpdate = FALSE, bCPT;
-    gmx_bool          bMasterState;
-    int               force_flags, cglo_flags;
-    tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
-    int               i, m;
-    t_trxstatus      *status;
-    rvec              mu_tot;
-    t_vcm            *vcm;
-    t_state          *bufstate = NULL;
-    matrix            pcoupl_mu, M;
-    t_trxframe        rerun_fr;
-    gmx_repl_ex_t     repl_ex = NULL;
-    int               nchkpt  = 1;
-    gmx_localtop_t   *top;
-    t_mdebin         *mdebin   = NULL;
-    t_state          *state    = NULL;
-    rvec             *f_global = NULL;
-    gmx_enerdata_t   *enerd;
-    rvec             *f = NULL;
-    gmx_global_stat_t gstat;
-    gmx_update_t      upd   = NULL;
-    t_graph          *graph = NULL;
-    gmx_signalling_t  gs;
-    gmx_groups_t     *groups;
-    gmx_ekindata_t   *ekind, *ekind_save;
-    gmx_shellfc_t     shellfc;
-    int               count, nconverged = 0;
-    double            tcount                 = 0;
-    gmx_bool          bConverged             = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bResetCountersHalfMaxH = FALSE;
-    gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
-    gmx_bool          bUpdateDoLR;
-    real              dvdl_constr;
-    rvec             *cbuf = NULL;
-    matrix            lastbox;
-    real              veta_save, scalevir, tracevir;
-    real              vetanew = 0;
-    int               lamnew  = 0;
+    gmx_bool             bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
+    gmx_bool             do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
+                         bForceUpdate = FALSE, bCPT;
+    gmx_bool             bMasterState;
+    int                  force_flags, cglo_flags;
+    tensor               force_vir, shake_vir, total_vir, tmp_vir, pres;
+    int                  i, m;
+    t_trxstatus         *status;
+    rvec                 mu_tot;
+    t_vcm               *vcm;
+    t_state             *bufstate = NULL;
+    matrix               pcoupl_mu, M;
+    t_trxframe           rerun_fr;
+    gmx_repl_ex_t        repl_ex = NULL;
+    int                  nchkpt  = 1;
+    gmx_localtop_t      *top;
+    t_mdebin            *mdebin   = NULL;
+    t_state             *state    = NULL;
+    rvec                *f_global = NULL;
+    gmx_enerdata_t      *enerd;
+    rvec                *f = NULL;
+    gmx_global_stat_t    gstat;
+    gmx_update_t         upd   = NULL;
+    t_graph             *graph = NULL;
+    gmx_signalling_t     gs;
+    gmx_groups_t        *groups;
+    gmx_ekindata_t      *ekind, *ekind_save;
+    gmx_shellfc_t        shellfc;
+    int                  count, nconverged = 0;
+    double               tcount                 = 0;
+    gmx_bool             bConverged             = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool             bResetCountersHalfMaxH = FALSE;
+    gmx_bool             bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
+    gmx_bool             bUpdateDoLR;
+    real                 dvdl_constr;
+    rvec                *cbuf = NULL;
+    matrix               lastbox;
+    real                 veta_save, scalevir, tracevir;
+    real                 vetanew = 0;
+    int                  lamnew  = 0;
     /* for FEP */
-    int               nstfep;
-    double            cycles;
-    real              saved_conserved_quantity = 0;
-    real              last_ekin                = 0;
-    t_extmass         MassQ;
-    int             **trotter_seq;
-    char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
-    int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
-    gmx_iterate_t     iterate;
-    gmx_int64_t       multisim_nsteps = -1;                        /* number of steps to do  before first multisim
-                                                                          simulation stops. If equal to zero, don't
-                                                                          communicate any more between multisims.*/
+    int                  nstfep;
+    double               cycles;
+    real                 saved_conserved_quantity = 0;
+    real                 last_ekin                = 0;
+    t_extmass            MassQ;
+    int                **trotter_seq;
+    char                 sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
+    int                  handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
+    gmx_iterate_t        iterate;
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
@@ -239,8 +236,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
-    int chkpt_ret;
+    int      chkpt_ret;
 #endif
+    gmx_bool bIntraSimSignal, bInterSimSignal;
 
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
@@ -569,7 +567,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                     NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                    constr, NULL, FALSE, state->box,
+                    constr, &gs, FALSE, FALSE, state->box,
                     top_global, &bSumEkinhOld, cglo_flags);
     if (ir->eI == eiVVAK)
     {
@@ -581,7 +579,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, NULL, FALSE, state->box,
+                        constr, &gs, FALSE, FALSE, state->box,
                         top_global, &bSumEkinhOld,
                         cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
     }
@@ -742,21 +740,30 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
 
-    init_global_signals(&gs, cr, ir, repl_ex_nst);
+    init_mdrun_signals(&gs);
+
+    // TODO extract this to new multi-simulation module
+    if (MASTER(cr) && MULTISIM(cr) && (repl_ex_nst <= 0 ))
+    {
+        if (multisim_int_is_not_equal(cr->ms, ir->nsteps))
+        {
+            md_print_info(cr, fplog,
+                          "Note: The number of steps was not consistent across multi simulations,\n"
+                          "but we are proceeding anyway!\n");
+        }
+        if (multisim_int_is_not_equal(cr->ms, ir->init_step))
+        {
+            md_print_info(cr, fplog,
+                          "Note: The initial step was not consistent across multi simulations,\n"
+                          "but we are proceeding anyway!\n");
+        }
+    }
 
     step     = ir->init_step;
     step_rel = 0;
 
-    if (MULTISIM(cr) && (repl_ex_nst <= 0 ))
-    {
-        /* check how many steps are left in other sims */
-        multisim_nsteps = get_multisim_nsteps(cr, ir->nsteps);
-    }
-
-
     /* and stop now if we should */
-    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
-                 ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
+    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep || (bRerunMD && bNotLastFrame))
     {
 
@@ -879,30 +886,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bNS = (bFirstStep || bExchanged || bNeedRepartition || bNStList || bDoFEP);
         }
 
-        /* check whether we should stop because another simulation has
-           stopped. */
-        if (MULTISIM(cr))
-        {
-            if ( (multisim_nsteps >= 0) &&  (step_rel >= multisim_nsteps)  &&
-                 (multisim_nsteps != ir->nsteps) )
-            {
-                if (bNS)
-                {
-                    if (MASTER(cr))
-                    {
-                        fprintf(stderr,
-                                "Stopping simulation %d because another one has finished\n",
-                                cr->ms->sim);
-                    }
-                    bLastStep         = TRUE;
-                    gs.sig[eglsCHKPT] = 1;
-                }
-            }
-        }
+        bIntraSimSignal = (0 == step_rel % nstglobalcomm);
+        bInterSimSignal = (step_rel > 0) && bDoReplEx;
 
         /* < 0 means stop at next step, > 0 means stop at next NS step */
-        if ( (gs.set[eglsSTOPCOND] < 0) ||
-             ( (gs.set[eglsSTOPCOND] > 0) && (bNStList || ir->nstlist == 0) ) )
+        if ( (gs.set[eglsSTOPCOND] < 0 ) ||
+             ( (gs.set[eglsSTOPCOND] > 0 ) && ( bNS || ir->nstlist == 0)) )
         {
             bLastStep = TRUE;
         }
@@ -975,7 +964,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
-                            constr, NULL, FALSE, state->box,
+                            constr, &gs, FALSE, FALSE, state->box,
                             top_global, &bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
@@ -1204,7 +1193,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     wallcycle_stop(wcycle, ewcUPDATE);
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                    constr, NULL, FALSE, state->box,
+                                    constr, &gs, FALSE, FALSE, state->box,
                                     top_global, &bSumEkinhOld,
                                     cglo_flags
                                     | CGLO_ENERGY
@@ -1242,7 +1231,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             /* This may not be quite working correctly yet . . . . */
                             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
-                                            constr, NULL, FALSE, state->box,
+                                            constr, &gs, FALSE, FALSE, state->box,
                                             top_global, &bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
                             wallcycle_start(wcycle, ewcUPDATE);
@@ -1340,8 +1329,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 #endif
             )
         {
-            /* this is just make gs.sig compatible with the hack
-               of sending signals around by MPI_Reduce with together with
+            /* this just makes gs.sig compatible with the hack
+               of sending signals around by MPI_Reduce together with
                other floats */
             if (gmx_get_stop_condition() == gmx_stop_cond_next_ns)
             {
@@ -1530,7 +1519,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     /* just compute the kinetic energy at the half step to perform a trotter step */
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                    constr, NULL, FALSE, lastbox,
+                                    constr, &gs, FALSE, FALSE, lastbox,
                                     top_global, &bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE
                                     );
@@ -1616,9 +1605,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr,
-                                bFirstIterate ? &gs : NULL,
-                                (step_rel % gs.nstms == 0) &&
-                                (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
+                                &gs,
+                                bFirstIterate ? bIntraSimSignal : false,
+                                bFirstIterate ? bInterSimSignal : false,
                                 lastbox,
                                 top_global, &bSumEkinhOld,
                                 cglo_flags
