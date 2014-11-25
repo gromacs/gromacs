@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,23 +78,19 @@ enum {
  * Note that xlc on BG/Q requires sig to be of size char (see unit tests
  * of ArrayRef for details). */
 struct gmx_signalling_t {
-    int         nstms;             /**< The frequency for inter-simulation communication */
     signed char sig[eglsNR];       /**< The signal set by this rank in do_md */
     signed char set[eglsNR];       /**< The communicated signal, equal for all ranks once communication has occurred */
     real        mpiBuffer[eglsNR]; /**< Buffer for communication */
 };
 
 /*! \brief Construct a struct gmx_signalling_t */
-void init_global_signals(struct gmx_signalling_t *gs,
-                         const t_commrec         *cr,
-                         const t_inputrec        *ir,
-                         int                      repl_ex_nst);
+void init_mdrun_signals(struct gmx_signalling_t *gs);
 
 /*! \brief Fill the array of reals in which inter- and
  * intra-simulation signals will be communicated
  * with the signal values to be sent. */
 gmx::ArrayRef<real>
-prepareSignalBuffer(struct gmx_signalling_t *gs);
+prepareSignalBuffer(struct gmx_signalling_t *gs, bool bDoSignalling);
 
 /*! \brief Handle intra- and inter-simulation signals recieved
  *
@@ -105,8 +101,9 @@ prepareSignalBuffer(struct gmx_signalling_t *gs);
  * Then, set the flags that mdrun will use to respond to the signals
  * received. */
 void
-handleSignals(struct gmx_signalling_t  *gs,
-              const t_commrec          *cr,
-              bool                      bInterSimGS);
+handleSignals(struct gmx_signalling_t *gs,
+              const t_commrec         *cr,
+              bool                     bIntraSimSignal,
+              bool                     bInterSimSignal);
 
 #endif
