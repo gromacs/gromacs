@@ -307,6 +307,31 @@ std::string Path::stripExtension(const std::string &path)
     return path.substr(0, extPos);
 }
 
+std::string Path::concatenateBeforeExtension(const std::string &input, const std::string &stringToAdd)
+{
+    std::string output;
+    size_t      dirSeparatorPosition = input.find_last_of(cDirSeparators);
+    size_t      extSeparatorPosition = input.find_last_of('.');
+    bool        havePath             = (dirSeparatorPosition != std::string::npos);
+    // Make sure that if there's an extension-separator character,
+    // that it follows the last path-separator character (if any),
+    // before we interpret it as an extension separator.
+    bool haveExtension = (extSeparatorPosition != std::string::npos &&
+                          ((!havePath ||
+                            (extSeparatorPosition > dirSeparatorPosition))));
+    if (!haveExtension)
+    {
+        output = input + stringToAdd;
+    }
+    else
+    {
+        output  = input.substr(0, extSeparatorPosition);
+        output += stringToAdd;
+        output += std::string(input, extSeparatorPosition);
+    }
+    return output;
+}
+
 std::string Path::normalize(const std::string &path)
 {
     std::string result(path);
