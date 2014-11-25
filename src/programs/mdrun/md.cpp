@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,7 +80,6 @@
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/globsig.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
@@ -94,6 +93,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -198,7 +198,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_global_stat_t gstat;
     gmx_update_t      upd   = NULL;
     t_graph          *graph = NULL;
-    globsig_t         gs;
+    gmx_signalling_t  gs;
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind, *ekind_save;
     gmx_shellfc_t     shellfc;
