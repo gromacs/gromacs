@@ -41,12 +41,13 @@
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vcm.h"
-#include "gromacs/legacyheaders/types/globsig.h"
 #include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmx_signalling_t;
 
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.
@@ -111,10 +112,6 @@ int multisim_nstsimsync(const t_commrec *cr,
                         const t_inputrec *ir, int repl_ex_nst);
 /* Determine the interval for inter-simulation communication */
 
-void init_global_signals(globsig_t *gs, const t_commrec *cr,
-                         const t_inputrec *ir, int repl_ex_nst);
-/* Constructor for globsig_t */
-
 void copy_coupling_state(t_state *statea, t_state *stateb,
                          gmx_ekindata_t *ekinda, gmx_ekindata_t *ekindb, t_grpopts* opts);
 /* Copy stuff from state A to state B */
@@ -125,7 +122,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
-                     globsig_t *gs, gmx_bool bInterSimGS,
+                     struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
                      matrix box, gmx_mtop_t *top_global, gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
 
