@@ -50,7 +50,6 @@
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/globsig.h"
 #include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/timing/wallcycle.h"
 
