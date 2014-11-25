@@ -189,6 +189,8 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     }
     else
     {
+        // TODO Part of this error message would also be good to go to
+        // stderr (from one rank of one sim only)
         if (NULL != log)
         {
             fprintf(log, "\n%s is not equal for all subsystems\n", name);
