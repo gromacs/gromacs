@@ -40,6 +40,7 @@
 #include "gromacs/legacyheaders/md_support.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -51,13 +52,11 @@
 #include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-
-/* Is the signal in one simulation independent of other simulations? */
-gmx_bool gs_simlocal[eglsNR] = { FALSE, FALSE, TRUE };
 
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */
@@ -173,31 +172,6 @@ int multisim_nstsimsync(const t_commrec *cr,
     return nmin;
 }
 
-void init_global_signals(globsig_t *gs, const t_commrec *cr,
-                         const t_inputrec *ir, int repl_ex_nst)
-{
-    int i;
-
-    if (MULTISIM(cr))
-    {
-        gs->nstms = multisim_nstsimsync(cr, ir, repl_ex_nst);
-        if (debug)
-        {
-            fprintf(debug, "Syncing simulations for checkpointing and termination every %d steps\n", gs->nstms);
-        }
-    }
-    else
-    {
-        gs->nstms = 1;
-    }
-
-    for (i = 0; i < eglsNR; i++)
-    {
-        gs->sig[i] = 0;
-        gs->set[i] = 0;
-    }
-}
-
 void copy_coupling_state(t_state *statea, t_state *stateb,
                          gmx_ekindata_t *ekinda, gmx_ekindata_t *ekindb, t_grpopts* opts)
 {
@@ -288,12 +262,10 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
-                     globsig_t *gs, gmx_bool bInterSimGS,
+                     struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
                      matrix box, gmx_mtop_t *top_global,
                      gmx_bool *bSumEkinhOld, int flags)
 {
-    int      i, gsi;
-    real     gs_buf[eglsNR];
     tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat,
@@ -362,54 +334,18 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         else
         {
-            if (gs != NULL)
-            {
-                for (i = 0; i < eglsNR; i++)
-                {
-                    gs_buf[i] = gs->sig[i];
-                }
-            }
+            std::vector<real> signalBuffer = prepareSignalBuffer(gs);
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                             ir, ekind, constr, bStopCM ? vcm : NULL,
-                            gs != NULL ? eglsNR : 0, gs_buf,
+                            gs != NULL ? signalBuffer.size() : 0, &signalBuffer[0],
                             top_global, state,
                             *bSumEkinhOld, flags);
                 wallcycle_stop(wcycle, ewcMoveE);
             }
-            if (gs != NULL)
-            {
-                if (MULTISIM(cr) && bInterSimGS)
-                {
-                    if (MASTER(cr))
-                    {
-                        /* Communicate the signals between the simulations */
-                        gmx_sum_sim(eglsNR, gs_buf, cr->ms);
-                    }
-                    /* Communicate the signals form the master to the others */
-                    gmx_bcast(eglsNR*sizeof(gs_buf[0]), gs_buf, cr);
-                }
-                for (i = 0; i < eglsNR; i++)
-                {
-                    if (bInterSimGS || gs_simlocal[i])
-                    {
-                        /* Set the communicated signal only when it is non-zero,
-                         * since signals might not be processed at each MD step.
-                         */
-                        gsi = (gs_buf[i] >= 0 ?
-                               (int)(gs_buf[i] + 0.5) :
-                               (int)(gs_buf[i] - 0.5));
-                        if (gsi != 0)
-                        {
-                            gs->set[i] = gsi;
-                        }
-                        /* Turn off the local signal */
-                        gs->sig[i] = 0;
-                    }
-                }
-            }
+            handleSignals(gs, cr, bInterSimGS, &signalBuffer);
             *bSumEkinhOld = FALSE;
         }
     }
