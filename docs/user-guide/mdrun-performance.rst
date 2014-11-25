@@ -351,10 +351,13 @@ cases.
     the minimum of :mdp:`nstcalcenergy` and :mdp:`nstlist`.
     ``mdrun -gcom`` sets the number of steps that must elapse between
     such communication phases, which can improve performance when
-    running on a lot of nodes. Note that this means that _e.g._
+    running on a lot of ranks. Note that this means that _e.g._
     temperature coupling algorithms will
-    effectively remain at constant energy until the next global
-    communication phase.
+    effectively remain at constant energy until the next
+    communication phase. :ref:`gmx mdrun` will always honor the
+    setting of ``mdrun -gcom``, by changing :mdp:`nstcalcenergy`,
+    :mdp:`nstenergy`, :mdp:`nstlog`, :mdp:`nsttcouple` and/or
+    :mdp:`nstpcouple` if necessary.
 
 Note that ``-tunepme`` has more effect when there is more than one
 :term:`node`, because the cost of communication for the PP and PME

@@ -481,8 +481,7 @@ int gmx_mdrun(int argc, char *argv[])
     if (nmultisim >= 1)
     {
 #if !GMX_THREAD_MPI
-        gmx_bool bParFn = (multidir == NULL);
-        init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
+        init_multisystem(cr, nmultisim, multidir, NFILE, fnm);
 #else
         gmx_fatal(FARGS, "mdrun -multi or -multidir are not supported with the thread-MPI library. "
                   "Please compile GROMACS with a proper external MPI library.");

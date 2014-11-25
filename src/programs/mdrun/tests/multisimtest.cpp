@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
  * \todo Test mdrun -multidir also
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 
@@ -54,12 +54,14 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 
 #include "moduletest.h"
+#include "terminationhelper.h"
 
 namespace gmx
 {
@@ -85,16 +87,17 @@ MultiSimTest::MultiSimTest() : size_(gmx_node_num()),
 
     runner_.useTopGroAndNdxFromDatabase("spc2");
 
-    mdrunCaller_->append("mdrun_mpi");
+    mdrunCaller_->append("mdrun");
     mdrunCaller_->addOption("-multi", size_);
 }
 
-void MultiSimTest::organizeMdpFile(const char *controlVariable)
+void MultiSimTest::organizeMdpFile(const char *controlVariable,
+                                   int         numSteps)
 {
     const real  baseTemperature = 298;
     const real  basePressure    = 1;
     std::string mdpFileContents =
-        formatString("nsteps = 2\n"
+        formatString("nsteps = %d\n"
                      "nstlog = 1\n"
                      "nstcalcenergy = 1\n"
                      "tcoupl = v-rescale\n"
@@ -110,6 +113,7 @@ void MultiSimTest::organizeMdpFile(const char *controlVariable)
                      "gen-temp = %f\n"
                      // control variable specification
                      "%s\n",
+                     numSteps,
                      baseTemperature + 0.0001*rank_,
                      basePressure * std::pow(1.01, rank_),
                      /* Set things up so that the initial KE decreases with
@@ -120,6 +124,52 @@ void MultiSimTest::organizeMdpFile(const char *controlVariable)
                      std::max(baseTemperature - 10 * rank_, real(0)),
                      controlVariable);
     runner_.useStringAsMdpFile(mdpFileContents);
+}
+
+void MultiSimTest::runExitsNormallyTest()
+{
+    if (size_ <= 1)
+    {
+        /* Can't test multi-sim without multiple ranks. */
+        return;
+    }
+
+    const char *pcoupl = GetParam();
+    organizeMdpFile(pcoupl);
+    /* Call grompp on every rank - the standard callGrompp() only runs
+       grompp on rank 0. */
+    EXPECT_EQ(0, runner_.callGromppOnThisRank());
+
+    // mdrun names the files without the rank suffix
+    runner_.tprFileName_ = mdrunTprFileName_;
+    ASSERT_EQ(0, runner_.callMdrun(*mdrunCaller_));
+}
+
+void MultiSimTest::runMaxhTest()
+{
+    if (size_ <= 1)
+    {
+        /* Can't test replica exchange without multiple ranks. */
+        return;
+    }
+
+    TerminationHelper helper(&fileManager_, mdrunCaller_.get(), &runner_);
+    // Make sure -maxh has a chance to propagate
+    int               numSteps = 100;
+    organizeMdpFile("pcoupl = no", numSteps);
+    /* Call grompp on every rank - the standard callGrompp() only runs
+       grompp on rank 0. */
+    EXPECT_EQ(0, runner_.callGromppOnThisRank());
+
+    // mdrun names the files without the rank suffix
+    runner_.tprFileName_ = mdrunTprFileName_;
+
+    // The actual output checkpoint file gets a rank suffix, so
+    // handle that in the expected result.
+    std::string expectedCptFileName
+        = Path::concatenateBeforeExtension(runner_.cptFileName_, formatString("%d", rank_));
+    helper.runFirstMdrun(expectedCptFileName);
+    helper.runSecondMdrun();
 }
 
 } // namespace
