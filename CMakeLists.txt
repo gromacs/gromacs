@@ -111,7 +111,7 @@ if(CMAKE_HOST_UNIX)
     if(GMX_BUILD_HOSTNAME AND NOT "${GMX_BUILD_HOSTNAME}" STREQUAL "${TMP_HOSTNAME}")
         message(WARNING "
             The CMake cache, probably generated on a different host (${GMX_BUILD_HOSTNAME}),
-            is being reused! This could lead to inconsitencies; therefore, it is
+            is being reused! This could lead to inconsistencies; therefore, it is
             recommended to regenerate the cache!")
     endif()
     set(GMX_BUILD_HOSTNAME "${TMP_HOSTNAME}" CACHE INTERNAL

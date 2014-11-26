@@ -1499,6 +1499,10 @@ static void combine_forces(gmx_update_t upd,
                 {
                     xp[i][d] = state->x[i][d] + fac*f_lr[i][d]*md->invmass[i];
                 }
+                else
+                {
+                    xp[i][d] = state->x[i][d];
+                }
             }
         }
         constrain(NULL, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
