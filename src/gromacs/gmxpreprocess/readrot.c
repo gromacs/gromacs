@@ -77,15 +77,15 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
 
     /* read rotation parameters */
     CTYPE("Output frequency for angle, torque and rotation potential energy for the whole group");
-    ITYPE("rot_nstrout",     rot->nstrout, 100);
+    ITYPE("rot-nstrout",     rot->nstrout, 100);
     CTYPE("Output frequency for per-slab data (angles, torques and slab centers)");
-    ITYPE("rot_nstsout",     rot->nstsout, 1000);
+    ITYPE("rot-nstsout",     rot->nstsout, 1000);
     CTYPE("Number of rotation groups");
-    ITYPE("rot_ngroups",     rot->ngrp, 1);
+    ITYPE("rot-ngroups",     rot->ngrp, 1);
 
     if (rot->ngrp < 1)
     {
-        gmx_fatal(FARGS, "rot_ngroups should be >= 1");
+        gmx_fatal(FARGS, "rot-ngroups should be >= 1");
     }
 
     snew(rot->grp, rot->ngrp);
@@ -97,19 +97,19 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         rotg = &rot->grp[g];
         snew(grpbuf[g], STRLEN);
         CTYPE("Rotation group name");
-        sprintf(buf, "rot_group%d", g);
+        sprintf(buf, "rot-group%d", g);
         STYPE(buf, grpbuf[g], "");
 
         CTYPE("Rotation potential. Can be iso, iso-pf, pm, pm-pf, rm, rm-pf, rm2, rm2-pf, flex, flex-t, flex2, flex2-t");
-        sprintf(buf, "rot_type%d", g);
+        sprintf(buf, "rot-type%d", g);
         ETYPE(buf, rotg->eType, erotg_names);
 
         CTYPE("Use mass-weighting of the rotation group positions");
-        sprintf(buf, "rot_massw%d", g);
+        sprintf(buf, "rot-massw%d", g);
         ETYPE(buf, rotg->bMassW, yesno_names);
 
         CTYPE("Rotation vector, will get normalized");
-        sprintf(buf, "rot_vec%d", g);
+        sprintf(buf, "rot-vec%d", g);
         STYPE(buf, s_vec, "1.0 0.0 0.0");
         string2dvec(s_vec, vec);
         /* Normalize the rotation vector */
@@ -119,7 +119,7 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         }
         else
         {
-            sprintf(warn_buf, "rot_vec%d = 0", g);
+            sprintf(warn_buf, "rot-vec%d = 0", g);
             warning_error(wi, warn_buf);
         }
         fprintf(stderr, "%s Group %d (%s) normalized rot. vector: %f %f %f\n",
@@ -130,7 +130,7 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         }
 
         CTYPE("Pivot point for the potentials iso, pm, rm, and rm2 (nm)");
-        sprintf(buf, "rot_pivot%d", g);
+        sprintf(buf, "rot-pivot%d", g);
         STYPE(buf, s_vec, "0.0 0.0 0.0");
         clear_dvec(vec);
         if ( (rotg->eType == erotgISO) || (rotg->eType == erotgPM) || (rotg->eType == erotgRM) || (rotg->eType == erotgRM2) )
@@ -143,57 +143,57 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         }
 
         CTYPE("Rotation rate (degree/ps) and force constant (kJ/(mol*nm^2))");
-        sprintf(buf, "rot_rate%d", g);
+        sprintf(buf, "rot-rate%d", g);
         RTYPE(buf, rotg->rate, 0.0);
 
-        sprintf(buf, "rot_k%d", g);
+        sprintf(buf, "rot-k%d", g);
         RTYPE(buf, rotg->k, 0.0);
         if (rotg->k <= 0.0)
         {
-            sprintf(warn_buf, "rot_k%d <= 0", g);
+            sprintf(warn_buf, "rot-k%d <= 0", g);
             warning_note(wi, warn_buf);
         }
 
         CTYPE("Slab distance for flexible axis rotation (nm)");
-        sprintf(buf, "rot_slab_dist%d", g);
+        sprintf(buf, "rot-slab-dist%d", g);
         RTYPE(buf, rotg->slab_dist, 1.5);
         if (rotg->slab_dist <= 0.0)
         {
-            sprintf(warn_buf, "rot_slab_dist%d <= 0", g);
+            sprintf(warn_buf, "rot-slab-dist%d <= 0", g);
             warning_error(wi, warn_buf);
         }
 
         CTYPE("Minimum value of Gaussian function for the force to be evaluated (for flex* potentials)");
-        sprintf(buf, "rot_min_gauss%d", g);
+        sprintf(buf, "rot-min-gauss%d", g);
         RTYPE(buf, rotg->min_gaussian, 1e-3);
         if (rotg->min_gaussian <= 0.0)
         {
-            sprintf(warn_buf, "rot_min_gauss%d <= 0", g);
+            sprintf(warn_buf, "rot-min-gauss%d <= 0", g);
             warning_error(wi, warn_buf);
         }
 
         CTYPE("Value of additive constant epsilon' (nm^2) for rm2* and flex2* potentials");
-        sprintf(buf, "rot_eps%d", g);
+        sprintf(buf, "rot-eps%d", g);
         RTYPE(buf, rotg->eps, 1e-4);
         if ( (rotg->eps <= 0.0) && (rotg->eType == erotgRM2 || rotg->eType == erotgFLEX2) )
         {
-            sprintf(warn_buf, "rot_eps%d <= 0", g);
+            sprintf(warn_buf, "rot-eps%d <= 0", g);
             warning_error(wi, warn_buf);
         }
 
         CTYPE("Fitting method to determine angle of rotation group (rmsd, norm, or potential)");
-        sprintf(buf, "rot_fit_method%d", g);
+        sprintf(buf, "rot-fit-method%d", g);
         ETYPE(buf, rotg->eFittype, erotg_fitnames);
         CTYPE("For fit type 'potential', nr. of angles around the reference for which the pot. is evaluated");
-        sprintf(buf, "rot_potfit_nsteps%d", g);
+        sprintf(buf, "rot-potfit-nsteps%d", g);
         ITYPE(buf, rotg->PotAngle_nstep, 21);
         if ( (rotg->eFittype == erotgFitPOT) && (rotg->PotAngle_nstep < 1) )
         {
-            sprintf(warn_buf, "rot_potfit_nsteps%d < 1", g);
+            sprintf(warn_buf, "rot-potfit-nsteps%d < 1", g);
             warning_error(wi, warn_buf);
         }
         CTYPE("For fit type 'potential', distance in degrees between two consecutive angles");
-        sprintf(buf, "rot_potfit_step%d", g);
+        sprintf(buf, "rot-potfit-step%d", g);
         RTYPE(buf, rotg->PotAngle_step, 0.25);
     }
 

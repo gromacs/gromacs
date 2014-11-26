@@ -792,8 +792,8 @@ static void pr_rotgrp(FILE *fp, int indent, int g, t_rotgrp *rotg)
     PR("rot-min-gauss", rotg->min_gaussian);
     PR("rot-eps", rotg->eps);
     PS("rot-fit-method", EROTFIT(rotg->eFittype));
-    PI("rot_potfit_nstep", rotg->PotAngle_nstep);
-    PR("rot_potfit_step", rotg->PotAngle_step);
+    PI("rot-potfit-nstep", rotg->PotAngle_nstep);
+    PR("rot-potfit-step", rotg->PotAngle_step);
 }
 
 static void pr_rot(FILE *fp, int indent, t_rot *rot)

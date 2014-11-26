@@ -647,6 +647,10 @@ int gmx_trjcat(int argc, char *argv[])
         {
             if (ftpout == efTNG)
             {
+                if (ftpout != ftpin)
+                {
+                    gmx_fatal(FARGS, "When writing TNG the input file format must also be TNG");
+                }
                 if (bIndex)
                 {
                     trjtools_gmx_prepare_tng_writing(out_file, 'w', NULL, &trxout,

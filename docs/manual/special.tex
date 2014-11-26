@@ -234,14 +234,14 @@ to calculate the PMF of a lipid as function of its distance
 from the whole bilayer. The whole bilayer can be taken as reference
 group in that case, but it might also be of interest to define the
 reaction coordinate for the PMF more locally. The {\tt .mdp} option
-{\tt pull_geometry = cylinder} does not
+{\tt pull-geometry = cylinder} does not
 use all the atoms of the reference group, but instead dynamically only those
-within a cylinder with radius {\tt r_1} around the pull vector going
+within a cylinder with radius {\tt pull-r1} around the pull vector going
 through the pull group. This only
 works for distances defined in one dimension, and the cylinder is
 oriented with its long axis along this one dimension. A second cylinder
-can be defined with {\tt r_0}, with a linear switch function that weighs
-the contribution of atoms between {\tt r_0} and {\tt r_1} with
+can be defined with {\tt pull-r0}, with a linear switch function that weighs
+the contribution of atoms between {\tt pull-r0} and {\tt pull-r1} with
 distance. This smooths the effects of atoms moving in and out of the
 cylinder (which causes jumps in the pull forces).
 
@@ -859,14 +859,14 @@ similar to those of $V\rotflextwo$ and $\ve{F}\rotflextwo$.
 \subsection{Usage}
 To apply enforced rotation, the particles $i$ that are to
 be subjected to one of the rotation potentials are defined via index groups
-{\tt rot\_group0}, {\tt rot\_group1}, etc., in the {\tt .mdp} input file. 
+{\tt rot-group0}, {\tt rot-group1}, etc., in the {\tt .mdp} input file. 
 The reference positions $\ve{y}_i^0$ are
 read from a special {\tt .trr} file provided to {\tt grompp}. If no such file is found,
 $\ve{x}_i(t=0)$ are used as reference positions and written to {\tt .trr} such
 that they can be used for subsequent setups. All parameters of the potentials
 such as $k$, $\epsilon'$, etc. (\tabref{vars}) are provided as {\tt .mdp}
-parameters; {\tt rot\_type} selects the type of the potential. 
-The option {\tt rot\_massw} allows to choose whether or not to use
+parameters; {\tt rot-type} selects the type of the potential. 
+The option {\tt rot-massw} allows to choose whether or not to use
 mass-weighted averaging. 
 For the flexible potentials, a cutoff value $g_n^\mathrm{min}$ 
 (typically  $g_n^\mathrm{min}=0.001$) makes shure that only
@@ -888,7 +888,7 @@ to additional output files and which are described below.
 \begin{tabular}{l>{$}l<{$}rccccccc}
 \hline
 parameter           &               &                      & $k$      & $\hat{\ve{v}}$ & $\ve{u}$     & $\omega$    & $\epsilon'$ & $\Delta x$        & $g_n^\mathrm{min}$ \\
-\multicolumn{3}{l}{{\tt .mdp} input variable name}         & \smtt{k} & \smtt{vec}     & \smtt{pivot} & \smtt{rate} & \smtt{eps}  & \smtt{slab\_dist} & \smtt{min\_gauss}  \\
+\multicolumn{3}{l}{{\tt .mdp} input variable name}         & \smtt{k} & \smtt{vec}     & \smtt{pivot} & \smtt{rate} & \smtt{eps}  & \smtt{slab-dist}  & \smtt{min-gauss}   \\
 unit                &               &                      & \kunit   & -              & nm           & $^\circ$/ps & nm$^2$      & nm                & \,-\,              \\[1mm]
 \hline \multicolumn{2}{l}{fixed axis potentials:} & eqn.\\
 isotropic           & V\rotiso      & (\ref{eqn:potiso})   & {\sf x}  & {\sf x}        & {\sf x}      & {\sf x}     & -           & -                 &  -                 \\
@@ -969,7 +969,7 @@ positions are weighted with the Gaussian function of slab $n$, and
 $\theta_\mathrm{fit}(t,n)$ is calculated as in \eqnref{rmsdfit}) from the
 Gaussian-weighted positions.
 
-For all angles, the {\tt .mdp} input option {\tt rot\_fit\_method} controls
+For all angles, the {\tt .mdp} input option {\tt rot-fit-method} controls
 whether a normal RMSD fit is performed or whether for the fit each
 position $\ve{x}_i$ is put at the same distance to the rotation axis as its
 reference counterpart $\ve{y}_i^0$. In the latter case, the RMSD
@@ -977,7 +977,7 @@ measures only angular differences, not radial ones.
 
 
 \subsubsection*{Angle Determination by Searching the Energy Minimum}
-Alternatively, for {\tt rot\_fit\_method = potential}, the angle of the rotation 
+Alternatively, for {\tt rot-fit-method = potential}, the angle of the rotation 
 group is determined as the angle for which the rotation potential energy is minimal.
 Therefore, the used rotation potential is additionally evaluated for a set of angles
 around the current reference angle. In this case, the {\tt rotangles.log} output file
@@ -1059,24 +1059,24 @@ The following {\tt .mdp} options control the CompEL protocol:
 {\small
 \begin{verbatim}
 swapcoords     = Z            ; Swap positions: no, X, Y, Z
-swap_frequency = 100          ; Swap attempt frequency
+swap-frequency = 100          ; Swap attempt frequency
 \end{verbatim}}
 Choose {\tt Z} if your membrane is in the $xy$-plane (\figref{compelsetup} A, B).
 Ions will be exchanged between compartments depending on their $z$-positions alone.
-{\tt swap_frequency} determines how often a swap attempt will be made.
+{\tt swap-frequency} determines how often a swap attempt will be made.
 This step requires that the positions of the ions, solvent, and swap groups are
-communicated between the parallel ranks, so if chosen too small it can decrease the simulation
+communicated between the parallel processes, so if chosen too small it can decrease the simulation
 performance.
 {\small
 \begin{verbatim}
-split_group0   = channel0     ; Defines compartment boundary 
-split_group1   = channel1     ; Defines other compartment boundary 
-massw_split0   = no           ; use mass-weighted center?
-massw_split1   = no
+split-group0   = channel0     ; Defines compartment boundary 
+split-group1   = channel1     ; Defines other compartment boundary 
+massw-split0   = no           ; use mass-weighted center?
+massw-split1   = no
 \end{verbatim}}
-{\tt split_group0} and {\tt split_group1} are two index groups that define the boundaries
+{\tt split-group0} and {\tt split-group1} are two index groups that define the boundaries
 between the two compartments, which are usually the centers of the channels.
-If {\tt massw_split0} or {\tt massw_split1} are set to {\tt yes}, the center of mass
+If {\tt massw-split0} or {\tt massw-split1} are set to {\tt yes}, the center of mass
 of each index group is used as boundary, here in $z$-direction. Otherwise, the
 geometrical centers will be used ($\times$ in \figref{compelsetup} A). If, such as here, a membrane
 channel is selected as split group, the center of the channel will define the dividing
@@ -1084,19 +1084,19 @@ plane between the compartments (dashed horizontal line in the figure). All index
 must be defined in the index file.
 {\small
 \begin{verbatim}
-swap_group     = NA+_CL-      ; Ions to be included in exchange
-solvent_group  = SOL          ; Group name of solvent molecules
-cyl0_r         = 5.0          ; Split cylinder 0: pore radius (nm)
-cyl0_up        = 0.75         ; Split cylinder 0 upper extension (nm)
-cyl0_down      = 0.75         ; Split cylinder 0 lower extension (nm)
-cyl1_r         = 5.0          ; same for other channel
-cyl1_up        = 0.75
-cyl1_down      = 0.75
-coupl_steps    = 10           ; Average over these many swap steps
+swap-group     = NA+_CL-      ; Ions to be included in exchange
+solvent-group  = SOL          ; Group name of solvent molecules
+cyl0-r         = 5.0          ; Split cylinder 0: pore radius (nm)
+cyl0-up        = 0.75         ; Split cylinder 0 upper extension (nm)
+cyl0-down      = 0.75         ; Split cylinder 0 lower extension (nm)
+cyl1-r         = 5.0          ; same for other channel
+cyl1-up        = 0.75
+cyl1-down      = 0.75
+coupl-steps    = 10           ; Average over these many swap steps
 threshold      = 1            ; Do not swap if < threshold
 \end{verbatim}}
-{\tt swap_group} identifies the index group of ions that 
-should be involved in the flux and exchange cycles, {\tt solvent_group} defines the solvent
+{\tt swap-group} identifies the index group of ions that 
+should be involved in the flux and exchange cycles, {\tt solvent-group} defines the solvent
 group with which they are swapped. The cylinder options only influence the counting of
 ions, i.e., ions will be counted as having traveled through either channel 0 or channel 1
 according to the definition of (channel) cylinder radius, upper and lower extension,
@@ -1104,14 +1104,14 @@ relative to the location of the respective split group. This will not affect the
 flux or exchange, but will provide you with the ion permeation numbers across
 each of the channels. Note that an ion can only be counted as passing through a particular
 channel if it is detected \emph{within} the defined split cylinder in a swap step.
-If {\tt swap_frequency} is chosen too high, a particular ion may be detected in compartment {\bf A}
+If {\tt swap-frequency} is chosen too high, a particular ion may be detected in compartment {\bf A}
 in one swap step, and in compartment {\bf B} in the following swap step, so it will be unclear
 through which of the channels it has passed.
 
-{\tt coupl_steps} sets the number of swap attempt steps. A discrepancy between
+{\tt coupl-steps} sets the number of swap attempt steps. A discrepancy between
 actual and reference ion numbers in each compartment must persist over this many attempts
-before an actual exchange takes place. If {\tt coupl_steps} is set to 1, then the momentary ion distribution determines
-whether ions are exchanged. {\tt coupl_steps} \textgreater\ 1 will use the time-average
+before an actual exchange takes place. If {\tt coupl-steps} is set to 1, then the momentary ion distribution determines
+whether ions are exchanged. {\tt coupl-steps} \textgreater\ 1 will use the time-average
 of ion distributions over the selected number of attempt steps instead. This can be useful, for example,
 when ions diffuse near compartment boundaries, which would lead to numerous unproductive
 ion exchanges. A {\tt threshold} of 1 means that a swap is performed if the average ion
