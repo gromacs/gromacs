@@ -42,8 +42,8 @@
 
 #include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/bitmask.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
