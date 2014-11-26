@@ -578,11 +578,16 @@ gmx_test__finite(HAVE__FINITE)
 include(gmxTestCXX11)
 gmx_test_cxx11(GMX_CXX11_SUPPORTED GMX_CXX11_FLAGS)
 include(CMakeDependentOption)
+# clang with some older versions of boost fail to work with C++11
+if(CMAKE_CXX_COMPILER_ID MATCHES Clang AND
+    (Boost_VERSION VERSION_EQUAL 104601 OR Boost_VERSION VERSION_EQUAL 104700))
+    set(CLANG_AND_OLD_EXTERNAL_BOOST TRUE)
+endif()
 # nvcc does not support C++11 flags, so with GPUs we prefer to skip C++11 flags
 # entirely to keep the compilation environment uniform.
 cmake_dependent_option(GMX_CXX11
     "Use C++11 features"
-    ON "GMX_CXX11_SUPPORTED AND NOT GMX_GPU" OFF)
+    ON "GMX_CXX11_SUPPORTED AND NOT GMX_GPU AND NOT CLANG_AND_OLD_EXTERNAL_BOOST" OFF)
 mark_as_advanced(GMX_CXX11)
 if(GMX_CXX11)
     set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
