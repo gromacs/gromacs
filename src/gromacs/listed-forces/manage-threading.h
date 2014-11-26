@@ -34,11 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief Declares functions for managing threading of listed forces
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_listed-forces
  */
 #ifndef GMX_LISTED_FORCES_MANAGE_THREADING_H
@@ -46,10 +46,26 @@
 
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/bitmask.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*! \libinternal \brief Per thread listed-forces data */
+struct f_thread_t {
+    rvec             *f;           /**< Forces */
+    int               f_nalloc;    /**< Allocation size of f */
+    gmx_bitmask_t     red_mask;    /**< Mask for marking which parts of f are filled */
+    rvec             *fshift;      /**< Force shifts */
+    real              ener[F_NRE]; /**< Energies per interaction type */
+    gmx_grppairener_t grpp;        /**< Energies for each group pair */
+    real              Vcorr_q;
+    real              Vcorr_lj;
+    real              dvdl[efptNR];
+    tensor            vir_q;
+    tensor            vir_lj;
+};
 
 /*! \brief Divide the listed interactions over the threads
  *
