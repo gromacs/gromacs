@@ -64,6 +64,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

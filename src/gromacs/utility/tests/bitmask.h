@@ -39,10 +39,11 @@
  * These tests check the functionality of bitmask.h
 
  * \author Roland Schulz <roland@rschulz.eu>
+ * \ingroup module_utility
  */
 #include <gtest/gtest.h>
 
-#include "gromacs/mdlib/bitmask.h"
+#include "gromacs/utility/bitmask.h"
 
 //! Implemenation of BITMASK_CLASSNAME
 #define BITMASK_CLASSNAME_(S) BitmaskTest ## S
