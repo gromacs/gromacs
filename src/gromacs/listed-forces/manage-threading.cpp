@@ -50,6 +50,7 @@
 #include <algorithm>
 
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -110,15 +111,14 @@ static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
 }
 
 //! Construct a reduction mask for which interaction was computed on which thread
-static unsigned
-calc_bonded_reduction_mask(const t_idef *idef,
+static void
+calc_bonded_reduction_mask(gmx_bitmask_t *mask,
+                           const t_idef *idef,
                            int shift,
                            int t, int nt)
 {
-    unsigned mask;
-    int      ftype, nb, nat1, nb0, nb1, i, a;
-
-    mask = 0;
+    int           ftype, nb, nat1, nb0, nb1, i, a;
+    bitmask_clear(mask);
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -139,21 +139,19 @@ calc_bonded_reduction_mask(const t_idef *idef,
                 {
                     for (a = 1; a < nat1; a++)
                     {
-                        mask |= (1U << (idef->il[ftype].iatoms[i+a]>>shift));
+                        bitmask_set_bit(mask, idef->il[ftype].iatoms[i+a]>>shift);
                     }
                 }
             }
         }
     }
-
-    return mask;
 }
 
 
-/*! \brief We divide the force array in a maximum of 32 blocks.
+/*! \brief We divide the force array in a maximum of BITMASK_SIZE (default 32) blocks.
  * Minimum force block reduction size is thus 2^6=64.
  */
-const int maxBlockBits = 32;
+const int maxBlockBits = BITMASK_SIZE;
 
 void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
 {
@@ -189,8 +187,8 @@ void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
 #pragma omp parallel for num_threads(fr->nthreads) schedule(static)
     for (t = 1; t < fr->nthreads; t++)
     {
-        fr->f_t[t].red_mask =
-            calc_bonded_reduction_mask(idef, fr->red_ashift, t, fr->nthreads);
+        calc_bonded_reduction_mask(&fr->f_t[t].red_mask,
+                                   idef, fr->red_ashift, t, fr->nthreads);
     }
 
     /* Determine the maximum number of blocks we need to reduce over */
@@ -201,17 +199,19 @@ void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
         c = 0;
         for (b = 0; b < maxBlockBits; b++)
         {
-            if (fr->f_t[t].red_mask & (1U<<b))
+            if (bitmask_is_set(fr->f_t[t].red_mask, b))
             {
                 fr->red_nblock = std::max(fr->red_nblock, b+1);
                 c++;
             }
         }
+#if BITMASK_SIZE <= 64
         if (debug)
         {
             fprintf(debug, "thread %d flags %x count %d\n",
                     t, fr->f_t[t].red_mask, c);
         }
+#endif
         ctot += c;
     }
     if (debug)

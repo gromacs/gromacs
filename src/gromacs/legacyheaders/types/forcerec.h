@@ -185,19 +185,7 @@ typedef struct {
 /* ewald table type */
 typedef struct ewald_tab *ewald_tab_t;
 
-typedef struct {
-    rvec             *f;
-    int               f_nalloc;
-    unsigned          red_mask; /* Mask for marking which parts of f are filled */
-    rvec             *fshift;
-    real              ener[F_NRE];
-    gmx_grppairener_t grpp;
-    real              Vcorr_q;
-    real              Vcorr_lj;
-    real              dvdl[efptNR];
-    tensor            vir_q;
-    tensor            vir_lj;
-} f_thread_t;
+typedef struct f_thread_t f_thread_t;
 
 typedef struct {
     interaction_const_t *ic;
