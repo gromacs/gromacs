@@ -38,6 +38,7 @@
  *
  * \author Roland Schulz <roland@utk.edu>
  * \inlibraryapi
+ * \ingroup module_utility
  */
 
 #ifndef GMX_MDLIB_BITMASK_H

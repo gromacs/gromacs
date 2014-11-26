@@ -60,6 +60,7 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -92,11 +93,11 @@ zero_thread_forces(f_thread_t *f_t, int n,
         srenew(f_t->f, f_t->f_nalloc);
     }
 
-    if (f_t->red_mask != 0)
+    if (!bitmask_is_zero(f_t->red_mask))
     {
         for (b = 0; b < nblock; b++)
         {
-            if (f_t->red_mask && (1U<<b))
+            if (bitmask_is_set(f_t->red_mask, b))
             {
                 a0 = b*blocksize;
                 a1 = std::min((b+1)*blocksize, n);
@@ -161,7 +162,7 @@ reduce_thread_force_buffer(int n, rvec *f,
         nfb = 0;
         for (ft = 1; ft < nthreads; ft++)
         {
-            if (f_t[ft].red_mask & (1U<<b))
+            if (bitmask_is_set(f_t[ft].red_mask, b))
             {
                 fp[nfb++] = f_t[ft].f;
             }
