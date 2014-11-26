@@ -61,6 +61,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
