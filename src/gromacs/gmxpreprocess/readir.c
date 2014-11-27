@@ -1226,6 +1226,28 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "wall-ewald-zfac should be >= 2");
         CHECK(ir->wall_ewald_zfac < 2);
     }
+    if ((ir->ewald_geometry == eewg3DC) && (ir->ePBC != epbcXY) &&
+        EEL_FULL(ir->coulombtype))
+    {
+        sprintf(warn_buf, "With %s and ewald_geometry = %s you should use pbc = %s",
+                eel_names[ir->coulombtype], eewg_names[eewg3DC], epbc_names[epbcXY]);
+        warning(wi, warn_buf);
+    }
+    if ((ir->epsilon_surface != 0) && EEL_FULL(ir->coulombtype))
+    {
+        if (ir->cutoff_scheme == ecutsVERLET)
+        {
+            sprintf(warn_buf, "Since molecules/charge groups are broken using the Verlet scheme, you can not use a dipole correction to the %s electrostatics.",
+                    eel_names[ir->coulombtype]);
+            warning(wi, warn_buf);
+        }
+        else
+        {
+            sprintf(warn_buf, "Dipole corrections to %s electrostatics only work if all charge groups that can cross PBC boundaries are dipoles. If this is not the case set epsilon_surface to 0",
+                    eel_names[ir->coulombtype]);
+            warning_note(wi, warn_buf);
+        }
+    }
 
     if (ir_vdw_switched(ir))
     {
