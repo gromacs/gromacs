@@ -748,7 +748,7 @@ t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
     t_pargs *ppa;
     int      i, npa;
 
-    npa = asize(pa);
+    npa = asize(acfpa);
     snew(ppa, *npargs+npa);
     for (i = 0; (i < *npargs); i++)
     {
