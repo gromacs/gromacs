@@ -1788,21 +1788,23 @@ int gmx_grompp(int argc, char *argv[])
             warning_note(wi, "dt is very large, recommend 0.001 for stability.");
         }
 
-        /* Recommended subdivision of time steps is 20 for Drude systems */
-        if (ir->drude->tsteps < 20)
+        /* Recommended subdivision of time steps is 20 for Drude systems,
+         * but the only strict requirement is that the value be != 1 since
+         * energy conservation becomes an issue */ 
+        if (ir->drude->tsteps <= 1)
         {
-            warning_note(wi, "Check drude-tsteps: Thermostat integration should be done with at least 20 substeps!");
+            warning_note(wi, "Check drude-tsteps: Thermostat integration should be done with > 1 substeps!");
         }
 
         /* Note that free energy and pull code are completely untested...should work? */
         if (ir->efep != efepNO)
         {
-            warning_note(wi, "Free energy simulatoins with Drude are completely untested!");
+            gmx_fatal(FARGS, "Free energy simulations with Drude have not been tested and are therefore not supported.");
         }
 
         if (ir->ePull != epullNO)
         {
-            warning_note(wi, "Drude + pulling has not been tested but should work. Tread lightly!");
+            gmx_fatal(FARGS, "Drude + pulling has not been tested and is therefore not supported.");
         }
 
         /* Drude will not work with anything other than EM or VV */
