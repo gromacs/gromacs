@@ -92,7 +92,8 @@ enum tpxv {
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
-    tpxv_RemoveObsoleteParameters1                           /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_DrudeExtendedLagrangian                             /**< Drude extended Lagrangian support within md-vv */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -106,7 +107,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_RemoveObsoleteParameters1;
+static const int tpx_version = tpxv_DrudeExtendedLagrangian;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -1540,7 +1541,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
 
     /* Drude stuff */
-    if (file_version >= 96)
+    if (file_version >= tpxv_DrudeExtendedLagrangian)
     {
         gmx_fio_do_gmx_bool(fio, ir->bDrude);
         if (ir->bDrude)
