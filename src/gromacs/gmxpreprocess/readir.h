@@ -90,7 +90,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 int search_string(const char *s, int ng, char *gn[]);
 /* Returns the index of string s in the index groups */
 
-void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr,
+void double_check(t_inputrec *ir, matrix box,
+                  gmx_bool bHasNormalConstraints,
+                  gmx_bool bHasAnyConstraints,
                   warninp_t wi);
 /* Do more checks */
 
