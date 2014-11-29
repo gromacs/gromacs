@@ -3,6 +3,7 @@
 <ReferenceData>
   <SASA Name="100Points">
     <Real Name="Area">1041.9522794772727</Real>
+    <Real Name="Volume">808.03995831604618</Real>
     <Sequence Name="AtomArea">
       <Int Name="Length">100</Int>
       <Real>0.95131516208197198</Real>

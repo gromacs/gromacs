@@ -353,8 +353,7 @@ TEST_F(SurfaceAreaTest, Computes100PointsWithRectangularPBC)
     box_[XX][XX] = 20.0;
     box_[YY][YY] = 20.0;
     box_[ZZ][ZZ] = 20.0;
-    // TODO: The volume computation with PBC is broken...
-    const int flags = FLAG_ATOM_AREA | FLAG_DOTS;
+    const int flags = FLAG_ATOM_AREA | FLAG_VOLUME | FLAG_DOTS;
     ASSERT_NO_FATAL_FAILURE(calculate(24, flags, true));
     checkReference(&checker, "100Points", false);
 
@@ -388,8 +387,7 @@ TEST_F(SurfaceAreaTest, Computes100PointsWithTriclinicPBC)
     box_[ZZ][YY] = 10.0*sqrt(1.0/3.0);
     box_[ZZ][ZZ] = 20.0*sqrt(2.0/3.0);
 
-    // TODO: The volume computation with PBC is broken...
-    const int flags = FLAG_ATOM_AREA | FLAG_DOTS;
+    const int flags = FLAG_ATOM_AREA | FLAG_VOLUME | FLAG_DOTS;
     ASSERT_NO_FATAL_FAILURE(calculate(24, flags, true));
     checkReference(&checker, "100Points", false);
 

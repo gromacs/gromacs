@@ -434,8 +434,10 @@ Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
         //"which can be used to restrain surface atoms.[PAR]",
 
         "With the [TT]-tv[tt] option the total volume and density of the",
-        "molecule can be computed.",
-        "Please consider whether the normal probe radius is appropriate",
+        "molecule can be computed. With [TT]-pbc[tt] (the default), you",
+        "must ensure that your molecule/surface group is not split across PBC.",
+        "Otherwise, you will get non-sensical results.",
+        "Please also consider whether the normal probe radius is appropriate",
         "in this case or whether you would rather use, e.g., 0. It is good",
         "to keep in mind that the results for volume and density are very",
         "approximate. For example, in ice Ih, one can easily fit water molecules in the",
