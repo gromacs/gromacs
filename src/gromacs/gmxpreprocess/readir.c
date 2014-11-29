@@ -4254,7 +4254,10 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     check_disre(sys);
 }
 
-void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr, warninp_t wi)
+void double_check(t_inputrec *ir, matrix box,
+                  gmx_bool bHasNormalConstraints,
+                  gmx_bool bHasAnyConstraints,
+                  warninp_t wi)
 {
     real        min_size;
     gmx_bool    bTWIN;
@@ -4267,7 +4270,7 @@ void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr, warninp_t wi)
         warning_error(wi, ptr);
     }
 
-    if (bConstr && ir->eConstrAlg == econtSHAKE)
+    if (bHasNormalConstraints && ir->eConstrAlg == econtSHAKE)
     {
         if (ir->shake_tol <= 0.0)
         {
@@ -4290,7 +4293,7 @@ void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr, warninp_t wi)
         }
     }
 
-    if ( (ir->eConstrAlg == econtLINCS) && bConstr)
+    if ( (ir->eConstrAlg == econtLINCS) && bHasNormalConstraints)
     {
         /* If we have Lincs constraints: */
         if (ir->eI == eiMD && ir->etc == etcNO &&
@@ -4311,7 +4314,7 @@ void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr, warninp_t wi)
         }
     }
 
-    if (bConstr && ir->epc == epcMTTK)
+    if (bHasAnyConstraints && ir->epc == epcMTTK)
     {
         warning_note(wi, "MTTK with constraints is deprecated, and will be removed in GROMACS 5.1");
     }
