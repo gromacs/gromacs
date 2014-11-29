@@ -38,112 +38,134 @@
 #define GMX_TRAJECTORYANALYSIS_SURFACEAREA_H
 
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/classhelpers.h"
+
+struct t_pbc;
 
 #define FLAG_DOTS       01
 #define FLAG_VOLUME     02
 #define FLAG_ATOM_AREA  04
 
-#ifdef __cplusplus
-extern "C"
+namespace gmx
 {
-#endif
 
-int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
-                 int  densit, int mode,
-                 real *value_of_area, real **at_area,
-                 real *value_of_vol,
-                 real **lidots, int *nu_dots,
-                 atom_id index[], int ePBC, matrix box);
-
-/*
-    User notes :
-   The input requirements :
-   The arrays with atom coordinates and radii are thought to start
-   with index 0, i.e., places 0, 1, and 2 are the x-, y-, and z-
-   coordinates of the zero-th atom and place 0 in the other array
-   is its radius.
-
-   PLEASE TAKE INTO ACCOUNT THAT THE RADII GIVEN HERE ARE DIRECTLY
-   USED FOR SURFACE CALCULATION. NSC does not increment with a probe
-   radius.
-
-   The user can define any number of dots. The program selects a
-   dot density that is the lowest possible with at least the required
-   number of dots. The points are distributed in accordance with the
-   icosahedron-based or the dodecahedron-based method as described in
-   ref. 1.
-
-   The output requirements are :
-   1 and 3 :  pointer to an existing real
-   2 and 4 :  pointer to an existing pointer to real
-             NSC allocates memory for an array
-   5       :  pointer to an existing integer
-
-   The subroutine NSC makes use of variant 2 described in reference 1.
-   By selecting the necessary output via flags, the requirements for
-   cpu-time and computer memory can be adapted to the actual needs.
-
-   Example : flag = FLAG_VOLUME | FLAG_ATOM_AREA | FLAG_DOTS
-          The routine calculates the area, volume and the dot surface. The
-          program allocates arrays for the atomwise areas and for the surface
-          dots. The addresses are returned in the pointers to pointers to
-          real.
-          This variant is not recommended because normally the dot surface
-          is needed for low point density (e.g.42) at which area and volume
-          are inaccurate. The sign "|" is used as binary AND !
-
-          flag = FLAG_VOLUME | FLAG_ATOM_AREA
-          In this case the large arrays for storing the surface dots
-          are not allocated. A large point number of the fully accessible
-          sphere can be selected. Good accuracy is already achieved with
-          600-700 points per sphere (accuracy of about 1.5 square Angstrem
-          per atomic sphere).
-          Output pointers 4 and 5 may be NULL.
-
-          flag = FLAG_DOTS
-          Only the dot surface is produced.
-          Output pointers 2 and 3 may be NULL.
-
-   The output pointer 1 cannot be set to NULL in any circumstances. The
-   overall area value is returned in every mode.
-
-   All files calling NSC should include surfacearea.h !!
-
-
-   Example for calling NSC (contents of user file):
-
-   ...
-   #include "surfacearea.h"
-
-   int routine_calling_NSC(int n_atom, real *coordinates, real *radii) {
-   real area, volume, *atomwise_area, *surface_dots;
-   int    i, density = 300, n_dots;
-
-   ...
-
-   for (i=0; i<n_atom; i++) {
-   radii[i]  += 1.4      /# add the probe radius if necessary #/
-
-   if (NSC(coordinates, radii, n_atom, density,
-          FLAG_AREA | FLAG_VOLUME | FLAG_DOTS,
-          &area, &atomwise_area, &volume, &surface_dots, &n_dots))
-    printf("error occured\n");
-    return 1;
-    }
-
-   ...
-
-   /# do something with areas, volume and surface dots #/
-
-   ...
-
-   return 0;
-   }
-
+/*! \internal
+ * \brief
+ * Computes surface areas for a group of atoms/spheres.
+ *
+ * This class provides a surface area/volume calculator.
+ *
+ * The algorithm is based on representing each atom/sphere surface as a set of
+ * dots, and determining which dots are on the surface (not covered by any
+ * other atom/sphere).  The dots are distributed evenly using an icosahedron- or
+ * a dodecahedron-based method (see the original reference cited in the code).
+ * The area is then estimated from the area represented by each dot.
+ * The volume is calculated by selecting a fixed point and integrating over the
+ * surface dots, summing up the cones whose tip is at the fixed point and base
+ * at the surface points.
+ *
+ * The default dot density per sphere is 32, which gives quite inaccurate
+ * areas and volumes, but a reasonable number of surface points.  According to
+ * original documentation of the method, a density of 600-700 dots gives an
+ * accuracy of 1.5 A^2 per atom.
+ *
+ * \ingroup module_trajectoryanalysis
  */
+class SurfaceAreaCalculator
+{
+    public:
+        /*! \brief
+         * Initializes a surface area calculator.
+         *
+         * \throws std::bad_alloc if out of memory.
+         */
+        SurfaceAreaCalculator();
+        ~SurfaceAreaCalculator();
 
-#ifdef __cplusplus
-}
-#endif
+        /*! \brief
+         * Sets the number of surface dots per sphere to use.
+         *
+         * If not called, the default is 32.
+         */
+        void setDotCount(int dotCount);
+
+        /*! \brief
+         * Requests calculation of volume.
+         *
+         * If not called, and FLAG_VOLUME is not passed to calculate(), the
+         * volume output is not produced.
+         *
+         * Does not throw.
+         */
+        void setCalculateVolume(bool bVolume);
+        /*! \brief
+         * Requests output of per-atom areas.
+         *
+         * If not called, and FLAG_ATOM_AREA is not passed to calculate(), the
+         * atom area output is not produced.
+         *
+         * Does not throw.
+         */
+        void setCalculateAtomArea(bool bAtomArea);
+        /*! \brief
+         * Requests output of all surface dots.
+         *
+         * If not called, and FLAG_DOTS is not passed to calculate(), the
+         * surface dot output is not produced.
+         *
+         * Does not throw.
+         */
+        void setCalculateSurfaceDots(bool bDots);
+
+        /*! \brief
+         * Calculates the surface area for a set of positions.
+         *
+         * \param[in]  x       Atom positions (sphere centers).
+         * \param[in]  radius  Radius for each atom/sphere.
+         *     These radii are used as-is, without adding any probe radius.
+         * \param[in]  pbc     PBC information (if `NULL`, calculation is done
+         *     without PBC).
+         * \param[in]  nat     Number of atoms to calculate.
+         * \param[in]  index   Atom indices to include in the calculation.
+         * \param[in]  flags   Additional flags for the calculation.
+         * \param[out] area    Total surface area (must be non-`NULL`).
+         * \param[out] volume  Total volume (can be `NULL`).
+         * \param[out] at_area Surface area for each atom in \p index
+         *     (\p nat values) (can be `NULL`).
+         * \param[out] lidots  Surface dots as x,y,z triplets (`3*lidots` values)
+         *     (can be `NULL`).
+         * \param[out] n_dots Number of surface dots in \p lidots
+         *     (can be `NULL`).
+         *
+         * Calculates the surface area of spheres centered at `x[index[0]]`,
+         * ..., `x[index[nat-1]]`, with radii `radius[index[0]]`, ....
+         *
+         * If \p flags is 0, the calculation is done for the items specified
+         * with setCalculateVolume(), setCalculateAtomArea(), and
+         * setCalculateSurfaceDots().  Flags can specify FLAG_VOLUME,
+         * FLAG_ATOM_AREA, and/or FLAG_DOTS to request additional output for
+         * this particular calculation.  If any output is `NULL`, that output
+         * is not calculated, irrespective of the calculation mode set.
+         *
+         * \todo
+         * Make the output options more C++-like, in particular for the array
+         * outputs.
+         *
+         * \todo
+         * Make this thread-safe; currently, only a single concurrent call to
+         * calculate() is supported.
+         */
+        void calculate(const rvec *x, const real *radius, const t_pbc *pbc,
+                       int nat, atom_id index[], int flags, real *area,
+                       real *volume, real **at_area,
+                       real **lidots, int *n_dots) const;
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
+
+} // namespace gmx
 
 #endif
