@@ -2054,24 +2054,21 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
 
     /* constrain the current position */
     constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-              ir, NULL, cr, step, 0, 1.0, md,
+              ir, cr, step, 0, 1.0, md,
               state->x, state->x, NULL,
               fr->bMolPBC, state->box,
               state->lambda[efptBONDED], &dvdl_dum,
-              NULL, NULL, nrnb, econqCoord,
-              ir->epc == epcMTTK, state->veta, state->veta);
+              NULL, NULL, nrnb, econqCoord);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
-        /* might not yet treat veta correctly */
         constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-                  ir, NULL, cr, step, 0, 1.0, md,
+                  ir, cr, step, 0, 1.0, md,
                   state->x, state->v, state->v,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
-                  NULL, NULL, nrnb, econqVeloc,
-                  ir->epc == epcMTTK, state->veta, state->veta);
+                  NULL, NULL, nrnb, econqVeloc);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -2097,12 +2094,11 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         }
         dvdl_dum = 0;
         constrain(NULL, TRUE, FALSE, constr, &(top->idef),
-                  ir, NULL, cr, step, -1, 1.0, md,
+                  ir, cr, step, -1, 1.0, md,
                   state->x, savex, NULL,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
-                  state->v, NULL, nrnb, econqCoord,
-                  ir->epc == epcMTTK, state->veta, state->veta);
+                  state->v, NULL, nrnb, econqCoord);
 
         for (i = start; i < end; i++)
         {

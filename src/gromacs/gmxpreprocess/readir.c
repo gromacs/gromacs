@@ -4343,7 +4343,7 @@ void double_check(t_inputrec *ir, matrix box,
 
     if (bHasAnyConstraints && ir->epc == epcMTTK)
     {
-        warning_note(wi, "MTTK with constraints is deprecated, and will be removed in GROMACS 5.1");
+        warning_error(wi, "Constraints are not implemented with MTTK pressure control.");
     }
 
     if (ir->LincsWarnAngle > 90.0)
