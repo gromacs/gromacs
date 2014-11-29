@@ -68,14 +68,10 @@ extern "C" {
 #define CGLO_PRESSURE       (1<<8)
 /* Sum the constraint term in global computation */
 #define CGLO_CONSTRAINT     (1<<9)
-/* we are using an integrator that requires iteration over some steps - currently not used*/
-#define CGLO_ITERATE        (1<<10)
-/* it is the first time we are iterating (or, only once through is required */
-#define CGLO_FIRSTITERATE   (1<<11)
 /* Reading ekin from the trajectory */
-#define CGLO_READEKIN       (1<<12)
+#define CGLO_READEKIN       (1<<10)
 /* we need to reset the ekin rescaling factor here */
-#define CGLO_SCALEEKIN      (1<<13)
+#define CGLO_SCALEEKIN      (1<<11)
 
 
 /* return the number of steps between global communcations */
