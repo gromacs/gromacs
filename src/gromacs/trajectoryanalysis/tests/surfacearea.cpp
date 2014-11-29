@@ -43,6 +43,8 @@
 
 #include "gromacs/trajectoryanalysis/modules/surfacearea.h"
 
+#include <cstdlib>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/math/utilities.h"
@@ -161,9 +163,20 @@ class SurfaceAreaTest : public ::testing::Test
             dotCount_ = 0;
             sfree(dots_);
             dots_     = NULL;
-            ASSERT_EQ(0, nsc_dclm_pbc(x_, &radius_[0], index_.size(), ndots, flags,
-                                      &area_, &atomArea_, &volume_, &dots_, &dotCount_,
-                                      &index_[0], epbcXYZ, bPBC ? box_ : NULL));
+            t_pbc       pbc;
+            if (bPBC)
+            {
+                set_pbc(&pbc, epbcXYZ, box_);
+            }
+            ASSERT_NO_THROW_GMX(
+                    {
+                        gmx::SurfaceAreaCalculator calculator;
+                        calculator.setDotCount(ndots);
+                        calculator.calculate(x_, &radius_[0], bPBC ? &pbc : NULL,
+                                             index_.size(), &index_[0], flags,
+                                             &area_, &volume_, &atomArea_,
+                                             &dots_, &dotCount_);
+                    });
         }
         real resultArea() const { return area_; }
         real resultVolume() const { return volume_; }
@@ -187,6 +200,10 @@ class SurfaceAreaTest : public ::testing::Test
             {
                 if (checkDotCoordinates)
                 {
+                    // The algorithm may produce the dots in different order in
+                    // single and double precision due to some internal
+                    // sorting...
+                    std::qsort(dots_, dotCount_, sizeof(rvec), &dotComparer);
                     compound.checkSequenceArray(3*dotCount_, dots_, "Dots");
                 }
                 else
@@ -200,6 +217,28 @@ class SurfaceAreaTest : public ::testing::Test
         matrix                          box_;
 
     private:
+        static int dotComparer(const void *a, const void *b)
+        {
+            for (int d = DIM - 1; d >= 0; --d)
+            {
+                const real ad = reinterpret_cast<const real *>(a)[d];
+                const real bd = reinterpret_cast<const real *>(b)[d];
+                // A fudge factor is needed to get an ordering that is the same
+                // in single and double precision, since the points are not
+                // exactly on the same Z plane even though in exact arithmetic
+                // they probably would be.
+                if (ad < bd - 0.001)
+                {
+                    return -1;
+                }
+                else if (ad > bd + 0.001)
+                {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
         gmx_rng_t          rng_;
         int                allocated_;
         rvec              *x_;
@@ -251,6 +290,42 @@ TEST_F(SurfaceAreaTest, ComputesTwoPointsOfUnequalRadius)
     EXPECT_REAL_EQ_TOL(2*M_PI*(1.5 + (dist - 0.5 + 2)*2), resultArea(), tolerance);
     EXPECT_REAL_EQ_TOL(2*M_PI*1.5, atomArea(0), tolerance);
     EXPECT_REAL_EQ_TOL(2*M_PI*(dist - 0.5 + 2)*2, atomArea(1), tolerance);
+}
+
+TEST_F(SurfaceAreaTest, SurfacePoints12)
+{
+    gmx::test::TestReferenceChecker checker(data_.rootChecker());
+    reserveSpace(1);
+    addSphere(0, 0, 0, 1);
+    ASSERT_NO_FATAL_FAILURE(calculate(12, FLAG_DOTS, false));
+    checkReference(&checker, "Surface", true);
+}
+
+TEST_F(SurfaceAreaTest, SurfacePoints32)
+{
+    gmx::test::TestReferenceChecker checker(data_.rootChecker());
+    reserveSpace(1);
+    addSphere(0, 0, 0, 1);
+    ASSERT_NO_FATAL_FAILURE(calculate(32, FLAG_DOTS, false));
+    checkReference(&checker, "Surface", true);
+}
+
+TEST_F(SurfaceAreaTest, SurfacePoints42)
+{
+    gmx::test::TestReferenceChecker checker(data_.rootChecker());
+    reserveSpace(1);
+    addSphere(0, 0, 0, 1);
+    ASSERT_NO_FATAL_FAILURE(calculate(42, FLAG_DOTS, false));
+    checkReference(&checker, "Surface", true);
+}
+
+TEST_F(SurfaceAreaTest, SurfacePoints122)
+{
+    gmx::test::TestReferenceChecker checker(data_.rootChecker());
+    reserveSpace(1);
+    addSphere(0, 0, 0, 1);
+    ASSERT_NO_FATAL_FAILURE(calculate(122, FLAG_DOTS, false));
+    checkReference(&checker, "Surface", true);
 }
 
 TEST_F(SurfaceAreaTest, Computes100Points)
