@@ -402,6 +402,8 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
     }
 }
 
+/* TODO Decide whether this function can be consolidated with
+ * gmx_mtop_ftype_count */
 static gmx_bool nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
 {
     int nint, mb;
@@ -624,11 +626,21 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
                     nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
             warning(wi, buf);
         }
+
+        /* Do more checks, mostly related to constraints */
         if (bVerbose)
         {
             fprintf(stderr, "double-checking input for internal consistency...\n");
         }
-        double_check(ir, state->box, nint_ftype(sys, molinfo, F_CONSTR), wi);
+        {
+            int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
+                                             nint_ftype(sys, molinfo, F_CONSTRNC));
+            int bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
+            double_check(ir, state->box,
+                         bHasNormalConstraints,
+                         bHasAnyConstraints,
+                         wi);
+        }
     }
 
     if (bGenVel)
