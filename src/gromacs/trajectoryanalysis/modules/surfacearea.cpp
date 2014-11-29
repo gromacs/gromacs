@@ -653,7 +653,7 @@ nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     Neighb     *wknb, *ctnb;
     int         iii1, iii2, iiat, lfnr = 0, i_at, j_at;
     real        dx, dy, dz, dd, ai, aisq, ajsq, aj, as, a;
-    real        xi, yi, zi, xs = 0., ys = 0., zs = 0.;
+    real        xi, yi, zi;
     real        dotarea, area, vol = 0.;
     real       *xus, *dots = NULL, *atom_area = NULL;
     int         nxbox, nybox, nzbox, nxy, nxyz;
@@ -727,6 +727,24 @@ nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     }
     ra2max = 2*ra2max;
 
+    // Compute the center of the molecule for volume calculation.
+    // In principle, the center should not influence the results, but that is
+    // only true at the limit of infinite dot density, so this makes the
+    // results translation-invariant.
+    // With PBC, if the molecule is broken across the boundary, the computation
+    // is broken in other ways as well, so it does not need to be considered
+    // here.
+    real xs = 0.0, ys = 0.0, zs = 0.0;
+    for (i = 0; i < nat; ++i)
+    {
+        iat = index[i];
+        xs += coords[iat][XX];
+        ys += coords[iat][YY];
+        zs += coords[iat][ZZ];
+    }
+    xs /= nat;
+    ys /= nat;
+    zs /= nat;
     /* Added DvdS 2006-07-19 */
     /* Updated 2008-10-09 */
     if (box)
@@ -735,7 +753,7 @@ nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
         snew(x, nat);
         for (i = 0; (i < nat); i++)
         {
-            iat  = index[0];
+            iat = index[0];
             copy_rvec(coords[iat], x[i]);
         }
         put_atoms_in_triclinic_unitcell(ecenterTRIC, box, nat, x);
@@ -751,9 +769,9 @@ nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     {
         /* dimensions of atomic set, cell edge is 2*ra_max */
         iat    = index[0];
-        xmin   = coords[iat][XX]; xmax = xmin; xs = xmin;
-        ymin   = coords[iat][YY]; ymax = ymin; ys = ymin;
-        zmin   = coords[iat][ZZ]; zmax = zmin; zs = zmin;
+        xmin   = coords[iat][XX]; xmax = xmin;
+        ymin   = coords[iat][YY]; ymax = ymin;
+        zmin   = coords[iat][ZZ]; zmax = zmin;
 
         for (iat_xx = 1; (iat_xx < nat); iat_xx++)
         {
@@ -762,11 +780,7 @@ nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
             xmin = std::min(xmin, *pco);     xmax = std::max(xmax, *pco);
             ymin = std::min(ymin, *(pco+1)); ymax = std::max(ymax, *(pco+1));
             zmin = std::min(zmin, *(pco+2)); zmax = std::max(zmax, *(pco+2));
-            xs   = xs+ *pco; ys = ys+ *(pco+1); zs = zs+ *(pco+2);
         }
-        xs = xs/ (real) nat;
-        ys = ys/ (real) nat;
-        zs = zs/ (real) nat;
         if (debug)
         {
             fprintf(debug, "nsc_dclm: n_dot=%5d ra2max=%9.3f %9.3f\n", n_dot, ra2max, dotarea);
