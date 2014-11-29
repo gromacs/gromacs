@@ -45,6 +45,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
@@ -55,55 +56,24 @@
 #define UNSP_ICO_DOD      9
 #define UNSP_ICO_ARC     10
 
-static real   *xpunsp = NULL;
-static real    del_cube;
-static int     n_dot, ico_cube, last_n_dot = 0, last_densit = 0, last_unsp = 0;
-static int     last_cubus = 0;
-
 #define FOURPI (4.*M_PI)
 #define TORAD(A)     ((A)*0.017453293)
 #define DP_TOL     0.001
 
-#define UPDATE_FL  __file__ = __FILE__, __line__ = __LINE__
-static const char * __file__;   /* declared versions of macros */
-static int          __line__;   /* __FILE__  and __LINE__ */
-
-#ifdef ERROR
-#undef ERROR
-#endif
-#define ERROR UPDATE_FL, error
-static void error(const char *fmt, ...)
-{
-    va_list args;
-    fprintf(stderr,
-            "\n---> ERROR when executing line %i in file %s !\n",
-            __line__, __file__);
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-    fprintf(stderr, "\n---> Execution stopped !\n\n");
-}
-
-#define ASIN safe_asin
 static real safe_asin(real f)
 {
     if ( (fabs(f) < 1.00) )
     {
         return( asin(f) );
     }
-    if ( (fabs(f) - 1.00)  <= DP_TOL)
-    {
-        ERROR("ASIN : invalid argument %f", f);
-    }
+    GMX_ASSERT(fabs(f) - 1.0 > DP_TOL, "Invalid argument");
     return(M_PI_2);
 }
 
 /* routines for dot distributions on the surface of the unit sphere */
-static real rh;
-
-static void icosaeder_vertices(real *xus)
+static real icosaeder_vertices(real *xus)
 {
-    rh = sqrt(1.-2.*cos(TORAD(72.)))/(1.-cos(TORAD(72.)));
+    const real rh = sqrt(1.-2.*cos(TORAD(72.)))/(1.-cos(TORAD(72.)));
     const real rg = cos(TORAD(72.))/(1.-cos(TORAD(72.)));
     /* icosaeder vertices */
     xus[ 0] = 0.;                  xus[ 1] = 0.;                  xus[ 2] = 1.;
@@ -118,6 +88,7 @@ static void icosaeder_vertices(real *xus)
     xus[27] = rh*cos(TORAD(252.)); xus[28] = rh*sin(TORAD(252.)); xus[29] = -rg;
     xus[30] = rh*cos(TORAD(324.)); xus[31] = rh*sin(TORAD(324.)); xus[32] = -rg;
     xus[33] = 0.;                  xus[34] = 0.;                  xus[35] = -1.;
+    return rh;
 }
 
 
@@ -133,23 +104,14 @@ static void divarc(real x1, real y1, real z1,
     yd = z1*x2-z2*x1;
     zd = x1*y2-x2*y1;
     dd = sqrt(xd*xd+yd*yd+zd*zd);
-    if (dd < DP_TOL)
-    {
-        ERROR("divarc: rotation axis of length %f", dd);
-    }
+    GMX_ASSERT(dd >= DP_TOL, "Rotation axis vector too short");
 
     d1 = x1*x1+y1*y1+z1*z1;
-    if (d1 < 0.5)
-    {
-        ERROR("divarc: vector 1 of sq.length %f", d1);
-    }
     d2 = x2*x2+y2*y2+z2*z2;
-    if (d2 < 0.5)
-    {
-        ERROR("divarc: vector 2 of sq.length %f", d2);
-    }
+    GMX_ASSERT(d1 >= 0.5, "Vector 1 too short");
+    GMX_ASSERT(d2 >= 0.5, "Vector 2 too short");
 
-    phi  = ASIN(dd/sqrt(d1*d2));
+    phi  = safe_asin(dd/sqrt(d1*d2));
     phi  = phi*((real)div1)/((real)div2);
     sphi = sin(phi); cphi = cos(phi);
     s    = (x1*xd+y1*yd+z1*zd)/dd;
@@ -161,30 +123,25 @@ static void divarc(real x1, real y1, real z1,
     *xr = x/dd; *yr = y/dd; *zr = z/dd;
 }
 
-static int ico_dot_arc(int densit)   /* densit...required dots per unit sphere */
+/* densit...required dots per unit sphere */
+static std::vector<real> ico_dot_arc(int densit)
 {
     /* dot distribution on a unit sphere based on an icosaeder *
      * great circle average refining of icosahedral face       */
 
-    int   i, j, k, tl, tl2, tn, tess;
+    int   i, j, k, tl, tl2, tn;
     real  a, d, x, y, z, x2, y2, z2, x3, y3, z3;
     real  xij, yij, zij, xji, yji, zji, xik, yik, zik, xki, yki, zki,
           xjk, yjk, zjk, xkj, ykj, zkj;
-    real *xus = NULL;
 
     /* calculate tessalation level */
-    a     = sqrt((((real) densit)-2.)/10.);
-    tess  = (int) ceil(a);
-    n_dot = 10*tess*tess+2;
-    if (n_dot < densit)
-    {
-        ERROR("ico_dot_arc: error in formula for tessalation level (%d->%d, %d)",
-              tess, n_dot, densit);
-    }
+    a = sqrt((((real) densit)-2.)/10.);
+    const int  tess = (int) ceil(a);
+    const int  ndot = 10*tess*tess+2;
+    GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
-    snew(xus, 3*n_dot);
-    xpunsp = xus;
-    icosaeder_vertices(xus);
+    std::vector<real> xus(3*ndot);
+    const real        rh = icosaeder_vertices(&xus[0]);
 
     if (tess > 1)
     {
@@ -204,10 +161,7 @@ static int ico_dot_arc(int densit)   /* densit...required dots per unit sphere *
                 }
                 for (tl = 1; tl < tess; tl++)
                 {
-                    if (tn >= n_dot)
-                    {
-                        ERROR("ico_dot: tn exceeds dimension of xus");
-                    }
+                    GMX_ASSERT(tn < ndot, "Inconsistent precomputed surface dot count");
                     divarc(xus[3*i], xus[1+3*i], xus[2+3*i],
                            xus[3*j], xus[1+3*j], xus[2+3*j],
                            tl, tess, &xus[3*tn], &xus[1+3*tn], &xus[2+3*tn]);
@@ -267,16 +221,14 @@ static int ico_dot_arc(int densit)   /* densit...required dots per unit sphere *
                             divarc(xus[3*j], xus[1+3*j], xus[2+3*j],
                                    xus[3*k], xus[1+3*k], xus[2+3*k],
                                    tess-tl-tl2, tess, &xjk, &yjk, &zjk);
-                            if (tn >= n_dot)
-                            {
-                                ERROR("ico_dot: tn exceeds dimension of xus");
-                            }
                             divarc(xki, yki, zki, xji, yji, zji, tl2, tess-tl,
                                    &x, &y, &z);
                             divarc(xkj, ykj, zkj, xij, yij, zij, tl, tess-tl2,
                                    &x2, &y2, &z2);
                             divarc(xjk, yjk, zjk, xik, yik, zik, tl, tl+tl2,
                                    &x3, &y3, &z3);
+                            GMX_ASSERT(tn < ndot,
+                                       "Inconsistent precomputed surface dot count");
                             x           = x+x2+x3; y = y+y2+y3; z = z+z2+z3;
                             d           = sqrt(x*x+y*y+z*z);
                             xus[3*tn]   = x/d;
@@ -288,16 +240,14 @@ static int ico_dot_arc(int densit)   /* densit...required dots per unit sphere *
                 }         /* cycle k */
             }             /* cycle j */
         }                 /* cycle i */
-        if (n_dot != tn)
-        {
-            ERROR("ico_dot: n_dot(%d) and tn(%d) differ", n_dot, tn);
-        }
-    }   /* end of if (tess > 1) */
+        GMX_ASSERT(tn == ndot, "Inconsistent precomputed surface dot count");
+    }                     /* end of if (tess > 1) */
 
-    return n_dot;
+    return xus;
 }                                  /* end of routine ico_dot_arc */
 
-static int ico_dot_dod(int densit) /* densit...required dots per unit sphere */
+/* densit...required dots per unit sphere */
+static std::vector<real> ico_dot_dod(int densit)
 {
     /* dot distribution on a unit sphere based on an icosaeder *
      * great circle average refining of icosahedral face       */
@@ -306,20 +256,15 @@ static int ico_dot_dod(int densit) /* densit...required dots per unit sphere */
     real  a, d, x, y, z, x2, y2, z2, x3, y3, z3, ai_d, adod;
     real  xij, yij, zij, xji, yji, zji, xik, yik, zik, xki, yki, zki,
           xjk, yjk, zjk, xkj, ykj, zkj;
-    real *xus = NULL;
+
     /* calculate tesselation level */
     a     = sqrt((((real) densit)-2.)/30.);
     tess  = std::max((int) ceil(a), 1);
-    n_dot = 30*tess*tess+2;
-    if (n_dot < densit)
-    {
-        ERROR("ico_dot_dod: error in formula for tessalation level (%d->%d, %d)",
-              tess, n_dot, densit);
-    }
+    const int ndot = 30*tess*tess+2;
+    GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
-    snew(xus, 3*n_dot);
-    xpunsp = xus;
-    icosaeder_vertices(xus);
+    std::vector<real> xus(3*ndot);
+    const real        rh = icosaeder_vertices(&xus[0]);
 
     tn = 12;
     /* square of the edge of an icosaeder */
@@ -389,10 +334,8 @@ static int ico_dot_dod(int densit) /* densit...required dots per unit sphere */
                 }
                 for (tl = 1; tl < tess; tl++)
                 {
-                    if (tn >= n_dot)
-                    {
-                        ERROR("ico_dot: tn exceeds dimension of xus");
-                    }
+                    GMX_ASSERT(tn < ndot,
+                               "Inconsistent precomputed surface dot count");
                     divarc(xus[3*i], xus[1+3*i], xus[2+3*i],
                            xus[3*j], xus[1+3*j], xus[2+3*j],
                            tl, tess, &xus[3*tn], &xus[1+3*tn], &xus[2+3*tn]);
@@ -452,16 +395,14 @@ static int ico_dot_dod(int densit) /* densit...required dots per unit sphere */
                             divarc(xus[3*j], xus[1+3*j], xus[2+3*j],
                                    xus[3*k], xus[1+3*k], xus[2+3*k],
                                    tess-tl-tl2, tess, &xjk, &yjk, &zjk);
-                            if (tn >= n_dot)
-                            {
-                                ERROR("ico_dot: tn exceeds dimension of xus");
-                            }
                             divarc(xki, yki, zki, xji, yji, zji, tl2, tess-tl,
                                    &x, &y, &z);
                             divarc(xkj, ykj, zkj, xij, yij, zij, tl, tess-tl2,
                                    &x2, &y2, &z2);
                             divarc(xjk, yjk, zjk, xik, yik, zik, tl, tl+tl2,
                                    &x3, &y3, &z3);
+                            GMX_ASSERT(tn < ndot,
+                                       "Inconsistent precomputed surface dot count");
                             x           = x+x2+x3; y = y+y2+y3; z = z+z2+z3;
                             d           = sqrt(x*x+y*y+z*z);
                             xus[3*tn]   = x/d;
@@ -473,13 +414,10 @@ static int ico_dot_dod(int densit) /* densit...required dots per unit sphere */
                 }         /* cycle k */
             }             /* cycle j */
         }                 /* cycle i */
-        if (n_dot != tn)
-        {
-            ERROR("ico_dot: n_dot(%d) and tn(%d) differ", n_dot, tn);
-        }
-    }   /* end of if (tess > 1) */
+        GMX_ASSERT(tn == ndot, "Inconsistent precomputed surface dot count");
+    }                     /* end of if (tess > 1) */
 
-    return n_dot;
+    return xus;
 }       /* end of routine ico_dot_dod */
 
 static int unsp_type(int densit)
@@ -505,49 +443,29 @@ static int unsp_type(int densit)
     }
 }
 
-static void make_unsp(int densit, int mode, int * num_dot, int cubus)
+static std::vector<real> make_unsp(int densit, int cubus)
 {
-    int  *ico_wk, *ico_pt;
-    int   ico_cube_cb, i, j, k, l, ijk, tn, tl, tl2;
-    real *xus;
-    int  *work;
-    real  x, y, z;
+    int              *ico_wk, *ico_pt;
+    int               ico_cube, ico_cube_cb, i, j, k, l, ijk, tn, tl, tl2;
+    int              *work;
+    real              x, y, z;
 
-    if (xpunsp)
-    {
-        free(xpunsp);
-    }
-
-    k = 1;
-    if (mode < 0)
-    {
-        k    = 0;
-        mode = -mode;
-    }
-    // Assignment to satisfy cppcheck.
-    int ndot = 0;
+    int               mode = unsp_type(densit);
+    std::vector<real> xus;
     if (mode == UNSP_ICO_ARC)
     {
-        ndot = ico_dot_arc(densit);
+        xus = ico_dot_arc(densit);
     }
     else if (mode == UNSP_ICO_DOD)
     {
-        ndot = ico_dot_dod(densit);
+        xus = ico_dot_dod(densit);
     }
     else
     {
         GMX_RELEASE_ASSERT(false, "Invalid unit sphere mode");
     }
 
-    last_n_dot = ndot; last_densit = densit; last_unsp = mode;
-    *num_dot   = ndot;
-    if (k)
-    {
-        return;
-    }
-
-    /* in the following the dots of the unit sphere may be resorted */
-    last_unsp = -last_unsp;
+    const int ndot = static_cast<int>(xus.size())/3;
 
     /* determine distribution of points in elementary cubes */
     if (cubus)
@@ -556,7 +474,6 @@ static void make_unsp(int densit, int mode, int * num_dot, int cubus)
     }
     else
     {
-        last_cubus = 0;
         i          = 1;
         while (i*i*i*2 < ndot)
         {
@@ -565,9 +482,8 @@ static void make_unsp(int densit, int mode, int * num_dot, int cubus)
         ico_cube = std::max(i-1, 0);
     }
     ico_cube_cb = ico_cube*ico_cube*ico_cube;
-    del_cube    = 2./((real)ico_cube);
+    const real del_cube = 2./((real)ico_cube);
     snew(work, ndot);
-    xus = xpunsp;
     for (l = 0; l < ndot; l++)
     {
         i = std::max((int) floor((1.+xus[3*l])/del_cube), 0);
@@ -627,6 +543,8 @@ static void make_unsp(int densit, int mode, int * num_dot, int cubus)
     }         /* cycle i */
     sfree(ico_wk);
     sfree(work);
+
+    return xus;
 }
 
 
@@ -637,10 +555,9 @@ typedef struct _stwknb {
     real dot;
 } Neighb;
 
-// This is extern "C" for now to make it easy to put valgrind suppressions.
-extern "C" void
+static void
 nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
-             int  densit, int mode,
+             const real *xus, int n_dot, int mode,
              real *value_of_area, real **at_area,
              real *value_of_vol,
              real **lidots, int *nu_dots,
@@ -648,7 +565,6 @@ nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
 {
     int         iat, i, ii, iii, ix, iy, iz, ixe, ixs, iye, iys, ize, izs, i_ac;
     int         jat, j, jj, jjj, jx, jy, jz;
-    int         distribution;
     int         l;
     int         maxnei, nnei, last, maxdots = 0;
     int        *wkdot = NULL, *wkbox = NULL, *wkat1 = NULL, *wkatm = NULL;
@@ -657,7 +573,7 @@ nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     real        dx, dy, dz, dd, ai, aisq, ajsq, aj, as, a;
     real        xi, yi, zi;
     real        dotarea, area, vol = 0.;
-    real       *xus, *dots = NULL, *atom_area = NULL;
+    real       *dots = NULL, *atom_area = NULL;
     int         nxbox, nybox, nzbox, nxy, nxyz;
     real        xmin = 0, ymin = 0, zmin = 0, xmax, ymax, zmax, ra2max, d;
     const real *pco;
@@ -665,14 +581,6 @@ nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
     t_pbc       pbc;
     rvec        ddx, *x = NULL;
     int         iat_xx;
-
-    distribution = unsp_type(densit);
-    if (distribution != -last_unsp || last_cubus != 4 ||
-        (densit != last_densit && densit != last_n_dot))
-    {
-        make_unsp(densit, (-distribution), &n_dot, 4);
-    }
-    xus = xpunsp;
 
     dotarea = FOURPI/(real) n_dot;
     area    = 0.;
@@ -1143,12 +1051,12 @@ namespace gmx
 class SurfaceAreaCalculator::Impl
 {
     public:
-        Impl() : dotCount_(32), flags_(0)
+        Impl() : flags_(0)
         {
         }
 
-        int dotCount_;
-        int flags_;
+        std::vector<real> unitSphereDots_;
+        int               flags_;
 };
 
 SurfaceAreaCalculator::SurfaceAreaCalculator()
@@ -1162,7 +1070,7 @@ SurfaceAreaCalculator::~SurfaceAreaCalculator()
 
 void SurfaceAreaCalculator::setDotCount(int dotCount)
 {
-    impl_->dotCount_ = dotCount;
+    impl_->unitSphereDots_ = make_unsp(dotCount, 4);
 }
 
 void SurfaceAreaCalculator::setCalculateVolume(bool bVolume)
@@ -1240,7 +1148,8 @@ void SurfaceAreaCalculator::calculate(
     {
         *n_dots = 0;
     }
-    nsc_dclm_pbc(x, const_cast<real *>(radius), nat, impl_->dotCount_,
+    nsc_dclm_pbc(x, const_cast<real *>(radius), nat,
+                 &impl_->unitSphereDots_[0], impl_->unitSphereDots_.size()/3,
                  flags, area, at_area, volume, lidots, n_dots, index,
                  pbc != NULL ? pbc->ePBC : epbcNONE,
                  pbc != NULL ? const_cast<rvec *>(pbc->box) : NULL);

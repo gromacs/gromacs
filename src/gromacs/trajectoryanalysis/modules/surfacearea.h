@@ -85,7 +85,8 @@ class SurfaceAreaCalculator
         /*! \brief
          * Sets the number of surface dots per sphere to use.
          *
-         * If not called, the default is 32.
+         * This function must be called before calculate() to set the desired
+         * accuracy/computational cost.
          */
         void setDotCount(int dotCount);
 
@@ -150,10 +151,6 @@ class SurfaceAreaCalculator
          * \todo
          * Make the output options more C++-like, in particular for the array
          * outputs.
-         *
-         * \todo
-         * Make this thread-safe; currently, only a single concurrent call to
-         * calculate() is supported.
          */
         void calculate(const rvec *x, const real *radius, const t_pbc *pbc,
                        int nat, atom_id index[], int flags, real *area,

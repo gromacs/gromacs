@@ -3,16 +3,6 @@
 # Memory leaks in the legacy code are excluded
 # Other problems besides memory leaks should NOT be excluded for legacy code
 
-# Ugly memory leak that depends on global variables being used to pass
-# information between routines.
-{
-   nsc_dclm_pbc
-   Memcheck:Leak
-   fun:calloc
-   fun:save_calloc
-   ...
-   fun:nsc_dclm_pbc
-}
 # Contains multiple leaks, and is in the same test binary as insert-molecules
 # that is desired to be included.
 {
