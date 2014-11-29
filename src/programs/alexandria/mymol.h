@@ -61,7 +61,6 @@ enum eSupport {
 
 namespace alexandria
 {
-
 /*! \brief
  * Contains molecular properties from a range of sources.
  * Overloads the regular molprop and adds a lot of functionality.
@@ -94,22 +93,25 @@ class MyMol : public MolProp
                                 ChargeGenerationModel iModel);
 
         //! Generate angles, dihedrals, exclusions etc.
-        void MakeAngles();
+        void MakeAngles(bool bPairs, bool bDihs);
 
         //! Generate virtual sites or linear angles
-        void MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd);
+        void MakeSpecialInteractions(bool bUseVsites);
 
+        //! Fetch the force constants
+        void GetForceConstants(gmx_poldata_t pd);
     public:
         rvec           *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix          box;
         real            dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq, Hform, Emol, Ecalc, Force2;
         real           *qESP;
         tensor          Q_exp, Q_calc, Q_esp;
-        int             bts[ebtsNR];
         eSupport        eSupp;
         t_state         state_;
         t_forcerec     *fr_;
-        t_params       *plist_;
+        
+        std::vector<PlistWrapper> plist_;
+        
         gmx_mtop_t     *mtop_;
         gmx_localtop_t *ltop_;
         gpp_atomtype_t  atype_;
@@ -158,9 +160,6 @@ class MyMol : public MolProp
 
         //! Print some info about the molecule to a file
         void PrintQPol(FILE *fp, gmx_poldata_t pd);
-
-        //! Print a rtp entry
-        void PrintRTPEntry(const char *fn);
 
         //! Set the force field
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
@@ -214,8 +213,6 @@ class MyMol : public MolProp
 const char *immsg(immStatus imm);
 
 }
-
-void mv_plists(gmx_poldata_t pd, t_params plist[], gmx_bool bForward);
 
 #define gmx_assert(n, m) if (n != m) { gmx_fatal(FARGS, "Variable %s = %d, should have been %d",#n, n, m); }
 

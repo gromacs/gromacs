@@ -99,9 +99,7 @@ int alex_gentop(int argc, char *argv[])
         "gentop generates a topology from molecular coordinates",
         "either from a file, from a database, or from a gaussian log file.",
         "The program assumes all hydrogens are present when defining",
-        "the hybridization from the atom name and the number of bonds.",
-        "The program can also make an rtp entry, which you can then add",
-        "to the rtp database.[PAR]",
+        "the hybridization from the atom name and the number of bonds.[PAR]",
         "If the [TT]-oi[tt] option is set an [TT]itp[tt] file will be generated",
         "instead of a [TT]top[tt] file.",
         "When [TT]-param[tt] is set, equilibrium distances and angles",
@@ -130,7 +128,7 @@ int alex_gentop(int argc, char *argv[])
     output_env_t                     oenv;
     gmx_atomprop_t                   aps;
     gmx_poldata_t                    pd;
-    gmx_bool                         bRTP, bTOP;
+    gmx_bool                         bTOP;
     char                             forcefield[STRLEN], ffdir[STRLEN];
     char                             ffname[STRLEN];
     std::vector<alexandria::MolProp> mps;
@@ -143,7 +141,6 @@ int alex_gentop(int argc, char *argv[])
         { efTOP, "-o",    "out",  ffOPTWR },
         { efITP, "-oi",   "out",  ffOPTWR },
         { efSTO, "-c",    "out",  ffWRITE },
-        { efRTP, "-r",    "out",  ffOPTWR },
         { efLOG, "-g03",  "gauss",  ffOPTRD },
         { efNDX, "-n",    "renum", ffOPTWR },
         { efDAT, "-q",    "qout", ffOPTWR },
@@ -337,7 +334,6 @@ int alex_gentop(int argc, char *argv[])
     }
 
     /* Check the options */
-    bRTP = opt2bSet("-r", NFILE, fnm);
     bITP = opt2bSet("-oi", NFILE, fnm);
     bTOP = TRUE;
 
@@ -346,7 +342,7 @@ int alex_gentop(int argc, char *argv[])
         maxcycle = 1;
     }
 
-    if (!bRTP && !bTOP)
+    if (!bTOP)
     {
         gmx_fatal(FARGS, "Specify at least one output file");
     }
@@ -496,11 +492,6 @@ int alex_gentop(int argc, char *argv[])
                                 ftp2fn(efTOP, NFILE, fnm),
                                 iModel, bVerbose,
                                 pd, aps);
-        }
-        else if (bRTP)
-        {
-            /* Write force field component */
-            mymol.PrintRTPEntry((char *)ftp2fn(efRTP, NFILE, fnm));
         }
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
 

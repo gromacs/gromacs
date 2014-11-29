@@ -154,129 +154,9 @@ void GentopVsites::addRingPlanar(int natom, int aa[], int nbonds[])
     }
 }
 
-static void delete_params(t_params plist[], int etype, int alist[])
-{
-    int j, k, l, nra;
-
-    nra = interaction_function[etype].nratoms;
-    switch (nra)
-    {
-        case 2:
-            /* Remove bonds, if present */
-            for (j = 0; (j < plist[etype].nr); j++)
-            {
-                if (((plist[etype].param[j].a[0] == alist[0]) &&
-                     (plist[etype].param[j].a[1] == alist[1])) ||
-                    ((plist[etype].param[j].a[1] == alist[0]) &&
-                     (plist[etype].param[j].a[0] == alist[1])))
-                {
-                    if (NULL != debug)
-                    {
-                        fprintf(debug, "Removing bond beteen atoms %d %d\n",
-                                alist[0], alist[1]);
-                    }
-                    for (k = j+1; (k < plist[etype].nr); k++)
-                    {
-                        for (l = 0; (l < MAXATOMLIST); l++)
-                        {
-                            plist[etype].param[k-1].a[l] =
-                                plist[etype].param[k].a[l];
-                        }
-                        for (l = 0; (l < MAXFORCEPARAM); l++)
-                        {
-                            plist[etype].param[k-1].c[l] =
-                                plist[etype].param[k].c[l];
-                        }
-                    }
-                    plist[etype].nr--;
-                    j--;
-                    break;
-                }
-            }
-            break;
-        case 3:
-            /* Remove angle, if present */
-            for (j = 0; (j < plist[etype].nr); j++)
-            {
-                if (plist[etype].param[j].a[1] == alist[1])
-                {
-                    if (((plist[etype].param[j].a[0] == alist[0]) &&
-                         (plist[etype].param[j].a[2] == alist[2])) ||
-                        ((plist[etype].param[j].a[2] == alist[0]) &&
-                         (plist[etype].param[j].a[0] == alist[2])))
-                    {
-                        if (NULL != debug)
-                        {
-                            fprintf(debug, "Removing angle beteen atoms %d %d %d\n",
-                                    alist[0], alist[1], alist[2]);
-                        }
-                        for (k = j+1; (k < plist[etype].nr); k++)
-                        {
-                            for (l = 0; (l < MAXATOMLIST); l++)
-                            {
-                                plist[etype].param[k-1].a[l] =
-                                    plist[etype].param[k].a[l];
-                            }
-                            for (l = 0; (l < MAXFORCEPARAM); l++)
-                            {
-                                plist[etype].param[k-1].c[l] =
-                                    plist[etype].param[k].c[l];
-                            }
-                        }
-                        plist[etype].nr--;
-                        j--;
-                        break;
-                    }
-                }
-            }
-            break;
-        case 4:
-            /* Remove dihedral, if present. Allow wildcard in alist[3] (specified as -1) */
-            for (j = 0; (j < plist[etype].nr); j++)
-            {
-                if (((plist[etype].param[j].a[0] == alist[0]) &&
-                     (plist[etype].param[j].a[1] == alist[1]) &&
-                     (plist[etype].param[j].a[2] == alist[2]) &&
-                     ((alist[3] == -1) || (plist[etype].param[j].a[3] == alist[3]))) ||
-                    ((plist[etype].param[j].a[3] == alist[0]) &&
-                     (plist[etype].param[j].a[2] == alist[1]) &&
-                     (plist[etype].param[j].a[1] == alist[2]) &&
-                     ((alist[3] == -1) || (plist[etype].param[j].a[0] == alist[3]))) ||
-                    ((plist[etype].param[j].a[1] == alist[0]) &&
-                     (plist[etype].param[j].a[2] == alist[1]) &&
-                     (plist[etype].param[j].a[3] == alist[2]) &&
-                     (alist[3] == -1)))
-                {
-                    if (NULL != debug)
-                    {
-                        fprintf(debug, "Removing dihedral beteen atoms %d %d %d %d\n",
-                                alist[0], alist[1], alist[2], alist[3]);
-                    }
-                    for (k = j+1; (k < plist[etype].nr); k++)
-                    {
-                        for (l = 0; (l < MAXATOMLIST); l++)
-                        {
-                            plist[etype].param[k-1].a[l] =
-                                plist[etype].param[k].a[l];
-                        }
-                        for (l = 0; (l < MAXFORCEPARAM); l++)
-                        {
-                            plist[etype].param[k-1].c[l] =
-                                plist[etype].param[k].c[l];
-                        }
-                    }
-                    plist[etype].nr--;
-                    j--;
-                }
-            }
-            break;
-        default:
-            fprintf(stderr, "Don't know how to remove params from type %s\n",
-                    interaction_function[etype].name);
-    }
-}
-
-static void calc_vsite2parm(t_atoms *atoms, t_params plist[], rvec **x,
+static void calc_vsite2parm(t_atoms *atoms, 
+                            std::vector<PlistWrapper> &plist,
+                            rvec **x,
                             gv_linear *gvl, t_symtab *symtab,
                             gpp_atomtype_t atype)
 {
@@ -387,7 +267,7 @@ static void calc_vsite2parm(t_atoms *atoms, t_params plist[], rvec **x,
     pp.a[0] = gvl->a[0];
     pp.a[1] = natoms;
     pp.c[0] = rVV;
-    add_param_to_list(&(plist[F_CONSTR]), &pp);
+    add_param_to_plist(plist, F_CONSTR, pp);
 
     /* Add vsites */
     for (i = 1; (i < gvl->nline); i++)
@@ -397,7 +277,7 @@ static void calc_vsite2parm(t_atoms *atoms, t_params plist[], rvec **x,
         pp.a[1] = gvl->a[0];
         pp.a[2] = natoms;
         pp.c[0] = ac[i];
-        add_param_to_list(&(plist[F_VSITE2]), &pp);
+        add_param_to_plist(plist, F_VSITE2, pp);
     }
 }
 
@@ -490,23 +370,37 @@ void GentopVsites::mergeLinear(bool bGenVsites)
     }
 }
 
-static void set_linear_angle_params(int a[], int ftb,
-                                    t_params plist[], real ktheta)
+static void set_linear_angle_params(int a[],
+                                    std::vector<PlistWrapper> &plist,
+                                    real ktheta)
 {
     t_param pp;
     real b0 = 0, b1 = 0;
+    std::vector<PlistWrapper>::iterator pw;
     
-    for(int i = 0; (i < plist[ftb].nr); i++)
+    for(pw=plist.begin(); (pw < plist.end()); ++pw)
     {
-        if (((plist[ftb].param[i].a[0] == a[0]) && (plist[ftb].param[i].a[1] == a[1])) ||
-            ((plist[ftb].param[i].a[0] == a[1]) && (plist[ftb].param[i].a[1] == a[0])))
+        if (pw->getFtype() == F_BONDS)
         {
-            b0 = plist[ftb].param[i].c[0];
+            break;
         }
-        else if (((plist[ftb].param[i].a[0] == a[2]) && (plist[ftb].param[i].a[1] == a[1])) ||
-            ((plist[ftb].param[i].a[0] == a[1]) && (plist[ftb].param[i].a[1] == a[2])))
+    }
+    if (plist.end() == pw)
+    {
+        fprintf(stderr, "Can not find the bonds in set_linear_angle_params\n");
+        return;
+    }
+    for(ParamIterator i = pw->beginParam(); (i < pw->endParam()); ++i)
+    {
+        if (((i->a[0] == a[0]) && (i->a[1] == a[1])) ||
+            ((i->a[0] == a[1]) && (i->a[1] == a[0])))
         {
-            b1 = plist[ftb].param[i].c[0];
+            b0 = i->c[0];
+        }
+        else if (((i->a[0] == a[2]) && (i->a[1] == a[1])) ||
+            ((i->a[0] == a[1]) && (i->a[1] == a[2])))
+        {
+            b1 = i->c[0];
         }
     }
     if ((b0 > 0) && (b1 > 0))
@@ -518,7 +412,7 @@ static void set_linear_angle_params(int a[], int ftb,
         }
         pp.c[0] = (b1/(b0+b1));
         pp.c[1] = ktheta;
-        add_param_to_list(&(plist[F_LINEAR_ANGLES]), &pp);
+        add_param_to_plist(plist, F_LINEAR_ANGLES, pp);
     }
     else if (NULL != debug)
     {
@@ -529,9 +423,9 @@ static void set_linear_angle_params(int a[], int ftb,
 
 void GentopVsites::generateSpecial(bool bUseVsites,
                                    t_atoms *atoms, rvec **x,
-                                   t_params plist[], t_symtab *symtab,
-                                   gpp_atomtype_t atype, t_excls **excls,
-                                   gmx_poldata_t pd)
+                                   std::vector<PlistWrapper> &plist,
+                                   t_symtab *symtab,
+                                   gpp_atomtype_t atype, t_excls **excls)
 {
     int     j, nlin_at;
     int     a[MAXATOMLIST], aa[2];
@@ -540,10 +434,10 @@ void GentopVsites::generateSpecial(bool bUseVsites,
 
     mergeLinear(bUseVsites);
 
-    ftb     = gmx_poldata_get_bond_ftype(pd);
-    fta     = gmx_poldata_get_angle_ftype(pd);
-    ftp     = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
-    fti     = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
+    ftb     = F_BONDS;
+    fta     = F_ANGLES;
+    ftp     = F_PDIHS;
+    fti     = F_IDIHS;
     nlin_at = 0;
     for (unsigned int i = 0; (i < linear_.size()); i++)
     {
@@ -600,7 +494,8 @@ void GentopVsites::generateSpecial(bool bUseVsites,
                 /* Compute details for the new masses and vsites, 
                  * and update everything 
                  */
-                calc_vsite2parm(atoms, plist, x, &linear_[i], symtab, atype);
+                calc_vsite2parm(atoms, plist,
+                                x, &linear_[i], symtab, atype);
                 srenew((*excls), atoms->nr);
                 for (j = atoms->nr-2; (j <= atoms->nr-1); j++)
                 {
@@ -613,7 +508,7 @@ void GentopVsites::generateSpecial(bool bUseVsites,
             {
                 /* Need to add parameters here! */
                 real kth = 400;
-                set_linear_angle_params(a, ftb, plist, kth);
+                set_linear_angle_params(a, plist, kth);
             }
         }
     }
@@ -666,7 +561,7 @@ void GentopVsites::generateSpecial(bool bUseVsites,
             {
                 pp.a[j] = planar_[i].a[j];
             }
-            add_param_to_list(&(plist[fti]), &pp);
+            add_param_to_plist(plist, F_IDIHS, pp);
         }
     }
 }

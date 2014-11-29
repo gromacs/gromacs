@@ -62,9 +62,10 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "poldata.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
+#include "poldata.h"
+#include "plistwrapper.h"
 #include "stringutil.h"
 
 void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
@@ -305,18 +306,19 @@ void reset_q(t_atoms *atoms)
 }
 
 void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
-                        t_params *bonds, gmx_poldata_t pd,
+                        std::vector<alexandria::PlistWrapper>::iterator pw,
+                        gmx_poldata_t pd,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges)
 {
     char  *central, *attached;
-    int    nattached, i, j, nh, ai, aj, anri, anrj;
+    int    nattached, nh, ai, aj, anri, anrj;
     int    anr_central, anr_attached, nrq;
     int    hs[8];
     double qaver, qsum;
     int    hsmin;
 
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         sym_charges.push_back(i);
     }
@@ -346,15 +348,16 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                 anr_central  = gmx_atomprop_atomnumber(aps, central);
                 anr_attached = gmx_atomprop_atomnumber(aps, attached);
                 hsmin        = -1;
-                for (i = 0; (i < atoms->nr); i++)
+                for (int i = 0; (i < atoms->nr); i++)
                 {
                     if (atoms->atom[i].atomnumber == anr_central)
                     {
                         nh = 0;
-                        for (j = 0; (j < bonds->nr); j++)
+                        for (alexandria::ParamIterator j = pw->beginParam();
+                             (j < pw->endParam()); ++j)
                         {
-                            ai   = bonds->param[j].a[0];
-                            aj   = bonds->param[j].a[1];
+                            ai   = j->a[0];
+                            aj   = j->a[1];
                             anri = atoms->atom[ai].atomnumber;
                             anrj = atoms->atom[aj].atomnumber;
 
@@ -373,7 +376,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         }
                         if ((nh == nattached) && (hsmin != -1))
                         {
-                            for (j = 0; (j < nattached); j++)
+                            for (int j = 0; (j < nattached); j++)
                             {
                                 sym_charges[hs[j]] = hsmin;
                             }
@@ -383,11 +386,11 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             }
         }
 
-        for (i = 0; (i < atoms->nr); i++)
+        for (int i = 0; (i < atoms->nr); i++)
         {
             qsum = 0;
             nrq  = 0;
-            for (j = 0; (j < atoms->nr); j++)
+            for (int j = 0; (j < atoms->nr); j++)
             {
                 if (sym_charges[j] == sym_charges[i])
                 {
@@ -398,7 +401,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             if (0 < nrq)
             {
                 qaver = qsum/nrq;
-                for (j = 0; (j < atoms->nr); j++)
+                for (int j = 0; (j < atoms->nr); j++)
                 {
                     if (sym_charges[j] == sym_charges[i])
                     {
@@ -434,7 +437,8 @@ static int *generate_cg_neutral(t_atoms *atoms, gmx_bool bUsePDBcharge)
     return cgnr;
 }
 
-static int *generate_cg_group(t_atoms *atoms, t_params *bonds, t_params *pols)
+static int *generate_cg_group(t_atoms *atoms, 
+                              std::vector<alexandria::PlistWrapper> &plist)
 {
     int        i, j, k, atn, ai, aj, ncg = 1;
     int       *cgnr;
@@ -464,56 +468,65 @@ static int *generate_cg_group(t_atoms *atoms, t_params *bonds, t_params *pols)
     }
     /* Rely on the notion that all H and other monovalent
        atoms are bound to something */
-    for (j = 0; (j < bonds->nr); j++)
+    alexandria::PlistWrapperIterator bonds = SearchPlist(plist, F_BONDS);
+    if (plist.end() != bonds)
     {
-        ai  = bonds->param[j].a[0];
-        aj  = bonds->param[j].a[1];
-        bMV = FALSE;
-        atn = atoms->atom[ai].atomnumber;
-        for (k = 0; (k < nmv) && !bMV; k++)
+        for (alexandria::ParamIterator j = bonds->beginParam();
+             (j < bonds->endParam()); ++j)
         {
-            bMV = (atn == monovalent[k]);
-        }
-        if (bMV)
-        {
-            if (cgnr[aj] != NOTSET)
-            {
-                cgnr[ai] = cgnr[aj];
-            }
-            else
-            {
-                cgnr[ai] = cgnr[aj] = 1;
-            }
-        }
-        else
-        {
+            ai  = j->a[0];
+            aj  = j->a[1];
             bMV = FALSE;
-            atn = atoms->atom[aj].atomnumber;
+            atn = atoms->atom[ai].atomnumber;
             for (k = 0; (k < nmv) && !bMV; k++)
             {
                 bMV = (atn == monovalent[k]);
             }
             if (bMV)
             {
-                cgnr[aj] = cgnr[ai];
+                if (cgnr[aj] != NOTSET)
+                {
+                    cgnr[ai] = cgnr[aj];
+                }
+                else
+                {
+                    cgnr[ai] = cgnr[aj] = 1;
+                }
+            }
+            else
+            {
+                bMV = FALSE;
+                atn = atoms->atom[aj].atomnumber;
+                for (k = 0; (k < nmv) && !bMV; k++)
+                {
+                    bMV = (atn == monovalent[k]);
+                }
+                if (bMV)
+                {
+                    cgnr[aj] = cgnr[ai];
+                }
             }
         }
     }
     /* Rely on the notion that all shells are bound to something */
-    for (j = 0; (j < pols->nr); j++)
+    alexandria::PlistWrapperIterator pols = SearchPlist(plist, F_POLARIZATION);
+    if (plist.end() != pols)
     {
-        ai       = pols->param[j].a[0];
-        aj       = pols->param[j].a[1];
-        cgnr[aj] = cgnr[ai];
-    }
-    for (i = 0; (i < atoms->nr); i++)
-    {
-        if (cgnr[i] == NOTSET)
+        for (alexandria::ParamIterator j = pols->beginParam();
+             (j < pols->endParam()); ++j)
         {
-            cgnr[i] = ncg++;
+            ai       = j->a[0];
+            aj       = j->a[1];
+            cgnr[aj] = cgnr[ai];
+        }
+        for (i = 0; (i < atoms->nr); i++)
+        {
+            if (cgnr[i] == NOTSET)
+            {
+                cgnr[i] = ncg++;
+            }
         }
     }
-
     printf("There are %d charge groups\n", ncg-1);
 
     return cgnr;
@@ -533,11 +546,14 @@ static int *generate_cg_atom(int natom)
 }
 
 int *generate_charge_groups(eChargeGroup cgtp, t_atoms *atoms,
-                            t_params *bonds, t_params *pols,
+                            std::vector<alexandria::PlistWrapper> &plist,
                             bool bUsePDBcharge,
                             real *qtot, real *mtot)
 {
     int i, *cgnr = NULL;
+    std::vector<alexandria::PlistWrapper>::iterator pb, ps;
+    pb = alexandria::SearchPlist(plist, F_BONDS);
+    ps = alexandria::SearchPlist(plist, F_POLARIZATION);
 
     switch (cgtp)
     {
@@ -545,7 +561,7 @@ int *generate_charge_groups(eChargeGroup cgtp, t_atoms *atoms,
             cgnr = generate_cg_neutral(atoms, bUsePDBcharge);
             break;
         case ecgGroup:
-            cgnr = generate_cg_group(atoms, bonds, pols);
+            cgnr = generate_cg_group(atoms, plist);
             break;
         case ecgAtom:
             cgnr = generate_cg_atom(atoms->nr);
@@ -593,7 +609,8 @@ static int cg_comp(const void *a, const void *b)
     }
 }
 
-void sort_on_charge_groups(int *cgnr, t_atoms *atoms, t_params plist[],
+void sort_on_charge_groups(int *cgnr, t_atoms *atoms, 
+                           std::vector<alexandria::PlistWrapper> &pw,
                            rvec x[], t_excls excls[],
                            const char *ndxout, int nmol)
 {
@@ -652,13 +669,15 @@ void sort_on_charge_groups(int *cgnr, t_atoms *atoms, t_params plist[],
         newi               = cg_renum[i];
         atoms->atomtype[i] = smn[newi];
     }
-    for (i = 0; (i < F_NRE); i++)
+    for (alexandria::PlistWrapperIterator i = pw.begin();
+         (i < pw.end()); ++i)
     {
-        for (j = 0; (j < plist[i].nr); j++)
+        for (alexandria::ParamIterator j = i->beginParam();
+             (j < i->endParam()); j++)
         {
-            for (k = 0; (k < NRAL(i)); k++)
+            for (k = 0; (k < NRAL(i->getFtype())); k++)
             {
-                plist[i].param[j].a[k] = inv_renum[plist[i].param[j].a[k]];
+                j->a[k] = inv_renum[j->a[k]];
             }
         }
     }

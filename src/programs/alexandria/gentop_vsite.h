@@ -24,10 +24,10 @@
 #ifndef GENTOP_VSITE_H
 #define GENTOP_VSITE_H
 
-//#include <algorithm>
 #include <vector>
 
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "plistwrapper.h"
 #include "poldata.h"
 
 #define egvtNO           0
@@ -39,7 +39,6 @@
 
 namespace alexandria
 {
-
 typedef struct {
     int nline; /* Must be 3 or 4 */
     int a[4];
@@ -136,9 +135,9 @@ class GentopVsites
          */
         void generateSpecial(bool bUseVsites,
                              t_atoms *atoms, rvec **x,
-                             t_params plist[],
+                             std::vector<PlistWrapper> &plist,
                              t_symtab *symtab, gpp_atomtype_t atype,
-                             t_excls **excls, gmx_poldata_t pd);
+                             t_excls **excls);
 };
 
 }

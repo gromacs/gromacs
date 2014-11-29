@@ -30,6 +30,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "plistwrapper.h"
 #include "poldata.h"
 
 void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC, matrix box);
@@ -44,7 +45,9 @@ void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
                t_params plist[], int cgnr[], int nbts, int bts[]);
 
 void symmetrize_charges(gmx_bool bQsym,
-                        t_atoms *atoms, t_params *bonds, gmx_poldata_t pd,
+                        t_atoms *atoms, 
+                        std::vector<alexandria::PlistWrapper>::iterator pw,
+                        gmx_poldata_t pd,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges);
 
@@ -53,11 +56,12 @@ enum eChargeGroup {
 };
 
 int *generate_charge_groups(eChargeGroup cgtp, t_atoms *atoms,
-                            t_params *bonds, t_params *pols,
+                            std::vector<alexandria::PlistWrapper> &pw,
                             bool bUsePDBcharge,
                             real *qtot, real *mtot);
 
-void sort_on_charge_groups(int *cgnr, t_atoms *atoms, t_params plist[],
+void sort_on_charge_groups(int *cgnr, t_atoms *atoms, 
+                           std::vector<alexandria::PlistWrapper> &pw,
                            rvec x[], t_excls excls[],
                            const char *ndxout,
                            int nmol);

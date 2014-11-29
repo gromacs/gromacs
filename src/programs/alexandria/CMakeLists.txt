@@ -80,6 +80,7 @@ set(ALEXANDRIA_SOURCES
         molprop_tables.cpp
         mymol.cpp
         moldip.cpp
+        plistwrapper.cpp
         gauss_io.cpp
         gentop.cpp
         tune_fc.cpp

@@ -81,90 +81,6 @@ static const char *gentop_version = "gentop 0.98";
 
 #define STRLEN 256
 
-static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *atoms)
-{
-    int    j, n, ft, k;
-    double xx, sx, bo;
-    char  *params;
-
-#define ATP(ii) ((char *)gmx_poldata_atype_to_btype(pd, *atoms->atomtype[ii]))
-    ft = gmx_poldata_get_bond_ftype(pd);
-    for (j = 0; (j < plist[ft].nr); j++)
-    {
-        if (0 < gmx_poldata_search_bond(pd,
-                                        ATP(plist[ft].param[j].a[0]),
-                                        ATP(plist[ft].param[j].a[1]),
-                                        &xx, &sx, NULL, &bo, &params))
-        {
-            plist[ft].param[j].c[0] = convert2gmx(xx, eg2cPm);
-            std::vector<std::string> ptr = split(params, ' ');
-            n = 0;
-            for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
-            {
-                if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                {
-                    plist[ft].param[j].c[1+n] = atof(pi->c_str());
-                    n++;
-                }
-            }
-        }
-        if ((NULL != debug) && (plist[ft].param[j].c[0] == 0))
-        {
-            fprintf(debug, "Could not find bonding parameters for %s - %s.\n",
-                    ATP(plist[ft].param[j].a[0]),
-                    ATP(plist[ft].param[j].a[1]));
-        }
-    }
-    ft = gmx_poldata_get_angle_ftype(pd);
-    for (j = 0; (j < plist[ft].nr); j++)
-    {
-        if (0 < gmx_poldata_search_angle(pd,
-                                         ATP(plist[ft].param[j].a[0]),
-                                         ATP(plist[ft].param[j].a[1]),
-                                         ATP(plist[ft].param[j].a[2]),
-                                         &xx, &sx, NULL, &params))
-        {
-            plist[ft].param[j].c[0] = xx;
-            std::vector<std::string> ptr = split(params, ' ');
-            n = 0;
-            for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
-            {
-                if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                {
-                    plist[ft].param[j].c[1+n] = atof(pi->c_str());
-                    n++;
-                }
-            }
-        }
-    }
-    for (k = 0; (k < egdNR); k++)
-    {
-        ft = gmx_poldata_get_dihedral_ftype(pd, k);
-        for (j = 0; (j < plist[ft].nr); j++)
-        {
-            if (0 < gmx_poldata_search_dihedral(pd, k,
-                                                ATP(plist[ft].param[j].a[0]),
-                                                ATP(plist[ft].param[j].a[1]),
-                                                ATP(plist[ft].param[j].a[2]),
-                                                ATP(plist[ft].param[j].a[3]),
-                                                &xx, &sx, NULL, &params))
-            {
-                plist[ft].param[j].c[0] = xx;
-                std::vector<std::string> ptr = split(params, ' ');
-                n = 0;
-                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
-                {
-                    if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                    {
-                        plist[ft].param[j].c[1+n] = atof(pi->c_str());
-                        n++;
-                    }
-                }
-            }
-        }
-    }
-}
-
 namespace alexandria
 {
 
@@ -182,264 +98,6 @@ const char *immsg(immStatus imm)
     };
 
     return msg[imm];
-}
-
-static void mv_plist(t_params *dst, t_params *src)
-{
-    int i;
-
-    if (dst->maxnr < src->nr)
-    {
-        srenew(dst->param, src->nr);
-        dst->maxnr = src->nr;
-    }
-    for (i = 0; (i < src->nr); i++)
-    {
-        cp_param(&dst->param[i], &src->param[i]);
-    }
-    dst->nr = src->nr;
-
-    src->nr = 0;
-}
-
-static void mv_plists(gmx_poldata_t pd, t_params plist[], bool bForward)
-{
-    int ft;
-
-    /* Now move over to the appropriate function types */
-    if (NOTSET == (ft = gmx_poldata_get_bond_ftype(pd)))
-    {
-        gmx_fatal(FARGS, "Bond function type not set in force field file");
-    }
-    if (F_BONDS != ft)
-    {
-        if (bForward)
-        {
-            mv_plist(&plist[ft], &plist[F_BONDS]);
-        }
-        else
-        {
-            mv_plist(&plist[F_BONDS], &plist[ft]);
-        }
-    }
-    if (NOTSET == (ft = gmx_poldata_get_angle_ftype(pd)))
-    {
-        gmx_fatal(FARGS, "Angle function type not set in force field file");
-    }
-    if (F_ANGLES != ft)
-    {
-        if (bForward)
-        {
-            mv_plist(&plist[ft], &plist[F_ANGLES]);
-        }
-        else
-        {
-            mv_plist(&plist[F_ANGLES], &plist[ft]);
-        }
-    }
-    if (NOTSET == (ft = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS)))
-    {
-        gmx_fatal(FARGS, "Dihedral function type not set in force field file");
-    }
-    if (F_PDIHS != ft)
-    {
-        if (bForward)
-        {
-            mv_plist(&plist[ft], &plist[F_PDIHS]);
-        }
-        else
-        {
-            mv_plist(&plist[F_PDIHS], &plist[ft]);
-        }
-    }
-    if (NOTSET == (ft = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS)))
-    {
-        gmx_fatal(FARGS, "Improper function type not set in force field file");
-    }
-    if (F_IDIHS != ft)
-    {
-        if (bForward)
-        {
-            mv_plist(&plist[ft], &plist[F_IDIHS]);
-        }
-        else
-        {
-            mv_plist(&plist[F_IDIHS], &plist[ft]);
-        }
-    }
-}
-
-static void detect_rings(t_params *bonds, int natom, gmx_bool bRing[])
-{
-    /* Check for 4,5,6,7,8 rings.
-     */
-    int j, k, l, m, n, o, p, q, a1, a2, a3, a4, a5, a6, a7, a8, a9;
-
-    for (j = 0; (j < natom); j++)
-    {
-        bRing[j] = FALSE;
-    }
-
-    for (a1 = 0; (a1 < natom); a1++)
-    {
-        for (j = 0; (j < bonds->nr); j++)
-        {
-            a2 = NOTSET;
-            if (bonds->param[j].a[0] == a1)
-            {
-                a2 = bonds->param[j].a[1];
-            }
-            else if (bonds->param[j].a[1] == a1)
-            {
-                a2 = bonds->param[j].a[0];
-            }
-            if (a2 != NOTSET)
-            {
-                for (k = 0; (k < bonds->nr); k++)
-                {
-                    a3 = NOTSET;
-                    if (bonds->param[k].a[0] == a2)
-                    {
-                        a3 = bonds->param[k].a[1];
-                    }
-                    else if (bonds->param[k].a[1] == a2)
-                    {
-                        a3 = bonds->param[k].a[0];
-                    }
-                    if ((a3 != NOTSET) && (a3 != a1))
-                    {
-                        for (l = 0; (l < bonds->nr); l++)
-                        {
-                            a4 = NOTSET;
-                            if (bonds->param[l].a[0] == a3)
-                            {
-                                a4 = bonds->param[l].a[1];
-                            }
-                            else if (bonds->param[l].a[1] == a3)
-                            {
-                                a4 = bonds->param[l].a[0];
-                            }
-                            if ((a4 != NOTSET) && (a4 != a2))
-                            {
-                                for (m = 0; (m < bonds->nr); m++)
-                                {
-                                    a5 = NOTSET;
-                                    if (bonds->param[m].a[0] == a4)
-                                    {
-                                        a5 = bonds->param[m].a[1];
-                                    }
-                                    else if (bonds->param[m].a[1] == a4)
-                                    {
-                                        a5 = bonds->param[m].a[0];
-                                    }
-                                    if ((a5 != NOTSET) && (a5 != a3))
-                                    {
-                                        if (a5 == a1)
-                                        {
-                                            /* 4-ring */
-                                            bRing[a1] = bRing[a2] = bRing[a3] = bRing[a4] = TRUE;
-                                        }
-                                        else if (a3 != a1)
-                                        {
-                                            for (n = 0; (n < bonds->nr); n++)
-                                            {
-                                                a6 = NOTSET;
-                                                if (bonds->param[n].a[0] == a5)
-                                                {
-                                                    a6 = bonds->param[n].a[1];
-                                                }
-                                                else if (bonds->param[n].a[1] == a5)
-                                                {
-                                                    a6 = bonds->param[n].a[0];
-                                                }
-                                                if ((a6 != NOTSET) && (a6 != a4))
-                                                {
-                                                    if (a6 == a1)
-                                                    {
-                                                        /* 5-ring */
-                                                        bRing[a1] = bRing[a2] = bRing[a3] = bRing[a4] = bRing[a5] = TRUE;
-                                                    }
-                                                    else
-                                                    {
-                                                        for (o = 0; (o < bonds->nr); o++)
-                                                        {
-                                                            a7 = NOTSET;
-                                                            if (bonds->param[o].a[0] == a6)
-                                                            {
-                                                                a7 = bonds->param[o].a[1];
-                                                            }
-                                                            else if (bonds->param[o].a[1] == a6)
-                                                            {
-                                                                a7 = bonds->param[o].a[0];
-                                                            }
-                                                            if ((a7 != NOTSET) && (a7 != a5))
-                                                            {
-                                                                if (a7 == a1)
-                                                                {
-                                                                    /* 6-ring */
-                                                                    bRing[a1]             = bRing[a2] = bRing[a3] =
-                                                                                bRing[a4] = bRing[a5] = bRing[a6] = TRUE;
-                                                                }
-                                                                else
-                                                                {
-                                                                    for (p = 0; (p < bonds->nr); p++)
-                                                                    {
-                                                                        a8 = NOTSET;
-                                                                        if (bonds->param[p].a[0] == a7)
-                                                                        {
-                                                                            a8 = bonds->param[p].a[1];
-                                                                        }
-                                                                        else if (bonds->param[p].a[1] == a7)
-                                                                        {
-                                                                            a8 = bonds->param[p].a[0];
-                                                                        }
-                                                                        if ((a8 != NOTSET) && (a8 != a6))
-                                                                        {
-                                                                            if (a8 == a1)
-                                                                            {
-                                                                                /* 7-ring */
-                                                                                bRing[a1]             = bRing[a2] = bRing[a3] =
-                                                                                            bRing[a4] = bRing[a5] = bRing[a6] = bRing[a7] = TRUE;
-                                                                            }
-                                                                            else
-                                                                            {
-                                                                                for (q = 0; (q < bonds->nr); q++)
-                                                                                {
-                                                                                    a9 = NOTSET;
-                                                                                    if (bonds->param[q].a[0] == a8)
-                                                                                    {
-                                                                                        a9 = bonds->param[q].a[1];
-                                                                                    }
-                                                                                    else if (bonds->param[q].a[1] == a8)
-                                                                                    {
-                                                                                        a9 = bonds->param[q].a[0];
-                                                                                    }
-                                                                                    if (a9 == a1)
-                                                                                    {
-                                                                                        /* 8-ring */
-                                                                                        bRing[a1]             = bRing[a2] = bRing[a3] =
-                                                                                                    bRing[a4] = bRing[a5] = bRing[a6] = bRing[a7] = bRing[a8] = TRUE;
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 static bool is_planar(rvec xi, rvec xj, rvec xk, rvec xl, t_pbc *pbc,
@@ -470,7 +128,130 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     return false;
 }
 
-void MyMol::MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd)
+void MyMol::GetForceConstants(gmx_poldata_t pd)
+{
+    int    n;
+    double xx, sx, bo;
+    char  *params;
+
+#define ATP(ii) ((char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ii]))
+    for(std::vector<PlistWrapper>::iterator pw=plist_.begin();
+        (pw < plist_.end()); ++pw)
+    {
+        switch(pw->getFtype()) 
+        {
+        case F_BONDS:
+            for (ParamIterator j = pw->beginParam();
+                 (j < pw->endParam()); ++j)
+            {
+                int ai = j->a[0];
+                int aj = j->a[1];
+                if (0 < gmx_poldata_search_bond(pd,
+                                                ATP(ai),
+                                                ATP(aj),
+                                                &xx, &sx, NULL, &bo, &params))
+                {
+                    j->c[0] = convert2gmx(xx, eg2cPm);
+                    std::vector<std::string> ptr = split(params, ' ');
+                    n = 0;
+                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                    {
+                        if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                        {
+                            j->c[1+n] = atof(pi->c_str());
+                            n++;
+                        }
+                    }
+                }
+                if ((NULL != debug) && (j->c[0] == 0))
+                {
+                    fprintf(debug, "Could not find bonding parameters for %s - %s.\n",
+                            ATP(j->a[0]),
+                            ATP(j->a[1]));
+                }
+            }
+            break;
+        case F_ANGLES:
+            for (ParamIterator j = pw->beginParam();
+                 (j < pw->endParam()); ++j)
+            {
+                if (0 < gmx_poldata_search_angle(pd,
+                                                 ATP(j->a[0]),
+                                                 ATP(j->a[1]),
+                                                 ATP(j->a[2]),
+                                                 &xx, &sx, NULL, &params))
+                {
+                    j->c[0] = xx;
+                    std::vector<std::string> ptr = split(params, ' ');
+                    n = 0;
+                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                    {
+                        if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                        {
+                            j->c[1+n] = atof(pi->c_str());
+                            n++;
+                        }
+                    }
+                }
+            }
+            break;
+        case F_PDIHS:
+            for (ParamIterator j = pw->beginParam();
+                 (j < pw->endParam()); ++j)
+            {
+                if (0 < gmx_poldata_search_dihedral(pd, egdPDIHS,
+                                                    ATP(j->a[0]),
+                                                    ATP(j->a[1]),
+                                                    ATP(j->a[2]),
+                                                    ATP(j->a[3]),
+                                                    &xx, &sx, NULL, &params))
+                {
+                    j->c[0] = xx;
+                    std::vector<std::string> ptr = split(params, ' ');
+                    n = 0;
+                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                    {
+                        if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                        {
+                            j->c[1+n] = atof(pi->c_str());
+                            n++;
+                        }
+                    }
+                }
+            }
+            break;
+        case F_IDIHS:
+            for (ParamIterator j = pw->beginParam();
+                 (j < pw->endParam()); ++j)
+            {
+                if (0 < gmx_poldata_search_dihedral(pd, egdIDIHS,
+                                                    ATP(j->a[0]),
+                                                    ATP(j->a[1]),
+                                                    ATP(j->a[2]),
+                                                    ATP(j->a[3]),
+                                                    &xx, &sx, NULL, &params))
+                {
+                    j->c[0] = xx;
+                    std::vector<std::string> ptr = split(params, ' ');
+                    n = 0;
+                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                    {
+                        if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                        {
+                            j->c[1+n] = atof(pi->c_str());
+                            n++;
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void MyMol::MakeSpecialInteractions(bool bUseVsites)
 {
     std::vector < std::vector < unsigned int> > bonds;
     std::vector<int> nbonds;
@@ -519,30 +300,81 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites, gmx_poldata_t pd)
     }
     int anr = topology_->atoms.nr;
 
-    gvt_.generateSpecial(bUseVsites, &topology_->atoms, &x_, plist_,
-                         symtab_, atype_, &excls_, pd);
+    gvt_.generateSpecial(bUseVsites, &topology_->atoms, &x_, 
+                         plist_, symtab_, atype_, &excls_);
     bHaveVSites_ = (topology_->atoms.nr > anr);
 }
 
-void MyMol::MakeAngles()
+static void cp_plist(t_params plist[], int ftype,
+                     std::vector<PlistWrapper> &plist_)
+{
+    if (plist[ftype].nr > 0)
+    {
+        PlistWrapper pw(ftype);
+        for(int i = 0; (i < plist[ftype].nr); i++)
+        {
+            pw.addParam(plist[ftype].param[i]);
+        }
+        plist_.push_back(pw);
+    }
+}
+
+void MyMol::MakeAngles(bool bPairs, bool bDihs)
 {
     t_nextnb nnb;
     t_restp  rtp;
-
+    t_params plist[F_NRE];
+    std::vector<PlistWrapper>::iterator pw;
+    
+    init_plist(plist);
+    for(pw=plist_.begin(); (pw < plist_.end()); ++pw)
+    {
+        if (F_BONDS == pw->getFtype()) 
+        {
+            pr_alloc(pw->nParam(), &plist[F_BONDS]);
+            int i = 0;
+            for(ParamIterator pi = pw->beginParam();
+                (pi < pw->endParam()); ++pi)
+            {
+                t_param *src = &(*pi);
+                cp_param(&(plist[F_BONDS].param[i]), src);
+                i++;
+            }
+            plist[F_BONDS].nr = i;
+            break;
+        }
+    }
     /* Make Angles and Dihedrals */
     snew(excls_, topology_->atoms.nr);
     init_nnb(&nnb, topology_->atoms.nr, nexcl_+2);
-    gen_nnb(&nnb, plist_);
-    //detect_rings(&plist_[F_BONDS],topology_->atoms.nr,bRing);
+    gen_nnb(&nnb, plist);
 
     print_nnb(&nnb, "NNB");
     rtp.bKeepAllGeneratedDihedrals    = TRUE;
     rtp.bRemoveDihedralIfWithImproper = TRUE;
     rtp.bGenerateHH14Interactions     = TRUE;
     rtp.nrexcl = nexcl_;
-    gen_pad(&nnb, &(topology_->atoms), &rtp, plist_, excls_, NULL, FALSE);
+    gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
     generate_excls(&nnb, nexcl_, excls_);
     done_nnb(&nnb);
+ 
+    cp_plist(plist, F_ANGLES, plist_);
+    if (bDihs)
+    {
+        cp_plist(plist, F_PDIHS, plist_);
+    }
+    cp_plist(plist, F_IDIHS, plist_);
+    if (bPairs)
+    {
+        cp_plist(plist, F_LJ14, plist_);
+    }
+    for(int i = 0; (i<F_NRE); i++)
+    {
+        if (plist[i].nr > 0)
+        {
+            sfree(plist[i].param);
+        }
+    }
 }
 
 static void generate_nbparam(int ftype, int comb, double ci[], double cj[],
@@ -690,7 +522,9 @@ static void excls__to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
     blocka->nra          = nra;
 }
 
-static void plist_to_mtop(gmx_poldata_t pd, t_params plist_[], gmx_mtop_t *mtop_)
+static void plist_to_mtop(gmx_poldata_t pd, 
+                          std::vector<PlistWrapper> plist,
+                          gmx_mtop_t *mtop_)
 {
     double fudgeLJ;
     double reppow = 12.0;
@@ -700,28 +534,31 @@ static void plist_to_mtop(gmx_poldata_t pd, t_params plist_[], gmx_mtop_t *mtop_
     fudgeLJ = gmx_poldata_get_fudgeLJ(pd);
 
     int nfptot = mtop_->ffparams.ntypes;
-    for (int i = 0; (i < F_NRE); i++)
+    for(std::vector<PlistWrapper>::iterator pw=plist.begin();
+        (pw < plist.end()); ++pw)
     {
-        nfptot += plist_[i].nr*NRFPA(i);
+        nfptot += pw->nParam()*NRFPA(pw->getFtype());
     }
     srenew(mtop_->ffparams.functype, nfptot);
     srenew(mtop_->ffparams.iparams, nfptot);
 
-    for (int i = 0; (i < F_NRE); i++)
+    for(std::vector<PlistWrapper>::iterator pw=plist.begin();
+        (pw < plist.end()); ++pw)
     {
-        int nra    = NRAL(i);
-        int nrfp   = NRFPA(i);
-        int nratot = plist_[i].nr*(1+nra);
-        snew(mtop_->moltype[0].ilist[i].iatoms, nratot);
+        int nra    = NRAL(pw->getFtype());
+        int nrfp   = NRFPA(pw->getFtype());
+        int nratot = pw->nParam()*(1+nra);
+        snew(mtop_->moltype[0].ilist[pw->getFtype()].iatoms, nratot);
         int k = 0;
-        for (int j = 0; (j < plist_[i].nr); j++)
+        for (ParamIterator j = pw->beginParam();
+             (j < pw->endParam()); ++j)
         {
             real c[MAXFORCEPARAM];
             int  l = 0;
-            if (i == F_LJ14)
+            if (pw->getFtype() == F_LJ14)
             {
-                int ati = mtop_->moltype[0].atoms.atom[plist_[i].param[j].a[0]].type;
-                int atj = mtop_->moltype[0].atoms.atom[plist_[i].param[j].a[1]].type;
+                int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
+                int atj = mtop_->moltype[0].atoms.atom[j->a[1]].type;
                 int tp  = ati*mtop_->ffparams.atnr+atj;
                 c[l++] = mtop_->ffparams.iparams[tp].lj.c6*fudgeLJ;
                 c[l++] = mtop_->ffparams.iparams[tp].lj.c12*fudgeLJ;
@@ -730,7 +567,7 @@ static void plist_to_mtop(gmx_poldata_t pd, t_params plist_[], gmx_mtop_t *mtop_
             {
                 for (; (l < nrfp); l++)
                 {
-                    c[l] = plist_[i].param[j].c[l];
+                    c[l] = j->c[l];
                     if (NOTSET == c[l])
                     {
                         c[l] = 0;
@@ -741,14 +578,14 @@ static void plist_to_mtop(gmx_poldata_t pd, t_params plist_[], gmx_mtop_t *mtop_
             {
                 c[l] = 0;
             }
-            n = enter_params(&mtop_->ffparams, i, c, 0, reppow, n, TRUE);
-            mtop_->moltype[0].ilist[i].iatoms[k++] = n;
+            n = enter_params(&mtop_->ffparams, pw->getFtype(), c, 0, reppow, n, TRUE);
+            mtop_->moltype[0].ilist[pw->getFtype()].iatoms[k++] = n;
             for (l = 0; (l < nra); l++)
             {
-                mtop_->moltype[0].ilist[i].iatoms[k++] = plist_[i].param[j].a[l];
+                mtop_->moltype[0].ilist[pw->getFtype()].iatoms[k++] = j->a[l];
             }
         }
-        mtop_->moltype[0].ilist[i].nr = k;
+        mtop_->moltype[0].ilist[pw->getFtype()].nr = k;
     }
 }
 
@@ -854,10 +691,6 @@ MyMol::MyMol():gvt_(egvtALL)
     snew(symtab_, 1);
     open_symtab(symtab_);
     atype_ = init_atomtype();
-    for (int i = 0; (i < ebtsNR); i++)
-    {
-        bts[i] = NOTSET;
-    }
     clear_mat(box);
     mtop_  = NULL;
     ltop_  = NULL;
@@ -869,10 +702,6 @@ MyMol::MyMol():gvt_(egvtALL)
     /* Inputrec parameters */
     snew(inputrec_, 1);
     fill_inputrec(inputrec_);
-
-    /* Topology_ stuff */
-    snew(plist_, F_NRE);
-    init_plist(plist_);
 }
 
 MyMol::~MyMol()
@@ -893,16 +722,10 @@ MyMol::~MyMol()
         sfree(inputrec_);
         inputrec_ = NULL;
     }
-    if (NULL != plist_)
+    for(std::vector<PlistWrapper>::iterator pw=plist_.begin();
+        (pw < plist_.end()); ++pw)
     {
-        for (int i = 0; (i < F_NRE); i++)
-        {
-            sfree(plist_[i].param);
-            sfree(plist_[i].cmap);
-            sfree(plist_[i].cmap_types);
-        }
-        sfree(plist_);
-        plist_ = NULL;
+        pw->eraseParams();
     }
     if (NULL != symtab_)
     {
@@ -981,11 +804,6 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t        ap,
 
             natom++;
         }
-        /* Change their atomtype from the OpenBabel internal type to the
-         * one specified in our force field file (gentop.dat).
-         */
-        //translate_atomtypes(&topology_->atoms,&(symtab_),
-        //                  gmx_poldata_get_force_field(pd));
         for (int i = 0; (i < natom); i++)
         {
             topology_->atoms.atom[i].type      =
@@ -1031,27 +849,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
         fprintf(debug, "Generating topology_ for %s\n", GetMolname().c_str());
     }
 
-    /* Set bts for topology_ output */
-    if (NOTSET == (bts[ebtsBONDS]  = gmx_poldata_get_bond_ftype(pd)))
-    {
-        gmx_fatal(FARGS, "No bonded type defined in force field file");
-    }
-    if (NOTSET == (bts[ebtsANGLES] = gmx_poldata_get_angle_ftype(pd)))
-    {
-        gmx_fatal(FARGS, "No angle type defined in force field file");
-    }
-    if (NOTSET == (bts[ebtsIDIHS]  = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS)))
-    {
-        gmx_fatal(FARGS, "No improper dihedral type defined in force field file");
-    }
-    if (NOTSET == (bts[ebtsPDIHS]  = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS)))
-    {
-        gmx_fatal(FARGS, "No dihedral type defined in force field file");
-    }
-    bts[ebtsCMAP]  = F_CMAP;
-    bts[ebtsEXCLS] = 0;
-
-    ftb    = bts[ebtsBONDS];
     nexcl_ = nexcl;
     GenerateComposition(pd);
     if (NAtom() <= 0)
@@ -1065,16 +862,16 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
         /* Get atoms */
         imm = GenerateAtoms(ap, lot, iModel);
     }
+    /* Store bonds in harmonic potential list first, update type later */
+    ftb = F_BONDS;
     if (immOK == imm)
     {
-        /* Store bonds in harmonic potential list first, update type later */
-        ftb = F_BONDS;
         memset(&b, 0, sizeof(b));
         for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
         {
             b.a[0] = bi->GetAi() - 1;
             b.a[1] = bi->GetAj() - 1;
-            add_param_to_list(&(plist_[ftb]), &b);
+            add_param_to_plist(plist_, ftb, b);
         }
         if (NBond() == 0)
         {
@@ -1084,29 +881,15 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
     if (immOK == imm)
     {
         /* Make Angles and Dihedrals. This needs the bonds to be F_BONDS. */
-        MakeAngles();
-
-        if (!bPairs)
-        {
-            /* Check whether this is the right index */
-            plist_[F_LJ14].nr = 0;
-        }
-
-        if (!bDih)
-        {
-            /* Check whether this is the right index */
-            plist_[F_PDIHS].nr = 0;
-        }
-
-        /* Move the plist_ to the correct function */
-        mv_plists(pd, plist_, true);
-    }
-    if (immOK == imm)
-    {
-        get_force_constants(pd, plist_, &topology_->atoms);
+        MakeAngles(bPairs, bDih);
 
         /* Linear angles and or vsites etc. */
-        MakeSpecialInteractions(bUseVsites, pd);
+        MakeSpecialInteractions(bUseVsites);
+
+        /* Move the plist_ to the correct function */
+        //mv_plists(pd, plist_, true);
+
+        GetForceConstants(pd);
 
         char **molnameptr = put_symtab(symtab_, GetMolname().c_str());
         snew(mtop_, 1);
@@ -1182,9 +965,14 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     {
         if (bSymmetricCharges)
         {
-            symmetrize_charges(bSymmetricCharges,
-                               &topology_->atoms, &(plist_[F_BONDS]),
-                               pd, ap, symm_string, symmetric_charges_);
+            std::vector<PlistWrapper>::iterator pw = SearchPlist(plist_, F_BONDS);
+            if (plist_.end() != pw)
+            {
+                symmetrize_charges(bSymmetricCharges,
+                                   &topology_->atoms, 
+                                   pw,
+                                   pd, ap, symm_string, symmetric_charges_);
+            }
         }
     }
 
@@ -1209,7 +997,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                     if (ci != EndCalculation())
                     {
                         //printf("There are %d potential points\n",ci->NPotential());
-                        for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); epi++)
+                        for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi)
                         {
                             /* Maybe not convert to gmx ? */
                             int xu = string2unit(epi->GetXYZunit().c_str());
@@ -1457,34 +1245,49 @@ static void write_zeta_q2(gentop_qgen_t qgen, gpp_atomtype_t atype,
     fclose(fp);
 }
 
+static int get_subtype(directive d, int ftype)
+{
+    int i;
+    for(i = 0; (i < 20); i++)
+    {
+        if (ifunc_index(d, i) == ftype)
+        {
+            return i;
+        }
+    }
+    return 1;
+}
+
 static void print_bondeds2(FILE     *out,
                            directive d,
-                           int       ftype,
-                           int       subtype,
-                           t_params  p[])
+                           int       plist_ftype,
+                           int       print_ftype,
+                           std::vector<PlistWrapper> plist)
 {
-    if (p[ftype].nr == 0)
+    std::vector<PlistWrapper>::iterator p = SearchPlist(plist, plist_ftype);
+    
+    if (plist.end() == p || p->nParam() == 0)
     {
         return;
     }
     fprintf(out, "[ %s ]\n", dir2str(d));
     fprintf(out, ";atom i");
-    for (int j = 1; (j < NRAL(ftype)); j++)
+    for (int j = 1; (j < NRAL(print_ftype)); j++)
     {
         fprintf(out, "  %5c", j+'i');
     }
     fprintf(out, "   type  parameters\n");
-
-    for (int i = 0; (i < p[ftype].nr); i++)
+    int subtype = get_subtype(d, print_ftype);
+    for (ParamIterator i = p->beginParam(); (i < p->endParam()); ++i)
     {
-        for (int j = 0; (j < NRAL(ftype)); j++)
+        for (int j = 0; (j < NRAL(print_ftype)); j++)
         {
-            fprintf(out, "  %5d", 1+p[ftype].param[i].a[j]);
+            fprintf(out, "  %5d", 1+i->a[j]);
         }
-        fprintf(out, "  %5d", 1+subtype);
-        for (int j = 0; (j < NRFPA(ftype)); j++)
+        fprintf(out, "  %5d", subtype);
+        for (int j = 0; (j < NRFPA(print_ftype)); j++)
         {
-            fprintf(out, "  %10g", p[ftype].param[i].c[j]);
+            fprintf(out, "  %10g", i->c[j]);
         }
         fprintf(out, "\n");
     }
@@ -1493,8 +1296,10 @@ static void print_bondeds2(FILE     *out,
 
 static void write_top2(FILE *out, char *molname,
                        t_atoms *at, gmx_bool bRTPresname,
-                       int bts[], t_params plist_[], t_excls excls[],
-                       gpp_atomtype_t atype, int *cgnr, int nrexcl)
+                       std::vector<PlistWrapper> plist_,
+                       t_excls excls[],
+                       gpp_atomtype_t atype, int *cgnr, int nrexcl,
+                       gmx_poldata_t pd)
 /* NOTE: nrexcl is not the size of *excl! */
 {
     if (at && atype && cgnr)
@@ -1504,26 +1309,33 @@ static void write_top2(FILE *out, char *molname,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds2(out, d_bonds,    F_MORSE,  bts[ebtsBONDS],   plist_);
-        print_bondeds2(out, d_constraints, F_CONSTR,   0,              plist_);
-        print_bondeds2(out, d_constraints, F_CONSTRNC, 0,              plist_);
-        print_bondeds2(out, d_pairs,      F_LJ14,     0,              plist_);
+        print_bondeds2(out, d_bonds, F_BONDS, 
+                       gmx_poldata_get_bond_ftype(pd), 
+                       plist_);
+        print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
+        print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
+        print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
         print_excl(out, at->nr, excls);
-        print_bondeds2(out, d_angles,     bts[ebtsANGLES], 0, plist_);
-        print_bondeds2(out, d_angles,     F_LINEAR_ANGLES, 0, plist_);
-        print_bondeds2(out, d_dihedrals,  bts[ebtsPDIHS], 0, plist_);
-        print_bondeds2(out, d_dihedrals,  bts[ebtsIDIHS], 0, plist_);
-        print_bondeds2(out, d_cmap,       bts[ebtsCMAP],  0, plist_);
-        print_bondeds2(out, d_polarization, F_POLARIZATION,   0,       plist_);
-        print_bondeds2(out, d_thole_polarization, F_THOLE_POL, 0,       plist_);
-        print_bondeds2(out, d_vsites2,    F_VSITE2,   0,              plist_);
-        print_bondeds2(out, d_vsites3,    F_VSITE3,   0,              plist_);
-        print_bondeds2(out, d_vsites3,    F_VSITE3FD, 0,              plist_);
-        print_bondeds2(out, d_vsites3,    F_VSITE3FAD, 0,              plist_);
-        print_bondeds2(out, d_vsites3,    F_VSITE3OUT, 0,              plist_);
-        print_bondeds2(out, d_vsites4,    F_VSITE4FD, 0,              plist_);
-        print_bondeds2(out, d_vsites4,    F_VSITE4FDN, 0,             plist_);
-
+        print_bondeds2(out, d_angles, F_ANGLES, 
+                       gmx_poldata_get_angle_ftype(pd), plist_);
+        print_bondeds2(out, d_angles, F_LINEAR_ANGLES, F_LINEAR_ANGLES, 
+                       plist_);
+        print_bondeds2(out, d_dihedrals, F_PDIHS, 
+                       gmx_poldata_get_dihedral_ftype(pd, egdPDIHS), plist_);
+        /* Check whether the dihedrals use the same function */
+        print_bondeds2(out, d_dihedrals, F_IDIHS,  
+                       gmx_poldata_get_dihedral_ftype(pd, egdIDIHS), plist_);
+        print_bondeds2(out, d_cmap, F_CMAP, F_CMAP, plist_);
+        print_bondeds2(out, d_polarization, F_POLARIZATION, F_POLARIZATION, 
+                       plist_);
+        print_bondeds2(out, d_thole_polarization, F_THOLE_POL, F_THOLE_POL, plist_);
+        print_bondeds2(out, d_vsites2, F_VSITE2, F_VSITE2, plist_);
+        print_bondeds2(out, d_vsites3, F_VSITE3, F_VSITE3, plist_);
+        print_bondeds2(out, d_vsites3, F_VSITE3FD, F_VSITE3FD, plist_);
+        print_bondeds2(out, d_vsites3, F_VSITE3FAD, F_VSITE3FAD, plist_);
+        print_bondeds2(out, d_vsites3, F_VSITE3OUT, F_VSITE3OUT, plist_);
+        print_bondeds2(out, d_vsites4, F_VSITE4FD, F_VSITE4FD, plist_);
+        print_bondeds2(out, d_vsites4, F_VSITE4FDN, F_VSITE4FDN, plist_);
     }
 }
 
@@ -1599,7 +1411,7 @@ void MyMol::PrintTopology(const char           *fn,
     FILE   *fp;
     t_mols  printmol;
     bool    bITP;
-    int     i, bts2[ebtsNR];
+
     if (GetMolname().size() > 0)
     {
         printmol.name = strdup(GetMolname().c_str());
@@ -1622,59 +1434,12 @@ void MyMol::PrintTopology(const char           *fn,
         print_top_header2(fp, pd, aps, bHaveShells_);
     }
 
-    /* Make pdb2gmx compatible bts array
-     * This is to write a topology_ that grompp can read again.
-     */
-    for (i = 0; (i < ebtsNR); i++)
-    {
-        bts2[i] = NOTSET;
-    }
-    for (i = 1; (i < 20) && (bts2[ebtsBONDS] == NOTSET); i++)
-    {
-        if (ifunc_index(d_bonds, i) == bts[ebtsBONDS])
-        {
-            bts2[ebtsBONDS] = i;
-        }
-    }
-    for (i = 1; (i < 20) && (bts2[ebtsANGLES] == NOTSET); i++)
-    {
-        if (ifunc_index(d_angles, i) == bts[ebtsANGLES])
-        {
-            bts2[ebtsANGLES] = i;
-        }
-    }
-    for (i = 1; (i < 20) && (bts2[ebtsPDIHS] == NOTSET); i++)
-    {
-        if (ifunc_index(d_dihedrals, i) == bts[ebtsPDIHS])
-        {
-            bts2[ebtsPDIHS] = i;
-        }
-    }
-    for (i = 1; (i < 20) && (bts2[ebtsIDIHS] == NOTSET); i++)
-    {
-        if (ifunc_index(d_dihedrals, i) == bts[ebtsIDIHS])
-        {
-            bts2[ebtsIDIHS] = i;
-        }
-    }
-    bts2[ebtsEXCLS] = 0;
-    bts2[ebtsCMAP]  = 0;
-    for (i = 0; (i < ebtsNR); i++)
-    {
-        if (NOTSET == bts2[i])
-        {
-            gmx_fatal(FARGS, "Could not find ftype for bts[%d]", i);
-        }
-    }
-
     if (bHaveShells_ || (iModel == eqgAXg) || (iModel == eqgAXs))
     {
         write_zeta_q(fp, qgen_, &topology_->atoms, iModel);
         //write_zeta_q2(qgen,atype,&topology_->atoms,pd,iModel);
     }
-    // mv_plist_s(pd,plist_,false);
-    write_top2(fp, printmol.name, &topology_->atoms, FALSE, bts, plist_, excls_, atype_, cgnr_, nexcl_);
-    // mv_plist_s(pd,plist_,true);
+    write_top2(fp, printmol.name, &topology_->atoms, FALSE, plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
     {
         print_top_mols(fp, printmol.name, GetForceField().c_str(), NULL, 0, NULL, 1, &printmol);
@@ -1686,19 +1451,17 @@ void MyMol::PrintTopology(const char           *fn,
                "          %4d angles, %4d linear angles\n"
                "          %4d pairs, %4d bonds, %4d atoms\n"
                "          %4d polarizations\n",
-               plist_[bts[ebtsPDIHS]].nr,  plist_[bts[ebtsIDIHS]].nr,
-               plist_[bts[ebtsANGLES]].nr, plist_[F_LINEAR_ANGLES].nr,
-               plist_[F_LJ14].nr,   plist_[bts[ebtsBONDS]].nr, topology_->atoms.nr,
-               plist_[F_POLARIZATION].nr);
+               CountPlist(plist_, F_PDIHS),
+               CountPlist(plist_, F_IDIHS),
+               CountPlist(plist_, F_ANGLES), 
+               CountPlist(plist_, F_LINEAR_ANGLES),
+               CountPlist(plist_, F_LJ14),   
+               CountPlist(plist_, F_BONDS),
+               topology_->atoms.nr,
+               CountPlist(plist_, F_POLARIZATION));
     }
 
     fclose(fp);
-}
-
-void MyMol::PrintRTPEntry(const char *fn)
-{
-    print_rtp(fn, gentop_version,
-              &topology_->atoms, plist_, cgnr_, asize(bts), bts);
 }
 
 static void add_excl(t_excls *excls, atom_id e)
@@ -1851,7 +1614,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
             p.a[0] = renum[i];
             p.a[1] = renum[i]+1;
             p.c[0] = 0.001*pol;
-            add_param_to_list(&(plist_[F_POLARIZATION]), &p);
+            add_param_to_plist(plist_, F_POLARIZATION, p);
         }
     }
     renum[topology_->atoms.nr] = topology_->atoms.nr + ns;
@@ -1869,26 +1632,30 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
 
         /* Make new exclusion array, and put the shells in it */
         snew(newexcls, newa->nr);
-        for (j = 0; (j < plist_[F_POLARIZATION].nr); j++)
+        std::vector<PlistWrapper>::iterator pw = SearchPlist(plist_, F_POLARIZATION);
+        if (plist_.end() != pw)
         {
-            ai = plist_[F_POLARIZATION].param[j].a[0];
-            aj = plist_[F_POLARIZATION].param[j].a[1];
-            add_excl(&newexcls[ai], aj);
-            add_excl(&newexcls[aj], ai);
+            for (ParamIterator j = pw->beginParam();
+                 (j < pw->endParam()); ++j)
+            {
+                ai = j->a[0];
+                aj = j->a[1];
+                add_excl(&newexcls[ai], aj);
+                add_excl(&newexcls[aj], ai);
+            }
+            for (i = 0; (i < topology_->atoms.nr); i++)
+            {
+                newa->atom[renum[i]]      = topology_->atoms.atom[i];
+                newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
+                newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
+                newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
+                copy_rvec(x_[i], newx[renum[i]]);
+                newname[renum[i]] = *topology_->atoms.atomtype[i];
+                t_atoms_set_resinfo(newa, renum[i], symtab_,
+                                    *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
+                                    topology_->atoms.atom[i].resind, ' ', 1, ' ');
+            }
         }
-        for (i = 0; (i < topology_->atoms.nr); i++)
-        {
-            newa->atom[renum[i]]      = topology_->atoms.atom[i];
-            newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
-            newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
-            newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
-            copy_rvec(x_[i], newx[renum[i]]);
-            newname[renum[i]] = *topology_->atoms.atomtype[i];
-            t_atoms_set_resinfo(newa, renum[i], symtab_,
-                                *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
-                                topology_->atoms.atom[i].resind, ' ', 1, ' ');
-        }
-
         for (i = 0; (i < topology_->atoms.nr); i++)
         {
             iat = renum[i];
@@ -1961,15 +1728,17 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
         /* Copy exclusions, may need to empty the original first */
         excls_ = newexcls;
 
-        for (i = 0; (i < F_NRE); i++)
+        for (PlistWrapperIterator i = plist_.begin();
+             (i < plist_.end()); ++i)
         {
-            if (i != F_POLARIZATION)
+            if (i->getFtype() != F_POLARIZATION)
             {
-                for (j = 0; (j < plist_[i].nr); j++)
+                for (ParamIterator j = i->beginParam(); 
+                     (j < i->endParam()); ++j)
                 {
-                    for (k = 0; (k < NRAL(i)); k++)
+                    for (k = 0; (k < NRAL(i->getFtype())); k++)
                     {
-                        plist_[i].param[j].a[k] = renum[plist_[i].param[j].a[k]];
+                        j->a[k] = renum[j->a[k]];
                     }
                 }
             }
@@ -1984,9 +1753,9 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge,
                                       const char *ndxfn, int nmol)
 {
     real qtot, mtot;
-
+    
     if ((cgnr_ = generate_charge_groups(ecg, &topology_->atoms,
-                                        &plist_[bts[ebtsBONDS]], &plist_[F_POLARIZATION],
+                                        plist_,
                                         bUsePDBcharge,
                                         &qtot, &mtot)) == NULL)
     {
@@ -1995,7 +1764,8 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge,
 
     if (ecg != ecgAtom)
     {
-        sort_on_charge_groups(cgnr_, &topology_->atoms, plist_, x_, excls_, ndxfn, nmol);
+        //sort_on_charge_groups(cgnr_, &topology_->atoms, 
+        //                    plist_, x_, excls_, ndxfn, nmol);
     }
     return immOK;
 }

@@ -464,7 +464,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         gmx_stats_get_average(b->imp[i].lsq, &av);
         gmx_stats_get_sigma(b->imp[i].lsq, &sig);
         gmx_stats_get_npoints(b->imp[i].lsq, &N);
-        sprintf(pbuf, "%g", kp);
+        sprintf(pbuf, "%g  1", kp);
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
         gmx_poldata_add_dihedral(pd, egdIDIHS,
