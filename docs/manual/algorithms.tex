@@ -1520,8 +1520,9 @@ every step, the extended-ensemble Parrinello-Rahman approach~\cite{Parrinello81,
 the velocity Verlet variants, the Martyna-Tuckerman-Tobias-Klein
 (MTTK) implementation of pressure
 control~\cite{Martyna1996}. Parrinello-Rahman and Berendsen can be
-combined with any of the temperature coupling methods above; MTTK can
-only be used with Nos{\'e}-Hoover temperature control.
+combined with any of the temperature coupling methods above. MTTK can
+only be used with Nos{\'e}-Hoover temperature control. From 5.1 afterwards,
+it can only used when the system does not have constraints.
 
 \subsubsection{Berendsen pressure coupling\pawsindexquiet{Berendsen}{pressure coupling}\index{weak coupling}}
 \label{sec:berendsen_pressure_coupling}
@@ -1807,12 +1808,13 @@ but the half-step-averaged kinetic energy for the temperatures, which can be wri
 &&\exp\left(iL_{\mathrm{NHC}}\dt/2\right) \exp\left(iL_{\epsilon,1}\dt\right) \exp\left(iL_1 \dt\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right) \nonumber \\
 &&\exp\left(iL_2 \dt/2\right) \exp\left(iL_{\epsilon,2}\dt/2\right) \exp\left(iL_{\mathrm{NHC-baro}}\dt/2\right) + \mathcal{O}(\dt^3)
 \eea
-With constraints, the equations become significantly more
-complicated, in that each of these equations need to be solved
-iteratively for the constraint forces.  The discussion of the details of the iteration
-is beyond the scope of this manual; readers are encouraged to see the
-implementation described in~\cite{Yu2010}.
 
+With constraints, the equations become significantly more complicated,
+in that each of these equations need to be solved iteratively for the
+constraint forces. Previous to Gromacs 5.1, these iterative
+constraints were solved as described in~\cite{Yu2010}. From Gromacs
+5.1 onward, MTTK with constraints has been removed because of
+numerical stability issues with the iterations.
 
 \subsubsection{Infrequent evaluation of temperature and pressure coupling}
 
