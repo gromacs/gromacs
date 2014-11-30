@@ -219,6 +219,13 @@ void MyMol::GetForceConstants(gmx_poldata_t pd)
                             }
                         }
                     }
+                    else
+                    {
+                        // Default dihedral parameters
+                        j->c[0] = 0;
+                        j->c[1] = 5;
+                        j->c[2] = 0;
+                    }
                 }
                 break;
             case F_IDIHS:
