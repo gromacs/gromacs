@@ -306,7 +306,7 @@ void reset_q(t_atoms *atoms)
 }
 
 void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
-                        std::vector<alexandria::PlistWrapper>::iterator pw,
+                        std::vector<alexandria::PlistWrapper>::iterator bonds,
                         gmx_poldata_t pd,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges)
@@ -318,6 +318,9 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
     double qaver, qsum;
     int    hsmin;
 
+    printf("Fix me: symmetrize charges algorithm is broken in: file %s, line %d\n",
+           __FILE__, __LINE__ );
+    return;
     for (int i = 0; (i < atoms->nr); i++)
     {
         sym_charges.push_back(i);
@@ -353,8 +356,8 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                     if (atoms->atom[i].atomnumber == anr_central)
                     {
                         nh = 0;
-                        for (alexandria::ParamIterator j = pw->beginParam();
-                             (j < pw->endParam()); ++j)
+                        for (alexandria::ParamIterator j = bonds->beginParam();
+                             (j < bonds->endParam()); ++j)
                         {
                             ai   = j->a[0];
                             aj   = j->a[1];
@@ -390,7 +393,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
         {
             qsum = 0;
             nrq  = 0;
-            for (int j = 0; (j < atoms->nr); j++)
+            for (int j = i+1; (j < atoms->nr); j++)
             {
                 if (sym_charges[j] == sym_charges[i])
                 {
@@ -405,7 +408,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                 {
                     if (sym_charges[j] == sym_charges[i])
                     {
-                        atoms->atom[j].q = qaver;
+                        atoms->atom[j].q = atoms->atom[j].qB = qaver;
                     }
                 }
             }

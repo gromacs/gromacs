@@ -438,7 +438,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         {
             sprintf(pbuf, "%g", klin);
         }
-        gmx_poldata_add_angle(pd, 
+        gmx_poldata_add_angle(pd,
                               b->angle[i].a1, b->angle[i].a2,
                               b->angle[i].a3, av, sig, N, pbuf);
         fprintf(fp, "angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
@@ -496,7 +496,7 @@ int alex_bastat(int argc, char *argv[])
     static real           Dm       = 400, kt = 400, kp = 5, beta = 20, klin = 20;
     static char          *lot      = (char *)"B3LYP/aug-cc-pVTZ";
     static char          *qgen[]   = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
-    t_pargs               pa[]     = { 
+    t_pargs               pa[]     = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
         { "-Dm",    FALSE, etREAL, {&Dm},

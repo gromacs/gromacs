@@ -28,12 +28,13 @@
 #include "gromacs/utility/fatalerror.h"
 #include "plistwrapper.h"
 
-namespace alexandria {
+namespace alexandria
+{
 
 std::vector<PlistWrapper>::iterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype)
 {
     std::vector<PlistWrapper>::iterator pw;
-    for(pw = plist.begin(); (pw < plist.end() && pw->getFtype() != ftype); ++pw)
+    for (pw = plist.begin(); (pw < plist.end() && pw->getFtype() != ftype); ++pw)
     {
         ;
     }
@@ -51,8 +52,8 @@ unsigned int CountPlist(std::vector<PlistWrapper> &plist, int ftype)
 }
 
 void delete_params(std::vector<PlistWrapper> &plist_,
-                   const int ftype,
-                   const int alist[])
+                   const int                  ftype,
+                   const int                  alist[])
 {
     int nra;
     std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist_, ftype);
@@ -61,7 +62,7 @@ void delete_params(std::vector<PlistWrapper> &plist_,
     {
         if (NULL != debug)
         {
-            fprintf(debug, "Cannot find function type %s in plist\n", 
+            fprintf(debug, "Cannot find function type %s in plist\n",
                     interaction_function[ftype].name);
         }
         return;
@@ -147,11 +148,11 @@ void delete_params(std::vector<PlistWrapper> &plist_,
 }
 
 void add_param_to_plist(std::vector<PlistWrapper> &plist,
-                        const int ftype,
-                        const t_param &p)
+                        const int                  ftype,
+                        const t_param             &p)
 {
     std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist, ftype);
-    
+
     if (plist.end() == pwi)
     {
         PlistWrapper pw(ftype);

@@ -46,7 +46,7 @@ void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
 
 void symmetrize_charges(gmx_bool bQsym,
                         t_atoms *atoms, 
-                        std::vector<alexandria::PlistWrapper>::iterator pw,
+                        alexandria::PlistWrapperIterator bonds,
                         gmx_poldata_t pd,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges);

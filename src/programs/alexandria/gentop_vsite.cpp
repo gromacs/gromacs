@@ -153,7 +153,7 @@ void GentopVsites::addRingPlanar(int natom, int aa[], int nbonds[])
     }
 }
 
-static void calc_vsite2parm(t_atoms *atoms, 
+static void calc_vsite2parm(t_atoms *atoms,
                             std::vector<PlistWrapper> &plist,
                             rvec **x,
                             gv_linear *gvl, t_symtab *symtab,
@@ -369,15 +369,15 @@ void GentopVsites::mergeLinear(bool bGenVsites)
     }
 }
 
-static void set_linear_angle_params(int a[],
+static void set_linear_angle_params(int                        a[],
                                     std::vector<PlistWrapper> &plist,
-                                    real ktheta)
+                                    real                       ktheta)
 {
     t_param pp;
-    real b0 = 0, b1 = 0;
+    real    b0 = 0, b1 = 0;
     std::vector<PlistWrapper>::iterator pw;
-    
-    for(pw=plist.begin(); (pw < plist.end()); ++pw)
+
+    for (pw = plist.begin(); (pw < plist.end()); ++pw)
     {
         if (pw->getFtype() == F_BONDS)
         {
@@ -389,7 +389,7 @@ static void set_linear_angle_params(int a[],
         fprintf(stderr, "Can not find the bonds in set_linear_angle_params\n");
         return;
     }
-    for(ParamIterator i = pw->beginParam(); (i < pw->endParam()); ++i)
+    for (ParamIterator i = pw->beginParam(); (i < pw->endParam()); ++i)
     {
         if (((i->a[0] == a[0]) && (i->a[1] == a[1])) ||
             ((i->a[0] == a[1]) && (i->a[1] == a[0])))
@@ -397,7 +397,7 @@ static void set_linear_angle_params(int a[],
             b0 = i->c[0];
         }
         else if (((i->a[0] == a[2]) && (i->a[1] == a[1])) ||
-            ((i->a[0] == a[1]) && (i->a[1] == a[2])))
+                 ((i->a[0] == a[1]) && (i->a[1] == a[2])))
         {
             b1 = i->c[0];
         }
@@ -490,8 +490,8 @@ void GentopVsites::generateSpecial(bool bUseVsites,
                     delete_params(plist, ftb, aa);
                 }
 
-                /* Compute details for the new masses and vsites, 
-                 * and update everything 
+                /* Compute details for the new masses and vsites,
+                 * and update everything
                  */
                 calc_vsite2parm(atoms, plist,
                                 x, &linear_[i], symtab, atype);

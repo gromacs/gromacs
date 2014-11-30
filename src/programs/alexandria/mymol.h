@@ -101,28 +101,28 @@ class MyMol : public MolProp
         //! Fetch the force constants
         void GetForceConstants(gmx_poldata_t pd);
     public:
-        rvec           *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
-        matrix          box;
-        real            dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq, Hform, Emol, Ecalc, Force2;
-        real           *qESP;
-        tensor          Q_exp, Q_calc, Q_esp;
-        eSupport        eSupp;
-        t_state         state_;
-        t_forcerec     *fr_;
-        
+        rvec                     *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
+        matrix                    box;
+        real                      dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq, Hform, Emol, Ecalc, Force2;
+        real                     *qESP;
+        tensor                    Q_exp, Q_calc, Q_esp;
+        eSupport                  eSupp;
+        t_state                   state_;
+        t_forcerec               *fr_;
+
         std::vector<PlistWrapper> plist_;
-        
-        gmx_mtop_t     *mtop_;
-        gmx_localtop_t *ltop_;
-        gpp_atomtype_t  atype_;
-        gentop_qgen_t   qgen_;
-        t_symtab       *symtab_;
-        t_inputrec     *inputrec_;
-        gmx_shellfc_t   shell_;
-        gmx_enerdata_t  enerd_;
-        gmx_resp_t      gr_;
-        t_mdatoms      *md_;
-        t_topology     *topology_;
+
+        gmx_mtop_t               *mtop_;
+        gmx_localtop_t           *ltop_;
+        gpp_atomtype_t            atype_;
+        gentop_qgen_t             qgen_;
+        t_symtab                 *symtab_;
+        t_inputrec               *inputrec_;
+        gmx_shellfc_t             shell_;
+        gmx_enerdata_t            enerd_;
+        gmx_resp_t                gr_;
+        t_mdatoms                *md_;
+        t_topology               *topology_;
 
         //! Constructor
         MyMol();

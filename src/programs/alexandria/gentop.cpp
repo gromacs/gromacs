@@ -456,7 +456,7 @@ int alex_gentop(int argc, char *argv[])
     if (immOK == imm)
     {
         imm = mymol.GenerateCharges(pd, aps, iModel, hfac, epsr,
-                                    lot, TRUE, NULL);
+                                    lot, TRUE, symm_string);
     }
     if (immOK == imm)
     {

@@ -136,118 +136,118 @@ void MyMol::GetForceConstants(gmx_poldata_t pd)
     char  *params;
 
 #define ATP(ii) ((char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ii]))
-    for(std::vector<PlistWrapper>::iterator pw=plist_.begin();
-        (pw < plist_.end()); ++pw)
+    for (std::vector<PlistWrapper>::iterator pw = plist_.begin();
+         (pw < plist_.end()); ++pw)
     {
-        switch(pw->getFtype()) 
+        switch (pw->getFtype())
         {
-        case F_BONDS:
-            for (ParamIterator j = pw->beginParam();
-                 (j < pw->endParam()); ++j)
-            {
-                int ai = j->a[0];
-                int aj = j->a[1];
-                if (0 < gmx_poldata_search_bond(pd,
-                                                ATP(ai),
-                                                ATP(aj),
-                                                &xx, &sx, NULL, &bo, &params))
+            case F_BONDS:
+                for (ParamIterator j = pw->beginParam();
+                     (j < pw->endParam()); ++j)
                 {
-                    j->c[0] = convert2gmx(xx, eg2cPm);
-                    std::vector<std::string> ptr = split(params, ' ');
-                    n = 0;
-                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                    int ai = j->a[0];
+                    int aj = j->a[1];
+                    if (0 < gmx_poldata_search_bond(pd,
+                                                    ATP(ai),
+                                                    ATP(aj),
+                                                    &xx, &sx, NULL, &bo, &params))
                     {
-                        if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                        j->c[0] = convert2gmx(xx, eg2cPm);
+                        std::vector<std::string> ptr = split(params, ' ');
+                        n = 0;
+                        for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
-                            j->c[1+n] = atof(pi->c_str());
-                            n++;
+                            if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                            {
+                                j->c[1+n] = atof(pi->c_str());
+                                n++;
+                            }
+                        }
+                    }
+                    if ((NULL != debug) && (j->c[0] == 0))
+                    {
+                        fprintf(debug, "Could not find bonding parameters for %s - %s.\n",
+                                ATP(j->a[0]),
+                                ATP(j->a[1]));
+                    }
+                }
+                break;
+            case F_ANGLES:
+                for (ParamIterator j = pw->beginParam();
+                     (j < pw->endParam()); ++j)
+                {
+                    if (0 < gmx_poldata_search_angle(pd,
+                                                     ATP(j->a[0]),
+                                                     ATP(j->a[1]),
+                                                     ATP(j->a[2]),
+                                                     &xx, &sx, NULL, &params))
+                    {
+                        j->c[0] = xx;
+                        std::vector<std::string> ptr = split(params, ' ');
+                        n = 0;
+                        for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        {
+                            if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                            {
+                                j->c[1+n] = atof(pi->c_str());
+                                n++;
+                            }
                         }
                     }
                 }
-                if ((NULL != debug) && (j->c[0] == 0))
+                break;
+            case F_PDIHS:
+                for (ParamIterator j = pw->beginParam();
+                     (j < pw->endParam()); ++j)
                 {
-                    fprintf(debug, "Could not find bonding parameters for %s - %s.\n",
-                            ATP(j->a[0]),
-                            ATP(j->a[1]));
-                }
-            }
-            break;
-        case F_ANGLES:
-            for (ParamIterator j = pw->beginParam();
-                 (j < pw->endParam()); ++j)
-            {
-                if (0 < gmx_poldata_search_angle(pd,
-                                                 ATP(j->a[0]),
-                                                 ATP(j->a[1]),
-                                                 ATP(j->a[2]),
-                                                 &xx, &sx, NULL, &params))
-                {
-                    j->c[0] = xx;
-                    std::vector<std::string> ptr = split(params, ' ');
-                    n = 0;
-                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                    if (0 < gmx_poldata_search_dihedral(pd, egdPDIHS,
+                                                        ATP(j->a[0]),
+                                                        ATP(j->a[1]),
+                                                        ATP(j->a[2]),
+                                                        ATP(j->a[3]),
+                                                        &xx, &sx, NULL, &params))
                     {
-                        if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                        j->c[0] = xx;
+                        std::vector<std::string> ptr = split(params, ' ');
+                        n = 0;
+                        for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
-                            j->c[1+n] = atof(pi->c_str());
-                            n++;
+                            if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                            {
+                                j->c[1+n] = atof(pi->c_str());
+                                n++;
+                            }
                         }
                     }
                 }
-            }
-            break;
-        case F_PDIHS:
-            for (ParamIterator j = pw->beginParam();
-                 (j < pw->endParam()); ++j)
-            {
-                if (0 < gmx_poldata_search_dihedral(pd, egdPDIHS,
-                                                    ATP(j->a[0]),
-                                                    ATP(j->a[1]),
-                                                    ATP(j->a[2]),
-                                                    ATP(j->a[3]),
-                                                    &xx, &sx, NULL, &params))
+                break;
+            case F_IDIHS:
+                for (ParamIterator j = pw->beginParam();
+                     (j < pw->endParam()); ++j)
                 {
-                    j->c[0] = xx;
-                    std::vector<std::string> ptr = split(params, ' ');
-                    n = 0;
-                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                    if (0 < gmx_poldata_search_dihedral(pd, egdIDIHS,
+                                                        ATP(j->a[0]),
+                                                        ATP(j->a[1]),
+                                                        ATP(j->a[2]),
+                                                        ATP(j->a[3]),
+                                                        &xx, &sx, NULL, &params))
                     {
-                        if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                        j->c[0] = xx;
+                        std::vector<std::string> ptr = split(params, ' ');
+                        n = 0;
+                        for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
-                            j->c[1+n] = atof(pi->c_str());
-                            n++;
+                            if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
+                            {
+                                j->c[1+n] = atof(pi->c_str());
+                                n++;
+                            }
                         }
                     }
                 }
-            }
-            break;
-        case F_IDIHS:
-            for (ParamIterator j = pw->beginParam();
-                 (j < pw->endParam()); ++j)
-            {
-                if (0 < gmx_poldata_search_dihedral(pd, egdIDIHS,
-                                                    ATP(j->a[0]),
-                                                    ATP(j->a[1]),
-                                                    ATP(j->a[2]),
-                                                    ATP(j->a[3]),
-                                                    &xx, &sx, NULL, &params))
-                {
-                    j->c[0] = xx;
-                    std::vector<std::string> ptr = split(params, ' ');
-                    n = 0;
-                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
-                    {
-                        if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                        {
-                            j->c[1+n] = atof(pi->c_str());
-                            n++;
-                        }
-                    }
-                }
-            }
-            break;
-        default:
-            break;
+                break;
+            default:
+                break;
         }
     }
 }
@@ -287,7 +287,7 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
             {
                 fprintf(debug, "found linear angle %s-%s-%s in %s\n",
                         *topology_->atoms.atomtype[bonds[i][0]],
-                        *topology_->atoms.atomtype[i],    
+                        *topology_->atoms.atomtype[i],
                         *topology_->atoms.atomtype[bonds[i][1]],
                         GetMolname().c_str());
             }
@@ -301,7 +301,7 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
             if (NULL != debug)
             {
                 fprintf(debug, "found planar group %s-%s-%s-%s in %s\n",
-                        *topology_->atoms.atomtype[i],    
+                        *topology_->atoms.atomtype[i],
                         *topology_->atoms.atomtype[bonds[i][0]],
                         *topology_->atoms.atomtype[bonds[i][1]],
                         *topology_->atoms.atomtype[bonds[i][2]],
@@ -313,7 +313,7 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
     }
     int anr = topology_->atoms.nr;
 
-    gvt_.generateSpecial(bUseVsites, &topology_->atoms, &x_, 
+    gvt_.generateSpecial(bUseVsites, &topology_->atoms, &x_,
                          plist_, symtab_, atype_, &excls_);
     bHaveVSites_ = (topology_->atoms.nr > anr);
 }
@@ -324,7 +324,7 @@ static void cp_plist(t_params plist[], int ftype,
     if (plist[ftype].nr > 0)
     {
         PlistWrapper pw(ftype);
-        for(int i = 0; (i < plist[ftype].nr); i++)
+        for (int i = 0; (i < plist[ftype].nr); i++)
         {
             pw.addParam(plist[ftype].param[i]);
         }
@@ -338,16 +338,16 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
     t_restp  rtp;
     t_params plist[F_NRE];
     std::vector<PlistWrapper>::iterator pw;
-    
+
     init_plist(plist);
-    for(pw=plist_.begin(); (pw < plist_.end()); ++pw)
+    for (pw = plist_.begin(); (pw < plist_.end()); ++pw)
     {
-        if (F_BONDS == pw->getFtype()) 
+        if (F_BONDS == pw->getFtype())
         {
             pr_alloc(pw->nParam(), &plist[F_BONDS]);
             int i = 0;
-            for(ParamIterator pi = pw->beginParam();
-                (pi < pw->endParam()); ++pi)
+            for (ParamIterator pi = pw->beginParam();
+                 (pi < pw->endParam()); ++pi)
             {
                 t_param *src = &(*pi);
                 cp_param(&(plist[F_BONDS].param[i]), src);
@@ -370,7 +370,7 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
     gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
     generate_excls(&nnb, nexcl_, excls_);
     done_nnb(&nnb);
- 
+
     cp_plist(plist, F_ANGLES, plist_);
     if (bDihs)
     {
@@ -381,7 +381,7 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
     {
         cp_plist(plist, F_LJ14, plist_);
     }
-    for(int i = 0; (i<F_NRE); i++)
+    for (int i = 0; (i < F_NRE); i++)
     {
         if (plist[i].nr > 0)
         {
@@ -535,9 +535,9 @@ static void excls__to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
     blocka->nra          = nra;
 }
 
-static void plist_to_mtop(gmx_poldata_t pd, 
+static void plist_to_mtop(gmx_poldata_t             pd,
                           std::vector<PlistWrapper> plist,
-                          gmx_mtop_t *mtop_)
+                          gmx_mtop_t               *mtop_)
 {
     double fudgeLJ;
     double reppow = 12.0;
@@ -547,16 +547,16 @@ static void plist_to_mtop(gmx_poldata_t pd,
     fudgeLJ = gmx_poldata_get_fudgeLJ(pd);
 
     int nfptot = mtop_->ffparams.ntypes;
-    for(std::vector<PlistWrapper>::iterator pw=plist.begin();
-        (pw < plist.end()); ++pw)
+    for (std::vector<PlistWrapper>::iterator pw = plist.begin();
+         (pw < plist.end()); ++pw)
     {
         nfptot += pw->nParam()*NRFPA(pw->getFtype());
     }
     srenew(mtop_->ffparams.functype, nfptot);
     srenew(mtop_->ffparams.iparams, nfptot);
 
-    for(std::vector<PlistWrapper>::iterator pw=plist.begin();
-        (pw < plist.end()); ++pw)
+    for (std::vector<PlistWrapper>::iterator pw = plist.begin();
+         (pw < plist.end()); ++pw)
     {
         int nra    = NRAL(pw->getFtype());
         int nrfp   = NRFPA(pw->getFtype());
@@ -692,7 +692,7 @@ static void fill_inputrec(t_inputrec *ir)
     snew(ir->fepvals, 1);
 }
 
-MyMol::MyMol():gvt_(egvtALL)
+MyMol::MyMol() : gvt_(egvtALL)
 {
     bHaveShells_       = false;
     bHaveVSites_       = false;
@@ -735,8 +735,8 @@ MyMol::~MyMol()
         sfree(inputrec_);
         inputrec_ = NULL;
     }
-    for(std::vector<PlistWrapper>::iterator pw=plist_.begin();
-        (pw < plist_.end()); ++pw)
+    for (std::vector<PlistWrapper>::iterator pw = plist_.begin();
+         (pw < plist_.end()); ++pw)
     {
         pw->eraseParams();
     }
@@ -982,7 +982,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
             if (plist_.end() != pw)
             {
                 symmetrize_charges(bSymmetricCharges,
-                                   &topology_->atoms, 
+                                   &topology_->atoms,
                                    pw,
                                    pd, ap, symm_string, symmetric_charges_);
             }
@@ -1261,7 +1261,7 @@ static void write_zeta_q2(gentop_qgen_t qgen, gpp_atomtype_t atype,
 static int get_subtype(directive d, int ftype)
 {
     int i;
-    for(i = 1; (i < 20); i++)
+    for (i = 1; (i < 20); i++)
     {
         if (ifunc_index(d, i) == ftype)
         {
@@ -1271,14 +1271,14 @@ static int get_subtype(directive d, int ftype)
     return 1;
 }
 
-static void print_bondeds2(FILE     *out,
-                           directive d,
-                           int       plist_ftype,
-                           int       print_ftype,
+static void print_bondeds2(FILE                     *out,
+                           directive                 d,
+                           int                       plist_ftype,
+                           int                       print_ftype,
                            std::vector<PlistWrapper> plist)
 {
     std::vector<PlistWrapper>::iterator p = SearchPlist(plist, plist_ftype);
-    
+
     if (plist.end() == p || p->nParam() == 0)
     {
         return;
@@ -1322,24 +1322,24 @@ static void write_top2(FILE *out, char *molname,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds2(out, d_bonds, F_BONDS, 
-                       gmx_poldata_get_bond_ftype(pd), 
+        print_bondeds2(out, d_bonds, F_BONDS,
+                       gmx_poldata_get_bond_ftype(pd),
                        plist_);
         print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
         print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
         print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
         print_excl(out, at->nr, excls);
-        print_bondeds2(out, d_angles, F_ANGLES, 
+        print_bondeds2(out, d_angles, F_ANGLES,
                        gmx_poldata_get_angle_ftype(pd), plist_);
-        print_bondeds2(out, d_angles, F_LINEAR_ANGLES, F_LINEAR_ANGLES, 
+        print_bondeds2(out, d_angles, F_LINEAR_ANGLES, F_LINEAR_ANGLES,
                        plist_);
-        print_bondeds2(out, d_dihedrals, F_PDIHS, 
+        print_bondeds2(out, d_dihedrals, F_PDIHS,
                        gmx_poldata_get_dihedral_ftype(pd, egdPDIHS), plist_);
         /* Check whether the dihedrals use the same function */
-        print_bondeds2(out, d_dihedrals, F_IDIHS,  
+        print_bondeds2(out, d_dihedrals, F_IDIHS,
                        gmx_poldata_get_dihedral_ftype(pd, egdIDIHS), plist_);
         print_bondeds2(out, d_cmap, F_CMAP, F_CMAP, plist_);
-        print_bondeds2(out, d_polarization, F_POLARIZATION, F_POLARIZATION, 
+        print_bondeds2(out, d_polarization, F_POLARIZATION, F_POLARIZATION,
                        plist_);
         print_bondeds2(out, d_thole_polarization, F_THOLE_POL, F_THOLE_POL, plist_);
         print_bondeds2(out, d_vsites2, F_VSITE2, F_VSITE2, plist_);
@@ -1466,9 +1466,9 @@ void MyMol::PrintTopology(const char           *fn,
                "          %4d polarizations\n",
                CountPlist(plist_, F_PDIHS),
                CountPlist(plist_, F_IDIHS),
-               CountPlist(plist_, F_ANGLES), 
+               CountPlist(plist_, F_ANGLES),
                CountPlist(plist_, F_LINEAR_ANGLES),
-               CountPlist(plist_, F_LJ14),   
+               CountPlist(plist_, F_LJ14),
                CountPlist(plist_, F_BONDS),
                topology_->atoms.nr,
                CountPlist(plist_, F_POLARIZATION));
@@ -1685,7 +1685,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
                 newa->atom[j].mB         = 0;
                 newa->atom[j].atomnumber = 0;
                 sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type,
-                                                      atype_));
+                                                       atype_));
                 newname[j] = strdup(buf);
                 shell      = add_atomtype(atype_, symtab_, shell_atom, buf, &p,
                                           0, 0, 0, 0, 0, 0, 0);
@@ -1746,7 +1746,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
         {
             if (i->getFtype() != F_POLARIZATION)
             {
-                for (ParamIterator j = i->beginParam(); 
+                for (ParamIterator j = i->beginParam();
                      (j < i->endParam()); ++j)
                 {
                     for (k = 0; (k < NRAL(i->getFtype())); k++)
@@ -1765,7 +1765,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
 immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 {
     real qtot, mtot;
-    
+
     if ((cgnr_ = generate_charge_groups(ecg, &topology_->atoms,
                                         plist_,
                                         bUsePDBcharge,
@@ -1776,7 +1776,7 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 
     if (ecg != ecgAtom)
     {
-        //sort_on_charge_groups(cgnr_, &topology_->atoms, 
+        //sort_on_charge_groups(cgnr_, &topology_->atoms,
         //                    plist_, x_, excls_, ndxfn, nmol);
     }
     return immOK;
@@ -1959,7 +1959,7 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
     clear_rvec(mu);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        if (1 == 
+        if (1 ==
             gmx_poldata_get_atype_pol(pd, *topology_->atoms.atomtype[i], &pol, &sigpol))
         {
             np++;
@@ -1976,7 +1976,7 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
     double mutot = ENM2DEBYE*norm(mu);
     fprintf(fp, "Total charge is %d, total mass is %g, dipole is %.3f D\n",
             qq, mm, mutot);
-    fprintf(fp, "Polarizability is %.2f +/- %.2f A^3.\n", 
+    fprintf(fp, "Polarizability is %.2f +/- %.2f A^3.\n",
             poltot, sqrt(sptot/topology_->atoms.nr));
 }
 
