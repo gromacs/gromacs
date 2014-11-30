@@ -578,10 +578,10 @@ int alex_bastat(int argc, char *argv[])
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
     std::vector<alexandria::MolProp> mp;
     merge_xml(nfiles, fns, mp, NULL, NULL, NULL, aps, pd, TRUE);
-    ftb = gmx_poldata_get_bond_ftype(pd);
-    fta = gmx_poldata_get_angle_ftype(pd);
-    ftd = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
-    fti = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
+    ftb = F_BONDS;
+    fta = F_ANGLES;
+    ftd = F_PDIHS;
+    fti = F_IDIHS;
     snew(b, 1);
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {

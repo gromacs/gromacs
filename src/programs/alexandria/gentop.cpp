@@ -479,8 +479,7 @@ int alex_gentop(int argc, char *argv[])
     }
     if (immOK == imm)
     {
-        mymol.GenerateChargeGroups(ecg, bUsePDBcharge,
-                                   opt2fn("-n", NFILE, fnm), nmol);
+        mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
 
 

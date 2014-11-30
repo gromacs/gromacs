@@ -174,8 +174,7 @@ class MyMol : public MolProp
 
         void AddShells(gmx_poldata_t pd, ePolar epol);
 
-        immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge,
-                                       const char *ndxfn, int nmol);
+        immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
         immStatus GenerateGromacs(output_env_t oenv, t_commrec *cr);
 

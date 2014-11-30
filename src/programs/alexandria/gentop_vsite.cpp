@@ -68,7 +68,6 @@ void GentopVsites::addPlanar(int ai, int aj, int ak, int al, int nbonds[])
 {
     unsigned int i;
 
-    printf("addPlanar %d %d %d %d\n", ai, aj, ak, al);
     for (i = 0; (i < planar_.size()); i++)
     {
         if (((planar_[i].a[0] == ai) && (planar_[i].a[1] == aj)  &&

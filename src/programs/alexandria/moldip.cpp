@@ -594,7 +594,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 }
                 if (immOK == imm)
                 {
-                    imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE, NULL, 1);
+                    imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE);
                 }
                 if (immOK == imm)
                 {
@@ -721,7 +721,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             }
             if (immOK == imm)
             {
-                imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE, NULL, 1);
+                imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE);
             }
             if (immOK == imm)
             {

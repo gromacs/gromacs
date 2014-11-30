@@ -63,7 +63,7 @@ void add_param_to_plist(std::vector<PlistWrapper> &plist,
                         const t_param &p);
                         
 void delete_params(std::vector<PlistWrapper> &plist_,
-                   const int etype, 
+                   const int ftype, 
                    const int alist[]);
                    
 void add_param_to_plist(std::vector<PlistWrapper> &plist,

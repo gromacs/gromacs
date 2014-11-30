@@ -51,19 +51,22 @@ unsigned int CountPlist(std::vector<PlistWrapper> &plist, int ftype)
 }
 
 void delete_params(std::vector<PlistWrapper> &plist_,
-                   const int etype,
+                   const int ftype,
                    const int alist[])
 {
     int nra;
-    std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist_, etype);
+    std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist_, ftype);
 
     if (plist_.end() == pwi)
     {
-        fprintf(stderr, "Cannot find function type %s in plist\n", 
-                interaction_function[etype].name);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Cannot find function type %s in plist\n", 
+                    interaction_function[ftype].name);
+        }
         return;
     }
-    nra = interaction_function[etype].nratoms;
+    nra = interaction_function[ftype].nratoms;
     switch (nra)
     {
         case 2:
@@ -139,7 +142,7 @@ void delete_params(std::vector<PlistWrapper> &plist_,
             break;
         default:
             fprintf(stderr, "Don't know how to remove params from type %s\n",
-                    interaction_function[etype].name);
+                    interaction_function[ftype].name);
     }
 }
 

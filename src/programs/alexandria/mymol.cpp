@@ -77,8 +77,6 @@
 #include "mymol.h"
 #include "stringutil.h"
 
-static const char *gentop_version = "gentop 0.98";
-
 #define STRLEN 256
 
 namespace alexandria
@@ -122,7 +120,10 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     th = fabs(RAD2DEG*bond_angle(xi, xj, xk, pbc, r_ij, r_kj, &costh, &t1, &t2));
     if ((th > th_toler) || (th < 180-th_toler))
     {
-        printf("Angle is %g, th_toler is %g\n", th, th_toler);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Angle is %g, th_toler is %g\n", th, th_toler);
+        }
         return true;
     }
     return false;
@@ -282,11 +283,14 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
             is_linear(x_[i], x_[bonds[i][0]], x_[bonds[i][1]],
                       &pbc, th_toler))
         {
-            printf("found linear angle %s-%s-%s in %s\n",
-                   *topology_->atoms.atomtype[bonds[i][0]],
-                   *topology_->atoms.atomtype[i],    
-                   *topology_->atoms.atomtype[bonds[i][1]],
-                   GetMolname().c_str());
+            if (NULL != debug)
+            {
+                fprintf(debug, "found linear angle %s-%s-%s in %s\n",
+                        *topology_->atoms.atomtype[bonds[i][0]],
+                        *topology_->atoms.atomtype[i],    
+                        *topology_->atoms.atomtype[bonds[i][1]],
+                        GetMolname().c_str());
+            }
             gvt_.addLinear(bonds[i][0], i, bonds[i][1]);
         }
         else if ((bonds[i].size() == 3) &&
@@ -294,6 +298,15 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
                            x_[bonds[i][1]], x_[bonds[i][2]],
                            &pbc, ph_toler))
         {
+            if (NULL != debug)
+            {
+                fprintf(debug, "found planar group %s-%s-%s-%s in %s\n",
+                        *topology_->atoms.atomtype[i],    
+                        *topology_->atoms.atomtype[bonds[i][0]],
+                        *topology_->atoms.atomtype[bonds[i][1]],
+                        *topology_->atoms.atomtype[bonds[i][2]],
+                        GetMolname().c_str());
+            }
             gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
                            &nbonds[0]);
         }
@@ -1248,7 +1261,7 @@ static void write_zeta_q2(gentop_qgen_t qgen, gpp_atomtype_t atype,
 static int get_subtype(directive d, int ftype)
 {
     int i;
-    for(i = 0; (i < 20); i++)
+    for(i = 1; (i < 20); i++)
     {
         if (ifunc_index(d, i) == ftype)
         {
@@ -1749,8 +1762,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
     sfree(shell_atom);
 }
 
-immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge,
-                                      const char *ndxfn, int nmol)
+immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 {
     real qtot, mtot;
     
