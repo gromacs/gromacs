@@ -33,6 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief This file defines functions used by the domdec module
+ * in its initial setup phase.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_domdec
+ */
+
 #include "gmxpre.h"
 
 #include <assert.h>
@@ -49,9 +58,16 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Margin for setting up the DD grid */
+/*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
 
+/*! \brief Factorize \p n.
+ *
+ * \param[in]    n     Value to factorize
+ * \param[out]   fac   Pointer to array of factors (to be allocated in this function)
+ * \param[out]   mfac  Pointer to array of the number of times each factor repeats in the factorization (to be allocated in this function)
+ * \return             The number of unique factors
+ */
 static int factorize(int n, int **fac, int **mfac)
 {
     int d, ndiv;
@@ -84,6 +100,7 @@ static int factorize(int n, int **fac, int **mfac)
     return ndiv;
 }
 
+/*! \brief Find largest divisor of \p n smaller than \p n*/
 static gmx_bool largest_divisor(int n)
 {
     int ndiv, *div, *mdiv, ldiv;
@@ -96,6 +113,7 @@ static gmx_bool largest_divisor(int n)
     return ldiv;
 }
 
+/*! \brief Compute largest common divisor of \p n1 and \b n2 */
 static int lcd(int n1, int n2)
 {
     int d, i;
@@ -112,50 +130,53 @@ static int lcd(int n1, int n2)
     return d;
 }
 
-static gmx_bool fits_pme_ratio(int nnodes, int npme, float ratio)
+/*! \brief Returns TRUE when there are enough PME ranks for the ratio */
+static gmx_bool fits_pme_ratio(int nrank_tot, int nrank_pme, float ratio)
 {
-    return ((double)npme/(double)nnodes > 0.95*ratio);
+    return ((double)nrank_pme/(double)nrank_tot > 0.95*ratio);
 }
 
-static gmx_bool fits_pp_pme_perf(int nnodes, int npme, float ratio)
+/*! \brief Returns TRUE when npme out of ntot ranks doing PME is expected to give reasonable performance */
+static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 {
     int ndiv, *div, *mdiv, ldiv;
     int npp_root3, npme_root2;
 
-    ndiv = factorize(nnodes-npme, &div, &mdiv);
+    ndiv = factorize(ntot - npme, &div, &mdiv);
     ldiv = div[ndiv-1];
     sfree(div);
     sfree(mdiv);
 
-    npp_root3  = static_cast<int>(std::pow(nnodes-npme, 1.0/3.0) + 0.5);
+    npp_root3  = static_cast<int>(std::pow(ntot - npme, 1.0/3.0) + 0.5);
     npme_root2 = static_cast<int>(std::sqrt(static_cast<double>(npme)) + 0.5);
 
     /* The check below gives a reasonable division:
-     * factor 5 allowed at 5 or more PP nodes,
-     * factor 7 allowed at 49 or more PP nodes.
+     * factor 5 allowed at 5 or more PP ranks,
+     * factor 7 allowed at 49 or more PP ranks.
      */
     if (ldiv > 3 + npp_root3)
     {
         return FALSE;
     }
 
-    /* Check if the number of PP and PME nodes have a reasonable sized
+    /* Check if the number of PP and PME ranks have a reasonable sized
      * denominator in common, such that we can use 2D PME decomposition
      * when required (which requires nx_pp == nx_pme).
      * The factor of 2 allows for a maximum ratio of 2^2=4
      * between nx_pme and ny_pme.
      */
-    if (lcd(nnodes-npme, npme)*2 < npme_root2)
+    if (lcd(ntot - npme, npme)*2 < npme_root2)
     {
         return FALSE;
     }
 
     /* Does this division gives a reasonable PME load? */
-    return fits_pme_ratio(nnodes, npme, ratio);
+    return fits_pme_ratio(ntot, npme, ratio);
 }
 
+/*! \brief Make a guess for the number of PME ranks to use. */
 static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
-                      int nnodes)
+                      int nrank_tot)
 {
     float      ratio;
     int        npme;
@@ -167,59 +188,59 @@ static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
         fprintf(fplog, "Guess for relative PME load: %.2f\n", ratio);
     }
 
-    /* We assume the optimal node ratio is close to the load ratio.
+    /* We assume the optimal rank ratio is close to the load ratio.
      * The communication load is neglected,
      * but (hopefully) this will balance out between PP and PME.
      */
 
-    if (!fits_pme_ratio(nnodes, nnodes/2, ratio))
+    if (!fits_pme_ratio(nrank_tot, nrank_tot/2, ratio))
     {
-        /* We would need more than nnodes/2 PME only nodes,
+        /* We would need more than nrank_tot/2 PME only nodes,
          * which is not possible. Since the PME load is very high,
-         * we will not loose much performance when all nodes do PME.
+         * we will not loose much performance when all ranks do PME.
          */
 
         return 0;
     }
 
-    /* First try to find npme as a factor of nnodes up to nnodes/3.
+    /* First try to find npme as a factor of nrank_tot up to nrank_tot/3.
      * We start with a minimum PME node fraction of 1/16
      * and avoid ratios which lead to large prime factors in nnodes-npme.
      */
-    npme = (nnodes + 15)/16;
-    while (npme <= nnodes/3)
+    npme = (nrank_tot + 15)/16;
+    while (npme <= nrank_tot/3)
     {
-        if (nnodes % npme == 0)
+        if (nrank_tot % npme == 0)
         {
             /* Note that fits_perf might change the PME grid,
              * in the current implementation it does not.
              */
-            if (fits_pp_pme_perf(nnodes, npme, ratio))
+            if (fits_pp_pme_perf(nrank_tot, npme, ratio))
             {
                 break;
             }
         }
         npme++;
     }
-    if (npme > nnodes/3)
+    if (npme > nrank_tot/3)
     {
         /* Try any possible number for npme */
         npme = 1;
-        while (npme <= nnodes/2)
+        while (npme <= nrank_tot/2)
         {
             /* Note that fits_perf may change the PME grid */
-            if (fits_pp_pme_perf(nnodes, npme, ratio))
+            if (fits_pp_pme_perf(nrank_tot, npme, ratio))
             {
                 break;
             }
             npme++;
         }
     }
-    if (npme > nnodes/2)
+    if (npme > nrank_tot/2)
     {
         gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
-                  ratio, (int)(0.95*ratio*nnodes+0.5), nnodes/2, ir->nkx, ir->nky);
+                  ratio, (int)(0.95*ratio*nrank_tot + 0.5), nrank_tot/2, ir->nkx, ir->nky);
         /* Keep the compiler happy */
         npme = 0;
     }
@@ -230,17 +251,18 @@ static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
             fprintf(fplog,
                     "Will use %d particle-particle and %d PME only ranks\n"
                     "This is a guess, check the performance at the end of the log file\n",
-                    nnodes-npme, npme);
+                    nrank_tot - npme, npme);
         }
         fprintf(stderr, "\n"
                 "Will use %d particle-particle and %d PME only ranks\n"
                 "This is a guess, check the performance at the end of the log file\n",
-                nnodes-npme, npme);
+                nrank_tot - npme, npme);
     }
 
     return npme;
 }
 
+/*! \brief Return \p n divided by \p f rounded up to the next integer. */
 static int div_up(int n, int f)
 {
     return (n + f - 1)/f;
@@ -284,15 +306,23 @@ real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox)
     return comm_vol;
 }
 
+/*! \brief Return whether the DD inhomogeneous in the z direction */
 static gmx_bool inhomogeneous_z(const t_inputrec *ir)
 {
     return ((EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD) &&
             ir->ePBC == epbcXYZ && ir->ewald_geometry == eewg3DC);
 }
 
-/* Avoid integer overflows */
+/*! \brief Estimate cost of PME FFT communication
+ *
+ * This only takes the communication into account and not imbalance
+ * in the calculation. But the imbalance in communication and calculation
+ * are similar and therefore these formulas also prefer load balance
+ * in the FFT and pme_solve calculation.
+ */
 static float comm_pme_cost_vol(int npme, int a, int b, int c)
 {
+    /* We use a float here, since an integer might overflow */
     float comm_vol;
 
     comm_vol  = npme - 1;
@@ -300,9 +330,11 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
     comm_vol *= div_up(a, npme);
     comm_vol *= div_up(b, npme);
     comm_vol *= c;
+
     return comm_vol;
 }
 
+/*! \brief Estimate cost of communication for a possible domain decomposition. */
 static float comm_cost_est(real limit, real cutoff,
                            matrix box, gmx_ddbox_t *ddbox,
                            int natoms, t_inputrec *ir,
@@ -462,12 +494,6 @@ static float comm_cost_est(real limit, real cutoff,
         }
     }
 
-    /* PME FFT communication volume.
-     * This only takes the communication into account and not imbalance
-     * in the calculation. But the imbalance in communication and calculation
-     * are similar and therefore these formulas also prefer load balance
-     * in the FFT and pme_solve calculation.
-     */
     comm_pme += comm_pme_cost_vol(npme[YY], ir->nky, ir->nkz, ir->nkx);
     comm_pme += comm_pme_cost_vol(npme[XX], ir->nkx, ir->nky, ir->nkz);
 
@@ -498,6 +524,7 @@ static float comm_cost_est(real limit, real cutoff,
     return 3*natoms*(comm_vol + cost_pbcdx) + comm_pme;
 }
 
+/*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
 static void assign_factors(gmx_domdec_t *dd,
                            real limit, real cutoff,
                            matrix box, gmx_ddbox_t *ddbox,
@@ -560,6 +587,7 @@ static void assign_factors(gmx_domdec_t *dd,
     }
 }
 
+/*! \brief Determine the optimal distribution of DD cells for the simulation system and number of MPI ranks */
 static real optimize_ncells(FILE *fplog,
                             int nnodes_tot, int npme_only,
                             gmx_bool bDynLoadBal, real dlb_scale,
