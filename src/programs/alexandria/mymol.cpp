@@ -164,11 +164,11 @@ void MyMol::GetForceConstants(gmx_poldata_t pd)
                             }
                         }
                     }
-                    if ((NULL != debug) && (j->c[0] == 0))
+                    else
                     {
-                        fprintf(debug, "Could not find bonding parameters for %s - %s.\n",
-                                ATP(j->a[0]),
-                                ATP(j->a[1]));
+                        // Default bond parameters
+                        j->c[0] = 0.15;
+                        j->c[1] = 2e5;
                     }
                 }
                 break;
@@ -194,6 +194,13 @@ void MyMol::GetForceConstants(gmx_poldata_t pd)
                             }
                         }
                     }
+                    else
+                    {
+                        // Default angle parameters
+                        j->c[0] = 109;
+                        j->c[1] = 400;
+                    }
+                
                 }
                 break;
             case F_PDIHS:
@@ -251,6 +258,13 @@ void MyMol::GetForceConstants(gmx_poldata_t pd)
                             }
                         }
                     }
+                    else
+                    {
+                        // Default improper dihedral parameters
+                        j->c[0] = 0;
+                        j->c[1] = 5;
+                    }
+                
                 }
                 break;
             default:
