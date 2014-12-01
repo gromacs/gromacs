@@ -33,6 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief This file defines functions used by the domdec module
+ * for (bounding) box and pbc information generation.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_domdec
+ */
+
 #include "gmxpre.h"
 
 #include "gromacs/domdec/domdec.h"
@@ -45,6 +54,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
+/*! \brief Calculates the average and standard deviation in 3D of n charge groups */
 static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stddev,
                                 t_commrec *cr_sum)
 {
@@ -116,6 +126,7 @@ static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stdd
     }
 }
 
+/*! \brief Determines if dimensions require triclinic treatment and stores this info in ddbox */
 static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
 {
     int   npbcdim, d, i, j;
@@ -225,6 +236,7 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
     }
 }
 
+/*! \brief This function calculates and bounding box and pbc infor and populates ddbox */
 static void low_set_ddbox(t_inputrec *ir, ivec *dd_nc, matrix box,
                           gmx_bool bCalcUnboundedSize, int ncg, t_block *cgs, rvec *x,
                           t_commrec *cr_sum,

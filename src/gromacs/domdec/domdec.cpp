@@ -107,6 +107,10 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "domdec_constraints.h"
+#include "domdec_internal.h"
+#include "domdec_vsite.h"
+
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
@@ -2093,7 +2097,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
     gmx_fio_fclose(out);
 }
 
-real dd_cutoff_mbody(gmx_domdec_t *dd)
+real dd_cutoff_multibody(const gmx_domdec_t *dd)
 {
     gmx_domdec_comm_t *comm;
     int                di;
@@ -2130,11 +2134,11 @@ real dd_cutoff_mbody(gmx_domdec_t *dd)
     return r;
 }
 
-real dd_cutoff_twobody(gmx_domdec_t *dd)
+real dd_cutoff_twobody(const gmx_domdec_t *dd)
 {
     real r_mb;
 
-    r_mb = dd_cutoff_mbody(dd);
+    r_mb = dd_cutoff_multibody(dd);
 
     return std::max(dd->comm->cutoff, r_mb);
 }
@@ -2337,22 +2341,6 @@ void get_pme_nnodes(const gmx_domdec_t *dd,
         *npmenodes_x = 1;
         *npmenodes_y = 1;
     }
-}
-
-gmx_bool gmx_pmeonlynode(t_commrec *cr, int sim_nodeid)
-{
-    gmx_bool bPMEOnlyNode;
-
-    if (DOMAINDECOMP(cr))
-    {
-        bPMEOnlyNode = (dd_simnode2pmenode(cr, sim_nodeid) == -1);
-    }
-    else
-    {
-        bPMEOnlyNode = FALSE;
-    }
-
-    return bPMEOnlyNode;
 }
 
 void get_pme_ddnodes(t_commrec *cr, int pmenodeid,
