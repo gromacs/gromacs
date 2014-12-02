@@ -77,7 +77,7 @@ struct t_state;
 
 /* The options for the domain decomposition MPI task ordering */
 enum {
-    ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
+    ddrankorderSEL, ddrankorderINTERLEAVE, ddrankorderPP_PME, ddrankorderCARTESIAN, ddrankorderNR
 };
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
