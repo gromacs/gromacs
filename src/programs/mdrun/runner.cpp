@@ -141,6 +141,7 @@ struct mdrunner_arglist
     int                     nstglobalcomm;
     ivec                    ddxyz;
     int                     dd_node_order;
+    int                     npme;
     real                    rdd;
     real                    rconstr;
     const char             *dddlb_opt;
@@ -192,7 +193,7 @@ static void mdrunner_start_fn(void *arg)
 
         gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
                       mc.bVerbose, mc.nstglobalcomm,
-                      mc.ddxyz, mc.dd_node_order, mc.rdd,
+                      mc.ddxyz, mc.dd_node_order, mc.npme, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
                       mc.nbpu_opt, mc.nstlist_cmdline,
@@ -212,7 +213,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
                                          const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
                                          int nstglobalcomm,
-                                         ivec ddxyz, int dd_node_order, real rdd, real rconstr,
+                                         ivec ddxyz, int dd_node_order, int npme,
+                                         real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
                                          const char *nbpu_opt, int nstlist_cmdline,
@@ -251,6 +253,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->ddxyz[YY]       = ddxyz[YY];
     mda->ddxyz[ZZ]       = ddxyz[ZZ];
     mda->dd_node_order   = dd_node_order;
+    mda->npme            = npme;
     mda->rdd             = rdd;
     mda->rconstr         = rconstr;
     mda->dddlb_opt       = dddlb_opt;
@@ -658,7 +661,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
              int nstglobalcomm,
-             ivec ddxyz, int dd_node_order, real rdd, real rconstr,
+             ivec ddxyz, int dd_node_order, int npme, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,
@@ -828,7 +831,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             /* now start the threads. */
             cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
                                         oenv, bVerbose, nstglobalcomm,
-                                        ddxyz, dd_node_order, rdd, rconstr,
+                                        ddxyz, dd_node_order, npme, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                         nbpu_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
@@ -1022,17 +1025,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, rdd, rconstr,
+        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
+                                           dd_node_order,
+                                           rdd, rconstr,
                                            dddlb_opt, dlb_scale,
                                            ddcsx, ddcsy, ddcsz,
                                            mtop, inputrec,
                                            box, state->x,
                                            &ddbox, &npme_major, &npme_minor);
-
-        make_dd_communicators(fplog, cr, dd_node_order);
-
-        /* Set overallocation to avoid frequent reallocation of arrays */
-        set_over_alloc_dd(TRUE);
     }
     else
     {
@@ -1309,12 +1309,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (DOMAINDECOMP(cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
+            /* This call is not included in init_domain_decomposition mainly
+             * because fr->cginfo_mb is set later.
+             */
             dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
                             Flags & MD_DDBONDCHECK, fr->cginfo_mb);
-
-            set_dd_parameters(fplog, cr->dd, dlb_scale, inputrec, &ddbox);
-
-            setup_dd_grid(fplog, cr->dd);
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */

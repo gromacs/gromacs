@@ -451,12 +451,7 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
 
-    /* we set these early because they might be used in init_multisystem()
-       Note that there is the potential for npme>nnodes until the number of
-       threads is set later on, if there's thread parallelization. That shouldn't
-       lead to problems. */
     dd_node_order = nenum(ddno_opt);
-    cr->npmenodes = npme;
 
     hw_opt.thread_affinity = nenum(thread_aff_opt);
 
@@ -530,7 +525,7 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
     rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
-                       nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
+                       nstglobalcomm, ddxyz, dd_node_order, npme, rdd, rconstr,
                        dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
                        nbpu_opt[0], nstlist,
                        nsteps, nstepout, resetstep,
