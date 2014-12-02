@@ -1750,7 +1750,7 @@ static void check_match(FILE *fplog,
                         char *version,
                         char *btime, char *buser, char *bhost, int double_prec,
                         char *fprog,
-                        t_commrec *cr, int npp_f, int npme_f,
+                        const t_commrec *cr, int npp_f, int npme_f,
                         ivec dd_nc, ivec dd_nc_f)
 {
     int      npp;
@@ -1838,7 +1838,8 @@ static void check_match(FILE *fplog,
 }
 
 static void read_checkpoint(const char *fn, FILE **pfplog,
-                            t_commrec *cr, ivec dd_nc,
+                            const t_commrec *cr,
+                            ivec dd_nc, int *npme,
                             int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadEkin,
                             int *simulation_part,
@@ -1957,15 +1958,15 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (!PAR(cr))
     {
-        cr->npmenodes = 0;
+        *npme = 0;
     }
     else if (cr->nnodes == nppnodes_f + npmenodes_f)
     {
-        if (cr->npmenodes < 0)
+        if (*npme < 0)
         {
-            cr->npmenodes = npmenodes_f;
+            *npme = npmenodes_f;
         }
-        int nppnodes = cr->nnodes - cr->npmenodes;
+        int nppnodes = cr->nnodes - *npme;
         if (nppnodes == nppnodes_f)
         {
             for (d = 0; d < DIM; d++)
@@ -2236,7 +2237,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
 
 void load_checkpoint(const char *fn, FILE **fplog,
-                     t_commrec *cr, ivec dd_nc,
+                     const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
                      gmx_bool bAppend, gmx_bool bForceAppend)
@@ -2248,13 +2249,13 @@ void load_checkpoint(const char *fn, FILE **fplog,
     {
         /* Read the state from the checkpoint file */
         read_checkpoint(fn, fplog,
-                        cr, dd_nc,
+                        cr, dd_nc, npme,
                         ir->eI, &(ir->fepvals->init_fep_state), &step, &t, state, bReadEkin,
                         &ir->simulation_part, bAppend, bForceAppend);
     }
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(cr->npmenodes), &cr->npmenodes, cr);
+        gmx_bcast(sizeof(*npme), npme, cr);
         gmx_bcast(DIM*sizeof(dd_nc[0]), dd_nc, cr);
         gmx_bcast(sizeof(step), &step, cr);
         gmx_bcast(sizeof(*bReadEkin), bReadEkin, cr);
