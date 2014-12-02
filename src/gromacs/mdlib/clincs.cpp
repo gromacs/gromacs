@@ -814,7 +814,8 @@ void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
     li->matlam = lambda;
 }
 
-static int count_triangle_constraints(t_ilist *ilist, t_blocka *at2con)
+static int count_triangle_constraints(const t_ilist  *ilist,
+                                      const t_blocka *at2con)
 {
     int      ncon1, ncon_tot;
     int      c0, a00, a01, n1, c1, a10, a11, ac1, n2, c2, a20, a21;
@@ -912,8 +913,8 @@ static int int_comp(const void *a, const void *b)
     return (*(int *)a) - (*(int *)b);
 }
 
-gmx_lincsdata_t init_lincs(FILE *fplog, gmx_mtop_t *mtop,
-                           int nflexcon_global, t_blocka *at2con,
+gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
+                           int nflexcon_global, const t_blocka *at2con,
                            gmx_bool bPLINCS, int nIter, int nProjOrder)
 {
     struct gmx_lincsdata *li;
@@ -1135,8 +1136,10 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
 }
 
 
-void set_lincs(t_idef *idef, t_mdatoms *md,
-               gmx_bool bDynamics, t_commrec *cr,
+void set_lincs(const t_idef         *idef,
+               const t_mdatoms      *md,
+               gmx_bool              bDynamics,
+               t_commrec            *cr,
                struct gmx_lincsdata *li)
 {
     int          start, natoms, nflexcon;

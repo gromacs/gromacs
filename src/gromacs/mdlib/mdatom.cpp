@@ -47,7 +47,7 @@
 
 #define ALMOST_ZERO 1e-30
 
-t_mdatoms *init_mdatoms(FILE *fp, gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
+t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 {
     int                     a;
     double                  tmA, tmB;
@@ -106,16 +106,16 @@ t_mdatoms *init_mdatoms(FILE *fp, gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
     return md;
 }
 
-void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
-              int nindex, int *index,
+void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
+              int nindex, const int *index,
               int homenr,
               t_mdatoms *md)
 {
     gmx_bool              bLJPME;
     gmx_mtop_atomlookup_t alook;
     int                   i;
-    t_grpopts            *opts;
-    gmx_groups_t         *groups;
+    const t_grpopts      *opts;
+    const gmx_groups_t   *groups;
     int                   nthreads gmx_unused;
     const real            oneOverSix = 1.0 / 6.0;
 

@@ -1051,15 +1051,14 @@ static void do_single_flood(
 
 
 /* Main flooding routine, called from do_force */
-extern void do_flood(
-        t_commrec       *cr,
-        t_inputrec      *ir,
-        rvec             x[],
-        rvec             force[],
-        gmx_edsam_t      ed,
-        matrix           box,
-        gmx_int64_t      step,
-        gmx_bool         bNS)
+extern void do_flood(t_commrec        *cr,
+                     const t_inputrec *ir,
+                     rvec              x[],
+                     rvec              force[],
+                     gmx_edsam_t       ed,
+                     matrix            box,
+                     gmx_int64_t       step,
+                     gmx_bool          bNS)
 {
     t_edpar *edi;
 
@@ -1341,7 +1340,7 @@ static void broadcast_ed_data(t_commrec *cr, gmx_edsam_t ed, int numedis)
 
 
 /* init-routine called for every *.edi-cycle, initialises t_edpar structure */
-static void init_edi(gmx_mtop_t *mtop, t_edpar *edi)
+static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
 {
     int                   i;
     real                  totalmass = 0.0;
@@ -2649,13 +2648,13 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv)
 
 /* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
-void init_edsam(gmx_mtop_t   *mtop,
-                t_inputrec   *ir,
-                t_commrec    *cr,
-                gmx_edsam_t   ed,
-                rvec          x[],
-                matrix        box,
-                edsamstate_t *EDstate)
+void init_edsam(const gmx_mtop_t *mtop,
+                const t_inputrec *ir,
+                t_commrec        *cr,
+                gmx_edsam_t       ed,
+                rvec              x[],
+                matrix            box,
+                edsamstate_t     *EDstate)
 {
     t_edpar *edi = NULL;                    /* points to a single edi data set */
     int      i, nr_edi, avindex;
@@ -2996,13 +2995,13 @@ void init_edsam(gmx_mtop_t   *mtop,
 }
 
 
-void do_edsam(t_inputrec     *ir,
-              gmx_int64_t     step,
-              t_commrec      *cr,
-              rvec            xs[],
-              rvec            v[],
-              matrix          box,
-              gmx_edsam_t     ed)
+void do_edsam(const t_inputrec *ir,
+              gmx_int64_t       step,
+              t_commrec        *cr,
+              rvec              xs[],
+              rvec              v[],
+              matrix            box,
+              gmx_edsam_t       ed)
 {
     int                i, edinr, iupdate = 500;
     matrix             rotmat;         /* rotation matrix */
