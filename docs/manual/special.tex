@@ -1059,8 +1059,10 @@ important for studying channel rectification.
 
 \begin{figure}
 \centerline{\includegraphics[width=13.5cm]{plots/compelsetup.pdf}}
-\caption{Typical double-membrane setup for CompEL simulations (A, B). Plot (C) shows
-the potential difference $\Delta U$ resulting
+\caption{Typical double-membrane setup for CompEL simulations (A, B).
+Ion\,/\,water molecule exchanges will be performed as needed
+between the two light blue volumes around the dotted black lines (A).
+Plot (C) shows the potential difference $\Delta U$ resulting
 from the selected charge imbalance $\Delta q_{ref}$ between the compartments.}
 \label{fig:compelsetup}
 \end{figure}
@@ -1096,11 +1098,13 @@ Ions will be exchanged between compartments depending on their $z$-positions alo
 {\tt swap-frequency} determines how often a swap attempt will be made.
 This step requires that the positions of the ions, solvent, and swap groups are
 communicated between the parallel processes, so if chosen too small it can decrease the simulation
-performance.
+performance. The {\tt Position swapping} entry in the cycle and time accounting
+table at the end of the {\tt md.log} file summarizes the amount of runtime spent
+in the swap module.
 {\small
 \begin{verbatim}
-split-group0   = channel0     ; Defines compartment boundary 
-split-group1   = channel1     ; Defines other compartment boundary 
+split-group0   = channel0     ; Defines compartment boundary
+split-group1   = channel1     ; Defines other compartment boundary
 massw-split0   = no           ; use mass-weighted center?
 massw-split1   = no
 \end{verbatim}}
@@ -1112,6 +1116,18 @@ geometrical centers will be used ($\times$ in \figref{compelsetup} A). If, such 
 channel is selected as split group, the center of the channel will define the dividing
 plane between the compartments (dashed horizontal line in the figure). All index groups
 must be defined in the index file.
+
+If, to restore the requested ion counts, an ion from one compartment has to be exchanged
+with a water molecule from the other compartment, then those molecules are swapped
+which have the largest distance to the compartment-defining boundaries
+(dashed horizontal lines in \figref{compelsetup} A). Depending on the ion concentration,
+this effectively results in exchanges of molecules between the light blue volumes.
+If a channel is very asymmetric in $z$-direction and would extend into one of the
+swap volumes, one can offset the swap exchange plane with the {\tt bulk-offset}
+parameter. A value of 0.0 means no offset $b$, values $-1.0 < b < 0$ move the
+swap exchange plane closer to the lower, values $0 < b < 1.0$ closer to the upper
+membrane. The figure \figref{compelsetup} A (left) depicts that for the {\bf A} compartment.
+ 
 {\small
 \begin{verbatim}
 swap-group     = NA+_CL-      ; Ions to be included in exchange
