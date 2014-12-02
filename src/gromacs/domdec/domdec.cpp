@@ -200,12 +200,12 @@ static int ddcoord2ddnodeid(gmx_domdec_t *dd, ivec c)
     return ddnodeid;
 }
 
-static gmx_bool dynamic_dd_box(gmx_ddbox_t *ddbox, t_inputrec *ir)
+static gmx_bool dynamic_dd_box(const gmx_ddbox_t *ddbox, const t_inputrec *ir)
 {
     return (ddbox->nboundeddim < DIM || DYNAMIC_BOX(*ir));
 }
 
-int ddglatnr(gmx_domdec_t *dd, int i)
+int ddglatnr(const gmx_domdec_t *dd, int i)
 {
     int atnr;
 
@@ -273,7 +273,7 @@ gmx_domdec_zones_t *domdec_zones(gmx_domdec_t *dd)
     return &dd->comm->zones;
 }
 
-void dd_get_ns_ranges(gmx_domdec_t *dd, int icg,
+void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
                       int *jcg0, int *jcg1, ivec shift0, ivec shift1)
 {
     gmx_domdec_zones_t *zones;
@@ -317,12 +317,12 @@ void dd_get_ns_ranges(gmx_domdec_t *dd, int icg,
     }
 }
 
-int dd_natoms_vsite(gmx_domdec_t *dd)
+int dd_natoms_vsite(const gmx_domdec_t *dd)
 {
     return dd->comm->nat[ddnatVSITE];
 }
 
-void dd_get_constraint_range(gmx_domdec_t *dd, int *at_start, int *at_end)
+void dd_get_constraint_range(const gmx_domdec_t *dd, int *at_start, int *at_end)
 {
     *at_start = dd->comm->nat[ddnatCON-1];
     *at_end   = dd->comm->nat[ddnatCON];
@@ -1697,7 +1697,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
 }
 
 void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
-                  gmx_mtop_t *mtop, t_commrec *cr,
+                  const gmx_mtop_t *mtop, t_commrec *cr,
                   int natoms, rvec x[], matrix box)
 {
     char          fname[STRLEN], buf[22];
@@ -1806,48 +1806,43 @@ static void dd_cart_coord2pmecoord(gmx_domdec_t *dd, ivec coord, ivec coord_pme)
         nc + (coord[dd->comm->cartpmedim]*(ntot - nc) + (ntot - nc)/2)/nc;
 }
 
-static int low_ddindex2pmeindex(int ndd, int npme, int ddindex)
+static int ddindex2pmeindex(const gmx_domdec_t *dd, int ddindex)
 {
+    int npp, npme;
+
+    npp  = dd->nnodes;
+    npme = dd->comm->npmenodes;
+
     /* Here we assign a PME node to communicate with this DD node
      * by assuming that the major index of both is x.
      * We add cr->npmenodes/2 to obtain an even distribution.
      */
-    return (ddindex*npme + npme/2)/ndd;
+    return (ddindex*npme + npme/2)/npp;
 }
 
-static int ddindex2pmeindex(const gmx_domdec_t *dd, int ddindex)
+static int *dd_interleaved_pme_ranks(const gmx_domdec_t *dd)
 {
-    return low_ddindex2pmeindex(dd->nnodes, dd->comm->npmenodes, ddindex);
-}
-
-static int cr_ddindex2pmeindex(const t_commrec *cr, int ddindex)
-{
-    return low_ddindex2pmeindex(cr->dd->nnodes, cr->npmenodes, ddindex);
-}
-
-static int *dd_pmenodes(t_commrec *cr)
-{
-    int *pmenodes;
+    int *pme_rank;
     int  n, i, p0, p1;
 
-    snew(pmenodes, cr->npmenodes);
+    snew(pme_rank, dd->comm->npmenodes);
     n = 0;
-    for (i = 0; i < cr->dd->nnodes; i++)
+    for (i = 0; i < dd->nnodes; i++)
     {
-        p0 = cr_ddindex2pmeindex(cr, i);
-        p1 = cr_ddindex2pmeindex(cr, i+1);
-        if (i+1 == cr->dd->nnodes || p1 > p0)
+        p0 = ddindex2pmeindex(dd, i);
+        p1 = ddindex2pmeindex(dd, i+1);
+        if (i+1 == dd->nnodes || p1 > p0)
         {
             if (debug)
             {
-                fprintf(debug, "pmenode[%d] = %d\n", n, i+1+n);
+                fprintf(debug, "pme_rank[%d] = %d\n", n, i+1+n);
             }
-            pmenodes[n] = i + 1 + n;
+            pme_rank[n] = i + 1 + n;
             n++;
         }
     }
 
-    return pmenodes;
+    return pme_rank;
 }
 
 static int gmx_ddcoord2pmeindex(t_commrec *cr, int x, int y, int z)
@@ -2652,7 +2647,7 @@ static void init_ddpme(gmx_domdec_t *dd, gmx_ddpme_t *ddpme, int dimind)
     set_slb_pme_dim_f(dd, ddpme->dim, &ddpme->slb_dim_f);
 }
 
-int dd_pme_maxshift_x(gmx_domdec_t *dd)
+int dd_pme_maxshift_x(const gmx_domdec_t *dd)
 {
     if (dd->comm->ddpme[0].dim == XX)
     {
@@ -2664,7 +2659,7 @@ int dd_pme_maxshift_x(gmx_domdec_t *dd)
     }
 }
 
-int dd_pme_maxshift_y(gmx_domdec_t *dd)
+int dd_pme_maxshift_y(const gmx_domdec_t *dd)
 {
     if (dd->comm->ddpme[0].dim == YY)
     {
@@ -2681,7 +2676,8 @@ int dd_pme_maxshift_y(gmx_domdec_t *dd)
 }
 
 static void set_pme_maxshift(gmx_domdec_t *dd, gmx_ddpme_t *ddpme,
-                             gmx_bool bUniform, gmx_ddbox_t *ddbox, real *cell_f)
+                             gmx_bool bUniform, const gmx_ddbox_t *ddbox,
+                             const real *cell_f)
 {
     gmx_domdec_comm_t *comm;
     int                nc, ns, s;
@@ -2780,7 +2776,7 @@ enum {
  * setmode determine if and where the boundaries are stored, use enum above.
  * Returns the number communication pulses in npulse.
  */
-static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
+static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
                                   int setmode, ivec npulse)
 {
     gmx_domdec_comm_t *comm;
@@ -2901,7 +2897,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
 
 static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
                                                   int d, int dim, domdec_root_t *root,
-                                                  gmx_ddbox_t *ddbox,
+                                                  const gmx_ddbox_t *ddbox,
                                                   gmx_bool bUniform, gmx_int64_t step, real cellsize_limit_f, int range[])
 {
     gmx_domdec_comm_t *comm;
@@ -3112,7 +3108,8 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
 
 static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                                        int d, int dim, domdec_root_t *root,
-                                       gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
+                                       const gmx_ddbox_t *ddbox,
+                                       gmx_bool bDynamicBox,
                                        gmx_bool bUniform, gmx_int64_t step)
 {
     gmx_domdec_comm_t *comm;
@@ -3278,8 +3275,9 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     }
 }
 
-static void relative_to_absolute_cell_bounds(gmx_domdec_t *dd,
-                                             gmx_ddbox_t *ddbox, int dimind)
+static void relative_to_absolute_cell_bounds(gmx_domdec_t      *dd,
+                                             const gmx_ddbox_t *ddbox,
+                                             int                dimind)
 {
     gmx_domdec_comm_t *comm;
     int                dim;
@@ -3299,7 +3297,7 @@ static void relative_to_absolute_cell_bounds(gmx_domdec_t *dd,
 
 static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
                                          int d, int dim, real *cell_f_row,
-                                         gmx_ddbox_t *ddbox)
+                                         const gmx_ddbox_t *ddbox)
 {
     gmx_domdec_comm_t *comm;
     int                d1, pos;
@@ -3337,7 +3335,8 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
 }
 
 static void set_dd_cell_sizes_dlb_change(gmx_domdec_t *dd,
-                                         gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
+                                         const gmx_ddbox_t *ddbox,
+                                         gmx_bool bDynamicBox,
                                          gmx_bool bUniform, gmx_int64_t step)
 {
     gmx_domdec_comm_t *comm;
@@ -3380,7 +3379,8 @@ static void set_dd_cell_sizes_dlb_change(gmx_domdec_t *dd,
     }
 }
 
-static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
+static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t      *dd,
+                                           const gmx_ddbox_t *ddbox)
 {
     int d;
 
@@ -3397,7 +3397,7 @@ static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
 
 
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
-                                  gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
+                                  const gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
                                   gmx_bool bUniform, gmx_bool bDoDLB, gmx_int64_t step,
                                   gmx_wallcycle_t wcycle)
 {
@@ -5457,7 +5457,8 @@ static void make_load_communicators(gmx_domdec_t gmx_unused *dd)
 #endif
 }
 
-void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd)
+/*! \brief Sets up the relation between neighboring domains and zones */
+static void setup_neighbor_relations(gmx_domdec_t *dd)
 {
     int                     d, dim, i, j, m;
     ivec                    tmp, s;
@@ -5483,13 +5484,6 @@ void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd)
         }
     }
 
-    if (fplog)
-    {
-        fprintf(fplog, "\nMaking %dD domain decomposition grid %d x %d x %d, home cell index %d %d %d\n\n",
-                dd->ndim,
-                dd->nc[XX], dd->nc[YY], dd->nc[ZZ],
-                dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
-    }
     nzone  = (1 << dd->ndim);
     nizone = std::max(1 << (dd->ndim - 1), 1);
     assert(nizone >= 1 && nizone <= DD_MAXIZONE);
@@ -5617,11 +5611,11 @@ void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd)
     }
 }
 
-static void make_pp_communicator(FILE *fplog, t_commrec *cr, int gmx_unused reorder)
+static void make_pp_communicator(FILE           *fplog,
+                                 t_commrec      *cr,
+                                 gmx_domdec_t   *dd,
+                                 int gmx_unused  reorder)
 {
-    gmx_domdec_t      *dd;
-    dd   = cr->dd;
-
 #ifdef GMX_MPI
     gmx_domdec_comm_t *comm;
     int                rank, *buf;
@@ -5913,16 +5907,12 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
                 }
                 break;
             case ddnoINTERLEAVE:
-                /* Interleave the PP-only and PME-only nodes,
-                 * as on clusters with dual-core machines this will double
-                 * the communication bandwidth of the PME processes
-                 * and thus speed up the PP <-> PME and inter PME communication.
-                 */
+                /* Interleave the PP-only and PME-only ranks */
                 if (fplog)
                 {
                     fprintf(fplog, "Interleaving PP and PME ranks\n");
                 }
-                comm->pmenodes = dd_pmenodes(cr);
+                comm->pmenodes = dd_interleaved_pme_ranks(dd);
                 break;
             case ddnoCARTESIAN:
                 break;
@@ -5955,7 +5945,8 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
     }
 }
 
-void make_dd_communicators(FILE *fplog, t_commrec *cr, int dd_node_order)
+/*! \brief Generates the MPI communicators for domain decomposition */
+static void make_dd_communicators(FILE *fplog, t_commrec *cr, int dd_node_order)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -5999,7 +5990,7 @@ void make_dd_communicators(FILE *fplog, t_commrec *cr, int dd_node_order)
     if (cr->duty & DUTY_PP)
     {
         /* Copy or make a new PP communicator */
-        make_pp_communicator(fplog, cr, CartReorder);
+        make_pp_communicator(fplog, cr, dd, CartReorder);
     }
     else
     {
@@ -6080,7 +6071,7 @@ static real *get_slb_frac(FILE *fplog, const char *dir, int nc, const char *size
     return slb_frac;
 }
 
-static int multi_body_bondeds_count(gmx_mtop_t *mtop)
+static int multi_body_bondeds_count(const gmx_mtop_t *mtop)
 {
     int                  n, nmol, ftype;
     gmx_mtop_ilistloop_t iloop;
@@ -6138,8 +6129,8 @@ static void dd_warning(t_commrec *cr, FILE *fplog, const char *warn_string)
     }
 }
 
-static void check_dd_restrictions(t_commrec *cr, gmx_domdec_t *dd,
-                                  t_inputrec *ir, FILE *fplog)
+static void check_dd_restrictions(t_commrec *cr, const gmx_domdec_t *dd,
+                                  const t_inputrec *ir, FILE *fplog)
 {
     if (ir->ePBC == epbcSCREW &&
         (dd->nc[XX] == 1 || dd->nc[YY] > 1 || dd->nc[ZZ] > 1))
@@ -6181,7 +6172,7 @@ static real average_cellsize_min(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
 
 static int check_dlb_support(FILE *fplog, t_commrec *cr,
                              const char *dlb_opt, gmx_bool bRecordLoad,
-                             unsigned long Flags, t_inputrec *ir)
+                             unsigned long Flags, const t_inputrec *ir)
 {
     int           eDLB = -1;
     char          buf[STRLEN];
@@ -6310,16 +6301,18 @@ static gmx_domdec_comm_t *init_dd_comm()
     return comm;
 }
 
-gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
-                                        unsigned long Flags,
-                                        ivec nc, int nPmeRanks,
-                                        real comm_distance_min, real rconstr,
-                                        const char *dlb_opt, real dlb_scale,
-                                        const char *sizex, const char *sizey, const char *sizez,
-                                        gmx_mtop_t *mtop, t_inputrec *ir,
-                                        matrix box, rvec *x,
-                                        gmx_ddbox_t *ddbox,
-                                        int *npme_x, int *npme_y)
+static gmx_domdec_t *
+init_domain_decomposition_setup(FILE *fplog, t_commrec *cr,
+                                unsigned long Flags,
+                                ivec nc, int nPmeRanks,
+                                real comm_distance_min, real rconstr,
+                                const char *dlb_opt, real dlb_scale,
+                                const char *sizex, const char *sizey, const char *sizez,
+                                const gmx_mtop_t *mtop,
+                                const t_inputrec *ir,
+                                matrix box, const rvec *x,
+                                gmx_ddbox_t *ddbox,
+                                int *npme_x, int *npme_y)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -6831,6 +6824,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     comm->partition_step = INT_MIN;
     dd->ddp_count        = 0;
 
+    /* We currently don't know the number of threads yet, we set this later */
+    comm->nth = 0;
+
     clear_dd_cycle_counts(dd);
 
     return dd;
@@ -6913,7 +6909,7 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
     }
 }
 
-static char *init_bLocalCG(gmx_mtop_t *mtop)
+static char *init_bLocalCG(const gmx_mtop_t *mtop)
 {
     int   ncg, cg;
     char *bLocalCG;
@@ -6929,9 +6925,11 @@ static char *init_bLocalCG(gmx_mtop_t *mtop)
 }
 
 void dd_init_bondeds(FILE *fplog,
-                     gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                     gmx_vsite_t *vsite,
-                     t_inputrec *ir, gmx_bool bBCheck, cginfo_mb_t *cginfo_mb)
+                     gmx_domdec_t *dd,
+                     const gmx_mtop_t *mtop,
+                     const gmx_vsite_t *vsite,
+                     const t_inputrec *ir,
+                     gmx_bool bBCheck, cginfo_mb_t *cginfo_mb)
 {
     gmx_domdec_comm_t *comm;
 
@@ -6960,9 +6958,9 @@ void dd_init_bondeds(FILE *fplog,
 }
 
 static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
-                              t_inputrec *ir,
+                              const t_inputrec *ir,
                               gmx_bool bDynLoadBal, real dlb_scale,
-                              gmx_ddbox_t *ddbox)
+                              const gmx_ddbox_t *ddbox)
 {
     gmx_domdec_comm_t *comm;
     int                d;
@@ -7183,7 +7181,7 @@ static void set_cell_limits_dlb(gmx_domdec_t      *dd,
     }
 }
 
-gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd, int ePBC)
+gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC)
 {
     /* If each molecule is a single charge group
      * or we use domain decomposition for each periodic dimension,
@@ -7195,24 +7193,16 @@ gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd, int ePBC)
               (dd->nc[ZZ] > 1 || ePBC == epbcXY)));
 }
 
-void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
-                       t_inputrec *ir, gmx_ddbox_t *ddbox)
+/*! \brief Sets grid size limits and PP-PME setup, prints settings to log */
+static void set_ddgrid_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
+                                  const t_inputrec *ir,
+                                  const gmx_ddbox_t *ddbox)
 {
     gmx_domdec_comm_t *comm;
     int                natoms_tot;
     real               vol_frac;
 
     comm = dd->comm;
-
-    /* Initialize the thread data.
-     * This can not be done in init_domain_decomposition,
-     * as the numbers of threads is determined later.
-     */
-    comm->nth = gmx_omp_nthreads_get(emntDomdec);
-    if (comm->nth > 1)
-    {
-        snew(comm->dth, comm->nth);
-    }
 
     if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
@@ -7269,8 +7259,44 @@ void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
     dd->ga2la = ga2la_init(natoms_tot, static_cast<int>(vol_frac*natoms_tot));
 }
 
+void init_domain_decomposition(FILE *fplog, t_commrec *cr,
+                               unsigned long Flags,
+                               ivec nc, int nPmeRanks,
+                               int dd_node_order,
+                               real comm_distance_min, real rconstr,
+                               const char *dlb_opt, real dlb_scale,
+                               const char *sizex, const char *sizey, const char *sizez,
+                               const gmx_mtop_t *mtop,
+                               const t_inputrec *ir,
+                               matrix box, rvec *x,
+                               gmx_ddbox_t *ddbox,
+                               int *npme_x, int *npme_y)
+{
+    cr->dd = init_domain_decomposition_setup(fplog, cr, Flags,
+                                             nc, nPmeRanks,
+                                             comm_distance_min, rconstr,
+                                             dlb_opt, dlb_scale,
+                                             sizex, sizey, sizez,
+                                             mtop, ir,
+                                             box, x,
+                                             ddbox,
+                                             npme_x, npme_y);
+
+    make_dd_communicators(fplog, cr, dd_node_order);
+
+    if (cr->duty & DUTY_PP)
+    {
+        set_ddgrid_parameters(fplog, cr->dd, dlb_scale, ir, ddbox);
+
+        setup_neighbor_relations(cr->dd);
+    }
+
+    /* Set overallocation to avoid frequent reallocation of arrays */
+    set_over_alloc_dd(TRUE);
+}
+
 static gmx_bool test_dd_cutoff(t_commrec *cr,
-                               t_state *state, t_inputrec *ir,
+                               t_state *state, const t_inputrec *ir,
                                real cutoff_req)
 {
     gmx_domdec_t *dd;
@@ -7905,6 +7931,19 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     }
 
     comm  = dd->comm;
+
+    if (comm->nth == 0)
+    {
+        /* Initialize the thread data.
+         * This can not be done in init_domain_decomposition,
+         * as the numbers of threads is determined later.
+         */
+        comm->nth = gmx_omp_nthreads_get(emntDomdec);
+        if (comm->nth > 1)
+        {
+            snew(comm->dth, comm->nth);
+        }
+    }
 
     switch (fr->cutoff_scheme)
     {
@@ -8934,8 +8973,8 @@ void dd_partition_system(FILE                *fplog,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
                          t_state             *state_global,
-                         gmx_mtop_t          *top_global,
-                         t_inputrec          *ir,
+                         const gmx_mtop_t    *top_global,
+                         const t_inputrec    *ir,
                          t_state             *state_local,
                          rvec               **f,
                          t_mdatoms           *mdatoms,
