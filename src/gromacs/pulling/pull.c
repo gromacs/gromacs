@@ -74,46 +74,20 @@ static void pull_print_group_x(FILE *out, ivec dim, const t_pull_group *pgrp)
 }
 
 static void pull_print_coord_dr(FILE *out, const t_pull_coord *pcrd,
-                                gmx_bool bPrintRefValue, double t,
+                                gmx_bool bPrintRefValue,
                                 gmx_bool bPrintComponents)
 {
-    double distance, distance2;
-    int    m;
-
-    if (pcrd->eGeom == epullgDIST)
-    {
-        /* Geometry=distance: print the length of the distance vector */
-        distance2 = 0;
-        for (m = 0; m < DIM; m++)
-        {
-            if (pcrd->dim[m])
-            {
-                distance2 += pcrd->dr[m]*pcrd->dr[m];
-            }
-        }
-        distance = sqrt(distance2);
-    }
-    else
-    {
-        /* Geometry=direction-like: print distance along the pull vector */
-        distance = 0;
-        for (m = 0; m < DIM; m++)
-        {
-            if (pcrd->dim[m])
-            {
-                distance += pcrd->dr[m]*pcrd->vec[m];
-            }
-        }
-    }
-    fprintf(out, "\t%g", distance);
+    fprintf(out, "\t%g", pcrd->value);
 
     if (bPrintRefValue)
     {
-        fprintf(out, "\t%g", pcrd->init + pcrd->rate*t);
+        fprintf(out, "\t%g", pcrd->value_ref);
     }
 
     if (bPrintComponents)
     {
+        int m;
+
         for (m = 0; m < DIM; m++)
         {
             if (pcrd->dim[m])
@@ -151,7 +125,7 @@ static void pull_print_x(FILE *out, t_pull *pull, double t)
             pull_print_group_x(out, pcrd->dim, &pull->group[pcrd->group[1]]);
         }
         pull_print_coord_dr(out, pcrd,
-                            pull->bPrintRefValue, t, pull->bPrintComp);
+                            pull->bPrintRefValue, pull->bPrintComp);
     }
     fprintf(out, "\n");
 }
@@ -469,7 +443,7 @@ static double max_pull_distance2(const t_pull_coord *pcrd, const t_pbc *pbc)
  */
 static void low_get_pull_coord_dr(const t_pull *pull,
                                   const t_pull_coord *pcrd,
-                                  const t_pbc *pbc, double t,
+                                  const t_pbc *pbc,
                                   dvec xg, dvec xref, double max_dist2,
                                   dvec dr)
 {
@@ -496,7 +470,7 @@ static void low_get_pull_coord_dr(const t_pull *pull,
     {
         for (m = 0; m < DIM; m++)
         {
-            dref[m] = (pcrd->init + pcrd->rate*t)*pcrd->vec[m];
+            dref[m] = pcrd->value_ref*pcrd->vec[m];
         }
         /* Add the reference position, so we use the correct periodic image */
         dvec_inc(xrefr, dref);
@@ -524,9 +498,9 @@ static void low_get_pull_coord_dr(const t_pull *pull,
 /* This function returns the distance based on the contents of the pull struct.
  * pull->coord[coord_ind].dr, and potentially vector, are updated.
  */
-static void get_pull_coord_dr(const t_pull *pull,
+static void get_pull_coord_dr(t_pull *pull,
                               int coord_ind,
-                              const t_pbc *pbc, double t)
+                              const t_pbc *pbc)
 {
     double        md2;
     t_pull_coord *pcrd;
@@ -573,41 +547,47 @@ static void get_pull_coord_dr(const t_pull *pull,
         }
     }
 
-    low_get_pull_coord_dr(pull, pcrd, pbc, t,
+    low_get_pull_coord_dr(pull, pcrd, pbc,
                           pull->group[pcrd->group[1]].x,
                           pcrd->eGeom == epullgCYL ? pull->dyna[coord_ind].x : pull->group[pcrd->group[0]].x,
                           md2,
                           pcrd->dr);
 }
 
-void get_pull_coord_distance(const t_pull *pull,
-                             int coord_ind,
-                             const t_pbc *pbc, double t,
-                             double *dev)
+void update_pull_coord_reference_value(t_pull_coord *pcrd, double t)
 {
-    static gmx_bool     bWarned = FALSE; /* TODO: this should be fixed for thread-safety,
-                                            but is fairly benign */
-    const t_pull_coord *pcrd;
-    int                 m;
-    double              ref, drs, inpr;
+    /* With zero rate the reference value is set initially and doesn't change */
+    if (pcrd->rate != 0)
+    {
+        pcrd->value_ref = pcrd->init + pcrd->rate*t;
+    }
+}
+
+void get_pull_coord_distance(t_pull      *pull,
+                             int          coord_ind,
+                             const t_pbc *pbc,
+                             double      *dev)
+{
+    static gmx_bool  bWarned = FALSE; /* TODO: this should be fixed for thread-safety,
+                                        but is fairly benign */
+    t_pull_coord    *pcrd;
+    int              m;
 
     pcrd = &pull->coord[coord_ind];
 
-    get_pull_coord_dr(pull, coord_ind, pbc, t);
-
-    ref = pcrd->init + pcrd->rate*t;
+    get_pull_coord_dr(pull, coord_ind, pbc);
 
     switch (pcrd->eGeom)
     {
         case epullgDIST:
             /* Pull along the vector between the com's */
-            if (ref < 0 && !bWarned)
+            if (pcrd->value_ref < 0 && !bWarned)
             {
-                fprintf(stderr, "\nPull reference distance for coordinate %d is negative (%f)\n", coord_ind+1, ref);
+                fprintf(stderr, "\nPull reference distance for coordinate %d is negative (%f)\n", coord_ind+1, pcrd->value_ref);
                 bWarned = TRUE;
             }
-            drs = dnorm(pcrd->dr);
-            if (drs == 0)
+            pcrd->value = dnorm(pcrd->dr);
+            if (pcrd->value == 0)
             {
                 /* With no vector we can not determine the direction for the force,
                  * so we set the force to zero.
@@ -617,7 +597,7 @@ void get_pull_coord_distance(const t_pull *pull,
             else
             {
                 /* Determine the deviation */
-                *dev = drs - ref;
+                *dev = pcrd->value - pcrd->value_ref;
             }
             break;
         case epullgDIR:
@@ -625,12 +605,12 @@ void get_pull_coord_distance(const t_pull *pull,
         case epullgDIRRELATIVE:
         case epullgCYL:
             /* Pull along vec */
-            inpr = 0;
+            pcrd->value = 0;
             for (m = 0; m < DIM; m++)
             {
-                inpr += pcrd->vec[m]*pcrd->dr[m];
+                pcrd->value += pcrd->vec[m]*pcrd->dr[m];
             }
-            *dev = inpr - ref;
+            *dev = pcrd->value - pcrd->value_ref;
             break;
     }
 }
@@ -661,7 +641,6 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
     dvec          unc_ij; /* xp[i] com of i this step, before constr.   -> unc_ij  */
     dvec         *rnew;   /* current 'new' positions of the groups */
     double       *dr_tot; /* the total update of the coords */
-    double        ref;
     dvec          vec;
     double        inpr;
     double        lambda, rm, invdt = 0;
@@ -689,6 +668,8 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
     /* Determine the constraint directions from the old positions */
     for (c = 0; c < pull->ncoord; c++)
     {
+        double dev;
+
         pcrd = &pull->coord[c];
 
         if (pcrd->eType != epullCONSTRAINT)
@@ -696,8 +677,12 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
             continue;
         }
 
-        get_pull_coord_dr(pull, c, pbc, t);
-        /* Store the difference vector at time t for printing */
+        /* Note that get_pull_coord_distance also sets pcrd->dr and pcrd->value.
+         * We don't modify dr and value anymore, so these values are also used
+         * for printing.
+         */
+        get_pull_coord_distance(pull, c, pbc, &dev);
+
         if (debug)
         {
             fprintf(debug, "Pull coord %d dr %f %f %f\n",
@@ -745,16 +730,16 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
                 continue;
             }
 
+            update_pull_coord_reference_value(pcrd, t);
+
             pgrp0 = &pull->group[pcrd->group[0]];
             pgrp1 = &pull->group[pcrd->group[1]];
 
             /* Get the current difference vector */
-            low_get_pull_coord_dr(pull, pcrd, pbc, t,
+            low_get_pull_coord_dr(pull, pcrd, pbc,
                                   rnew[pcrd->group[1]],
                                   rnew[pcrd->group[0]],
                                   -1, unc_ij);
-
-            ref = pcrd->init + pcrd->rate*t;
 
             if (debug)
             {
@@ -766,9 +751,9 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
             switch (pcrd->eGeom)
             {
                 case epullgDIST:
-                    if (ref <= 0)
+                    if (pcrd->value_ref <= 0)
                     {
-                        gmx_fatal(FARGS, "The pull constraint reference distance for group %d is <= 0 (%f)", c, ref);
+                        gmx_fatal(FARGS, "The pull constraint reference distance for group %d is <= 0 (%f)", c, pcrd->value_ref);
                     }
 
                     {
@@ -776,7 +761,7 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
 
                         c_a = diprod(r_ij[c], r_ij[c]);
                         c_b = diprod(unc_ij, r_ij[c])*2;
-                        c_c = diprod(unc_ij, unc_ij) - dsqr(ref);
+                        c_c = diprod(unc_ij, unc_ij) - dsqr(pcrd->value_ref);
 
                         if (c_b < 0)
                         {
@@ -814,7 +799,7 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
                     }
                     /* Select only the component along the vector */
                     dsvmul(a, vec, unc_ij);
-                    lambda = a - ref;
+                    lambda = a - pcrd->value_ref;
                     if (debug)
                     {
                         fprintf(debug, "Pull inpr %e lambda: %e\n", a, lambda);
@@ -834,15 +819,15 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
 
                 g0 = pcrd->group[0];
                 g1 = pcrd->group[1];
-                low_get_pull_coord_dr(pull, pcrd, pbc, t, rnew[g1], rnew[g0], -1, tmp);
-                low_get_pull_coord_dr(pull, pcrd, pbc, t, dr1, dr0, -1, tmp3);
+                low_get_pull_coord_dr(pull, pcrd, pbc, rnew[g1], rnew[g0], -1, tmp);
+                low_get_pull_coord_dr(pull, pcrd, pbc, dr1, dr0, -1, tmp3);
                 fprintf(debug,
                         "Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
                         rnew[g0][0], rnew[g0][1], rnew[g0][2],
                         rnew[g1][0], rnew[g1][1], rnew[g1][2], dnorm(tmp));
                 fprintf(debug,
                         "Pull ref %8s %8s %8s   %8s %8s %8s d: %8.5f\n",
-                        "", "", "", "", "", "", ref);
+                        "", "", "", "", "", "", pcrd->value_ref);
                 fprintf(debug,
                         "Pull cor %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
                         dr0[0], dr0[1], dr0[2],
@@ -865,9 +850,7 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
                 continue;
             }
 
-            ref  = pcrd->init + pcrd->rate*t;
-
-            low_get_pull_coord_dr(pull, pcrd, pbc, t,
+            low_get_pull_coord_dr(pull, pcrd, pbc,
                                   rnew[pcrd->group[1]],
                                   rnew[pcrd->group[0]],
                                   -1, unc_ij);
@@ -875,7 +858,8 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
             switch (pcrd->eGeom)
             {
                 case epullgDIST:
-                    bConverged = fabs(dnorm(unc_ij) - ref) < pull->constr_tol;
+                    bConverged =
+                        fabs(dnorm(unc_ij) - pcrd->value_ref) < pull->constr_tol;
                     break;
                 case epullgDIR:
                 case epullgDIRPBC:
@@ -887,7 +871,7 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
                     inpr = diprod(unc_ij, vec);
                     dsvmul(inpr, vec, unc_ij);
                     bConverged =
-                        fabs(diprod(unc_ij, vec) - ref) < pull->constr_tol;
+                        fabs(diprod(unc_ij, vec) - pcrd->value_ref) < pull->constr_tol;
                     break;
             }
 
@@ -897,7 +881,7 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
                 {
                     fprintf(debug, "NOT CONVERGED YET: Group %d:"
                             "d_ref = %f, current d = %f\n",
-                            g, ref, dnorm(unc_ij));
+                            g, pcrd->value_ref, dnorm(unc_ij));
                 }
 
                 bConverged_all = FALSE;
@@ -1017,7 +1001,9 @@ static void do_pull_pot(t_pull *pull, t_pbc *pbc, double t, real lambda,
             continue;
         }
 
-        get_pull_coord_distance(pull, c, pbc, t, &dev);
+        update_pull_coord_reference_value(pcrd, t);
+
+        get_pull_coord_distance(pull, c, pbc, &dev);
 
         k    = (1.0 - lambda)*pcrd->k + lambda*pcrd->kB;
         dkdl = pcrd->kB - pcrd->k;
@@ -1423,6 +1409,13 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
         for (g = calc_com_start; g <= calc_com_end; g++)
         {
             pull->group[pcrd->group[g]].bCalcCOM = TRUE;
+        }
+
+        /* With non-zero rate the reference value is set at every step */
+        if (pcrd->rate == 0)
+        {
+            /* Initialize the constant reference value */
+            pcrd->value_ref = pcrd->init;
         }
     }
 
