@@ -395,10 +395,10 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
     t_pull_group *pgrp0, *pgrp1;
     t_pbc         pbc;
     int           c, m;
-    double        t_start, tinvrate;
-    real          init;
+    double        t_start;
+    real          init = 0;
     dvec          dr;
-    double        dev;
+    double        dev, value;
 
     init_pull(NULL, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
     md = init_mdatoms(NULL, mtop, ir->efep);
@@ -415,7 +415,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
 
     pull_calc_coms(NULL, pull, md, &pbc, t_start, x, NULL);
 
-    fprintf(stderr, "Pull group  natoms  pbc atom  distance at start     reference at t=0\n");
+    fprintf(stderr, "Pull group  natoms  pbc atom  distance at start  reference at t=0\n");
     for (c = 0; c < pull->ncoord; c++)
     {
         pcrd  = &pull->coord[c];
@@ -427,28 +427,21 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         fprintf(stderr, "%8d  %8d  %8d ",
                 pcrd->group[1], pgrp1->nat, pgrp1->pbcatom+1);
 
-        init       = pcrd->init;
-        pcrd->init = 0;
+        if (bStart)
+        {
+            init       = pcrd->init;
+            pcrd->init = 0;
+        }
 
-        if (pcrd->rate == 0)
-        {
-            tinvrate = 0;
-        }
-        else
-        {
-            tinvrate = t_start/pcrd->rate;
-        }
-        get_pull_coord_distance(pull, c, &pbc, 0, dr, &dev);
-        fprintf(stderr, " %6.3f ", dev);
+        get_pull_coord_distance(pull, c, &pbc, t_start, dr, &dev);
+        /* Calculate the value of the coordinate at t_start */
+        value = pcrd->init + t_start*pcrd->rate + dev;
+        fprintf(stderr, " %10.3f nm", value);
 
         if (bStart)
         {
-            pcrd->init = init + dev - tinvrate;
+            pcrd->init = value + init;
         }
-        else
-        {
-            pcrd->init = init;
-        }
-        fprintf(stderr, " %6.3f\n", pcrd->init);
+        fprintf(stderr, "     %10.3f nm\n", pcrd->init);
     }
 }
