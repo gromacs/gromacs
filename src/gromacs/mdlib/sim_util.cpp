@@ -2507,7 +2507,7 @@ void do_pbc_first(FILE *fplog, matrix box, t_forcerec *fr,
 }
 
 static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
-                            gmx_mtop_t *mtop, rvec x[],
+                            const gmx_mtop_t *mtop, rvec x[],
                             gmx_bool bFirst)
 {
     t_graph        *graph;
@@ -2555,7 +2555,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
 }
 
 void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
-                       gmx_mtop_t *mtop, rvec x[])
+                       const gmx_mtop_t *mtop, rvec x[])
 {
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, TRUE);
 }

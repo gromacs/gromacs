@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,10 +68,10 @@ typedef struct {
 
 struct t_graph;
 
-void construct_vsites(gmx_vsite_t *vsite,
+void construct_vsites(const gmx_vsite_t *vsite,
                       rvec x[],
                       real dt, rvec v[],
-                      t_iparams ip[], t_ilist ilist[],
+                      const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
                       t_commrec *cr, matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
@@ -105,7 +105,7 @@ void spread_vsite_f(gmx_vsite_t *vsite,
  * as for instance for the PME mesh contribution.
  */
 
-gmx_vsite_t *init_vsite(gmx_mtop_t *mtop, t_commrec *cr,
+gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
                         gmx_bool bSerial_NoPBC);
 /* Initialize the virtual site struct,
  * returns NULL when there are no virtual sites.
