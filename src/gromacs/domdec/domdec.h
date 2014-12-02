@@ -88,7 +88,7 @@ extern "C" {
  * and returns atom numbers starting at 1.
  * When dd=NULL returns i+1.
  */
-int ddglatnr(gmx_domdec_t *dd, int i);
+int ddglatnr(const gmx_domdec_t *dd, int i);
 
 /*! \brief Return a block struct for the charge groups of the whole system */
 t_block *dd_charge_groups_global(gmx_domdec_t *dd);
@@ -103,14 +103,14 @@ void dd_store_state(gmx_domdec_t *dd, t_state *state);
 gmx_domdec_zones_t *domdec_zones(gmx_domdec_t *dd);
 
 /*! \brief Sets the j-charge-group range for i-charge-group \p icg */
-void dd_get_ns_ranges(gmx_domdec_t *dd, int icg,
+void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
                       int *jcg0, int *jcg1, ivec shift0, ivec shift1);
 
 /*! \brief Returns the atom range in the local state for atoms involved in virtual sites */
-int dd_natoms_vsite(gmx_domdec_t *dd);
+int dd_natoms_vsite(const gmx_domdec_t *dd);
 
 /*! \brief Sets the atom range for atom in the local state for atoms received in constraints communication */
-void dd_get_constraint_range(gmx_domdec_t *dd,
+void dd_get_constraint_range(const gmx_domdec_t *dd,
                              int *at_start, int *at_end);
 
 /*! \brief Get the number of PME nodes along x and y, can be called with dd=NULL */
@@ -122,44 +122,44 @@ void get_pme_ddnodes(t_commrec *cr, int pmenodeid,
                      int *nmy_ddnodes, int **my_ddnodes, int *node_peer);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim x */
-int dd_pme_maxshift_x(gmx_domdec_t *dd);
+int dd_pme_maxshift_x(const gmx_domdec_t *dd);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim y */
-int dd_pme_maxshift_y(gmx_domdec_t *dd);
-
-/*! \brief Generates the MPI communicators for domain decomposition */
-void make_dd_communicators(FILE *fplog, t_commrec *cr, int dd_node_order);
+int dd_pme_maxshift_y(const gmx_domdec_t *dd);
 
 /*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks */
-gmx_domdec_t *
-init_domain_decomposition(FILE *fplog,
-                          t_commrec *cr,
-                          unsigned long Flags,
-                          ivec nc, int nPmeRanks,
-                          real comm_distance_min, real rconstr,
-                          const char *dlb_opt, real dlb_scale,
-                          const char *sizex, const char *sizey, const char *sizez,
-                          gmx_mtop_t *mtop, t_inputrec *ir,
-                          matrix box, rvec *x,
-                          gmx_ddbox_t *ddbox,
-                          int *npme_x, int *npme_y);
+void init_domain_decomposition(FILE             *fplog,
+                               t_commrec        *cr,
+                               unsigned long     Flags,
+                               ivec              nc,
+                               int               nPmeRanks,
+                               int               dd_node_order,
+                               real              comm_distance_min,
+                               real              rconstr,
+                               const char       *dlb_opt,
+                               real              dlb_scale,
+                               const char       *sizex,
+                               const char       *sizey,
+                               const char       *sizez,
+                               const gmx_mtop_t *mtop,
+                               const t_inputrec *ir,
+                               matrix            box,
+                               rvec             *x,
+                               gmx_ddbox_t      *ddbox,
+                               int              *npme_x,
+                               int              *npme_y);
 
 /*! \brief Initialize data structures for bonded interactions */
-void dd_init_bondeds(FILE *fplog,
-                     gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                     gmx_vsite_t *vsite,
-                     t_inputrec *ir, gmx_bool bBCheck, cginfo_mb_t *cginfo_mb);
+void dd_init_bondeds(FILE              *fplog,
+                     gmx_domdec_t      *dd,
+                     const gmx_mtop_t  *mtop,
+                     const gmx_vsite_t *vsite,
+                     const t_inputrec  *ir,
+                     gmx_bool           bBCheck,
+                     cginfo_mb_t       *cginfo_mb);
 
 /*! \brief Returns if we need to do pbc for calculating bonded interactions */
-gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd, int ePBC);
-
-/*! \brief Set DD grid dimensions and limits
- *
- * Should be called after calling dd_init_bondeds.
- */
-void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
-                       t_inputrec *ir,
-                       gmx_ddbox_t *ddbox);
+gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC);
 
 /*! \brief Change the DD non-bonded communication cut-off.
  *
@@ -194,9 +194,6 @@ void dd_dlb_set_lock(gmx_domdec_t *dd, gmx_bool bValue);
 void dd_setup_dlb_resource_sharing(t_commrec           *cr,
                                    const gmx_hw_info_t *hwinfo,
                                    const gmx_hw_opt_t  *hw_opt);
-
-/*! \brief Sets up the DD communication setup */
-void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd);
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
 void dd_collect_vec(gmx_domdec_t *dd,
@@ -255,8 +252,8 @@ void dd_partition_system(FILE                *fplog,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
                          t_state             *state_global,
-                         gmx_mtop_t          *top_global,
-                         t_inputrec          *ir,
+                         const gmx_mtop_t    *top_global,
+                         const t_inputrec    *ir,
                          t_state             *state_local,
                          rvec               **f,
                          t_mdatoms           *mdatoms,
@@ -302,13 +299,15 @@ int *dd_constraints_nlocalatoms(gmx_domdec_t *dd);
 
 /*! \brief Print error output when interactions are missing */
 void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
-                                   int local_count,  gmx_mtop_t *top_global, t_state *state_local);
+                                   int local_count,
+                                   const gmx_mtop_t *top_global,
+                                   t_state *state_local);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE *fplog,
-                         gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                         gmx_vsite_t *vsite,
-                         t_inputrec *ir, gmx_bool bBCheck);
+                         gmx_domdec_t *dd, const gmx_mtop_t *mtop,
+                         const gmx_vsite_t *vsite,
+                         const t_inputrec *ir, gmx_bool bBCheck);
 
 /*! \brief Store the local charge group index in \p lcgs */
 void dd_make_local_cgs(gmx_domdec_t *dd, t_block *lcgs);
@@ -320,26 +319,27 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        t_forcerec *fr,
                        rvec *cgcm_or_x,
                        gmx_vsite_t *vsite,
-                       gmx_mtop_t *top, gmx_localtop_t *ltop);
+                       const gmx_mtop_t *top, gmx_localtop_t *ltop);
 
 /*! \brief Sort ltop->ilist when we are doing free energy. */
-void dd_sort_local_top(gmx_domdec_t *dd, t_mdatoms *mdatoms,
+void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
                        gmx_localtop_t *ltop);
 
 /*! \brief Construct local topology */
-gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global);
+gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global);
 
 /*! \brief Construct local state */
 void dd_init_local_state(gmx_domdec_t *dd,
                          t_state *state_global, t_state *local_state);
 
 /*! \brief Generate a list of links between charge groups that are linked by bonded interactions */
-t_blocka *make_charge_group_links(gmx_mtop_t *mtop, gmx_domdec_t *dd,
+t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                                   cginfo_mb_t *cginfo_mb);
 
 /*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
-void dd_bonded_cg_distance(FILE *fplog, gmx_mtop_t *mtop,
-                           t_inputrec *ir, rvec *x, matrix box,
+void dd_bonded_cg_distance(FILE *fplog, const gmx_mtop_t *mtop,
+                           const t_inputrec *ir,
+                           const rvec *x, matrix box,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb);
 
@@ -348,7 +348,7 @@ void dd_bonded_cg_distance(FILE *fplog, gmx_mtop_t *mtop,
  * When natoms=-1, dump all known atoms.
  */
 void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
-                  gmx_mtop_t *mtop,
+                  const gmx_mtop_t *mtop,
                   t_commrec *cr,
                   int natoms, rvec x[], matrix box);
 
@@ -356,7 +356,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
 /* In domdec_setup.c */
 
 /*! \brief Returns the volume fraction of the system that is communicated */
-real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox);
+real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox);
 
 /*! \brief Determines the optimal DD cell setup dd->nc and possibly npmenodes
  * for the system.
@@ -364,8 +364,10 @@ real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox);
  * On the master node returns the actual cellsize limit used.
  */
 real dd_choose_grid(FILE *fplog,
-                    t_commrec *cr, gmx_domdec_t *dd, t_inputrec *ir,
-                    gmx_mtop_t *mtop, matrix box, gmx_ddbox_t *ddbox,
+                    t_commrec *cr, gmx_domdec_t *dd,
+                    const t_inputrec *ir,
+                    const gmx_mtop_t *mtop,
+                    matrix box, const gmx_ddbox_t *ddbox,
                     int nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
@@ -376,13 +378,14 @@ real dd_choose_grid(FILE *fplog,
 
 /*! \brief Set the box and PBC data in \p ddbox */
 void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
-               t_inputrec *ir, matrix box,
-               gmx_bool bCalcUnboundedSize, t_block *cgs, rvec *x,
+               const t_inputrec *ir, const matrix box,
+               gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
                gmx_ddbox_t *ddbox);
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox_cr(t_commrec *cr, ivec *dd_nc,
-                  t_inputrec *ir, matrix box, t_block *cgs, rvec *x,
+void set_ddbox_cr(t_commrec *cr, const ivec *dd_nc,
+                  const t_inputrec *ir, const matrix box,
+                  const t_block *cgs, const rvec *x,
                   gmx_ddbox_t *ddbox);
 
 #ifdef __cplusplus

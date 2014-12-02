@@ -55,7 +55,8 @@
 #include "gromacs/utility/fatalerror.h"
 
 /*! \brief Calculates the average and standard deviation in 3D of n charge groups */
-static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stddev,
+static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
+                                rvec av, rvec stddev,
                                 t_commrec *cr_sum)
 {
     int   *cgindex;
@@ -127,7 +128,8 @@ static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stdd
 }
 
 /*! \brief Determines if dimensions require triclinic treatment and stores this info in ddbox */
-static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
+static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox,
+                         const matrix box)
 {
     int   npbcdim, d, i, j;
     rvec *v, *normal;
@@ -237,8 +239,9 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
 }
 
 /*! \brief This function calculates and bounding box and pbc infor and populates ddbox */
-static void low_set_ddbox(t_inputrec *ir, ivec *dd_nc, matrix box,
-                          gmx_bool bCalcUnboundedSize, int ncg, t_block *cgs, rvec *x,
+static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix box,
+                          gmx_bool bCalcUnboundedSize, int ncg,
+                          const t_block *cgs, const rvec *x,
                           t_commrec *cr_sum,
                           gmx_ddbox_t *ddbox)
 {
@@ -281,8 +284,9 @@ static void low_set_ddbox(t_inputrec *ir, ivec *dd_nc, matrix box,
 }
 
 void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
-               t_inputrec *ir, matrix box,
-               gmx_bool bCalcUnboundedSize, t_block *cgs, rvec *x,
+               const t_inputrec *ir, const matrix box,
+               gmx_bool bCalcUnboundedSize,
+               const t_block *cgs, const rvec *x,
                gmx_ddbox_t *ddbox)
 {
     if (!bMasterState || DDMASTER(dd))
@@ -299,8 +303,9 @@ void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
     }
 }
 
-void set_ddbox_cr(t_commrec *cr, ivec *dd_nc,
-                  t_inputrec *ir, matrix box, t_block *cgs, rvec *x,
+void set_ddbox_cr(t_commrec *cr, const ivec *dd_nc,
+                  const t_inputrec *ir, const matrix box,
+                  const t_block *cgs, const rvec *x,
                   gmx_ddbox_t *ddbox)
 {
     if (MASTER(cr))
