@@ -85,7 +85,7 @@ static void add_gbond(t_graph *g, atom_id a0, atom_id a1)
     }
 }
 
-static void mk_igraph(t_graph *g, int ftype, t_ilist *il,
+static void mk_igraph(t_graph *g, int ftype, const t_ilist *il,
                       int at_start, int at_end,
                       int *part)
 {
@@ -183,7 +183,7 @@ void p_graph(FILE *log, const char *title, t_graph *g)
     fflush(log);
 }
 
-static void calc_1se(t_graph *g, int ftype, t_ilist *il,
+static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
                      int nbond[], int at_start, int at_end)
 {
     int      k, nratoms, end, j;
@@ -235,7 +235,7 @@ static void calc_1se(t_graph *g, int ftype, t_ilist *il,
     }
 }
 
-static int calc_start_end(FILE *fplog, t_graph *g, t_ilist il[],
+static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
                           int at_start, int at_end,
                           int nbond[])
 {
@@ -364,7 +364,7 @@ static gmx_bool determine_graph_parts(t_graph *g, int *part)
 }
 
 void mk_graph_ilist(FILE *fplog,
-                    t_ilist *ilist, int at_start, int at_end,
+                    const t_ilist *ilist, int at_start, int at_end,
                     gmx_bool bShakeOnly, gmx_bool bSettle,
                     t_graph *g)
 {
@@ -471,7 +471,7 @@ void mk_graph_ilist(FILE *fplog,
 }
 
 t_graph *mk_graph(FILE *fplog,
-                  t_idef *idef, int at_start, int at_end,
+                  const t_idef *idef, int at_start, int at_end,
                   gmx_bool bShakeOnly, gmx_bool bSettle)
 {
     t_graph *g;
@@ -502,8 +502,8 @@ void done_graph(t_graph *g)
  *
  ************************************************************/
 
-static void mk_1shift_tric(int npbcdim, matrix box, rvec hbox,
-                           rvec xi, rvec xj, int *mi, int *mj)
+static void mk_1shift_tric(int npbcdim, matrix box, const rvec hbox,
+                           const rvec xi, const rvec xj, int *mi, int *mj)
 {
     /* Calculate periodicity for triclinic box... */
     int  m, d;
@@ -540,7 +540,8 @@ static void mk_1shift_tric(int npbcdim, matrix box, rvec hbox,
     }
 }
 
-static void mk_1shift(int npbcdim, rvec hbox, rvec xi, rvec xj, int *mi, int *mj)
+static void mk_1shift(int npbcdim, const rvec hbox, const rvec xi, const rvec xj,
+                      int *mi, int *mj)
 {
     /* Calculate periodicity for rectangular box... */
     int  m;
@@ -569,8 +570,8 @@ static void mk_1shift(int npbcdim, rvec hbox, rvec xi, rvec xj, int *mi, int *mj
     }
 }
 
-static void mk_1shift_screw(matrix box, rvec hbox,
-                            rvec xi, rvec xj, int *mi, int *mj)
+static void mk_1shift_screw(matrix box, const rvec hbox,
+                            const rvec xi, const rvec xj, int *mi, int *mj)
 {
     /* Calculate periodicity for rectangular box... */
     int  signi, m;
@@ -627,7 +628,7 @@ static void mk_1shift_screw(matrix box, rvec hbox,
 }
 
 static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
-                   int npbcdim, matrix box, rvec x[], int *nerror)
+                   int npbcdim, matrix box, const rvec x[], int *nerror)
 {
     int          m, j, ng, ai, aj, g0;
     rvec         dx, hbox;
@@ -714,7 +715,8 @@ static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
     return -1;
 }
 
-void mk_mshift(FILE *log, t_graph *g, int ePBC, matrix box, rvec x[])
+void mk_mshift(FILE *log, t_graph *g, int ePBC,
+               matrix box, const rvec x[])
 {
     static int nerror_tot = 0;
     int        npbcdim;
@@ -842,7 +844,7 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC, matrix box, rvec x[])
  *
  ************************************************************/
 
-void shift_x(t_graph *g, matrix box, rvec x[], rvec x_s[])
+void shift_x(const t_graph *g, matrix box, const rvec x[], rvec x_s[])
 {
     ivec    *is;
     int      g0, g1;
@@ -914,7 +916,7 @@ void shift_x(t_graph *g, matrix box, rvec x[], rvec x_s[])
     }
 }
 
-void shift_self(t_graph *g, matrix box, rvec x[])
+void shift_self(const t_graph *g, matrix box, rvec x[])
 {
     ivec    *is;
     int      g0, g1;
@@ -960,7 +962,7 @@ void shift_self(t_graph *g, matrix box, rvec x[])
     }
 }
 
-void unshift_x(t_graph *g, matrix box, rvec x[], rvec x_s[])
+void unshift_x(const t_graph *g, matrix box, rvec x[], const rvec x_s[])
 {
     ivec    *is;
     int      g0, g1;
@@ -1013,7 +1015,7 @@ void unshift_x(t_graph *g, matrix box, rvec x[], rvec x_s[])
     }
 }
 
-void unshift_self(t_graph *g, matrix box, rvec x[])
+void unshift_self(const t_graph *g, matrix box, rvec x[])
 {
     ivec *is;
     int   g0, g1;

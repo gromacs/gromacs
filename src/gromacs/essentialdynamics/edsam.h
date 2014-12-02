@@ -65,7 +65,7 @@ extern "C" {
  * \param box               The simulation box.
  * \param ed                The essential dynamics data.
  */
-void do_edsam(t_inputrec *ir, gmx_int64_t step,
+void do_edsam(const t_inputrec *ir, gmx_int64_t step,
               t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam_t ed);
 
 
@@ -101,7 +101,7 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm
  * \param box               The simulation box.
  * \param EDstate           ED data stored in the checkpoint file.
  */
-void init_edsam(gmx_mtop_t *mtop, t_inputrec *ir, t_commrec *cr,
+void init_edsam(const gmx_mtop_t *mtop, const t_inputrec *ir, t_commrec *cr,
                 gmx_edsam_t ed, rvec x[], matrix box, edsamstate_t *EDstate);
 
 
@@ -126,7 +126,7 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
  * \param step              Number of the time step.
  * \param bNS               Are we in a neighbor searching step?
  */
-void do_flood(t_commrec *cr, t_inputrec *ir, rvec x[], rvec force[], gmx_edsam_t ed,
+void do_flood(t_commrec *cr, const t_inputrec *ir, rvec x[], rvec force[], gmx_edsam_t ed,
               matrix box, gmx_int64_t step, gmx_bool bNS);
 
 

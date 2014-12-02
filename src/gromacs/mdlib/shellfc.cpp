@@ -700,7 +700,7 @@ static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
                  * cause a NaN if df were binary-equal to zero. Values close to
                  * zero won't cause problems (because of the min() and max()), so
                  * just testing for binary inequality is OK. */
-                if (0.0 != df)
+                if (zero != df)
                 {
                     k_est = -dx/df;
                     /* Scale the step size by a factor interpolated from
@@ -850,8 +850,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
                       real *lambda, real *dvdlambda, t_nrnb *nrnb)
 {
     rvec           *xnold, *xnew;
-    double          w_dt;
-    real            dt;
+    double          dt, w_dt;
     int             n, d;
     unsigned short *ptype;
 

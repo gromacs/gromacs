@@ -57,7 +57,7 @@ void calc_chargegroup_radii(const struct gmx_mtop_t *mtop, rvec *x,
  * separately for VdW and Coulomb interactions.
  */
 
-void calc_cgcm(FILE *log, int cg0, int cg1, struct t_block *cgs,
+void calc_cgcm(FILE *log, int cg0, int cg1, const struct t_block *cgs,
                rvec pos[], rvec cg_cm[]);
 /* Routine to compute centers of geometry of charge groups. No periodicity
  * is used.
