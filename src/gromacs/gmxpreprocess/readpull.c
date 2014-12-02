@@ -427,13 +427,9 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
 {
     t_mdatoms    *md;
     t_pull       *pull;
-    t_pull_coord *pcrd;
-    t_pull_group *pgrp0, *pgrp1;
     t_pbc         pbc;
-    int           c, m;
+    int           c;
     double        t_start;
-    real          init = 0;
-    double        dev, value;
 
     init_pull(NULL, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
     md = init_mdatoms(NULL, mtop, ir->efep);
@@ -453,6 +449,11 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
     fprintf(stderr, "Pull group  natoms  pbc atom  distance at start  reference at t=0\n");
     for (c = 0; c < pull->ncoord; c++)
     {
+        t_pull_coord *pcrd;
+        t_pull_group *pgrp0, *pgrp1;
+        double        value;
+        real          init = 0;
+
         pcrd  = &pull->coord[c];
 
         pgrp0 = &pull->group[pcrd->group[0]];
@@ -468,9 +469,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
             pcrd->init = 0;
         }
 
-        get_pull_coord_distance(pull, c, &pbc, t_start, &dev);
-        /* Calculate the value of the coordinate at t_start */
-        value = pcrd->init + t_start*pcrd->rate + dev;
+        get_pull_coord_value(pull, c, &pbc, &value);
         fprintf(stderr, " %10.3f nm", value);
 
         if (pcrd->bStart)
