@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,7 @@ struct t_graph;
 int ePBC2npbcdim(int ePBC);
 /* Returns the number of dimensions that use pbc, starting at X */
 
-int inputrec2nboundeddim(t_inputrec *ir);
+int inputrec2nboundeddim(const t_inputrec *ir);
 /* Returns the number of dimensions in which
  * the coordinates of the particles are bounded, starting at X.
  */
