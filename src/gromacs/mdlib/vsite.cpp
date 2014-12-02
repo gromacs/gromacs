@@ -270,7 +270,7 @@ static void constr_vsite4FDN(rvec xi, rvec xj, rvec xk, rvec xl, rvec x,
 }
 
 
-static int constr_vsiten(t_iatom *ia, t_iparams ip[],
+static int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
                          rvec *x, t_pbc *pbc)
 {
     rvec x1, dx;
@@ -309,10 +309,10 @@ static int constr_vsiten(t_iatom *ia, t_iparams ip[],
 }
 
 
-void construct_vsites_thread(gmx_vsite_t *vsite,
+void construct_vsites_thread(const gmx_vsite_t *vsite,
                              rvec x[],
                              real dt, rvec *v,
-                             t_iparams ip[], t_ilist ilist[],
+                             const t_iparams ip[], const t_ilist ilist[],
                              t_pbc *pbc_null)
 {
     gmx_bool   bPBCAll;
@@ -482,10 +482,10 @@ void construct_vsites_thread(gmx_vsite_t *vsite,
     }
 }
 
-void construct_vsites(gmx_vsite_t *vsite,
+void construct_vsites(const gmx_vsite_t *vsite,
                       rvec x[],
                       real dt, rvec *v,
-                      t_iparams ip[], t_ilist ilist[],
+                      const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
                       t_commrec *cr, matrix box)
 {
@@ -1552,8 +1552,8 @@ static int *atom2cg(t_block *cgs)
     return a2cg;
 }
 
-static int count_intercg_vsite(gmx_mtop_t *mtop,
-                               gmx_bool   *bHaveChargeGroups)
+static int count_intercg_vsite(const gmx_mtop_t *mtop,
+                               gmx_bool         *bHaveChargeGroups)
 {
     int             mb, ftype, nral, i, cg, a;
     gmx_molblock_t *molb;
@@ -1746,7 +1746,7 @@ static int **get_vsite_pbc(t_iparams *iparams, t_ilist *ilist,
 }
 
 
-gmx_vsite_t *init_vsite(gmx_mtop_t *mtop, t_commrec *cr,
+gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
                         gmx_bool bSerial_NoPBC)
 {
     int            nvsite, i;

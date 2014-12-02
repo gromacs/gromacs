@@ -90,7 +90,7 @@ struct t_graph;
 int ePBC2npbcdim(int ePBC);
 /* Returns the number of dimensions that use pbc, starting at X */
 
-int inputrec2nboundeddim(t_inputrec *ir);
+int inputrec2nboundeddim(const t_inputrec *ir);
 /* Returns the number of dimensions in which
  * the coordinates of the particles are bounded, starting at X.
  */
