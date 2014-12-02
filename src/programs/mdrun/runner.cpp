@@ -1401,17 +1401,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                      inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
+                                           dd_node_order,
                                            rdd, rconstr,
                                            dddlb_opt, dlb_scale,
                                            ddcsx, ddcsy, ddcsz,
                                            mtop, inputrec,
                                            box, state->x,
                                            &ddbox, &npme_major, &npme_minor);
-
-        make_dd_communicators(fplog, cr, dd_node_order);
-
-        /* Set overallocation to avoid frequent reallocation of arrays */
-        set_over_alloc_dd(TRUE);
     }
     else
     {
@@ -1695,12 +1691,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (DOMAINDECOMP(cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
+            /* This call is not included in init_domain_decomposition mainly
+             * because fr->cginfo_mb is set later.
+             */
             dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
                             Flags & MD_DDBONDCHECK, fr->cginfo_mb);
-
-            set_dd_parameters(fplog, cr->dd, dlb_scale, inputrec, &ddbox);
-
-            setup_dd_grid(fplog, cr->dd);
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
