@@ -51,10 +51,10 @@ extern "C" {
 
 struct gmx_mtop_t;
 
-t_mdatoms *init_mdatoms(FILE *fp, struct gmx_mtop_t *mtop, gmx_bool bFreeEnergy);
+t_mdatoms *init_mdatoms(FILE *fp, const struct gmx_mtop_t *mtop, gmx_bool bFreeEnergy);
 
-void atoms2md(struct gmx_mtop_t *mtop, t_inputrec *ir,
-              int nindex, int *index,
+void atoms2md(const struct gmx_mtop_t *mtop, const t_inputrec *ir,
+              int nindex, const int *index,
               int homenr,
               t_mdatoms *md);
 /* This routine copies the atoms->atom struct into md.

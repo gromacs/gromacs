@@ -92,7 +92,7 @@ typedef struct gmx_constr {
     tensor            *vir_r_m_dr_th; /* Thread local working data          */
     int               *settle_error;  /* Thread local working data          */
 
-    gmx_mtop_t        *warn_mtop;     /* Only used for printing warnings    */
+    const gmx_mtop_t  *warn_mtop;     /* Only used for printing warnings    */
 } t_gmx_constr;
 
 typedef struct {
@@ -105,7 +105,7 @@ typedef struct {
 static void *init_vetavars(t_vetavars *vars,
                            gmx_bool constr_deriv,
                            real veta, real vetanew,
-                           t_inputrec *ir, real delta_t,
+                           const t_inputrec *ir, real delta_t,
                            gmx_ekindata_t *ekind, gmx_bool bPscal)
 {
     double g;
@@ -231,7 +231,7 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount)
 }
 
 static void write_constr_pdb(const char *fn, const char *title,
-                             gmx_mtop_t *mtop,
+                             const gmx_mtop_t *mtop,
                              int start, int homenr, t_commrec *cr,
                              rvec x[], matrix box)
 {
@@ -286,7 +286,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     gmx_fio_fclose(out);
 }
 
-static void dump_confs(FILE *fplog, gmx_int64_t step, gmx_mtop_t *mtop,
+static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
                        int start, int homenr, t_commrec *cr,
                        rvec x[], rvec xprime[], matrix box)
 {
@@ -727,7 +727,7 @@ real constr_rmsd(struct gmx_constr *constr, gmx_bool bSD2)
 }
 
 static void make_shake_sblock_serial(struct gmx_constr *constr,
-                                     t_idef *idef, t_mdatoms *md)
+                                     t_idef *idef, const t_mdatoms *md)
 {
     int          i, j, m, ncons;
     int          bstart, bnr;
@@ -840,8 +840,8 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
 }
 
 static void make_shake_sblock_dd(struct gmx_constr *constr,
-                                 t_ilist *ilcon, t_block *cgs,
-                                 gmx_domdec_t *dd)
+                                 const t_ilist *ilcon, const t_block *cgs,
+                                 const gmx_domdec_t *dd)
 {
     int      ncons, c, cg;
     t_iatom *iatom;
@@ -872,7 +872,7 @@ static void make_shake_sblock_dd(struct gmx_constr *constr,
 }
 
 t_blocka make_at2con(int start, int natoms,
-                     t_ilist *ilist, t_iparams *iparams,
+                     const t_ilist *ilist, const t_iparams *iparams,
                      gmx_bool bDynamics, int *nflexiblecons)
 {
     int      *count, ncon, con, con_tot, nflexcon, ftype, i, a;
@@ -975,13 +975,13 @@ static int *make_at2settle(int natoms, const t_ilist *ilist)
 }
 
 void set_constraints(struct gmx_constr *constr,
-                     gmx_localtop_t *top, t_inputrec *ir,
-                     t_mdatoms *md, t_commrec *cr)
+                     gmx_localtop_t *top, const t_inputrec *ir,
+                     const t_mdatoms *md, t_commrec *cr)
 {
-    t_idef  *idef;
-    int      ncons;
-    t_ilist *settle;
-    int      iO, iH;
+    t_idef        *idef;
+    int            ncons;
+    const t_ilist *settle;
+    int            iO, iH;
 
     idef = &top->idef;
 
@@ -1036,8 +1036,9 @@ void set_constraints(struct gmx_constr *constr,
     }
 }
 
-static void constr_recur(t_blocka *at2con,
-                         t_ilist *ilist, t_iparams *iparams, gmx_bool bTopB,
+static void constr_recur(const t_blocka *at2con,
+                         const t_ilist *ilist, const t_iparams *iparams,
+                         gmx_bool bTopB,
                          int at, int depth, int nc, int *path,
                          real r0, real r1, real *r2max,
                          int *count)
@@ -1131,8 +1132,9 @@ static void constr_recur(t_blocka *at2con,
     }
 }
 
-static real constr_r_max_moltype(gmx_moltype_t *molt, t_iparams *iparams,
-                                 t_inputrec *ir)
+static real constr_r_max_moltype(const gmx_moltype_t *molt,
+                                 const t_iparams     *iparams,
+                                 const t_inputrec    *ir)
 {
     int      natoms, nflexcon, *path, at, count;
 
@@ -1199,7 +1201,7 @@ static real constr_r_max_moltype(gmx_moltype_t *molt, t_iparams *iparams,
     return rmax;
 }
 
-real constr_r_max(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir)
+real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
 {
     int  mt;
     real rmax;
@@ -1221,7 +1223,7 @@ real constr_r_max(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir)
 }
 
 gmx_constr_t init_constraints(FILE *fplog,
-                              gmx_mtop_t *mtop, t_inputrec *ir,
+                              const gmx_mtop_t *mtop, const t_inputrec *ir,
                               gmx_edsam_t ed, t_state *state,
                               t_commrec *cr)
 {
