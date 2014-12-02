@@ -68,7 +68,8 @@ namespace gmx
  * \param[in] nstglobalcomm Number of steps between global communication
  * \param[in] ddxyz    Division of sub-boxes over processors for
  *                     use in domain decomposition parallellization
- * \param[in] dd_node_order
+ * \param[in] dd_rank_order Ordering of the PP and PME ranks
+ * \param[in] npme     The number of separate PME ranks requested, -1 = auto
  * \param[in] rdd      The maximum distance for bonded interactions with DD (nm)
  * \param[in] rconstr  Maximum distance for P-LINCS (nm)
  * \param[in] dddlb_opt File name for debugging
@@ -94,7 +95,7 @@ namespace gmx
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, struct t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             int nstglobalcomm, ivec ddxyz, int dd_node_order,
+             int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
              real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,
