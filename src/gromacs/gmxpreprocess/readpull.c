@@ -433,7 +433,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
     int           c, m;
     double        t_start;
     real          init = 0;
-    double        dev, value;
+    double        dev;
 
     init_pull(NULL, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
     md = init_mdatoms(NULL, mtop, ir->efep);
@@ -468,14 +468,13 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
             pcrd->init = 0;
         }
 
-        get_pull_coord_distance(pull, c, &pbc, t_start, &dev);
-        /* Calculate the value of the coordinate at t_start */
-        value = pcrd->init + t_start*pcrd->rate + dev;
-        fprintf(stderr, " %10.3f nm", value);
+        update_pull_coord_reference_value(pcrd, t_start);
+        get_pull_coord_distance(pull, c, &pbc, &dev);
+        fprintf(stderr, " %10.3f nm", pcrd->value);
 
         if (pcrd->bStart)
         {
-            pcrd->init = value + init;
+            pcrd->init = pcrd->value + init;
         }
         fprintf(stderr, "     %10.3f nm\n", pcrd->init);
     }
