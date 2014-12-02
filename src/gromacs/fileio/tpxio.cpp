@@ -93,6 +93,7 @@ enum tpxv {
     tpxv_PullCoordTypeGeom,                                  /**< add pull type and geometry per group and flat-bottom */
     tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
     tpxv_IntermolecularBondeds,                              /**< permit inter-molecular bonded interactions in the topology */
+    tpxv_CompElWithSwapLayerOffset,                          /**< added parameters for improved CompEl setups */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -736,7 +737,7 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
 }
 
 
-static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
+static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead, int file_version)
 {
     int j;
 
@@ -778,6 +779,14 @@ static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
     {
         gmx_fio_do_int(fio, swap->nanions[j]);
         gmx_fio_do_int(fio, swap->ncations[j]);
+    }
+
+    if (file_version >= tpxv_CompElWithSwapLayerOffset)
+    {
+        for (j = 0; j < eCompNR; j++)
+        {
+            gmx_fio_do_real(fio, swap->bulkOffset[j]);
+        }
     }
 
 }
@@ -1743,7 +1752,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             {
                 snew(ir->swap, 1);
             }
-            do_swapcoords(fio, ir->swap, bRead);
+            do_swapcoords(fio, ir->swap, bRead, file_version);
         }
     }
 
