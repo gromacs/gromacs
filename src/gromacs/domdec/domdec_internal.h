@@ -225,9 +225,8 @@ struct gmx_domdec_comm_t
     /* The DLB state, used for reloading old states, during e.g. EM */
     t_block cgs_gl;               /**< The global charge groups, this defined the DD state (except for the DLB state) */
 
-    /* Charge group sorting */
-    int                nstSortCG; /**< Step interval for sorting cg's, can be 0 = never */
-    gmx_domdec_sort_t *sort;      /**< Data structure for cg sorting */
+    /* Charge group / atom sorting */
+    gmx_domdec_sort_t *sort;      /**< Data structure for cg/atom sorting */
 
     /* Are there charge groups? */
     gmx_bool bCGs;                /**< True when there are charge groups */

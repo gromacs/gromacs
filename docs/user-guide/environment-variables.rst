@@ -160,11 +160,6 @@ Performance and Run Control
 ``GMX_DD_RECORD_LOAD``
         record DD load statistics for reporting at end of the run (default 1, meaning on)
 
-``GMX_DD_NST_SORT_CHARGE_GROUPS``
-        number of steps that elapse between re-sorting of the charge
-        groups (default 1). This only takes effect during domain decomposition, so should typically
-        be 0 (never), 1 (to mean at every domain decomposition), or a multiple of :mdp:`nstlist`.
-
 ``GMX_DETAILED_PERF_STATS``
         when set, print slightly more detailed performance information
         to the :ref:`log` file. The resulting output is the way performance summary is reported in versions
