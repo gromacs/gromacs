@@ -257,29 +257,31 @@ typedef struct t_IMD {
     struct t_gmx_IMD *setup; /* Stores non-inputrec IMD data                  */
 } t_IMD;
 
-/* Abstract types for position swapping only defined in swapcoords.c */
+/* Abstract types for position swapping only defined in swapcoords.cpp */
 typedef struct t_swap *gmx_swapcoords_t;
 
 typedef struct t_swapcoords {
-    int              nstswap;           /* Every how many steps a swap is attempted?    */
-    int              nat;               /* Number of atoms in the ion group             */
-    int              nat_split[2];      /* Number of atoms in the split group           */
-    int              nat_sol;           /* Number of atoms in the solvent group         */
-    atom_id         *ind;               /* The global ion group atoms numbers           */
-    atom_id         *ind_split[2];      /* Split groups for compartment partitioning    */
-    atom_id         *ind_sol;           /* The global solvent group atom numbers        */
-    gmx_bool         massw_split[2];    /* Use mass-weighted positions in split group?  */
-    real             cyl0r, cyl1r;      /* Split cylinders defined by radius, upper and */
-    real             cyl0u, cyl1u;      /* ... lower extension. The split cylinders de- */
-    real             cyl0l, cyl1l;      /* ... fine the channels and are each anchored  */
-                                        /* ... in the center of the split group         */
-    int              nanions[eCompNR];  /* Requested number of anions and               */
-    int              nAverage;          /* Coupling constant (nr of swap attempt steps) */
-    real             threshold;         /* Ion counts may deviate from the requested
-                                           values by +-threshold before a swap is done  */
-    int              ncations[eCompNR]; /* ... cations for both compartments            */
-    gmx_swapcoords_t si_priv;           /* swap private data accessible in
-                                         * swapcoords.c                                 */
+    int              nstswap;             /* Every how many steps a swap is attempted?    */
+    int              nat;                 /* Number of atoms in the ion group             */
+    int              nat_split[2];        /* Number of atoms in the split group           */
+    int              nat_sol;             /* Number of atoms in the solvent group         */
+    atom_id         *ind;                 /* The global ion group atoms numbers           */
+    atom_id         *ind_split[2];        /* Split groups for compartment partitioning    */
+    atom_id         *ind_sol;             /* The global solvent group atom numbers        */
+    gmx_bool         massw_split[2];      /* Use mass-weighted positions in split group?  */
+    real             cyl0r, cyl1r;        /* Split cylinders defined by radius, upper and */
+    real             cyl0u, cyl1u;        /* ... lower extension. The split cylinders de- */
+    real             cyl0l, cyl1l;        /* ... fine the channels and are each anchored  */
+                                          /* ... in the center of the split group         */
+    int              nanions[eCompNR];    /* Requested number of anions and               */
+    int              nAverage;            /* Coupling constant (nr of swap attempt steps) */
+    real             threshold;           /* Ion counts may deviate from the requested
+                                             values by +-threshold before a swap is done  */
+    int              ncations[eCompNR];   /* ... cations for both compartments            */
+    real             bulkOffset[eCompNR]; /* Offset of the swap layer (='bulk') w.r.t.
+                                             the compartment-defining layers              */
+    gmx_swapcoords_t si_priv;             /* swap private data accessible in
+                                           * swapcoords.cpp                               */
 } t_swapcoords;
 
 
