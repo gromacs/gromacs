@@ -2243,6 +2243,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("E-z",     is->efield_z,   NULL);
     STYPE ("E-zt",    is->efield_zt,  NULL);
 
+    /* Ion/water position swapping ("computational electrophysiology") */
     CCTYPE("Ion/water position swapping for computational electrophysiology setups");
     CTYPE("Swap positions along direction: no, X, Y, Z");
     EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
@@ -2281,6 +2282,19 @@ void get_ir(const char *mdparin, const char *mdparout,
         ITYPE("cationsA", ir->swap->ncations[0], -1);
         ITYPE("anionsB", ir->swap->nanions[1], -1);
         ITYPE("cationsB", ir->swap->ncations[1], -1);
+
+        CTYPE("By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
+        CTYPE("at maximum distance (= bulk concentration) to the split group layers. However,");
+        CTYPE("an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0");
+        CTYPE("towards one of the compartment-partitioning layers (at +/- 1.0).");
+        RTYPE("bulk-offsetA", ir->swap->bulkOffset[0], 0.0);
+        RTYPE("bulk-offsetB", ir->swap->bulkOffset[1], 0.0);
+        if (!(ir->swap->bulkOffset[0] > -1.0 && ir->swap->bulkOffset[0] < 1.0)
+            || !(ir->swap->bulkOffset[1] > -1.0 && ir->swap->bulkOffset[1] < 1.0) )
+        {
+            warning_error(wi, "Bulk layer offsets must be > -1.0 and < 1.0 !");
+        }
+
         CTYPE("Start to swap ions if threshold difference to requested count is reached");
         RTYPE("threshold", ir->swap->threshold, 1.0);
     }

@@ -849,6 +849,11 @@ static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
         sprintf(str, "cations%c", j+'A');
         PI(str, swap->ncations[j]);
     }
+    for (j = 0; j < 2; j++)
+    {
+        sprintf(str, "bulk-offset%c", j+'A');
+        PR(str, swap->bulkOffset[j]);
+    }
     PR("threshold", swap->threshold);
 }
 

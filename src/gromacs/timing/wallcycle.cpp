@@ -109,7 +109,7 @@ static const char *wcn[ewcNR] =
     "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "Wait GPU loc. est.", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force",
     "Write traj.", "Update", "Constraints", "Comm. energies",
-    "Enforced rotation", "Add rot. forces", "Coordinate swapping", "IMD", "Test"
+    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
 };
 
 #ifdef GMX_CYCLE_SUBCOUNTERS
