@@ -59,20 +59,28 @@ extern "C" {
 
 struct t_pbc;
 
+/*! \brief Set the reference value for a pull coord with rate!=0, does nothing when rate==0.
+ *
+ * \param[in,out] pcrd The pull coordinate.
+ * \param[in]     t    Time.
+ */
+void update_pull_coord_reference_value(t_pull_coord *pcrd, double t);
+
 /*! \brief Get the deviation for pull coord coord_ind.
  *
- * This call updates some data in the pull coordinates in \p pull.
+ * This function also updates \p pull->coord[coord_ind].dr.
+ * The function \p update_pull_coord_reference_value should be called before
+ * calling this function to ensure that \p value_ref is up to date.
  *
  * \param[in,out] pull      The pull struct.
  * \param[in]     coord_ind Number of the pull coordinate.
  * \param[in]     pbc       Information structure about periodicity.
- * \param[in]     t         Time.
- * \param[out]    dev       The deviation from the reference distance.
+ * \param[out]    dev       The deviation from the reference position.
  */
-void get_pull_coord_distance(const t_pull *pull,
-                             int coord_ind,
-                             const struct t_pbc *pbc, double t,
-                             double *dev);
+void get_pull_coord_distance(t_pull             *pull,
+                             int                 coord_ind,
+                             const struct t_pbc *pbc,
+                             double             *dev);
 
 
 /*! \brief Set the all the pull forces to zero.
