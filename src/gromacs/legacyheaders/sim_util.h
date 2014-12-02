@@ -59,7 +59,7 @@ void do_pbc_first(FILE *log, matrix box, t_forcerec *fr,
                   struct t_graph *graph, rvec x[]);
 
 void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
-                       gmx_mtop_t *mtop, rvec x[]);
+                       const gmx_mtop_t *mtop, rvec x[]);
 
 void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
                  gmx_mtop_t *mtop, rvec x[]);

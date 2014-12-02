@@ -83,7 +83,7 @@ int ePBC2npbcdim(int ePBC)
     return npbcdim;
 }
 
-int inputrec2nboundeddim(t_inputrec *ir)
+int inputrec2nboundeddim(const t_inputrec *ir)
 {
     if (ir->nwall == 2 && ir->ePBC == epbcXY)
     {

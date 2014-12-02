@@ -185,16 +185,16 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
  */
 
 gmx_constr_t init_constraints(FILE *log,
-                              gmx_mtop_t *mtop, t_inputrec *ir,
+                              const gmx_mtop_t *mtop, const t_inputrec *ir,
                               gmx_edsam_t ed, t_state *state,
                               t_commrec *cr);
 /* Initialize constraints stuff */
 
-void set_constraints(gmx_constr_t    constr,
-                     gmx_localtop_t *top,
-                     t_inputrec     *ir,
-                     t_mdatoms      *md,
-                     t_commrec      *cr);
+void set_constraints(gmx_constr_t      constr,
+                     gmx_localtop_t   *top,
+                     const t_inputrec *ir,
+                     const t_mdatoms  *md,
+                     t_commrec        *cr);
 /* Set up all the local constraints for the node */
 
 /* The at2con t_blocka struct returned by the routines below
@@ -204,7 +204,7 @@ void set_constraints(gmx_constr_t    constr,
  */
 
 t_blocka make_at2con(int start, int natoms,
-                     t_ilist *ilist, t_iparams *iparams,
+                     const t_ilist *ilist, const t_iparams *iparams,
                      gmx_bool bDynamics, int *nflexiblecons);
 /* Returns a block struct to go from atoms to constraints */
 
@@ -240,20 +240,20 @@ real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
 real lincs_rmsd(gmx_lincsdata_t lincsd, gmx_bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
-gmx_lincsdata_t init_lincs(FILE *fplog, gmx_mtop_t *mtop,
-                           int nflexcon_global, t_blocka *at2con,
+gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
+                           int nflexcon_global, const t_blocka *at2con,
                            gmx_bool bPLINCS, int nIter, int nProjOrder);
 /* Initializes and returns the lincs data struct */
 
-void set_lincs(t_idef *idef, t_mdatoms *md,
+void set_lincs(const t_idef *idef, const t_mdatoms *md,
                gmx_bool bDynamics, t_commrec *cr,
                gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
-void set_lincs_matrix(gmx_lincsdata_t li, real *invmass, real lambda);
+void set_lincs_matrix(gmx_lincsdata_t li, const real *invmass, real lambda);
 /* Sets the elements of the LINCS constraint coupling matrix */
 
-real constr_r_max(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir);
+real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
 /* Returns an estimate of the maximum distance between atoms
  * required for LINCS.
  */

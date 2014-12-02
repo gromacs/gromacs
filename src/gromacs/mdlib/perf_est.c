@@ -88,11 +88,11 @@
 /* Cost of a bonded interaction divided by the number of (pbc_)dx nrequired */
 #define C_BOND        5.0
 
-int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
+int n_bonded_dx(const gmx_mtop_t *mtop, gmx_bool bExcl)
 {
-    int            mb, nmol, ftype, ndxb, ndx_excl;
-    int            ndx;
-    gmx_moltype_t *molt;
+    int                  mb, nmol, ftype, ndxb, ndx_excl;
+    int                  ndx;
+    const gmx_moltype_t *molt;
 
     /* Count the number of pbc_rvec_sub calls required for bonded interactions.
      * This number is also roughly proportional to the computational cost.
@@ -140,7 +140,8 @@ int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
     return ndx;
 }
 
-static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
+static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
+                          matrix box,
                           int *nq_tot, int *nlj_tot,
                           double *cost_pp,
                           gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
@@ -263,7 +264,8 @@ static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
         *4/3*M_PI*ir->rlist*ir->rlist*ir->rlist/det(box);
 }
 
-static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
+static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
+                           matrix box,
                            int *nq_tot, int *nlj_tot,
                            double *cost_pp,
                            gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
@@ -363,7 +365,8 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
         *4/3*M_PI*r_eff*r_eff*r_eff/det(box);
 }
 
-float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
+float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
+                        matrix box)
 {
     t_atom        *atom;
     int            mb, nmol, atnr, cg, a, a0, nq_tot, nlj_tot, f;
