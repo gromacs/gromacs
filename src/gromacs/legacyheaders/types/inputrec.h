@@ -139,6 +139,8 @@ typedef struct {
     real        kB;         /* force constant for state B */
 
     /* Variables not present in mdp, but used at run time */
+    double      value_ref;  /* The reference value, usually init+rate*t */
+    double      value;      /* The current value of the coordinate */
     dvec        dr;         /* The distance from the reference group */
     double      vec_len;    /* Length of vec for direction-relative */
     dvec        ffrad;      /* conversion factor from vec to radial force */

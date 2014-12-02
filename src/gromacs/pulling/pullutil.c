@@ -158,9 +158,14 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
              * we reduced the other group COM over the ranks. This resolves
              * any PBC issues and we don't need to use a PBC-atom here.
              */
+            if (pcrd->rate != 0)
+            {
+                /* With rate=0, value_ref is set initially */
+                pcrd->value_ref = pcrd->init + pcrd->rate*t;
+            }
             for (m = 0; m < DIM; m++)
             {
-                g_x[m] = pgrp->x[m] - pcrd->vec[m]*(pcrd->init + pcrd->rate*t);
+                g_x[m] = pgrp->x[m] - pcrd->vec[m]*pcrd->value_ref;
             }
 
             /* loop over all atoms in the main ref group */
@@ -280,7 +285,7 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
             pcrd->cyl_dev  = 0;
             for (m = 0; m < DIM; m++)
             {
-                g_x[m]         = pgrp->x[m] - pcrd->vec[m]*(pcrd->init + pcrd->rate*t);
+                g_x[m]         = pgrp->x[m] - pcrd->vec[m]*pcrd->value_ref;
                 dist           = -pcrd->vec[m]*pull->dbuf_cyl[c*stride+2]*pdyna->mwscale;
                 pdyna->x[m]    = g_x[m] - dist;
                 pcrd->cyl_dev += dist;
