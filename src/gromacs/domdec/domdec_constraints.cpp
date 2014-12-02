@@ -658,11 +658,11 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     return at_end;
 }
 
-void init_domdec_constraints(gmx_domdec_t *dd,
-                             gmx_mtop_t   *mtop)
+void init_domdec_constraints(gmx_domdec_t     *dd,
+                             const gmx_mtop_t *mtop)
 {
     gmx_domdec_constraints_t *dc;
-    gmx_molblock_t           *molb;
+    const gmx_molblock_t     *molb;
     int mb, ncon, c;
 
     if (debug)

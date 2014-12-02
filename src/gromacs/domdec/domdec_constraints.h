@@ -60,7 +60,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                               t_ilist *il_local);
 
 /*! \brief Initializes the data structures for constraint communication */
-void init_domdec_constraints(gmx_domdec_t *dd,
-                             gmx_mtop_t   *mtop);
+void init_domdec_constraints(gmx_domdec_t     *dd,
+                             const gmx_mtop_t *mtop);
 
 #endif
