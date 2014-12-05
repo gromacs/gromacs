@@ -204,7 +204,8 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         nscan = sscanf(groups, "%d %d %d", &pcrd->group[0], &pcrd->group[1], &idum);
         if (nscan != 2)
         {
-            fprintf(stderr, "ERROR: %s should have %d components\n", buf, 2);
+            fprintf(stderr, "ERROR: %s should contain %d pull group indices\n",
+                    buf, 2);
             nerror++;
         }
         sprintf(buf, "pull-coord%d-origin", i);
@@ -248,7 +249,7 @@ void make_pull_groups(t_pull *pull,
 
         if (strcmp(pgnames[g], "") == 0)
         {
-            gmx_fatal(FARGS, "Group pull_group%d required by grompp was undefined.", g);
+            gmx_fatal(FARGS, "Pull option pull_group%d required by grompp has not been set.", g);
         }
 
         ig        = search_string(pgnames[g], grps->nr, gnames);
