@@ -67,6 +67,7 @@ typedef struct {
     int   *ind_r;      /* constraint index for updating atom data */
     int    ind_nalloc; /* allocation size of ind and ind_r */
     tensor vir_r_m_dr; /* temporary variable for virial calculation */
+    real   dhdlambda;  /* temporary variable for lambda derivative */
 } lincs_thread_t;
 
 typedef struct gmx_lincsdata {
@@ -360,7 +361,7 @@ static void lincs_update_atoms(struct gmx_lincsdata *li, int th,
 static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
                       struct gmx_lincsdata *lincsd, int th,
                       real *invmass,
-                      int econq, real *dvdlambda,
+                      int econq, gmx_bool bCalcDHDL,
                       gmx_bool bCalcVir, tensor rmdf)
 {
     int      b0, b1, b, i, j, k, n;
@@ -463,14 +464,17 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     lincs_update_atoms(lincsd, th, 1.0, sol, r,
                        (econq != econqForce) ? invmass : NULL, fp);
 
-    if (dvdlambda != NULL)
+    if (bCalcDHDL)
     {
-#pragma omp barrier
+        real dhdlambda;
+
+        dhdlambda = 0;
         for (b = b0; b < b1; b++)
         {
-            *dvdlambda -= sol[b]*lincsd->ddist[b];
+            dhdlambda -= sol[b]*lincsd->ddist[b];
         }
-        /* 10 ncons flops */
+
+        lincsd->th[th].dhdlambda = dhdlambda;
     }
 
     if (bCalcVir)
@@ -499,7 +503,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                      struct gmx_lincsdata *lincsd, int th,
                      real *invmass,
                      t_commrec *cr,
-                     gmx_bool bCalcLambda,
+                     gmx_bool bCalcDHDL,
                      real wangle, int *warn,
                      real invdt, rvec *v,
                      gmx_bool bCalcVir, tensor vir_r_m_dr)
@@ -685,9 +689,9 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         /* 16 ncons flops */
     }
 
-    if (nlocat != NULL && bCalcLambda)
+    if (nlocat != NULL && (bCalcDHDL || bCalcVir))
     {
-        /* In lincs_update_atoms thread might cross-read mlambda */
+        /* In lincs_update_atoms threads might cross-read mlambda */
 #pragma omp barrier
 
         /* Only account for local atoms */
@@ -695,6 +699,21 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         {
             mlambda[b] *= 0.5*nlocat[b];
         }
+    }
+
+    if (bCalcDHDL)
+    {
+        real dhdl;
+
+        dhdl = 0;
+        for (b = b0; b < b1; b++)
+        {
+            /* Note that this this is dhdl*dt^2, the dt^2 factor is corrected
+             * later after the contributions are reduced over the threads.
+             */
+            dhdl -= lincsd->mlambda[b]*lincsd->ddist[b];
+        }
+        lincsd->th[th].dhdlambda = dhdl;
     }
 
     if (bCalcVir)
@@ -1462,6 +1481,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          t_nrnb *nrnb,
                          int maxwarn, int *warncount)
 {
+    gmx_bool  bCalcDHDL;
     char      buf[STRLEN], buf2[22], buf3[STRLEN];
     int       i, warn, p_imax;
     real      ncons_loc, p_ssd, p_max = 0;
@@ -1469,6 +1489,12 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     gmx_bool  bOK;
 
     bOK = TRUE;
+
+    /* This boolean should be set by a flag passed to this routine.
+     * We can also easily check if any constraint length is changed,
+     * if not dH/dlambda=0 and we can also set the boolean to FALSE.
+     */
+    bCalcDHDL = (ir->efep != efepNO && dvdlambda != NULL);
 
     if (lincsd->nc == 0 && cr->dd == NULL)
     {
@@ -1491,6 +1517,9 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (econq == econqCoord)
     {
+        /* We can't use bCalcDHDL here, since NULL can be passed for dvdlambda
+         * also with efep!=fepNO.
+         */
         if (ir->efep != efepNO)
         {
             if (md->nMassPerturbed && lincsd->matlam != md->lambda)
@@ -1553,25 +1582,13 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
             do_lincs(x, xprime, box, pbc, lincsd, th,
                      md->invmass, cr,
-                     bCalcVir || (ir->efep != efepNO),
+                     bCalcDHDL,
                      ir->LincsWarnAngle, &warn,
                      invdt, v, bCalcVir,
                      th == 0 ? vir_r_m_dr : lincsd->th[th].vir_r_m_dr);
         }
 
-        if (ir->efep != efepNO)
-        {
-            real dt_2, dvdl = 0;
-
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */
-            dt_2 = 1.0/(ir->delta_t*ir->delta_t);
-            for (i = 0; (i < lincsd->nc); i++)
-            {
-                dvdl -= lincsd->mlambda[i]*dt_2*lincsd->ddist[i];
-            }
-            *dvdlambda += dvdl;
-        }
-
         if (bLog && fplog && lincsd->nc > 0)
         {
             fprintf(fplog, "   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
@@ -1664,9 +1681,28 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             int th = gmx_omp_get_thread_num();
 
             do_lincsp(x, xprime, min_proj, pbc, lincsd, th,
-                      md->invmass, econq, ir->efep != efepNO ? dvdlambda : NULL,
+                      md->invmass, econq, bCalcDHDL,
                       bCalcVir, th == 0 ? vir_r_m_dr : lincsd->th[th].vir_r_m_dr);
         }
+    }
+
+    if (bCalcDHDL)
+    {
+        /* Reduce the dH/dlambda contributions over the threads */
+        real dhdlambda;
+        int  th;
+
+        dhdlambda = 0;
+        for (th = 0; th < lincsd->nth; th++)
+        {
+            dhdlambda += lincsd->th[th].dhdlambda;
+        }
+        if (econqCoord)
+        {
+            /* dhdlambda contains dH/dlambda*dt^2, correct for this */
+            dhdlambda /= ir->delta_t*ir->delta_t;
+        }
+        *dvdlambda += dhdlambda;
     }
 
     if (bCalcVir && lincsd->nth > 1)
