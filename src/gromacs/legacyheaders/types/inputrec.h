@@ -329,7 +329,6 @@ typedef struct {
 typedef struct {
     int         drudemode;      /* Mode: SCF of extended Lagrangian */
     real        drude_t;        /* Temperature for Drude thermostat */
-    real        drude_tau_t;    /* Coupling constant for Drude thermostat */
     gmx_bool    bHardWall;      /* Whether or not to apply hard-wall restraining potential */
     real        drude_r;        /* Length beyond which to apply quartic restraining potential */
     real        drude_khyp;     /* Force constant for hyperpolarization correction */

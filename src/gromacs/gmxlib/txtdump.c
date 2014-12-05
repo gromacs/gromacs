@@ -1116,7 +1116,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         {
             PS("drudemode", EDRUDETYPE(ir->drude->drudemode));
             PR("drude-t", ir->drude->drude_t);
-            PR("drude-tau-t", ir->drude->drude_tau_t);
             PS("drude-hardwall", EBOOL(ir->drude->bHardWall));
             PR("drude-r", ir->drude->drude_r);
             PR("drude-khyp", ir->drude->drude_khyp);

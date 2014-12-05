@@ -1552,7 +1552,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             }
             gmx_fio_do_int(fio, ir->drude->drudemode);
             gmx_fio_do_real(fio, ir->drude->drude_t);
-            gmx_fio_do_real(fio, ir->drude->drude_tau_t);
             gmx_fio_do_gmx_bool(fio, ir->drude->bHardWall);
             gmx_fio_do_real(fio, ir->drude->drude_r);
             gmx_fio_do_real(fio, ir->drude->drude_khyp);
