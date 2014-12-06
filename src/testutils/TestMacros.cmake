@@ -57,6 +57,7 @@ function (gmx_build_unit_test NAME EXENAME)
             TEST_TEMP_PATH="${_temporary_files_path}")
 
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+        set_target_properties(${EXENAME} PROPERTIES COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     endif()
 endfunction ()
 

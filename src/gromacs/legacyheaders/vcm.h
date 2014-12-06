@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,18 +53,27 @@ extern "C" {
 struct gmx_groups_t;
 
 typedef struct {
-    int        nr;             /* Number of groups                    */
-    int        mode;           /* One of the enums above              */
-    gmx_bool   ndim;           /* The number of dimensions for corr.  */
-    real      *group_ndf;      /* Number of degrees of freedom        */
     rvec      *group_p;        /* Linear momentum per group           */
-    rvec      *group_v;        /* Linear velocity per group           */
     rvec      *group_x;        /* Center of mass per group            */
     rvec      *group_j;        /* Angular momentum per group          */
-    rvec      *group_w;        /* Angular velocity (omega)            */
     tensor    *group_i;        /* Moment of inertia per group         */
     real      *group_mass;     /* Mass per group                      */
-    char     **group_name;     /* These two are copies to pointers in */
+} t_vcm_thread;
+
+typedef struct {
+    int           nr;          /* Number of groups                    */
+    int           mode;        /* One of the enums above              */
+    gmx_bool      ndim;        /* The number of dimensions for corr.  */
+    real         *group_ndf;   /* Number of degrees of freedom        */
+    rvec         *group_p;     /* Linear momentum per group           */
+    rvec         *group_v;     /* Linear velocity per group           */
+    rvec         *group_x;     /* Center of mass per group            */
+    rvec         *group_j;     /* Angular momentum per group          */
+    rvec         *group_w;     /* Angular velocity (omega)            */
+    tensor       *group_i;     /* Moment of inertia per group         */
+    real         *group_mass;  /* Mass per group                      */
+    char        **group_name;  /* These two are copies to pointers in */
+    t_vcm_thread *thread_vcm;  /* Temporary data per thread           */
 } t_vcm;
 
 t_vcm *init_vcm(FILE *fp, struct gmx_groups_t *groups, t_inputrec *ir);
