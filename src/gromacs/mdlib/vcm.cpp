@@ -39,12 +39,14 @@
 
 #include "gromacs/legacyheaders/vcm.h"
 
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
 t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir)
@@ -100,6 +102,20 @@ t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir)
                 fprintf(fp, "%3d:  %s\n", g, vcm->group_name[g]);
             }
         }
+
+        int t, nthreads = gmx_omp_nthreads_get(emntDefault);
+        snew(vcm->thread_vcm, nthreads);
+        for (t = 0; t < nthreads; t++)
+        {
+            snew(vcm->thread_vcm[t].group_p, vcm->nr+1);
+            snew(vcm->thread_vcm[t].group_mass, vcm->nr+1);
+            if (vcm->mode == ecmANGULAR)
+            {
+                snew(vcm->thread_vcm[t].group_j, vcm->nr+1);
+                snew(vcm->thread_vcm[t].group_x, vcm->nr+1);
+                snew(vcm->thread_vcm[t].group_i, vcm->nr+1);
+            }
+        }
     }
 
     return vcm;
@@ -128,119 +144,153 @@ static void update_tensor(rvec x, real m0, tensor I)
 void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
                   rvec x[], rvec v[], t_vcm *vcm)
 {
-    int    i, g, m;
-    real   m0;
-    rvec   j0;
-
+    int    i, g, t, nthreads;
+    nthreads = gmx_omp_nthreads_get(emntDefault);
     if (vcm->mode != ecmNO)
     {
-        /* Also clear a possible rest group */
+#pragma omp parallel private(g, t) num_threads(nthreads)
+        {
+            t = gmx_omp_get_thread_num();
+            for (g = 0; (g < vcm->nr+1); g++)
+            {
+                /* Reset linear momentum */
+                vcm->thread_vcm[t].group_mass[g] = 0;
+                clear_rvec(vcm->thread_vcm[t].group_p[g]);
+                if (vcm->mode == ecmANGULAR)
+                {
+                    /* Reset anular momentum */
+                    clear_rvec(vcm->thread_vcm[t].group_j[g]);
+                    clear_rvec(vcm->thread_vcm[t].group_x[g]);
+                    clear_mat(vcm->thread_vcm[t].group_i[g]);
+                }
+            }
+
+            g = 0;
+#pragma omp for schedule(static)
+            for (i = start; (i < start+homenr); i++)
+            {
+                real m0 = md->massT[i];
+                if (md->cVCM)
+                {
+                    g = md->cVCM[i];
+                }
+
+                /* Calculate linear momentum */
+                vcm->thread_vcm[t].group_mass[g]  += m0;
+                int m;
+                for (m = 0; (m < DIM); m++)
+                {
+                    vcm->thread_vcm[t].group_p[g][m] += m0*v[i][m];
+                }
+
+                if (vcm->mode == ecmANGULAR)
+                {
+                    /* Calculate angular momentum */
+                    rvec   j0;
+                    cprod(x[i], v[i], j0);
+
+                    for (m = 0; (m < DIM); m++)
+                    {
+                        vcm->thread_vcm[t].group_j[g][m] += m0*j0[m];
+                        vcm->thread_vcm[t].group_x[g][m] += m0*x[i][m];
+                    }
+                    /* Update inertia tensor */
+                    update_tensor(x[i], m0, vcm->thread_vcm[t].group_i[g]);
+                }
+            }
+        }
         for (g = 0; (g < vcm->nr+1); g++)
         {
             /* Reset linear momentum */
             vcm->group_mass[g] = 0;
             clear_rvec(vcm->group_p[g]);
-
             if (vcm->mode == ecmANGULAR)
             {
                 /* Reset anular momentum */
                 clear_rvec(vcm->group_j[g]);
                 clear_rvec(vcm->group_x[g]);
-                clear_rvec(vcm->group_w[g]);
                 clear_mat(vcm->group_i[g]);
             }
-        }
 
-        g = 0;
-        for (i = start; (i < start+homenr); i++)
-        {
-            m0 = md->massT[i];
-            if (md->cVCM)
+            for (t = 0; t < nthreads; t++)
             {
-                g = md->cVCM[i];
-            }
-
-            /* Calculate linear momentum */
-            vcm->group_mass[g]  += m0;
-            for (m = 0; (m < DIM); m++)
-            {
-                vcm->group_p[g][m] += m0*v[i][m];
-            }
-
-            if (vcm->mode == ecmANGULAR)
-            {
-                /* Calculate angular momentum */
-                cprod(x[i], v[i], j0);
-
-                for (m = 0; (m < DIM); m++)
+                vcm->group_mass[g] += vcm->thread_vcm[t].group_mass[g];
+                rvec_inc(vcm->group_p[g], vcm->thread_vcm[t].group_p[g]);
+                if (vcm->mode == ecmANGULAR)
                 {
-                    vcm->group_j[g][m] += m0*j0[m];
-                    vcm->group_x[g][m] += m0*x[i][m];
+                    rvec_inc(vcm->group_j[g], vcm->thread_vcm[t].group_j[g]);
+                    rvec_inc(vcm->group_x[g], vcm->thread_vcm[t].group_x[g]);
+                    m_add(vcm->group_i[g], vcm->group_i[g], vcm->thread_vcm[t].group_i[g]);
                 }
-                /* Update inertia tensor */
-                update_tensor(x[i], m0, vcm->group_i[g]);
             }
         }
+
     }
 }
 
 void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
                    rvec x[], rvec v[], t_vcm *vcm)
 {
-    int  i, g;
-    rvec dv, dx;
-
     if (vcm->mode != ecmNO)
     {
-        /* Subtract linear momentum */
-        g = 0;
-        switch (vcm->ndim)
+        int nth = gmx_omp_nthreads_get(emntDefault);
+#pragma omp parallel num_threads(nth)
         {
-            case 1:
-                for (i = start; (i < start+homenr); i++)
-                {
-                    if (group_id)
-                    {
-                        g = group_id[i];
-                    }
-                    v[i][XX] -= vcm->group_v[g][XX];
-                }
-                break;
-            case 2:
-                for (i = start; (i < start+homenr); i++)
-                {
-                    if (group_id)
-                    {
-                        g = group_id[i];
-                    }
-                    v[i][XX] -= vcm->group_v[g][XX];
-                    v[i][YY] -= vcm->group_v[g][YY];
-                }
-                break;
-            case 3:
-                for (i = start; (i < start+homenr); i++)
-                {
-                    if (group_id)
-                    {
-                        g = group_id[i];
-                    }
-                    rvec_dec(v[i], vcm->group_v[g]);
-                }
-                break;
-        }
-        if (vcm->mode == ecmANGULAR)
-        {
-            /* Subtract angular momentum */
-            for (i = start; (i < start+homenr); i++)
+            int  i, g = 0;
+            rvec dv, dx;
+            /* Subtract linear momentum */
+            switch (vcm->ndim)
             {
-                if (group_id)
+                case 1:
+#pragma omp for schedule(static)
+                    for (i = start; (i < start+homenr); i++)
+                    {
+                        if (group_id)
+                        {
+                            g = group_id[i];
+                        }
+                        v[i][XX] -= vcm->group_v[g][XX];
+                    }
+                    break;
+                case 2:
+#pragma omp for schedule(static)
+                    for (i = start; (i < start+homenr); i++)
+                    {
+                        if (group_id)
+                        {
+                            g = group_id[i];
+                        }
+                        v[i][XX] -= vcm->group_v[g][XX];
+                        v[i][YY] -= vcm->group_v[g][YY];
+                    }
+                    break;
+                case 3:
+#pragma omp for schedule(static)
+                    for (i = start; (i < start+homenr); i++)
+                    {
+                        if (group_id)
+                        {
+                            g = group_id[i];
+                        }
+                        rvec_dec(v[i], vcm->group_v[g]);
+                    }
+                    break;
+            }
+            if (vcm->mode == ecmANGULAR)
+            {
+                /* Subtract angular momentum */
+#pragma omp for schedule(static)
+                for (i = start; (i < start+homenr); i++)
                 {
-                    g = group_id[i];
+                    if (group_id)
+                    {
+                        g = group_id[i];
+                    }
+                    /* Compute the correction to the velocity for each atom */
+                    rvec_sub(x[i], vcm->group_x[g], dx);
+                    cprod(vcm->group_w[g], dx, dv);
+                    rvec_dec(v[i], dv);
                 }
-                /* Compute the correction to the velocity for each atom */
-                rvec_sub(x[i], vcm->group_x[g], dx);
-                cprod(vcm->group_w[g], dx, dv);
-                rvec_dec(v[i], dv);
             }
         }
     }

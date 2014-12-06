@@ -53,6 +53,7 @@
 
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/orires.h"
@@ -202,41 +203,47 @@ reduce_thread_forces(int n, rvec *f, rvec *fshift,
     /* When necessary, reduce energy and virial using one thread only */
     if (bCalcEnerVir)
     {
-        int t, i, j;
-
-        for (i = 0; i < SHIFTS; i++)
+#pragma omp parallel num_threads(gmx_omp_nthreads_get(emntDefault))
         {
-            for (t = 1; t < nthreads; t++)
-            {
-                rvec_inc(fshift[i], f_t[t].fshift[i]);
-            }
-        }
-        for (i = 0; i < F_NRE; i++)
-        {
-            for (t = 1; t < nthreads; t++)
-            {
-                ener[i] += f_t[t].ener[i];
-            }
-        }
-        for (i = 0; i < egNR; i++)
-        {
-            for (j = 0; j < f_t[1].grpp.nener; j++)
+            int t, i, j;
+#pragma omp for nowait schedule(static)
+            for (i = 0; i < SHIFTS; i++)
             {
                 for (t = 1; t < nthreads; t++)
                 {
-
-                    grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
+                    rvec_inc(fshift[i], f_t[t].fshift[i]);
                 }
             }
-        }
-        if (bDHDL)
-        {
-            for (i = 0; i < efptNR; i++)
+#pragma omp for nowait schedule(static)
+            for (i = 0; i < F_NRE; i++)
             {
-
                 for (t = 1; t < nthreads; t++)
                 {
-                    dvdl[i] += f_t[t].dvdl[i];
+                    ener[i] += f_t[t].ener[i];
+                }
+            }
+#pragma omp for nowait schedule(static)
+            for (i = 0; i < egNR; i++)
+            {
+                for (j = 0; j < f_t[1].grpp.nener; j++)
+                {
+                    for (t = 1; t < nthreads; t++)
+                    {
+
+                        grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
+                    }
+                }
+            }
+            if (bDHDL)
+            {
+#pragma omp for nowait schedule(static)
+                for (i = 0; i < efptNR; i++)
+                {
+
+                    for (t = 1; t < nthreads; t++)
+                    {
+                        dvdl[i] += f_t[t].dvdl[i];
+                    }
                 }
             }
         }
