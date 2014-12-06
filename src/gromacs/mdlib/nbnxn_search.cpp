@@ -3738,13 +3738,15 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
                                 int                         nsrc,
                                 const nbnxn_buffer_flags_t *dest)
 {
-    for (int s = 0; s < nsrc; s++)
+    int gmx_unused nthread = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for schedule(static) num_threads(nthread)
+    for (int b = 0; b < dest->nflag; b++)
     {
-        gmx_bitmask_t * flag = nbs->work[s].buffer_flags.flag;
-
-        for (int b = 0; b < dest->nflag; b++)
+        int s;
+        for (s = 0; s < nsrc; s++)
         {
-            bitmask_union(&(dest->flag[b]), flag[b]);
+            bitmask_union(&(dest->flag[b]),
+                          nbs->work[s].buffer_flags.flag[b]);
         }
     }
 }
