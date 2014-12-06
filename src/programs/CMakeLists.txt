@@ -35,6 +35,7 @@
 file(GLOB MDRUN_SOURCES mdrun/*.c mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
+set_target_properties(mdrun_objlib PROPERTIES COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
@@ -61,6 +62,7 @@ else()
         file(GLOB VIEW_SOURCES view/view.cpp)
     endif()
     add_library(view_objlib OBJECT ${VIEW_SOURCES})
+    set_target_properties(view_objlib PROPERTIES COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     add_executable(gmx
         ${GMX_MAIN_SOURCES}
         $<TARGET_OBJECTS:mdrun_objlib>
