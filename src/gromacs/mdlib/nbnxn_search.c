@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1597,17 +1597,27 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     int   n0, n1, i;
     int   cx, cy, cxy, ncz_max, ncz;
     int   nthread, thread;
-    int  *cxy_na, cxy_na_i;
 
     nthread = gmx_omp_nthreads_get(emntPairsearch);
 
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+#pragma omp parallel num_threads(nthread)
     {
-        calc_column_indices(grid, a0, a1, x, dd_zone, move, thread, nthread,
-                            nbs->cell, nbs->work[thread].cxy_na);
+#pragma omp for schedule(static)
+        for (thread = 0; thread < nthread; thread++)
+        {
+            calc_column_indices(grid, a0, a1, x, dd_zone, move, thread, nthread,
+                                nbs->cell, nbs->work[thread].cxy_na);
+        }
+#pragma omp for schedule(static) private(thread)
+        for (i = 0; i < grid->ncx*grid->ncy+1; i++)
+        {
+            grid->cxy_na[i] = nbs->work[0].cxy_na[i];
+            for (thread = 1; thread < nthread; thread++)
+            {
+                grid->cxy_na[i] += nbs->work[thread].cxy_na[i];
+            }
+        }
     }
-
     /* Make the cell index as a function of x and y */
     ncz_max          = 0;
     ncz              = 0;
@@ -1622,12 +1632,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
         {
             ncz_max = ncz;
         }
-        cxy_na_i = nbs->work[0].cxy_na[i];
-        for (thread = 1; thread < nthread; thread++)
-        {
-            cxy_na_i += nbs->work[thread].cxy_na[i];
-        }
-        ncz = (cxy_na_i + grid->na_sc - 1)/grid->na_sc;
+        ncz = (grid->cxy_na[i] + grid->na_sc - 1)/grid->na_sc;
         if (nbat->XFormat == nbatX8)
         {
             /* Make the number of cell a multiple of 2 */
@@ -5450,16 +5455,15 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
                                 int                         nsrc,
                                 const nbnxn_buffer_flags_t *dest)
 {
-    int            s, b;
-    gmx_bitmask_t *flag;
-
-    for (s = 0; s < nsrc; s++)
+    int b, nthread = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for schedule(static) num_threads(nthread)
+    for (b = 0; b < dest->nflag; b++)
     {
-        flag = nbs->work[s].buffer_flags.flag;
-
-        for (b = 0; b < dest->nflag; b++)
+        int s;
+        for (s = 0; s < nsrc; s++)
         {
-            bitmask_union(&(dest->flag[b]), flag[b]);
+            bitmask_union(&(dest->flag[b]),
+                          nbs->work[s].buffer_flags.flag[b]);
         }
     }
 }

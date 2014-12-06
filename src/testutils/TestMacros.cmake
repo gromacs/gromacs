@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@ function (gmx_build_unit_test NAME EXENAME)
         set(EXTRA_COMPILE_DEFINITIONS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}" TEST_TEMP_PATH="${_temporary_files_path}")
 
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+        set_target_properties(${EXENAME} PROPERTIES COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     endif()
 endfunction ()
 

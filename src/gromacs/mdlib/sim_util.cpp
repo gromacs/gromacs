@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -199,7 +199,10 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
         pr_rvecs(debug, 0, "fsr", f+start, end-start);
         pr_rvecs(debug, 0, "flr", flr+start, end-start);
     }
-    for (i = start; (i < end); i++)
+    // cppcheck-suppress unreadVariable
+    int gmx_unused nt = gmx_omp_nthreads_get(emntDefault);
+#pragma omp parallel for num_threads(nt) schedule(static)
+    for (i = start; i < end; i++)
     {
         rvec_inc(f[i], flr[i]);
     }
@@ -717,6 +720,16 @@ gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
     return nbv != NULL && nbv->bUseGPU;
 }
 
+static gmx_inline void clear_rvecs_omp_nowait(int n, rvec v[])
+{
+    int i;
+#pragma omp for nowait
+    for (i = 0; i < n; i++)
+    {
+        clear_rvec(v[i]);
+    }
+}
+
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
                          gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1127,14 +1140,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             if (flags & GMX_FORCE_VIRIAL)
             {
                 fr->f_novirsum = fr->f_novirsum_alloc;
-                if (fr->bDomDec)
-                {
-                    clear_rvecs(fr->f_novirsum_n, fr->f_novirsum);
-                }
-                else
-                {
-                    clear_rvecs(homenr, fr->f_novirsum+start);
-                }
             }
             else
             {
@@ -1145,12 +1150,31 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                 fr->f_novirsum = f;
             }
         }
-
-        /* Clear the short- and long-range forces */
-        clear_rvecs(fr->natoms_force_constr, f);
-        if (bSepLRF && do_per_step(step, inputrec->nstcalclr))
+        // cppcheck-suppress unreadVariable
+        int gmx_unused nth = gmx_omp_nthreads_get(emntDefault);
+#pragma omp parallel num_threads(nth)
         {
-            clear_rvecs(fr->natoms_force_constr, fr->f_twin);
+            if (fr->bF_NoVirSum)
+            {
+                if (flags & GMX_FORCE_VIRIAL)
+                {
+
+                    if (fr->bDomDec)
+                    {
+                        clear_rvecs_omp_nowait(fr->f_novirsum_n, fr->f_novirsum);
+                    }
+                    else
+                    {
+                        clear_rvecs_omp_nowait(homenr, fr->f_novirsum+start);
+                    }
+                }
+            }
+            /* Clear the short- and long-range forces */
+            clear_rvecs_omp_nowait(fr->natoms_force_constr, f);
+            if (bSepLRF && do_per_step(step, inputrec->nstcalclr))
+            {
+                clear_rvecs_omp_nowait(fr->natoms_force_constr, fr->f_twin);
+            }
         }
 
         clear_rvec(fr->vir_diag_posres);
