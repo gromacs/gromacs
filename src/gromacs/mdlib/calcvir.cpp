@@ -40,6 +40,7 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -66,10 +67,13 @@ static void upd_vir(rvec vir, real dvx, real dvy, real dvz)
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box)
 {
-    int      i, isx;
+    int      i;
     double   dvxx = 0, dvxy = 0, dvxz = 0, dvyx = 0, dvyy = 0, dvyz = 0, dvzx = 0, dvzy = 0, dvzz = 0;
 
-    for (i = 0; (i < nxf); i++)
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) \
+    schedule(static) \
+    reduction(+: dvxx, dvxy, dvxz, dvyx, dvyy, dvyz, dvzx, dvzy, dvzz)
+    for (i = 0; i < nxf; i++)
     {
         dvxx += x[i][XX]*f[i][XX];
         dvxy += x[i][XX]*f[i][YY];
@@ -85,7 +89,7 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
 
         if (bScrewPBC)
         {
-            isx = IS2X(i);
+            int isx = IS2X(i);
             /* We should correct all odd x-shifts, but the range of isx is -2 to 2 */
             if (isx == 1 || isx == -1)
             {

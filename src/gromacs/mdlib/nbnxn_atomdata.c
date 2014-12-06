@@ -1668,15 +1668,13 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift)
 {
-    const nbnxn_atomdata_output_t *out;
-    int  th;
-    int  s;
-    rvec sum;
-
-    out = nbat->out;
-
+    const nbnxn_atomdata_output_t *out = nbat->out;
+    int s, nth = gmx_omp_nthreads_get(emntNonbonded);
+#pragma omp parallel for num_threads(nth) schedule(static)
     for (s = 0; s < SHIFTS; s++)
     {
+        int  th;
+        rvec sum;
         clear_rvec(sum);
         for (th = 0; th < nbat->nout; th++)
         {
