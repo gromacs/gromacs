@@ -53,6 +53,7 @@
 
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/orires.h"
@@ -138,10 +139,8 @@ zero_thread_forces(f_thread_t *f_t, int n,
 void
 reduce_thread_force_buffer(int n, rvec *f,
                            int nthreads, f_thread_t *f_t,
-                           int nblock, int block_size)
+                           int b, int block_size)
 {
-    int b;
-
     if (nthreads > MAX_BONDED_THREADS)
     {
         gmx_fatal(FARGS, "Can not reduce bonded forces on more than %d threads",
@@ -151,34 +150,30 @@ reduce_thread_force_buffer(int n, rvec *f,
     /* This reduction can run on any number of threads,
      * independently of nthreads.
      */
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (b = 0; b < nblock; b++)
-    {
-        rvec *fp[MAX_BONDED_THREADS];
-        int   nfb, ft, fb;
-        int   a0, a1, a;
+    rvec *fp[MAX_BONDED_THREADS];
+    int   nfb, ft, fb;
+    int   a0, a1, a;
 
-        /* Determine which threads contribute to this block */
-        nfb = 0;
-        for (ft = 1; ft < nthreads; ft++)
+    /* Determine which threads contribute to this block */
+    nfb = 0;
+    for (ft = 1; ft < nthreads; ft++)
+    {
+        if (bitmask_is_set(f_t[ft].red_mask, b))
         {
-            if (bitmask_is_set(f_t[ft].red_mask, b))
-            {
-                fp[nfb++] = f_t[ft].f;
-            }
+            fp[nfb++] = f_t[ft].f;
         }
-        if (nfb > 0)
+    }
+    if (nfb > 0)
+    {
+        /* Reduce force buffers for threads that contribute */
+        a0 =  b   *block_size;
+        a1 = (b+1)*block_size;
+        a1 = std::min(a1, n);
+        for (a = a0; a < a1; a++)
         {
-            /* Reduce force buffers for threads that contribute */
-            a0 =  b   *block_size;
-            a1 = (b+1)*block_size;
-            a1 = std::min(a1, n);
-            for (a = a0; a < a1; a++)
+            for (fb = 0; fb < nfb; fb++)
             {
-                for (fb = 0; fb < nfb; fb++)
-                {
-                    rvec_inc(f[a], fp[fb][a]);
-                }
+                rvec_inc(f[a], fp[fb][a]);
             }
         }
     }
@@ -193,51 +188,64 @@ reduce_thread_forces(int n, rvec *f, rvec *fshift,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
-    if (nblock > 0)
-    {
-        /* Reduce the bonded force buffer */
-        reduce_thread_force_buffer(n, f, nthreads, f_t, nblock, block_size);
-    }
-
-    /* When necessary, reduce energy and virial using one thread only */
+    int b, steps = nblock;
+    /* When necessary, reduce energy and virial */
     if (bCalcEnerVir)
     {
-        int t, i, j;
-
-        for (i = 0; i < SHIFTS; i++)
+        steps += SHIFTS + F_NRE + egNR;
+        if (bDHDL)
+        {
+            steps += efptNR;
+        }
+    }
+    //This loop fuses together multiple loops to have enough independent work
+#pragma omp parallel for num_threads(nthreads) schedule(static, 1)
+    for (b = 0; b < steps; b++)
+    {
+        int i, t, j;
+        if (b < nblock) //each if corresponds to an independent loop
+        {
+            /* Reduce the bonded force buffer */
+            reduce_thread_force_buffer(n, f, nthreads, f_t, b, block_size);
+            continue;
+        }
+        i = b - nblock; // by subtracting the length of the previous "loop"
+                        // i becomes the "loop"-index
+        if (i < SHIFTS)
         {
             for (t = 1; t < nthreads; t++)
             {
                 rvec_inc(fshift[i], f_t[t].fshift[i]);
             }
+            continue;
         }
-        for (i = 0; i < F_NRE; i++)
+        i -= SHIFTS;
+        if (i < F_NRE)
         {
             for (t = 1; t < nthreads; t++)
             {
                 ener[i] += f_t[t].ener[i];
             }
+            continue;
         }
-        for (i = 0; i < egNR; i++)
+        i -= F_NRE;
+        if (i < egNR)
         {
             for (j = 0; j < f_t[1].grpp.nener; j++)
             {
                 for (t = 1; t < nthreads; t++)
                 {
-
                     grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
                 }
             }
+            continue;
         }
-        if (bDHDL)
+        i -= egNR;
+        if (i < efptNR) //Last if is always true. Here for consistency.
         {
-            for (i = 0; i < efptNR; i++)
+            for (t = 1; t < nthreads; t++)
             {
-
-                for (t = 1; t < nthreads; t++)
-                {
-                    dvdl[i] += f_t[t].dvdl[i];
-                }
+                dvdl[i] += f_t[t].dvdl[i];
             }
         }
     }

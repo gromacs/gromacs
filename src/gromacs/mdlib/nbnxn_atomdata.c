@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1668,15 +1668,14 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift)
 {
-    const nbnxn_atomdata_output_t *out;
-    int  th;
-    int  s;
-    rvec sum;
-
-    out = nbat->out;
-
+    const nbnxn_atomdata_output_t *out = nbat->out;
+    int s;
+    int gmx_unused                 nth = gmx_omp_nthreads_get(emntNonbonded);
+#pragma omp parallel for num_threads(nth) schedule(static)
     for (s = 0; s < SHIFTS; s++)
     {
+        int  th;
+        rvec sum;
         clear_rvec(sum);
         for (th = 0; th < nbat->nout; th++)
         {
