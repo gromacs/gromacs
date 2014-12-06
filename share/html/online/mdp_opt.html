@@ -18,7 +18,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init-step, comm-mode, nstcomm, comm-grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd-fric, ld-seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
-<li><a HREF="#shellmd"><b>polarizable simulations</b></a>(drude,drude-mode,emtol,niter,fcstep,drude-t,drude-tau-t,drude-hardwall,drude-r,drude-khyp,drude-tsteps)
+<li><a HREF="#shellmd"><b>polarizable simulations</b></a>(drude,drude-mode,emtol,niter,fcstep,drude-t,drude-hardwall,drude-r,drude-khyp,drude-tsteps)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxout-compressed, compressed-x-precision, compressed-x-grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-tolerance, rlist, rlistlong)
@@ -331,9 +331,6 @@ is set to <b>SCF</b></dd>
 <dt><b>drude-t: (1.0) [K]</b></dt>
 <dd>The temperature for Drude particle velocity generation.  Only meaningful when
 <b>drude-mode</b> is set to <b>Lagrangian</b></dd>
-<dt><b>drude-tau-t: (0.005) [ps]</b></dt>
-<dd>The characteristic response time for any thermostat coupled to Drude oscillators.
-Only meaningful when <b>drude-mode</b> is set to <b>Lagrangian</b></dd>
 <dt><b>drude-hardwall: (yes)</b></dt>
 <dd><dl compact>
 <dt><b>yes</b></dt>
