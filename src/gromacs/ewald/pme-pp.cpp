@@ -57,6 +57,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -752,14 +753,12 @@ void gmx_pme_receive_f(t_commrec *cr,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles)
 {
-    int natoms, i;
-
 #ifdef GMX_PME_DELAYED_WAIT
     /* Wait for the x request to finish */
     gmx_pme_send_coeffs_coords_wait(cr->dd);
 #endif
 
-    natoms = cr->dd->nat_home;
+    int natoms = cr->dd->nat_home;
 
     if (natoms > cr->dd->pme_recv_f_alloc)
     {
@@ -774,7 +773,10 @@ void gmx_pme_receive_f(t_commrec *cr,
              MPI_STATUS_IGNORE);
 #endif
 
-    for (i = 0; i < natoms; i++)
+    // cppcheck-suppress unreadVariable
+    int gmx_unused nt = gmx_omp_nthreads_get(emntDefault);
+#pragma omp parallel for num_threads(nt) schedule(static)
+    for (int i = 0; i < natoms; i++)
     {
         rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
     }
