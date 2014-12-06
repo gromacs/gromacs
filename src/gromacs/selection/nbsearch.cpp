@@ -396,12 +396,14 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     cutoff_         = cutoff;
     if (cutoff_ <= 0)
     {
-        cutoff_     = GMX_REAL_MAX;
+        cutoff_     = cutoff2_ = GMX_REAL_MAX;
         bTryGrid_   = false;
     }
-    cutoff2_        = sqr(cutoff_);
-    bXY_            = false;
-
+    else
+    {
+        cutoff2_        = sqr(cutoff_);
+    }
+    bXY_             = false;
     nref_            = 0;
     xref_            = NULL;
     refExclusionIds_ = NULL;
@@ -513,9 +515,46 @@ bool AnalysisNeighborhoodSearchImpl::checkGridSearchEfficiency(bool bForce)
 bool AnalysisNeighborhoodSearchImpl::initGridCells(
         const matrix box, bool bSingleCell[DIM], int posCount)
 {
-    const real targetsize =
-        pow(box[XX][XX] * box[YY][YY] * box[ZZ][ZZ] * 10 / posCount,
-            static_cast<real>(1./3.));
+    // Determine the size of cubes where there are on average 10 positions.
+    // The loop takes care of cases where some of the box edges are shorter
+    // than the the desired cube size; in such cases, a single grid cell is
+    // used in these dimensions, and the cube size is determined only from the
+    // larger box vectors.  Such boxes should be rare, but the bounding box
+    // approach can result in very flat boxes with certain types of selections
+    // (e.g., for interfacial systems or for small number of atoms).
+    real targetsize   = 0.0;
+    int  prevDimCount = 4;
+    while (true)
+    {
+        real volume   = 1.0;
+        int  dimCount = 3;
+        for (int dd = 0; dd < DIM; ++dd)
+        {
+            const real boxSize = box[dd][dd];
+            if (boxSize < targetsize)
+            {
+                bSingleCell[dd] = true;
+                if (bGridPBC_[dd])
+                {
+                    return false;
+                }
+            }
+            if (bSingleCell[dd])
+            {
+                --dimCount;
+            }
+            else
+            {
+                volume *= boxSize;
+            }
+        }
+        if (dimCount == 0 || dimCount == prevDimCount)
+        {
+            break;
+        }
+        targetsize   = pow(volume * 10 / posCount, static_cast<real>(1./dimCount));
+        prevDimCount = dimCount;
+    }
 
     int totalCellCount = 1;
     for (int dd = 0; dd < DIM; ++dd)
@@ -602,7 +641,9 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(
             clear_rvec(box[dd]);
             box[dd][dd] = boundingBoxSize[dd];
         }
-        else if (box[dd][dd] <= 0.0)
+        // TODO: In case the zero vector comes from the bounding box, this does
+        // not lead to a very efficient grid search, but that should be rare.
+        if (box[dd][dd] <= 0.0)
         {
             GMX_ASSERT(!bGridPBC_[dd], "Periodic box vector is zero");
             bSingleCell[dd] = true;
