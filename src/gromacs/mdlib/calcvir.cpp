@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -65,10 +66,13 @@ static void upd_vir(rvec vir, real dvx, real dvy, real dvz)
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box)
 {
-    int      i, isx;
+    int      i;
     double   dvxx = 0, dvxy = 0, dvxz = 0, dvyx = 0, dvyy = 0, dvyz = 0, dvzx = 0, dvzy = 0, dvzz = 0;
 
-    for (i = 0; (i < nxf); i++)
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) \
+    schedule(static) \
+    reduction(+: dvxx, dvxy, dvxz, dvyx, dvyy, dvyz, dvzx, dvzy, dvzz)
+    for (i = 0; i < nxf; i++)
     {
         dvxx += x[i][XX]*f[i][XX];
         dvxy += x[i][XX]*f[i][YY];
@@ -84,7 +88,7 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
 
         if (bScrewPBC)
         {
-            isx = IS2X(i);
+            int isx = IS2X(i);
             /* We should correct all odd x-shifts, but the range of isx is -2 to 2 */
             if (isx == 1 || isx == -1)
             {
