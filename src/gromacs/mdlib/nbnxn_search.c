@@ -37,8 +37,6 @@
 
 #include "nbnxn_search.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <math.h>
 #include <string.h>
@@ -3258,12 +3256,6 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
                         inner_e = ge - (se << na_cj_2log);
 
                         nbl->cj[found].excl &= ~(1U<<((inner_i<<na_cj_2log) + inner_e));
-/* The next code line is usually not needed. We do not want to version
- * away the above line, because there is logic that relies on being
- * able to detect easily whether any exclusions exist. */
-#if (defined GMX_SIMD_IBM_QPX)
-                        nbl->cj[found].interaction_mask_indices[inner_i] &= ~(1U << inner_e);
-#endif
                     }
                 }
             }

@@ -455,7 +455,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_error(wi, "nstcalclr must be a positive number (divisor of nstcalclr), or -1 to follow nstlist.");
     }
 
-    if (EEL_PME(ir->coulombtype) && ir->rcoulomb > ir->rvdw && ir->nstcalclr > 1)
+    if (EEL_PME(ir->coulombtype) && ir->rcoulomb > ir->rlist && ir->nstcalclr > 1)
     {
         warning_error(wi, "When used with PME, the long-range component of twin-range interactions must be updated every step (nstcalclr)");
     }
@@ -1224,6 +1224,28 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         /* This check avoids extra pbc coding for exclusion corrections */
         sprintf(err_buf, "wall-ewald-zfac should be >= 2");
         CHECK(ir->wall_ewald_zfac < 2);
+    }
+    if ((ir->ewald_geometry == eewg3DC) && (ir->ePBC != epbcXY) &&
+        EEL_FULL(ir->coulombtype))
+    {
+        sprintf(warn_buf, "With %s and ewald_geometry = %s you should use pbc = %s",
+                eel_names[ir->coulombtype], eewg_names[eewg3DC], epbc_names[epbcXY]);
+        warning(wi, warn_buf);
+    }
+    if ((ir->epsilon_surface != 0) && EEL_FULL(ir->coulombtype))
+    {
+        if (ir->cutoff_scheme == ecutsVERLET)
+        {
+            sprintf(warn_buf, "Since molecules/charge groups are broken using the Verlet scheme, you can not use a dipole correction to the %s electrostatics.",
+                    eel_names[ir->coulombtype]);
+            warning(wi, warn_buf);
+        }
+        else
+        {
+            sprintf(warn_buf, "Dipole corrections to %s electrostatics only work if all charge groups that can cross PBC boundaries are dipoles. If this is not the case set epsilon_surface to 0",
+                    eel_names[ir->coulombtype]);
+            warning_note(wi, warn_buf);
+        }
     }
 
     if (ir_vdw_switched(ir))
@@ -2398,6 +2420,22 @@ void get_ir(const char *mdparin, const char *mdparout,
         if (ir->bSimTemp) /* done after fep params */
         {
             do_simtemp_params(ir);
+        }
+
+        /* Because sc-coul (=FALSE by default) only acts on the lambda state
+         * setup and not on the old way of specifying the free-energy setup,
+         * we should check for using soft-core when not needed, since that
+         * can complicate the sampling significantly.
+         * Note that we only check for the automated coupling setup.
+         * If the (advanced) user does FEP through manual topology changes,
+         * this check will not be triggered.
+         */
+        if (ir->efep != efepNO && ir->fepvals->n_lambda == 0 &&
+            ir->fepvals->sc_alpha != 0 &&
+            ((opts->couple_lam0 == ecouplamVDW  && opts->couple_lam0 == ecouplamVDWQ) ||
+             (opts->couple_lam1 == ecouplamVDWQ && opts->couple_lam1 == ecouplamVDW)))
+        {
+            warning(wi, "You are using soft-core interactions while the Van der Waals interactions are not decoupled (note that the sc-coul option is only active when using lambda states). Although this will not lead to errors, you will need much more sampling than without soft-core interactions. Consider using sc-alpha=0.");
         }
     }
     else
