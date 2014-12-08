@@ -914,7 +914,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             CHECK(ir->bPeriodicMols);
             if (ir->ePBC != epbcNONE)
             {
-                warning(wi, "Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
+                warning(wi, "Removing the rotation around the center of mass in a periodic system, this can lead to artifacts. Only use this on a single (cluster of) molecules. This cluster should not cross periodic boundaries.");
             }
         }
     }
