@@ -1,0 +1,8 @@
+Code-Review+1: Carsten Kutzner <ckutzne@gwdg.de>
+Code-Review+2: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Verified+2: Jenkins Buildbot
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Mon, 08 Dec 2014 20:43:27 +0100
+Reviewed-on: https://gerrit.gromacs.org/4257
+Project: gromacs
+Branch: refs/heads/release-5-0
