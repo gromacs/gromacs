@@ -32,6 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * managing automatic load balance of PME calculations (Coulomb and
+ * LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \inlibraryapi
+ * \ingroup module_ewald
+ */
 
 #ifndef GMX_EWALD_PME_LOAD_BALANCING_H
 #define GMX_EWALD_PME_LOAD_BALANCING_H
@@ -42,19 +52,18 @@
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/state.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/*! \brief Object to manage PME load balancing */
+struct pme_load_balancing_t;
 
-typedef struct pme_load_balancing *pme_load_balancing_t;
-
-/* Initialze the PP-PME load balacing data and infrastructure */
-void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
-                      const t_inputrec *ir, matrix box,
+/*! \brief Initialze the PP-PME load balacing data and infrastructure */
+void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
+                      const t_inputrec          *ir,
+                      matrix                     box,
                       const interaction_const_t *ic,
-                      gmx_pme_t pmedata);
+                      struct gmx_pme_t          *pmedata);
 
-/* Try to adjust the PME grid and Coulomb cut-off.
+/*! \brief Try to adjust the PME grid and Coulomb cut-off.
+ *
  * The adjustment is done to generate a different non-bonded PP and PME load.
  * With separate PME nodes (PP and PME on different processes) or with
  * a GPU (PP on GPU, PME on CPU), PP and PME run on different resources
@@ -64,30 +73,27 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
  * times and acquiring enough statistics, the best performing setup is chosen.
  * Here we try to take into account fluctuations and changes due to external
  * factors as well as DD load balancing.
- * Returns TRUE the load balancing continues, FALSE is the balancing is done.
+ *
+ * \return TRUE the load balancing continues, FALSE is the balancing is done.
  */
-gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
-                          t_commrec                  *cr,
-                          FILE                       *fp_err,
-                          FILE                       *fp_log,
-                          t_inputrec                 *ir,
-                          t_state                    *state,
-                          double                      cycles,
-                          interaction_const_t        *ic,
-                          struct nonbonded_verlet_t  *nbv,
-                          gmx_pme_t                  *pmedata,
-                          gmx_int64_t                 step);
+gmx_bool pme_load_balance(pme_load_balancing_t      *pme_lb,
+                          t_commrec                 *cr,
+                          FILE                      *fp_err,
+                          FILE                      *fp_log,
+                          t_inputrec                *ir,
+                          t_state                   *state,
+                          double                     cycles,
+                          interaction_const_t       *ic,
+                          struct nonbonded_verlet_t *nbv,
+                          struct gmx_pme_t **        pmedata,
+                          gmx_int64_t                step);
 
-/* Restart the PME load balancing discarding all timings gathered up till now */
-void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
+/*! \brief Restart the PME load balancing discarding all timings gathered up till now */
+void restart_pme_loadbal(pme_load_balancing_t *pme_lb, int n);
 
-/* Finish the PME load balancing and print the settings when fplog!=NULL */
-void pme_loadbal_done(pme_load_balancing_t pme_lb,
+/*! \brief Finish the PME load balancing and print the settings when fplog!=NULL */
+void pme_loadbal_done(pme_load_balancing_t *pme_lb,
                       t_commrec *cr, FILE *fplog,
                       gmx_bool bNonBondedOnGPU);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

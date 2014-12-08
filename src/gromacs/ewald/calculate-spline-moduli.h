@@ -34,51 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *
- * \brief This file contains function declarations necessary for
- * computing energies and forces for the PME long-ranged part (Coulomb
- * and LJ).
- *
- * \author Erik Lindahl <erik@kth.se>
- * \author Berk Hess <hess@kth.se>
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
- * \ingroup module_ewald
- */
+#ifndef GMX_EWALD_CALCULATE_SPLINE_MODULI_H
+#define GMX_EWALD_CALCULATE_SPLINE_MODULI_H
 
-#ifndef GMX_EWALD_LONG_RANGE_CORRECTION_H
-#define GMX_EWALD_LONG_RANGE_CORRECTION_H
+#include "pme-internal.h"
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/topology/block.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
+/* Calulate plain SPME B-spline interpolation */
+void make_bspline_moduli(splinevec bsp_mod,
+                         int nx, int ny, int nz, int order);
 
-/*! \brief Calculate long-range Ewald correction terms.
- *
- * For the group cutoff scheme (only), calculates the correction to
- * the Ewald sums (electrostatic and/or LJ) due to pairs excluded from
- * the long-ranged part.
- *
- * For both cutoff schemes, but only for Coulomb interactions,
- * calculates correction for surface dipole terms. */
-void
-ewald_LRcorrection(int start, int end,
-                   t_commrec *cr, int thread, t_forcerec *fr,
-                   real *chargeA, real *chargeB,
-                   real *C6A, real *C6B,
-                   real *sigmaA, real *sigmaB,
-                   real *sigma3A, real *sigma3B,
-                   gmx_bool calc_excl_corr,
-                   t_blocka *excl, rvec x[],
-                   matrix box, rvec mu_tot[],
-                   int ewald_geometry, real epsilon_surface,
-                   rvec *f, tensor vir_q, tensor vir_lj,
-                   real *Vcorr_q, real *Vcorr_lj,
-                   real lambda_q, real lambda_lj,
-                   real *dvdlambda_q, real *dvdlambda_lj);
+/* Calculate the P3M B-spline moduli */
+void make_p3m_bspline_moduli(splinevec bsp_mod,
+                             int nx, int ny, int nz, int order);
 
 #endif

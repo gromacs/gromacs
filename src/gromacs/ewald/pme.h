@@ -34,6 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * computing energies and forces for the PME long-ranged part (Coulomb
+ * and LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \inlibraryapi
+ * \ingroup module_ewald
+ */
 
 #ifndef GMX_EWALD_PME_H
 #define GMX_EWALD_PME_H
@@ -51,28 +61,31 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
 };
 
-int gmx_pme_init(gmx_pme_t *pmedata, t_commrec *cr,
+/*! \brief Initialize \p pmedata
+ *
+ * Return value 0 indicates all well, non zero is an error code.
+ */
+int gmx_pme_init(struct gmx_pme_t **pmedata, t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
                  t_inputrec *ir, int homenr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                  gmx_bool bReproducible, int nthread);
-/* Initialize the pme data structures resepectively.
- * Return value 0 indicates all well, non zero is an error code.
- */
 
-int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
-/* Destroy the pme data structures resepectively.
- * Return value 0 indicates all well, non zero is an error code.
+/*! \brief Destroy the pme data structures resepectively.
+ *
+ * \return 0 indicates all well, non zero is an error code.
  */
+int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata);
 
+//@{
+/*! \brief Flag values that control what gmx_pme_do() will calculate
+ *
+ * These can be combined with bitwise-OR if more than one thing is required.
+ */
 #define GMX_PME_SPREAD        (1<<0)
 #define GMX_PME_SOLVE         (1<<1)
 #define GMX_PME_CALC_F        (1<<2)
@@ -87,8 +100,16 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
 #define GMX_PME_DO_LJ         (1<<14)
 
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
+//@}
 
-int gmx_pme_do(gmx_pme_t pme,
+/*! \brief Do a PME calculation for the long range electrostatics and/or LJ.
+ *
+ * The meaning of \p flags is defined above, and determines which
+ * parts of the calculation are performed.
+ *
+ * \return 0 indicates all well, non zero is an error code.
+ */
+int gmx_pme_do(struct gmx_pme_t *pme,
                int start,       int homenr,
                rvec x[],        rvec f[],
                real chargeA[],  real chargeB[],
@@ -100,31 +121,29 @@ int gmx_pme_do(gmx_pme_t pme,
                matrix vir_q,    real ewaldcoeff_q,
                matrix vir_lj,   real ewaldcoeff_lj,
                real *energy_q,  real *energy_lj,
-               real lambda_q, real lambda_lj,
+               real lambda_q,   real lambda_lj,
                real *dvdlambda_q, real *dvdlambda_lj,
                int flags);
-/* Do a PME calculation for the long range electrostatics and/or LJ.
- * flags, defined above, determine which parts of the calculation are performed.
- * Return value 0 indicates all well, non zero is an error code.
- */
 
-int gmx_pmeonly(gmx_pme_t pme,
+/*! \brief Called on the nodes that do PME exclusively (as slaves) */
+int gmx_pmeonly(struct gmx_pme_t *pme,
                 t_commrec *cr,     t_nrnb *mynrnb,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff_q, real ewaldcoeff_lj,
                 t_inputrec *ir);
-/* Called on the nodes that do PME exclusively (as slaves)
- */
 
-void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V);
-/* Calculate the PME grid energy V for n charges with a potential
- * in the pme struct determined before with a call to gmx_pme_do
- * with at least GMX_PME_SPREAD and GMX_PME_SOLVE specified.
- * Note that the charges are not spread on the grid in the pme struct.
- * Currently does not work in parallel or with free energy.
+/*! \brief Calculate the PME grid energy V for n charges.
+ *
+ * The potential (found in \p pme) must have been found already with a
+ * call to gmx_pme_do() with at least GMX_PME_SPREAD and GMX_PME_SOLVE
+ * specified. Note that the charges are not spread on the grid in the
+ * pme struct. Currently does not work in parallel or with free
+ * energy.
  */
+void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V);
 
+/*! \brief Send the charges and maxshift to out PME-only node. */
 void gmx_pme_send_parameters(t_commrec *cr,
                              const interaction_const_t *ic,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
@@ -132,30 +151,25 @@ void gmx_pme_send_parameters(t_commrec *cr,
                              real *sqrt_c6A, real *sqrt_c6B,
                              real *sigmaA, real *sigmaB,
                              int maxshift_x, int maxshift_y);
-/* Send the charges and maxshift to out PME-only node. */
 
+/*! \brief Send the coordinates to our PME-only node and request a PME calculation */
 void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
                               gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir, int pme_flags,
                               gmx_int64_t step);
-/* Send the coordinates to our PME-only node and request a PME calculation */
 
+/*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(t_commrec *cr);
-/* Tell our PME-only node to finish */
 
+/*! \brief Tell our PME-only node to reset all cycle and flop counters */
 void gmx_pme_send_resetcounters(t_commrec *cr, gmx_int64_t step);
-/* Tell our PME-only node to reset all cycle and flop counters */
 
+/*! \brief PP nodes receive the long range forces from the PME nodes */
 void gmx_pme_receive_f(t_commrec *cr,
                        rvec f[], matrix vir_q, real *energy_q,
                        matrix vir_lj, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles);
-/* PP nodes receive the long range forces from the PME nodes */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

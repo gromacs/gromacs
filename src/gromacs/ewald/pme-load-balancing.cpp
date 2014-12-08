@@ -32,17 +32,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file contains function definitions necessary for
+ * managing automatic load balance of PME calculations (Coulomb and
+ * LJ).
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_ewald
+ */
 #include "gmxpre.h"
 
 #include "pme-load-balancing.h"
 
 #include "config.h"
 
+#include <cmath>
+
+#include <algorithm>
+
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/legacyheaders/calcgrid.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sim_util.h"
@@ -53,72 +64,77 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Parameters and setting for one PP-PME setup */
-typedef struct {
-    real      rcut_coulomb;    /* Coulomb cut-off                              */
-    real      rlist;           /* pair-list cut-off                            */
-    real      rlistlong;       /* LR pair-list cut-off                         */
-    int       nstcalclr;       /* frequency of evaluating long-range forces for group scheme */
-    real      spacing;         /* (largest) PME grid spacing                   */
-    ivec      grid;            /* the PME grid dimensions                      */
-    real      grid_efficiency; /* ineffiency factor for non-uniform grids <= 1 */
-    real      ewaldcoeff_q;    /* Electrostatic Ewald coefficient            */
-    real      ewaldcoeff_lj;   /* LJ Ewald coefficient, only for the call to send_switchgrid */
-    gmx_pme_t pmedata;         /* the data structure used in the PME code      */
-    int       count;           /* number of times this setup has been timed    */
-    double    cycles;          /* the fastest time for this setup in cycles    */
-} pme_setup_t;
+#include "pme-internal.h"
 
-/* In the initial scan, step by grids that are at least a factor 0.8 coarser */
-#define PME_LB_GRID_SCALE_FAC  0.8
-/* In the initial scan, try to skip grids with uneven x/y/z spacing,
+/*! \brief Parameters and settings for one PP-PME setup */
+struct pme_setup_t {
+    real              rcut_coulomb;    /**< Coulomb cut-off                              */
+    real              rlist;           /**< pair-list cut-off                            */
+    real              rlistlong;       /**< LR pair-list cut-off                         */
+    int               nstcalclr;       /**< frequency of evaluating long-range forces for group scheme */
+    real              spacing;         /**< (largest) PME grid spacing                   */
+    ivec              grid;            /**< the PME grid dimensions                      */
+    real              grid_efficiency; /**< ineffiency factor for non-uniform grids <= 1 */
+    real              ewaldcoeff_q;    /**< Electrostatic Ewald coefficient            */
+    real              ewaldcoeff_lj;   /**< LJ Ewald coefficient, only for the call to send_switchgrid */
+    struct gmx_pme_t *pmedata;         /**< the data structure used in the PME code      */
+    int               count;           /**< number of times this setup has been timed    */
+    double            cycles;          /**< the fastest time for this setup in cycles    */
+};
+
+/*! \brief In the initial scan, step by grids that are at least a factor 0.8 coarser */
+const real gridScaleFactor = 0.8;
+
+/*! \brief In the initial scan, try to skip grids with uneven x/y/z spacing,
  * checking if the "efficiency" is more than 5% worse than the previous grid.
  */
-#define PME_LB_GRID_EFFICIENCY_REL_FAC  1.05
-/* Rerun up till 12% slower setups than the fastest up till now */
-#define PME_LB_SLOW_FAC  1.12
-/* If setups get more than 2% faster, do another round to avoid
+const real relativeEfficiencyFactor = 1.05;
+/*! \brief Rerun until a run is 12% slower setups than the fastest run so far */
+const real maxRelativeSlowdownAccepted = 1.12;
+/*! \brief If setups get more than 2% faster, do another round to avoid
  * choosing a slower setup due to acceleration or fluctuations.
  */
-#define PME_LB_ACCEL_TOL 1.02
+const real maxFluctuationAccepted = 1.02;
 
-enum {
+/*! \brief Enumeration whose values describe the effect limiting the load balancing */
+enum epmelb {
     epmelblimNO, epmelblimBOX, epmelblimDD, epmelblimPMEGRID, epmelblimNR
 };
 
+/*! \brief Descriptive strings matching ::epmelb */
 const char *pmelblim_str[epmelblimNR] =
 { "no", "box size", "domain decompostion", "PME grid restriction" };
 
-struct pme_load_balancing {
-    int          nstage;             /* the current maximum number of stages */
+struct pme_load_balancing_t {
+    int          nstage;             /**< the current maximum number of stages */
 
-    real         cut_spacing;        /* the minimum cutoff / PME grid spacing ratio */
-    real         rcut_vdw;           /* Vdw cutoff (does not change) */
-    real         rcut_coulomb_start; /* Initial electrostatics cutoff */
-    int          nstcalclr_start;    /* Initial electrostatics cutoff */
-    real         rbuf_coulomb;       /* the pairlist buffer size */
-    real         rbuf_vdw;           /* the pairlist buffer size */
-    matrix       box_start;          /* the initial simulation box */
-    int          n;                  /* the count of setup as well as the allocation size */
-    pme_setup_t *setup;              /* the PME+cutoff setups */
-    int          cur;                /* the current setup */
-    int          fastest;            /* fastest setup up till now */
-    int          start;              /* start of setup range to consider in stage>0 */
-    int          end;                /* end   of setup range to consider in stage>0 */
-    int          elimited;           /* was the balancing limited, uses enum above */
-    int          cutoff_scheme;      /* Verlet or group cut-offs */
+    real         cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
+    real         rcut_vdw;           /**< Vdw cutoff (does not change) */
+    real         rcut_coulomb_start; /**< Initial electrostatics cutoff */
+    int          nstcalclr_start;    /**< Initial electrostatics cutoff */
+    real         rbuf_coulomb;       /**< the pairlist buffer size */
+    real         rbuf_vdw;           /**< the pairlist buffer size */
+    matrix       box_start;          /**< the initial simulation box */
+    int          n;                  /**< the count of setup as well as the allocation size */
+    pme_setup_t *setup;              /**< the PME+cutoff setups */
+    int          cur;                /**< the current setup */
+    int          fastest;            /**< fastest setup up till now */
+    int          start;              /**< start of setup range to consider in stage>0 */
+    int          end;                /**< end   of setup range to consider in stage>0 */
+    int          elimited;           /**< was the balancing limited, uses enum above */
+    int          cutoff_scheme;      /**< Verlet or group cut-offs */
 
-    int          stage;              /* the current stage */
+    int          stage;              /**< the current stage */
 };
 
-void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
+void pme_loadbal_init(pme_load_balancing_t **pme_lb_p,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
-                      gmx_pme_t pmedata)
+                      struct gmx_pme_t *pmedata)
 {
-    pme_load_balancing_t pme_lb;
-    real                 spm, sp;
-    int                  d;
+    pme_load_balancing_t *pme_lb;
+    real                  spm, sp;
+    int                   d;
 
     snew(pme_lb, 1);
 
@@ -208,7 +224,8 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
     *pme_lb_p = pme_lb;
 }
 
-static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t  pme_lb,
+/*! \brief Try to increase the cutoff during load balancing */
+static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
                                             int                   pme_order,
                                             const gmx_domdec_t   *dd)
 {
@@ -285,8 +302,8 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t  pme_lb,
     {
         tmpr_coulomb          = set->rcut_coulomb + pme_lb->rbuf_coulomb;
         tmpr_vdw              = pme_lb->rcut_vdw + pme_lb->rbuf_vdw;
-        set->rlist            = min(tmpr_coulomb, tmpr_vdw);
-        set->rlistlong        = max(tmpr_coulomb, tmpr_vdw);
+        set->rlist            = std::min(tmpr_coulomb, tmpr_vdw);
+        set->rlistlong        = std::max(tmpr_coulomb, tmpr_vdw);
 
         /* Set the long-range update frequency */
         if (set->rlist == set->rlistlong)
@@ -346,6 +363,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t  pme_lb,
     return TRUE;
 }
 
+/*! \brief Print the PME grid */
 static void print_grid(FILE *fp_err, FILE *fp_log,
                        const char *pre,
                        const char *desc,
@@ -376,7 +394,8 @@ static void print_grid(FILE *fp_err, FILE *fp_log,
     }
 }
 
-static int pme_loadbal_end(pme_load_balancing_t pme_lb)
+/*! \brief Return the index of the last setup used in PME load balancing */
+static int pme_loadbal_end(pme_load_balancing_t *pme_lb)
 {
     /* In the initial stage only n is set; end is not set yet */
     if (pme_lb->end > 0)
@@ -389,9 +408,10 @@ static int pme_loadbal_end(pme_load_balancing_t pme_lb)
     }
 }
 
+/*! \brief Print descriptive string about what limits PME load balancing */
 static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
                                   gmx_int64_t step,
-                                  pme_load_balancing_t pme_lb)
+                                  pme_load_balancing_t *pme_lb)
 {
     char buf[STRLEN], sbuf[22];
 
@@ -409,13 +429,16 @@ static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
     }
 }
 
-static void switch_to_stage1(pme_load_balancing_t pme_lb)
+/*! \brief Switch load balancing to stage 1
+ *
+ * In this stage, only reasonably fast setups are run again. */
+static void switch_to_stage1(pme_load_balancing_t *pme_lb)
 {
     pme_lb->start = 0;
     while (pme_lb->start+1 < pme_lb->n &&
            (pme_lb->setup[pme_lb->start].count == 0 ||
             pme_lb->setup[pme_lb->start].cycles >
-            pme_lb->setup[pme_lb->fastest].cycles*PME_LB_SLOW_FAC))
+            pme_lb->setup[pme_lb->fastest].cycles*maxRelativeSlowdownAccepted))
     {
         pme_lb->start++;
     }
@@ -427,7 +450,7 @@ static void switch_to_stage1(pme_load_balancing_t pme_lb)
     pme_lb->end = pme_lb->n;
     if (pme_lb->setup[pme_lb->end-1].count > 0 &&
         pme_lb->setup[pme_lb->end-1].cycles >
-        pme_lb->setup[pme_lb->fastest].cycles*PME_LB_SLOW_FAC)
+        pme_lb->setup[pme_lb->fastest].cycles*maxRelativeSlowdownAccepted)
     {
         pme_lb->end--;
     }
@@ -440,17 +463,17 @@ static void switch_to_stage1(pme_load_balancing_t pme_lb)
     pme_lb->cur = pme_lb->start - 1;
 }
 
-gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
-                          t_commrec                  *cr,
-                          FILE                       *fp_err,
-                          FILE                       *fp_log,
-                          t_inputrec                 *ir,
-                          t_state                    *state,
-                          double                      cycles,
-                          interaction_const_t        *ic,
-                          struct nonbonded_verlet_t  *nbv,
-                          gmx_pme_t                  *pmedata,
-                          gmx_int64_t                 step)
+gmx_bool pme_load_balance(pme_load_balancing_t      *pme_lb,
+                          t_commrec                 *cr,
+                          FILE                      *fp_err,
+                          FILE                      *fp_log,
+                          t_inputrec                *ir,
+                          t_state                   *state,
+                          double                     cycles,
+                          interaction_const_t       *ic,
+                          struct nonbonded_verlet_t *nbv,
+                          struct gmx_pme_t **        pmedata,
+                          gmx_int64_t                step)
 {
     gmx_bool     OK;
     pme_setup_t *set;
@@ -492,7 +515,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
     }
     else
     {
-        if (cycles*PME_LB_ACCEL_TOL < set->cycles &&
+        if (cycles*maxFluctuationAccepted < set->cycles &&
             pme_lb->stage == pme_lb->nstage - 1)
         {
             /* The performance went up a lot (due to e.g. DD load balancing).
@@ -506,11 +529,11 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
                         "Increased the number stages to %d"
                         " and ignoring the previous performance\n",
                         set->grid[XX], set->grid[YY], set->grid[ZZ],
-                        cycles*1e-6, set->cycles*1e-6, PME_LB_ACCEL_TOL,
+                        cycles*1e-6, set->cycles*1e-6, maxFluctuationAccepted,
                         pme_lb->nstage);
             }
         }
-        set->cycles = min(set->cycles, cycles);
+        set->cycles = std::min(set->cycles, cycles);
     }
 
     if (set->cycles < pme_lb->setup[pme_lb->fastest].cycles)
@@ -537,10 +560,10 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
     cycles_fast = pme_lb->setup[pme_lb->fastest].cycles;
 
     /* Check in stage 0 if we should stop scanning grids.
-     * Stop when the time is more than SLOW_FAC longer than the fastest.
+     * Stop when the time is more than maxRelativeSlowDownAccepted longer than the fastest.
      */
     if (pme_lb->stage == 0 && pme_lb->cur > 0 &&
-        cycles > pme_lb->setup[pme_lb->fastest].cycles*PME_LB_SLOW_FAC)
+        cycles > pme_lb->setup[pme_lb->fastest].cycles*maxRelativeSlowdownAccepted)
     {
         pme_lb->n = pme_lb->cur + 1;
         /* Done with scanning, go to stage 1 */
@@ -612,10 +635,10 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
                !(pme_lb->setup[pme_lb->cur].grid[XX]*
                  pme_lb->setup[pme_lb->cur].grid[YY]*
                  pme_lb->setup[pme_lb->cur].grid[ZZ] <
-                 gridsize_start*PME_LB_GRID_SCALE_FAC
+                 gridsize_start*gridScaleFactor
                  &&
                  pme_lb->setup[pme_lb->cur].grid_efficiency <
-                 pme_lb->setup[pme_lb->cur-1].grid_efficiency*PME_LB_GRID_EFFICIENCY_REL_FAC));
+                 pme_lb->setup[pme_lb->cur-1].grid_efficiency*relativeEfficiencyFactor));
     }
 
     if (pme_lb->stage > 0 && pme_lb->end == 1)
@@ -642,7 +665,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
         }
         while (pme_lb->stage == pme_lb->nstage - 1 &&
                pme_lb->setup[pme_lb->cur].count > 0 &&
-               pme_lb->setup[pme_lb->cur].cycles > cycles_fast*PME_LB_SLOW_FAC);
+               pme_lb->setup[pme_lb->cur].cycles > cycles_fast*maxRelativeSlowdownAccepted);
 
         if (pme_lb->stage == pme_lb->nstage)
         {
@@ -691,13 +714,14 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
         ic->ewaldcoeff_lj   = set->ewaldcoeff_lj;
         if (ic->vdw_modifier == eintmodPOTSHIFT)
         {
-            real crc2;
+            real       crc2;
+            const real minusSix = -6.0, minusTwelve = -12.0;
 
-            ic->dispersion_shift.cpot = -pow(ic->rvdw, -6.0);
-            ic->repulsion_shift.cpot  = -pow(ic->rvdw, -12.0);
+            ic->dispersion_shift.cpot = -std::pow(ic->rvdw, minusSix);
+            ic->repulsion_shift.cpot  = -std::pow(ic->rvdw, minusTwelve);
             ic->sh_invrc6             = -ic->dispersion_shift.cpot;
             crc2                      = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-            ic->sh_lj_ewald           = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
+            ic->sh_lj_ewald           = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*std::pow(ic->rvdw, minusSix);
         }
     }
 
@@ -761,16 +785,18 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
     return TRUE;
 }
 
-void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n)
+void restart_pme_loadbal(pme_load_balancing_t *pme_lb, int n)
 {
     pme_lb->nstage += n;
 }
 
+/*! \brief Return product of the number of PME grid points in each dimension */
 static int pme_grid_points(const pme_setup_t *setup)
 {
     return setup->grid[XX]*setup->grid[YY]*setup->grid[ZZ];
 }
 
+/*! \brief Retuern the largest short-range list cut-off radius */
 static real pme_loadbal_rlist(const pme_setup_t *setup)
 {
     /* With the group cut-off scheme we can have twin-range either
@@ -787,8 +813,9 @@ static real pme_loadbal_rlist(const pme_setup_t *setup)
     }
 }
 
+/*! \brief Print one load-balancing setting */
 static void print_pme_loadbal_setting(FILE              *fplog,
-                                      char              *name,
+                                      const char        *name,
                                       const pme_setup_t *setup)
 {
     fprintf(fplog,
@@ -799,14 +826,16 @@ static void print_pme_loadbal_setting(FILE              *fplog,
             setup->spacing, 1/setup->ewaldcoeff_q);
 }
 
-static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
-                                       t_commrec           *cr,
-                                       FILE                *fplog,
-                                       gmx_bool             bNonBondedOnGPU)
+/*! \brief Print all load-balancing settings */
+static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
+                                       t_commrec            *cr,
+                                       FILE                 *fplog,
+                                       gmx_bool              bNonBondedOnGPU)
 {
-    double pp_ratio, grid_ratio;
+    double     pp_ratio, grid_ratio;
+    const real three = 3.0;
 
-    pp_ratio   = pow(pme_loadbal_rlist(&pme_lb->setup[pme_lb->cur])/pme_loadbal_rlist(&pme_lb->setup[0]), 3.0);
+    pp_ratio   = std::pow(pme_loadbal_rlist(&pme_lb->setup[pme_lb->cur])/pme_loadbal_rlist(&pme_lb->setup[0]), three);
     grid_ratio = pme_grid_points(&pme_lb->setup[pme_lb->cur])/
         (double)pme_grid_points(&pme_lb->setup[0]);
 
@@ -848,9 +877,10 @@ static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
     }
 }
 
-void pme_loadbal_done(pme_load_balancing_t pme_lb,
-                      t_commrec *cr, FILE *fplog,
-                      gmx_bool bNonBondedOnGPU)
+void pme_loadbal_done(pme_load_balancing_t *pme_lb,
+                      t_commrec            *cr,
+                      FILE                 *fplog,
+                      gmx_bool              bNonBondedOnGPU)
 {
     if (fplog != NULL && (pme_lb->cur > 0 || pme_lb->elimited != epmelblimNO))
     {

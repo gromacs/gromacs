@@ -34,51 +34,49 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *
- * \brief This file contains function declarations necessary for
- * computing energies and forces for the PME long-ranged part (Coulomb
- * and LJ).
- *
- * \author Erik Lindahl <erik@kth.se>
- * \author Berk Hess <hess@kth.se>
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
- * \ingroup module_ewald
- */
 
-#ifndef GMX_EWALD_LONG_RANGE_CORRECTION_H
-#define GMX_EWALD_LONG_RANGE_CORRECTION_H
+#include "gmxpre.h"
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/topology/block.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
+#include "pme-spline-work.h"
 
-/*! \brief Calculate long-range Ewald correction terms.
- *
- * For the group cutoff scheme (only), calculates the correction to
- * the Ewald sums (electrostatic and/or LJ) due to pairs excluded from
- * the long-ranged part.
- *
- * For both cutoff schemes, but only for Coulomb interactions,
- * calculates correction for surface dipole terms. */
-void
-ewald_LRcorrection(int start, int end,
-                   t_commrec *cr, int thread, t_forcerec *fr,
-                   real *chargeA, real *chargeB,
-                   real *C6A, real *C6B,
-                   real *sigmaA, real *sigmaB,
-                   real *sigma3A, real *sigma3B,
-                   gmx_bool calc_excl_corr,
-                   t_blocka *excl, rvec x[],
-                   matrix box, rvec mu_tot[],
-                   int ewald_geometry, real epsilon_surface,
-                   rvec *f, tensor vir_q, tensor vir_lj,
-                   real *Vcorr_q, real *Vcorr_lj,
-                   real lambda_q, real lambda_lj,
-                   real *dvdlambda_q, real *dvdlambda_lj);
+#include "gromacs/utility/smalloc.h"
 
+#include "pme-simd.h"
+
+struct pme_spline_work *make_pme_spline_work(int gmx_unused order)
+{
+    struct pme_spline_work *work;
+
+#ifdef PME_SIMD4_SPREAD_GATHER
+    real             tmp[GMX_SIMD4_WIDTH*3], *tmp_aligned;
+    gmx_simd4_real_t zero_S;
+    gmx_simd4_real_t real_mask_S0, real_mask_S1;
+    int              of, i;
+
+    snew_aligned(work, 1, SIMD4_ALIGNMENT);
+
+    tmp_aligned = gmx_simd4_align_r(tmp);
+
+    zero_S = gmx_simd4_setzero_r();
+
+    /* Generate bit masks to mask out the unused grid entries,
+     * as we only operate on order of the 8 grid entries that are
+     * load into 2 SIMD registers.
+     */
+    for (of = 0; of < 2*GMX_SIMD4_WIDTH-(order-1); of++)
+    {
+        for (i = 0; i < 2*GMX_SIMD4_WIDTH; i++)
+        {
+            tmp_aligned[i] = (i >= of && i < of+order ? -1.0 : 1.0);
+        }
+        real_mask_S0      = gmx_simd4_load_r(tmp_aligned);
+        real_mask_S1      = gmx_simd4_load_r(tmp_aligned+GMX_SIMD4_WIDTH);
+        work->mask_S0[of] = gmx_simd4_cmplt_r(real_mask_S0, zero_S);
+        work->mask_S1[of] = gmx_simd4_cmplt_r(real_mask_S1, zero_S);
+    }
+#else
+    work = NULL;
 #endif
+
+    return work;
+}
