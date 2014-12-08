@@ -1238,7 +1238,7 @@ int alex_gen_table(int argc, char *argv[])
     };
     static const char          *cqgen[] = {
         NULL, "None", "Yang", "Bultinck", "Rappe",
-        "AXp", "AXs", "AXsp", "AXg", "AXgp",
+        "AXp", "AXs", "AXg",
         "ESP", "RESP", NULL
     };
     static const char          *opt[]      = { NULL, "cut", "rf", "pme", NULL };
