@@ -15,8 +15,8 @@
 #include "../../include/compression/warnmalloc.h"
 #include "../../include/compression/merge_sort.h"
 
-static void ms_inner(void *base, size_t size,
-             size_t start, size_t end,
+static void ms_inner(void *base, const size_t size,
+             const size_t start, const size_t end,
              int (*compar)(const void *v1,const void *v2,const void *private),
              const void *private,
              char *workarray)
@@ -80,7 +80,7 @@ static void ms_inner(void *base, size_t size,
 }
 
 
-void Ptngc_merge_sort(void *base, size_t nmemb, size_t size,
+void Ptngc_merge_sort(void *base, const size_t nmemb, const size_t size,
         int (*compar)(const void *v1,const void *v2,const void *private),
         void *private)
 {
