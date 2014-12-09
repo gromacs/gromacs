@@ -19,7 +19,7 @@
 #include "../../include/compression/rle.h"
 #include "../../include/compression/vals16.h"
 
-int Ptngc_comp_huff_buflen(int nvals)
+int Ptngc_comp_huff_buflen(const int nvals)
 {
   return 132000+nvals*8;
 }
@@ -29,7 +29,7 @@ void Ptngc_comp_huff_compress_verbose(unsigned int *vals, int nvals,
                                 unsigned char *huffman, int *huffman_len,
                                 int *huffdatalen,
                                 int *huffman_lengths,int *chosen_algo,
-                                int isvals16)
+                                const int isvals16)
 {
   unsigned int *dict=warnmalloc(0x20005*sizeof *dict);
   unsigned int *hist=warnmalloc(0x20005*sizeof *hist);
@@ -227,7 +227,7 @@ void Ptngc_comp_huff_compress_verbose(unsigned int *vals, int nvals,
   free(dict);
 }
 
-void Ptngc_comp_huff_compress(unsigned int *vals, int nvals,
+void Ptngc_comp_huff_compress(unsigned int *vals, const int nvals,
                         unsigned char *huffman, int *huffman_len)
 {
   int huffman_lengths[N_HUFFMAN_ALGO];
@@ -237,7 +237,7 @@ void Ptngc_comp_huff_compress(unsigned int *vals, int nvals,
                              huffman_lengths,&algo,0);
 }
 
-void Ptngc_comp_huff_decompress(unsigned char *huffman, int huffman_len,
+void Ptngc_comp_huff_decompress(unsigned char *huffman, const int huffman_len,
                           unsigned int *vals)
 {
   int isvals16=(int)huffman[0];
@@ -346,7 +346,7 @@ static char *huff_algo_names[N_HUFFMAN_ALGO]=
     "Huffman (dict=RLE+Huffman)"
   };
 
-char *Ptngc_comp_get_huff_algo_name(int algo)
+char *Ptngc_comp_get_huff_algo_name(const int algo)
 {
   if (algo<0)
     return NULL;
