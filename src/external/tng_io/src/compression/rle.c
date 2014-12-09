@@ -12,8 +12,8 @@
 #include "../../include/compression/rle.h"
 
 static void add_rle(unsigned int *rle,
-                    int v,int nsim,
-                    int *j,int min_rle)
+                    const int v, int nsim,
+                    int *j, const int min_rle)
 {
   if (nsim>min_rle)
     {
@@ -36,9 +36,9 @@ static void add_rle(unsigned int *rle,
 /* Run length encoding.
    Acceptable inputs are about 16 bits (0-0xFFFF)
    If input is 0-N output will be be values of 0-(N+2) */
-void Ptngc_comp_conv_to_rle(unsigned int *vals, int nvals,
-                      unsigned int *rle, int *nrle,
-                      int min_rle)
+void Ptngc_comp_conv_to_rle(unsigned int *vals, const int nvals,
+                            unsigned int *rle, int *nrle,
+                            const int min_rle)
 {
   int i;
   int j=0;
@@ -69,7 +69,7 @@ void Ptngc_comp_conv_to_rle(unsigned int *vals, int nvals,
 }
 
 void Ptngc_comp_conv_from_rle(unsigned int *rle,
-                        unsigned int *vals, int nvals)
+                              unsigned int *vals, const int nvals)
 {
   int i=0;
   int j=0;
