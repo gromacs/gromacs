@@ -50,18 +50,18 @@
    If too large values are input (compared to the precision), NULL is returned.
 */
 
-char DECLSPECDLLEXPORT *tng_compress_pos(double *pos, int natoms, int nframes,
-					 double desired_precision,
-					 int speed, int *algo,
+char DECLSPECDLLEXPORT *tng_compress_pos(double *pos, const int natoms, const int nframes,
+					 const double desired_precision,
+					 const int speed, int *algo,
 					 int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_pos_float(float *pos, int natoms, int nframes,
-					       float desired_precision,
-					       int speed, int *algo,
+char DECLSPECDLLEXPORT *tng_compress_pos_float(float *pos, const int natoms, const int nframes,
+					       const float desired_precision,
+					       const int speed, int *algo,
 					       int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_pos_int(int *pos, int natoms, int nframes,
-					     unsigned long prec_hi, unsigned long prec_lo,
+char DECLSPECDLLEXPORT *tng_compress_pos_int(int *pos, const int natoms, const int nframes,
+					     const unsigned long prec_hi, const unsigned long prec_lo,
 					     int speed,int *algo,
 					     int *nitems);
 
@@ -90,21 +90,21 @@ char DECLSPECDLLEXPORT *tng_compress_pos_int(int *pos, int natoms, int nframes,
    by calling tng_compress_nalgo
 */
 
-char DECLSPECDLLEXPORT *tng_compress_pos_find_algo(double *pos, int natoms, int nframes,
-						   double desired_precision,
-						   int speed,
+char DECLSPECDLLEXPORT *tng_compress_pos_find_algo(double *pos, const int natoms, const int nframes,
+						   const double desired_precision,
+						   const int speed,
 						   int *algo,
 						   int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_pos_float_find_algo(float *pos, int natoms, int nframes,
-							 float desired_precision,
-							 int speed,
+char DECLSPECDLLEXPORT *tng_compress_pos_float_find_algo(float *pos, const int natoms, const int nframes,
+							 const float desired_precision,
+							 const int speed,
 							 int *algo,
 							 int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_pos_int_find_algo(int *pos, int natoms, int nframes,
-						       unsigned long prec_hi, unsigned long prec_lo,
-						       int speed,int *algo,
+char DECLSPECDLLEXPORT *tng_compress_pos_int_find_algo(int *pos, const int natoms, const int nframes,
+						       const unsigned long prec_hi, const unsigned long prec_lo,
+						       const int speed, int *algo,
 						       int *nitems);
 
 /* This returns the number of integers required for the storage of the algorithm
@@ -116,36 +116,36 @@ int DECLSPECDLLEXPORT tng_compress_nalgo(void);
    selection for velocities is different, so the position and
    velocities routines should not be mixed. */
 
-char DECLSPECDLLEXPORT *tng_compress_vel(double *vel, int natoms, int nframes,
-					 double desired_precision,
-					 int speed, int *algo,
+char DECLSPECDLLEXPORT *tng_compress_vel(double *vel, const int natoms, const int nframes,
+					 const double desired_precision,
+					 const int speed, int *algo,
 					 int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_vel_float(float *vel, int natoms, int nframes,
-					       float desired_precision,
-					       int speed, int *algo,
+char DECLSPECDLLEXPORT *tng_compress_vel_float(float *vel, const int natoms, const int nframes,
+					       const float desired_precision,
+					       const int speed, int *algo,
 					       int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_vel_int(int *vel, int natoms, int nframes,
-					     unsigned long prec_hi, unsigned long prec_lo,
+char DECLSPECDLLEXPORT *tng_compress_vel_int(int *vel, const int natoms, const int nframes,
+					     const unsigned long prec_hi, const unsigned long prec_lo,
 					     int speed, int *algo,
 					     int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_vel_find_algo(double *vel, int natoms, int nframes,
-						   double desired_precision,
-						   int speed,
+char DECLSPECDLLEXPORT *tng_compress_vel_find_algo(double *vel, const int natoms, const int nframes,
+						   const double desired_precision,
+						   const int speed,
 						   int *algo,
 						   int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_vel_float_find_algo(float *vel, int natoms, int nframes,
-							 float desired_precision,
-							 int speed,
+char DECLSPECDLLEXPORT *tng_compress_vel_float_find_algo(float *vel, const int natoms, const int nframes,
+							 const float desired_precision,
+							 const int speed,
 							 int *algo,
 							 int *nitems);
 
-char DECLSPECDLLEXPORT *tng_compress_vel_int_find_algo(int *vel, int natoms, int nframes,
-						       unsigned long prec_hi, unsigned long prec_lo,
-						       int speed,
+char DECLSPECDLLEXPORT *tng_compress_vel_int_find_algo(int *vel, const int natoms, const int nframes,
+						       const unsigned long prec_hi, const unsigned long prec_lo,
+						       const int speed,
 						       int *algo,
 						       int *nitems);
 
@@ -170,12 +170,12 @@ int DECLSPECDLLEXPORT tng_compress_uncompress_int(char *data,int *posvel, unsign
 
 /* This converts a block of integers, as obtained from tng_compress_uncompress_int, to floating point values
    either double precision or single precision. */
-void DECLSPECDLLEXPORT tng_compress_int_to_double(int *posvel_int,unsigned long prec_hi, unsigned long prec_lo,
-						  int natoms,int nframes,
+void DECLSPECDLLEXPORT tng_compress_int_to_double(int *posvel_int, const unsigned long prec_hi, const unsigned long prec_lo,
+						  const int natoms, const int nframes,
 						  double *posvel_double);
 
-void DECLSPECDLLEXPORT tng_compress_int_to_float(int *posvel_int,unsigned long prec_hi, unsigned long prec_lo,
-						 int natoms,int nframes,
+void DECLSPECDLLEXPORT tng_compress_int_to_float(int *posvel_int, const unsigned long prec_hi, const unsigned long prec_lo,
+						 const int natoms, const int nframes,
 						 float *posvel_float);
 
 
