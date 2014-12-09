@@ -165,6 +165,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
 #else
     /* Define storage for little-endian or both types of CPUs. */
     md5_word_t xbuf[16];
+    /* cppcheck-suppress unassignedVariable */
     const md5_word_t *X;
 #endif
 

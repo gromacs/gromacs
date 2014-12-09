@@ -12,15 +12,15 @@
 #ifndef BWT_H
 #define BWT_H
 
-void Ptngc_comp_to_bwt(unsigned int *vals, int nvals,
+void Ptngc_comp_to_bwt(unsigned int *vals, const int nvals,
 		 unsigned int *output, int *index);
 
-void Ptngc_comp_from_bwt(unsigned int *input, int nvals, int index,
+void Ptngc_comp_from_bwt(unsigned int *input, const int nvals, int index,
 		   unsigned int *vals);
 
-void Ptngc_bwt_merge_sort_inner(int *indices, int nvals,unsigned int *vals,
-			  int start, int end,
-			  unsigned int *nrepeat,
-			  int *workarray);
+void Ptngc_bwt_merge_sort_inner(int *indices, const int nvals, unsigned int *vals,
+                                const int start, const int end,
+                                unsigned int *nrepeat,
+                                int *workarray);
 
 #endif

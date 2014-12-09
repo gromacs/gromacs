@@ -147,7 +147,7 @@ static void sort_strings(unsigned int *vals, int nvals,
 #define MAX_OFFSET 0xFFFF
 #define MAX_STRING_SEARCH 8
 
-static void add_circular(int *previous,int v, int i)
+static void add_circular(int *previous, const int v, const int i)
 {
   if (previous[(NUM_PREVIOUS+3)*v+2]!=i-1)
     {
@@ -162,7 +162,7 @@ static void add_circular(int *previous,int v, int i)
   previous[(NUM_PREVIOUS+3)*v+2]=i;
 }
 
-void Ptngc_comp_to_lz77(unsigned int *vals, int nvals,
+void Ptngc_comp_to_lz77(unsigned int *vals, const int nvals,
                   unsigned int *data, int *ndata,
                   unsigned int *len, int *nlens,
                   unsigned int *offsets, int *noffsets)
@@ -306,10 +306,10 @@ void Ptngc_comp_to_lz77(unsigned int *vals, int nvals,
   free(previous);
 }
 
-void Ptngc_comp_from_lz77(unsigned int *data, int ndata,
-                    unsigned int *len, int nlens,
-                    unsigned int *offsets, int noffsets,
-                    unsigned int *vals, int nvals)
+void Ptngc_comp_from_lz77(unsigned int *data, const int ndata,
+                    unsigned int *len, const int nlens,
+                    unsigned int *offsets, const int noffsets,
+                    unsigned int *vals, const int nvals)
 {
   int i=0;
   int joff=0;
