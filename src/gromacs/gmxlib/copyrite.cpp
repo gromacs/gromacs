@@ -632,11 +632,15 @@ const char *ShortProgram(void)
 
 const char *Program(void)
 {
+    const char *programName = NULL;
+
     try
     {
-        return gmx::getProgramContext().fullBinaryPath();
+        programName = gmx::getProgramContext().fullBinaryPath();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return programName;
 }
 
 
