@@ -1,7 +1,7 @@
 /* This code is part of the tng compression routines.
  *
- * Written by Daniel Spangberg
- * Copyright (c) 2010, 2013, The GROMACS development team.
+ * Written by Daniel Spangberg and Magnus Lundborg
+ * Copyright (c) 2010, 2013-2014 The GROMACS development team.
  *
  *
  * This program is free software; you can redistribute it and/or
@@ -60,11 +60,17 @@ static const double iflipgaincheck=0.89089871814033927; /*  1./(2**(1./6)) */
 #define SHOWIT_LIGHT
 #endif
 
+#ifdef USE_WINDOWS
+#define TNG_INLINE __inline
+#else
+#define TNG_INLINE inline
+#endif
+
 /* These routines are in xtc2.c */
 int Ptngc_magic(unsigned int i);
-int Ptngc_find_magic_index(unsigned int maxval);
+int Ptngc_find_magic_index(const unsigned int maxval);
 
-static unsigned int positive_int(int item)
+static TNG_INLINE unsigned int positive_int(const int item)
 {
   int s=0;
   if (item>0)
@@ -74,7 +80,7 @@ static unsigned int positive_int(int item)
   return s;
 }
 
-static int unpositive_int(int val)
+static TNG_INLINE int unpositive_int(const int val)
 {
   int s=(val+1)/2;
   if ((val%2)==0)
@@ -153,14 +159,14 @@ static void free_xtc3_context(struct xtc3_context *xtc3_context)
 }
 
 /* Modifies three integer values for better compression of water */
-static void swap_ints(int *in, int *out)
+static void swap_ints(const int *in, int *out)
 {
   out[0]=in[0]+in[1];
   out[1]=-in[1];
   out[2]=in[1]+in[2];
 }
 
-static void swap_is_better(int *input, int *minint, int *sum_normal, int *sum_swapped)
+static void swap_is_better(const int *input, const int *minint, int *sum_normal, int *sum_swapped)
 {
   int normal_max=0;
   int swapped_max=0;
@@ -200,7 +206,7 @@ static void allocate_enough_memory(unsigned int **ptr, int *nele, int *nele_allo
 }
 
 static void insert_value_in_array(unsigned int **ptr, int *nele, int *nele_alloc,
-                                  unsigned int value,
+                                  const unsigned int value,
                                   char *arrayname)
 {
 #ifndef SHOWIT
@@ -266,7 +272,7 @@ static void swapdecide(struct xtc3_context *xtc3_context, int *input,int *swapat
 /* It is "large" if we have to increase the small index quite a
    bit. Not so much to be rejected by the not very large check
    later. */
-static int is_quite_large(int *input, int small_index, int max_large_index)
+static int is_quite_large(const int *input, const int small_index, const int max_large_index)
 {
   int is=0;
   int i;
@@ -289,7 +295,7 @@ int nbits_sum;
 int nvalues_sum;
 #endif
 
-static void insert_batch(int *input_ptr, int ntriplets_left, int *prevcoord, int *encode_ints, int startenc, int *nenc)
+static void insert_batch(const int *input_ptr, const int ntriplets_left, const int *prevcoord, int *encode_ints, const int startenc, int *nenc)
 {
   int nencode=startenc*3;
   int tmp_prevcoord[3];
@@ -347,7 +353,7 @@ static void insert_batch(int *input_ptr, int ntriplets_left, int *prevcoord, int
   *nenc=nencode;
 }
 
-static void large_instruction_change(struct xtc3_context *xtc3_context, int i)
+static void large_instruction_change(struct xtc3_context *xtc3_context, const int i)
 {
   /* If the first large is of a different kind than the currently used we must
      emit an "instruction" to change the large type. */
@@ -369,7 +375,7 @@ static void large_instruction_change(struct xtc3_context *xtc3_context, int i)
 }
 
 static void write_three_large(struct xtc3_context *xtc3_context,
-                              int i)
+                              const int i)
 {
   int m;
   if (xtc3_context->current_large_type==0)
@@ -399,7 +405,7 @@ static void write_three_large(struct xtc3_context *xtc3_context,
 }
 
 static void flush_large(struct xtc3_context *xtc3_context,
-                        int n) /* How many to flush. */
+                        const int n) /* How many to flush. */
 {
   int i;
   i=0;
@@ -464,8 +470,8 @@ static double compute_intlen(unsigned int *ints)
   return (double)m;
 }
 
-static void buffer_large(struct xtc3_context *xtc3_context, int *input, int inpdata,
-                         int natoms, int intradelta_ok)
+static void buffer_large(struct xtc3_context *xtc3_context, int *input, const int inpdata,
+                         const int natoms, const int intradelta_ok)
 {
   unsigned int direct[3], intradelta[3]={0,}, interdelta[3]={0,};
   double minlen;
@@ -536,7 +542,7 @@ static void buffer_large(struct xtc3_context *xtc3_context, int *input, int inpd
   xtc3_context->has_large++;
 }
 
-static void output_int(unsigned char *output,int *outdata, unsigned int n)
+static void output_int(unsigned char *output,int *outdata, const unsigned int n)
 {
   output[(*outdata)++]=((unsigned int)n)&0xFFU;
   output[(*outdata)++]=(((unsigned int)n)>>8)&0xFFU;
@@ -568,21 +574,21 @@ static void printarray(unsigned int *a, int n, char *name)
 #define BASEINTERVAL 8
 
 /* How many bytes are needed to store n values in base base */
-static int base_bytes(unsigned int base, int n)
+static int base_bytes(const unsigned int base, const int n)
 {
   int i,j;
   unsigned int largeint[MAXMAXBASEVALS+1];
   unsigned int largeint_tmp[MAXMAXBASEVALS+1];
   int numbytes=0;
-  for (i=0; i<n+1; i++)
-    largeint[i]=0U;
+
+  memset(largeint, 0U, sizeof(unsigned int) * (n+1));
+
   for (i=0; i<n; i++)
     {
       if (i!=0)
         {
           Ptngc_largeint_mul(base,largeint,largeint_tmp,n+1);
-          for (j=0; j<n+1; j++)
-            largeint[j]=largeint_tmp[j];
+          memcpy(largeint, largeint_tmp, (n+1)*sizeof *largeint);
         }
       Ptngc_largeint_add(base-1U,largeint,n+1);
     }
@@ -594,7 +600,7 @@ static int base_bytes(unsigned int base, int n)
   return numbytes;
 }
 
-static void base_compress(unsigned int *data, int len, unsigned char *output, int *outlen)
+static void base_compress(unsigned int *data, const int len, unsigned char *output, int *outlen)
 {
   unsigned int largeint[MAXBASEVALS+1];
   unsigned int largeint_tmp[MAXBASEVALS+1];
@@ -612,8 +618,9 @@ static void base_compress(unsigned int *data, int len, unsigned char *output, in
       unsigned int base=0U;
       int nvals=0;
       int basegiven=0;
-      for (j=0; j<MAXBASEVALS+1; j++)
-        largeint[j]=0U;
+
+      memset(largeint, 0U, sizeof(unsigned int) * (MAXBASEVALS+1));
+
       for (i=ixyz; i<len; i+=3)
         {
          if (nvals==0)
@@ -679,8 +686,8 @@ static void base_compress(unsigned int *data, int len, unsigned char *output, in
               fprintf(stderr,"\n");
 #endif
               nvals=0;
-              for (j=0; j<MAXBASEVALS+1; j++)
-                largeint[j]=0U;
+
+              memset(largeint, 0U, sizeof(unsigned int) * (MAXBASEVALS+1));
             }
         }
       if (nvals)
@@ -700,7 +707,7 @@ static void base_compress(unsigned int *data, int len, unsigned char *output, in
   *outlen=nwrittenout;
 }
 
-static void base_decompress(unsigned char *input, int len, unsigned int *output)
+static void base_decompress(unsigned char *input, const int len, unsigned int *output)
 {
   unsigned int largeint[MAXMAXBASEVALS+1];
   unsigned int largeint_tmp[MAXMAXBASEVALS+1];
@@ -747,8 +754,7 @@ static void base_decompress(unsigned char *input, int len, unsigned int *output)
               fprintf(stderr,"Base for %d is %u. I need %d bytes for %d values.\n",ixyz,base,numbytes,nvals_left);
 #endif
             }
-          for (j=0; j<maxbasevals+1; j++)
-            largeint[j]=0U;
+          memset(largeint, 0U, sizeof(unsigned int) * (maxbasevals+1));
 #ifdef SHOWIT
           fprintf(stderr,"Reading largeint: ");
 #endif
@@ -789,7 +795,7 @@ static void base_decompress(unsigned char *input, int len, unsigned int *output)
 }
 
 /* If a large proportion of the integers are large (More than 10\% are >14 bits) we return 0, otherwise 1 */
-static int heuristic_bwlzh(unsigned int *ints, int nints)
+static int heuristic_bwlzh(unsigned int *ints, const int nints)
 {
   int i,num;
   num=0;
@@ -808,7 +814,7 @@ static int heuristic_bwlzh(unsigned int *ints, int nints)
    Speed 5 enables the LZ77 component of BWLZH.
    Speed 6 always tests if BWLZH is better and if it is uses it. This can be very slow.
  */
-unsigned char *Ptngc_pack_array_xtc3(int *input, int *length, int natoms, int speed)
+unsigned char *Ptngc_pack_array_xtc3(int *input, int *length, const int natoms, int speed)
 {
   unsigned char *output=NULL;
   int i,ienc,j;
@@ -840,9 +846,8 @@ unsigned char *Ptngc_pack_array_xtc3(int *input, int *length, int natoms, int sp
   struct xtc3_context xtc3_context;
   init_xtc3_context(&xtc3_context);
 
-  xtc3_context.maxint[0]=xtc3_context.minint[0]=input[0];
-  xtc3_context.maxint[1]=xtc3_context.minint[1]=input[1];
-  xtc3_context.maxint[2]=xtc3_context.minint[2]=input[2];
+  memcpy(xtc3_context.maxint, input, 3*sizeof *xtc3_context.maxint);
+  memcpy(xtc3_context.minint, input, 3*sizeof *xtc3_context.maxint);
 
   /* Values of speed should be sane. */
   if (speed<1)
@@ -923,6 +928,7 @@ unsigned char *Ptngc_pack_array_xtc3(int *input, int *length, int natoms, int sp
 #endif
 
   /* Initial prevcoord is the minimum integers. */
+  memcpy(prevcoord, xtc3_context.minint, 3*sizeof *prevcoord);
   prevcoord[0]=xtc3_context.minint[0];
   prevcoord[1]=xtc3_context.minint[1];
   prevcoord[2]=xtc3_context.minint[2];
@@ -1663,7 +1669,7 @@ unsigned char *Ptngc_pack_array_xtc3(int *input, int *length, int natoms, int sp
 }
 
 static void decompress_bwlzh_block(unsigned char **ptr,
-                                   int nvals,
+                                   const int nvals,
                                    unsigned int **vals)
 {
   int bwlzh_buf_len=(int)(((unsigned int)(*ptr)[0]) |
@@ -1677,7 +1683,7 @@ static void decompress_bwlzh_block(unsigned char **ptr,
 }
 
 static void decompress_base_block(unsigned char **ptr,
-                                  int nvals,
+                                  const int nvals,
                                   unsigned int **vals)
 {
   int base_buf_len=(int)(((unsigned int)(*ptr)[0]) |
@@ -1694,8 +1700,8 @@ static void unpack_one_large(struct xtc3_context *xtc3_context,
                              int *ilargedir, int *ilargeintra,
                              int *ilargeinter, int *prevcoord,
                              int *minint, int *output,
-                             int outdata, int didswap,
-                             int natoms, int current_large_type)
+                             const int outdata, const int didswap,
+                             const int natoms, const int current_large_type)
 {
   int large_ints[3]={0,0,0};
   if (current_large_type==0 && xtc3_context->large_direct)
@@ -1722,9 +1728,7 @@ static void unpack_one_large(struct xtc3_context *xtc3_context,
         +output[outdata-natoms*3+2+didswap*3];
       (*ilargeinter)+=3;
     }
-  prevcoord[0]=large_ints[0];
-  prevcoord[1]=large_ints[1];
-  prevcoord[2]=large_ints[2];
+  memcpy(prevcoord, large_ints, 3*sizeof *prevcoord);
   output[outdata]=large_ints[0];
   output[outdata+1]=large_ints[1];
   output[outdata+2]=large_ints[2];
@@ -1734,7 +1738,7 @@ static void unpack_one_large(struct xtc3_context *xtc3_context,
 }
 
 
-int Ptngc_unpack_array_xtc3(unsigned char *packed,int *output, int length, int natoms)
+int Ptngc_unpack_array_xtc3(unsigned char *packed,int *output, const int length, const int natoms)
 {
   int i;
   int minint[3];
@@ -1833,9 +1837,7 @@ int Ptngc_unpack_array_xtc3(unsigned char *packed,int *output, int length, int n
     }
 
   /* Initial prevcoord is the minimum integers. */
-  prevcoord[0]=minint[0];
-  prevcoord[1]=minint[1];
-  prevcoord[2]=minint[2];
+  memcpy(prevcoord, minint, 3*sizeof *prevcoord);
 
   while (ntriplets_left>0 && iinstr<xtc3_context.ninstr)
     {

@@ -1,11 +1,11 @@
 #ifdef TNG_BUILD_OPENMP_EXAMPLES
 
+#include "tng/tng_io.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
 #include <omp.h>
-#include "tng/tng_io.h"
 
 int main ();
 void compute ( int np, int nd, float pos[], float vel[],

@@ -19,7 +19,7 @@
 /* Conversion routines from / to double precision */
 
 /* Positive double to 32 bit fixed point value */
-fix_t Ptngc_ud_to_fix_t(double d,double max)
+fix_t Ptngc_ud_to_fix_t(double d, const double max)
 {
   fix_t val;
   if (d<0.)
@@ -33,7 +33,7 @@ fix_t Ptngc_ud_to_fix_t(double d,double max)
 }
 
 /* double to signed 32 bit fixed point value */
-fix_t Ptngc_d_to_fix_t(double d,double max)
+fix_t Ptngc_d_to_fix_t(double d, const double max)
 {
   fix_t val;
   int sign=0;
@@ -54,13 +54,13 @@ fix_t Ptngc_d_to_fix_t(double d,double max)
 
 
 /* 32 bit fixed point value to positive double */
-double Ptngc_fix_t_to_ud(fix_t f, double max)
+double Ptngc_fix_t_to_ud(fix_t f, const double max)
 {
   return (double)f*(max/MAX32BIT);
 }
 
 /* signed 32 bit fixed point value to double */
-double Ptngc_fix_t_to_d(fix_t f, double max)
+double Ptngc_fix_t_to_d(fix_t f, const double max)
 {
   int sign=0;
   double d;
