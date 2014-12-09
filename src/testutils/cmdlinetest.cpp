@@ -50,6 +50,9 @@
 #include <sstream>
 #include <vector>
 
+#include <boost/scoped_ptr.hpp>
+
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/file.h"
@@ -257,6 +260,26 @@ class CommandLineTestHelper::Impl
 /********************************************************************
  * CommandLineTestHelper
  */
+
+// static
+int CommandLineTestHelper::runModule(
+        CommandLineModuleInterface *module, CommandLine *commandLine)
+{
+    CommandLineModuleSettings settings;
+    module->init(&settings);
+    return module->run(commandLine->argc(), commandLine->argv());
+}
+
+// static
+int CommandLineTestHelper::runModule(
+        CommandLineOptionsModuleInterface::FactoryMethod  factory,
+        CommandLine                                      *commandLine)
+{
+    // The name and description are not used in the tests, so they can be NULL.
+    boost::scoped_ptr<CommandLineModuleInterface> module(
+            CommandLineOptionsModuleInterface::createModule(NULL, NULL, factory));
+    return runModule(module.get(), commandLine);
+}
 
 CommandLineTestHelper::CommandLineTestHelper(TestFileManager *fileManager)
     : impl_(new Impl(fileManager))

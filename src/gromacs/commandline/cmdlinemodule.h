@@ -85,6 +85,7 @@ class CommandLineModuleSettings
  * Module that can be run from command line using CommandLineModuleManager.
  *
  * \see CommandLineModuleManager
+ * \see CommandLineOptionsModule
  *
  * \inpublicapi
  * \ingroup module_commandline
@@ -104,6 +105,8 @@ class CommandLineModuleInterface
          *
          * This will be called before run(), and can be used to adjust
          * initialization that the runner does.
+         *
+         * This method is currently not called when writing the help.
          */
         virtual void init(CommandLineModuleSettings *settings) = 0;
         /*! \brief
