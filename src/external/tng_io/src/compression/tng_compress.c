@@ -28,7 +28,7 @@
 
 #define MAX_FVAL 2147483647.
 
-static int verify_input_data(double *x, int natoms, int nframes, double precision)
+static int verify_input_data(double *x, const int natoms, const int nframes, const double precision)
 {
   int iframe, i, j;
   for (iframe=0; iframe<nframes; iframe++)
@@ -48,7 +48,7 @@ static int verify_input_data(double *x, int natoms, int nframes, double precisio
   return 1;
 }
 
-static int verify_input_data_float(float *x, int natoms, int nframes, float precision)
+static int verify_input_data_float(float *x, const int natoms, const int nframes, const float precision)
 {
   int iframe, i, j;
   for (iframe=0; iframe<nframes; iframe++)
@@ -68,9 +68,9 @@ static int verify_input_data_float(float *x, int natoms, int nframes, float prec
   return 1;
 }
 
-static int quantize(double *x, int natoms, int nframes,
-                     double precision,
-                     int *quant)
+static int quantize(double *x, const int natoms, const int nframes,
+                    const double precision,
+                    int *quant)
 {
   int iframe, i, j;
   for (iframe=0; iframe<nframes; iframe++)
@@ -80,9 +80,9 @@ static int quantize(double *x, int natoms, int nframes,
   return verify_input_data(x,natoms,nframes,precision);
 }
 
-static int quantize_float(float *x, int natoms, int nframes,
-                           float precision,
-                           int *quant)
+static int quantize_float(float *x, int natoms, const int nframes,
+                          const float precision,
+                          int *quant)
 {
   int iframe, i, j;
   for (iframe=0; iframe<nframes; iframe++)
@@ -92,7 +92,7 @@ static int quantize_float(float *x, int natoms, int nframes,
   return verify_input_data_float(x,natoms,nframes,precision);
 }
 
-static void quant_inter_differences(int *quant, int natoms, int nframes,
+static void quant_inter_differences(int *quant, const int natoms, const int nframes,
                                     int *quant_inter)
 {
   int iframe, i, j;
@@ -107,7 +107,7 @@ static void quant_inter_differences(int *quant, int natoms, int nframes,
         quant_inter[iframe*natoms*3+i*3+j]=quant[iframe*natoms*3+i*3+j]-quant[(iframe-1)*natoms*3+i*3+j];
 }
 
-static void quant_intra_differences(int *quant, int natoms, int nframes,
+static void quant_intra_differences(int *quant, const int natoms, const int nframes,
                                     int *quant_intra)
 {
   int iframe, i, j;
@@ -123,8 +123,8 @@ static void quant_intra_differences(int *quant, int natoms, int nframes,
     }
 }
 
-static void unquantize(double *x, int natoms, int nframes,
-                       double precision,
+static void unquantize(double *x, int natoms, const int nframes,
+                       const double precision,
                        int *quant)
 {
   int iframe, i, j;
@@ -134,8 +134,8 @@ static void unquantize(double *x, int natoms, int nframes,
         x[iframe*natoms*3+i*3+j]=(double)quant[iframe*natoms*3+i*3+j]*precision;
 }
 
-static void unquantize_float(float *x, int natoms, int nframes,
-                             float precision,
+static void unquantize_float(float *x, const int natoms, const int nframes,
+                             const float precision,
                              int *quant)
 {
   int iframe, i, j;
@@ -145,8 +145,8 @@ static void unquantize_float(float *x, int natoms, int nframes,
         x[iframe*natoms*3+i*3+j]=(float)quant[iframe*natoms*3+i*3+j]*precision;
 }
 
-static void unquantize_inter_differences(double *x, int natoms, int nframes,
-                                         double precision,
+static void unquantize_inter_differences(double *x, int natoms, const int nframes,
+                                         const double precision,
                                          int *quant)
 {
   int iframe, i, j;
@@ -163,8 +163,8 @@ static void unquantize_inter_differences(double *x, int natoms, int nframes,
       }
 }
 
-static void unquantize_inter_differences_float(float *x, int natoms, int nframes,
-                                               float precision,
+static void unquantize_inter_differences_float(float *x, const int natoms, const int nframes,
+                                               const float precision,
                                                int *quant)
 {
   int iframe, i, j;
@@ -181,7 +181,7 @@ static void unquantize_inter_differences_float(float *x, int natoms, int nframes
       }
 }
 
-static void unquantize_inter_differences_int(int *x, int natoms, int nframes,
+static void unquantize_inter_differences_int(int *x, const int natoms, const int nframes,
                                              int *quant)
 {
   int iframe, i, j;
@@ -200,7 +200,7 @@ static void unquantize_inter_differences_int(int *x, int natoms, int nframes,
 
 /* In frame update required for the initial frame if intra-frame
    compression was used. */
-static void unquant_intra_differences_first_frame(int *quant, int natoms)
+static void unquant_intra_differences_first_frame(int *quant, const int natoms)
 {
   int i,j;
   for (j=0; j<3; j++)
@@ -221,8 +221,8 @@ static void unquant_intra_differences_first_frame(int *quant, int natoms)
 #endif
 }
 
-static void unquantize_intra_differences(double *x, int natoms, int nframes,
-                                         double precision,
+static void unquantize_intra_differences(double *x, const int natoms, const int nframes,
+                                         const double precision,
                                          int *quant)
 {
   int iframe, i, j;
@@ -242,8 +242,8 @@ static void unquantize_intra_differences(double *x, int natoms, int nframes,
       }
 }
 
-static void unquantize_intra_differences_float(float *x, int natoms, int nframes,
-                                               float precision,
+static void unquantize_intra_differences_float(float *x, const int natoms, const int nframes,
+                                               const float precision,
                                                int *quant)
 {
   int iframe, i, j;
@@ -260,7 +260,7 @@ static void unquantize_intra_differences_float(float *x, int natoms, int nframes
       }
 }
 
-static void unquantize_intra_differences_int(int *x, int natoms, int nframes,
+static void unquantize_intra_differences_int(int *x, const int natoms, const int nframes,
                                              int *quant)
 {
   int iframe, i, j;
@@ -308,11 +308,11 @@ static fix_t readbufferfix(unsigned char *buf, int num)
 
 /* Perform position compression from the quantized data. */
 static void compress_quantized_pos(int *quant, int *quant_inter, int *quant_intra,
-                                   int natoms, int nframes,
-                                   int speed,
-                                   int initial_coding, int initial_coding_parameter,
-                                   int coding, int coding_parameter,
-                                   fix_t prec_hi, fix_t prec_lo,
+                                   const int natoms, const int nframes,
+                                   const int speed,
+                                   const int initial_coding, const int initial_coding_parameter,
+                                   const int coding, const int coding_parameter,
+                                   const fix_t prec_hi, const fix_t prec_lo,
                                    int *nitems,
                                    char *data)
 {
@@ -436,11 +436,11 @@ static void compress_quantized_pos(int *quant, int *quant_inter, int *quant_intr
 
 /* Perform velocity compression from vel into the data block */
 static void compress_quantized_vel(int *quant, int *quant_inter,
-                                   int natoms, int nframes,
-                                   int speed,
-                                   int initial_coding, int initial_coding_parameter,
-                                   int coding, int coding_parameter,
-                                   fix_t prec_hi, fix_t prec_lo,
+                                   const int natoms, const int nframes,
+                                   const int speed,
+                                   const int initial_coding, const int initial_coding_parameter,
+                                   const int coding, const int coding_parameter,
+                                   const fix_t prec_hi, const fix_t prec_lo,
                                    int *nitems,
                                    char *data)
 {
@@ -544,7 +544,7 @@ static void compress_quantized_vel(int *quant, int *quant_inter,
 }
 
 static int determine_best_coding_stop_bits(struct coder *coder,int *input, int *length,
-                                           int *coding_parameter, int natoms)
+                                           int *coding_parameter, const int natoms)
 {
   int bits;
   unsigned char *packed;
@@ -575,7 +575,7 @@ static int determine_best_coding_stop_bits(struct coder *coder,int *input, int *
 }
 
 static int determine_best_coding_triple(struct coder *coder,int *input, int *length,
-                                        int *coding_parameter, int natoms)
+                                        int *coding_parameter, const int natoms)
 {
   int bits;
   unsigned char *packed;
@@ -605,8 +605,8 @@ static int determine_best_coding_triple(struct coder *coder,int *input, int *len
   return 0;
 }
 
-static void determine_best_pos_initial_coding(int *quant, int *quant_intra, int natoms, int speed,
-                                              fix_t prec_hi, fix_t prec_lo,
+static void determine_best_pos_initial_coding(int *quant, int *quant_intra, const int natoms, const int speed,
+                                              const fix_t prec_hi, const fix_t prec_lo,
                                               int *initial_coding, int *initial_coding_parameter)
 {
   if (*initial_coding==-1)
@@ -718,8 +718,8 @@ static void determine_best_pos_initial_coding(int *quant, int *quant_intra, int 
     }
 }
 
-static void determine_best_pos_coding(int *quant, int *quant_inter, int *quant_intra, int natoms, int nframes, int speed,
-                                      fix_t prec_hi, fix_t prec_lo,
+static void determine_best_pos_coding(int *quant, int *quant_inter, int *quant_intra, const int natoms, const int nframes, const int speed,
+                                      const fix_t prec_hi, const fix_t prec_lo,
                                       int *coding, int *coding_parameter)
 {
   if (*coding==-1)
@@ -896,8 +896,8 @@ static void determine_best_pos_coding(int *quant, int *quant_inter, int *quant_i
     }
 }
 
-static void determine_best_vel_initial_coding(int *quant, int natoms, int speed,
-                                              fix_t prec_hi, fix_t prec_lo,
+static void determine_best_vel_initial_coding(int *quant, const int natoms, const int speed,
+                                              const fix_t prec_hi, const fix_t prec_lo,
                                               int *initial_coding, int *initial_coding_parameter)
 {
   if (*initial_coding==-1)
@@ -979,8 +979,8 @@ static void determine_best_vel_initial_coding(int *quant, int natoms, int speed,
     }
 }
 
-static void determine_best_vel_coding(int *quant, int *quant_inter, int natoms, int nframes, int speed,
-                                      fix_t prec_hi, fix_t prec_lo,
+static void determine_best_vel_coding(int *quant, int *quant_inter, const int natoms, const int nframes, const int speed,
+                                      const fix_t prec_hi, const fix_t prec_lo,
                                       int *coding, int *coding_parameter)
 {
   if (*coding==-1)
@@ -1137,8 +1137,8 @@ static void determine_best_vel_coding(int *quant, int *quant_inter, int natoms, 
     }
 }
 
-char DECLSPECDLLEXPORT *tng_compress_pos_int(int *pos, int natoms, int nframes,
-                                             unsigned long prec_hi, unsigned long prec_lo,
+char DECLSPECDLLEXPORT *tng_compress_pos_int(int *pos, const int natoms, const int nframes,
+                                             const unsigned long prec_hi, const unsigned long prec_lo,
                                              int speed,int *algo,
                                              int *nitems)
 {
@@ -1217,9 +1217,9 @@ char DECLSPECDLLEXPORT *tng_compress_pos_int(int *pos, int natoms, int nframes,
   return data;
 }
 
-char DECLSPECDLLEXPORT *tng_compress_pos(double *pos, int natoms, int nframes,
-                                         double desired_precision,
-                                         int speed,int *algo,
+char DECLSPECDLLEXPORT *tng_compress_pos(double *pos, const int natoms, const int nframes,
+                                         const double desired_precision,
+                                         const int speed,int *algo,
                                          int *nitems)
 {
   int *quant=malloc(natoms*nframes*3*sizeof *quant);
@@ -1235,9 +1235,9 @@ char DECLSPECDLLEXPORT *tng_compress_pos(double *pos, int natoms, int nframes,
   return data;
 }
 
-char DECLSPECDLLEXPORT *tng_compress_pos_float(float *pos, int natoms, int nframes,
-                                               float desired_precision,
-                                               int speed,int *algo,
+char DECLSPECDLLEXPORT *tng_compress_pos_float(float *pos, const int natoms, const int nframes,
+                                               const float desired_precision,
+                                               const int speed, int *algo,
                                                int *nitems)
 {
   int *quant=malloc(natoms*nframes*3*sizeof *quant);
@@ -1253,9 +1253,9 @@ char DECLSPECDLLEXPORT *tng_compress_pos_float(float *pos, int natoms, int nfram
   return data;
 }
 
-char DECLSPECDLLEXPORT *tng_compress_pos_find_algo(double *pos, int natoms, int nframes,
-                                                   double desired_precision,
-                                                   int speed,
+char DECLSPECDLLEXPORT *tng_compress_pos_find_algo(double *pos, const int natoms, const int nframes,
+                                                   const double desired_precision,
+                                                   const int speed,
                                                    int *algo,
                                                    int *nitems)
 {
@@ -1266,9 +1266,9 @@ char DECLSPECDLLEXPORT *tng_compress_pos_find_algo(double *pos, int natoms, int 
   return tng_compress_pos(pos,natoms,nframes,desired_precision,speed,algo,nitems);
 }
 
-char DECLSPECDLLEXPORT *tng_compress_pos_float_find_algo(float *pos, int natoms, int nframes,
-                                                         float desired_precision,
-                                                         int speed,
+char DECLSPECDLLEXPORT *tng_compress_pos_float_find_algo(float *pos, const int natoms, const int nframes,
+                                                         const float desired_precision,
+                                                         const int speed,
                                                          int *algo,
                                                          int *nitems)
 {
@@ -1279,9 +1279,9 @@ char DECLSPECDLLEXPORT *tng_compress_pos_float_find_algo(float *pos, int natoms,
   return tng_compress_pos_float(pos,natoms,nframes,desired_precision,speed,algo,nitems);
 }
 
-char DECLSPECDLLEXPORT *tng_compress_pos_int_find_algo(int *pos, int natoms, int nframes,
-                                                       unsigned long prec_hi, unsigned long prec_lo,
-                                                       int speed,int *algo,
+char DECLSPECDLLEXPORT *tng_compress_pos_int_find_algo(int *pos, const int natoms, const int nframes,
+                                                       const unsigned long prec_hi, const unsigned long prec_lo,
+                                                       const int speed, int *algo,
                                                        int *nitems)
 {
   algo[0]=-1;
@@ -1303,8 +1303,8 @@ int DECLSPECDLLEXPORT tng_compress_nalgo(void)
  4) One parameter to the algorithm for the remaining frames (the coding parameter). */
 }
 
-char DECLSPECDLLEXPORT *tng_compress_vel_int(int *vel, int natoms, int nframes,
-                                             unsigned long prec_hi, unsigned long prec_lo,
+char DECLSPECDLLEXPORT *tng_compress_vel_int(int *vel, const int natoms, const int nframes,
+                                             const unsigned long prec_hi, const unsigned long prec_lo,
                                              int speed, int *algo,
                                              int *nitems)
 {
@@ -1380,9 +1380,9 @@ char DECLSPECDLLEXPORT *tng_compress_vel_int(int *vel, int natoms, int nframes,
   return data;
 }
 
-char DECLSPECDLLEXPORT *tng_compress_vel(double *vel, int natoms, int nframes,
-                                         double desired_precision,
-                                         int speed, int *algo,
+char DECLSPECDLLEXPORT *tng_compress_vel(double *vel, const int natoms, const int nframes,
+                                         const double desired_precision,
+                                         const int speed, int *algo,
                                          int *nitems)
 {
   int *quant=malloc(natoms*nframes*3*sizeof *quant);
@@ -1397,9 +1397,9 @@ char DECLSPECDLLEXPORT *tng_compress_vel(double *vel, int natoms, int nframes,
   return data;
 }
 
-char DECLSPECDLLEXPORT *tng_compress_vel_float(float *vel, int natoms, int nframes,
-                                               float desired_precision,
-                                               int speed, int *algo,
+char DECLSPECDLLEXPORT *tng_compress_vel_float(float *vel, const int natoms, const int nframes,
+                                               const float desired_precision,
+                                               const int speed, int *algo,
                                                int *nitems)
 {
   int *quant=malloc(natoms*nframes*3*sizeof *quant);
@@ -1414,9 +1414,9 @@ char DECLSPECDLLEXPORT *tng_compress_vel_float(float *vel, int natoms, int nfram
   return data;
 }
 
-char DECLSPECDLLEXPORT *tng_compress_vel_find_algo(double *vel, int natoms, int nframes,
-                                                   double desired_precision,
-                                                   int speed,
+char DECLSPECDLLEXPORT *tng_compress_vel_find_algo(double *vel, const int natoms, const int nframes,
+                                                   const double desired_precision,
+                                                   const int speed,
                                                    int *algo,
                                                    int *nitems)
 {
@@ -1427,9 +1427,9 @@ char DECLSPECDLLEXPORT *tng_compress_vel_find_algo(double *vel, int natoms, int 
   return tng_compress_vel(vel,natoms,nframes,desired_precision,speed,algo,nitems);
 }
 
-char DECLSPECDLLEXPORT *tng_compress_vel_float_find_algo(float *vel, int natoms, int nframes,
-                                                         float desired_precision,
-                                                         int speed,
+char DECLSPECDLLEXPORT *tng_compress_vel_float_find_algo(float *vel, const int natoms, const int nframes,
+                                                         const float desired_precision,
+                                                         const int speed,
                                                          int *algo,
                                                          int *nitems)
 {
@@ -1440,9 +1440,9 @@ char DECLSPECDLLEXPORT *tng_compress_vel_float_find_algo(float *vel, int natoms,
   return tng_compress_vel_float(vel,natoms,nframes,desired_precision,speed,algo,nitems);
 }
 
-char DECLSPECDLLEXPORT *tng_compress_vel_int_find_algo(int *vel, int natoms, int nframes,
-                                                       unsigned long prec_hi, unsigned long prec_lo,
-                                                       int speed,
+char DECLSPECDLLEXPORT *tng_compress_vel_int_find_algo(int *vel, const int natoms, const int nframes,
+                                                       const unsigned long prec_hi, const unsigned long prec_lo,
+                                                       const int speed,
                                                        int *algo,
                                                        int *nitems)
 {
@@ -1811,15 +1811,15 @@ int DECLSPECDLLEXPORT tng_compress_uncompress_int(char *data,int *posvel, unsign
     return 1;
 }
 
-void DECLSPECDLLEXPORT tng_compress_int_to_double(int *posvel_int,unsigned long prec_hi, unsigned long prec_lo,
-                                                  int natoms,int nframes,
+void DECLSPECDLLEXPORT tng_compress_int_to_double(int *posvel_int, const unsigned long prec_hi, const unsigned long prec_lo,
+                                                  const int natoms, const int nframes,
                                                   double *posvel_double)
 {
   unquantize(posvel_double,natoms,nframes,PRECISION(prec_hi,prec_lo),posvel_int);
 }
 
-void DECLSPECDLLEXPORT tng_compress_int_to_float(int *posvel_int,unsigned long prec_hi, unsigned long prec_lo,
-                                                 int natoms,int nframes,
+void DECLSPECDLLEXPORT tng_compress_int_to_float(int *posvel_int, const unsigned long prec_hi, const unsigned long prec_lo,
+                                                 const int natoms, const int nframes,
                                                  float *posvel_float)
 {
   unquantize_float(posvel_float,natoms,nframes,(float)PRECISION(prec_hi,prec_lo),posvel_int);

@@ -70,7 +70,7 @@ static void assign_codes(union htree_nodeleaf *htree,
                          struct codelength *codelength,
                          unsigned int code,
                          int length,
-                         int top)
+                         const int top)
 {
 #if 0
   printf("Assign codes called with code %d length %d\n",code,length);
@@ -131,7 +131,7 @@ static void flush_8bits(unsigned int *combine, unsigned char **output, int *bitp
     }
 }
 
-static void writebits(unsigned int value,int length, unsigned char **output, int *bitptr)
+static void writebits(unsigned int value, int length, unsigned char **output, int *bitptr)
 {
   unsigned int mask;
   unsigned int combine=(unsigned int)**output;
@@ -216,8 +216,8 @@ static int comp_codes_value(const void *codeptr1, const void *codeptr2, const vo
 /* The huffman_dict array should be 131077 (0x20005) long. The
 huffman_dict_unpacked array should be 131077 long (note five longer than
 0x20000) */
-void Ptngc_comp_conv_to_huffman(unsigned int *vals, int nvals,
-                          unsigned int *dict, int ndict,
+void Ptngc_comp_conv_to_huffman(unsigned int *vals, const int nvals,
+                          unsigned int *dict, const int ndict,
                           unsigned int *prob,
                           unsigned char *huffman,
                           int *huffman_len,
@@ -463,12 +463,12 @@ void Ptngc_comp_conv_to_huffman(unsigned int *vals, int nvals,
 }
 
 void Ptngc_comp_conv_from_huffman(unsigned char *huffman,
-                            unsigned int *vals, int nvals,
-                            int ndict,
+                            unsigned int *vals, const int nvals,
+                            const int ndict,
                             unsigned char *huffman_dict,
-                            int huffman_dictlen,
+                            const int huffman_dictlen,
                             unsigned int *huffman_dict_unpacked,
-                            int huffman_dict_unpackedlen)
+                            const int huffman_dict_unpackedlen)
 {
   struct codelength *codelength=warnmalloc(ndict*sizeof *codelength);
   int i,j;

@@ -12,14 +12,14 @@
 #ifndef LZ77_H
 #define LZ77_H
 
-void Ptngc_comp_to_lz77(unsigned int *vals, int nvals,
+void Ptngc_comp_to_lz77(unsigned int *vals, const int nvals,
 		  unsigned int *data, int *ndata,
 		  unsigned int *len, int *nlens,
 		  unsigned int *offsets, int *noffsets);
 
-void Ptngc_comp_from_lz77(unsigned int *data, int ndata,
-		    unsigned int *len, int nlens,
-		    unsigned int *offsets, int noffsets,
-		    unsigned int *vals, int nvals);
+void Ptngc_comp_from_lz77(unsigned int *data, const int ndata,
+		    unsigned int *len, const int nlens,
+		    unsigned int *offsets, const int noffsets,
+		    unsigned int *vals, const int nvals);
 
 #endif
