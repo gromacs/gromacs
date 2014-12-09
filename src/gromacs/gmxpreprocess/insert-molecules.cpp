@@ -39,15 +39,19 @@
 #include "insert-molecules.h"
 
 #include <algorithm>
+#include <string>
 
-#include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/gmxpreprocess/read-conformation.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/options.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
@@ -59,7 +63,7 @@
 
 /* enum for random rotations of inserted solutes */
 enum {
-    en_rot, en_rotXYZ, en_rotZ, en_rotNone, en_NR
+    en_rotXYZ, en_rotZ, en_rotNone
 };
 
 static void center_molecule(int atomCount, rvec x[])
@@ -161,7 +165,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                         t_atoms *atoms, rvec **x,
                         const t_atoms *atoms_insrt, const rvec *x_insrt,
                         int ePBC, matrix box,
-                        const char* posfn, const rvec deltaR, int enum_rot)
+                        const std::string &posfn, const rvec deltaR, int enum_rot)
 {
     t_pbc            pbc;
     rvec            *x_n;
@@ -197,15 +201,17 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
 
     /* With -ip, take nmol_insrt from file posfn */
     double         **rpos = NULL;
-    if (posfn != NULL)
+    if (!posfn.empty())
     {
         int ncol;
-        nmol_insrt = read_xvg(posfn, &rpos, &ncol);
+        nmol_insrt = read_xvg(posfn.c_str(), &rpos, &ncol);
         if (ncol != 3)
         {
-            gmx_fatal(FARGS, "Expected 3 columns (x/y/z coordinates) in file %s\n", ncol, posfn);
+            gmx_fatal(FARGS, "Expected 3 columns (x/y/z coordinates) in file %s\n",
+                      posfn.c_str());
         }
-        fprintf(stderr, "Read %d positions from file %s\n\n", nmol_insrt, posfn);
+        fprintf(stderr, "Read %d positions from file %s\n\n",
+                nmol_insrt, posfn.c_str());
     }
 
     {
@@ -225,7 +231,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt))
     {
         rvec offset_x;
-        if (posfn == NULL)
+        if (posfn.empty())
         {
             // Insert at random positions.
             offset_x[XX] = box[XX][XX] * gmx_rng_uniform_real(rng);
@@ -291,9 +297,51 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     }
 }
 
-int gmx_insert_molecules(int argc, char *argv[])
+namespace gmx
 {
-    const char *desc[] = {
+
+namespace
+{
+
+class InsertMolecules : public CommandLineOptionsModuleInterface
+{
+    public:
+        InsertMolecules()
+            : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(1997),
+              defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ)
+        {
+            clear_rvec(newBox_);
+            clear_rvec(deltaR_);
+        }
+
+        virtual void init(CommandLineModuleSettings * /*settings*/)
+        {
+        }
+
+        virtual void initOptions(Options *options);
+        virtual void optionsFinished(Options *options);
+
+        virtual int run();
+
+    private:
+        std::string inputConfFile_;
+        std::string insertConfFile_;
+        std::string positionFile_;
+        std::string outputConfFile_;
+        rvec        newBox_;
+        bool        bBox_;
+        int         nmolIns_;
+        int         nmolTry_;
+        int         seed_;
+        real        defaultDistance_;
+        real        scaleFactor_;
+        rvec        deltaR_;
+        int         enumRot_;
+};
+
+void InsertMolecules::initOptions(Options *options)
+{
+    const char *const desc[] = {
         "[THISMODULE] inserts [TT]-nmol[tt] copies of the system specified in",
         "the [TT]-ci[tt] input file. The insertions take place either into",
         "vacant space in the solute conformation given with [TT]-f[tt], or",
@@ -325,112 +373,128 @@ int gmx_insert_molecules(int argc, char *argv[])
         "[THISMODULE] (e.g. from [gmx-editconf] [TT]-center[tt]).",
         "Comments in that file starting with # are ignored. Option [TT]-dr[tt]",
         "defines the maximally allowed displacements during insertial trials.",
-        "[TT]-try[tt] and [TT]-rot[tt] work as in the default mode (see above).",
-        "[PAR]",
+        "[TT]-try[tt] and [TT]-rot[tt] work as in the default mode (see above)."
     };
 
-    /* protein configuration data */
-    char          *title = NULL;
-    t_atoms       *atoms, *atoms_insrt;
-    rvec          *x    = NULL, *x_insrt = NULL;
-    int            ePBC = -1;
-    matrix         box;
+    options->setDescription(desc);
 
-    t_filenm       fnm[] = {
-        { efSTX, "-f", "protein", ffOPTRD },
-        { efSTX, "-ci", "insert",  ffREAD},
-        { efDAT, "-ip", "positions",  ffOPTRD},
-        { efSTO, NULL,  NULL,      ffWRITE},
-    };
-#define NFILE asize(fnm)
+    // TODO: Replace use of legacyType.
+    options->addOption(FileNameOption("f")
+                           .legacyType(efSTX).inputFile()
+                           .store(&inputConfFile_)
+                           .defaultBasename("protein")
+                           .description("Existing configuration to insert into"));
+    options->addOption(FileNameOption("ci")
+                           .legacyType(efSTX).inputFile().required()
+                           .store(&insertConfFile_)
+                           .defaultBasename("insert")
+                           .description("Configuration to insert"));
+    options->addOption(FileNameOption("ip")
+                           .filetype(eftGenericData).inputFile()
+                           .store(&positionFile_)
+                           .defaultBasename("positions")
+                           .description("Predefined insertion trial positions"));
+    options->addOption(FileNameOption("o")
+                           .legacyType(efSTO).outputFile().required()
+                           .store(&outputConfFile_)
+                           .defaultBasename("out")
+                           .description("Output configuration after insertion"));
 
-    static int      nmol_ins               = 0, nmol_try = 10, seed = 1997;
-    static real     defaultDistance        = 0.105, scaleFactor = 0.57;
-    static rvec     new_box                = {0.0, 0.0, 0.0}, deltaR = {0.0, 0.0, 0.0};
-    output_env_t    oenv;
-    const char     *enum_rot_string[] = {NULL, "xyz", "z", "none", NULL};
-    t_pargs         pa[]              = {
-        { "-box",    FALSE, etRVEC, {new_box},
-          "Box size (in nm)" },
-        { "-nmol",   FALSE, etINT, {&nmol_ins},
-          "Number of extra molecules to insert" },
-        { "-try",    FALSE, etINT, {&nmol_try},
-          "Try inserting [TT]-nmol[tt] times [TT]-try[tt] times" },
-        { "-seed",   FALSE, etINT, {&seed},
-          "Random generator seed"},
-        { "-radius",   FALSE, etREAL, {&defaultDistance},
-          "Default van der Waals distance"},
-        { "-scale", FALSE, etREAL, {&scaleFactor},
-          "Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water." },
-        { "-dr",    FALSE, etRVEC, {deltaR},
-          "Allowed displacement in x/y/z from positions in [TT]-ip[tt] file" },
-        { "-rot", FALSE,  etENUM, {enum_rot_string},
-          "rotate inserted molecules randomly" }
-    };
+    options->addOption(RealOption("box").vector()
+                           .store(newBox_)
+                           .description("Box size (in nm)"));
+    options->addOption(IntegerOption("nmol")
+                           .store(&nmolIns_)
+                           .description("Number of extra molecules to insert"));
+    options->addOption(IntegerOption("try")
+                           .store(&nmolTry_)
+                           .description("Try inserting [TT]-nmol[tt] times [TT]-try[tt] times"));
+    options->addOption(IntegerOption("seed")
+                           .store(&seed_)
+                           .description("Random generator seed"));
+    options->addOption(RealOption("radius")
+                           .store(&defaultDistance_)
+                           .description("Default van der Waals distance"));
+    options->addOption(RealOption("scale")
+                           .store(&scaleFactor_)
+                           .description("Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water."));
+    options->addOption(RealOption("dr").vector()
+                           .store(deltaR_)
+                           .description("Allowed displacement in x/y/z from positions in [TT]-ip[tt] file"));
+    const char *const cRotationEnum[] = {"xyz", "z", "none"};
+    options->addOption(StringOption("rot").enumValue(cRotationEnum)
+                           .storeEnumIndex(&enumRot_)
+                           .description("Rotate inserted molecules randomly"));
+}
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
-    {
-        return 0;
-    }
+void InsertMolecules::optionsFinished(Options *options)
+{
+    bBox_ = options->isSet("box");
+}
 
-    const bool        bProt    = opt2bSet("-f", NFILE, fnm);
-    const bool        bBox     = opt2parg_bSet("-box", asize(pa), pa);
-    const char *const posfn    = opt2fn_null("-ip", NFILE, fnm);
-    const int         enum_rot = nenum(enum_rot_string);
+int InsertMolecules::run()
+{
+    const bool bProt = !inputConfFile_.empty();
 
     /* check input */
-    if (nmol_ins <= 0 && !opt2bSet("-ip", NFILE, fnm))
+    if (nmolIns_ <= 0 && positionFile_.empty())
     {
         gmx_fatal(FARGS, "Either -nmol must be larger than 0, "
                   "or positions must be given with -ip");
     }
-    if (!bProt && !bBox)
+    if (!bProt && !bBox_)
     {
         gmx_fatal(FARGS, "When no solute (-f) is specified, "
                   "a box size (-box) must be specified");
     }
 
+    char    *title = NULL;
+    t_atoms *atoms;
+    rvec    *x = NULL;
+    matrix   box;
+    int      ePBC = -1;
     snew(atoms, 1);
     init_t_atoms(atoms, 0, FALSE);
     if (bProt)
     {
         /* Generate a solute configuration */
-        const char *conf_prot = opt2fn("-f", NFILE, fnm);
-        title                 = readConformation(conf_prot, atoms, &x, NULL,
-                                                 &ePBC, box, "solute");
+        title = readConformation(inputConfFile_.c_str(), atoms, &x, NULL,
+                                 &ePBC, box, "solute");
         if (atoms->nr == 0)
         {
-            fprintf(stderr, "Note: no atoms in %s\n", conf_prot);
+            fprintf(stderr, "Note: no atoms in %s\n", inputConfFile_.c_str());
             sfree(title);
             title = NULL;
         }
     }
-    if (bBox)
+    if (bBox_)
     {
         ePBC = epbcXYZ;
         clear_mat(box);
-        box[XX][XX] = new_box[XX];
-        box[YY][YY] = new_box[YY];
-        box[ZZ][ZZ] = new_box[ZZ];
+        box[XX][XX] = newBox_[XX];
+        box[YY][YY] = newBox_[YY];
+        box[ZZ][ZZ] = newBox_[ZZ];
     }
     if (det(box) == 0)
     {
         gmx_fatal(FARGS, "Undefined solute box.\nCreate one with gmx editconf "
                   "or give explicit -box command line option");
     }
+
+    t_atoms *atoms_insrt;
+    rvec    *x_insrt = NULL;
     snew(atoms_insrt, 1);
     init_t_atoms(atoms_insrt, 0, FALSE);
     {
         int         ePBC_dummy;
         matrix      box_dummy;
-        const char *conf_insrt = opt2fn("-ci", NFILE, fnm);
         char       *title_ins
-            = readConformation(conf_insrt, atoms_insrt, &x_insrt, NULL,
-                               &ePBC_dummy, box_dummy, "molecule");
+            = readConformation(insertConfFile_.c_str(), atoms_insrt, &x_insrt,
+                               NULL, &ePBC_dummy, box_dummy, "molecule");
         if (atoms_insrt->nr == 0)
         {
-            gmx_fatal(FARGS, "No molecule in %s, please check your input", conf_insrt);
+            gmx_fatal(FARGS, "No molecule in %s, please check your input",
+                      insertConfFile_.c_str());
         }
         if (title == NULL)
         {
@@ -440,7 +504,7 @@ int gmx_insert_molecules(int argc, char *argv[])
         {
             sfree(title_ins);
         }
-        if (posfn == NULL)
+        if (positionFile_.empty())
         {
             center_molecule(atoms_insrt->nr, x_insrt);
         }
@@ -448,14 +512,14 @@ int gmx_insert_molecules(int argc, char *argv[])
 
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
-    insert_mols(nmol_ins, nmol_try, seed, defaultDistance, scaleFactor,
+    insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
                 atoms, &x, atoms_insrt, x_insrt,
-                ePBC, box, posfn, deltaR, enum_rot);
+                ePBC, box, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
-    const char *confout = ftp2fn(efSTO, NFILE, fnm);
-    fprintf(stderr, "Writing generated configuration to %s\n", confout);
-    write_sto_conf(confout, title, atoms, x, NULL, ePBC, box);
+    fprintf(stderr, "Writing generated configuration to %s\n",
+            outputConfFile_.c_str());
+    write_sto_conf(outputConfFile_.c_str(), title, atoms, x, NULL, ePBC, box);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
@@ -468,8 +532,18 @@ int gmx_insert_molecules(int argc, char *argv[])
     sfree(atoms);
     sfree(atoms_insrt);
     sfree(title);
-    output_env_done(oenv);
-    done_filenms(NFILE, fnm);
 
     return 0;
 }
+
+}   // namespace
+
+const char InsertMoleculesInfo::name[]             = "insert-molecules";
+const char InsertMoleculesInfo::shortDescription[] =
+    "Insert molecules into existing vacancies";
+CommandLineOptionsModuleInterface *InsertMoleculesInfo::create()
+{
+    return new InsertMolecules();
+}
+
+} // namespace gmx
