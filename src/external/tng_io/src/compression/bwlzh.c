@@ -40,13 +40,13 @@
 #define PARTIAL_MTF
 #endif
 
-int bwlzh_get_buflen(int nvals)
+int bwlzh_get_buflen(const int nvals)
 {
   return 132000+nvals*8+12*((nvals+MAX_VALS_PER_BLOCK)/MAX_VALS_PER_BLOCK);
 }
 
 #ifdef SHOWIT
-static void printvals(char *name, unsigned int *vals, int nvals)
+static void printvals(const char *name, unsigned int *vals, const int nvals)
 {
   int i;
   int nvalsmax=nvals;
@@ -69,10 +69,10 @@ static void printvals(char *name, unsigned int *vals, int nvals)
 #endif
 
 
-static void bwlzh_compress_gen(unsigned int *vals, int nvals,
+static void bwlzh_compress_gen(unsigned int *vals, const int nvals,
                                unsigned char *output, int *output_len,
-                               int enable_lz77,
-                               int verbose)
+                               const int enable_lz77,
+                               const int verbose)
 {
   unsigned int *vals16;
   int nvals16;
@@ -460,35 +460,35 @@ static void bwlzh_compress_gen(unsigned int *vals, int nvals,
 }
 
 
-void DECLSPECDLLEXPORT bwlzh_compress(unsigned int *vals, int nvals,
+void DECLSPECDLLEXPORT bwlzh_compress(unsigned int *vals, const int nvals,
                   unsigned char *output, int *output_len)
 {
   bwlzh_compress_gen(vals,nvals,output,output_len,1,0);
 }
 
-void DECLSPECDLLEXPORT bwlzh_compress_verbose(unsigned int *vals, int nvals,
+void DECLSPECDLLEXPORT bwlzh_compress_verbose(unsigned int *vals, const int nvals,
                           unsigned char *output, int *output_len)
 {
   bwlzh_compress_gen(vals,nvals,output,output_len,1,1);
 }
 
 
-void DECLSPECDLLEXPORT bwlzh_compress_no_lz77(unsigned int *vals, int nvals,
+void DECLSPECDLLEXPORT bwlzh_compress_no_lz77(unsigned int *vals, const int nvals,
                   unsigned char *output, int *output_len)
 {
   bwlzh_compress_gen(vals,nvals,output,output_len,0,0);
 }
 
-void DECLSPECDLLEXPORT bwlzh_compress_no_lz77_verbose(unsigned int *vals, int nvals,
+void DECLSPECDLLEXPORT bwlzh_compress_no_lz77_verbose(unsigned int *vals, const int nvals,
                           unsigned char *output, int *output_len)
 {
   bwlzh_compress_gen(vals,nvals,output,output_len,0,1);
 }
 
 
-static void bwlzh_decompress_gen(unsigned char *input, int nvals,
+static void bwlzh_decompress_gen(unsigned char *input, const int nvals,
                                unsigned int *vals,
-                               int verbose)
+                               const int verbose)
 {
   unsigned int *vals16;
   int nvals16;
@@ -785,13 +785,13 @@ static void bwlzh_decompress_gen(unsigned char *input, int nvals,
 }
 
 
-void DECLSPECDLLEXPORT bwlzh_decompress(unsigned char *input, int nvals,
+void DECLSPECDLLEXPORT bwlzh_decompress(unsigned char *input, const int nvals,
                     unsigned int *vals)
 {
   bwlzh_decompress_gen(input,nvals,vals,0);
 }
 
-void DECLSPECDLLEXPORT bwlzh_decompress_verbose(unsigned char *input, int nvals,
+void DECLSPECDLLEXPORT bwlzh_decompress_verbose(unsigned char *input, const int nvals,
                             unsigned int *vals)
 {
   bwlzh_decompress_gen(input,nvals,vals,1);

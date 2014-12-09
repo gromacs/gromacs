@@ -14,7 +14,7 @@
 #include "../../include/compression/tng_compress.h"
 #include "../../include/compression/warnmalloc.h"
 
-void DECLSPECDLLEXPORT *Ptngc_warnmalloc_x(size_t size, char *file, int line)
+void DECLSPECDLLEXPORT *Ptngc_warnmalloc_x(const size_t size, char *file, const int line)
 {
   void *mem=malloc(size);
   if (!mem)
@@ -25,7 +25,7 @@ void DECLSPECDLLEXPORT *Ptngc_warnmalloc_x(size_t size, char *file, int line)
   return mem;
 }
 
-void DECLSPECDLLEXPORT *Ptngc_warnrealloc_x(void *old, size_t size, char *file, int line)
+void DECLSPECDLLEXPORT *Ptngc_warnrealloc_x(void *old, const size_t size, char *file, const int line)
 {
   void *mem=realloc(old,size);
   if (!mem)

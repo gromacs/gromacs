@@ -11,9 +11,10 @@
  * modify it under the terms of the Revised BSD License.
  */
 
+#include "tng/tng_io.h"
+
 #include <stdlib.h>
 #include <stdio.h>
-#include "tng/tng_io.h"
 
 
 /* N.B. this code is for testing parallel reading of trajectory frame sets. The

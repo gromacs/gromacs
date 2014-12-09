@@ -31,9 +31,7 @@ typedef struct tng_gen_block *tng_gen_block_t;
 typedef struct tng_particle_mapping *tng_particle_mapping_t;
 /** A pointer to a structure containing frame set information. */
 typedef struct tng_trajectory_frame_set *tng_trajectory_frame_set_t;
-/** A pointer to a particle data container. */
-typedef struct tng_particle_data *tng_particle_data_t;
-/** A pointer to a non-particle data container. */
-typedef struct tng_non_particle_data *tng_non_particle_data_t;
+/** A pointer to a data container. */
+typedef struct tng_data *tng_data_t;
 
 #endif

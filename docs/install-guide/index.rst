@@ -289,7 +289,7 @@ Optional build components
   Motif/Lesstif libraries and header files. You may prefer to use
   third-party software for visualization, such as VMD_ or PyMol_.
 * An external TNG library for trajectory-file handling can be used,
-  but TNG 1.6 is bundled in the |Gromacs| source already
+  but TNG 1.7.3 is bundled in the |Gromacs| source already
 * zlib is used by TNG for compressing some kinds of trajectory data
 * Running the |Gromacs| test suite requires libxml2
 * Building the |Gromacs| documentation requires ImageMagick, pdflatex,
