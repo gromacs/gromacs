@@ -35,17 +35,19 @@
 #ifndef GMX_GMXPREPROCESS_INSERT_MOLECULES_H
 #define GMX_GMXPREPROCESS_INSERT_MOLECULES_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
+namespace gmx
+{
 
-int gmx_insert_molecules(int argc, char *argv[]);
+class CommandLineOptionsModuleInterface;
 
-#ifdef __cplusplus
-}
-#endif
+class InsertMoleculesInfo
+{
+    public:
+        static const char name[];
+        static const char shortDescription[];
+        static CommandLineOptionsModuleInterface *create();
+};
+
+} // namespace gmx
 
 #endif
