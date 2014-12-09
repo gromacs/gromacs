@@ -45,6 +45,7 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -236,6 +237,11 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModuleNoNice(manager, &gmx_mdrun, "mdrun",
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
 
+    gmx::CommandLineOptionsModuleInterface::registerModule(
+            manager, gmx::InsertMoleculesInfo::name,
+            gmx::InsertMoleculesInfo::shortDescription,
+            &gmx::InsertMoleculesInfo::create);
+
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
                    "Assign secondary structure and calculate solvent accessible surface area");
@@ -245,8 +251,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Convert energy files");
     registerModule(manager, &gmx_solvate, "solvate",
                    "Solvate a system");
-    registerModule(manager, &gmx_insert_molecules, "insert-molecules",
-                   "Insert molecules into existing vacancies");
     registerObsoleteTool(manager, "genbox");
     registerModule(manager, &gmx_genconf, "genconf",
                    "Multiply a conformation in 'random' orientations");
