@@ -50,6 +50,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -150,7 +151,15 @@ int processExceptionAtExitForCommandLine(const std::exception &ex)
 int runCommandLineModule(int argc, char *argv[],
                          CommandLineModuleInterface *module)
 {
-    return gmx::CommandLineModuleManager::runAsMainSingleModule(argc, argv, module);
+    return CommandLineModuleManager::runAsMainSingleModule(argc, argv, module);
+}
+
+int runCommandLineModule(int argc, char *argv[],
+                         const char *name, const char *description,
+                         CommandLineOptionsModuleInterface *(*factory)())
+{
+    return CommandLineOptionsModuleInterface::runAsMain(
+            argc, argv, name, description, factory);
 }
 
 } // namespace gmx

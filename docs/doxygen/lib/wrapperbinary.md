@@ -25,7 +25,23 @@ tasks:
 The %main() method also catches all exceptions, and if one is caught, prints an
 error message and terminates the program cleanly.
 
-Command line manager
+Command line modules
+====================
+
+All modules within the wrapper binary are implemented as classes that implement
+the gmx::CommandLineModuleInterface interface.  There is generally some helper
+class in between:
+ * General C++ modules typically use gmx::Options for their command-line
+   handling.  Instead of each module implementing parsing and help separately
+   with identical code, they implement gmx::CommandLineOptionsModuleInterface
+   instead.  The framework then provides a bridge class that contains the
+   common code and wraps gmx::CommandLineOptionsModuleInterface into a
+   gmx::CommandLineModuleInterface.
+ * For C++ trajectory analysis modules, there is a general implementation for
+   running the gmx::TrajectoryAnalysisModule subclasses in cmdlinerunner.cpp.
+ * For old C-style %main() functions, see \ref section_wrapperbinary_cmain.
+
+Command line manager {#section_wrapperbinary_manager}
 ====================
 
 The core of the wrapper binary is the gmx::CommandLineModuleManager::run()
@@ -110,7 +126,7 @@ separate CMake script that is run by `make html` to add headers and footers to
 these partial HTML files.
 The final HTML help is produced in `share/html/final/`.
 
-Handling C %main() functions
+Handling C %main() functions {#section_wrapperbinary_cmain}
 ----------------------------
 
 Many pre-5.0 modules are still implemented as a function with a C %main()

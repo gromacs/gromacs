@@ -54,6 +54,10 @@
 
 namespace gmx
 {
+
+class CommandLineModuleInterface;
+class CommandLineOptionsModuleInterface;
+
 namespace test
 {
 
@@ -187,6 +191,8 @@ class CommandLine
  *      setOutputFileNoTest()).
  *   3. Checking the contents of some of the output files using
  *      TestReferenceData (setOutputFile() and checkOutputFiles()).
+ *   4. Static methods for easily executing command-line modules
+ *      (various overloads of runModule()).
  *
  * All files created during the test are cleaned up at the end of the test.
  *
@@ -199,6 +205,33 @@ class CommandLine
 class CommandLineTestHelper
 {
     public:
+        /*! \brief
+         * Runs a command-line program that implements CommandLineModuleInterface.
+         *
+         * \param[in,out] module       Module to run.
+         *     The function does not take ownership.
+         * \param[in,out] commandLine  Command line parameters to pass.
+         *     This is only modified if \p module modifies it.
+         * \returns The return value of the module.
+         * \throws  unspecified  Any exception thrown by the module.
+         */
+        static int
+        runModule(CommandLineModuleInterface *module, CommandLine *commandLine);
+        /*! \brief
+         * Runs a command-line program that implements
+         * CommandLineOptionsModuleInterface.
+         *
+         * \param[in] factory          Factory method for the module to run.
+         * \param[in,out] commandLine  Command line parameters to pass.
+         *     This is only modified if the module modifies it.
+         * \returns The return value of the module.
+         * \throws  unspecified  Any exception thrown by the factory or the
+         *     module.
+         */
+        static int
+        runModule(CommandLineOptionsModuleInterface *(*factory)(),
+                  CommandLine                      *commandLine);
+
         /*! \brief
          * Initializes an instance.
          *

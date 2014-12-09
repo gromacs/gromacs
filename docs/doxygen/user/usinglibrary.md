@@ -18,11 +18,13 @@ low-level functions.
    the facilities provided by \ref module_commandline.  There are a few
    different alternatives, depending on how much control you want to give
    \Gromacs:
-    - For C++ code, you can implement gmx::CommandLineModuleInterface, and
-      use gmx::runCommandLineModule() to execute it.  This requires using some
-      additional \Gromacs classes (in particular, for implementing
-      gmx::CommandLineModuleInterface::writeHelp(), if you want to support the
-      `-h` option).
+    - For C++ code, you can implement gmx::CommandLineOptionsModuleInterface and
+      use gmx::runCommandLineModule() to execute it.  This interface assumes
+      the use of the gmx::Options mechanism for declaring command-line options
+      (see \ref module_options).
+      For a lower-level interface, gmx::CommandLineModuleInterface can be used,
+      but this requires you to implement `-h` output and command-line parsing
+      yourself (possibly using classes that \Gromacs provides).
     - For C code, you can use gmx_run_cmain() to wrap an existing C main
       method.  The only constraint on the provided main method is that it
       should use parse_common_args() for argument processing.
