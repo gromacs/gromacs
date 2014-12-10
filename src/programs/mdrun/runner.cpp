@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1007,7 +1007,8 @@ static void override_nsteps_cmdline(FILE            *fplog,
                                     t_inputrec      *ir,
                                     const t_commrec *cr)
 {
-    char sbuf[STEPSTRSIZE];
+    char sbuf_steps[STEPSTRSIZE];
+    char sbuf_msg[STRLEN];
 
     assert(ir);
     assert(cr);
@@ -1015,23 +1016,30 @@ static void override_nsteps_cmdline(FILE            *fplog,
     /* override with anything else than the default -2 */
     if (nsteps_cmdline > -2)
     {
-        char stmp[STRLEN];
-
         ir->nsteps = nsteps_cmdline;
         if (EI_DYNAMICS(ir->eI))
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps, %.3f ps",
-                    gmx_step_str(nsteps_cmdline, sbuf),
+            sprintf(sbuf_msg, "Overriding nsteps with value passed on the command line: %s steps, %.3f ps",
+                    gmx_step_str(nsteps_cmdline, sbuf_steps),
                     nsteps_cmdline*ir->delta_t);
         }
         else
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps",
-                    gmx_step_str(nsteps_cmdline, sbuf));
+            sprintf(sbuf_msg, "Overriding nsteps with value passed on the command line: %s steps",
+                    gmx_step_str(nsteps_cmdline, sbuf_steps));
         }
-
-        md_print_warn(cr, fplog, "%s\n", stmp);
     }
+    else if (nsteps_cmdline == -2)
+    {
+        return;
+    }
+    else /* nsteps_cmdline < -2 */
+    {
+        gmx_fatal(FARGS, "Invalid nsteps value passed on the command line: %d",
+                  nsteps_cmdline);
+    }
+
+    md_print_warn(cr, fplog, "%s\n", sbuf_msg);
 }
 
 int mdrunner(gmx_hw_opt_t *hw_opt,

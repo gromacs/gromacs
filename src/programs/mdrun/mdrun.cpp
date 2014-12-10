@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -385,7 +385,11 @@ int gmx_mdrun(int argc, char *argv[])
         "[PAR]",
         "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
         "file is written at the first neighbor search step where the run time",
-        "exceeds [TT]-maxh[tt]*0.99 hours.",
+        "exceeds [TT]-maxh[tt]*0.99 hours. This option is particularly useful in",
+        "combination with setting [TT]nsteps[tt] to -1 either in the mdp or using the",
+        "similarly named command line option. This results in an infinite run,",
+        "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)"
+        "or upon receiving a signal."
         "[PAR]",
         "When [TT]mdrun[tt] receives a TERM signal, it will set nsteps to the current",
         "step plus one. When [TT]mdrun[tt] receives an INT signal (e.g. when ctrl+C is",
@@ -574,7 +578,7 @@ int gmx_mdrun(int argc, char *argv[])
         { "-append",  FALSE, etBOOL, {&bAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
         { "-nsteps",  FALSE, etINT64, {&nsteps},
-          "Run this number of steps, overrides .mdp file option" },
+          "Run this number of steps, overrides .mdp file option (-1 means infinite, smaller value is ignored)" },
         { "-maxh",   FALSE, etREAL, {&max_hours},
           "Terminate after 0.99 times this time (hours)" },
         { "-multi",   FALSE, etINT, {&nmultisim},
