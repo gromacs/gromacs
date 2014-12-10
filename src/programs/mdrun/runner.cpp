@@ -1007,7 +1007,8 @@ static void override_nsteps_cmdline(FILE            *fplog,
                                     t_inputrec      *ir,
                                     const t_commrec *cr)
 {
-    char sbuf[STEPSTRSIZE];
+    char sbuf_steps[STEPSTRSIZE];
+    char sbuf_msg[STRLEN];
 
     assert(ir);
     assert(cr);
@@ -1015,23 +1016,32 @@ static void override_nsteps_cmdline(FILE            *fplog,
     /* override with anything else than the default -2 */
     if (nsteps_cmdline > -2)
     {
-        char stmp[STRLEN];
-
         ir->nsteps = nsteps_cmdline;
         if (EI_DYNAMICS(ir->eI))
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps, %.3f ps",
-                    gmx_step_str(nsteps_cmdline, sbuf),
+            sprintf(sbuf_msg, "Overriding nsteps with value passed on the command line: %s steps, %.3f ps",
+                    gmx_step_str(nsteps_cmdline, sbuf_steps),
                     nsteps_cmdline*ir->delta_t);
         }
         else
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps",
-                    gmx_step_str(nsteps_cmdline, sbuf));
+            sprintf(sbuf_msg, "Overriding nsteps with value passed on the command line: %s steps",
+                    gmx_step_str(nsteps_cmdline, sbuf_steps));
         }
-
-        md_print_warn(cr, fplog, "%s\n", stmp);
     }
+    else if (nsteps_cmdline == -2)
+    {
+        sprintf(sbuf_msg, "Ignoring nsteps value passed on the command line: %s "
+                "is reserved as default,\nthe value set by the mdp option will be used",
+                gmx_step_str(nsteps_cmdline, sbuf_steps));
+    }
+    else
+    {
+        sprintf(sbuf_msg, "Ignoring invalid nsteps value passed on the command line: %s",
+                gmx_step_str(nsteps_cmdline, sbuf_steps));
+    }
+
+    md_print_warn(cr, fplog, "%s\n", sbuf_msg);
 }
 
 int mdrunner(gmx_hw_opt_t *hw_opt,
