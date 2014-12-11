@@ -91,10 +91,12 @@ static void init_pull_group(t_pull_group *pg,
 }
 
 static void init_pull_coord(t_pull_coord *pcrd, int eGeom,
-                            const char *origin_buf, const char *vec_buf)
+                            const char *origin_buf, const char *vec_buf,
+                            warninp_t wi)
 {
     int    m;
     dvec   origin, vec;
+    char   buf[STRLEN];
 
     string2dvec(origin_buf, origin);
     if (pcrd->group[0] != 0 && dnorm(origin) > 0)
@@ -104,6 +106,20 @@ static void init_pull_coord(t_pull_coord *pcrd, int eGeom,
 
     if (eGeom == epullgDIST)
     {
+        if (pcrd->init < 0)
+        {
+            sprintf(buf, "The initial pull distance is negative with geometry %s, while a distance can not be negative. Use geometry %s instead.",
+                    EPULLGEOM(eGeom), EPULLGEOM(epullgDIR));
+            warning_error(wi, buf);
+        }
+        /* TODO: With a positive init but a negative rate things could still
+         * go wrong, but it might be fine if you don't pull too far.
+         * We should give a warning or note when there is only one pull dim
+         * active, since that is usually the problematic case when you should
+         * be using direction. We will do this later, since an already planned
+         * generalization of the pull code makes pull dim available here.
+         */
+
         clear_dvec(vec);
     }
     else
@@ -228,7 +244,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         RTYPE(buf,              pcrd->kB, pcrd->k);
 
         /* Initialize the pull coordinate */
-        init_pull_coord(pcrd, pull->eGeom, origin_buf, vec_buf);
+        init_pull_coord(pcrd, pull->eGeom, origin_buf, vec_buf, wi);
     }
 
     *ninp_p   = ninp;
