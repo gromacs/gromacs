@@ -94,7 +94,7 @@
 #include "corewrap.h"
 #endif
 
-#include "gromacs/legacyheaders/gpu_utils.h"
+#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 
 typedef struct {
     gmx_integrator_t *func;

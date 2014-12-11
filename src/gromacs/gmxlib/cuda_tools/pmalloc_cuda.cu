@@ -35,7 +35,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/pmalloc_cuda.h"
+#include "pmalloc_cuda.h"
 
 #include <stdlib.h>
 
