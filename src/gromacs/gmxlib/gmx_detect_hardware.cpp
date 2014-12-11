@@ -56,9 +56,9 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_cpuid.h"
-#include "gromacs/legacyheaders/gpu_utils.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"

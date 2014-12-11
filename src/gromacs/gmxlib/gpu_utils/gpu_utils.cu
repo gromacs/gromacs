@@ -35,7 +35,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/gpu_utils.h"
+#include "gpu_utils.h"
 
 #include "config.h"
 

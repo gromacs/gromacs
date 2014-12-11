@@ -34,7 +34,7 @@
 
 # includes: Nothing to build, just installation
 file(GLOB HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
-list(REMOVE_ITEM HEADERS gmx_hash.h gmx_ga2la.h gpu_utils.h pmalloc_cuda.h)
+list(REMOVE_ITEM HEADERS gmx_hash.h gmx_ga2la.h)
 gmx_install_headers(${HEADERS})
 
 add_subdirectory(types)
