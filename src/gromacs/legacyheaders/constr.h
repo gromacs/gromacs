@@ -86,7 +86,8 @@ gmx_bool bshakef(FILE           *log,          /* Log file			*/
                  tensor          vir_r_m_dr,   /* sum r x m delta_r            */
                  gmx_bool        bDumpOnError, /* Dump debugging stuff on error*/
                  int             econq,        /* which type of constrainint is occurring */
-                 t_vetavars     *vetavar);     /* veta for pressure control */
+                 t_vetavars     *vetavar,     /* veta for pressure control */
+		 rvec           *local_vir);
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0
@@ -147,7 +148,7 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_bool bMolPBC, matrix box,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq, gmx_bool bPscal, real veta, real vetanew);
+                   t_nrnb *nrnb, int econq, gmx_bool bPscal, real veta, real vetanew, rvec* local_vir);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.

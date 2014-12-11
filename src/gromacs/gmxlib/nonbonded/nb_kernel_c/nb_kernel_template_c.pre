@@ -117,6 +117,7 @@ void
                     (t_nblist                    * gmx_restrict       nlist,
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
+                     rvec                        * gmx_restrict          vvir,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -127,12 +128,12 @@ void
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
+    real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
+    real             *shiftvec,*fshift,*x,*f,*vir;
     /* #for I in PARTICLES_I */
     int              vdwioffset{I};
-    real             ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I};
+    real             ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I},virix{I},viriy{I},viriz{I};
     /* #endfor */
     /* #for J in PARTICLES_J */
     int              vdwjidx{J};
@@ -179,6 +180,7 @@ void
 
     x                = xx[0];
     f                = ff[0];
+    vir              = vvir[0];
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -351,6 +353,9 @@ void
         fix{I}             = 0.0;
         fiy{I}             = 0.0;
         fiz{I}             = 0.0;
+        virix{I}             = 0.0;
+        viriy{I}             = 0.0;
+        viriz{I}             = 0.0;
         /*     #endfor */
         /* #endif */
 
@@ -822,14 +827,24 @@ void
             tx               = fscal*dx{I}{J};
             ty               = fscal*dy{I}{J};
             tz               = fscal*dz{I}{J};
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx{I}{J};
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy{I}{J};
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz{I}{J};
 
             /* Update vectorial force */
             fix{I}            += tx;
             fiy{I}            += ty;
             fiz{I}            += tz;
+            virix{I}            += virx;
+            viriy{I}            += viry;
+            viriz{I}            += virz;
             f[j_coord_offset+DIM*{J}+XX] -= tx;
             f[j_coord_offset+DIM*{J}+YY] -= ty;
             f[j_coord_offset+DIM*{J}+ZZ] -= tz;
+            vir[j_coord_offset+DIM*{J}+XX] += virx;
+            vir[j_coord_offset+DIM*{J}+YY] += viry;
+            vir[j_coord_offset+DIM*{J}+ZZ] += virz;
 
             /*         #define INNERFLOPS INNERFLOPS+9 */
             /*     #endif */
@@ -856,6 +871,9 @@ void
         f[i_coord_offset+DIM*{I}+XX] += fix{I};
         f[i_coord_offset+DIM*{I}+YY] += fiy{I};
         f[i_coord_offset+DIM*{I}+ZZ] += fiz{I};
+        vir[i_coord_offset+DIM*{I}+XX] += virix{I};
+        vir[i_coord_offset+DIM*{I}+YY] += viriy{I};
+        vir[i_coord_offset+DIM*{I}+ZZ] += viriz{I};
         tx                         += fix{I};
         ty                         += fiy{I};
         tz                         += fiz{I};

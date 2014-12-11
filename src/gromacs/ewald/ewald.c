@@ -120,7 +120,7 @@ static void tabulate_eir(int natom, rvec x[], int kmax, cvec **eir, rvec lll)
 }
 
 real do_ewald(t_inputrec *ir,
-              rvec x[],        rvec f[],
+              rvec x[],        rvec f[], rvec vir[],
               real chargeA[],  real chargeB[],
               rvec box,
               t_commrec *cr,   int natoms,
@@ -131,11 +131,12 @@ real do_ewald(t_inputrec *ir,
     real     factor     = -1.0/(4*ewaldcoeff*ewaldcoeff);
     real     scaleRecip = 4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r; /* 1/(Vol*e0) */
     real    *charge, energy_AB[2], energy;
+    real     *local_virial;
     rvec     lll;
     int      lowiy, lowiz, ix, iy, iz, n, q;
     real     tmp, cs, ss, ak, akv, mx, my, mz, m2, scale;
     gmx_bool bFreeEnergy;
-
+    local_virial = (real * )malloc(3*natoms*sizeof(real));
     if (cr != NULL)
     {
         if (PAR(cr))
@@ -184,6 +185,9 @@ real do_ewald(t_inputrec *ir,
         lowiy        = 0;
         lowiz        = 1;
         energy_AB[q] = 0;
+        
+        for (n = 0; n < 3*natoms; n++)
+		local_virial[n]=0.0;
         for (ix = 0; ix < et->nx; ix++)
         {
             mx = ix*lll[XX];
@@ -232,6 +236,14 @@ real do_ewald(t_inputrec *ir,
                     {
                         cs += et->tab_qxyz[n].re;
                         ss += et->tab_qxyz[n].im;
+		    }
+                    for (n = 0; n < natoms; n++)
+                    {
+			real loctmp;
+			loctmp = (et->tab_qxyz[n].re * cs + et->tab_qxyz[n].im * ss);
+			local_virial[3*n]   -= 2.*(1e25/AVOGADRO)*loctmp *(ak -  akv*mx*mx ); 
+			local_virial[3*n+1] -= 2.*(1e25/AVOGADRO)*loctmp *(ak -  akv*my*my ); 
+			local_virial[3*n+2] -= 2.*(1e25/AVOGADRO)*loctmp *(ak -  akv*mz*mz ); 
                     }
                     energy_AB[q]  += ak*(cs*cs+ss*ss);
                     tmp            = scale*akv*(cs*cs+ss*ss);
@@ -270,20 +282,36 @@ real do_ewald(t_inputrec *ir,
         energy      = (1.0 - lambda)*energy_AB[0] + lambda*energy_AB[1];
         *dvdlambda += scaleRecip*(energy_AB[1] - energy_AB[0]);
     }
-
+{ 
+    rvec totv;
+    totv[0]=totv[1]=totv[2]=0.0;
+    for (n = 0; n < natoms; n++){
+        // NOTE: this is actually (pressure * Volume) in (atm * nm^3)
+	vir[n][0]-=0.5*scaleRecip*local_virial[3*n+0];
+	vir[n][1]-=0.5*scaleRecip*local_virial[3*n+1];
+	vir[n][2]-=0.5*scaleRecip*local_virial[3*n+2];
+	totv[0]+=vir[n][0];
+	totv[1]+=vir[n][1];
+	totv[2]+=vir[n][2];
+//	printf("vir[%d]: %f %f %f\n",n,vir[n][0],vir[n][1],vir[n][2]);
+    }
+  //  printf("totvir: %f %f %f\n",totv[0],totv[1],totv[2]);
+}
     lrvir[XX][XX] = -0.5*scaleRecip*(lrvir[XX][XX]+energy);
     lrvir[XX][YY] = -0.5*scaleRecip*(lrvir[XX][YY]);
     lrvir[XX][ZZ] = -0.5*scaleRecip*(lrvir[XX][ZZ]);
     lrvir[YY][YY] = -0.5*scaleRecip*(lrvir[YY][YY]+energy);
     lrvir[YY][ZZ] = -0.5*scaleRecip*(lrvir[YY][ZZ]);
     lrvir[ZZ][ZZ] = -0.5*scaleRecip*(lrvir[ZZ][ZZ]+energy);
-
+    //printf("total virial = %f %f %f\n",lrvir[XX][XX],lrvir[YY][YY],lrvir[ZZ][ZZ]);
     lrvir[YY][XX] = lrvir[XX][YY];
     lrvir[ZZ][XX] = lrvir[XX][ZZ];
     lrvir[ZZ][YY] = lrvir[YY][ZZ];
 
-    energy *= scaleRecip;
 
+
+    energy *= scaleRecip;
+    free(local_virial);
     return energy;
 }
 

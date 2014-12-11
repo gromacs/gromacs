@@ -246,7 +246,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      rvec *f_local, rvec *f_global)
+                                      rvec *f_local, rvec *f_global, rvec *vir_local, rvec *vir_global)
 {
     rvec *local_v;
     rvec *global_v;
@@ -309,7 +309,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                              fplog, cr, of->eIntegrator, of->simulation_part,
                              of->bExpanded, of->elamstats, step, t, state_global);
         }
-
+//SAW
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
         {
             if (of->fp_trn)
@@ -318,7 +318,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                            state_local->box, top_global->natoms,
                            (mdof_flags & MDOF_X) ? state_global->x : NULL,
                            (mdof_flags & MDOF_V) ? global_v : NULL,
-                           (mdof_flags & MDOF_F) ? f_global : NULL);
+                           (mdof_flags & MDOF_F) ? f_global : NULL,
+                           (mdof_flags & MDOF_F) ? vir_global : NULL);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
                     gmx_file("Cannot write trajectory; maybe you are out of disk space?");
@@ -330,7 +331,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                            top_global->natoms,
                            (mdof_flags & MDOF_X) ? (const rvec *) state_global->x : NULL,
                            (mdof_flags & MDOF_V) ? (const rvec *) global_v : NULL,
-                           (mdof_flags & MDOF_F) ? (const rvec *) f_global : NULL);
+                           (mdof_flags & MDOF_F) ? (const rvec *) f_global : NULL,
+                           (mdof_flags & MDOF_F) ? (const rvec *) vir_global : NULL);
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
         {
@@ -372,7 +374,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                            of->natoms_x_compressed,
                            (const rvec *) xxtc,
                            NULL,
-                           NULL);
+                           NULL,NULL);
             if (of->natoms_x_compressed != of->natoms_global)
             {
                 sfree(xxtc);

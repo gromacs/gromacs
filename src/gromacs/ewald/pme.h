@@ -90,7 +90,7 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
 
 int gmx_pme_do(gmx_pme_t pme,
                int start,       int homenr,
-               rvec x[],        rvec f[],
+               rvec x[],        rvec f[],    rvec vir[],
                real chargeA[],  real chargeB[],
                real c6A[],      real c6B[],
                real sigmaA[],   real sigmaB[],
@@ -148,7 +148,7 @@ void gmx_pme_send_resetcounters(t_commrec *cr, gmx_int64_t step);
 /* Tell our PME-only node to reset all cycle and flop counters */
 
 void gmx_pme_receive_f(t_commrec *cr,
-                       rvec f[], matrix vir_q, real *energy_q,
+                       rvec f[], rvec vir[], matrix vir_q, real *energy_q,
                        matrix vir_lj, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles);

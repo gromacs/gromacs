@@ -67,7 +67,7 @@ void gmx_prepare_tng_writing(const char              *filename,
     {
         TNG_TRAJ_BOX_SHAPE, TNG_TRAJ_POSITIONS,
         TNG_TRAJ_VELOCITIES, TNG_TRAJ_FORCES,
-        TNG_GMX_LAMBDA
+        TNG_GMX_LAMBDA,
     };
     static char         fallbackNames[defaultNumIds][32] =
     {
@@ -209,7 +209,8 @@ void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
                    natoms,
                    (const rvec *) frame->x,
                    (const rvec *) frame->v,
-                   (const rvec *) frame->f);
+                   (const rvec *) frame->f,
+                   (const rvec *) frame->vir);
 #else
     GMX_UNUSED_VALUE(output);
     GMX_UNUSED_VALUE(frame);
@@ -594,6 +595,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
                                             datatype);
                 fr->bF = TRUE;
                 break;
+
             case TNG_GMX_LAMBDA:
                 switch (datatype)
                 {

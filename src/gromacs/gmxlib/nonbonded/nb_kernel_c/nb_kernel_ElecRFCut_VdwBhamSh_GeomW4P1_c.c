@@ -58,6 +58,7 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
                     (t_nblist                    * gmx_restrict       nlist,
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
+                     rvec                        * gmx_restrict          vvir,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -66,17 +67,17 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
+    real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
+    real             *shiftvec,*fshift,*x,*f,*vir;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,virix0,viriy0,viriz0;
     int              vdwioffset1;
-    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1;
+    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1,virix1,viriy1,viriz1;
     int              vdwioffset2;
-    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2;
+    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2,virix2,viriy2,viriz2;
     int              vdwioffset3;
-    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3;
+    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3,virix3,viriy3,viriz3;
     int              vdwjidx0;
     real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
     real             dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00,cexp1_00,cexp2_00;
@@ -92,6 +93,7 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
 
     x                = xx[0];
     f                = ff[0];
+    vir              = vvir[0];
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -161,15 +163,27 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
         fix0             = 0.0;
         fiy0             = 0.0;
         fiz0             = 0.0;
+        virix0             = 0.0;
+        viriy0             = 0.0;
+        viriz0             = 0.0;
         fix1             = 0.0;
         fiy1             = 0.0;
         fiz1             = 0.0;
+        virix1             = 0.0;
+        viriy1             = 0.0;
+        viriz1             = 0.0;
         fix2             = 0.0;
         fiy2             = 0.0;
         fiz2             = 0.0;
+        virix2             = 0.0;
+        viriy2             = 0.0;
+        viriz2             = 0.0;
         fix3             = 0.0;
         fiy3             = 0.0;
         fiz3             = 0.0;
+        virix3             = 0.0;
+        viriy3             = 0.0;
+        viriz3             = 0.0;
 
         /* Reset potential sums */
         velecsum         = 0.0;
@@ -251,14 +265,24 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
             tx               = fscal*dx00;
             ty               = fscal*dy00;
             tz               = fscal*dz00;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx00;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy00;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz00;
 
             /* Update vectorial force */
             fix0            += tx;
             fiy0            += ty;
             fiz0            += tz;
+            virix0            += virx;
+            viriy0            += viry;
+            viriz0            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -284,14 +308,24 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
             tx               = fscal*dx10;
             ty               = fscal*dy10;
             tz               = fscal*dz10;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx10;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy10;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz10;
 
             /* Update vectorial force */
             fix1            += tx;
             fiy1            += ty;
             fiz1            += tz;
+            virix1            += virx;
+            viriy1            += viry;
+            viriz1            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -317,14 +351,24 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
             tx               = fscal*dx20;
             ty               = fscal*dy20;
             tz               = fscal*dz20;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx20;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy20;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz20;
 
             /* Update vectorial force */
             fix2            += tx;
             fiy2            += ty;
             fiz2            += tz;
+            virix2            += virx;
+            viriy2            += viry;
+            viriz2            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -350,14 +394,24 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
             tx               = fscal*dx30;
             ty               = fscal*dy30;
             tz               = fscal*dz30;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx30;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy30;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz30;
 
             /* Update vectorial force */
             fix3            += tx;
             fiy3            += ty;
             fiz3            += tz;
+            virix3            += virx;
+            viriy3            += viry;
+            viriz3            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -369,24 +423,36 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
         f[i_coord_offset+DIM*0+XX] += fix0;
         f[i_coord_offset+DIM*0+YY] += fiy0;
         f[i_coord_offset+DIM*0+ZZ] += fiz0;
+        vir[i_coord_offset+DIM*0+XX] += virix0;
+        vir[i_coord_offset+DIM*0+YY] += viriy0;
+        vir[i_coord_offset+DIM*0+ZZ] += viriz0;
         tx                         += fix0;
         ty                         += fiy0;
         tz                         += fiz0;
         f[i_coord_offset+DIM*1+XX] += fix1;
         f[i_coord_offset+DIM*1+YY] += fiy1;
         f[i_coord_offset+DIM*1+ZZ] += fiz1;
+        vir[i_coord_offset+DIM*1+XX] += virix1;
+        vir[i_coord_offset+DIM*1+YY] += viriy1;
+        vir[i_coord_offset+DIM*1+ZZ] += viriz1;
         tx                         += fix1;
         ty                         += fiy1;
         tz                         += fiz1;
         f[i_coord_offset+DIM*2+XX] += fix2;
         f[i_coord_offset+DIM*2+YY] += fiy2;
         f[i_coord_offset+DIM*2+ZZ] += fiz2;
+        vir[i_coord_offset+DIM*2+XX] += virix2;
+        vir[i_coord_offset+DIM*2+YY] += viriy2;
+        vir[i_coord_offset+DIM*2+ZZ] += viriz2;
         tx                         += fix2;
         ty                         += fiy2;
         tz                         += fiz2;
         f[i_coord_offset+DIM*3+XX] += fix3;
         f[i_coord_offset+DIM*3+YY] += fiy3;
         f[i_coord_offset+DIM*3+ZZ] += fiz3;
+        vir[i_coord_offset+DIM*3+XX] += virix3;
+        vir[i_coord_offset+DIM*3+YY] += viriy3;
+        vir[i_coord_offset+DIM*3+ZZ] += viriz3;
         tx                         += fix3;
         ty                         += fiy3;
         tz                         += fiz3;
@@ -424,6 +490,7 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
                     (t_nblist                    * gmx_restrict       nlist,
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
+                     rvec                        * gmx_restrict          vvir,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -432,17 +499,17 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
+    real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
+    real             *shiftvec,*fshift,*x,*f,*vir;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,virix0,viriy0,viriz0;
     int              vdwioffset1;
-    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1;
+    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1,virix1,viriy1,viriz1;
     int              vdwioffset2;
-    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2;
+    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2,virix2,viriy2,viriz2;
     int              vdwioffset3;
-    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3;
+    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3,virix3,viriy3,viriz3;
     int              vdwjidx0;
     real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
     real             dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00,cexp1_00,cexp2_00;
@@ -458,6 +525,7 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
 
     x                = xx[0];
     f                = ff[0];
+    vir              = vvir[0];
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -527,15 +595,27 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
         fix0             = 0.0;
         fiy0             = 0.0;
         fiz0             = 0.0;
+        virix0             = 0.0;
+        viriy0             = 0.0;
+        viriz0             = 0.0;
         fix1             = 0.0;
         fiy1             = 0.0;
         fiz1             = 0.0;
+        virix1             = 0.0;
+        viriy1             = 0.0;
+        viriz1             = 0.0;
         fix2             = 0.0;
         fiy2             = 0.0;
         fiz2             = 0.0;
+        virix2             = 0.0;
+        viriy2             = 0.0;
+        viriz2             = 0.0;
         fix3             = 0.0;
         fiy3             = 0.0;
         fiz3             = 0.0;
+        virix3             = 0.0;
+        viriy3             = 0.0;
+        viriz3             = 0.0;
 
         /* Start inner kernel loop */
         for(jidx=j_index_start; jidx<j_index_end; jidx++)
@@ -609,14 +689,24 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
             tx               = fscal*dx00;
             ty               = fscal*dy00;
             tz               = fscal*dz00;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx00;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy00;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz00;
 
             /* Update vectorial force */
             fix0            += tx;
             fiy0            += ty;
             fiz0            += tz;
+            virix0            += virx;
+            viriy0            += viry;
+            viriz0            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -638,14 +728,24 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
             tx               = fscal*dx10;
             ty               = fscal*dy10;
             tz               = fscal*dz10;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx10;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy10;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz10;
 
             /* Update vectorial force */
             fix1            += tx;
             fiy1            += ty;
             fiz1            += tz;
+            virix1            += virx;
+            viriy1            += viry;
+            viriz1            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -667,14 +767,24 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
             tx               = fscal*dx20;
             ty               = fscal*dy20;
             tz               = fscal*dz20;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx20;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy20;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz20;
 
             /* Update vectorial force */
             fix2            += tx;
             fiy2            += ty;
             fiz2            += tz;
+            virix2            += virx;
+            viriy2            += viry;
+            viriz2            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -696,14 +806,24 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
             tx               = fscal*dx30;
             ty               = fscal*dy30;
             tz               = fscal*dz30;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx30;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy30;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz30;
 
             /* Update vectorial force */
             fix3            += tx;
             fiy3            += ty;
             fiz3            += tz;
+            virix3            += virx;
+            viriy3            += viry;
+            viriz3            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -715,24 +835,36 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
         f[i_coord_offset+DIM*0+XX] += fix0;
         f[i_coord_offset+DIM*0+YY] += fiy0;
         f[i_coord_offset+DIM*0+ZZ] += fiz0;
+        vir[i_coord_offset+DIM*0+XX] += virix0;
+        vir[i_coord_offset+DIM*0+YY] += viriy0;
+        vir[i_coord_offset+DIM*0+ZZ] += viriz0;
         tx                         += fix0;
         ty                         += fiy0;
         tz                         += fiz0;
         f[i_coord_offset+DIM*1+XX] += fix1;
         f[i_coord_offset+DIM*1+YY] += fiy1;
         f[i_coord_offset+DIM*1+ZZ] += fiz1;
+        vir[i_coord_offset+DIM*1+XX] += virix1;
+        vir[i_coord_offset+DIM*1+YY] += viriy1;
+        vir[i_coord_offset+DIM*1+ZZ] += viriz1;
         tx                         += fix1;
         ty                         += fiy1;
         tz                         += fiz1;
         f[i_coord_offset+DIM*2+XX] += fix2;
         f[i_coord_offset+DIM*2+YY] += fiy2;
         f[i_coord_offset+DIM*2+ZZ] += fiz2;
+        vir[i_coord_offset+DIM*2+XX] += virix2;
+        vir[i_coord_offset+DIM*2+YY] += viriy2;
+        vir[i_coord_offset+DIM*2+ZZ] += viriz2;
         tx                         += fix2;
         ty                         += fiy2;
         tz                         += fiz2;
         f[i_coord_offset+DIM*3+XX] += fix3;
         f[i_coord_offset+DIM*3+YY] += fiy3;
         f[i_coord_offset+DIM*3+ZZ] += fiz3;
+        vir[i_coord_offset+DIM*3+XX] += virix3;
+        vir[i_coord_offset+DIM*3+YY] += viriy3;
+        vir[i_coord_offset+DIM*3+ZZ] += viriz3;
         tx                         += fix3;
         ty                         += fiy3;
         tz                         += fiz3;

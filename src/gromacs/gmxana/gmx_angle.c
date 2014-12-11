@@ -93,7 +93,7 @@ static void dump_dih_trn(int nframes, int nangles, real **dih, const char *fn,
                 }
             }
         }
-        fwrite_trn(trn, i, time[i], 0, box, na, x, NULL, NULL);
+        fwrite_trn(trn, i, time[i], 0, box, na, x, NULL, NULL,NULL);
     }
     close_trn(trn);
     sfree(x);

@@ -356,7 +356,7 @@ static void pme_receive_force_ener(t_commrec      *cr,
     wallcycle_start(wcycle, ewcPP_PMEWAITRECVF);
     dvdl_q  = 0;
     dvdl_lj = 0;
-    gmx_pme_receive_f(cr, fr->f_novirsum, fr->vir_el_recip, &e_q,
+    gmx_pme_receive_f(cr, fr->f_novirsum, fr->vir, fr->vir_el_recip, &e_q,
                       fr->vir_lj_recip, &e_lj, &dvdl_q, &dvdl_lj,
                       &cycles_seppme);
     enerd->term[F_COUL_RECIP] += e_q;
@@ -1247,9 +1247,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
+    exit(printf("Not implemented with verlet\n"));
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
+                      x, hist, f, bSepLRF ? fr->f_twin : f, NULL, NULL, enerd, fcd, top, fr->born, 
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
@@ -1505,6 +1506,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         gmx_groups_t *groups,
                         matrix box, rvec x[], history_t *hist,
                         rvec f[],
+                        rvec vir[],
                         tensor vir_force,
                         t_mdatoms *mdatoms,
                         gmx_enerdata_t *enerd, t_fcdata *fcd,
@@ -1815,7 +1817,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
+                      x, hist, f, bSepLRF ? fr->f_twin : f, vir, vir, enerd, fcd, top, fr->born,   // TODO: here we can add LR virial contrib
                       bBornRadii, box,
                       inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
@@ -1966,6 +1968,7 @@ void do_force(FILE *fplog, t_commrec *cr,
               gmx_groups_t *groups,
               matrix box, rvec x[], history_t *hist,
               rvec f[],
+              rvec vir[],
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd, t_fcdata *fcd,
@@ -2006,7 +2009,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                top,
                                groups,
                                box, x, hist,
-                               f, vir_force,
+                               f, vir, vir_force,
                                mdatoms,
                                enerd, fcd,
                                lambda, graph,
@@ -2059,7 +2062,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
               fr->bMolPBC, state->box,
               state->lambda[efptBONDED], &dvdl_dum,
               NULL, NULL, nrnb, econqCoord,
-              ir->epc == epcMTTK, state->veta, state->veta);
+              ir->epc == epcMTTK, state->veta, state->veta,NULL);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
@@ -2071,7 +2074,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
                   NULL, NULL, nrnb, econqVeloc,
-                  ir->epc == epcMTTK, state->veta, state->veta);
+                  ir->epc == epcMTTK, state->veta, state->veta,NULL);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -2102,7 +2105,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
                   state->v, NULL, nrnb, econqCoord,
-                  ir->epc == epcMTTK, state->veta, state->veta);
+                  ir->epc == epcMTTK, state->veta, state->veta,NULL);
 
         for (i = start; i < end; i++)
         {

@@ -58,6 +58,7 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c
                     (t_nblist                    * gmx_restrict       nlist,
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
+                     rvec                        * gmx_restrict          vvir,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -66,11 +67,11 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
+    real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
+    real             *shiftvec,*fshift,*x,*f,*vir;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,virix0,viriy0,viriz0;
     int              vdwjidx0;
     real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
     real             dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00,cexp1_00,cexp2_00;
@@ -81,6 +82,7 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c
 
     x                = xx[0];
     f                = ff[0];
+    vir              = vvir[0];
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -128,6 +130,9 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c
         fix0             = 0.0;
         fiy0             = 0.0;
         fiz0             = 0.0;
+        virix0             = 0.0;
+        viriy0             = 0.0;
+        viriz0             = 0.0;
 
         /* Load parameters for i particles */
         vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
@@ -187,14 +192,24 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c
             tx               = fscal*dx00;
             ty               = fscal*dy00;
             tz               = fscal*dz00;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx00;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy00;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz00;
 
             /* Update vectorial force */
             fix0            += tx;
             fiy0            += ty;
             fiz0            += tz;
+            virix0            += virx;
+            viriy0            += viry;
+            viriz0            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -206,6 +221,9 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c
         f[i_coord_offset+DIM*0+XX] += fix0;
         f[i_coord_offset+DIM*0+YY] += fiy0;
         f[i_coord_offset+DIM*0+ZZ] += fiz0;
+        vir[i_coord_offset+DIM*0+XX] += virix0;
+        vir[i_coord_offset+DIM*0+YY] += viriy0;
+        vir[i_coord_offset+DIM*0+ZZ] += viriz0;
         tx                         += fix0;
         ty                         += fiy0;
         tz                         += fiz0;
@@ -242,6 +260,7 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_c
                     (t_nblist                    * gmx_restrict       nlist,
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
+                     rvec                        * gmx_restrict          vvir,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -250,11 +269,11 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_c
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
+    real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
+    real             *shiftvec,*fshift,*x,*f,*vir;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,virix0,viriy0,viriz0;
     int              vdwjidx0;
     real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
     real             dx00,dy00,dz00,rsq00,rinv00,rinvsq00,r00,qq00,c6_00,c12_00,cexp1_00,cexp2_00;
@@ -265,6 +284,7 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_c
 
     x                = xx[0];
     f                = ff[0];
+    vir              = vvir[0];
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -312,6 +332,9 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_c
         fix0             = 0.0;
         fiy0             = 0.0;
         fiz0             = 0.0;
+        virix0             = 0.0;
+        viriy0             = 0.0;
+        viriz0             = 0.0;
 
         /* Load parameters for i particles */
         vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
@@ -362,14 +385,24 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_c
             tx               = fscal*dx00;
             ty               = fscal*dy00;
             tz               = fscal*dz00;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx00;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy00;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz00;
 
             /* Update vectorial force */
             fix0            += tx;
             fiy0            += ty;
             fiz0            += tz;
+            virix0            += virx;
+            viriy0            += viry;
+            viriz0            += virz;
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+            vir[j_coord_offset+DIM*0+XX] += virx;
+            vir[j_coord_offset+DIM*0+YY] += viry;
+            vir[j_coord_offset+DIM*0+ZZ] += virz;
 
             }
 
@@ -381,6 +414,9 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_c
         f[i_coord_offset+DIM*0+XX] += fix0;
         f[i_coord_offset+DIM*0+YY] += fiy0;
         f[i_coord_offset+DIM*0+ZZ] += fiz0;
+        vir[i_coord_offset+DIM*0+XX] += virix0;
+        vir[i_coord_offset+DIM*0+YY] += viriy0;
+        vir[i_coord_offset+DIM*0+ZZ] += viriz0;
         tx                         += fix0;
         ty                         += fiy0;
         tz                         += fiz0;

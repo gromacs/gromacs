@@ -521,7 +521,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                 bFrame = bFrame && bOK;
                 if (bFrame)
                 {
-                    bOK = fread_htrn(fp, &head, newbox, newx, newv, NULL);
+                    bOK = fread_htrn(fp, &head, newbox, newx, newv, NULL,NULL);
                 }
                 bFrame = bFrame && bOK;
                 bUse   = FALSE;

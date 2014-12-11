@@ -309,7 +309,7 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
                            const atom_id *ind, gmx_conect gc)
 {
     char  title[STRLEN];
-    rvec *xout = NULL, *vout = NULL, *fout = NULL;
+    rvec *xout = NULL, *vout = NULL, *fout = NULL, *virout = NULL;
     int   i, ftp = -1;
     real  prec;
 
@@ -364,9 +364,11 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             if (fr->bF)
             {
                 snew(fout, nind);
+                snew(virout, nind);
                 for (i = 0; i < nind; i++)
                 {
                     copy_rvec(fr->f[ind[i]], fout[i]);
+                    copy_rvec(fr->vir[ind[i]], virout[i]);
                 }
             }
         /* no break */
@@ -394,7 +396,7 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             break;
         case efTRR:
             fwrite_trn(status->fio, nframes_read(status),
-                       fr->time, fr->step, fr->box, nind, xout, vout, fout);
+                       fr->time, fr->step, fr->box, nind, xout, vout, fout, virout);
             break;
         case efGRO:
         case efPDB:
@@ -438,6 +440,10 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             if (fout)
             {
                 sfree(fout);
+            }
+            if (virout)
+            {
+                sfree(virout);
             }
         /* no break */
         case efXTC:
@@ -546,7 +552,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             break;
         case efTRR:
             fwrite_trn(status->fio, fr->step, fr->time, fr->lambda, fr->box, fr->natoms,
-                       fr->bX ? fr->x : NULL, fr->bV ? fr->v : NULL, fr->bF ? fr->f : NULL);
+                       fr->bX ? fr->x : NULL, fr->bV ? fr->v : NULL, fr->bF ? fr->f : NULL, fr->bF ? fr->vir : NULL);
             break;
         case efGRO:
         case efPDB:
@@ -670,10 +676,11 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             if (fr->f == NULL)
             {
                 snew(fr->f, sh.natoms);
+                snew(fr->vir, sh.natoms);
             }
             fr->bF = sh.f_size > 0;
         }
-        if (fread_htrn(status->fio, &sh, fr->box, fr->x, fr->v, fr->f))
+        if (fread_htrn(status->fio, &sh, fr->box, fr->x, fr->v, fr->f, fr->vir))
         {
             bRet = TRUE;
         }
@@ -1054,7 +1061,6 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
         }
     }
     fr->t0 = fr->time;
-
     return (fr->natoms > 0);
 }
 

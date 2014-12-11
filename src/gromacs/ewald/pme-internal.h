@@ -102,7 +102,7 @@ int gmx_pme_recv_coeffs_coords(gmx_pme_pp_t pme_pp,
                                real **chargeA, real **chargeB,
                                real **sqrt_c6A, real **sqrt_c6B,
                                real **sigmaA, real **sigmaB,
-                               matrix box, rvec **x, rvec **f,
+                               matrix box, rvec **x, rvec **f, rvec **vir,
                                int *maxshift_x, int *maxshift_y,
                                gmx_bool *bFreeEnergy_q, gmx_bool *bFreeEnergy_lj,
                                real *lambda_q, real *lambda_lj,
@@ -118,7 +118,7 @@ int gmx_pme_recv_coeffs_coords(gmx_pme_pp_t pme_pp,
  */
 
 void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
-                                 rvec *f, matrix vir_q, real energy_q,
+                                 rvec *f, rvec *vir, matrix vir_q, real energy_q,
                                  matrix vir_lj, real energy_lj,
                                  real dvdlambda_q, real dvdlambda_lj,
                                  float cycles);

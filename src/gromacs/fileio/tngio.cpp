@@ -733,7 +733,8 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                     int              nAtoms,
                     const rvec      *x,
                     const rvec      *v,
-                    const rvec      *f)
+                    const rvec      *f,
+                    const rvec      *vir)
 {
 #ifdef GMX_USE_TNG
     typedef tng_function_status (*write_data_func_pointer)(tng_trajectory_t,
@@ -830,6 +831,21 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
         }
     }
 
+    if (vir)
+    {
+        /* TNG-MF1 compression only compresses positions and velocities. Use lossless
+         * compression for forces regardless of output mode */
+        if (write_data(tng, step, elapsedSeconds,
+                       reinterpret_cast<const real *>(vir),
+                       3, TNG_TRAJ_FORCES, "VIRIAL",
+                       TNG_PARTICLE_BLOCK_DATA,
+                       TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+        {
+            gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
+        }
+    }
+
+
     /* TNG-MF1 compression only compresses positions and velocities. Use lossless
      * compression for lambdas regardless of output mode */
     if (write_data(tng, step, elapsedSeconds,
@@ -851,6 +867,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
     GMX_UNUSED_VALUE(x);
     GMX_UNUSED_VALUE(v);
     GMX_UNUSED_VALUE(f);
+    GMX_UNUSED_VALUE(vir);
 #endif
 }
 

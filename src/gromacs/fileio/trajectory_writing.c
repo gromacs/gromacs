@@ -45,7 +45,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/smalloc.h"
-
+//SAW
 void
 do_md_trajectory_writing(FILE           *fplog,
                          t_commrec      *cr,
@@ -64,6 +64,8 @@ do_md_trajectory_writing(FILE           *fplog,
                          gmx_ekindata_t *ekind,
                          rvec           *f,
                          rvec           *f_global,
+                         rvec           *vir,
+                         rvec           *vir_global,
                          int            *nchkpt,
                          gmx_bool        bCPT,
                          gmx_bool        bRerunMD,
@@ -141,7 +143,7 @@ do_md_trajectory_writing(FILE           *fplog,
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, f, f_global);
+                                         step, t, state, state_global, f, f_global, vir, vir_global);
         if (bCPT)
         {
             (*nchkpt)++;

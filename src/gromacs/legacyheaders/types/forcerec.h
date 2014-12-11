@@ -359,6 +359,7 @@ typedef struct {
      * points to the normal force vectors wen pressure is not requested.
      */
     rvec *f_novirsum;
+    rvec *vir;
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
     gmx_pme_t pmedata;

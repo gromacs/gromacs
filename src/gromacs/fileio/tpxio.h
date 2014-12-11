@@ -38,6 +38,8 @@
 #ifndef GMX_FILEIO_TPXIO_H
 #define GMX_FILEIO_TPXIO_H
 
+#define VIRIAL_EXTENSION
+
 
 /**************************************************************
  *

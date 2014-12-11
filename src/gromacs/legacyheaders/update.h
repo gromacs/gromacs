@@ -118,6 +118,7 @@ void update_constraints(FILE             *fplog,
                         gmx_bool          bMolPBC,
                         struct t_graph   *graph,
                         rvec              force[], /* forces on home particles */
+                        rvec              vir[], /* virial on home particles */
                         t_idef           *idef,
                         tensor            vir_part,
                         t_commrec        *cr,

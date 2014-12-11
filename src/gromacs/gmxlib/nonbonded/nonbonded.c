@@ -326,7 +326,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 }
 
 void do_nonbonded(t_forcerec *fr,
-                  rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *mdatoms, t_blocka *excl,
+                  rvec x[], rvec f_shortrange[], rvec f_longrange[], rvec vir_shortrange[], rvec vir_longrange[], t_mdatoms *mdatoms, t_blocka *excl,
                   gmx_grppairener_t *grppener,
                   t_nrnb *nrnb, real *lambda, real *dvdl,
                   int nls, int eNL, int flags)
@@ -337,6 +337,7 @@ void do_nonbonded(t_forcerec *fr,
     nb_kernel_data_t  kernel_data;
     nb_kernel_t *     kernelptr = NULL;
     rvec *            f;
+    rvec *            vir;
 
     kernel_data.flags                   = flags;
     kernel_data.exclusions              = excl;
@@ -394,6 +395,7 @@ void do_nonbonded(t_forcerec *fr,
                 kernel_data.energygrp_polarization  = grppener->ener[egGB];
                 nlist = nblists->nlist_sr;
                 f                                   = f_shortrange;
+                vir                                 = vir_shortrange;
             }
             else
             {
@@ -407,6 +409,7 @@ void do_nonbonded(t_forcerec *fr,
                 kernel_data.energygrp_polarization  = grppener->ener[egGB];
                 nlist = nblists->nlist_lr;
                 f                                   = f_longrange;
+                vir                                 = vir_longrange;
             }
 
             for (i = i0; (i < i1); i++)
@@ -429,10 +432,11 @@ void do_nonbonded(t_forcerec *fr,
                         /* We don't need the non-perturbed interactions */
                         continue;
                     }
+//SAW
                     /* Neighborlists whose kernelptr==NULL will always be empty */
                     if (kernelptr != NULL)
                     {
-                        (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                        (*kernelptr)(&(nlist[i]), x, f, vir, fr, mdatoms, &kernel_data, nrnb);
                     }
                     else
                     {

@@ -58,6 +58,7 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
                     (t_nblist                    * gmx_restrict       nlist,
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
+                     rvec                        * gmx_restrict          vvir,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -66,15 +67,15 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
+    real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
+    real             *shiftvec,*fshift,*x,*f,*vir;
     int              vdwioffset1;
-    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1;
+    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1,virix1,viriy1,viriz1;
     int              vdwioffset2;
-    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2;
+    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2,virix2,viriy2,viriz2;
     int              vdwioffset3;
-    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3;
+    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3,virix3,viriy3,viriz3;
     int              vdwjidx1;
     real             jx1,jy1,jz1,fjx1,fjy1,fjz1,jq1,isaj1;
     int              vdwjidx2;
@@ -98,6 +99,7 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
 
     x                = xx[0];
     f                = ff[0];
+    vir              = vvir[0];
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -168,12 +170,21 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
         fix1             = 0.0;
         fiy1             = 0.0;
         fiz1             = 0.0;
+        virix1             = 0.0;
+        viriy1             = 0.0;
+        viriz1             = 0.0;
         fix2             = 0.0;
         fiy2             = 0.0;
         fiz2             = 0.0;
+        virix2             = 0.0;
+        viriy2             = 0.0;
+        viriz2             = 0.0;
         fix3             = 0.0;
         fiy3             = 0.0;
         fiz3             = 0.0;
+        virix3             = 0.0;
+        viriy3             = 0.0;
+        viriz3             = 0.0;
 
         /* Reset potential sums */
         velecsum         = 0.0;
@@ -282,14 +293,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx11;
             ty               = fscal*dy11;
             tz               = fscal*dz11;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx11;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy11;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz11;
 
             /* Update vectorial force */
             fix1            += tx;
             fiy1            += ty;
             fiz1            += tz;
+            virix1            += virx;
+            viriy1            += viry;
+            viriz1            += virz;
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+            vir[j_coord_offset+DIM*1+XX] += virx;
+            vir[j_coord_offset+DIM*1+YY] += viry;
+            vir[j_coord_offset+DIM*1+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -317,14 +338,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx12;
             ty               = fscal*dy12;
             tz               = fscal*dz12;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx12;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy12;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz12;
 
             /* Update vectorial force */
             fix1            += tx;
             fiy1            += ty;
             fiz1            += tz;
+            virix1            += virx;
+            viriy1            += viry;
+            viriz1            += virz;
             f[j_coord_offset+DIM*2+XX] -= tx;
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
+            vir[j_coord_offset+DIM*2+XX] += virx;
+            vir[j_coord_offset+DIM*2+YY] += viry;
+            vir[j_coord_offset+DIM*2+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -352,14 +383,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx13;
             ty               = fscal*dy13;
             tz               = fscal*dz13;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx13;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy13;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz13;
 
             /* Update vectorial force */
             fix1            += tx;
             fiy1            += ty;
             fiz1            += tz;
+            virix1            += virx;
+            viriy1            += viry;
+            viriz1            += virz;
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+            vir[j_coord_offset+DIM*3+XX] += virx;
+            vir[j_coord_offset+DIM*3+YY] += viry;
+            vir[j_coord_offset+DIM*3+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -387,14 +428,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx21;
             ty               = fscal*dy21;
             tz               = fscal*dz21;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx21;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy21;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz21;
 
             /* Update vectorial force */
             fix2            += tx;
             fiy2            += ty;
             fiz2            += tz;
+            virix2            += virx;
+            viriy2            += viry;
+            viriz2            += virz;
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+            vir[j_coord_offset+DIM*1+XX] += virx;
+            vir[j_coord_offset+DIM*1+YY] += viry;
+            vir[j_coord_offset+DIM*1+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -422,14 +473,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx22;
             ty               = fscal*dy22;
             tz               = fscal*dz22;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx22;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy22;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz22;
 
             /* Update vectorial force */
             fix2            += tx;
             fiy2            += ty;
             fiz2            += tz;
+            virix2            += virx;
+            viriy2            += viry;
+            viriz2            += virz;
             f[j_coord_offset+DIM*2+XX] -= tx;
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
+            vir[j_coord_offset+DIM*2+XX] += virx;
+            vir[j_coord_offset+DIM*2+YY] += viry;
+            vir[j_coord_offset+DIM*2+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -457,14 +518,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx23;
             ty               = fscal*dy23;
             tz               = fscal*dz23;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx23;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy23;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz23;
 
             /* Update vectorial force */
             fix2            += tx;
             fiy2            += ty;
             fiz2            += tz;
+            virix2            += virx;
+            viriy2            += viry;
+            viriz2            += virz;
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+            vir[j_coord_offset+DIM*3+XX] += virx;
+            vir[j_coord_offset+DIM*3+YY] += viry;
+            vir[j_coord_offset+DIM*3+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -492,14 +563,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx31;
             ty               = fscal*dy31;
             tz               = fscal*dz31;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx31;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy31;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz31;
 
             /* Update vectorial force */
             fix3            += tx;
             fiy3            += ty;
             fiz3            += tz;
+            virix3            += virx;
+            viriy3            += viry;
+            viriz3            += virz;
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+            vir[j_coord_offset+DIM*1+XX] += virx;
+            vir[j_coord_offset+DIM*1+YY] += viry;
+            vir[j_coord_offset+DIM*1+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -527,14 +608,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx32;
             ty               = fscal*dy32;
             tz               = fscal*dz32;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx32;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy32;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz32;
 
             /* Update vectorial force */
             fix3            += tx;
             fiy3            += ty;
             fiz3            += tz;
+            virix3            += virx;
+            viriy3            += viry;
+            viriz3            += virz;
             f[j_coord_offset+DIM*2+XX] -= tx;
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
+            vir[j_coord_offset+DIM*2+XX] += virx;
+            vir[j_coord_offset+DIM*2+YY] += viry;
+            vir[j_coord_offset+DIM*2+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -562,14 +653,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
             tx               = fscal*dx33;
             ty               = fscal*dy33;
             tz               = fscal*dz33;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx33;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy33;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz33;
 
             /* Update vectorial force */
             fix3            += tx;
             fiy3            += ty;
             fiz3            += tz;
+            virix3            += virx;
+            viriy3            += viry;
+            viriz3            += virz;
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+            vir[j_coord_offset+DIM*3+XX] += virx;
+            vir[j_coord_offset+DIM*3+YY] += viry;
+            vir[j_coord_offset+DIM*3+ZZ] += virz;
 
             /* Inner loop uses 360 flops */
         }
@@ -579,18 +680,27 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_VF_c
         f[i_coord_offset+DIM*1+XX] += fix1;
         f[i_coord_offset+DIM*1+YY] += fiy1;
         f[i_coord_offset+DIM*1+ZZ] += fiz1;
+        vir[i_coord_offset+DIM*1+XX] += virix1;
+        vir[i_coord_offset+DIM*1+YY] += viriy1;
+        vir[i_coord_offset+DIM*1+ZZ] += viriz1;
         tx                         += fix1;
         ty                         += fiy1;
         tz                         += fiz1;
         f[i_coord_offset+DIM*2+XX] += fix2;
         f[i_coord_offset+DIM*2+YY] += fiy2;
         f[i_coord_offset+DIM*2+ZZ] += fiz2;
+        vir[i_coord_offset+DIM*2+XX] += virix2;
+        vir[i_coord_offset+DIM*2+YY] += viriy2;
+        vir[i_coord_offset+DIM*2+ZZ] += viriz2;
         tx                         += fix2;
         ty                         += fiy2;
         tz                         += fiz2;
         f[i_coord_offset+DIM*3+XX] += fix3;
         f[i_coord_offset+DIM*3+YY] += fiy3;
         f[i_coord_offset+DIM*3+ZZ] += fiz3;
+        vir[i_coord_offset+DIM*3+XX] += virix3;
+        vir[i_coord_offset+DIM*3+YY] += viriy3;
+        vir[i_coord_offset+DIM*3+ZZ] += viriz3;
         tx                         += fix3;
         ty                         += fiy3;
         tz                         += fiz3;
@@ -627,6 +737,7 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
                     (t_nblist                    * gmx_restrict       nlist,
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
+                     rvec                        * gmx_restrict          vvir,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -635,15 +746,15 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
     int              i_shift_offset,i_coord_offset,j_coord_offset;
     int              j_index_start,j_index_end;
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
-    real             shX,shY,shZ,tx,ty,tz,fscal,rcutoff,rcutoff2;
+    real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f;
+    real             *shiftvec,*fshift,*x,*f,*vir;
     int              vdwioffset1;
-    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1;
+    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1,virix1,viriy1,viriz1;
     int              vdwioffset2;
-    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2;
+    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2,virix2,viriy2,viriz2;
     int              vdwioffset3;
-    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3;
+    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3,virix3,viriy3,viriz3;
     int              vdwjidx1;
     real             jx1,jy1,jz1,fjx1,fjy1,fjz1,jq1,isaj1;
     int              vdwjidx2;
@@ -667,6 +778,7 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
 
     x                = xx[0];
     f                = ff[0];
+    vir              = vvir[0];
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -737,12 +849,21 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
         fix1             = 0.0;
         fiy1             = 0.0;
         fiz1             = 0.0;
+        virix1             = 0.0;
+        viriy1             = 0.0;
+        viriz1             = 0.0;
         fix2             = 0.0;
         fiy2             = 0.0;
         fiz2             = 0.0;
+        virix2             = 0.0;
+        viriy2             = 0.0;
+        viriz2             = 0.0;
         fix3             = 0.0;
         fiy3             = 0.0;
         fiz3             = 0.0;
+        virix3             = 0.0;
+        viriy3             = 0.0;
+        viriz3             = 0.0;
 
         /* Start inner kernel loop */
         for(jidx=j_index_start; jidx<j_index_end; jidx++)
@@ -843,14 +964,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx11;
             ty               = fscal*dy11;
             tz               = fscal*dz11;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx11;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy11;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz11;
 
             /* Update vectorial force */
             fix1            += tx;
             fiy1            += ty;
             fiz1            += tz;
+            virix1            += virx;
+            viriy1            += viry;
+            viriz1            += virz;
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+            vir[j_coord_offset+DIM*1+XX] += virx;
+            vir[j_coord_offset+DIM*1+YY] += viry;
+            vir[j_coord_offset+DIM*1+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -873,14 +1004,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx12;
             ty               = fscal*dy12;
             tz               = fscal*dz12;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx12;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy12;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz12;
 
             /* Update vectorial force */
             fix1            += tx;
             fiy1            += ty;
             fiz1            += tz;
+            virix1            += virx;
+            viriy1            += viry;
+            viriz1            += virz;
             f[j_coord_offset+DIM*2+XX] -= tx;
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
+            vir[j_coord_offset+DIM*2+XX] += virx;
+            vir[j_coord_offset+DIM*2+YY] += viry;
+            vir[j_coord_offset+DIM*2+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -903,14 +1044,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx13;
             ty               = fscal*dy13;
             tz               = fscal*dz13;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx13;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy13;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz13;
 
             /* Update vectorial force */
             fix1            += tx;
             fiy1            += ty;
             fiz1            += tz;
+            virix1            += virx;
+            viriy1            += viry;
+            viriz1            += virz;
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+            vir[j_coord_offset+DIM*3+XX] += virx;
+            vir[j_coord_offset+DIM*3+YY] += viry;
+            vir[j_coord_offset+DIM*3+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -933,14 +1084,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx21;
             ty               = fscal*dy21;
             tz               = fscal*dz21;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx21;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy21;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz21;
 
             /* Update vectorial force */
             fix2            += tx;
             fiy2            += ty;
             fiz2            += tz;
+            virix2            += virx;
+            viriy2            += viry;
+            viriz2            += virz;
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+            vir[j_coord_offset+DIM*1+XX] += virx;
+            vir[j_coord_offset+DIM*1+YY] += viry;
+            vir[j_coord_offset+DIM*1+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -963,14 +1124,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx22;
             ty               = fscal*dy22;
             tz               = fscal*dz22;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx22;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy22;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz22;
 
             /* Update vectorial force */
             fix2            += tx;
             fiy2            += ty;
             fiz2            += tz;
+            virix2            += virx;
+            viriy2            += viry;
+            viriz2            += virz;
             f[j_coord_offset+DIM*2+XX] -= tx;
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
+            vir[j_coord_offset+DIM*2+XX] += virx;
+            vir[j_coord_offset+DIM*2+YY] += viry;
+            vir[j_coord_offset+DIM*2+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -993,14 +1164,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx23;
             ty               = fscal*dy23;
             tz               = fscal*dz23;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx23;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy23;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz23;
 
             /* Update vectorial force */
             fix2            += tx;
             fiy2            += ty;
             fiz2            += tz;
+            virix2            += virx;
+            viriy2            += viry;
+            viriz2            += virz;
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+            vir[j_coord_offset+DIM*3+XX] += virx;
+            vir[j_coord_offset+DIM*3+YY] += viry;
+            vir[j_coord_offset+DIM*3+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1023,14 +1204,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx31;
             ty               = fscal*dy31;
             tz               = fscal*dz31;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx31;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy31;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz31;
 
             /* Update vectorial force */
             fix3            += tx;
             fiy3            += ty;
             fiz3            += tz;
+            virix3            += virx;
+            viriy3            += viry;
+            viriz3            += virz;
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+            vir[j_coord_offset+DIM*1+XX] += virx;
+            vir[j_coord_offset+DIM*1+YY] += viry;
+            vir[j_coord_offset+DIM*1+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1053,14 +1244,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx32;
             ty               = fscal*dy32;
             tz               = fscal*dz32;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx32;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy32;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz32;
 
             /* Update vectorial force */
             fix3            += tx;
             fiy3            += ty;
             fiz3            += tz;
+            virix3            += virx;
+            viriy3            += viry;
+            viriz3            += virz;
             f[j_coord_offset+DIM*2+XX] -= tx;
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
+            vir[j_coord_offset+DIM*2+XX] += virx;
+            vir[j_coord_offset+DIM*2+YY] += viry;
+            vir[j_coord_offset+DIM*2+ZZ] += virz;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1083,14 +1284,24 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
             tx               = fscal*dx33;
             ty               = fscal*dy33;
             tz               = fscal*dz33;
+  
+            virx             = 0.5*(1e25/AVOGADRO)*tx * dx33;
+            viry             = 0.5*(1e25/AVOGADRO)*ty * dy33;
+            virz             = 0.5*(1e25/AVOGADRO)*tz * dz33;
 
             /* Update vectorial force */
             fix3            += tx;
             fiy3            += ty;
             fiz3            += tz;
+            virix3            += virx;
+            viriy3            += viry;
+            viriz3            += virz;
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+            vir[j_coord_offset+DIM*3+XX] += virx;
+            vir[j_coord_offset+DIM*3+YY] += viry;
+            vir[j_coord_offset+DIM*3+ZZ] += virz;
 
             /* Inner loop uses 297 flops */
         }
@@ -1100,18 +1311,27 @@ nb_kernel_ElecEw_VdwNone_GeomW4W4_F_c
         f[i_coord_offset+DIM*1+XX] += fix1;
         f[i_coord_offset+DIM*1+YY] += fiy1;
         f[i_coord_offset+DIM*1+ZZ] += fiz1;
+        vir[i_coord_offset+DIM*1+XX] += virix1;
+        vir[i_coord_offset+DIM*1+YY] += viriy1;
+        vir[i_coord_offset+DIM*1+ZZ] += viriz1;
         tx                         += fix1;
         ty                         += fiy1;
         tz                         += fiz1;
         f[i_coord_offset+DIM*2+XX] += fix2;
         f[i_coord_offset+DIM*2+YY] += fiy2;
         f[i_coord_offset+DIM*2+ZZ] += fiz2;
+        vir[i_coord_offset+DIM*2+XX] += virix2;
+        vir[i_coord_offset+DIM*2+YY] += viriy2;
+        vir[i_coord_offset+DIM*2+ZZ] += viriz2;
         tx                         += fix2;
         ty                         += fiy2;
         tz                         += fiz2;
         f[i_coord_offset+DIM*3+XX] += fix3;
         f[i_coord_offset+DIM*3+YY] += fiy3;
         f[i_coord_offset+DIM*3+ZZ] += fiz3;
+        vir[i_coord_offset+DIM*3+XX] += virix3;
+        vir[i_coord_offset+DIM*3+YY] += viriy3;
+        vir[i_coord_offset+DIM*3+ZZ] += viriz3;
         tx                         += fix3;
         ty                         += fiy3;
         tz                         += fiz3;

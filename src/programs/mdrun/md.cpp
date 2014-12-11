@@ -197,8 +197,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     t_mdebin         *mdebin   = NULL;
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
+    rvec             *vir_global = NULL;
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
+    rvec             *vir = NULL;
     gmx_global_stat_t gstat;
     gmx_update_t      upd   = NULL;
     t_graph          *graph = NULL;
@@ -323,10 +325,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     if (DOMAINDECOMP(cr))
     {
         f = NULL;
+	exit(printf("Domain decomposition not yet implemented, sorry...(MS)"));
     }
     else
     {
         snew(f, top_global->natoms);
+        snew(vir, top_global->natoms);
     }
 
     /* Kinetic energy data */
@@ -406,6 +410,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         state    = serial_init_local_state(state_global);
         f_global = f;
+        vir_global = vir;
 
         atoms2md(top_global, ir, 0, NULL, top_global->natoms, mdatoms);
 
@@ -1043,7 +1048,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
                       (bGStat ? CGLO_GSTAT : 0)
                       );
-
+// SAW
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
                        GMX_FORCE_ALLFORCES |
@@ -1064,6 +1069,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (shellfc)
         {
             /* Now is the time to relax the shells */
+	    exit(printf("not implemented for shell particles.. (MS)"));
             count = relax_shell_flexcon(fplog, cr, bVerbose, step,
                                         ir, bNS, force_flags,
                                         top,
@@ -1087,9 +1093,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
+// SAW
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
+                     f, vir, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
@@ -1174,7 +1181,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     wallcycle_stop(wcycle, ewcUPDATE);
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
-                                       state, fr->bMolPBC, graph, f,
+                                       state, fr->bMolPBC, graph, f, vir,
                                        &top->idef, shake_vir,
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
@@ -1183,7 +1190,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
                     {
                         /* Correct the virial for multiple time stepping */
-                        m_sub(shake_vir, fr->vir_twin_constr, shake_vir);
+                        m_sub(shake_vir, fr->vir_twin_constr, shake_vir); 
                     }
                 }
                 else if (graph)
@@ -1326,12 +1333,24 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * coordinates at time t. We must output all of this before
          * the update.
          */
+//SAW
+        for (i = 0; i < mdatoms->homenr; i++) { 
+		real m = 1./mdatoms->invmass[i] ; 
+		vir[i][0] += (1e25/AVOGADRO) * m * state->v[i][0]* state->v[i][0];
+		vir[i][1] += (1e25/AVOGADRO) * m * state->v[i][1]* state->v[i][1];
+		vir[i][2] += (1e25/AVOGADRO) * m * state->v[i][2]* state->v[i][2];
+        }
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
-                                 outf, mdebin, ekind, f, f_global,
+                                 outf, mdebin, ekind, f, f_global, vir, vir_global,
                                  &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
+
+        for (i = 0; i < state_global->natoms; i++)
+        {
+        	clear_rvec(vir[i]);
+        }
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);
 
@@ -1450,7 +1469,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (constr && bIfRandomize)
                 {
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
-                                       state, fr->bMolPBC, graph, f,
+                                       state, fr->bMolPBC, graph, f, vir,
                                        &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
@@ -1549,7 +1568,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 wallcycle_stop(wcycle, ewcUPDATE);
 
                 update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
-                                   fr->bMolPBC, graph, f,
+                                   fr->bMolPBC, graph, f, vir,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    FALSE, bCalcVir, state->veta);
@@ -1588,7 +1607,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      * physically? I'm thinking they are just errors, but not completely sure.
                      * For now, will call without actually constraining, constr=NULL*/
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
-                                       state, fr->bMolPBC, graph, f,
+                                       state, fr->bMolPBC, graph, f, vir,
                                        &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, NULL,
                                        FALSE, bCalcVir,
@@ -1653,6 +1672,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     gs.sig[eglsNABNSB] = nlh.nabnsb;
                 }
+//SAW
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr,

@@ -221,7 +221,7 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
                gmx_bool bFEP, real lambda, real scaled_lagrange_multiplier[],
                real invdt, rvec *v,
                gmx_bool bCalcVir, tensor vir_r_m_dr, int econq,
-               t_vetavars *vetavar)
+               t_vetavars *vetavar, rvec *local_vir)
 {
     rvec    *rij;
     real    *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
@@ -348,6 +348,10 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
                 {
                     vir_r_m_dr[d][d2] -= tmp*rij[ll][d2];
                 }
+		if(local_vir !=NULL) { 
+		  local_vir[i][d] += 1.0 * (1e25/AVOGADRO)*tmp*rij[ll][d];
+		  local_vir[j][d] += 1.0 * (1e25/AVOGADRO)*tmp*rij[ll][d];
+		}
             }
             /* 21 flops */
         }
@@ -415,7 +419,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
                  t_nrnb *nrnb, real *scaled_lagrange_multiplier, real lambda, real *dvdlambda,
                  real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
-                 gmx_bool bDumpOnError, int econq, t_vetavars *vetavar)
+                 gmx_bool bDumpOnError, int econq, t_vetavars *vetavar, rvec* local_vir)
 {
     t_iatom *iatoms;
     real     dt_2, dvdl;
@@ -441,7 +445,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
                            ir->efep != efepNO, lambda, scaled_lagrange_multiplier, invdt, v, bCalcVir, vir_r_m_dr,
-                           econq, vetavar);
+                           econq, vetavar,local_vir);
 
 #ifdef DEBUGSHAKE
         check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);

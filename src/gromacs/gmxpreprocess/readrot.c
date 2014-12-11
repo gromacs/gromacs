@@ -281,7 +281,7 @@ extern void set_reference_positions(
                 gmx_fatal(FARGS, "Number of atoms in file %s (%d) does not match the number of atoms in rotation group (%d)!\n",
                           reffile, header.natoms, rotg->nat);
             }
-            read_trn(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, NULL, NULL);
+            read_trn(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, NULL, NULL, NULL);
 
             /* Check whether the box is unchanged and output a warning if not: */
             check_box_unchanged(f_box, box, reffile, wi);
@@ -294,7 +294,7 @@ extern void set_reference_positions(
                 ii = rotg->ind[i];
                 copy_rvec(x[ii], rotg->x_ref[i]);
             }
-            write_trn(reffile, g, 0.0, 0.0, box, rotg->nat, rotg->x_ref, NULL, NULL);
+            write_trn(reffile, g, 0.0, 0.0, box, rotg->nat, rotg->x_ref, NULL, NULL, NULL);
         }
     }
 }

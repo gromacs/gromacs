@@ -898,11 +898,11 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x, xnold-start, NULL, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
+              NULL, NULL, nrnb, econqCoord, FALSE, 0, 0,NULL);
     constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x, xnew-start, NULL, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
+              NULL, NULL, nrnb, econqCoord, FALSE, 0, 0,NULL);
 
     for (n = start; n < end; n++)
     {
@@ -919,7 +919,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
               x_old, xnew-start, acc_dir, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqDeriv_FlexCon, FALSE, 0, 0);
+              NULL, NULL, nrnb, econqDeriv_FlexCon, FALSE, 0, 0,NULL);
 }
 
 int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
@@ -1066,7 +1066,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
     do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, groups,
              state->box, state->x, &state->hist,
-             force[Min], force_vir, md, enerd, fcd,
+             force[Min],NULL, force_vir, md, enerd, fcd,
              state->lambda, graph,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
@@ -1168,7 +1168,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         /* Try the new positions */
         do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
                  top, groups, state->box, pos[Try], &state->hist,
-                 force[Try], force_vir,
+                 force[Try], NULL,force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
                  force_flags);

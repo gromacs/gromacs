@@ -336,7 +336,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
                    t_nrnb *nrnb, int econq, gmx_bool bPscal,
-                   real veta, real vetanew)
+                   real veta, real vetanew, rvec * local_vir)
 {
     gmx_bool    bOK, bDump;
     int         start, homenr;
@@ -349,9 +349,9 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     int         nsettle;
     t_pbc       pbc, *pbc_null;
     char        buf[22];
+    rvec       *tmpvir;
     t_vetavars  vetavar;
     int         nth, th;
-
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
         gmx_incons("constrain called for forces displacements while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
@@ -362,6 +362,9 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     start  = 0;
     homenr = md->homenr;
+
+    tmpvir = (rvec*)malloc(homenr * sizeof(rvec));
+    for(int i =0; i < homenr; i++) tmpvir[i][0]= tmpvir[i][1]=tmpvir[i][2]=0.0;
 
     scaled_delta_t = step_scaling * ir->delta_t;
 
@@ -480,7 +483,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               idef, ir, x, xprime, nrnb,
                               constr->lagr, lambda, dvdlambda,
                               invdt, v, vir != NULL, vir_r_m_dr,
-                              constr->maxwarn >= 0, econq, &vetavar);
+                              constr->maxwarn >= 0, econq, &vetavar,tmpvir);
                 break;
             case (econqVeloc):
                 bOK = bshakef(fplog, constr->shaked,
@@ -488,7 +491,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               idef, ir, x, min_proj, nrnb,
                               constr->lagr, lambda, dvdlambda,
                               invdt, NULL, vir != NULL, vir_r_m_dr,
-                              constr->maxwarn >= 0, econq, &vetavar);
+                              constr->maxwarn >= 0, econq, &vetavar,tmpvir);
                 break;
             default:
                 gmx_fatal(FARGS, "Internal error, SHAKE called for constraining something else than coordinates");
@@ -670,7 +673,15 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 (*vir)[i][j] = vir_fac*vir_r_m_dr[i][j];
             }
         }
+        if(local_vir!=NULL) { 
+          for(i=0;i<homenr;i++){
+              for (j = 0; j < DIM; j++) { 
+	  	local_vir[i][j]+=vir_fac * tmpvir[i][j];
+              }
+	  }
+        }
     }
+    free(tmpvir);
 
     if (bDump)
     {

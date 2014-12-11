@@ -61,7 +61,7 @@ init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir,
 /*! \brief Do the long-ranged part of an Ewald calculation */
 real
 do_ewald(t_inputrec *ir,
-         rvec x[],        rvec f[],
+         rvec x[],        rvec f[],     rvec vir[],
          real chargeA[],  real chargeB[],
          rvec box,
          t_commrec *cr,  int natoms,

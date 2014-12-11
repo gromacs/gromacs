@@ -102,6 +102,7 @@ typedef struct gmx_pme_pp {
     real        *sigmaB;
     rvec        *x;
     rvec        *f;
+    rvec        *vir;
     int          nalloc;
 #ifdef GMX_MPI
     MPI_Request *req;
@@ -414,6 +415,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
                                matrix gmx_unused           box,
                                rvec                      **x,
                                rvec                      **f,
+                               rvec                      **vir,
                                int gmx_unused             *maxshift_x,
                                int gmx_unused             *maxshift_y,
                                gmx_bool gmx_unused        *bFreeEnergy_q,
@@ -526,6 +528,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
                 }
                 srenew(pme_pp->x, pme_pp->nalloc);
                 srenew(pme_pp->f, pme_pp->nalloc);
+                srenew(pme_pp->vir, pme_pp->nalloc);
             }
 
             /* maxshift is sent when the charges are sent */
@@ -646,6 +649,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
     *sigmaB   = pme_pp->sigmaB;
     *x        = pme_pp->x;
     *f        = pme_pp->f;
+    *vir      = pme_pp->vir;
 
     return ((cnb.flags & PP_PME_FINISH) ? pmerecvqxFINISH : pmerecvqxX);
 }
@@ -695,7 +699,7 @@ static void receive_virial_energy(t_commrec *cr,
 }
 
 void gmx_pme_receive_f(t_commrec *cr,
-                       rvec f[], matrix vir_q, real *energy_q,
+                       rvec f[], rvec vir[], matrix vir_q, real *energy_q,
                        matrix vir_lj, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles)
@@ -720,6 +724,7 @@ void gmx_pme_receive_f(t_commrec *cr,
              natoms*sizeof(rvec), MPI_BYTE,
              cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
              MPI_STATUS_IGNORE);
+
 #endif
 
     for (i = 0; i < natoms; i++)
@@ -727,12 +732,22 @@ void gmx_pme_receive_f(t_commrec *cr,
         rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
     }
 
+#ifdef GMX_MPI
+    MPI_Recv(cr->dd->pme_recv_f_buf[0],
+             natoms*sizeof(rvec), MPI_BYTE,
+             cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
+             MPI_STATUS_IGNORE);
+#endif
+    for (i = 0; i < natoms; i++)
+    {
+        rvec_inc(vir[i], cr->dd->pme_recv_f_buf[i]);
+    }
 
     receive_virial_energy(cr, vir_q, energy_q, vir_lj, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
 }
 
 void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
-                                 rvec gmx_unused *f,
+                                 rvec gmx_unused *f, rvec gmx_unused *vir,
                                  matrix vir_q, real energy_q,
                                  matrix vir_lj, real energy_lj,
                                  real dvdlambda_q, real dvdlambda_lj,
@@ -757,6 +772,13 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
         {
             gmx_comm("MPI_Isend failed in do_pmeonly");
         }
+        if (MPI_Isend(vir[ind_start], (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
+                      pme_pp->node[receiver], 0,
+                      pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
+        {
+            gmx_comm("MPI_Isend failed in do_pmeonly");
+        }
+
 #endif
     }
 

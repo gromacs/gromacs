@@ -106,29 +106,29 @@ gmx_bool is_trn(FILE *fp);
  */
 
 void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
-                rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+                rvec *box, int natoms, rvec *x, rvec *v, rvec *f, rvec *vir);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
 gmx_bool fread_htrn(t_fileio *fio, t_trnheader *sh,
-                    rvec *box, rvec *x, rvec *v, rvec *f);
+                    rvec *box, rvec *x, rvec *v, rvec *f, rvec * vir);
 /* Extern read a frame except the header (that should be pre-read,
  * using routine read_trnheader, see above) from a trn file.
  * Return FALSE on error
  */
 
 gmx_bool fread_trn(t_fileio *fio, int *step, real *t, real *lambda,
-                   rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
+                   rvec *box, int *natoms, rvec *x, rvec *v, rvec *f, rvec * vir);
 /* Read a trn frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.
  * return FALSE on error
  */
 
 void write_trn(const char *fn, int step, real t, real lambda,
-               rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+               rvec *box, int natoms, rvec *x, rvec *v, rvec *f, rvec * vir);
 /* Write a single trn frame to file fn, which is closed afterwards */
 
 void read_trn(const char *fn, int *step, real *t, real *lambda,
-              rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
+              rvec *box, int *natoms, rvec *x, rvec *v, rvec *f, rvec  * vir);
 /* Read a single trn frame from file fn, which is closed afterwards
  */
 

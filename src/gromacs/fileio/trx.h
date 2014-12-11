@@ -89,6 +89,7 @@ typedef struct t_trxframe
     rvec           *v;         /* velocities (natoms)              */
     gmx_bool        bF;
     rvec           *f;         /* forces (natoms)                  */
+    rvec           *vir;       /* virial (natoms)                  */
     gmx_bool        bBox;
     matrix          box;       /* the 3 box vectors                */
     gmx_bool        bPBC;

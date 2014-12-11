@@ -502,7 +502,7 @@ void do_trunc(const char *fn, real t0)
         bStop = FALSE;
         while (!bStop && fread_trnheader(in, &sh, &bOK))
         {
-            fread_htrn(in, &sh, NULL, NULL, NULL, NULL);
+            fread_htrn(in, &sh, NULL, NULL, NULL, NULL,NULL);
             fpos = gmx_ftell(fp);
             t    = sh.t;
             if (t >= t0)

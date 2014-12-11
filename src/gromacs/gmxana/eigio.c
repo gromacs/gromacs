@@ -64,7 +64,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
     fread_trnheader(status, &head, &bOK);
     *natoms = head.natoms;
     snew(*xav, *natoms);
-    fread_htrn(status, &head, box, *xav, NULL, NULL);
+    fread_htrn(status, &head, box, *xav, NULL, NULL,NULL);
 
     if ((head.t >= -1.1) && (head.t <= -0.9))
     {
@@ -86,7 +86,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
             *xref = NULL;
         }
         fread_trnheader(status, &head, &bOK);
-        fread_htrn(status, &head, box, *xav, NULL, NULL);
+        fread_htrn(status, &head, box, *xav, NULL, NULL,NULL);
     }
     else
     {
@@ -117,7 +117,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
     *nvec = 0;
     while (fread_trnheader(status, &head, &bOK))
     {
-        fread_htrn(status, &head, box, x, NULL, NULL);
+        fread_htrn(status, &head, box, x, NULL, NULL,NULL);
         if (*nvec >= snew_size)
         {
             snew_size += 10;
@@ -163,16 +163,16 @@ void write_eigenvectors(const char *trnname, int natoms, real mat[],
     if (WriteXref == eWXR_YES)
     {
         /* misuse lambda: 0/1 mass weighted fit no/yes */
-        fwrite_trn(trnout, -1, -1, bDMR ? 1.0 : 0.0, zerobox, natoms, xref, NULL, NULL);
+        fwrite_trn(trnout, -1, -1, bDMR ? 1.0 : 0.0, zerobox, natoms, xref, NULL, NULL,NULL);
     }
     else if (WriteXref == eWXR_NOFIT)
     {
         /* misuse lambda: -1 no fit */
-        fwrite_trn(trnout, -1, -1, -1.0, zerobox, natoms, x, NULL, NULL);
+        fwrite_trn(trnout, -1, -1, -1.0, zerobox, natoms, x, NULL, NULL,NULL);
     }
 
     /* misuse lambda: 0/1 mass weighted analysis no/yes */
-    fwrite_trn(trnout, 0, 0, bDMA ? 1.0 : 0.0, zerobox, natoms, xav, NULL, NULL);
+    fwrite_trn(trnout, 0, 0, bDMA ? 1.0 : 0.0, zerobox, natoms, xav, NULL, NULL,NULL);
 
     for (i = 0; i <= (end-begin); i++)
     {
@@ -195,7 +195,7 @@ void write_eigenvectors(const char *trnname, int natoms, real mat[],
         }
 
         /* Store the eigenvalue in the time field */
-        fwrite_trn(trnout, begin+i, eigval[vec], 0, zerobox, natoms, x, NULL, NULL);
+        fwrite_trn(trnout, begin+i, eigval[vec], 0, zerobox, natoms, x, NULL, NULL,NULL);
     }
     close_trn(trnout);
 
