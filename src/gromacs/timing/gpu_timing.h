@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,31 +33,39 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- *  \brief Declare functions for host-side memory handling when using CUDA devices.
+ *  \brief Declares data types for GPU timing
  *
  *  \author Szilard Pall <pall.szilard@gmail.com>
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *  \inlibraryapi
  */
 
-#ifndef GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
-#define GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
-
-#include <stdlib.h>
-
-#include "gromacs/utility/basedefinitions.h"
+#ifndef GMX_TIMING_GPU_TIMING_H
+#define GMX_TIMING_GPU_TIMING_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*! \brief Allocates nbytes of page-locked memory. */
-void pmalloc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
+/*! \internal \brief Nonbonded kernel time and call count. */
+struct gmx_nbnxn_kernel_timing_data_t
+{
+    double  t; /**< Accumulated lapsed time */
+    int     c; /**< Number of calls corresponding to the elapsed time */
+};
 
-/*! \brief Allocates nbytes of page-locked memory with write-combining. */
-void pmalloc_wc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
-
-/*! \brief Frees page locked memory allocated with pmalloc. */
-void pfree(void gmx_unused *h_ptr);
+/*! \internal \brief GPU timings for kernels and H2d/D2H transfers. */
+struct gmx_wallclock_gpu_t
+{
+    struct gmx_nbnxn_kernel_timing_data_t ktime[2][2]; /**< table containing the timings of the four
+                                                          versions of the nonbonded kernels: force-only,
+                                                          force+energy, force+pruning, and force+energy+pruning */
+    double  nb_h2d_t;                                  /**< host to device transfer time in nb calculation  */
+    double  nb_d2h_t;                                  /**< device to host transfer time in nb calculation */
+    int     nb_c;                                      /**< total call count of the nonbonded gpu operations */
+    double  pl_h2d_t;                                  /**< pair search step host to device transfer time */
+    int     pl_h2d_c;                                  /**< pair search step  host to device transfer call count */
+};
 
 #ifdef __cplusplus
 }

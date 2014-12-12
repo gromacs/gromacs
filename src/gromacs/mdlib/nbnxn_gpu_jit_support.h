@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,35 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *  \brief Declare functions for host-side memory handling when using CUDA devices.
+/*! \internal \file
+ *  \brief Declares functions that support JIT compilation (e.g. for OpenCL)
  *
- *  \author Szilard Pall <pall.szilard@gmail.com>
- *  \inlibraryapi
+ *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 
-#ifndef GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
-#define GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
+#ifndef GMX_MDLIB_NBNXN_GPU_JIT_SUPPORT_H
+#define GMX_MDLIB_NBNXN_GPU_JIT_SUPPORT_H
 
-#include <stdlib.h>
+#include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
-#include "gromacs/utility/basedefinitions.h"
+struct gmx_gpu_info_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*! \brief Allocates nbytes of page-locked memory. */
-void pmalloc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
-
-/*! \brief Allocates nbytes of page-locked memory with write-combining. */
-void pmalloc_wc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
-
-/*! \brief Frees page locked memory allocated with pmalloc. */
-void pfree(void gmx_unused *h_ptr);
-
-#ifdef __cplusplus
-}
-#endif
+/*! \brief Handles any JIT compilation of nbnxn kernels for the GPU given by \p mygpu */
+GPU_FUNC_QUALIFIER void
+nbnxn_gpu_compile_kernels(int                       gmx_unused  mygpu,
+                          int                       gmx_unused  rank,
+                          const gmx_gpu_info_t      gmx_unused *gpu_info,
+                          const gmx_gpu_opt_t       gmx_unused *gpu_opt,
+                          const interaction_const_t gmx_unused *ic) GPU_FUNC_TERM
 
 #endif
