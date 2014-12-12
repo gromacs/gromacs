@@ -36,7 +36,7 @@
 #ifndef NB_VERLET_H
 #define NB_VERLET_H
 
-#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
 #ifdef __cplusplus
@@ -44,14 +44,14 @@ extern "C" {
 #endif
 
 
-/** Nonbonded NxN kernel types: plain C, CPU SIMD, GPU CUDA, GPU emulation */
+/** Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
 typedef enum
 {
     nbnxnkNotSet = 0,
     nbnxnk4x4_PlainC,
     nbnxnk4xN_SIMD_4xN,
     nbnxnk4xN_SIMD_2xNN,
-    nbnxnk8x8x8_CUDA,
+    nbnxnk8x8x8_GPU,
     nbnxnk8x8x8_PlainC,
     nbnxnkNR
 } nbnxn_kernel_type;
@@ -102,9 +102,9 @@ typedef struct nonbonded_verlet_t {
     nonbonded_verlet_group_t grp[2];          /* local and non-local interaction group */
 
     gmx_bool                 bUseGPU;         /* TRUE when GPU acceleration is used */
-    nbnxn_cuda_ptr_t         cu_nbv;          /* pointer to CUDA nb verlet data     */
+    gmx_nbnxn_gpu_t         *gpu_nbv;         /* pointer to GPU nb verlet data     */
     int                      min_ci_balanced; /* pair list balancing parameter
-                                                 used for the 8x8x8 CUDA kernels    */
+                                                 used for the 8x8x8 GPU kernels    */
 } nonbonded_verlet_t;
 
 /*! \brief Getter for bUseGPU */
