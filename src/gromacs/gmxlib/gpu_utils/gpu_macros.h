@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,35 +32,41 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *  \brief Declare functions for host-side memory handling when using CUDA devices.
- *
- *  \author Szilard Pall <pall.szilard@gmail.com>
- *  \inlibraryapi
- */
+#ifndef GMX_GMXLIB_GPU_UTILS_MACROS_H
+#define GMX_GMXLIB_GPU_UTILS_MACROS_H
 
-#ifndef GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
-#define GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
+#include "config.h"
 
-#include <stdlib.h>
+/* These macros that let us define inlineable null implementations so
+   that non-GPU Gromacs can run with no overhead without conditionality
+   everywhere a GPU function is called. */
+#define REAL_FUNC_QUALIFIER
+#define REAL_FUNC_TERM ;
+#define REAL_FUNC_TERM_WITH_RETURN(arg) ;
 
-#include "gromacs/utility/basedefinitions.h"
+#define NULL_FUNC_QUALIFIER static
+#define NULL_FUNC_TERM {}
+#define NULL_FUNC_TERM_WITH_RETURN(arg) { return (arg); }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#if defined GMX_GPU
 
-/*! \brief Allocates nbytes of page-locked memory. */
-void pmalloc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
+#define GPU_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define GPU_FUNC_TERM REAL_FUNC_TERM
+#define GPU_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
-/*! \brief Allocates nbytes of page-locked memory with write-combining. */
-void pmalloc_wc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
+#define CUDA_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define CUDA_FUNC_TERM REAL_FUNC_TERM
+#define CUDA_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
-/*! \brief Frees page locked memory allocated with pmalloc. */
-void pfree(void gmx_unused *h_ptr);
+#else /* No accelerator support */
 
-#ifdef __cplusplus
-}
+#define GPU_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define GPU_FUNC_TERM NULL_FUNC_TERM
+#define GPU_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+#define CUDA_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define CUDA_FUNC_TERM NULL_FUNC_TERM
+#define CUDA_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+
 #endif
 
 #endif

@@ -129,8 +129,7 @@ extern "C" {
 #endif
 
 /*! CUDA device information. */
-typedef struct cuda_dev_info cuda_dev_info_t;
-struct cuda_dev_info
+struct gmx_device_info_t
 {
     int                 id;                     /* id of the CUDA device */
     cudaDeviceProp      prop;                   /* CUDA device properties */

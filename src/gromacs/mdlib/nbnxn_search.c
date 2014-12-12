@@ -241,7 +241,7 @@ static int nbnxn_kernel_to_ci_size(int nb_kernel_type)
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
             return NBNXN_CPU_CLUSTER_I_SIZE;
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             /* The cluster size for super/sub lists is only set here.
              * Any value should work for the pair-search and atomdata code.
@@ -275,7 +275,7 @@ int nbnxn_kernel_to_cj_size(int nb_kernel_type)
         case nbnxnk4xN_SIMD_2xNN:
             cj_size = nbnxn_simd_width/2;
             break;
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             cj_size = nbnxn_kernel_to_ci_size(nb_kernel_type);
             break;
@@ -307,7 +307,7 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 
     switch (nb_kernel_type)
     {
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             return FALSE;
 
@@ -5320,7 +5320,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                             break;
 #endif
                                         case nbnxnk8x8x8_PlainC:
-                                        case nbnxnk8x8x8_CUDA:
+                                        case nbnxnk8x8x8_GPU:
                                             check_subcell_list_space_supersub(nbl, cl-cf+1);
                                             for (cj = cf; cj <= cl; cj++)
                                             {

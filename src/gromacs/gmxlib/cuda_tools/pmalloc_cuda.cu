@@ -32,6 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *  \brief Define functions for host-side memory handling when using CUDA devices.
+ *
+ *  \author Szilard Pall <pall.szilard@gmail.com>
+ */
 
 #include "gmxpre.h"
 

@@ -32,32 +32,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *  \brief Declare functions for host-side memory handling when using CUDA devices.
- *
- *  \author Szilard Pall <pall.szilard@gmail.com>
- *  \inlibraryapi
- */
 
-#ifndef GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
-#define GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
+#ifndef GMX_MDLIB_NBNXN_GPU_TYPES_H
+#define GMX_MDLIB_NBNXN_GPU_TYPES_H
 
-#include <stdlib.h>
-
-#include "gromacs/utility/basedefinitions.h"
+#include "config.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*! \brief Allocates nbytes of page-locked memory. */
-void pmalloc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
+#ifdef GMX_GPU
 
-/*! \brief Allocates nbytes of page-locked memory with write-combining. */
-void pmalloc_wc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
+struct gmx_nbnxn_cuda_t;
+typedef struct gmx_nbnxn_cuda_t gmx_nbnxn_gpu_t;
 
-/*! \brief Frees page locked memory allocated with pmalloc. */
-void pfree(void gmx_unused *h_ptr);
+#else
+
+typedef int gmx_nbnxn_gpu_t;
+
+#endif
 
 #ifdef __cplusplus
 }
