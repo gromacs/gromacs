@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -279,10 +279,10 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               float        *cycles_pme);
 /* Call all the force routines */
 
-void free_gpu_resources(const t_forcerec     *fr,
-                        const t_commrec      *cr,
-                        const gmx_gpu_info_t *gpu_info,
-                        const gmx_gpu_opt_t  *gpu_opt);
+void free_gpu_resources(const t_forcerec            *fr,
+                        const t_commrec             *cr,
+                        const struct gmx_gpu_info_t *gpu_info,
+                        const gmx_gpu_opt_t         *gpu_opt);
 
 #ifdef __cplusplus
 }

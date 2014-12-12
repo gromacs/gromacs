@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,25 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *  \brief Declares functions that support JIT compilation (e.g. for OpenCL)
+ *
+ *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ */
 
-#include "gmxpre.h"
+#ifndef GMX_MDLIB_NBNXN_GPU_JIT_SUPPORT_H
+#define GMX_MDLIB_NBNXN_GPU_JIT_SUPPORT_H
 
-#include <stdio.h>
+#include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+struct gmx_gpu_info_t;
 
-#include "buildinfo.h"
+/*! \brief Handles any JIT compilation of nbnxn kernels for the GPU given by \p mygpu */
+GPU_FUNC_QUALIFIER void
+nbnxn_gpu_compile_kernels(int                       gmx_unused  mygpu,
+                          int                       gmx_unused  rank,
+                          const gmx_gpu_info_t      gmx_unused *gpu_info,
+                          const gmx_gpu_opt_t       gmx_unused *gpu_opt,
+                          const interaction_const_t gmx_unused *ic) GPU_FUNC_TERM
 
-void gmx_print_version_info_cuda_gpu(FILE *fp)
-{
-    int cuda_driver, cuda_runtime;
-    fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
-    cuda_driver = 0;
-    cudaDriverGetVersion(&cuda_driver);
-    cuda_runtime = 0;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
-}
+#endif

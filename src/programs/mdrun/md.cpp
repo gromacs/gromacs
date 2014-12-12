@@ -95,7 +95,7 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -133,7 +133,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     md_print_warn(cr, fplog, "step %s: resetting all time and cycle counters\n",
                   gmx_step_str(step, sbuf));
 
-    nbnxn_cuda_reset_timings(nbv);
+    nbnxn_gpu_reset_timings(nbv);
 
     wallcycle_stop(wcycle, ewcRUN);
     wallcycle_reset_all(wcycle);

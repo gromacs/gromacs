@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,25 +32,41 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GMXLIB_GPU_UTILS_MACROS_H
+#define GMX_GMXLIB_GPU_UTILS_MACROS_H
 
-#include "gmxpre.h"
+#include "config.h"
 
-#include <stdio.h>
+/* These macros that let us define inlineable null implementations so
+   that non-GPU Gromacs can run with no overhead without conditionality
+   everywhere a GPU function is called. */
+#define REAL_FUNC_QUALIFIER
+#define REAL_FUNC_TERM ;
+#define REAL_FUNC_TERM_WITH_RETURN(arg) ;
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#define NULL_FUNC_QUALIFIER static
+#define NULL_FUNC_TERM {}
+#define NULL_FUNC_TERM_WITH_RETURN(arg) { return (arg); }
 
-#include "buildinfo.h"
+#if defined GMX_GPU
 
-void gmx_print_version_info_cuda_gpu(FILE *fp)
-{
-    int cuda_driver, cuda_runtime;
-    fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
-    cuda_driver = 0;
-    cudaDriverGetVersion(&cuda_driver);
-    cuda_runtime = 0;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
-}
+#define GPU_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define GPU_FUNC_TERM REAL_FUNC_TERM
+#define GPU_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+
+#define CUDA_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define CUDA_FUNC_TERM REAL_FUNC_TERM
+#define CUDA_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+
+#else /* No accelerator support */
+
+#define GPU_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define GPU_FUNC_TERM NULL_FUNC_TERM
+#define GPU_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+#define CUDA_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define CUDA_FUNC_TERM NULL_FUNC_TERM
+#define CUDA_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+
+#endif
+
+#endif

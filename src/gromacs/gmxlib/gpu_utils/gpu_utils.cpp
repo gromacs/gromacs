@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,25 +32,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \internal \file
+ *  \brief Stub functions for non-GPU builds
+ *
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ */
 #include "gmxpre.h"
 
-#include <stdio.h>
+#include "gpu_utils.h"
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-
-#include "buildinfo.h"
-
-void gmx_print_version_info_cuda_gpu(FILE *fp)
+/*! \brief Set allocation functions used by the GPU host
+ *
+ * Since GPU support is not configured, there is no host memory to
+ * allocate. */
+void gpu_set_host_malloc_and_free(bool,
+                                  gmx_host_alloc_t **nb_alloc,
+                                  gmx_host_free_t  **nb_free)
 {
-    int cuda_driver, cuda_runtime;
-    fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
-    cuda_driver = 0;
-    cudaDriverGetVersion(&cuda_driver);
-    cuda_runtime = 0;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
+    *nb_alloc = NULL;
+    *nb_free  = NULL;
 }

@@ -32,6 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ *  \brief Define functions for detection and initialization for CUDA devices.
+ *
+ *  \author Szilard Pall <pall.szilard@gmail.com>
+ */
 
 #include "gmxpre.h"
 
@@ -44,12 +49,13 @@
 #include <stdlib.h>
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-/*! \brief
+/*! \internal \brief
  * Max number of devices supported by CUDA (for consistency checking).
  *
  * In reality it is 16 with CUDA <=v5.0, but let's stay on the safe side.
@@ -237,7 +243,7 @@ static void md_print_warn(FILE       *fplog,
  * \param[in,out] cuda_dev  CUDA device information to enrich with NVML device info
  * \returns                 true if \cuda_dev could be enriched with matching NVML device information.
  */
-static bool addNVMLDeviceId(cuda_dev_info* cuda_dev)
+static bool addNVMLDeviceId(gmx_device_info_t* cuda_dev)
 {
     nvmlReturn_t nvml_stat = NVML_SUCCESS;
     nvmlDevice_t nvml_device_id;
@@ -290,20 +296,20 @@ static bool addNVMLDeviceId(cuda_dev_info* cuda_dev)
 static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unused gpuid, const gmx_gpu_info_t gmx_unused *gpu_info)
 {
 #ifndef HAVE_NVML
-    if ( (gpu_info->cuda_dev[gpuid].prop.major * 10 + gpu_info->cuda_dev[gpuid].prop.minor) >= 35 &&
-         (0 == gmx_wcmatch( "*Tesla*", gpu_info->cuda_dev[gpuid].prop.name )))
+    if ( (gpu_info->gpu_dev[gpuid].prop.major * 10 + gpu_info->gpu_dev[gpuid].prop.minor) >= 35 &&
+         (0 == gmx_wcmatch( "*Tesla*", gpu_info->gpu_dev[gpuid].prop.name )))
     {
         md_print_warn( fplog, "NVML support was not found in CUDA library %d.%d, so your GPU of type %s cannot use application clock support to improve performance.\n",
-                       gpu_info->cuda_dev[gpuid].prop.major,
-                       gpu_info->cuda_dev[gpuid].prop.minor,
-                       gpu_info->cuda_dev[gpuid].prop.name );
+                       gpu_info->gpu_dev[gpuid].prop.major,
+                       gpu_info->gpu_dev[gpuid].prop.minor,
+                       gpu_info->gpu_dev[gpuid].prop.name );
     }
     return true;
 #else /* HAVE_NVML defined */
     nvmlReturn_t nvml_stat = NVML_SUCCESS;
     char        *env;
-    if (!( (gpu_info->cuda_dev[gpuid].prop.major * 10 + gpu_info->cuda_dev[gpuid].prop.minor) >= 35 &&
-           (0 == gmx_wcmatch( "*Tesla*", gpu_info->cuda_dev[gpuid].prop.name ))))
+    if (!( (gpu_info->gpu_dev[gpuid].prop.major * 10 + gpu_info->gpu_dev[gpuid].prop.minor) >= 35 &&
+           (0 == gmx_wcmatch( "*Tesla*", gpu_info->gpu_dev[gpuid].prop.name ))))
     {
         return true;
     }
@@ -322,54 +328,54 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     {
         return false;
     }
-    if (!addNVMLDeviceId( &(gpu_info->cuda_dev[gpuid])))
+    if (!addNVMLDeviceId( &(gpu_info->gpu_dev[gpuid])))
     {
         return false;
     }
     //get current application clocks setting
     unsigned int app_sm_clock  = 0;
     unsigned int app_mem_clock = 0;
-    nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &app_sm_clock );
+    nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &app_sm_clock );
     if (NVML_ERROR_NOT_SUPPORTED == nvml_stat)
     {
         return false;
     }
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
-    nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &app_mem_clock );
+    nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &app_mem_clock );
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
     //get max application clocks
     unsigned int max_sm_clock  = 0;
     unsigned int max_mem_clock = 0;
-    nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &max_sm_clock );
+    nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &max_sm_clock );
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetMaxClockInfo failed" );
-    nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &max_mem_clock );
+    nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &max_mem_clock );
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetMaxClockInfo failed" );
 
-    gpu_info->cuda_dev[gpuid].nvml_is_restricted     = NVML_FEATURE_ENABLED;
-    gpu_info->cuda_dev[gpuid].nvml_ap_clocks_changed = false;
+    gpu_info->gpu_dev[gpuid].nvml_is_restricted     = NVML_FEATURE_ENABLED;
+    gpu_info->gpu_dev[gpuid].nvml_ap_clocks_changed = false;
 
-    nvml_stat = nvmlDeviceGetAPIRestriction ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_RESTRICTED_API_SET_APPLICATION_CLOCKS, &(gpu_info->cuda_dev[gpuid].nvml_is_restricted) );
+    nvml_stat = nvmlDeviceGetAPIRestriction ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_RESTRICTED_API_SET_APPLICATION_CLOCKS, &(gpu_info->gpu_dev[gpuid].nvml_is_restricted) );
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetAPIRestriction failed" );
 
     //TODO: Need to distinguish between different type of GPUs might be necessary in the future, e.g. if max application clocks should not be used
     //      for certain GPUs.
-    if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock && gpu_info->cuda_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED)
+    if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock && gpu_info->gpu_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED)
     {
         //TODO: Maybe need to think about something more user friendly here.
-        md_print_info( fplog, "Changing GPU clock rates by setting application clocks for %s to (%d,%d)\n", gpu_info->cuda_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
-        nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->cuda_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
+        md_print_info( fplog, "Changing GPU clock rates by setting application clocks for %s to (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
+        nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->gpu_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
         HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
-        gpu_info->cuda_dev[gpuid].nvml_ap_clocks_changed = true;
+        gpu_info->gpu_dev[gpuid].nvml_ap_clocks_changed = true;
     }
     else if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock)
     {
         //TODO: Maybe need to think about something more user friendly here.
-        md_print_warn( fplog, "Not possible to change GPU clocks to optimal value because of insufficient permissions to set application clocks for %s. Current values are (%d,%d). Max values are (%d,%d)\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clock permissions.\n", gpu_info->cuda_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
+        md_print_warn( fplog, "Not possible to change GPU clocks to optimal value because of insufficient permissions to set application clocks for %s. Current values are (%d,%d). Max values are (%d,%d)\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clock permissions.\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
     }
     else if (nvml_stat == NVML_SUCCESS && app_sm_clock == max_sm_clock)
     {
         //TODO: This should probably be integrated into the GPU Properties table.
-        md_print_info( fplog, "Application clocks (GPU clocks) for %s are (%d,%d)\n", gpu_info->cuda_dev[gpuid].prop.name, app_mem_clock, app_sm_clock);
+        md_print_info( fplog, "Application clocks (GPU clocks) for %s are (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock);
     }
     else
     {
@@ -380,11 +386,11 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
 #endif /*HAVE_NVML*/
 }
 
-/*! \brief Resets application clocks if changed and cleans up NVML for the passed \cuda_dev.
+/*! \brief Resets application clocks if changed and cleans up NVML for the passed \gpu_dev.
  *
- * \param[in] cuda_dev  CUDA device information
+ * \param[in] gpu_dev  CUDA device information
  */
-static gmx_bool reset_gpu_application_clocks(const cuda_dev_info gmx_unused * cuda_dev)
+static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused * cuda_dev)
 {
 #ifndef HAVE_NVML
     GMX_UNUSED_VALUE(cuda_dev);
@@ -404,20 +410,6 @@ static gmx_bool reset_gpu_application_clocks(const cuda_dev_info gmx_unused * cu
 #endif /*HAVE_NVML*/
 }
 
-
-/*! \brief Initializes the GPU with the given index.
- *
- * The varible \mygpu is the index of the GPU to initialize in the
- * gpu_info.cuda_dev array.
- *
- * \param[out] fplog        log file to write to
- * \param[in]  mygpu        index of the GPU to initialize
- * \param[out] result_str   the message related to the error that occurred
- *                          during the initialization (if there was any).
- * \param[in] gpu_info      GPU info of all detected devices in the system.
- * \param[in] gpu_opt       options for using the GPUs in gpu_info
- * \returns                 true if no error occurs during initialization.
- */
 gmx_bool init_gpu(FILE gmx_unused *fplog, int mygpu, char *result_str,
                   const gmx_gpu_info_t *gpu_info,
                   const gmx_gpu_opt_t *gpu_opt)
@@ -429,22 +421,22 @@ gmx_bool init_gpu(FILE gmx_unused *fplog, int mygpu, char *result_str,
     assert(gpu_info);
     assert(result_str);
 
-    if (mygpu < 0 || mygpu >= gpu_opt->ncuda_dev_use)
+    if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
     {
         sprintf(sbuf, "Trying to initialize an inexistent GPU: "
                 "there are %d %s-selected GPU(s), but #%d was requested.",
-                gpu_opt->ncuda_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
+                gpu_opt->n_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
         gmx_incons(sbuf);
     }
 
-    gpuid = gpu_info->cuda_dev[gpu_opt->cuda_dev_use[mygpu]].id;
+    gpuid = gpu_info->gpu_dev[gpu_opt->dev_use[mygpu]].id;
 
     stat = cudaSetDevice(gpuid);
     strncpy(result_str, cudaGetErrorString(stat), STRLEN);
 
     if (debug)
     {
-        fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuid, gpu_info->cuda_dev[gpuid].prop.name);
+        fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuid, gpu_info->gpu_dev[gpuid].prop.name);
     }
 
     //Ignoring return value as NVML errors should be treated not critical.
@@ -455,19 +447,7 @@ gmx_bool init_gpu(FILE gmx_unused *fplog, int mygpu, char *result_str,
     return (stat == cudaSuccess);
 }
 
-/*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
- *
- * The context is explicitly destroyed and therefore all data uploaded to the GPU
- * is lost. This should only be called when none of this data is required anymore.
- *
- * \param[in]  mygpu        index of the GPU clean up for
- * \param[out] result_str   the message related to the error that occurred
- *                          during the initialization (if there was any).
- * \param[in] gpu_info      GPU info of all detected devices in the system.
- * \param[in] gpu_opt       options for using the GPUs in gpu_info
- * \returns                 true if no error occurs during the freeing.
- */
-gmx_bool free_gpu(
+gmx_bool free_cuda_gpu(
         int gmx_unused mygpu, char *result_str,
         const gmx_gpu_info_t gmx_unused *gpu_info,
         const gmx_gpu_opt_t gmx_unused *gpu_opt
@@ -487,10 +467,10 @@ gmx_bool free_gpu(
         fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuid);
     }
 
-    gpuid = gpu_opt ? gpu_opt->cuda_dev_use[mygpu] : -1;
+    gpuid = gpu_opt ? gpu_opt->dev_use[mygpu] : -1;
     if (gpuid != -1)
     {
-        reset_gpu_application_clocks_status = reset_gpu_application_clocks( &(gpu_info->cuda_dev[gpuid]) );
+        reset_gpu_application_clocks_status = reset_gpu_application_clocks( &(gpu_info->gpu_dev[gpuid]) );
     }
 #if CUDA_VERSION < 4000
     stat = cudaThreadExit();
@@ -572,30 +552,17 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
 }
 
 
-/*! \brief Detect all NVIDIA GPUs in the system.
- *
- *  Will detect every NVIDIA GPU supported by the device driver in use. Also
- *  check for the compatibility of each and fill the gpu_info->cuda_dev array
- *  with the required information on each the device: ID, device properties,
- *  status.
- *
- *  \param[in] gpu_info    pointer to structure holding GPU information.
- *  \param[out] err_str    The error message of any CUDA API error that caused
- *                         the detection to fail (if there was any). The memory
- *                         the pointer points to should be managed externally.
- *  \returns               non-zero if the detection encountered a failure, zero otherwise.
- */
-int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
+int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 {
-    int              i, ndev, checkres, retval;
-    cudaError_t      stat;
-    cudaDeviceProp   prop;
-    cuda_dev_info_t *devs;
+    int                i, ndev, checkres, retval;
+    cudaError_t        stat;
+    cudaDeviceProp     prop;
+    gmx_device_info_t *devs;
 
     assert(gpu_info);
     assert(err_str);
 
-    gpu_info->ncuda_dev_compatible = 0;
+    gpu_info->n_dev_compatible = 0;
 
     ndev    = 0;
     devs    = NULL;
@@ -626,31 +593,18 @@ int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 
             if (checkres == egpuCompatible)
             {
-                gpu_info->ncuda_dev_compatible++;
+                gpu_info->n_dev_compatible++;
             }
         }
         retval = 0;
     }
 
-    gpu_info->ncuda_dev = ndev;
-    gpu_info->cuda_dev  = devs;
+    gpu_info->n_dev   = ndev;
+    gpu_info->gpu_dev = devs;
 
     return retval;
 }
 
-/*! \brief Select the GPUs compatible with the native GROMACS acceleration.
- *
- * This function selects the compatible gpus and initializes
- * gpu_info->cuda_dev_use and gpu_info->ncuda_dev_use.
- *
- * Given the list of GPUs available in the system check each device in
- * gpu_info->cuda_dev and place the indices of the compatible GPUs into
- * cuda_dev_use with this marking the respective GPUs as "available for use."
- * Note that \detect_cuda_gpus must have been called before.
- *
- * \param[in]     gpu_info    pointer to structure holding GPU information
- * \param[in,out] gpu_opt     pointer to structure holding GPU options
- */
 void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
                           gmx_gpu_opt_t        *gpu_opt)
 {
@@ -658,69 +612,57 @@ void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
     int *compat;
 
     assert(gpu_info);
-    /* cuda_dev/ncuda_dev have to be either NULL/0 or not (NULL/0) */
-    assert((gpu_info->ncuda_dev != 0 ? 0 : 1) ^ (gpu_info->cuda_dev == NULL ? 0 : 1));
+    /* gpu_dev/n_dev have to be either NULL/0 or not (NULL/0) */
+    assert((gpu_info->n_dev != 0 ? 0 : 1) ^ (gpu_info->gpu_dev == NULL ? 0 : 1));
 
-    snew(compat, gpu_info->ncuda_dev);
+    snew(compat, gpu_info->n_dev);
     ncompat = 0;
-    for (i = 0; i < gpu_info->ncuda_dev; i++)
+    for (i = 0; i < gpu_info->n_dev; i++)
     {
-        if (is_compatible_gpu(gpu_info->cuda_dev[i].stat))
+        if (is_compatible_gpu(gpu_info->gpu_dev[i].stat))
         {
             ncompat++;
             compat[ncompat - 1] = i;
         }
     }
 
-    gpu_opt->ncuda_dev_compatible = ncompat;
-    snew(gpu_opt->cuda_dev_compatible, ncompat);
-    memcpy(gpu_opt->cuda_dev_compatible, compat, ncompat*sizeof(*compat));
+    gpu_opt->n_dev_compatible = ncompat;
+    snew(gpu_opt->dev_compatible, ncompat);
+    memcpy(gpu_opt->dev_compatible, compat, ncompat*sizeof(*compat));
     sfree(compat);
 }
 
-/*! \brief Check the existence/compatibility of a set of GPUs specified by their device IDs.
- *
- * Given the a list of gpu->ncuda_dev_use GPU device IDs stored in
- * gpu_opt->cuda_dev_use check the existence and compatibility
- * of the respective GPUs. Also provide the caller with an array containing
- * the result of checks in \checkres.
- *
- * \param[out]  checkres    check result for each ID passed in \requested_devs
- * \param[in]   gpu_info    pointer to structure holding GPU information
- * \param[out]  gpu_opt     pointer to structure holding GPU options
- * \returns                 TRUE if every the requested GPUs are compatible
- */
-gmx_bool check_selected_cuda_gpus(int                  *checkres,
-                                  const gmx_gpu_info_t *gpu_info,
-                                  gmx_gpu_opt_t        *gpu_opt)
+gmx_bool check_selected_gpus(int                  *checkres,
+                             const gmx_gpu_info_t *gpu_info,
+                             gmx_gpu_opt_t        *gpu_opt)
 {
     int  i, id;
     bool bAllOk;
 
     assert(checkres);
     assert(gpu_info);
-    assert(gpu_opt->ncuda_dev_use >= 0);
+    assert(gpu_opt->n_dev_use >= 0);
 
-    if (gpu_opt->ncuda_dev_use == 0)
+    if (gpu_opt->n_dev_use == 0)
     {
         return TRUE;
     }
 
-    assert(gpu_opt->cuda_dev_use);
+    assert(gpu_opt->dev_use);
 
     /* we will assume that all GPUs requested are valid IDs,
        otherwise we'll bail anyways */
 
     bAllOk = true;
-    for (i = 0; i < gpu_opt->ncuda_dev_use; i++)
+    for (i = 0; i < gpu_opt->n_dev_use; i++)
     {
-        id = gpu_opt->cuda_dev_use[i];
+        id = gpu_opt->dev_use[i];
 
-        /* devices are stored in increasing order of IDs in cuda_dev */
-        gpu_opt->cuda_dev_use[i] = id;
+        /* devices are stored in increasing order of IDs in gpu_dev */
+        gpu_opt->dev_use[i] = id;
 
-        checkres[i] = (id >= gpu_info->ncuda_dev) ?
-            egpuNonexistent : gpu_info->cuda_dev[id].stat;
+        checkres[i] = (id >= gpu_info->n_dev) ?
+            egpuNonexistent : gpu_info->gpu_dev[id].stat;
 
         bAllOk = bAllOk && is_compatible_gpu(checkres[i]);
     }
@@ -728,10 +670,6 @@ gmx_bool check_selected_cuda_gpus(int                  *checkres,
     return bAllOk;
 }
 
-/*! \brief Frees the cuda_dev and cuda_dev_use array fields of \gpu_info.
- *
- * \param[in]    gpu_info    pointer to structure holding GPU information
- */
 void free_gpu_info(const gmx_gpu_info_t *gpu_info)
 {
     if (gpu_info == NULL)
@@ -739,32 +677,22 @@ void free_gpu_info(const gmx_gpu_info_t *gpu_info)
         return;
     }
 
-    sfree(gpu_info->cuda_dev);
+    sfree(gpu_info->gpu_dev);
 }
 
-/*! \brief Formats and returns a device information string for a given GPU.
- *
- * Given an index *directly* into the array of available GPUs (cuda_dev)
- * returns a formatted info string for the respective GPU which includes
- * ID, name, compute capability, and detection status.
- *
- * \param[out]  s           pointer to output string (has to be allocated externally)
- * \param[in]   gpu_info    pointer to structure holding GPU information
- * \param[in]   index       an index *directly* into the array of available GPUs
- */
 void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index)
 {
     assert(s);
     assert(gpu_info);
 
-    if (index < 0 && index >= gpu_info->ncuda_dev)
+    if (index < 0 && index >= gpu_info->n_dev)
     {
         return;
     }
 
-    cuda_dev_info_t *dinfo = &gpu_info->cuda_dev[index];
+    gmx_device_info_t *dinfo = &gpu_info->gpu_dev[index];
 
-    bool             bGpuExists =
+    bool               bGpuExists =
         dinfo->stat == egpuCompatible ||
         dinfo->stat == egpuIncompatible;
 
@@ -784,36 +712,18 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int ind
     }
 }
 
-/*! \brief Returns the device ID of the GPU with a given index into the array of used GPUs.
- *
- * Getter function which, given an index into the array of GPUs in use
- * (cuda_dev_use) -- typically a tMPI/MPI rank --, returns the device ID of the
- * respective CUDA GPU.
- *
- * \param[in]    gpu_info   pointer to structure holding GPU information
- * \param[in]    gpu_opt    pointer to structure holding GPU options
- * \param[in]    idx        index into the array of used GPUs
- * \returns                 device ID of the requested GPU
- */
-int get_gpu_device_id(const gmx_gpu_info_t *gpu_info,
-                      const gmx_gpu_opt_t  *gpu_opt,
-                      int                   idx)
+int get_cuda_gpu_device_id(const gmx_gpu_info_t *gpu_info,
+                           const gmx_gpu_opt_t  *gpu_opt,
+                           int                   idx)
 {
     assert(gpu_info);
     assert(gpu_opt);
-    assert(idx >= 0 && idx < gpu_opt->ncuda_dev_use);
+    assert(idx >= 0 && idx < gpu_opt->n_dev_use);
 
-    return gpu_info->cuda_dev[gpu_opt->cuda_dev_use[idx]].id;
+    return gpu_info->gpu_dev[gpu_opt->dev_use[idx]].id;
 }
 
-/*! \brief Returns the device ID of the GPU currently in use.
- *
- * The GPU used is the one that is active at the time of the call in the active context.
- *
- * \param[in]    gpu_info   pointer to structure holding GPU information
- * \returns                 device ID of the GPU in use at the time of the call
- */
-int get_current_gpu_device_id(void)
+int get_current_cuda_gpu_device_id(void)
 {
     int gpuid;
     CU_RET_ERR(cudaGetDevice(&gpuid), "cudaGetDevice failed");
@@ -821,13 +731,23 @@ int get_current_gpu_device_id(void)
     return gpuid;
 }
 
-/*! \brief Returns the size of the cuda_dev_info struct.
- *
- * The size of cuda_dev_info can be used for allocation and communication.
- *
- * \returns                 size in bytes of cuda_dev_info
- */
-size_t sizeof_cuda_dev_info(void)
+size_t sizeof_gpu_dev_info(void)
 {
-    return sizeof(cuda_dev_info);
+    return sizeof(gmx_device_info_t);
+}
+
+void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
+                                  gmx_host_alloc_t **nb_alloc,
+                                  gmx_host_free_t  **nb_free)
+{
+    if (bUseGpuKernels)
+    {
+        *nb_alloc = &pmalloc;
+        *nb_free  = &pfree;
+    }
+    else
+    {
+        *nb_alloc = NULL;
+        *nb_free  = NULL;
+    }
 }

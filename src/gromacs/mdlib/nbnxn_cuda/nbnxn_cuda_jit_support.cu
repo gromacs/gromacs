@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,25 +32,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \file
+ *  \brief Define CUDA implementation of nbnxn_gpu_git_support.h
+ *
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ */
 #include "gmxpre.h"
 
-#include <stdio.h>
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/mdlib/nbnxn_gpu_jit_support.h"
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-
-#include "buildinfo.h"
-
-void gmx_print_version_info_cuda_gpu(FILE *fp)
+void
+nbnxn_gpu_compile_kernels(int                        /*mygpu*/,
+                          int                        /*rank*/,
+                          const gmx_gpu_info_t      */*gpu_info*/,
+                          const gmx_gpu_opt_t       */*gpu_opt*/,
+                          const interaction_const_t */*ic*/)
 {
-    int cuda_driver, cuda_runtime;
-    fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
-    cuda_driver = 0;
-    cudaDriverGetVersion(&cuda_driver);
-    cuda_runtime = 0;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
+    /* CUDA support does not use JIT (yet).
+     *
+     * It would be nice if this function inlined away to nothing, but
+     * it's only used during setup. */
 }
