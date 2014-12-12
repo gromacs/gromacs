@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,6 @@
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/types/commrec_fwd.h"
-#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -48,6 +47,7 @@ extern "C" {
 #endif
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
+struct gmx_wallclock_gpu_t;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
@@ -96,7 +96,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-                     gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
+                     gmx_wallcycle_t wc, struct gmx_wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);

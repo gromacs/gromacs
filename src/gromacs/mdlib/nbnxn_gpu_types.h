@@ -33,24 +33,28 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
+#ifndef GMX_MDLIB_NBNXN_GPU_TYPES_H
+#define GMX_MDLIB_NBNXN_GPU_TYPES_H
 
-#include <stdio.h>
+#include "config.h"
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "buildinfo.h"
+#ifdef GMX_GPU
 
-void gmx_print_version_info_cuda_gpu(FILE *fp)
-{
-    int cuda_driver, cuda_runtime;
-    fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
-    cuda_driver = 0;
-    cudaDriverGetVersion(&cuda_driver);
-    cuda_runtime = 0;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
+struct gmx_nbnxn_cuda_t;
+typedef struct gmx_nbnxn_cuda_t gmx_nbnxn_gpu_t;
+
+#else
+
+typedef int gmx_nbnxn_gpu_t;
+
+#endif
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif

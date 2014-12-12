@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
@@ -702,7 +702,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
     }
 
     bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
-    nbnxn_cuda_pme_loadbal_update_param(nbv, ic);
+    nbnxn_gpu_pme_loadbal_update_param(nbv, ic);
 
     /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
      * also sharing texture references. To keep the code simple, we don't
