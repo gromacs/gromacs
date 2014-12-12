@@ -50,6 +50,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/gmxpreprocess/calc_verletbuf.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"
@@ -93,8 +94,6 @@
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
-
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 
 typedef struct {
     gmx_integrator_t *func;
@@ -374,10 +373,11 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     }
 
     bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET &&
-                  hwinfo->gpu_info.ncuda_dev_compatible > 0);
+                  hwinfo->gpu_info.n_dev_compatible > 0);
+
     if (bCanUseGPU)
     {
-        ngpu = hwinfo->gpu_info.ncuda_dev_compatible;
+        ngpu = hwinfo->gpu_info.n_dev_compatible;
     }
     else
     {
@@ -950,10 +950,12 @@ static void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
     gmx_parse_gpu_ids(&hw_opt->gpu_opt);
 
 #ifdef GMX_THREAD_MPI
-    if (hw_opt->gpu_opt.ncuda_dev_use > 0 && hw_opt->nthreads_tmpi == 0)
+    if (hw_opt->gpu_opt.n_dev_use > 0
+        &&
+        hw_opt->nthreads_tmpi == 0)
     {
         /* Set the number of MPI threads equal to the number of GPUs */
-        hw_opt->nthreads_tmpi = hw_opt->gpu_opt.ncuda_dev_use;
+        hw_opt->nthreads_tmpi = hw_opt->gpu_opt.n_dev_use;
 
         if (hw_opt->nthreads_tot > 0 &&
             hw_opt->nthreads_tmpi > hw_opt->nthreads_tot)
@@ -1110,7 +1112,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (hwinfo->gpu_info.ncuda_dev_compatible > 0 ||
+            bUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0 ||
                        getenv("GMX_EMULATE_GPU") != NULL);
 
             /* TODO add GPU kernels for this and replace this check by:
@@ -1140,7 +1142,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 gmx_fatal(FARGS, "Can not set nstlist with the group cut-off scheme");
             }
 
-            if (hwinfo->gpu_info.ncuda_dev_compatible > 0)
+            if (hwinfo->gpu_info.n_dev_compatible > 0)
             {
                 md_print_warn(cr, fplog,
                               "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
@@ -1487,7 +1489,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     else
     {
         /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.ncuda_dev_use = 0;
+        hw_opt->gpu_opt.n_dev_use = 0;
     }
 
     /* check consistency across ranks of things like SIMD

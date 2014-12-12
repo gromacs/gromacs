@@ -103,7 +103,7 @@ static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info)
     int      i, ndev;
     char     stmp[STRLEN];
 
-    ndev = gpu_info->ncuda_dev;
+    ndev = gpu_info->n_dev;
 
     sbuf[0] = '\0';
     for (i = 0; i < ndev; i++)
@@ -131,7 +131,7 @@ static void print_gpu_detection_stats(FILE                 *fplog,
         return;
     }
 
-    ngpu = gpu_info->ncuda_dev;
+    ngpu = gpu_info->n_dev;
 
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
     /* We only print the detection on one, of possibly multiple, nodes */
@@ -167,8 +167,8 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
                    const gmx_gpu_opt_t  *gpu_opt,
                    size_t                numPpRanks)
 {
-    int ngpu_use  = gpu_opt->ncuda_dev_use;
-    int ngpu_comp = gpu_info->ncuda_dev_compatible;
+    int ngpu_use  = gpu_opt->n_dev_use;
+    int ngpu_comp = gpu_info->n_dev_compatible;
 
     /* Issue a note if GPUs are available but not used */
     if (ngpu_comp > 0 && ngpu_use < 1)
@@ -181,14 +181,14 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     std::string output;
     if (!gpu_opt->bUserSet)
     {
-        // gpu_opt->cuda_dev_compatible is only populated during auto-selection
+        // gpu_opt->dev_compatible is only populated during auto-selection
         std::string gpuIdsString =
-            formatAndJoin(gmx::constArrayRefFromArray(gpu_opt->cuda_dev_compatible,
-                                                      gpu_opt->ncuda_dev_compatible),
+            formatAndJoin(gmx::constArrayRefFromArray(gpu_opt->dev_compatible,
+                                                      gpu_opt->n_dev_compatible),
                           ",", gmx::StringFormatter("%d"));
-        bool bPluralGpus = gpu_opt->ncuda_dev_compatible > 1;
+        bool bPluralGpus = gpu_opt->n_dev_compatible > 1;
         output += gmx::formatString("%d compatible GPU%s %s present, with ID%s %s\n",
-                                    gpu_opt->ncuda_dev_compatible,
+                                    gpu_opt->n_dev_compatible,
                                     bPluralGpus ? "s" : "",
                                     bPluralGpus ? "are" : "is",
                                     bPluralGpus ? "s" : "",
@@ -196,10 +196,10 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     }
 
     {
-        std::vector<int> gpuIdsInUse;
+        std::vector<int>   gpuIdsInUse;
         for (int i = 0; i < ngpu_use; i++)
         {
-            gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
+            gpuIdsInUse.push_back(get_cuda_gpu_device_id(gpu_info, gpu_opt, i));
         }
         std::string gpuIdsString =
             formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
@@ -305,7 +305,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
     /* NOTE: this print is only for and on one physical node */
     print_gpu_detection_stats(fplog, &hwinfo->gpu_info, cr);
 
-    if (hwinfo->gpu_info.ncuda_dev_compatible > 0)
+    if (hwinfo->gpu_info.n_dev_compatible > 0)
     {
         std::string gpuUseageReport;
         try
@@ -352,14 +352,14 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         sprintf(th_or_proc, "process");
     }
 
-    if (bUseGPU && hwinfo->gpu_info.ncuda_dev_compatible > 0 &&
+    if (bUseGPU && hwinfo->gpu_info.n_dev_compatible > 0 &&
         !bEmulateGPU)
     {
         int  ngpu_comp, ngpu_use;
         char gpu_comp_plural[2], gpu_use_plural[2];
 
-        ngpu_comp = hwinfo->gpu_info.ncuda_dev_compatible;
-        ngpu_use  = hw_opt->gpu_opt.ncuda_dev_use;
+        ngpu_comp = hwinfo->gpu_info.n_dev_compatible;
+        ngpu_use  = hw_opt->gpu_opt.n_dev_use;
 
         sprintf(gpu_comp_plural, "%s", (ngpu_comp > 1) ? "s" : "");
         sprintf(gpu_use_plural,  "%s", (ngpu_use > 1) ? "s" : "");
@@ -475,7 +475,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
 int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
 {
     int      same_count    = 0;
-    int      ngpu          = gpu_opt->ncuda_dev_use;
+    int      ngpu          = gpu_opt->n_dev_use;
 
     if (gpu_opt->bUserSet)
     {
@@ -485,8 +485,8 @@ int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
         {
             for (j = i + 1; j < ngpu; j++)
             {
-                same_count      += (gpu_opt->cuda_dev_use[i] ==
-                                    gpu_opt->cuda_dev_use[j]);
+                same_count      += (gpu_opt->dev_use[i] ==
+                                    gpu_opt->dev_use[j]);
             }
         }
     }
@@ -509,16 +509,17 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     assert(gpu_info);
     assert(gpu_opt);
 
-    ngpu        = gpu_info->ncuda_dev;
+    ngpu = gpu_info->n_dev;
+
     uniq_count  = 0;
 
     snew(uniq_ids, ngpu);
 
     /* Each element in uniq_ids will be set to 0 or 1. The n-th element set
      * to 1 indicates that the respective GPU was selected to be used. */
-    for (i = 0; i < gpu_opt->ncuda_dev_use; i++)
+    for (i = 0; i < gpu_opt->n_dev_use; i++)
     {
-        uniq_ids[get_gpu_device_id(gpu_info, gpu_opt, i)] = 1;
+        uniq_ids[get_cuda_gpu_device_id(gpu_info, gpu_opt, i)] = 1;
     }
     /* Count the devices used. */
     for (i = 0; i < ngpu; i++)
@@ -624,7 +625,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
     {
         char detection_error[STRLEN] = "", sbuf[STRLEN];
 
-        if (detect_cuda_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
+        if (detect_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
         {
             if (detection_error[0] != '\0')
             {
@@ -643,22 +644,22 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 
 #ifdef GMX_LIB_MPI
     /* Broadcast the GPU info to the other ranks within this node */
-    MPI_Bcast(&hwinfo_g->gpu_info.ncuda_dev, 1, MPI_INT, 0, physicalnode_comm);
+    MPI_Bcast(&hwinfo_g->gpu_info.n_dev, 1, MPI_INT, 0, physicalnode_comm);
 
-    if (hwinfo_g->gpu_info.ncuda_dev > 0)
+    if (hwinfo_g->gpu_info.n_dev > 0)
     {
-        int cuda_dev_size;
+        int dev_size;
 
-        cuda_dev_size = hwinfo_g->gpu_info.ncuda_dev*sizeof_cuda_dev_info();
+        dev_size = hwinfo_g->gpu_info.n_dev*sizeof_gpu_dev_info();
 
         if (rank_local > 0)
         {
-            hwinfo_g->gpu_info.cuda_dev =
-                (cuda_dev_info_ptr_t)malloc(cuda_dev_size);
+            hwinfo_g->gpu_info.gpu_dev =
+                (struct gmx_device_info_t *)malloc(dev_size);
         }
-        MPI_Bcast(hwinfo_g->gpu_info.cuda_dev, cuda_dev_size, MPI_BYTE,
+        MPI_Bcast(hwinfo_g->gpu_info.gpu_dev, dev_size, MPI_BYTE,
                   0, physicalnode_comm);
-        MPI_Bcast(&hwinfo_g->gpu_info.ncuda_dev_compatible, 1, MPI_INT,
+        MPI_Bcast(&hwinfo_g->gpu_info.n_dev_compatible, 1, MPI_INT,
                   0, physicalnode_comm);
     }
 
@@ -694,9 +695,9 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
 
         /* detect GPUs */
-        hwinfo_g->gpu_info.ncuda_dev            = 0;
-        hwinfo_g->gpu_info.cuda_dev             = NULL;
-        hwinfo_g->gpu_info.ncuda_dev_compatible = 0;
+        hwinfo_g->gpu_info.n_dev            = 0;
+        hwinfo_g->gpu_info.n_dev_compatible = 0;
+        hwinfo_g->gpu_info.gpu_dev          = NULL;
 
         /* Run the detection if the binary was compiled with GPU support
          * and we requested detection.
@@ -747,10 +748,10 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
          * digits corresponding to GPU IDs; the order will indicate
          * the process/tMPI thread - GPU assignment. */
         parse_digits_from_plain_string(env,
-                                       &gpu_opt->ncuda_dev_use,
-                                       &gpu_opt->cuda_dev_use);
+                                       &gpu_opt->n_dev_use,
+                                       &gpu_opt->dev_use);
 
-        if (gpu_opt->ncuda_dev_use == 0)
+        if (gpu_opt->n_dev_use == 0)
         {
             gmx_fatal(FARGS, "Empty GPU ID string encountered.\n%s\n",
                       invalid_gpuid_hint);
@@ -783,21 +784,21 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
         int *checkres;
         int  res;
 
-        snew(checkres, gpu_opt->ncuda_dev_use);
+        snew(checkres, gpu_opt->n_dev_use);
 
-        res = check_selected_cuda_gpus(checkres, gpu_info, gpu_opt);
+        res = check_selected_gpus(checkres, gpu_info, gpu_opt);
 
         if (!res)
         {
             print_gpu_detection_stats(fplog, gpu_info, cr);
 
             sprintf(sbuf, "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n");
-            for (i = 0; i < gpu_opt->ncuda_dev_use; i++)
+            for (i = 0; i < gpu_opt->n_dev_use; i++)
             {
                 if (checkres[i] != egpuCompatible)
                 {
                     sprintf(stmp, "    GPU #%d: %s\n",
-                            gpu_opt->cuda_dev_use[i],
+                            gpu_opt->dev_use[i],
                             gpu_detect_res_str[checkres[i]]);
                     strcat(sbuf, stmp);
                 }
@@ -814,7 +815,7 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
     }
 
     /* If the user asked for a GPU, check whether we have a GPU */
-    if (bForceUseGPU && gpu_info->ncuda_dev_compatible == 0)
+    if (bForceUseGPU && gpu_info->n_dev_compatible == 0)
     {
         gmx_fatal(FARGS, "GPU acceleration requested, but no compatible GPUs were detected.");
     }
@@ -829,16 +830,16 @@ static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int maxNumberToUse)
     GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
     GMX_RELEASE_ASSERT(maxNumberToUse >= 1,
                        gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
-                                         maxNumberToUse, gpu_opt->ncuda_dev_compatible).c_str());
+                                         maxNumberToUse, gpu_opt->n_dev_compatible).c_str());
 
     /* Don't increase the number of GPUs used beyond (e.g.) the number
        of PP ranks */
-    gpu_opt->ncuda_dev_use = std::min(gpu_opt->ncuda_dev_compatible, maxNumberToUse);
-    snew(gpu_opt->cuda_dev_use, gpu_opt->ncuda_dev_use);
-    for (int i = 0; i != gpu_opt->ncuda_dev_use; ++i)
+    gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_compatible, maxNumberToUse);
+    snew(gpu_opt->dev_use, gpu_opt->n_dev_use);
+    for (int i = 0; i != gpu_opt->n_dev_use; ++i)
     {
         /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-        gpu_opt->cuda_dev_use[i] = gpu_opt->cuda_dev_compatible[i];
+        gpu_opt->dev_use[i] = gpu_opt->dev_compatible[i];
     }
 }
 

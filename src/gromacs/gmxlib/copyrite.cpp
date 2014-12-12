@@ -636,7 +636,7 @@ const char *Program(void)
 }
 
 
-extern void gmx_print_version_info_gpu(FILE *fp);
+extern void gmx_print_version_info_cuda_gpu(FILE *fp);
 
 static void gmx_print_version_info(FILE *fp)
 {
@@ -735,7 +735,7 @@ static void gmx_print_version_info(FILE *fp)
             BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
             bExternalBoost ? " (external)" : " (internal)");
 #ifdef GMX_GPU
-    gmx_print_version_info_gpu(fp);
+    gmx_print_version_info_cuda_gpu(fp);
 #endif
 }
 

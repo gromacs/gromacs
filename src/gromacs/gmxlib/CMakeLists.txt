@@ -42,9 +42,8 @@ file(GLOB GMXLIB_SOURCES *.c *.cpp)
 
 # gpu utils + cuda tools module
 if(GMX_GPU)
-    # The log file output queries Cuda if GPU support is enabled
     add_subdirectory(cuda_tools)
-    add_subdirectory(gpu_utils)
 endif()
+add_subdirectory(gpu_utils)
 
 set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${NONBONDED_SOURCES} PARENT_SCOPE)
