@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
@@ -626,7 +627,7 @@ static void print_header(FILE *fplog, int nrank_pp, int nth_pp, int nrank_pme, i
 }
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-                     gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t)
+                     gmx_wallcycle_t wc, struct gmx_wallclock_gpu_t *gpu_t)
 {
     double     *cyc_sum;
     double      tot, tot_for_pp, tot_for_rest, tot_gpu, tot_cpu_overlap, gpu_cpu_ratio, tot_k;

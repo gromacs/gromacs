@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,9 +76,8 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
@@ -88,6 +87,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
@@ -96,6 +96,7 @@
 #include "gromacs/utility/sysinfo.h"
 
 #include "adress.h"
+#include "nbnxn_gpu.h"
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -464,7 +465,7 @@ static void do_nb_verlet(t_forcerec *fr,
 {
     int                        enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     nonbonded_verlet_group_t  *nbvg;
-    gmx_bool                   bCUDA;
+    gmx_bool                   bUsingGpuKernels;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -474,15 +475,15 @@ static void do_nb_verlet(t_forcerec *fr,
 
     nbvg = &fr->nbv->grp[ilocality];
 
-    /* CUDA kernel launch overhead is already timed separately */
+    /* GPU kernel launch overhead is already timed separately */
     if (fr->cutoff_scheme != ecutsVERLET)
     {
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    bCUDA = (nbvg->kernel_type == nbnxnk8x8x8_CUDA);
+    bUsingGpuKernels = (nbvg->kernel_type == nbnxnk8x8x8_GPU);
 
-    if (!bCUDA)
+    if (!bUsingGpuKernels)
     {
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
@@ -528,8 +529,8 @@ static void do_nb_verlet(t_forcerec *fr,
                                    enerd->grpp.ener[egLJSR]);
             break;
 
-        case nbnxnk8x8x8_CUDA:
-            nbnxn_cuda_launch_kernel(fr->nbv->cu_nbv, nbvg->nbat, flags, ilocality);
+        case nbnxnk8x8x8_GPU:
+            nbnxn_gpu_launch_kernel(fr->nbv->gpu_nbv, nbvg->nbat, flags, ilocality);
             break;
 
         case nbnxnk8x8x8_PlainC:
@@ -550,7 +551,7 @@ static void do_nb_verlet(t_forcerec *fr,
             gmx_incons("Invalid nonbonded kernel type passed!");
 
     }
-    if (!bCUDA)
+    if (!bUsingGpuKernels)
     {
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
@@ -559,8 +560,8 @@ static void do_nb_verlet(t_forcerec *fr,
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
-    else if ((!bCUDA && nbvg->ewald_excl == ewaldexclAnalytical) ||
-             (bCUDA && nbnxn_cuda_is_kernel_ewald_analytical(fr->nbv->cu_nbv)))
+    else if ((!bUsingGpuKernels && nbvg->ewald_excl == ewaldexclAnalytical) ||
+             (bUsingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(fr->nbv->gpu_nbv)))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
@@ -915,12 +916,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (bNS)
         {
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            nbnxn_cuda_init_atomdata(nbv->cu_nbv, nbv->grp[eintLocal].nbat);
+            nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
 
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-        nbnxn_cuda_upload_shiftvec(nbv->cu_nbv, nbv->grp[eintLocal].nbat);
+        nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -942,9 +943,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (bUseGPU)
         {
             /* initialize local pair-list on the GPU */
-            nbnxn_cuda_init_pairlist(nbv->cu_nbv,
-                                     nbv->grp[eintLocal].nbl_lists.nbl[0],
-                                     eintLocal);
+            nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
+                                    nbv->grp[eintLocal].nbl_lists.nbl[0],
+                                    eintLocal);
         }
         wallcycle_stop(wcycle, ewcNS);
     }
@@ -1010,12 +1011,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
-            if (nbv->grp[eintNonlocal].kernel_type == nbnxnk8x8x8_CUDA)
+            if (nbv->grp[eintNonlocal].kernel_type == nbnxnk8x8x8_GPU)
             {
                 /* initialize non-local pair-list on the GPU */
-                nbnxn_cuda_init_pairlist(nbv->cu_nbv,
-                                         nbv->grp[eintNonlocal].nbl_lists.nbl[0],
-                                         eintNonlocal);
+                nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
+                                        nbv->grp[eintNonlocal].nbl_lists.nbl[0],
+                                        eintNonlocal);
             }
             wallcycle_stop(wcycle, ewcNS);
         }
@@ -1055,11 +1056,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
-            nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintNonlocal].nbat,
-                                      flags, eatNonlocal);
+            nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintNonlocal].nbat,
+                                     flags, eatNonlocal);
         }
-        nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintLocal].nbat,
-                                  flags, eatLocal);
+        nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintLocal].nbat,
+                                 flags, eatLocal);
         cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -1283,11 +1284,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                 float cycles_tmp;
 
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
-                nbnxn_cuda_wait_gpu(nbv->cu_nbv,
-                                    nbv->grp[eintNonlocal].nbat,
-                                    flags, eatNonlocal,
-                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                    fr->fshift);
+                nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                                       nbv->grp[eintNonlocal].nbat,
+                                       flags, eatNonlocal,
+                                       enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                       fr->fshift);
                 cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
                 cycles_wait_gpu += cycles_tmp;
                 cycles_force    += cycles_tmp;
@@ -1346,11 +1347,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             const float cuda_api_overhead_margin = 50000.0f; /* cycles */
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-            nbnxn_cuda_wait_gpu(nbv->cu_nbv,
-                                nbv->grp[eintLocal].nbat,
-                                flags, eatLocal,
-                                enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                fr->fshift);
+            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                                   nbv->grp[eintLocal].nbat,
+                                   flags, eatLocal,
+                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                   fr->fshift);
             cycles_tmp      = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
             if (bDoForces && DOMAINDECOMP(cr))
@@ -1384,7 +1385,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* now clear the GPU outputs while we finish the step on the CPU */
 
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            nbnxn_cuda_clear_outputs(nbv->cu_nbv, flags);
+            nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
         else
@@ -2625,8 +2626,8 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
-        wallclock_gpu_t* gputimes = use_GPU(nbv) ?
-            nbnxn_cuda_get_timings(nbv->cu_nbv) : NULL;
+        struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : NULL;
+
         wallcycle_print(fplog, cr->nnodes, cr->npmenodes,
                         elapsed_time_over_all_ranks,
                         wcycle, gputimes);
