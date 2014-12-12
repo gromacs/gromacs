@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,36 +32,35 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ *  \brief Declare functions for host-side memory handling when using CUDA devices.
+ *
+ *  \author Szilard Pall <pall.szilard@gmail.com>
+ *  \inlibraryapi
+ */
 
-#ifndef PMALLOC_CUDA_H
-#define PMALLOC_CUDA_H
-
-#include "config.h"
+#ifndef GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
+#define GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
 
 #include <stdlib.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
-#ifdef GMX_GPU
-#define FUNC_TERM ;
-#else
-#define FUNC_TERM {}
-#endif
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** Allocates nbytes of page-locked memory. */
-void pmalloc(void gmx_unused **h_ptr, size_t gmx_unused nbytes) FUNC_TERM
+/*! \brief Allocates nbytes of page-locked memory. */
+void pmalloc(void **h_ptr, size_t nbytes);
 
-/** Allocates nbytes of page-locked memory with write-combining. */
-void pmalloc_wc(void gmx_unused **h_ptr, size_t gmx_unused nbytes) FUNC_TERM
+/*! \brief Allocates nbytes of page-locked memory with write-combining. */
+void pmalloc_wc(void **h_ptr, size_t nbytes);
 
-/** Frees page locked memory allocated with pmalloc. */
-void pfree(void gmx_unused *h_ptr) FUNC_TERM
+/*! \brief Frees page locked memory allocated with pmalloc. */
+void pfree(void *h_ptr);
 
 #ifdef __cplusplus
 }
 #endif
-#endif  /* PMALLOC_CUDA_H */
+
+#endif
