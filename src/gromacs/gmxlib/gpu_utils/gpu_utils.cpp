@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,35 +32,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *  \brief Declare functions for host-side memory handling when using CUDA devices.
+/*! \internal \file
+ *  \brief Stub functions for non-GPU builds
  *
- *  \author Szilard Pall <pall.szilard@gmail.com>
- *  \inlibraryapi
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
  */
+#include "gmxpre.h"
 
-#ifndef GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
-#define GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
+#include "gpu_utils.h"
 
-#include <stdlib.h>
-
-#include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*! \brief Allocates nbytes of page-locked memory. */
-void pmalloc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
-
-/*! \brief Allocates nbytes of page-locked memory with write-combining. */
-void pmalloc_wc(void gmx_unused **h_ptr, size_t gmx_unused nbytes);
-
-/*! \brief Frees page locked memory allocated with pmalloc. */
-void pfree(void gmx_unused *h_ptr);
-
-#ifdef __cplusplus
+/*! \brief Set allocation functions used by the GPU host
+ *
+ * Since GPU support is not configured, there is no host memory to
+ * allocate. */
+void gpu_set_host_malloc_and_free(bool,
+                                  gmx_host_alloc_t **nb_alloc,
+                                  gmx_host_free_t  **nb_free)
+{
+    *nb_alloc = NULL;
+    *nb_free  = NULL;
 }
-#endif
-
-#endif
