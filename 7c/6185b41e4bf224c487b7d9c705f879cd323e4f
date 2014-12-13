@@ -1,0 +1,8 @@
+Verified-1: Jenkins Buildbot
+Verified+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Sat, 13 Dec 2014 11:41:49 +0100
+Reviewed-on: https://gerrit.gromacs.org/2665
+Project: gromacs
+Branch: refs/heads/master
