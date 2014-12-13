@@ -33,8 +33,15 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if(GMX_GPU)
-    file(GLOB GPU_UTILS_SOURCES *.cu)
+    if (GMX_USE_OPENCL)
+        file(GLOB GPU_UTILS_SOURCES *ocl*.cpp)
+        SET_SOURCE_FILES_PROPERTIES( ${GPU_UTILS_SOURCES} PROPERTIES LANGUAGE CXX )
+    else()
+        file(GLOB GPU_UTILS_SOURCES *.cu)
+    endif()
 else()
+    file(GLOB OCL_UTILS_SOURCES *ocl*.cpp)
     file(GLOB GPU_UTILS_SOURCES *.cpp)
+    list(REMOVE_ITEM GPU_UTILS_SOURCES ${OCL_UTILS_SOURCES})
 endif()
 set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${GPU_UTILS_SOURCES} PARENT_SCOPE)

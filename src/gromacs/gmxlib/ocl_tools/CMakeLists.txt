@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,17 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.c nbnxn_kernels/simd_2xnn/*.c nbnxn_kernels/*.c *.c *.cpp)
-
-if(GMX_GPU AND NOT GMX_USE_OPENCL)
-    add_subdirectory(nbnxn_cuda)
-elseif(GMX_GPU AND GMX_USE_OPENCL)
-    add_subdirectory(nbnxn_ocl)
-    set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} PARENT_SCOPE)
-    set(MDLIB_OPENCL_KERNEL_DEPENDENCIES ${MDLIB_OPENCL_KERNEL_DEPENDENCIES} mdlib/nbnxn_consts.h PARENT_SCOPE)
-endif()
-
-set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
-if (BUILD_TESTING)
-    add_subdirectory(tests)
+if(GMX_GPU AND GMX_USE_OPENCL)
+    file(GLOB GMXLIB_OPENCL_KERNELS *.cl *.clh)
+    set(GMXLIB_OPENCL_KERNELS ${GMXLIB_OPENCL_KERNELS} PARENT_SCOPE)
+    file(GLOB GMXLIB_OPENCL_SOURCES *.cpp)
+    set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${GMXLIB_OPENCL_SOURCES} PARENT_SCOPE)
 endif()
