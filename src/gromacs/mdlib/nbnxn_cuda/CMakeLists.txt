@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(GMX_GPU)
+if(GMX_GPU AND NOT GMX_USE_OPENCL)
     file(GLOB CUDA_NB_SOURCES *.cu)
     set(MDLIB_SOURCES ${MDLIB_SOURCES} ${CUDA_NB_SOURCES} PARENT_SCOPE)
 endif()
