@@ -38,7 +38,13 @@
 
 #include <stddef.h>
 
+/* Avoid atomic.h include in OpenCL source. Structure atomdata is needed but some fields are
+ * host specific. Parent include redefines rvec and gmx_bool to eq. OpenCL types */
+#ifndef __IN_OPENCL_KERNEL__
 #include "thread_mpi/atomic.h"
+#else
+typedef void tMPI_Atomic_t;
+#endif
 
 #include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/math/vectypes.h"

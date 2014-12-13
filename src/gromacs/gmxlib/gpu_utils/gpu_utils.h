@@ -173,6 +173,22 @@ int get_cuda_gpu_device_id(const struct gmx_gpu_info_t gmx_unused *gpu_info,
                            const gmx_gpu_opt_t gmx_unused  *gpu_opt,
                            int gmx_unused                   index) CUDA_FUNC_TERM_WITH_RETURN(-1)
 
+/*! \brief Returns the name for the OpenCL GPU with a given index into the array of used GPUs.
+ *
+ * Getter function which, given an index into the array of GPUs in use
+ * (dev_use) -- typically a tMPI/MPI rank --, returns the device name for the
+ * respective OpenCL GPU.
+ *
+ * \param[in]    gpu_info   Pointer to structure holding GPU information
+ * \param[in]    gpu_opt    Pointer to structure holding GPU options
+ * \param[in]    idx        Index into the array of used GPUs
+ * \returns                 A string with the name of the requested OpenCL GPU
+ */
+OPENCL_FUNC_QUALIFIER
+char* get_ocl_gpu_device_name(const gmx_gpu_info_t gmx_unused *gpu_info,
+                              const gmx_gpu_opt_t  gmx_unused *gpu_opt,
+                              int                  gmx_unused  idx) OPENCL_FUNC_TERM_WITH_RETURN(NULL)
+
 /*! \brief Formats and returns a device information string for a given GPU.
  *
  * Given an index *directly* into the array of available GPUs (gpu_dev)

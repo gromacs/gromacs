@@ -97,7 +97,11 @@ extern "C" {
 #define X4_IND_A(a)  (STRIDE_P4*((a) >> 2) + ((a) & (PACK_X4 - 1)))
 #define X8_IND_A(a)  (STRIDE_P8*((a) >> 3) + ((a) & (PACK_X8 - 1)))
 
+#ifdef __IN_OPENCL_KERNEL__
+#define CONSTANT_ADDRESS_SPACE __constant
+#else
 #define CONSTANT_ADDRESS_SPACE static const
+#endif
 
 
 /* Cluster-pair Interaction masks for 4xN and 2xNN kernels.
