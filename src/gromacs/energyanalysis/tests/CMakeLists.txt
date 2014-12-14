@@ -33,5 +33,9 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(EnergyAnalysisUnitTests energyanalysis-test
-        legacyenergy.cpp
+        dhdl.cpp
+        energy.cpp
+        fluctprops.cpp
+        select_energy.cpp
+        viscosity.cpp
 )
