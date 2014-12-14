@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,68 +34,61 @@
  */
 /*! \internal \file
  * \brief
- * Implements registerTrajectoryAnalysisModules().
+ * Implements classes in modules.h.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_trajectoryanalysis
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
 #include "gmxpre.h"
 
 #include "modules.h"
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
-#include "modules/angle.h"
-#include "modules/distance.h"
-#include "modules/freevolume.h"
-#include "modules/pairdist.h"
-#include "modules/rdf.h"
-#include "modules/sasa.h"
-#include "modules/select.h"
+#include "energyanalysisrunner.h"
+#include "modules/dhdl.h"
+#include "modules/energy.h"
+#include "modules/fluctprops.h"
+#include "modules/viscosity.h"
 
 namespace gmx
 {
 
 namespace
 {
-
 /*! \brief
- * Convenience method for registering a command-line module for trajectory
+ * Convenience method for registering a command-line module for energy
  * analysis.
  *
- * \tparam ModuleInfo  Info about trajectory analysis module to wrap.
+ * \tparam ModuleInfo  Info about energy analysis module to wrap.
  *
  * \p ModuleInfo should have static public members
  * `const char name[]`, `const char shortDescription[]`, and
- * `gmx::TrajectoryAnalysisModulePointer create()`.
+ * `gmx::EnergyAnalysisModulePointer create()`.
  *
- * \ingroup module_trajectoryanalysis
+ * \ingroup module_energyanalysis
  */
 template <class ModuleInfo>
-void registerTrajectoryModule(CommandLineModuleManager *manager,
-                              CommandLineModuleGroup    group)
+void registerEnergyModule(CommandLineModuleManager *manager,
+                          CommandLineModuleGroup    group)
 {
-    TrajectoryAnalysisCommandLineRunner::registerModule(
+    EnergyAnalysisRunner::registerModule(
             manager, ModuleInfo::name, ModuleInfo::shortDescription,
             &ModuleInfo::create);
     group.addModule(ModuleInfo::name);
 }
 
-}   // namespace
+}       // namespace
 
 //! \cond libapi
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
+void registerEnergyAnalysisModules(CommandLineModuleManager *manager)
 {
-    using namespace gmx::analysismodules;
-    CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
-    registerTrajectoryModule<AngleInfo>(manager, group);
-    registerTrajectoryModule<DistanceInfo>(manager, group);
-    registerTrajectoryModule<FreeVolumeInfo>(manager, group);
-    registerTrajectoryModule<PairDistanceInfo>(manager, group);
-    registerTrajectoryModule<RdfInfo>(manager, group);
-    registerTrajectoryModule<SasaInfo>(manager, group);
-    registerTrajectoryModule<SelectInfo>(manager, group);
+    using namespace gmx::energyanalysis;
+    CommandLineModuleGroup group = manager->addModuleGroup("Energy analysis");
+    registerEnergyModule<EnergyInfo>(manager, group);
+    registerEnergyModule<DhdlInfo>(manager, group);
+    registerEnergyModule<FluctPropsInfo>(manager, group);
+    registerEnergyModule<ViscosityInfo>(manager, group);
 }
 //! \endcond
 
