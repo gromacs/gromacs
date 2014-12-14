@@ -65,6 +65,11 @@ StringInputStream::StringInputStream(const std::string &input)
 {
 }
 
+StringInputStream::StringInputStream(const std::vector<std::string> &input)
+    : input_(joinStrings(input.begin(), input.end(), "\n")), pos_(0)
+{
+}
+
 StringInputStream::StringInputStream(ConstArrayRef<const char *> const &input)
     : input_(joinStrings(input.begin(), input.end(), "\n")), pos_(0)
 {
