@@ -98,6 +98,14 @@ float   gmx_erfcf(float x);
 #define gmx_erfc(x)  gmx_erfcf(x)
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER < 1800
+#define gmx_expm1(x) (exp(x)-1)
+#define gmx_log1p(x) log(1+x)
+#else
+#define gmx_expm1 expm1
+#define gmx_log1p log1p
+#endif
+
 gmx_bool gmx_isfinite(real x);
 gmx_bool gmx_isnan(real x);
 

@@ -38,6 +38,7 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -361,6 +362,7 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
             }
             break;
         case eioNRVEC:
+            assert(item);
             for (i = 0; (i < nitem); i++)
             {
                 ptr = ((rvec *) item)[i];
@@ -368,10 +370,7 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
                 {
                     res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%lf\n",
                                  &x);
-                    if (item)
-                    {
-                        ptr[m] = x;
-                    }
+                    ptr[m] = x;
                 }
             }
             break;

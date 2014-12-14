@@ -144,6 +144,7 @@ class ExpfitTest : public ::testing::Test
 
 //static var
 int               ExpfitTest::nrLines_;
+//cppcheck-suppress arrayIndexOutOfBounds fixed in 1.68-dev
 std::vector<real> ExpfitTest::values_[expTestNrTypes];
 int               ExpfitTest::nrColumns_;
 std::vector<real> ExpfitTest::standardDev_;

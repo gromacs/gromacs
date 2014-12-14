@@ -285,7 +285,7 @@ static double lmc_errest_3_parm(double x, const double *a)
 
     if (a[0] != 0)
     {
-        e1 = exp(-x/a[0]) - 1;
+        e1 = gmx_expm1(-x/a[0]);
     }
     else
     {
@@ -293,7 +293,7 @@ static double lmc_errest_3_parm(double x, const double *a)
     }
     if (a[2] != 0)
     {
-        e2 = exp(-x/a[2]) - 1;
+        e2 = gmx_expm1(-x/a[2]);
     }
     else
     {
