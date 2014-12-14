@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <String Name="CommandLine">energy -term '4 6 9'</String>
   <OutputFiles Name="Files">
     <File Name="-o">
       <XvgLegend Name="Legend">
