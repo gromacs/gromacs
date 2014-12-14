@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,70 +32,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GROMACS_WORKFLOW_IMPL_H
-#define GROMACS_WORKFLOW_IMPL_H
-
-/*! \internal \file
- * \brief Implementation details for Workflow infrastructure.
+/*! \libinternal \file
+ * \brief
+ * Declares gmx::energyanalysis::ViscosityInfo
  *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
+#ifndef GMX_ENERGYANALYSIS_MODULES_VISCOSITY_H
+#define GMX_ENERGYANALYSIS_MODULES_VISCOSITY_H
 
-#include <memory>
-#include <string>
+#include "gromacs/energyanalysis/analysismodule.h"
 
-#include "workflow.h"
-
-#include "gmxapi/exceptions.h"
-
-namespace gmxapi
+namespace gmx
 {
 
-class WorkflowKeyError : public BasicException<WorkflowKeyError>
+namespace energyanalysis
+{
+
+class ViscosityInfo
 {
     public:
-        using BasicException::BasicException;
+        static const char name[];
+        static const char shortDescription[];
+        static EnergyAnalysisModulePointer create();
 };
 
-/*!
- * \brief Work graph node for MD simulation.
- */
-class MDNodeSpecification : public NodeSpecification
-{
-    public:
-        //! Uses parameter type of base class.
-        using NodeSpecification::paramsType;
+} // namespace energyanalysis
 
-        /*!
-         * \brief Simulation node from file input
-         *
-         * \param filename TPR input filename.
-         */
-        explicit MDNodeSpecification(const std::string &filename);
-
-        /*
-         * \brief Implement NodeSpecification::clone()
-         *
-         * \returns a node to launch a simulation from the same input as this
-         *
-         * Returns nullptr if clone is not possible.
-         */
-        std::unique_ptr<NodeSpecification> clone() override;
-
-        /*! \brief Implement NodeSpecification::params()
-         *
-         * \return Copy of internal params value.
-         */
-        paramsType params() const noexcept override;
-
-    private:
-        //! The TPR input filename, set during construction
-        paramsType tprfilename_;
-};
-
-
-}      // end namespace gmxapi
-
-#endif //GROMACS_WORKFLOW_IMPL_H
+} // namespace gmx
+#endif

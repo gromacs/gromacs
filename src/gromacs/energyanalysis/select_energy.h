@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,70 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GROMACS_WORKFLOW_IMPL_H
-#define GROMACS_WORKFLOW_IMPL_H
-
-/*! \internal \file
- * \brief Implementation details for Workflow infrastructure.
+/*! \libinternal \file
+ * \brief
+ * Declares utilities for selecting energies.
  *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
+#ifndef GMX_ENERGYANALYSIS_SELECT_H
+#define GMX_ENERGYANALYSIS_SELECT_H
 
-#include <memory>
 #include <string>
+#include <vector>
 
-#include "workflow.h"
+#include "analysismodule.h"
 
-#include "gmxapi/exceptions.h"
+namespace gmx
+{
+class TextInputStream;
 
-namespace gmxapi
+namespace energyanalysis
 {
 
-class WorkflowKeyError : public BasicException<WorkflowKeyError>
-{
-    public:
-        using BasicException::BasicException;
-};
-
-/*!
- * \brief Work graph node for MD simulation.
+/*! \libinternal
+ * \brief Return a set of indices in the energy file
+ *
+ * The indices can be specified interactively or by parsing a string.
+ * The caller may need to check whether the set is empty on return.
+ * \param[in]  eNU      The names (and units) of the energy terms
+ * \param[in]  bVerbose Write help text to standard output
+ * \param[in]  input    Input stream from file or command line string providing selections.
+ * \param[out] set      The vector of indices selected by the input
  */
-class MDNodeSpecification : public NodeSpecification
-{
-    public:
-        //! Uses parameter type of base class.
-        using NodeSpecification::paramsType;
+void select_energies(ArrayRef<const EnergyNameUnit>  eNU,
+                     bool                            bVerbose,
+                     TextInputStream                *input,
+                     std::vector<int>               *set);
 
-        /*!
-         * \brief Simulation node from file input
-         *
-         * \param filename TPR input filename.
-         */
-        explicit MDNodeSpecification(const std::string &filename);
+} // namespace energyanalysis
 
-        /*
-         * \brief Implement NodeSpecification::clone()
-         *
-         * \returns a node to launch a simulation from the same input as this
-         *
-         * Returns nullptr if clone is not possible.
-         */
-        std::unique_ptr<NodeSpecification> clone() override;
+} // namespace gmx
 
-        /*! \brief Implement NodeSpecification::params()
-         *
-         * \return Copy of internal params value.
-         */
-        paramsType params() const noexcept override;
-
-    private:
-        //! The TPR input filename, set during construction
-        paramsType tprfilename_;
-};
-
-
-}      // end namespace gmxapi
-
-#endif //GROMACS_WORKFLOW_IMPL_H
+#endif
