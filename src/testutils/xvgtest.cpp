@@ -69,8 +69,8 @@ void checkXvgFile(TextInputStream      *input,
 
     while (input->readLine(&line))
     {
-        if (!((line.find("#") != line.npos) ||
-              (line.find("@") != line.npos)))
+        if (!((line.find("#") != std::string::npos) ||
+              (line.find("@") != std::string::npos)))
         {
             std::vector<std::string> split = splitString(line);
             std::vector<real>        row;
