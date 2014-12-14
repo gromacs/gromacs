@@ -244,7 +244,6 @@ class Angle : public TrajectoryAnalysisModule
 {
     public:
         Angle();
-        virtual ~Angle();
 
         virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings);
@@ -284,8 +283,7 @@ class Angle : public TrajectoryAnalysisModule
         std::vector<int>                         angleCount_;
         int                                      natoms1_;
         int                                      natoms2_;
-        // TODO: It is not possible to put rvec into a container.
-        std::vector<rvec *>                      vt0_;
+        std::vector<std::vector<RVec> >          vt0_;
 
         // Copy and assign disallowed by base.
 };
@@ -302,15 +300,6 @@ Angle::Angle()
     registerAnalysisDataset(&angles_, "angle");
     registerBasicDataset(averageModule_.get(), "average");
     registerBasicDataset(&histogramModule_->averager(), "histogram");
-}
-
-
-Angle::~Angle()
-{
-    for (size_t g = 0; g < vt0_.size(); ++g)
-    {
-        delete [] vt0_[g];
-    }
 }
 
 
@@ -584,7 +573,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
         vt0_.resize(sel1_.size());
         for (size_t g = 0; g < sel1_.size(); ++g)
         {
-            vt0_[g] = new rvec[sel1_[g].posCount() / natoms1_];
+            vt0_[g].resize(sel1_[g].posCount() / natoms1_);
         }
     }
 
