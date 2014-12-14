@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,7 @@ namespace test
 class TrajectoryFrame;
 
 //! Convenience smart pointer typedef
-typedef unique_cptr<gmx_output_env_t, output_env_done> oenv_ptr;
+typedef OutputEnvPointer oenv_ptr;
 //! Convenience smart pointer typedef
 typedef unique_cptr<t_trxstatus, close_trx> trxstatus_file_ptr;
 //! Helper function to free all resources
