@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,50 +32,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
- * Declares gmx::unique_cptr and gmx::sfree_guard.
+ * Declares code to register energy analysis modules.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_energyanalysis
  */
-#ifndef GMX_UTILITY_UNIQUE_PTR_SFREE_H
-#define GMX_UTILITY_UNIQUE_PTR_SFREE_H
+#ifndef GMX_ENERGYANALYSIS_MODULES_H
+#define GMX_ENERGYANALYSIS_MODULES_H
 
-#include <memory>
-
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 
 namespace gmx
 {
 
-//! sfree wrapper to be used as unique_cptr deleter
-template <class T>
-inline void sfree_wrapper(T *p)
-{
-    sfree(p);
-}
+//! \cond libapi
+/*! \brief
+ * Register energy tools with the command line handler.
+ *
+ * \param[in] manager The command line module manager.
+ */
+void registerEnergyAnalysisModules(CommandLineModuleManager *manager);
+//! \endcond
 
-//! \internal \brief wrap function into functor to be used as deleter
-template<class T, void D(T *)>
-struct functor_wrapper {
-    //! call wrapped function
-    void operator()(T* t) { D(t); }
-};
-
-//! unique_ptr which takes function pointer (has to return void) as template argument
-template<typename T, void D(T *) = sfree_wrapper>
-using unique_cptr                = std::unique_ptr<T, functor_wrapper<T, D> >;
-
-//! Simple guard which calls sfree. See unique_cptr for details.
-typedef unique_cptr<void> sfree_guard;
-
-
-//! Create unique_ptr with any deleter function or lambda
-template<typename T, typename D>
-std::unique_ptr<T, D> create_unique_with_deleter(T *t, D d) { return std::unique_ptr<T, D>(t, d); }
-
-}      // namespace gmx
-
+} // namespace gmx
 #endif
