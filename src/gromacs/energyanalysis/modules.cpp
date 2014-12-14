@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,60 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Implements classes in modules.h.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#include "gmxpre.h"
+
+#include "modules.h"
+
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
+
+#include "dhdl.h"
+#include "fluctprops.h"
+#include "freeenergydifference.h"
+#include "simple.h"
+#include "viscosity.h"
 
 namespace gmx
 {
 
 /*! \brief
- * Purpose of file(s) provided through an option.
+ * Convenience method for registering a command-line module for energy
+ * analysis.
  *
- * \ingroup module_options
+ * \tparam ModuleInfo  Info about energy analysis module to wrap.
+ *
+ * \p ModuleInfo should have static public members
+ * `const char name[]`, `const char shortDescription[]`, and
+ * `gmx::TrajectoryAnalysisModulePointer create()`.
+ *
+ * \ingroup module_energyyanalysis
  */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftOptionFileType_NR
-};
+template <class ModuleInfo>
+void registerModule(CommandLineModuleManager *manager)
+{
+    ICommandLineOptionsModule::registerModule(manager,
+                                              ModuleInfo::name,
+                                              ModuleInfo::shortDescription,
+                                              &ModuleInfo::create);
+}
+
+//! \cond libapi
+void registerEnergyAnalysisModules(CommandLineModuleManager *manager)
+{
+    registerModule<SimpleInfo>(manager);
+    registerModule<DhdlInfo>(manager);
+    registerModule<FreeEnergyDifferenceInfo>(manager);
+    registerModule<FluctPropsInfo>(manager);
+    registerModule<ViscosityInfo>(manager);
+}
+//! \endcond
 
 } // namespace gmx
-
-#endif
