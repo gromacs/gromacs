@@ -67,7 +67,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
     set(_outputopt --template=gcc)
     if (CPPCHECK_XML_OUTPUT)
         set(_outputext xml)
-        set(_outputopt --xml)
+        set(_outputopt --xml --xml-version=2)
     endif()
     set(_common_flags
         --enable=style -DLINUX -DHAVE_UNISTD_H
