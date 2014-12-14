@@ -485,6 +485,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         gmx_fatal(FARGS, "Invalid particle type %s on line %s",
                   ptype, line);
     }
+    /* cppcheck-suppress arrayIndexOutOfBounds #6329 */
     pt = xl[j].ptype;
     if (debug)
     {

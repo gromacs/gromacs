@@ -89,7 +89,7 @@ static void power_fit(int n, int nset, real **val, real *t)
         fprintf(stdout, "First time is not larger than 0, using index number as time for power fit\n");
         for (i = 0; i < n; i++)
         {
-            x[i] = log(i+1);
+            x[i] = gmx_log1p(i);
         }
     }
 
