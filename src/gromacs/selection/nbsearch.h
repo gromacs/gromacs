@@ -49,6 +49,8 @@
 #ifndef GMX_SELECTION_NBSEARCH_H
 #define GMX_SELECTION_NBSEARCH_H
 
+#include <vector>
+
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/math/vectypes.h"
@@ -116,6 +118,14 @@ class AnalysisNeighborhoodPositions
          */
         AnalysisNeighborhoodPositions(const rvec x[], int count)
             : count_(count), index_(-1), x_(x), exclusionIds_(NULL)
+        {
+        }
+        /*! \brief
+         * Initializes positions from a vector of position vectors.
+         */
+        AnalysisNeighborhoodPositions(const std::vector<RVec> &x)
+            : count_(x.size()), index_(-1), x_(as_rvec_array(&x[0])),
+              exclusionIds_(NULL)
         {
         }
 

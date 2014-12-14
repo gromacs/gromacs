@@ -70,7 +70,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -284,10 +283,8 @@ class AnalysisNeighborhoodSearchImpl
         bool                    bTric_;
         //! Whether the grid is periodic in a dimension.
         bool                    bGridPBC_[DIM];
-        //! Array allocated for storing in-unit-cell reference positions.
-        rvec                   *xref_alloc_;
-        //! Allocation count for xref_alloc.
-        int                     xref_nalloc_;
+        //! Array for storing in-unit-cell reference positions.
+        std::vector<RVec>       xrefAlloc_;
         //! Origin of the grid (zero for periodic dimensions).
         rvec                    gridOrigin_;
         //! Size of a single grid cell.
@@ -415,8 +412,6 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     bGridPBC_[YY]   = true;
     bGridPBC_[ZZ]   = true;
 
-    xref_alloc_     = NULL;
-    xref_nalloc_    = 0;
     clear_rvec(gridOrigin_);
     clear_rvec(cellSize_);
     clear_rvec(invCellSize_);
@@ -431,7 +426,6 @@ AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
         GMX_RELEASE_ASSERT(i->unique(),
                            "Dangling AnalysisNeighborhoodPairSearch reference");
     }
-    sfree(xref_alloc_);
 }
 
 AnalysisNeighborhoodSearchImpl::PairSearchImplPointer
@@ -924,17 +918,13 @@ void AnalysisNeighborhoodSearchImpl::init(
     }
     if (bGrid_)
     {
-        if (xref_nalloc_ < nref_)
-        {
-            srenew(xref_alloc_, nref_);
-            xref_nalloc_ = nref_;
-        }
-        xref_ = xref_alloc_;
+        xrefAlloc_.resize(nref_);
+        xref_ = as_rvec_array(&xrefAlloc_[0]);
 
         for (int i = 0; i < nref_; ++i)
         {
             rvec refcell;
-            mapPointToGridCell(positions.x_[i], refcell, xref_alloc_[i]);
+            mapPointToGridCell(positions.x_[i], refcell, xrefAlloc_[i]);
             addToGridCell(refcell, i);
         }
     }
