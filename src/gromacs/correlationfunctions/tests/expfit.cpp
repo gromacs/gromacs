@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,7 +189,7 @@ TEST_F (ExpfitTest, EffnERF) {
 
 TEST_F (ExpfitTest, EffnERREST) {
     double  param[] = {0.5, 0.7, 0.3};
-    test(effnERREST, param, 1e-4, 2);
+    test(effnERREST, param, 1e-2, 2);
 }
 
 TEST_F (ExpfitTest, EffnVAC) {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
+#include "gromacs/energyanalysis/modules.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -322,8 +323,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Interpolate and extrapolate structure rotations");
     registerModule(manager, &gmx_enemat, "enemat",
                    "Extract an energy matrix from an energy file");
-    registerModule(manager, &gmx_energy, "energy",
-                   "Writes energies to xvg files and display averages");
+    registerEnergyAnalysisModules(manager);
+
     registerModule(manager, &gmx_filter, "filter",
                    "Frequency filter trajectories, useful for making smooth movies");
     registerModule(manager, &gmx_gyrate, "gyrate",
