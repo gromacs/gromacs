@@ -13,12 +13,16 @@ TYPE xy
 s0 legend "(P\sxy\N+P\syx\N)/2"
 s1 legend "(P\sxz\N+P\szx\N)/2"
 s2 legend "(P\syz\N+P\szy\N)/2"
-s3 legend "Average"
+s3 legend "P\sxx\N-P\syy\N"
+s4 legend "P\syy\N-P\szz\N"
+s5 legend "Average"
 ]]></String>
       </XvgLegend>
       <XvgData Name="Data">
         <Sequence Name="Row0">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
+          <Real>0</Real>
+          <Real>0</Real>
           <Real>0</Real>
           <Real>0</Real>
           <Real>0</Real>
@@ -26,108 +30,134 @@ s3 legend "Average"
           <Real>0</Real>
         </Sequence>
         <Sequence Name="Row1">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>0.2</Real>
           <Real>3.53916e-05</Real>
           <Real>3.994e-05</Real>
           <Real>4.54828e-05</Real>
-          <Real>4.02715e-05</Real>
+          <Real>3.73414e-05</Real>
+          <Real>3.58356e-05</Real>
+          <Real>3.87983e-05</Real>
         </Sequence>
         <Sequence Name="Row2">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>0.4</Real>
           <Real>9.95076e-05</Real>
           <Real>0.000107201</Real>
           <Real>0.000150138</Real>
-          <Real>0.000118949</Real>
+          <Real>8.41556e-05</Real>
+          <Real>7.91993e-05</Real>
+          <Real>0.00010404</Real>
         </Sequence>
         <Sequence Name="Row3">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>0.6</Real>
           <Real>0.000187268</Real>
           <Real>0.000173702</Real>
           <Real>0.000294227</Real>
-          <Real>0.000218399</Real>
+          <Real>0.000142196</Real>
+          <Real>0.000149476</Real>
+          <Real>0.000189374</Real>
         </Sequence>
         <Sequence Name="Row4">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>0.8</Real>
           <Real>0.000283204</Real>
           <Real>0.000227104</Real>
           <Real>0.000461096</Real>
-          <Real>0.000323801</Real>
+          <Real>0.000218384</Real>
+          <Real>0.000228648</Real>
+          <Real>0.000283687</Real>
         </Sequence>
         <Sequence Name="Row5">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>1</Real>
           <Real>0.000386827</Real>
           <Real>0.000270524</Real>
           <Real>0.000638843</Real>
-          <Real>0.000432065</Real>
+          <Real>0.000302637</Real>
+          <Real>0.000336101</Real>
+          <Real>0.000386986</Real>
         </Sequence>
         <Sequence Name="Row6">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>1.2</Real>
           <Real>0.000491027</Real>
           <Real>0.00030208</Real>
           <Real>0.000810851</Real>
-          <Real>0.000534652</Real>
+          <Real>0.000388981</Real>
+          <Real>0.000445659</Real>
+          <Real>0.000487719</Real>
         </Sequence>
         <Sequence Name="Row7">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>1.4</Real>
           <Real>0.000600214</Real>
           <Real>0.000325355</Real>
           <Real>0.000951438</Real>
-          <Real>0.000625669</Real>
+          <Real>0.000483634</Real>
+          <Real>0.000572869</Real>
+          <Real>0.000586702</Real>
         </Sequence>
         <Sequence Name="Row8">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>1.6</Real>
           <Real>0.000713111</Real>
           <Real>0.000355259</Real>
           <Real>0.00103806</Real>
-          <Real>0.000702145</Real>
+          <Real>0.000585276</Real>
+          <Real>0.00070455</Real>
+          <Real>0.000679252</Real>
         </Sequence>
         <Sequence Name="Row9">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>1.8</Real>
           <Real>0.00084181</Real>
           <Real>0.000405959</Real>
           <Real>0.00106653</Real>
-          <Real>0.000771431</Real>
+          <Real>0.00067553</Real>
+          <Real>0.000828505</Real>
+          <Real>0.000763666</Real>
         </Sequence>
         <Sequence Name="Row10">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>2</Real>
           <Real>0.000977894</Real>
           <Real>0.000471442</Real>
           <Real>0.00107524</Real>
-          <Real>0.000841526</Real>
+          <Real>0.000768119</Real>
+          <Real>0.000939774</Real>
+          <Real>0.000846494</Real>
         </Sequence>
         <Sequence Name="Row11">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>2.2</Real>
           <Real>0.00112092</Real>
           <Real>0.00054531</Real>
           <Real>0.00106461</Real>
-          <Real>0.000910279</Real>
+          <Real>0.000849858</Real>
+          <Real>0.00105771</Real>
+          <Real>0.00092768</Real>
         </Sequence>
         <Sequence Name="Row12">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>2.4</Real>
           <Real>0.00128459</Real>
           <Real>0.00062522</Real>
           <Real>0.00104767</Real>
-          <Real>0.000985826</Real>
+          <Real>0.000933641</Real>
+          <Real>0.00118397</Real>
+          <Real>0.00101502</Real>
         </Sequence>
         <Sequence Name="Row13">
-          <Int Name="Length">5</Int>
+          <Int Name="Length">7</Int>
           <Real>2.6</Real>
           <Real>0.00146957</Real>
           <Real>0.000709173</Real>
           <Real>0.00104922</Real>
-          <Real>0.00107599</Real>
+          <Real>0.00101649</Real>
+          <Real>0.00130185</Real>
+          <Real>0.00110926</Real>
         </Sequence>
       </XvgData>
     </File>
