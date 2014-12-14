@@ -1,0 +1,139 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">viscosity</String>
+  <OutputFiles Name="Files">
+    <File Name="-evis">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Shear viscosity using Einstein relation"
+xaxis  label "Time (ps)"
+yaxis  label "(kg m\S-1\N s\S-1\N)"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">7</Int>
+          <Real>0.3</Real>
+          <Real>25948.2</Real>
+          <Real>25948.2</Real>
+          <Real>25948.2</Real>
+          <Real>25948.2</Real>
+          <Real>25948.2</Real>
+          <Real>25948.2</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">7</Int>
+          <Real>0.5</Real>
+          <Real>78405.3</Real>
+          <Real>78405.3</Real>
+          <Real>78405.3</Real>
+          <Real>78405.3</Real>
+          <Real>78405.3</Real>
+          <Real>78405.3</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">7</Int>
+          <Real>0.7</Real>
+          <Real>131452</Real>
+          <Real>131452</Real>
+          <Real>131452</Real>
+          <Real>131452</Real>
+          <Real>131452</Real>
+          <Real>131452</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">7</Int>
+          <Real>0.9</Real>
+          <Real>184713</Real>
+          <Real>184713</Real>
+          <Real>184713</Real>
+          <Real>184713</Real>
+          <Real>184713</Real>
+          <Real>184713</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">7</Int>
+          <Real>1.1</Real>
+          <Real>238264</Real>
+          <Real>238264</Real>
+          <Real>238264</Real>
+          <Real>238264</Real>
+          <Real>238264</Real>
+          <Real>238264</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">7</Int>
+          <Real>1.3</Real>
+          <Real>291706</Real>
+          <Real>291706</Real>
+          <Real>291706</Real>
+          <Real>291706</Real>
+          <Real>291706</Real>
+          <Real>291706</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">7</Int>
+          <Real>1.5</Real>
+          <Real>345290</Real>
+          <Real>345290</Real>
+          <Real>345290</Real>
+          <Real>345290</Real>
+          <Real>345290</Real>
+          <Real>345290</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">7</Int>
+          <Real>1.7</Real>
+          <Real>398826</Real>
+          <Real>398826</Real>
+          <Real>398826</Real>
+          <Real>398826</Real>
+          <Real>398826</Real>
+          <Real>398826</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">7</Int>
+          <Real>1.9</Real>
+          <Real>451789</Real>
+          <Real>451789</Real>
+          <Real>451789</Real>
+          <Real>451789</Real>
+          <Real>451789</Real>
+          <Real>451789</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">7</Int>
+          <Real>2.1</Real>
+          <Real>506254</Real>
+          <Real>506254</Real>
+          <Real>506254</Real>
+          <Real>506254</Real>
+          <Real>506254</Real>
+          <Real>506254</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">7</Int>
+          <Real>2.3</Real>
+          <Real>559943</Real>
+          <Real>559943</Real>
+          <Real>559943</Real>
+          <Real>559943</Real>
+          <Real>559943</Real>
+          <Real>559943</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">7</Int>
+          <Real>2.5</Real>
+          <Real>613226</Real>
+          <Real>613226</Real>
+          <Real>613226</Real>
+          <Real>613226</Real>
+          <Real>613226</Real>
+          <Real>613226</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
