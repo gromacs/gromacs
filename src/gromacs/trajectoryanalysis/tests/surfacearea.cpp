@@ -69,7 +69,7 @@ class SurfaceAreaTest : public ::testing::Test
 {
     public:
         SurfaceAreaTest()
-            : rng_(NULL), allocated_(0), x_(NULL), area_(0.0), volume_(0.0),
+            : rng_(NULL), area_(0.0), volume_(0.0),
               atomArea_(NULL), dotCount_(0), dots_(NULL)
         {
             // TODO: Handle errors.
@@ -82,34 +82,18 @@ class SurfaceAreaTest : public ::testing::Test
             {
                 gmx_rng_destroy(rng_);
             }
-            sfree(x_);
             sfree(atomArea_);
             sfree(dots_);
-        }
-
-        void reserveSpace(int count)
-        {
-            GMX_RELEASE_ASSERT(allocated_ == 0 && x_ == NULL,
-                               "Cannot allocate data more than once");
-            snew(x_, count);
-            radius_.reserve(count);
-            index_.reserve(count);
-            allocated_ = count;
         }
 
         void addSphere(real x, real y, real z, real radius,
                        bool bAddToIndex = true)
         {
-            const int index = radius_.size();
-            GMX_RELEASE_ASSERT(index < allocated_,
-                               "Not enough space allocated for test data");
-            x_[index][XX] = x;
-            x_[index][YY] = y;
-            x_[index][ZZ] = z;
             if (bAddToIndex)
             {
-                index_.push_back(radius_.size());
+                index_.push_back(x_.size());
             }
+            x_.push_back(gmx::RVec(x, y, z));
             radius_.push_back(radius);
         }
 
@@ -136,7 +120,9 @@ class SurfaceAreaTest : public ::testing::Test
 
         void generateRandomPositions(int count)
         {
-            reserveSpace(count);
+            x_.reserve(count);
+            radius_.reserve(count);
+            index_.reserve(count);
             for (int i = 0; i < count; ++i)
             {
                 rvec x;
@@ -147,7 +133,7 @@ class SurfaceAreaTest : public ::testing::Test
         }
         void translatePoints(real x, real y, real z)
         {
-            for (size_t i = 0; i < radius_.size(); ++i)
+            for (size_t i = 0; i < x_.size(); ++i)
             {
                 x_[i][XX] += x;
                 x_[i][YY] += y;
@@ -172,7 +158,8 @@ class SurfaceAreaTest : public ::testing::Test
                     {
                         gmx::SurfaceAreaCalculator calculator;
                         calculator.setDotCount(ndots);
-                        calculator.calculate(x_, &radius_[0], bPBC ? &pbc : NULL,
+                        calculator.calculate(as_rvec_array(&x_[0]), &radius_[0],
+                                             bPBC ? &pbc : NULL,
                                              index_.size(), &index_[0], flags,
                                              &area_, &volume_, &atomArea_,
                                              &dots_, &dotCount_);
@@ -239,24 +226,22 @@ class SurfaceAreaTest : public ::testing::Test
             return 0;
         }
 
-        gmx_rng_t          rng_;
-        int                allocated_;
-        rvec              *x_;
-        std::vector<real>  radius_;
-        std::vector<int>   index_;
+        gmx_rng_t               rng_;
+        std::vector<gmx::RVec>  x_;
+        std::vector<real>       radius_;
+        std::vector<int>        index_;
 
-        real               area_;
-        real               volume_;
-        real              *atomArea_;
-        int                dotCount_;
-        real              *dots_;
+        real                    area_;
+        real                    volume_;
+        real                   *atomArea_;
+        int                     dotCount_;
+        real                   *dots_;
 };
 
 TEST_F(SurfaceAreaTest, ComputesSinglePoint)
 {
     gmx::test::FloatingPointTolerance tolerance(
             gmx::test::defaultRealTolerance());
-    reserveSpace(1);
     addSphere(1, 1, 1, 1);
     ASSERT_NO_FATAL_FAILURE(calculate(24, FLAG_VOLUME | FLAG_ATOM_AREA, false));
     EXPECT_REAL_EQ_TOL(4*M_PI, resultArea(), tolerance);
@@ -268,7 +253,6 @@ TEST_F(SurfaceAreaTest, ComputesTwoPoints)
 {
     gmx::test::FloatingPointTolerance tolerance(
             gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
-    reserveSpace(2);
     addSphere(1, 1, 1, 1);
     addSphere(2, 1, 1, 1);
     ASSERT_NO_FATAL_FAILURE(calculate(1000, FLAG_ATOM_AREA, false));
@@ -281,7 +265,6 @@ TEST_F(SurfaceAreaTest, ComputesTwoPointsOfUnequalRadius)
 {
     gmx::test::FloatingPointTolerance tolerance(
             gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
-    reserveSpace(2);
     // Spheres of radius 1 and 2 with intersection at 1.5
     const real dist = 0.5 + sqrt(3.25);
     addSphere(1.0, 1.0, 1.0, 1);
@@ -295,7 +278,6 @@ TEST_F(SurfaceAreaTest, ComputesTwoPointsOfUnequalRadius)
 TEST_F(SurfaceAreaTest, SurfacePoints12)
 {
     gmx::test::TestReferenceChecker checker(data_.rootChecker());
-    reserveSpace(1);
     addSphere(0, 0, 0, 1);
     ASSERT_NO_FATAL_FAILURE(calculate(12, FLAG_DOTS, false));
     checkReference(&checker, "Surface", true);
@@ -304,7 +286,6 @@ TEST_F(SurfaceAreaTest, SurfacePoints12)
 TEST_F(SurfaceAreaTest, SurfacePoints32)
 {
     gmx::test::TestReferenceChecker checker(data_.rootChecker());
-    reserveSpace(1);
     addSphere(0, 0, 0, 1);
     ASSERT_NO_FATAL_FAILURE(calculate(32, FLAG_DOTS, false));
     checkReference(&checker, "Surface", true);
@@ -313,7 +294,6 @@ TEST_F(SurfaceAreaTest, SurfacePoints32)
 TEST_F(SurfaceAreaTest, SurfacePoints42)
 {
     gmx::test::TestReferenceChecker checker(data_.rootChecker());
-    reserveSpace(1);
     addSphere(0, 0, 0, 1);
     ASSERT_NO_FATAL_FAILURE(calculate(42, FLAG_DOTS, false));
     checkReference(&checker, "Surface", true);
@@ -322,7 +302,6 @@ TEST_F(SurfaceAreaTest, SurfacePoints42)
 TEST_F(SurfaceAreaTest, SurfacePoints122)
 {
     gmx::test::TestReferenceChecker checker(data_.rootChecker());
-    reserveSpace(1);
     addSphere(0, 0, 0, 1);
     ASSERT_NO_FATAL_FAILURE(calculate(122, FLAG_DOTS, false));
     checkReference(&checker, "Surface", true);

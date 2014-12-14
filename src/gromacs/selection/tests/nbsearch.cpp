@@ -120,20 +120,19 @@ class NeighborhoodSearchTestData
 
         gmx::AnalysisNeighborhoodPositions refPositions() const
         {
-            return gmx::AnalysisNeighborhoodPositions(refPos_, refPosCount_);
+            return gmx::AnalysisNeighborhoodPositions(refPos_);
         }
         gmx::AnalysisNeighborhoodPositions testPositions() const
         {
-            if (testPos_ == NULL)
+            if (testPos_.empty())
             {
-                snew(testPos_, testPositions_.size());
+                testPos_.reserve(testPositions_.size());
                 for (size_t i = 0; i < testPositions_.size(); ++i)
                 {
-                    copy_rvec(testPositions_[i].x, testPos_[i]);
+                    testPos_.push_back(testPositions_[i].x);
                 }
             }
-            return gmx::AnalysisNeighborhoodPositions(testPos_,
-                                                      testPositions_.size());
+            return gmx::AnalysisNeighborhoodPositions(testPos_);
         }
         gmx::AnalysisNeighborhoodPositions testPosition(int index) const
         {
@@ -142,11 +141,11 @@ class NeighborhoodSearchTestData
 
         void addTestPosition(const rvec x)
         {
-            GMX_RELEASE_ASSERT(testPos_ == NULL,
+            GMX_RELEASE_ASSERT(testPos_.empty(),
                                "Cannot add positions after testPositions() call");
             testPositions_.push_back(TestPosition(x));
         }
-        void generateRandomPosition(rvec x);
+        gmx::RVec generateRandomPosition() const;
         void generateRandomRefPositions(int count);
         void generateRandomTestPositions(int count);
         void computeReferences(t_pbc *pbc)
@@ -175,20 +174,20 @@ class NeighborhoodSearchTestData
         matrix                           box_;
         t_pbc                            pbc_;
         int                              refPosCount_;
-        rvec                            *refPos_;
+        std::vector<gmx::RVec>           refPos_;
         TestPositionList                 testPositions_;
 
     private:
         void computeReferencesInternal(t_pbc *pbc, bool bXY);
 
-        mutable rvec                    *testPos_;
+        mutable std::vector<gmx::RVec>   testPos_;
 };
 
 //! Shorthand for a collection of reference pairs.
 typedef std::vector<NeighborhoodSearchTestData::RefPair> RefPairList;
 
 NeighborhoodSearchTestData::NeighborhoodSearchTestData(int seed, real cutoff)
-    : rng_(NULL), cutoff_(cutoff), refPosCount_(0), refPos_(NULL), testPos_(NULL)
+    : rng_(NULL), cutoff_(cutoff), refPosCount_(0)
 {
     // TODO: Handle errors.
     rng_ = gmx_rng_init(seed);
@@ -202,13 +201,11 @@ NeighborhoodSearchTestData::~NeighborhoodSearchTestData()
     {
         gmx_rng_destroy(rng_);
     }
-    sfree(refPos_);
-    sfree(testPos_);
 }
 
-void NeighborhoodSearchTestData::generateRandomPosition(rvec x)
+gmx::RVec NeighborhoodSearchTestData::generateRandomPosition() const
 {
-    rvec fx;
+    rvec fx, x;
     fx[XX] = gmx_rng_uniform_real(rng_);
     fx[YY] = gmx_rng_uniform_real(rng_);
     fx[ZZ] = gmx_rng_uniform_real(rng_);
@@ -217,15 +214,16 @@ void NeighborhoodSearchTestData::generateRandomPosition(rvec x)
     x[XX] += 0.2 * gmx_rng_uniform_real(rng_) - 0.1;
     x[YY] += 0.2 * gmx_rng_uniform_real(rng_) - 0.1;
     x[ZZ] += 0.2 * gmx_rng_uniform_real(rng_) - 0.1;
+    return x;
 }
 
 void NeighborhoodSearchTestData::generateRandomRefPositions(int count)
 {
     refPosCount_ = count;
-    snew(refPos_, refPosCount_);
-    for (int i = 0; i < refPosCount_; ++i)
+    refPos_.reserve(count);
+    for (int i = 0; i < count; ++i)
     {
-        generateRandomPosition(refPos_[i]);
+        refPos_.push_back(generateRandomPosition());
     }
 }
 
@@ -234,9 +232,7 @@ void NeighborhoodSearchTestData::generateRandomTestPositions(int count)
     testPositions_.reserve(count);
     for (int i = 0; i < count; ++i)
     {
-        rvec x;
-        generateRandomPosition(x);
-        addTestPosition(x);
+        addTestPosition(generateRandomPosition());
     }
 }
 
@@ -464,7 +460,8 @@ std::string formatVector(const rvec x)
 /*! \brief
  * Helper function to check that all expected pairs were found.
  */
-void checkAllPairsFound(const RefPairList &refPairs, const rvec refPos[],
+void checkAllPairsFound(const RefPairList &refPairs,
+                        const std::vector<gmx::RVec> &refPos,
                         int testPosIndex, const rvec testPos)
 {
     // This could be elegantly expressed with Google Mock matchers, but that
