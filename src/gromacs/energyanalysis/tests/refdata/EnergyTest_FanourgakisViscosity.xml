@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">viscosity</String>
+  <OutputFiles Name="Files">
+    <String Name="-pcorr"><![CDATA[
+# This file was created Wed Jul 29 22:03:28 2015
+# Created by:
+#  :-) GROMACS - energyanalysis-test, VERSION 5.2-dev-20150729-b2ec228-dirty (-:
+# 
+# Executable:   /Users/spoel/GG/energy/gromacs/build/bin/energyanalysis-test
+# Data prefix:  /Users/spoel/GG/energy/gromacs (source tree)
+# Command line:
+#   energyanalysis-test --ref-data update
+# energyanalysis-test is part of G R O M A C S:
+#
+# Guyana Rwanda Oman Macau Angola Cameroon Senegal
+#
+@    title "Pressure ACF"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "(units)"
+@TYPE xy
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Bulk Pacf"
+@ s1 legend "Shear Pacf"
+@ s2 legend "Fit to Bulk"
+@ s3 legend "Fit to Shear"
+         0       12547     2819.41       12547     2819.41
+       0.2    -5813.94      288.59    -5810.35     252.831
+       0.4     1609.18     248.371     1591.03     252.825
+       0.6     -452.14     33.4368     237.767     252.489
+       0.8     139.151     259.407       -1488      246.82
+         1     2269.92     463.087     2059.13     202.074
+       1.2    -2880.39    -70.5669    -1970.48     63.1318
+       1.4     2683.13    -42.5408     1371.29    0.387074
+       1.6    -1386.33    -483.995    -501.255  5.03903e-09
+       1.8     -221.79    -95.0498    -372.137  4.51778e-33
+         2     1123.26     129.998     1019.15  2.55186e-84
+       2.2      692.73    -5.73337    -1298.74  -1.59204e-84
+       2.4    -4.56096     60.7556     1183.02   2.016e-84
+       2.6    -1979.73    -422.879    -751.387  -1.02684e-84
+       2.8    -142.487     24.8982     158.034  1.42605e-84
+         3     3279.85     2.02358     416.368  -4.16937e-85
+       3.2    -1433.03     -180.08     -815.24  8.01158e-85
+       3.4     299.144    -36.3032     945.542  2.17858e-85
+       3.6    -1187.91    -181.358    -796.752  1.61619e-85
+       3.8     1369.22     154.701     436.116  8.5694e-85
+         4      1152.9    -295.458     16.6094  -4.71807e-85
+       4.2    -687.289     182.792    -426.489  1.47956e-84
+       4.4    -359.004     224.521     681.802  -1.07856e-84
+       4.6    -1209.79     -174.18     -723.02  2.06551e-84
+       4.8    -296.534     114.899     555.199  -1.63893e-84
+         5    -175.913    -215.357    -241.638  2.59575e-84
+]]></String>
+  </OutputFiles>
+</ReferenceData>

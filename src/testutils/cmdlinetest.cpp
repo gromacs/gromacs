@@ -240,8 +240,8 @@ class CommandLineTestHelper::Impl
     public:
         struct OutputFileInfo
         {
-            OutputFileInfo(const char *option, const std::string &path)
-                : option(option), path(path)
+            OutputFileInfo(const char *option, const std::string &path, bool xvg)
+                : option(option), path(path), xvg(xvg)
             {
                 xvg = endsWith(path, ".xvg");
             }
@@ -328,7 +328,15 @@ void CommandLineTestHelper::setOutputFile(
 {
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(filename);
     args->addOption(option, fullFilename);
-    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename));
+    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename, false));
+}
+
+void CommandLineTestHelper::setOutputFileXvg(
+        CommandLine *args, const char *option, const char *filename)
+{
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(filename);
+    args->addOption(option, fullFilename);
+    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename, true));
 }
 
 void CommandLineTestHelper::setOutputFileNoTest(
@@ -422,6 +430,12 @@ void CommandLineTestBase::setOutputFile(
         const char *option, const char *filename)
 {
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename);
+}
+
+void CommandLineTestBase::setOutputFileXvg(
+        const char *option, const char *filename)
+{
+    impl_->helper_.setOutputFileXvg(&impl_->cmdline_, option, filename);
 }
 
 void CommandLineTestBase::setOutputFileNoTest(

@@ -313,6 +313,18 @@ class CommandLineTestHelper
          */
         void setOutputFileNoTest(CommandLine *args, const char *option,
                                  const char *extension);
+        /*! \brief
+         * Sets an output file parameter and adds it to the set of tested files.
+         *
+         * \param[in,out] args      CommandLine to which to add the option.
+         * \param[in]     option    Option to set.
+         * \param[in]     filename  Name of the output file.
+         *
+         * This method method differs from setOutputFile in that it uses
+         * a specific test for xvg files.
+         */
+        void setOutputFileXvg(CommandLine *args, const char *option,
+                              const char *filename);
 
         /*! \brief
          * Checks output files added with setOutputFile() against reference
@@ -389,6 +401,12 @@ class CommandLineTestBase : public ::testing::Test
          * \see CommandLineTestHelper::setOutputFile()
          */
         void setOutputFile(const char *option, const char *filename);
+        /*! \brief
+         * Sets an output file parameter for testing xmgrace files.
+         *
+         * \see CommandLineTestHelper::setOutputFileNoTest()
+         */
+        void setOutputFileXvg(const char *option, const char *filename);
         /*! \brief
          * Sets an output file parameter.
          *
