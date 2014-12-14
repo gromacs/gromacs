@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">viscosity -xvg none</String>
+  <Sequence Name="result0">
+    <Int Name="Length">12</Int>
+    <Real>0.29999999999999999</Real>
+    <Real>0.5</Real>
+    <Real>0.69999999999999996</Real>
+    <Real>0.90000000000000002</Real>
+    <Real>1.1000000000000001</Real>
+    <Real>1.3</Real>
+    <Real>1.5</Real>
+    <Real>1.7</Real>
+    <Real>1.8999999999999999</Real>
+    <Real>2.1000000000000001</Real>
+    <Real>2.2999999999999998</Real>
+    <Real>2.5</Real>
+  </Sequence>
+  <Sequence Name="result1">
+    <Int Name="Length">12</Int>
+    <Real>1.7254</Real>
+    <Real>3.4190399999999999</Real>
+    <Real>4.6067200000000001</Real>
+    <Real>4.7584799999999996</Real>
+    <Real>5.2902100000000001</Real>
+    <Real>5.3749700000000002</Real>
+    <Real>5.7458799999999997</Real>
+    <Real>5.7434599999999998</Real>
+    <Real>6.5280500000000004</Real>
+    <Real>6.3154500000000002</Real>
+    <Real>6.9701399999999998</Real>
+    <Real>8.3384699999999992</Real>
+  </Sequence>
+  <Sequence Name="result2">
+    <Int Name="Length">12</Int>
+    <Real>1.81219</Real>
+    <Real>3.3915099999999998</Real>
+    <Real>3.4349599999999998</Real>
+    <Real>2.86741</Real>
+    <Real>2.0372599999999998</Real>
+    <Real>1.36415</Real>
+    <Real>1.26406</Real>
+    <Real>1.5899700000000001</Real>
+    <Real>2.5507499999999999</Real>
+    <Real>3.5117799999999999</Real>
+    <Real>3.7888500000000001</Real>
+    <Real>4.1848400000000003</Real>
+  </Sequence>
+  <Sequence Name="result3">
+    <Int Name="Length">12</Int>
+    <Real>2.3103899999999999</Real>
+    <Real>5.3055300000000001</Real>
+    <Real>7.3546300000000002</Real>
+    <Real>8.4623000000000008</Real>
+    <Real>8.9964300000000001</Real>
+    <Real>8.8361400000000003</Real>
+    <Real>7.1617699999999997</Real>
+    <Real>4.4024400000000004</Real>
+    <Real>1.44428</Real>
+    <Real>0.28189900000000001</Real>
+    <Real>-0.72289000000000003</Real>
+    <Real>-0.75693900000000003</Real>
+  </Sequence>
+  <Sequence Name="result4">
+    <Int Name="Length">12</Int>
+    <Real>5.1409900000000004</Real>
+    <Real>5.2243500000000003</Real>
+    <Real>6.8721199999999998</Real>
+    <Real>9.6011299999999995</Real>
+    <Real>10.3948</Real>
+    <Real>8.7678499999999993</Real>
+    <Real>8.4024599999999996</Real>
+    <Real>5.5654899999999996</Real>
+    <Real>2.9080499999999998</Real>
+    <Real>3.2378300000000002</Real>
+    <Real>-1.0014700000000001</Real>
+    <Real>-0.65381199999999995</Real>
+  </Sequence>
+  <Sequence Name="result5">
+    <Int Name="Length">12</Int>
+    <Real>5.55863</Real>
+    <Real>3.79514</Real>
+    <Real>7.70723</Real>
+    <Real>6.37547</Real>
+    <Real>8.6071899999999992</Real>
+    <Real>6.4642999999999997</Real>
+    <Real>5.9695</Real>
+    <Real>4.2391899999999998</Real>
+    <Real>0.59195699999999996</Real>
+    <Real>-1.34992</Real>
+    <Real>-0.62709099999999995</Real>
+    <Real>-0.13356299999999999</Real>
+  </Sequence>
+  <Sequence Name="result6">
+    <Int Name="Length">12</Int>
+    <Real>3.30952</Real>
+    <Real>4.2271099999999997</Real>
+    <Real>5.9951299999999996</Real>
+    <Real>6.41296</Real>
+    <Real>7.0651900000000003</Real>
+    <Real>6.1614800000000001</Real>
+    <Real>5.7087300000000001</Real>
+    <Real>4.3081100000000001</Real>
+    <Real>2.8046199999999999</Real>
+    <Real>2.39941</Real>
+    <Real>1.6815100000000001</Real>
+    <Real>2.1958000000000002</Real>
+  </Sequence>
+</ReferenceData>

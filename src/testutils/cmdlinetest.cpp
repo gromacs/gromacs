@@ -249,6 +249,8 @@ class CommandLineTestHelper::Impl
 
         typedef std::vector<OutputFileInfo>        OutputFileList;
 
+        std::string getOutputFile(const char *option);
+
         explicit Impl(TestFileManager *fileManager)
             : fileManager_(*fileManager)
         {
@@ -319,12 +321,31 @@ void CommandLineTestHelper::setInputFileContents(
     args->addOption(option, fullFilename);
 }
 
+std::string CommandLineTestHelper::getOutputFile(const char *option)
+{
+    return impl_->getOutputFile(option);
+}
+
 void CommandLineTestHelper::setOutputFile(
         CommandLine *args, const char *option, const char *filename)
 {
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(filename);
     args->addOption(option, fullFilename);
     impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename));
+}
+
+std::string CommandLineTestHelper::Impl::getOutputFile(const char *option)
+{
+    for (std::vector<OutputFileInfo>::iterator ofi = outputFiles_.begin();
+         (ofi < outputFiles_.end()); ++ofi)
+    {
+        if (ofi->option.compare(option) == 0)
+        {
+            return ofi->path;
+        }
+    }
+    std::string empty;
+    return empty;
 }
 
 void CommandLineTestHelper::setOutputFileNoTest(
@@ -381,6 +402,11 @@ CommandLineTestBase::CommandLineTestBase()
 
 CommandLineTestBase::~CommandLineTestBase()
 {
+}
+
+std::string CommandLineTestBase::getOutputFile(const char *option)
+{
+    return impl_->helper_.getOutputFile(option);
 }
 
 void CommandLineTestBase::setInputFile(
