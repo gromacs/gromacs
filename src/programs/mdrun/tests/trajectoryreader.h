@@ -70,7 +70,7 @@ namespace test
 class TrajectoryFrame;
 
 //! Convenience smart pointer typedef
-typedef unique_cptr<gmx_output_env_t, output_env_done> oenv_ptr;
+typedef OutputEnvPointer oenv_ptr;
 //! Convenience smart pointer typedef
 typedef unique_cptr<t_trxstatus, close_trx> trxstatus_file_ptr;
 //! Helper function to free all resources
