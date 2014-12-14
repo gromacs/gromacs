@@ -128,7 +128,7 @@ typedef struct t_enxblock{
 
 
 /* The frames that are read/written */
-typedef struct {
+typedef struct t_enxframe {
     double          t;            /* Timestamp of this frame	                     */
     gmx_int64_t     step;         /* MD step	                             */
     gmx_int64_t     nsteps;       /* The number of steps between frames            */
