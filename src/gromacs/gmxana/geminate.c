@@ -515,7 +515,7 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
 /* This returns the real-valued index(!) to an ACF, equidistant on a log scale. */
 static double getLogIndex(const int i, const t_gemParams *params)
 {
-    return (exp(((double)(i)) * params->logQuota) -1);
+    return expm1(((double)(i)) * params->logQuota);
 }
 
 extern t_gemParams *init_gemParams(const double sigma, const double D,

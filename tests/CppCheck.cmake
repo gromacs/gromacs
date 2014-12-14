@@ -86,9 +86,9 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=unusedStructMember
         --suppress=invalidscanf
         --suppress=sizeofCalculation
+        --suppress=invalidscanf_libc
         --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
         --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
-        --suppress=assignIfError:src/gromacs/mdlib/nbnxn_atomdata.c #Ticket 5695
         --suppress=invalidPointerCast:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
         --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
         --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh
@@ -97,10 +97,9 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         -D__cplusplus
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
-        --suppress=invalidscanf:src/gromacs/fileio/matio.cpp
-        --suppress=invalidscanf:src/gromacs/fileio/xvgr.cpp
-        --suppress=invalidscanf:src/gromacs/topology/index.cpp
-        --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp
+        --suppress=memsetClassFloat  #we assume IEEE754
+        --suppress=invalidscanf_libc #seems only important for security on non-std libc
+        --suppress=invalidscanf      #same as last (style and portability checker have the same warning)
         --suppress=passedByValue:src/gromacs/simd/tests/*
         )
 
