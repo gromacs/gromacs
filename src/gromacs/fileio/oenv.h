@@ -115,6 +115,9 @@ const char *output_env_get_program_display_name(const gmx_output_env_t *oenv);
 namespace gmx
 {
 class IProgramContext;
+
+//! Smart pointer to manage an gmx_output_env_t object
+using OutputEnvPointer = unique_cptr<gmx_output_env_t, output_env_done>;
 } // namespace gmx
 
 void output_env_init(gmx_output_env_t **oenvp,
