@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,20 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MATH_SOURCES *.cpp *.c)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
-
-gmx_install_headers(
-    3dtransforms.h
-    calculate-ewald-splitting-coefficient.h
-    do_fit.h
-    gmxcomplex.h
-    units.h
-    utilities.h
-    vec.h
-    vectypes.h
-    )
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+gmx_add_unit_test(MathUnitTests math-test
+                  vectypes.cpp
+                  )
