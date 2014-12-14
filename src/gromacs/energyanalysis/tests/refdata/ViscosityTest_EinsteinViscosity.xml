@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">viscosity</String>
+  <OutputFiles Name="Files">
+    <File Name="-evis">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Shear viscosity using Einstein relation"
+xaxis  label "Time (ps)"
+yaxis  label "(kg m\S-1\N s\S-1\N)"
+TYPE xy
+s0 legend "P\sxy\N-<P\sxy\N>"
+s1 legend "P\sxz\N-<P\sxz\N>"
+s2 legend "P\syz\N-<P\syz\N>"
+s3 legend "P\sxx\N-P\syy\N"
+s4 legend "P\syy\N-P\szz\N"
+s5 legend "Average"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">7</Int>
+          <Real>0.3</Real>
+          <Real>1.7254</Real>
+          <Real>1.81219</Real>
+          <Real>2.31039</Real>
+          <Real>5.14099</Real>
+          <Real>5.55863</Real>
+          <Real>3.30952</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">7</Int>
+          <Real>0.5</Real>
+          <Real>3.41904</Real>
+          <Real>3.39151</Real>
+          <Real>5.30553</Real>
+          <Real>5.22435</Real>
+          <Real>3.79514</Real>
+          <Real>4.22711</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">7</Int>
+          <Real>0.7</Real>
+          <Real>4.60672</Real>
+          <Real>3.43496</Real>
+          <Real>7.35463</Real>
+          <Real>6.87212</Real>
+          <Real>7.70723</Real>
+          <Real>5.99513</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">7</Int>
+          <Real>0.9</Real>
+          <Real>4.75848</Real>
+          <Real>2.86741</Real>
+          <Real>8.4623</Real>
+          <Real>9.60113</Real>
+          <Real>6.37547</Real>
+          <Real>6.41296</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">7</Int>
+          <Real>1.1</Real>
+          <Real>5.29021</Real>
+          <Real>2.03726</Real>
+          <Real>8.99643</Real>
+          <Real>10.3948</Real>
+          <Real>8.60719</Real>
+          <Real>7.06519</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">7</Int>
+          <Real>1.3</Real>
+          <Real>5.37497</Real>
+          <Real>1.36415</Real>
+          <Real>8.83614</Real>
+          <Real>8.76785</Real>
+          <Real>6.4643</Real>
+          <Real>6.16148</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">7</Int>
+          <Real>1.5</Real>
+          <Real>5.74588</Real>
+          <Real>1.26406</Real>
+          <Real>7.16177</Real>
+          <Real>8.40246</Real>
+          <Real>5.9695</Real>
+          <Real>5.70873</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">7</Int>
+          <Real>1.7</Real>
+          <Real>5.74346</Real>
+          <Real>1.58997</Real>
+          <Real>4.40244</Real>
+          <Real>5.56549</Real>
+          <Real>4.23919</Real>
+          <Real>4.30811</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">7</Int>
+          <Real>1.9</Real>
+          <Real>6.52805</Real>
+          <Real>2.55075</Real>
+          <Real>1.44428</Real>
+          <Real>2.90805</Real>
+          <Real>0.591957</Real>
+          <Real>2.80462</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">7</Int>
+          <Real>2.1</Real>
+          <Real>6.31545</Real>
+          <Real>3.51178</Real>
+          <Real>0.281899</Real>
+          <Real>3.23783</Real>
+          <Real>-1.34992</Real>
+          <Real>2.39941</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">7</Int>
+          <Real>2.3</Real>
+          <Real>6.97014</Real>
+          <Real>3.78885</Real>
+          <Real>-0.72289</Real>
+          <Real>-1.00147</Real>
+          <Real>-0.627091</Real>
+          <Real>1.68151</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">7</Int>
+          <Real>2.5</Real>
+          <Real>8.33847</Real>
+          <Real>4.18484</Real>
+          <Real>-0.756939</Real>
+          <Real>-0.653812</Real>
+          <Real>-0.133563</Real>
+          <Real>2.1958</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
