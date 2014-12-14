@@ -44,6 +44,7 @@
 #define GMX_COMMANDLINE_CMDLINEOPTIONSMODULE_H
 
 #include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {

@@ -317,6 +317,12 @@ class CommandLineTestHelper
          */
         void setOutputFileNoTest(CommandLine *args, const char *option,
                                  const char *extension);
+        /*! \brief
+         * Return the output file name corresponding to option.
+         *
+         * \param[in] option The option name
+         */
+        std::string getOutputFile(const char *option);
 
         /*! \brief
          * Checks output files added with setOutputFile() against reference
@@ -399,6 +405,12 @@ class CommandLineTestBase : public ::testing::Test
          * \see CommandLineTestHelper::setOutputFileNoTest()
          */
         void setOutputFileNoTest(const char *option, const char *extension);
+        /*! \brief
+         * Return the output file name corresponding to option.
+         *
+         * \param[in] option The option name
+         */
+        std::string getOutputFile(const char *option);
 
         /*! \brief
          * Returns the internal CommandLine object used to construct the
