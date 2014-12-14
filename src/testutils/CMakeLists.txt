@@ -45,7 +45,8 @@ set(TESTUTILS_SOURCES
     testfilemanager.cpp
     testfileredirector.cpp
     testinit.cpp
-    testoptions.cpp)
+    testoptions.cpp
+    xvgtests.cpp)
 
 add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils)
