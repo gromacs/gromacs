@@ -1,14 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <String Name="CommandLine">viscosity</String>
   <OutputFiles Name="Files">
-    <File Name="-o">
+    <File Name="-evisco">
       <XvgLegend Name="Legend">
         <String Name="XvgLegend"><![CDATA[
 title "Shear viscosity using Einstein relation"
 xaxis  label "Time (ps)"
 yaxis  label "(kg m\S-1\N s\S-1\N)"
 TYPE xy
+s0 legend "(P\sxy\N+P\syx\N)/2"
+s1 legend "(P\sxz\N+P\szx\N)/2"
+s2 legend "(P\syz\N+P\szy\N)/2"
+s3 legend "Average"
 ]]></String>
       </XvgLegend>
       <XvgData Name="Data">
@@ -65,7 +70,7 @@ TYPE xy
           <Real>1.3</Real>
           <Real>0.000521</Real>
           <Real>0.000157779</Real>
-          <Real>0.00086004</Real>
+          <Real>0.000860039</Real>
           <Real>0.00051294</Real>
         </Sequence>
         <Sequence Name="Row7">
@@ -81,7 +86,7 @@ TYPE xy
           <Real>1.7</Real>
           <Real>0.000564482</Real>
           <Real>0.000149521</Real>
-          <Real>0.000433129</Real>
+          <Real>0.000433128</Real>
           <Real>0.000382377</Real>
         </Sequence>
         <Sequence Name="Row9">
@@ -89,7 +94,7 @@ TYPE xy
           <Real>1.9</Real>
           <Real>0.000643496</Real>
           <Real>0.000253498</Real>
-          <Real>0.000142306</Real>
+          <Real>0.000142307</Real>
           <Real>0.000346433</Real>
         </Sequence>
         <Sequence Name="Row10">
@@ -97,7 +102,7 @@ TYPE xy
           <Real>2.1</Real>
           <Real>0.000680419</Real>
           <Real>0.000327415</Real>
-          <Real>4.35872e-05</Real>
+          <Real>4.35868e-05</Real>
           <Real>0.000350474</Real>
         </Sequence>
         <Sequence Name="Row11">
@@ -113,7 +118,7 @@ TYPE xy
           <Real>2.5</Real>
           <Real>0.000818337</Real>
           <Real>0.000399551</Real>
-          <Real>-8.46781e-05</Real>
+          <Real>-8.46782e-05</Real>
           <Real>0.000377737</Real>
         </Sequence>
         <Sequence Name="Row13">
@@ -121,7 +126,7 @@ TYPE xy
           <Real>2.7</Real>
           <Real>0.000924901</Real>
           <Real>0.000419762</Real>
-          <Real>7.73914e-06</Real>
+          <Real>7.73928e-06</Real>
           <Real>0.000450801</Real>
         </Sequence>
       </XvgData>
