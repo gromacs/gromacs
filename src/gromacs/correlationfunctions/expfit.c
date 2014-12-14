@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -198,24 +198,43 @@ static double lmc_exp_9_parm(double x, const double *a)
     return a[0]*e1 + a[2]*e2 + a[4]*e3 + a[6]*e4 + a[8];
 }
 
-/*! \brief Compute y = (1-a1) * exp(-(x/a3)^a4)*cos(x*a2) + a1*exp(-(x/a5)^a6) */
+static double penalty_power(double beta)
+{
+    double beta_min = 0.2;
+    double beta_max = 1.1;
+    double kfac     = 0;
+    if (beta < beta_min)
+    {
+        return kfac*sqr(beta - beta_min);
+    }
+    else if (beta > beta_max)
+    {
+        return kfac*sqr(beta - beta_max);
+    }
+    return 0;
+}
+
+/*! \brief Compute y = (1-a0) * exp(-(x/a2)^a3)*cos(x*a1) + a1*exp(-(x/a4)^a5) */
 static double effnPRES_fun(double x, const double *a)
 {
     double term1, term2, term3;
+    double beta_f, beta_s;
 
+    beta_s = a[5];
     if (a[0] != 0)
     {
-        term3 = a[0] * exp(-pow((x/a[4]), a[5]));
+        term3 = a[0] * exp(-pow((x/a[4]), beta_s));
     }
     else
     {
         term3 = 0;
     }
 
-    term1 = 1-a[0];
+    term1  = 1-a[0];
+    beta_f = a[3];
     if (term1 != 0)
     {
-        term2 = exp(-pow((x/a[2]), a[3])) * cos(x*a[1]);
+        term2 = exp(-pow((x/a[2]), beta_f)) * cos(x*a[1]);
     }
     else
     {
@@ -223,6 +242,37 @@ static double effnPRES_fun(double x, const double *a)
     }
 
     return term1*term2 + term3;
+}
+
+/*! \brief Compute y = (1-a0) * exp(-(x/a2)^a3)*cos(x*a1) + a1*exp(-(x/a4)^a5) */
+static double effnPRES_fit_fun(double x, const double *a)
+{
+    double term1, term2, term3;
+    double beta_f, beta_s, penalty;
+
+    beta_s = exp(a[5]);
+    if (a[0] != 0)
+    {
+        term3 = a[0] * exp(-pow((x/sqr(a[4])), beta_s));
+    }
+    else
+    {
+        term3 = 0;
+    }
+
+    term1  = 1-a[0];
+    beta_f = exp(a[3]);
+    if (term1 != 0)
+    {
+        term2 = exp(-pow((x/sqr(a[2])), beta_f)) * cos(x*fabs(a[1]));
+    }
+    else
+    {
+        term2 = 0;
+    }
+    penalty = penalty_power(beta_f) + penalty_power(beta_s);
+
+    return term1*term2 + term3 + penalty;
 }
 
 /*! \brief Compute vac function */
@@ -316,7 +366,7 @@ static double lmc_errest_3_parm(double x, const double *a)
 typedef double (*t_lmcurve)(double x, const double *a);
 
 /*! \brief array of fitting functions corresponding to the pre-defined types */
-t_lmcurve lmcurves[effnNR] = {
+t_lmcurve lmcurves[effnNR+1] = {
     lmc_exp_one_parm, lmc_exp_one_parm, lmc_exp_two_parm,
     lmc_exp_3_parm, lmc_vac_2_parm,
     lmc_exp_5_parm,   lmc_exp_7_parm,
@@ -329,7 +379,7 @@ double fit_function(int eFitFn, double *parm, double x)
     return lmcurves[eFitFn](x, parm);
 }
 
-/*! \brief lmfit_exp supports up to 3 parameter fitting of exponential functions */
+/*! \brief lmfit_exp supports fitting of different functions */
 static gmx_bool lmfit_exp(int nfit, double x[], double y[],
                           real ftol, int maxiter,
                           double parm[], gmx_bool bVerbose,
@@ -338,7 +388,7 @@ static gmx_bool lmfit_exp(int nfit, double x[], double y[],
     double             chisq, ochisq;
     gmx_bool           bCont;
     int                i, j;
-    lm_control_struct *control;
+    lm_control_struct  control;
     lm_status_struct  *status;
 
     if ((eFitFn < 0) || (eFitFn >= effnNR))
@@ -346,19 +396,18 @@ static gmx_bool lmfit_exp(int nfit, double x[], double y[],
         gmx_fatal(FARGS, "fitfn = %d, should be in 0..%d (%s,%d)",
                   effnNR-1, eFitFn, __FILE__, __LINE__);
     }
-
-    snew(control, 1);
-    control->ftol       = ftol;
-    control->xtol       = ftol;
-    control->gtol       = ftol;
-    control->epsilon    = 0.1;
-    control->stepbound  = 100;
-    control->patience   = maxiter;
-    control->scale_diag = 1;
-    control->msgfile    = stdout;
-    control->verbosity  = (bVerbose ? 1 : 0);
-    control->n_maxpri   = nfp_ffn[eFitFn];
-    control->m_maxpri   = 0;
+    control            = lm_control_double;
+    control.ftol       = ftol;
+    control.xtol       = ftol;
+    control.gtol       = ftol;
+    control.epsilon    = 0.1;
+    control.stepbound  = 100;
+    control.patience   = maxiter;
+    control.scale_diag = 1;
+    control.msgfile    = stdout;
+    control.verbosity  = (bVerbose ? 1 : 0);
+    control.n_maxpri   = nfp_ffn[eFitFn];
+    control.m_maxpri   = 0;
     snew(status, 1);
     /* Initial params */
     chisq  = 1e12;
@@ -373,7 +422,8 @@ static gmx_bool lmfit_exp(int nfit, double x[], double y[],
         ochisq = chisq;
 
         lmcurve(nfp_ffn[eFitFn], parm, nfit, x, y,
-                lmcurves[eFitFn], control, status);
+                (eFitFn == effnPRES) ? effnPRES_fit_fun : lmcurves[eFitFn],
+                &control, status);
         chisq = sqr(status->fnorm);
         if (bVerbose)
         {
@@ -395,10 +445,50 @@ static gmx_bool lmfit_exp(int nfit, double x[], double y[],
         fprintf(stderr, "\n");
     }
 
-    sfree(control);
     sfree(status);
 
     return TRUE;
+}
+
+static void initiate_fit_params(int    eFitFn,
+                                double params[])
+{
+    int i, nparm;
+
+    nparm = effnNparams(eFitFn);
+
+    switch (eFitFn)
+    {
+        case effnPRES:
+            params[1] = fabs(params[1]);
+            params[2] = sqrt(params[2]);
+            params[3] = log(params[3]);
+            params[4] = sqrt(params[4]);
+            params[5] = log(params[5]);
+            break;
+        default:
+            break;
+    }
+}
+
+static void extract_fit_params(int    eFitFn,
+                               double params[])
+{
+    int i, nparm;
+
+    nparm = effnNparams(eFitFn);
+
+    switch (eFitFn)
+    {
+        case effnPRES:
+            params[2] = sqr(params[2]);
+            params[3] = exp(params[3]);
+            params[4] = sqr(params[4]);
+            params[5] = exp(params[5]);
+            break;
+        default:
+            break;
+    }
 }
 
 /*! \brief See description in header file. */
@@ -410,8 +500,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
     char     buf[32];
 
     int      i, j, nparm, nfitpnts;
-    double   integral, ttt;
-    double  *parm, *dparm;
+    double   integral, ttt, chi2;
     double  *x, *y, *dy;
 #ifdef GMX_DOUBLE
     real     ftol    = 1e-16;
@@ -436,19 +525,20 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
     snew(y, ndata);
     snew(dy, ndata);
 
-    j = 0;
+    j    = 0;
+    chi2 = 0;
     for (i = 0; i < ndata; i++)
     {
         ttt = x0 ? x0[i] : dt*i;
         if (ttt >= begintimefit && ttt <= endtimefit)
         {
-            x[j] = ttt;
-            y[j] = c1[i];
-
+            x[j]  = ttt;
+            y[j]  = c1[i];
+            chi2 += sqr(y[j] - lmcurves[eFitFn](ttt, fitparms));
             /* mrqmin does not like sig to be zero */
             if (sig[i] < 1.0e-7)
             {
-                dy[j] = 1.0e-7;
+                dy[j] = fabs(y[j]*0.01);
             }
             else
             {
@@ -456,13 +546,15 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
             }
             if (debug)
             {
-                fprintf(debug, "j= %d, i= %d, x= %g, y= %g, dy= %g\n",
-                        j, i, x[j], y[j], dy[j]);
+                fprintf(debug, "j= %d, i= %d, x= %g, y= %g, dy= %g, ttt=%g\n",
+                        j, i, x[j], y[j], dy[j], ttt);
             }
             j++;
         }
     }
     nfitpnts = j;
+    printf("There are %d data points, %d parameters, initial chi2 = %g\n",
+           nfitpnts, nparm, chi2);
     integral = 0;
     if (nfitpnts < nparm)
     {
@@ -470,77 +562,55 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
     }
     else
     {
-        snew(parm, nparm);
-        snew(dparm, nparm);
-        if (fitparms)
-        {
-            for (i = 0; (i < nparm); i++)
-            {
-                parm[i] = fitparms[i];
-            }
-        }
+        initiate_fit_params(eFitFn, fitparms);
 
-        if (!lmfit_exp(nfitpnts, x, y, ftol, maxiter, parm, bVerbose, eFitFn))
+        if (!lmfit_exp(nfitpnts, x, y, ftol, maxiter, fitparms,
+                       bVerbose, eFitFn))
         {
             fprintf(stderr, "Fit failed!\n");
         }
-        else if (nparm <= 3)
+        else
         {
-            /* Compute the integral from begintimefit */
-            if (nparm == 3)
+            switch (eFitFn)
             {
-                integral = (parm[0]*myexp(begintimefit, parm[1],  parm[0]) +
-                            parm[2]*myexp(begintimefit, 1-parm[1], parm[2]));
-            }
-            else if (nparm == 2)
-            {
-                integral = parm[0]*myexp(begintimefit, parm[1],  parm[0]);
-            }
-            else if (nparm == 1)
-            {
-                integral = parm[0]*myexp(begintimefit, 1,  parm[0]);
-            }
-            else
-            {
-                gmx_fatal(FARGS, "nparm = %d in file %s, line %d",
-                          nparm, __FILE__, __LINE__);
+                case effnEXP1:
+                    integral = fitparms[0]*myexp(begintimefit, 1,  fitparms[0]);
+                    break;
+                case effnEXP2:
+                    integral = fitparms[0]*myexp(begintimefit, fitparms[1],  fitparms[0]);
+                    break;
+                case effnEXP3:
+                    integral = (fitparms[0]*myexp(begintimefit, fitparms[1],  fitparms[0]) +
+                                fitparms[2]*myexp(begintimefit, 1-fitparms[1], fitparms[2]));
+                    break;
+                default:
+                    fprintf(stderr, "Don't know how to compute integral for %s\n",
+                            s_ffn[eFitFn]);
+                    integral = 0;
+                    break;
             }
 
             /* Generate THE output */
             if (bVerbose)
             {
-                fprintf(stderr, "FIT: # points used in fit is: %d\n", nfitpnts);
-                fprintf(stderr, "FIT: %21s%21s%21s\n",
-                        "parm0     ", "parm1 (ps)   ", "parm2 (ps)    ");
-                fprintf(stderr, "FIT: ------------------------------------------------------------\n");
-                fprintf(stderr, "FIT: %8.3g +/- %8.3g%9.4g +/- %8.3g%8.3g +/- %8.3g\n",
-                        parm[0], dparm[0], parm[1], dparm[1], parm[2], dparm[2]);
                 fprintf(stderr, "FIT: Integral (calc with fitted function) from %g ps to inf. is: %g\n",
                         begintimefit, integral);
 
                 sprintf(buf, "test%d.xvg", nfitpnts);
                 fp = xvgropen(buf, "C(t) + Fit to C(t)", "Time (ps)", "C(t)", oenv);
-                fprintf(fp, "# parm0 = %g, parm1 = %g, parm2 = %g\n",
-                        parm[0], parm[1], parm[2]);
+                fprintf(fp, "# fitparms0 = %g, fitparms1 = %g, fitparms2 = %g\n",
+                        fitparms[0], fitparms[1], fitparms[2]);
                 for (j = 0; (j < nfitpnts); j++)
                 {
                     ttt = x0 ? x0[j] : dt*j;
                     fprintf(fp, "%10.5e  %10.5e  %10.5e\n",
                             ttt, c1[j],
-                            lmcurves[eFitFn](ttt, parm));
+                            lmcurves[eFitFn](ttt, fitparms));
                 }
                 xvgrclose(fp);
             }
         }
-        if (fitparms)
-        {
-            for (i = 0; (i < nparm); i++)
-            {
-                fitparms[i] = parm[i];
-            }
-        }
-        sfree(parm);
-        sfree(dparm);
+        extract_fit_params(eFitFn, fitparms);
     }
 
     sfree(x);

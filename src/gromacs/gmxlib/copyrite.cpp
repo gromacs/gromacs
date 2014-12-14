@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -293,6 +293,11 @@ void please_cite(FILE *fp, const char *key)
           "SETTLE: An Analytical Version of the SHAKE and RATTLE Algorithms for Rigid Water Models",
           "J. Comp. Chem.",
           13, 1992, "952-962" },
+        {  "Fanourgakis2012a",
+           "G. S. Fanourgakis, J. S. Medina and R. Prosmiti",
+           "Determining the Bulk Viscosity of Rigid Water Models",
+           "J. Phys. Chem. A",
+           116, 2012, "2564-2570" },
         { "Cromer1968a",
           "D. T. Cromer & J. B. Mann",
           "X-ray scattering factors computed from numerical Hartree-Fock wave functions",
