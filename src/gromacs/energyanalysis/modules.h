@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Declares gmx modules related to energy files
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+
+#ifndef GMX_ENERGYANALYSIS_MODULES_H
+#define GMX_ENERGYANALYSIS_MODULES_H
+
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 
 namespace gmx
 {
 
 /*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
+ * Register energy tools with the command line handler.
  */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftOptionFileType_NR
-};
+void registerEnergyAnalysisModules(CommandLineModuleManager *manager);
 
-} // namespace gmx
+}
 
 #endif

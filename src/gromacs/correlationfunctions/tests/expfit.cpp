@@ -189,7 +189,7 @@ TEST_F (ExpfitTest, EffnERF) {
 
 TEST_F (ExpfitTest, EffnERREST) {
     double  param[] = {0.5, 0.7, 0.3};
-    test(effnERREST, param, 1e-4, 2);
+    test(effnERREST, param, 1e-2, 2);
 }
 
 TEST_F (ExpfitTest, EffnVAC) {

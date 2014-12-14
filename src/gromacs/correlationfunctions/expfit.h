@@ -111,7 +111,7 @@ double fit_function(int eFitFn, double *parm, double x);
  * \param[in] oenv Output formatting information
  * \param[in] bVerbose Should the routine write to console?
  * \param[in] eFitFn Fitting function (0 .. effnNR)
- * \param[out] fitparms[]
+ * \param[inout] fitparms[]
  * \param[in] fix Constrains fit parameter i at it's starting value, when the i'th bit
  * of fix is set.
  * \return integral.
@@ -132,7 +132,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x,
  * \param[in] tendfit Ending time for fitting
  * \param[in] dt The time step
  * \param[in] c1 The data points
- * \param[out] fit The fitting parameters
+ * \param[inout] fit The fitting parameters
  * \return the integral over the autocorrelation function?
  */
 real fit_acf(int ncorr, int fitfn, const output_env_t oenv, gmx_bool bVerbose,
