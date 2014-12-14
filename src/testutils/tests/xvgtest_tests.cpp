@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Tests utilities for test reference data.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
+ * \ingroup module_testutils
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#include "gmxpre.h"
 
-namespace gmx
+#include "testutils/xvgtest.h"
+
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+
+namespace
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftOptionFileType_NR
-};
+TEST(XvgTests, ReadFile)
+{
+    {
+        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        std::string                     fileName("energy.xvg");
+        double                          tolerance = 1e-3;
+        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+        gmx::test::checkXvgFile(fileName, &checker);
+    }
+}
 
-} // namespace gmx
-
-#endif
+} // namespace

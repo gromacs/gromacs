@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,44 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Declares function to add the content of an xvg file to a checker.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#ifndef GMX_TESTUTILS_XVGTESTS_H
+#define GMX_TESTUTILS_XVGTESTS_H
+
+#include <string>
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftOptionFileType_NR
-};
+namespace test
+{
 
+class TestReferenceChecker;
+
+/*! \brief
+ * Adds content of xvg file to TestReferencechecker object.
+ *
+ * A file is read and at most nColumns are parsed. The columns
+ * are analyzed with a relative tolerance provided by the input.
+ * Xmgrace formatting is ignored and onyl multi-column data is
+ * understood.
+ *
+ * \param[in] fileName    The name of the file. If empty the routine
+ *                        returns without doing anything.
+ * \param[in,out] checker The checker object.
+ */
+void checkXvgFile(const std::string    &fileName,
+                  TestReferenceChecker *checker);
+
+
+} // namespace test
 } // namespace gmx
 
 #endif

@@ -62,6 +62,7 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/xvgtest.h"
 
 namespace gmx
 {
@@ -238,13 +239,14 @@ class CommandLineTestHelper::Impl
     public:
         struct OutputFileInfo
         {
-            OutputFileInfo(const char *option, const std::string &path)
-                : option(option), path(path)
+            OutputFileInfo(const char *option, const std::string &path, bool xvg)
+                : option(option), path(path), xvg(xvg)
             {
             }
 
             std::string         option;
             std::string         path;
+            bool                xvg;
         };
 
         typedef std::vector<OutputFileInfo>        OutputFileList;
@@ -324,7 +326,15 @@ void CommandLineTestHelper::setOutputFile(
 {
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(filename);
     args->addOption(option, fullFilename);
-    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename));
+    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename, false));
+}
+
+void CommandLineTestHelper::setOutputFileXvg(
+        CommandLine *args, const char *option, const char *filename)
+{
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(filename);
+    args->addOption(option, fullFilename);
+    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename, true));
 }
 
 void CommandLineTestHelper::setOutputFileNoTest(
@@ -346,8 +356,15 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
              outfile != impl_->outputFiles_.end();
              ++outfile)
         {
-            std::string output = TextReader::readFileToString(outfile->path);
-            outputChecker.checkStringBlock(output, outfile->option.c_str());
+            if (outfile->xvg)
+            {
+                checkXvgFile(outfile->path, &checker);
+            }
+            else
+            {
+                std::string output = TextReader::readFileToString(outfile->path);
+                outputChecker.checkStringBlock(output, outfile->option.c_str());
+            }
         }
     }
 }
@@ -408,6 +425,12 @@ void CommandLineTestBase::setOutputFile(
         const char *option, const char *filename)
 {
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename);
+}
+
+void CommandLineTestBase::setOutputFileXvg(
+        const char *option, const char *filename)
+{
+    impl_->helper_.setOutputFileXvg(&impl_->cmdline_, option, filename);
 }
 
 void CommandLineTestBase::setOutputFileNoTest(

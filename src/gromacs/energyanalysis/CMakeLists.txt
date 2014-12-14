@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,29 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
-include_directories(${LIBXML2_INCLUDE_DIR})
-set(TESTUTILS_SOURCES
-    cmdlinetest.cpp
-    integrationtests.cpp
-    interactivetest.cpp
-    mpi-printer.cpp
-    refdata.cpp
-    stringtest.cpp
-    testasserts.cpp
-    testfilemanager.cpp
-    testfileredirector.cpp
-    testinit.cpp
-    testoptions.cpp
-    xvgtest.cpp)
+file(GLOB ENERGYANALYSIS_SOURCES *.cpp)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ENERGYANALYSIS_SOURCES} PARENT_SCOPE)
 
-add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
-set(TESTUTILS_LIBS testutils)
-set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
-
-set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)
-set(TESTUTILS_LIBS ${TESTUTILS_LIBS} PARENT_SCOPE)
-
-add_subdirectory(tests)
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
