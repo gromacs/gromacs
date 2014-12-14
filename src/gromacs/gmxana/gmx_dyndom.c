@@ -208,6 +208,11 @@ int gmx_dyndom(int argc, char *argv[])
         return 0;
     }
 
+    if (maxangle == 0)
+    {
+        gmx_fatal(FARGS, "maxangle not given");
+    }
+
     get_stx_coordnum (opt2fn("-f", NFILE, fnm), &natoms);
     init_t_atoms(&atoms, natoms, TRUE);
     snew(x, natoms);

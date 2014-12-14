@@ -414,7 +414,6 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             add_at(&att, &natt, &prop[a], nmol);
         }
 
-        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         sfree(vsite_m);
         sfree(prop);
     }
