@@ -45,6 +45,7 @@
 #define GMX_UTILITY_STRINGSTREAM_H
 
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/textstream.h"
 
@@ -92,6 +93,14 @@ class StringInputStream : public TextInputStream
          * \param[in] input String to be served by the stream.
          */
         explicit StringInputStream(const std::string &input);
+        /*! \brief
+         * Constructor that stores input lines in a string.
+         *
+         * The vector of strings is stored as a string separated by newline.
+         *
+         * \param[in] input String to be served by the stream.
+         */
+        explicit StringInputStream(const std::vector<std::string> &input);
         /*! \brief
          * Constructor that stores input lines in a string.
          *
