@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,50 +32,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
- * Declares gmx::unique_cptr and gmx::sfree_guard.
+ * Declares gmx::energyanalysis::DhdlInfo
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
- * \ingroup module_utility
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
-#ifndef GMX_UTILITY_UNIQUE_PTR_SFREE_H
-#define GMX_UTILITY_UNIQUE_PTR_SFREE_H
+#ifndef GMX_ENERGYANALYSIS_MODULES_DHDL_H
+#define GMX_ENERGYANALYSIS_MODULES_DHDL_H
 
-#include <memory>
-
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/energyanalysis/analysismodule.h"
 
 namespace gmx
 {
 
-//! sfree wrapper to be used as unique_cptr deleter
-template <class T>
-inline void sfree_wrapper(T *p)
+namespace energyanalysis
 {
-    sfree(p);
-}
 
-//! \internal \brief wrap function into functor to be used as deleter
-template<class T, void D(T *)>
-struct functor_wrapper {
-    //! call wrapped function
-    void operator()(T* t) { D(t); }
+class DhdlInfo
+{
+    public:
+        static const char name[];
+        static const char shortDescription[];
+        static EnergyAnalysisModulePointer create();
 };
 
-//! unique_ptr which takes function pointer (has to return void) as template argument
-template<typename T, void D(T *) = sfree_wrapper>
-using unique_cptr                = std::unique_ptr<T, functor_wrapper<T, D> >;
+}
 
-//! Simple guard which calls sfree. See unique_cptr for details.
-typedef unique_cptr<void> sfree_guard;
-
-
-//! Create unique_ptr with any deleter function or lambda
-template<typename T, typename D>
-std::unique_ptr<T, D> create_unique_with_deleter(T *t, D d) { return std::unique_ptr<T, D>(t, d); }
-
-}      // namespace gmx
-
+}
 #endif

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -115,6 +116,9 @@ const char *output_env_get_program_display_name(const gmx_output_env_t *oenv);
 namespace gmx
 {
 class IProgramContext;
+
+//! Smart pointer to manage an gmx_output_env_t object
+using OutputEnvPointer = unique_cptr<gmx_output_env_t, output_env_done>;
 } // namespace gmx
 
 void output_env_init(gmx_output_env_t **oenvp,
