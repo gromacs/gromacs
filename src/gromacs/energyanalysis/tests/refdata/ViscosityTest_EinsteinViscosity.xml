@@ -1,14 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <String Name="CommandLine">viscosity</String>
   <OutputFiles Name="Files">
-    <File Name="-o">
+    <File Name="-evisco">
       <XvgLegend Name="Legend">
         <String Name="XvgLegend"><![CDATA[
 title "Shear viscosity using Einstein relation"
 xaxis  label "Time (ps)"
 yaxis  label "(kg m\S-1\N s\S-1\N)"
 TYPE xy
+s0 legend "(P\sxy\N+P\syx\N)/2"
+s1 legend "(P\sxz\N+P\szx\N)/2"
+s2 legend "(P\syz\N+P\szy\N)/2"
+s3 legend "Average"
 ]]></String>
       </XvgLegend>
       <XvgData Name="Data">
