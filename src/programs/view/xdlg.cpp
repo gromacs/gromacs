@@ -408,11 +408,14 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
         if (gmx_strcasecmp(buf, "nok") == 0)
         {
             /* An error occurred */
-            for (i = 0; (i < nlines); i++)
+            if (lines)
             {
-                sfree(lines[i]);
+                for (i = 0; (i < nlines); i++)
+                {
+                    sfree(lines[i]);
+                }
+                sfree(lines);
             }
-            sfree(lines);
             NoHelp(dlg);
             return;
         }

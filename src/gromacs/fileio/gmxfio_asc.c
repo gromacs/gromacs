@@ -363,13 +363,13 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
         case eioNRVEC:
             for (i = 0; (i < nitem); i++)
             {
-                ptr = ((rvec *) item)[i];
-                for (m = 0; (m < DIM); m++)
+                if (item)
                 {
-                    res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%lf\n",
-                                 &x);
-                    if (item)
+                    ptr = ((rvec *) item)[i];
+                    for (m = 0; (m < DIM); m++)
                     {
+                        res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%lf\n",
+                                     &x);
                         ptr[m] = x;
                     }
                 }

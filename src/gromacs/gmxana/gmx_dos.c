@@ -181,7 +181,7 @@ static real wSsolid(real nu, real beta)
     }
     else
     {
-        return bhn/(exp(bhn)-1) - log(1-exp(-bhn));
+        return bhn/expm1(bhn) - log(1-exp(-bhn));
     }
 }
 
@@ -209,7 +209,7 @@ static real wEsolid(real nu, real beta)
     }
     else
     {
-        return bhn/2 + bhn/(exp(bhn)-1)-1;
+        return bhn/2 + bhn/expm1(bhn)-1;
     }
 }
 
