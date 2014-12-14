@@ -1,0 +1,231 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">viscosity</String>
+  <OutputFiles Name="Files">
+    <File Name="-pcorr">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Pressure ACF"
+xaxis  label "Time (ps)"
+yaxis  label "(units)"
+TYPE xy
+s0 legend "Bulk Pacf"
+s1 legend "Shear Pacf"
+s2 legend "Fit to Bulk"
+s3 legend "Fit to Shear"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>0</Real>
+          <Real>639899</Real>
+          <Real>143790</Real>
+          <Real>639899</Real>
+          <Real>143790</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>0.2</Real>
+          <Real>-296511</Real>
+          <Real>14718.1</Real>
+          <Real>-296328</Real>
+          <Real>14718.1</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>0.4</Real>
+          <Real>82068.3</Real>
+          <Real>12666.9</Real>
+          <Real>81142.5</Real>
+          <Real>12371.2</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>0.6</Real>
+          <Real>-23059.2</Real>
+          <Real>1705.28</Real>
+          <Real>12126.1</Real>
+          <Real>12355.2</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>0.8</Real>
+          <Real>7096.7</Real>
+          <Real>13229.8</Real>
+          <Real>-75887.9</Real>
+          <Real>12085.3</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">5</Int>
+          <Real>1</Real>
+          <Real>115766</Real>
+          <Real>23617.4</Real>
+          <Real>105016</Real>
+          <Real>9948.62</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">5</Int>
+          <Real>1.2</Real>
+          <Real>-146900</Real>
+          <Real>-3598.91</Real>
+          <Real>-100495</Real>
+          <Real>3208.57</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">5</Int>
+          <Real>1.4</Real>
+          <Real>136840</Real>
+          <Real>-2169.58</Real>
+          <Real>69935.7</Real>
+          <Real>22.6116</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">5</Int>
+          <Real>1.6</Real>
+          <Real>-70702.7</Real>
+          <Real>-24683.7</Real>
+          <Real>-25564</Real>
+          <Real>4.83524e-07</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">5</Int>
+          <Real>1.8</Real>
+          <Real>-11311.3</Real>
+          <Real>-4847.54</Real>
+          <Real>-18979</Real>
+          <Real>1.96921e-30</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">5</Int>
+          <Real>2</Real>
+          <Real>57286.1</Real>
+          <Real>6629.92</Real>
+          <Real>51976.9</Real>
+          <Real>-1.91474e-83</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">5</Int>
+          <Real>2.2</Real>
+          <Real>35329.2</Real>
+          <Real>-292.4</Real>
+          <Real>-66235.6</Real>
+          <Real>-1.64379e-82</Real>
+        </Sequence>
+        <Sequence Name="Row12">
+          <Int Name="Length">5</Int>
+          <Real>2.4</Real>
+          <Real>-232.603</Real>
+          <Real>3098.53</Real>
+          <Real>60334.2</Real>
+          <Real>3.81237e-84</Real>
+        </Sequence>
+        <Sequence Name="Row13">
+          <Int Name="Length">5</Int>
+          <Real>2.6</Real>
+          <Real>-100966</Real>
+          <Real>-21566.8</Real>
+          <Real>-38320.7</Real>
+          <Real>1.94986e-82</Real>
+        </Sequence>
+        <Sequence Name="Row14">
+          <Int Name="Length">5</Int>
+          <Real>2.8</Real>
+          <Real>-7266.86</Real>
+          <Real>1269.81</Real>
+          <Real>8059.73</Real>
+          <Real>7.90132e-83</Real>
+        </Sequence>
+        <Sequence Name="Row15">
+          <Int Name="Length">5</Int>
+          <Real>3</Real>
+          <Real>167273</Real>
+          <Real>103.202</Real>
+          <Real>21234.8</Real>
+          <Real>-1.43838e-82</Real>
+        </Sequence>
+        <Sequence Name="Row16">
+          <Int Name="Length">5</Int>
+          <Real>3.2</Real>
+          <Real>-73084.5</Real>
+          <Real>-9184.06</Real>
+          <Real>-41577.3</Real>
+          <Real>-8.87374e-83</Real>
+        </Sequence>
+        <Sequence Name="Row17">
+          <Int Name="Length">5</Int>
+          <Real>3.4</Real>
+          <Real>15256.3</Real>
+          <Real>-1851.46</Real>
+          <Real>48222.6</Real>
+          <Real>1.49165e-82</Real>
+        </Sequence>
+        <Sequence Name="Row18">
+          <Int Name="Length">5</Int>
+          <Real>3.6</Real>
+          <Real>-60583.4</Real>
+          <Real>-9249.25</Real>
+          <Real>-40634.3</Real>
+          <Real>1.59047e-82</Real>
+        </Sequence>
+        <Sequence Name="Row19">
+          <Int Name="Length">5</Int>
+          <Real>3.8</Real>
+          <Real>69830.3</Real>
+          <Real>7889.75</Real>
+          <Real>22241.9</Real>
+          <Real>-7.61559e-83</Real>
+        </Sequence>
+        <Sequence Name="Row20">
+          <Int Name="Length">5</Int>
+          <Real>4</Real>
+          <Real>58797.7</Real>
+          <Real>-15068.3</Real>
+          <Real>847.081</Real>
+          <Real>-1.50284e-82</Real>
+        </Sequence>
+        <Sequence Name="Row21">
+          <Int Name="Length">5</Int>
+          <Real>4.2</Real>
+          <Real>-35051.7</Real>
+          <Real>9322.38</Real>
+          <Real>-21750.9</Real>
+          <Real>6.46711e-83</Real>
+        </Sequence>
+        <Sequence Name="Row22">
+          <Int Name="Length">5</Int>
+          <Real>4.4</Real>
+          <Real>-18309.2</Real>
+          <Real>11450.6</Real>
+          <Real>34771.9</Real>
+          <Real>1.97514e-82</Real>
+        </Sequence>
+        <Sequence Name="Row23">
+          <Int Name="Length">5</Int>
+          <Real>4.6</Real>
+          <Real>-61699.1</Real>
+          <Real>-8883.19</Real>
+          <Real>-36874</Real>
+          <Real>1.8845e-83</Real>
+        </Sequence>
+        <Sequence Name="Row24">
+          <Int Name="Length">5</Int>
+          <Real>4.8</Real>
+          <Real>-15123.2</Real>
+          <Real>5859.86</Real>
+          <Real>28315.2</Real>
+          <Real>-1.62801e-82</Real>
+        </Sequence>
+        <Sequence Name="Row25">
+          <Int Name="Length">5</Int>
+          <Real>5</Real>
+          <Real>-8971.55</Real>
+          <Real>-10983.2</Real>
+          <Real>-12323.5</Real>
+          <Real>-3.37489e-83</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
