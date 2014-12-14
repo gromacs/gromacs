@@ -246,7 +246,9 @@ int gmx_densmap(int argc, char *argv[])
     {
         n1      = (int)(2*amax/bin + 0.5);
         nradial = (int)(rmax/bin + 0.5);
+        /* cppcheck-suppress zerodiv fixed in 1.68-dev */
         invspa  = n1/(2*amax);
+        /* cppcheck-suppress zerodiv fixed in 1.68-dev */
         invspz  = nradial/rmax;
         if (bMirror)
         {
