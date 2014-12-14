@@ -43,12 +43,12 @@
 
 #include <map>
 
+#include "gmxapi/context.h"
+#include "gmxapi/status.h"
+
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrun/simulationcontext.h"
-
-#include "gmxapi/context.h"
-#include "gmxapi/status.h"
 
 namespace gmxapi
 {

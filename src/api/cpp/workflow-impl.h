@@ -43,12 +43,12 @@
  * \ingroup gmxapi
  */
 
-#include "workflow.h"
-
 #include <memory>
 #include <string>
 
 #include "gmxapi/exceptions.h"
+
+#include "api/cpp/workflow.h"
 
 namespace gmxapi
 {
