@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,40 +32,64 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \brief
- * Implements the gmx wrapper binary.
+/*! \internal \file
+ * \brief
+ * Implements classes in modules.h.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
 #include "gmxpre.h"
 
-#include "gromacs/commandline/cmdlineinit.h"
+#include "modules.h"
+
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/energyanalysis/modules.h"
-#include "gromacs/selection/selhelp.h"
-#include "gromacs/trajectoryanalysis/modules.h"
-#include "gromacs/utility/exceptions.h"
 
-#include "legacymodules.h"
+#include "energyanalysisrunner.h"
+#include "modules/dhdl.h"
+#include "modules/energy.h"
+#include "modules/fluctprops.h"
+#include "modules/viscosity.h"
 
-int
-main(int argc, char *argv[])
+namespace gmx
 {
-    gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
-    try
-    {
-        gmx::CommandLineModuleManager manager("gmx", &context);
-        gmx::registerTrajectoryAnalysisModules(&manager);
-        gmx::registerEnergyAnalysisModules(&manager);
-        registerLegacyModules(&manager);
-        manager.addHelpTopic(gmx::createSelectionHelpTopic());
-        int rc = manager.run(argc, argv);
-        gmx::finalizeForCommandLine();
-        return rc;
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return gmx::processExceptionAtExitForCommandLine(ex);
-    }
+
+namespace
+{
+/*! \brief
+ * Convenience method for registering a command-line module for energy
+ * analysis.
+ *
+ * \tparam ModuleInfo  Info about energy analysis module to wrap.
+ *
+ * \p ModuleInfo should have static public members
+ * `const char name[]`, `const char shortDescription[]`, and
+ * `gmx::EnergyAnalysisModulePointer create()`.
+ *
+ * \ingroup module_energyanalysis
+ */
+template <class ModuleInfo>
+void registerEnergyModule(CommandLineModuleManager *manager,
+                          CommandLineModuleGroup    group)
+{
+    EnergyAnalysisRunner::registerModule(
+            manager, ModuleInfo::name, ModuleInfo::shortDescription,
+            &ModuleInfo::create);
+    group.addModule(ModuleInfo::name);
 }
+
+}       // namespace
+
+//! \cond libapi
+void registerEnergyAnalysisModules(CommandLineModuleManager *manager)
+{
+    using namespace gmx::energyanalysis;
+    CommandLineModuleGroup group = manager->addModuleGroup("Energy analysis");
+    registerEnergyModule<EnergyInfo>(manager, group);
+    registerEnergyModule<DhdlInfo>(manager, group);
+    registerEnergyModule<FluctPropsInfo>(manager, group);
+    registerEnergyModule<ViscosityInfo>(manager, group);
+}
+//! \endcond
+
+} // namespace gmx
