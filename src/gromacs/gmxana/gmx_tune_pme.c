@@ -2340,7 +2340,7 @@ int gmx_tune_pme(int argc, char *argv[])
           "Take timings for this many steps in the benchmark runs" },
         { "-resetstep", FALSE, etINT,  {&presteps},
           "Let dlb equilibrate this many steps before timings are taken (reset cycle counters after this many steps)" },
-        { "-simsteps", FALSE, etINT64, {&new_sim_nsteps},
+        { "-nsteps",   FALSE, etINT64, {&new_sim_nsteps},
           "If non-negative, perform this many steps in the real run (overwrites nsteps from [TT].tpr[tt], add [TT].cpt[tt] steps)" },
         { "-launch",   FALSE, etBOOL, {&bLaunch},
           "Launch the real simulation after optimization" },

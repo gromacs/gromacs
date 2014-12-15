@@ -192,7 +192,7 @@ you should consult your local documentation for details.
 \item   {\tt GMX_DLB_BASED_ON_FLOPS}: do domain-decomposition dynamic load balancing based on flop count rather than
         measured time elapsed (default 0, meaning off).
         This makes the load balancing reproducible, which can be useful for debugging purposes.
-        A value of 1 uses the flops; a value > 1 adds (value - 1)*5\% of noise to the flops to increase the imbalance and the scaling.
+        A value of 1 uses the flops; a value $>1$ adds $(\mbox{value} - 1)\times5\%$ of noise to the flops to increase the imbalance and the scaling.
 \item   {\tt GMX_DLB_MAX_BOX_SCALING}: maximum percentage box scaling permitted per domain-decomposition
         load-balancing step (default 10)
 \item   {\tt GMX_DD_RECORD_LOAD}: record DD load statistics for reporting at end of the run (default 1, meaning on)
