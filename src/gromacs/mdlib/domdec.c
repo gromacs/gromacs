@@ -8718,7 +8718,7 @@ static void set_zones_size(gmx_domdec_t *dd,
         /* To determine the bounding box for a zone we need to find
          * the extreme corners of 4, 2 or 1 corners.
          */
-        nc = 1 << (ddbox->npbcdim - 1);
+        nc = 1 << (ddbox->nboundeddim - 1);
 
         for (c = 0; c < nc; c++)
         {
