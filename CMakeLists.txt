@@ -172,13 +172,6 @@ endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 include(gmxManageGPU)
 
-if(GMX_CPU_ACCELERATION)
-    # Stay compatible with old Jenkins command line options for specific SIMD acceleration
-    set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
-    message("You set GMX_CPU_ACCELERATION, which is deprecated, and will be removed in a later version of GROMACS. It is replaced by GMX_SIMD. For now, copying the value from GMX_CPU_ACCELERATION to GMX_SIMD.")
-    # TODO remove all references to GMX_CPU_ACCELERATION in master branch
-endif()
-
 include(gmxDetectSimd)
 gmx_detect_simd(GMX_SUGGESTED_SIMD)
 

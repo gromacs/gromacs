@@ -218,9 +218,5 @@ if (DOXYGEN_FOUND)
         add_custom_target(check-source-fast COMMAND ${check_source_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
         add_dependencies(check-source       doxygen-xml)
-        # Add a backwards-compatibility target for Jenkins, until we can assume
-        # that all changes in Gerrit have been rebased past the rename.
-        add_custom_target(doc-check)
-        add_dependencies(doc-check check-source)
     endif()
 endif()
