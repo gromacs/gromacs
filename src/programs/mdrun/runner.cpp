@@ -1018,11 +1018,11 @@ static void override_nsteps_cmdline(FILE            *fplog,
         char stmp[STRLEN];
 
         ir->nsteps = nsteps_cmdline;
-        if (EI_DYNAMICS(ir->eI))
+        if (EI_DYNAMICS(ir->eI) && nsteps_cmdline != -1)
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps, %.3f ps",
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps, %.3g ps",
                     gmx_step_str(nsteps_cmdline, sbuf),
-                    nsteps_cmdline*ir->delta_t);
+                    fabs(nsteps_cmdline*ir->delta_t));
         }
         else
         {

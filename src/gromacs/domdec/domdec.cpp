@@ -8737,22 +8737,27 @@ static void set_zones_size(gmx_domdec_t *dd,
             {
                 corner[ZZ] = zones->size[z].x1[ZZ];
             }
+            if (dd->ndim == 1 && dd->dim[0] < ZZ && ZZ < dd->npbcdim &&
+                box[ZZ][1 - dd->dim[0]] != 0)
+            {
+                /* With 1D domain decomposition the cg's are not in
+                 * the triclinic box, but triclinic x-y and rectangular y/x-z.
+                 * Shift the corner of the z-vector back to along the box
+                 * vector of dimension d, so it will later end up at 0 along d.
+                 * This can affect the location of this corner along dd->dim[0]
+                 * through the matrix operation below if box[d][dd->dim[0]]!=0.
+                 */
+                int d = 1 - dd->dim[0];
+
+                corner[d] -= corner[ZZ]*box[ZZ][d]/box[ZZ][ZZ];
+            }
             /* Apply the triclinic couplings */
             assert(ddbox->npbcdim <= DIM);
             for (i = YY; i < ddbox->npbcdim; i++)
             {
                 for (j = XX; j < i; j++)
                 {
-                    /* With 1D domain decomposition the cg's are not in
-                     * a triclinic box, but triclinic x-y and rectangular y/x-z.
-                     * So we should ignore the coupling for the non
-                     * domain-decomposed dimension of the pair x and y.
-                     */
-                    if (!(dd->ndim == 1 && ((dd->dim[0] == XX && j == YY) ||
-                                            (dd->dim[0] == YY && j == XX))))
-                    {
-                        corner[j] += corner[i]*box[i][j]/box[i][i];
-                    }
+                    corner[j] += corner[i]*box[i][j]/box[i][i];
                 }
             }
             if (c == 0)
