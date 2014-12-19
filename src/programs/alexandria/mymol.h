@@ -27,6 +27,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/topology/atomprop.h"
 #include "gmx_resp.h"

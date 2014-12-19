@@ -48,6 +48,7 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
@@ -389,7 +390,38 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
     rtp.bGenerateHH14Interactions     = TRUE;
     rtp.nrexcl = nexcl_;
     gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
-    generate_excls(&nnb, nexcl_, excls_);
+    { 
+        t_blocka *EXCL;
+        snew(EXCL, 1);
+        generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
+        for(int i = 0; (i<EXCL->nr); i++)
+        {
+            int ne = EXCL->index[i+1]-EXCL->index[i];
+            srenew(excls_[i].e, ne);
+            excls_[i].nr = 0;
+            for(int j = EXCL->index[i]; (j<EXCL->index[i+1]); j++)
+            {
+                if (EXCL->a[j] != i)
+                {
+                    excls_[i].e[excls_[i].nr++] = EXCL->a[j];
+                }
+            }
+        }
+        done_blocka(EXCL);
+        sfree(EXCL);
+        if (NULL != debug)
+        {
+            for(int i = 0; (i<topology_->atoms.nr); i++) 
+            {
+                fprintf(debug, "excl %d", i);
+                for(int j = 0; (j<excls_[i].nr); j++)
+                {
+                    fprintf(debug, "  %2d", excls_[i].e[j]);
+                }
+                fprintf(debug, "\n");
+            }
+        }
+    }
     done_nnb(&nnb);
 
     cp_plist(plist, F_ANGLES, plist_);
@@ -527,7 +559,7 @@ static void do_init_mtop(gmx_poldata_t pd,
     init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
 }
 
-static void excls__to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
+static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
 {
     int i, j, k, nra;
 
@@ -930,8 +962,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
         do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms);
 
         plist_to_mtop(pd, plist_, mtop_);
-        excls__to_blocka(topology_->atoms.nr, excls_,
-                         &(mtop_->moltype[0].excls));
+        excls_to_blocka(topology_->atoms.nr, excls_,
+                        &(mtop_->moltype[0].excls));
 
         ltop_ = gmx_mtop_generate_local_top(mtop_, inputrec_);
     }
@@ -1513,6 +1545,15 @@ static void add_excl(t_excls *excls, atom_id e)
     excls->e[excls->nr++] = e;
 }
 
+static void add_excl_pair(t_excls excls[], atom_id e1, atom_id e2)
+{
+    if (e1 != e2)
+    {
+        add_excl(&excls[e1], e2);
+        add_excl(&excls[e2], e1);
+    }
+}
+
 static void remove_excl(t_excls *excls, int remove)
 {
     int i;
@@ -1617,8 +1658,8 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
 
 void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
 {
-    int      i, j, k, ai, aj, iat, shell, ns = 0;
-    int     *renum;
+    int      i, j, k, iat, shell, ns = 0;
+    std::vector<int> renum, inv_renum;
     char     buf[32], **newname;
     t_param  p;
     t_atom  *shell_atom;
@@ -1633,17 +1674,21 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
     }
     int      maxatom = topology_->atoms.nr*2+2;
     srenew(x_, maxatom);
-    srenew(excls_, maxatom);
     snew(shell_atom, 1);
     shell_atom->ptype = eptShell;
     memset(&p, 0, sizeof(p));
-    snew(renum, maxatom);
+    inv_renum.reserve(topology_->atoms.nr*2);
+    for (i = 0; (i < topology_->atoms.nr*2); i++)
+    {
+        inv_renum[i] = -1;
+    }
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        renum[i] = i+ns;
         if (1 == gmx_poldata_get_atype_pol(pd, *topology_->atoms.atomtype[i],
                                            &pol, &sigpol))
         {
+            renum.push_back(i+ns);
+            inv_renum[i+ns] = i;
             ns++;
             p.a[0] = renum[i];
             p.a[1] = renum[i]+1;
@@ -1666,37 +1711,54 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
 
         /* Make new exclusion array, and put the shells in it */
         snew(newexcls, newa->nr);
+        /* TODO: other polarization types */
         std::vector<PlistWrapper>::iterator pw = SearchPlist(plist_, F_POLARIZATION);
         if (plist_.end() != pw)
         {
             for (ParamIterator j = pw->beginParam();
                  (j < pw->endParam()); ++j)
             {
-                ai = j->a[0];
-                aj = j->a[1];
-                add_excl(&newexcls[ai], aj);
-                add_excl(&newexcls[aj], ai);
+                // Exclude nucleus and shell from each other
+                add_excl_pair(newexcls, j->a[0], j->a[1]);
             }
-            for (i = 0; (i < topology_->atoms.nr); i++)
+            for (ParamIterator j = pw->beginParam();
+                 (j < pw->endParam()); ++j)
             {
-                newa->atom[renum[i]]      = topology_->atoms.atom[i];
-                newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
-                newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
-                newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
-                copy_rvec(x_[i], newx[renum[i]]);
-                newname[renum[i]] = *topology_->atoms.atomtype[i];
-                t_atoms_set_resinfo(newa, renum[i], symtab_,
-                                    *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
-                                    topology_->atoms.atom[i].resind, ' ', 1, ' ');
+                // Now add the exclusions from the nucleus to the shell.
+                // We know that the nuclues is 0 since we just made the list
+                int i0 = inv_renum[j->a[0]];
+                for(int j0 = 0; (j0 < excls_[i0].nr); j0++)
+                {
+                    add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);
+                    add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
+                }
+            }
+            for (ParamIterator j = pw->beginParam();
+                 (j < pw->endParam()); ++j)
+            {
+                for(int j0 = 0; (j0 < newexcls[j->a[0]].nr); j0++)
+                {
+                    add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
+                }
             }
         }
+        // Now copy the old atoms to the new structures
+        for (i = 0; (i < topology_->atoms.nr); i++)
+        {
+            newa->atom[renum[i]]      = topology_->atoms.atom[i];
+            newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
+            newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
+            newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
+            copy_rvec(x_[i], newx[renum[i]]);
+            newname[renum[i]] = *topology_->atoms.atomtype[i];
+            t_atoms_set_resinfo(newa, renum[i], symtab_,
+                                *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
+                                topology_->atoms.atom[i].resind, ' ', 1, ' ');
+        }
+        // Now insert the shell particles
         for (i = 0; (i < topology_->atoms.nr); i++)
         {
             iat = renum[i];
-            for (k = 0; (k < excls_[i].nr); k++)
-            {
-                add_excl(&(newexcls[iat]), renum[excls_[i].e[k]]);
-            }
             for (j = iat+1; (j < renum[i+1]); j++)
             {
                 newa->atom[j]            = topology_->atoms.atom[i];
@@ -1719,36 +1781,8 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
                 sprintf(buf, "%ss", *(topology_->atoms.atomname[i]));
                 newa->atomname[j] = put_symtab(symtab_, buf);
                 copy_rvec(x_[i], newx[j]);
-                for (k = 0; (k < excls_[i].nr); k++)
-                {
-                    ai = j;
-                    aj = renum[excls_[i].e[k]];
-                    if (ai != aj)
-                    {
-                        add_excl(&(newexcls[ai]), aj);
-                        add_excl(&(newexcls[aj]), ai);
-                    }
-                }
             }
         }
-        for (i = 0; (i < topology_->atoms.nr); i++)
-        {
-            iat = renum[i];
-            for (j = iat+1; (j < renum[i+1]); j++)
-            {
-                for (k = 0; (k < newexcls[iat].nr); k++)
-                {
-                    ai = j;
-                    aj = newexcls[iat].e[k];
-                    if (ai != aj)
-                    {
-                        add_excl(&(newexcls[ai]), aj);
-                        add_excl(&(newexcls[aj]), ai);
-                    }
-                }
-            }
-        }
-        prune_excl(newexcls, newa, atype_);
         /* Copy newa to atoms */
         copy_atoms(newa, &topology_->atoms);
         /* Copy coordinates and smnames */
@@ -1760,6 +1794,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
         sfree(newx);
         sfree(newname);
         /* Copy exclusions, may need to empty the original first */
+        sfree(excls_);
         excls_ = newexcls;
 
         for (PlistWrapperIterator i = plist_.begin();
@@ -1779,7 +1814,6 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
         }
         bHaveShells_ = true;
     }
-    sfree(renum);
     sfree(shell_atom);
 }
 
