@@ -201,7 +201,7 @@ void MyMol::GetForceConstants(gmx_poldata_t pd)
                         j->c[0] = 109;
                         j->c[1] = 400;
                     }
-                
+
                 }
                 break;
             case F_PDIHS:
@@ -265,7 +265,7 @@ void MyMol::GetForceConstants(gmx_poldata_t pd)
                         j->c[0] = 0;
                         j->c[1] = 5;
                     }
-                
+
                 }
                 break;
             default:
@@ -390,16 +390,16 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
     rtp.bGenerateHH14Interactions     = TRUE;
     rtp.nrexcl = nexcl_;
     gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
-    { 
+    {
         t_blocka *EXCL;
         snew(EXCL, 1);
         generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
-        for(int i = 0; (i<EXCL->nr); i++)
+        for (int i = 0; (i < EXCL->nr); i++)
         {
             int ne = EXCL->index[i+1]-EXCL->index[i];
             srenew(excls_[i].e, ne);
             excls_[i].nr = 0;
-            for(int j = EXCL->index[i]; (j<EXCL->index[i+1]); j++)
+            for (int j = EXCL->index[i]; (j < EXCL->index[i+1]); j++)
             {
                 if (EXCL->a[j] != i)
                 {
@@ -411,10 +411,10 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
         sfree(EXCL);
         if (NULL != debug)
         {
-            for(int i = 0; (i<topology_->atoms.nr); i++) 
+            for (int i = 0; (i < topology_->atoms.nr); i++)
             {
                 fprintf(debug, "excl %d", i);
-                for(int j = 0; (j<excls_[i].nr); j++)
+                for (int j = 0; (j < excls_[i].nr); j++)
                 {
                     fprintf(debug, "  %2d", excls_[i].e[j]);
                 }
@@ -1658,15 +1658,15 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
 
 void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
 {
-    int      i, j, k, iat, shell, ns = 0;
+    int              i, j, k, iat, shell, ns = 0;
     std::vector<int> renum, inv_renum;
-    char     buf[32], **newname;
-    t_param  p;
-    t_atom  *shell_atom;
-    t_atoms *newa;
-    t_excls *newexcls;
-    rvec    *newx;
-    double   pol, sigpol;
+    char             buf[32], **newname;
+    t_param          p;
+    t_atom          *shell_atom;
+    t_atoms         *newa;
+    t_excls         *newexcls;
+    rvec            *newx;
+    double           pol, sigpol;
 
     if (epol == epolNo)
     {
@@ -1727,7 +1727,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
                 // Now add the exclusions from the nucleus to the shell.
                 // We know that the nuclues is 0 since we just made the list
                 int i0 = inv_renum[j->a[0]];
-                for(int j0 = 0; (j0 < excls_[i0].nr); j0++)
+                for (int j0 = 0; (j0 < excls_[i0].nr); j0++)
                 {
                     add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);
                     add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
@@ -1736,7 +1736,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
             for (ParamIterator j = pw->beginParam();
                  (j < pw->endParam()); ++j)
             {
-                for(int j0 = 0; (j0 < newexcls[j->a[0]].nr); j0++)
+                for (int j0 = 0; (j0 < newexcls[j->a[0]].nr); j0++)
                 {
                     add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
                 }
