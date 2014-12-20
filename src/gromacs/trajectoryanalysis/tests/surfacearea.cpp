@@ -172,7 +172,8 @@ class SurfaceAreaTest : public ::testing::Test
                     {
                         gmx::SurfaceAreaCalculator calculator;
                         calculator.setDotCount(ndots);
-                        calculator.calculate(x_, &radius_[0], bPBC ? &pbc : NULL,
+                        calculator.setRadii(radius_);
+                        calculator.calculate(x_, bPBC ? &pbc : NULL,
                                              index_.size(), &index_[0], flags,
                                              &area_, &volume_, &atomArea_,
                                              &dots_, &dotCount_);
