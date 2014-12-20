@@ -614,6 +614,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     calculator_.setDotCount(ndots_);
+    calculator_.setRadii(radii_);
 
     // Initialize all the output data objects and initialize the output plotters.
 
@@ -913,7 +914,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     real  totarea, totvolume;
     real *area = NULL, *surfacedots = NULL;
     int   nsurfacedots;
-    calculator_.calculate(surfaceSel.coordinates().data(), &radii_[0], pbc,
+    calculator_.calculate(surfaceSel.coordinates().data(), pbc,
                           frameData.index_.size(), &frameData.index_[0], flag,
                           &totarea, &totvolume, &area,
                           &surfacedots, &nsurfacedots);

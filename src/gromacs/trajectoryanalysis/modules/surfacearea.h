@@ -38,6 +38,7 @@
 #define GMX_TRAJECTORYANALYSIS_SURFACEAREA_H
 
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
 struct t_pbc;
@@ -89,6 +90,20 @@ class SurfaceAreaCalculator
          * accuracy/computational cost.
          */
         void setDotCount(int dotCount);
+        /*! \brief
+         * Sets the radii of spheres to use in the calculation.
+         *
+         * \param[in]  radius  Radius for each atom/sphere.
+         *
+         * This function must be called before calculate() to set the radii for
+         * the spheres.  All calculations must use the same set of radii to
+         * share the same grid search.
+         * These radii are used as-is, without adding any probe radius.
+         * The passed array must remain valid for the lifetime of this object.
+         *
+         * Does not throw.
+         */
+        void setRadii(const ConstArrayRef<real> &radius);
 
         /*! \brief
          * Requests calculation of volume.
@@ -122,8 +137,6 @@ class SurfaceAreaCalculator
          * Calculates the surface area for a set of positions.
          *
          * \param[in]  x       Atom positions (sphere centers).
-         * \param[in]  radius  Radius for each atom/sphere.
-         *     These radii are used as-is, without adding any probe radius.
          * \param[in]  pbc     PBC information (if `NULL`, calculation is done
          *     without PBC).
          * \param[in]  nat     Number of atoms to calculate.
@@ -139,7 +152,8 @@ class SurfaceAreaCalculator
          *     (can be `NULL`).
          *
          * Calculates the surface area of spheres centered at `x[index[0]]`,
-         * ..., `x[index[nat-1]]`, with radii `radius[index[0]]`, ....
+         * ..., `x[index[nat-1]]`, with radii `radii[index[0]]`, ..., where
+         * `radii` is the array passed to setRadii().
          *
          * If \p flags is 0, the calculation is done for the items specified
          * with setCalculateVolume(), setCalculateAtomArea(), and
@@ -152,7 +166,7 @@ class SurfaceAreaCalculator
          * Make the output options more C++-like, in particular for the array
          * outputs.
          */
-        void calculate(const rvec *x, const real *radius, const t_pbc *pbc,
+        void calculate(const rvec *x, const t_pbc *pbc,
                        int nat, atom_id index[], int flags, real *area,
                        real *volume, real **at_area,
                        real **lidots, int *n_dots) const;
