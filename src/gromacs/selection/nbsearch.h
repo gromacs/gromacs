@@ -51,6 +51,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
@@ -108,14 +109,14 @@ class AnalysisNeighborhoodPositions
          * to methods that accept positions.
          */
         AnalysisNeighborhoodPositions(const rvec &x)
-            : count_(1), index_(-1), x_(&x), exclusionIds_(NULL)
+            : count_(1), index_(-1), x_(&x), exclusionIds_(NULL), indices_(NULL)
         {
         }
         /*! \brief
          * Initializes positions from an array of position vectors.
          */
         AnalysisNeighborhoodPositions(const rvec x[], int count)
-            : count_(count), index_(-1), x_(x), exclusionIds_(NULL)
+            : count_(count), index_(-1), x_(x), exclusionIds_(NULL), indices_(NULL)
         {
         }
 
@@ -132,6 +133,24 @@ class AnalysisNeighborhoodPositions
             GMX_ASSERT(static_cast<int>(ids.size()) == count_,
                        "Exclusion id array should match the number of positions");
             exclusionIds_ = ids.data();
+            return *this;
+        }
+        /*! \brief
+         * Sets indices that select a subset of all positions from the array.
+         *
+         * If called, selected positions from the array of positions passed to
+         * the constructor is used instead of the whole array.
+         * All returned indices from AnalysisNeighborhoodPair objects are still
+         * indices to the whole array.
+         *
+         * FIXME: Ensure that the indexing works consistently in all
+         * combinations.
+         */
+        AnalysisNeighborhoodPositions &
+        indexed(ConstArrayRef<int> indices)
+        {
+            count_   = indices.size();
+            indices_ = indices.data();
             return *this;
         }
 
@@ -156,6 +175,7 @@ class AnalysisNeighborhoodPositions
         int                     index_;
         const rvec             *x_;
         const int              *exclusionIds_;
+        const int              *indices_;
 
         //! To access the positions for initialization.
         friend class internal::AnalysisNeighborhoodSearchImpl;
@@ -322,11 +342,16 @@ class AnalysisNeighborhoodPair
 {
     public:
         //! Initializes an invalid pair.
-        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0) {}
+        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0)
+        {
+            clear_rvec(dx_);
+        }
         //! Initializes a pair object with the given data.
-        AnalysisNeighborhoodPair(int refIndex, int testIndex, real distance2)
+        AnalysisNeighborhoodPair(int refIndex, int testIndex, real distance2,
+                                 const rvec dx)
             : refIndex_(refIndex), testIndex_(testIndex), distance2_(distance2)
         {
+            copy_rvec(dx, dx_);
         }
 
         /*! \brief
@@ -367,11 +392,22 @@ class AnalysisNeighborhoodPair
             GMX_ASSERT(isValid(), "Accessing invalid object");
             return distance2_;
         }
+        /*! \brief
+         * Returns the shortest vector between the pair of positions.
+         *
+         * The vector is from the test position to the reference position.
+         */
+        const rvec &dx() const
+        {
+            GMX_ASSERT(isValid(), "Accessing invalid object");
+            return dx_;
+        }
 
     private:
         int                     refIndex_;
         int                     testIndex_;
         real                    distance2_;
+        rvec                    dx_;
 };
 
 /*! \brief
