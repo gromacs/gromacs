@@ -153,6 +153,22 @@ class ArrayRef
         {
             GMX_ASSERT(end >= begin, "Invalid range");
         }
+        /*! \brief
+         * Constructs a reference to a whole vector.
+         *
+         * \param[in] v  Vector to reference.
+         *
+         * Passed vector must remain valid and not be reallocated for the
+         * lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * std::vector to a method that takes ArrayRef.
+         */
+        ArrayRef(std::vector<T> &v)
+            : begin_((!v.empty()) ? &v[0] : NULL),
+              end_((!v.empty()) ? &v[0] + v.size() : NULL)
+        {
+        }
         //! \cond
         // Doxygen 1.8.5 doesn't parse the declaration correctly...
         /*! \brief
@@ -392,6 +408,22 @@ class ConstArrayRef
             : begin_(begin), end_(end)
         {
             GMX_ASSERT(end >= begin, "Invalid range");
+        }
+        /*! \brief
+         * Constructs a reference to a whole vector.
+         *
+         * \param[in] v  Vector to reference.
+         *
+         * Passed vector must remain valid and not be reallocated for the
+         * lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * std::vector to a method that takes ConstArrayRef.
+         */
+        ConstArrayRef(const std::vector<T> &v)
+            : begin_((!v.empty()) ? &v[0] : NULL),
+              end_((!v.empty()) ? &v[0] + v.size() : NULL)
+        {
         }
         //! \cond
         // Doxygen 1.8.5 doesn't parse the declaration correctly...
