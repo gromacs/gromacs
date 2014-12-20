@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -614,6 +614,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     calculator_.setDotCount(ndots_);
+    calculator_.setRadii(radii_);
 
     // Initialize all the output data objects and initialize the output plotters.
 
@@ -913,7 +914,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     real  totarea, totvolume;
     real *area = NULL, *surfacedots = NULL;
     int   nsurfacedots;
-    calculator_.calculate(surfaceSel.coordinates().data(), &radii_[0], pbc,
+    calculator_.calculate(surfaceSel.coordinates().data(), pbc,
                           frameData.index_.size(), &frameData.index_[0], flag,
                           &totarea, &totvolume, &area,
                           &surfacedots, &nsurfacedots);
