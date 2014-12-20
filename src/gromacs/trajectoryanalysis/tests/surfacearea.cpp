@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -158,8 +158,8 @@ class SurfaceAreaTest : public ::testing::Test
                     {
                         gmx::SurfaceAreaCalculator calculator;
                         calculator.setDotCount(ndots);
-                        calculator.calculate(as_rvec_array(&x_[0]), &radius_[0],
-                                             bPBC ? &pbc : NULL,
+                        calculator.setRadii(radius_);
+                        calculator.calculate(as_rvec_array(&x_[0]), bPBC ? &pbc : NULL,
                                              index_.size(), &index_[0], flags,
                                              &area_, &volume_, &atomArea_,
                                              &dots_, &dotCount_);
