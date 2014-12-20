@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -272,6 +272,8 @@ class AnalysisNeighborhoodSearchImpl
         const rvec             *xref_;
         //! Reference position exclusion IDs.
         const int              *refExclusionIds_;
+        //! Reference position indices (NULL if no indices).
+        const int              *refIndices_;
         //! Exclusions.
         const t_blocka         *excls_;
         //! PBC data.
@@ -325,7 +327,10 @@ class AnalysisNeighborhoodPairSearchImpl
         explicit AnalysisNeighborhoodPairSearchImpl(const AnalysisNeighborhoodSearchImpl &search)
             : search_(search)
         {
+            testPosCount_     = 0;
+            testPositions_    = NULL;
             testExclusionIds_ = NULL;
+            testIndices_      = NULL;
             nexcl_            = 0;
             excl_             = NULL;
             clear_rvec(xtest_);
@@ -353,10 +358,14 @@ class AnalysisNeighborhoodPairSearchImpl
 
         //! Parent search object.
         const AnalysisNeighborhoodSearchImpl   &search_;
+        //! Number of test positions.
+        int                                     testPosCount_;
         //! Reference to the test positions.
-        ConstArrayRef<rvec>                     testPositions_;
+        const rvec                             *testPositions_;
         //! Reference to the test exclusion indices.
         const int                              *testExclusionIds_;
+        //! Reference to the test position indices.
+        const int                              *testIndices_;
         //! Number of excluded reference positions for current test particle.
         int                                     nexcl_;
         //! Exclusions for current test particle.
@@ -369,6 +378,8 @@ class AnalysisNeighborhoodPairSearchImpl
         int                                     previ_;
         //! Stores the pair distance corresponding to previ_;
         real                                    prevr2_;
+        //! Stores the shortest distance vector corresponding to previ_;
+        rvec                                    prevdx_;
         //! Stores the current exclusion index during loops.
         int                                     exclind_;
         //! Stores the fractional test particle cell location during loops.
@@ -404,6 +415,7 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     nref_            = 0;
     xref_            = NULL;
     refExclusionIds_ = NULL;
+    refIndices_      = NULL;
     std::memset(&pbc_, 0, sizeof(pbc_));
 
     bGrid_          = false;
@@ -916,6 +928,7 @@ void AnalysisNeighborhoodSearchImpl::init(
         bGrid_ = initGrid(pbc_, positions.count_, positions.x_, bUseBoundingBox,
                           mode == AnalysisNeighborhood::eSearchMode_Grid);
     }
+    refIndices_ = positions.indices_;
     if (bGrid_)
     {
         xrefAlloc_.resize(nref_);
@@ -923,9 +936,19 @@ void AnalysisNeighborhoodSearchImpl::init(
 
         for (int i = 0; i < nref_; ++i)
         {
-            rvec refcell;
-            mapPointToGridCell(positions.x_[i], refcell, xrefAlloc_[i]);
+            const int ii = (refIndices_ != NULL) ? refIndices_[i] : i;
+            rvec      refcell;
+            mapPointToGridCell(positions.x_[ii], refcell, xrefAlloc_[i]);
             addToGridCell(refcell, i);
+        }
+    }
+    else if (refIndices_ != NULL)
+    {
+        xrefAlloc_.resize(nref_);
+        xref_ = as_rvec_array(&xrefAlloc_[0]);
+        for (int i = 0; i < nref_; ++i)
+        {
+            copy_rvec(positions.x_[refIndices_[i]], xrefAlloc_[i]);
         }
     }
     else
@@ -951,22 +974,24 @@ void AnalysisNeighborhoodSearchImpl::init(
 void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
 {
     testIndex_ = testIndex;
-    if (testIndex_ >= 0 && testIndex_ < static_cast<int>(testPositions_.size()))
+    if (testIndex_ >= 0 && testIndex_ < testPosCount_)
     {
+        const int index =
+            (testIndices_ != NULL ? testIndices_[testIndex] : testIndex);
         if (search_.bGrid_)
         {
-            search_.mapPointToGridCell(testPositions_[testIndex], testcell_, xtest_);
+            search_.mapPointToGridCell(testPositions_[index], testcell_, xtest_);
             search_.initCellRange(testcell_, currCell_, cellBound_, ZZ);
             search_.initCellRange(testcell_, currCell_, cellBound_, YY);
             search_.initCellRange(testcell_, currCell_, cellBound_, XX);
         }
         else
         {
-            copy_rvec(testPositions_[testIndex_], xtest_);
+            copy_rvec(testPositions_[index], xtest_);
         }
         if (search_.excls_ != NULL)
         {
-            const int exclIndex  = testExclusionIds_[testIndex];
+            const int exclIndex  = testExclusionIds_[index];
             if (exclIndex < search_.excls_->nr)
             {
                 const int startIndex = search_.excls_->index[exclIndex];
@@ -982,13 +1007,14 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
     }
     previ_     = -1;
     prevr2_    = 0.0;
+    clear_rvec(prevdx_);
     exclind_   = 0;
     prevcai_   = -1;
 }
 
 void AnalysisNeighborhoodPairSearchImpl::nextTestPosition()
 {
-    if (testIndex_ < static_cast<int>(testPositions_.size()))
+    if (testIndex_ < testPosCount_)
     {
         ++testIndex_;
         reset(testIndex_);
@@ -999,7 +1025,9 @@ bool AnalysisNeighborhoodPairSearchImpl::isExcluded(int j)
 {
     if (exclind_ < nexcl_)
     {
-        const int refId = search_.refExclusionIds_[j];
+        const int index =
+            (search_.refIndices_ != NULL ? search_.refIndices_[j] : j);
+        const int refId = search_.refExclusionIds_[index];
         while (exclind_ < nexcl_ && excl_[exclind_] < refId)
         {
             ++exclind_;
@@ -1016,19 +1044,21 @@ bool AnalysisNeighborhoodPairSearchImpl::isExcluded(int j)
 void AnalysisNeighborhoodPairSearchImpl::startSearch(
         const AnalysisNeighborhoodPositions &positions)
 {
+    testPosCount_     = positions.count_;
+    testPositions_    = positions.x_;
     testExclusionIds_ = positions.exclusionIds_;
+    testIndices_      = positions.indices_;
     GMX_RELEASE_ASSERT(search_.excls_ == NULL || testExclusionIds_ != NULL,
                        "Exclusion IDs must be set when exclusions are enabled");
     if (positions.index_ < 0)
     {
-        testPositions_ = constArrayRefFromArray<rvec>(positions.x_, positions.count_);
         reset(0);
     }
     else
     {
         // Somewhat of a hack: setup the array such that only the last position
         // will be used.
-        testPositions_ = constArrayRefFromArray<rvec>(positions.x_, positions.index_ + 1);
+        testPosCount_ = positions.index_ + 1;
         reset(positions.index_);
     }
 }
@@ -1036,7 +1066,7 @@ void AnalysisNeighborhoodPairSearchImpl::startSearch(
 template <class Action>
 bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
 {
-    while (testIndex_ < static_cast<int>(testPositions_.size()))
+    while (testIndex_ < testPosCount_)
     {
         if (search_.bGrid_)
         {
@@ -1055,19 +1085,20 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                         continue;
                     }
                     rvec       dx;
-                    rvec_sub(xtest_, search_.xref_[i], dx);
-                    rvec_add(dx, shift, dx);
+                    rvec_sub(search_.xref_[i], xtest_, dx);
+                    rvec_sub(dx, shift, dx);
                     const real r2
                         = search_.bXY_
                             ? dx[XX]*dx[XX] + dx[YY]*dx[YY]
                             : norm2(dx);
                     if (r2 <= search_.cutoff2_)
                     {
-                        if (action(i, r2))
+                        if (action(i, r2, dx))
                         {
                             prevcai_ = cai;
                             previ_   = i;
                             prevr2_  = r2;
+                            copy_rvec(dx, prevdx_);
                             return true;
                         }
                     }
@@ -1088,11 +1119,11 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                 rvec dx;
                 if (search_.pbc_.ePBC != epbcNONE)
                 {
-                    pbc_dx(&search_.pbc_, xtest_, search_.xref_[i], dx);
+                    pbc_dx(&search_.pbc_, search_.xref_[i], xtest_, dx);
                 }
                 else
                 {
-                    rvec_sub(xtest_, search_.xref_[i], dx);
+                    rvec_sub(search_.xref_[i], xtest_, dx);
                 }
                 const real r2
                     = search_.bXY_
@@ -1100,10 +1131,11 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                         : norm2(dx);
                 if (r2 <= search_.cutoff2_)
                 {
-                    if (action(i, r2))
+                    if (action(i, r2, dx))
                     {
                         previ_  = i;
                         prevr2_ = r2;
+                        copy_rvec(dx, prevdx_);
                         return true;
                     }
                 }
@@ -1123,7 +1155,7 @@ void AnalysisNeighborhoodPairSearchImpl::initFoundPair(
     }
     else
     {
-        *pair = AnalysisNeighborhoodPair(previ_, testIndex_, prevr2_);
+        *pair = AnalysisNeighborhoodPair(previ_, testIndex_, prevr2_, prevdx_);
     }
 }
 
@@ -1140,7 +1172,7 @@ namespace
  *
  * Simply breaks the loop on the first found neighbor.
  */
-bool withinAction(int /*i*/, real /*r2*/)
+bool withinAction(int /*i*/, real /*r2*/, const rvec /* dx */)
 {
     return true;
 }
@@ -1164,23 +1196,25 @@ class MindistAction
          *
          * \param[out] closestPoint Index of the closest reference location.
          * \param[out] minDist2     Minimum distance squared.
+         * \param[out] dx           Shortest distance vector.
          *
          * The constructor call does not modify the pointed values, but only
          * stores the pointers for later use.
          * See the class description for additional semantics.
          */
-        MindistAction(int *closestPoint, real *minDist2)
-            : closestPoint_(*closestPoint), minDist2_(*minDist2)
+        MindistAction(int *closestPoint, real *minDist2, rvec *dx)
+            : closestPoint_(*closestPoint), minDist2_(*minDist2), dx_(*dx)
         {
         }
 
         //! Processes a neighbor to find the nearest point.
-        bool operator()(int i, real r2)
+        bool operator()(int i, real r2, const rvec dx)
         {
             if (r2 < minDist2_)
             {
                 closestPoint_ = i;
                 minDist2_     = r2;
+                copy_rvec(dx, dx_);
             }
             return false;
         }
@@ -1188,6 +1222,7 @@ class MindistAction
     private:
         int     &closestPoint_;
         real    &minDist2_;
+        rvec    &dx_;
 
         GMX_DISALLOW_ASSIGN(MindistAction);
 };
@@ -1349,7 +1384,8 @@ real AnalysisNeighborhoodSearch::minimumDistance(
     pairSearch.startSearch(positions);
     real          minDist2     = impl_->cutoffSquared();
     int           closestPoint = -1;
-    MindistAction action(&closestPoint, &minDist2);
+    rvec          dx           = {0.0, 0.0, 0.0};
+    MindistAction action(&closestPoint, &minDist2, &dx);
     (void)pairSearch.searchNext(action);
     return sqrt(minDist2);
 }
@@ -1363,9 +1399,10 @@ AnalysisNeighborhoodSearch::nearestPoint(
     pairSearch.startSearch(positions);
     real          minDist2     = impl_->cutoffSquared();
     int           closestPoint = -1;
-    MindistAction action(&closestPoint, &minDist2);
+    rvec          dx           = {0.0, 0.0, 0.0};
+    MindistAction action(&closestPoint, &minDist2, &dx);
     (void)pairSearch.searchNext(action);
-    return AnalysisNeighborhoodPair(closestPoint, 0, minDist2);
+    return AnalysisNeighborhoodPair(closestPoint, 0, minDist2, dx);
 }
 
 AnalysisNeighborhoodPairSearch
