@@ -42,6 +42,7 @@
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,7 +103,10 @@ void update_coords(FILE             *fplog,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
                    t_nrnb           *nrnb,
                    gmx_constr_t      constr,
-                   t_idef           *idef);
+                   t_idef           *idef,
+                   rvec             *vold,
+                   t_forcerec       *fr,
+                   const t_pbc      *pbc1);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
