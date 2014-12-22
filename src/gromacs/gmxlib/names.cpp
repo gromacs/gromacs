@@ -238,6 +238,11 @@ const char *eSwapTypes_names[eSwapTypesNR+1] = {
     "no", "X", "Y", "Z", NULL
 };
 
+const char *eSwapFixedGrp_names[eSwapFixedGrpNR+1] = {
+    "Split0", "Split1", "Solvent", NULL
+};
+
+
 const char *eQMmethod_names[eQMmethodNR+1] = {
     "AM1", "PM3", "RHF",
     "UHF", "DFT", "B3LYP", "MP2", "CASSCF", "B3LYPLAN",
