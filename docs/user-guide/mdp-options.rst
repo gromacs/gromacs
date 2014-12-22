@@ -2986,10 +2986,6 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
    (no) As above, but for split-group #1.
 
-.. mdp:: swap-group
-
-   Group name of the ions that can be swapped with solvent molecules.
-
 .. mdp:: solvent-group
 
    Name of the index group of solvent molecules.
@@ -3000,23 +2996,24 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
    This can be used to prevent that ions near a compartment boundary
    (diffusing through a channel, e.g.) lead to unwanted back and forth swaps.
 
-.. mdp:: anionsA
+.. mdp:: iontypes
 
-   (-1) Requested (=reference) number of anions in compartment A.
+   (1) The number of different ion types to be controlled. These are during the 
+   simulation exchanged with solvent molecules to reach the desired reference numbers.
+
+.. mdp:: iontype0-name
+
+   Name of the first ion type.
+
+.. mdp:: iontype0-in-A
+
+   (-1) Requested (=reference) number of ions of type 0 in compartment A.
    The default value of -1 means: use the number of ions as found in time step 0
    as reference value.
 
-.. mdp:: cationsA
+.. mdp:: iontype0-in-B
 
-   (-1) Reference number of cations for compartment A.
-
-.. mdp:: anionsB
-
-   (-1) Reference number of anions for compartment B.
-
-.. mdp:: cationsB
-
-   (-1) Reference number of cations for compartment B.
+   (-1) Reference number of ions of type 0 for compartment B.
 
 .. mdp:: bulk-offsetA
 
