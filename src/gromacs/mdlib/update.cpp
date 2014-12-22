@@ -115,58 +115,77 @@ typedef struct gmx_update
     matrix          deformref_box;
 } t_gmx_update;
 
-static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
+static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
-    if (pbc) {
-        return pbc_dx_aiuc(pbc,xi,xj,dx);
-    } else {
-        rvec_sub(xi,xj,dx);
+    if (pbc)
+    {
+        return pbc_dx_aiuc(pbc, xi, xj, dx);
+    }
+    else
+    {
+        rvec_sub(xi, xj, dx);
         return CENTRAL;
     }
 }
 
 real max_f(real f1, real f2)
 {
-    if(f1>f2)
+    if (f1 > f2)
+    {
         return f1;
+    }
     else
+    {
         return f2;
+    }
 }
 
 static void do_update_positions(gmx_stochd_t *sd,
-                                int start,int homenr,double dt,
-                                rvec accel[],ivec nFreeze[],
-                                real invmass[],unsigned short ptype[],
-                                unsigned short cFREEZE[],unsigned short cACC[],
+                                int start, int homenr, double dt,
+                                rvec accel[], ivec nFreeze[],
+                                real invmass[], unsigned short ptype[],
+                                unsigned short cFREEZE[], unsigned short cACC[],
                                 unsigned short cTC[],
-                                rvec x[],rvec xprime[],rvec v[],rvec f[])
+                                rvec x[], rvec xprime[], rvec v[], rvec f[])
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
-    int    gf=0,ga=0,gt=0;
-    real   ism;
-    int    n,d;
+    int             gf = 0, ga = 0, gt = 0;
+    real            ism;
+    int             n, d;
 
     sdc = sd->sdc;
     sig = sd->sdsig;
-    if (homenr > sd->sd_V_nalloc) {
+    if (homenr > sd->sd_V_nalloc)
+    {
         sd->sd_V_nalloc = over_alloc_dd(homenr);
-        srenew(sd->sd_V,sd->sd_V_nalloc);
+        srenew(sd->sd_V, sd->sd_V_nalloc);
     }
-    for(n=start; n<start+homenr; n++) {
+    for (n = start; n < start+homenr; n++)
+    {
         ism = sqrt(invmass[n]);
         if (cFREEZE)
+        {
             gf  = cFREEZE[n];
+        }
         if (cACC)
+        {
             ga  = cACC[n];
+        }
         if (cTC)
+        {
             gt  = cTC[n];
+        }
 
-        for(d=0; d<DIM; d++) {
-            if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-                v[n][d] =  v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                v[n][d]      =  v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
                 xprime[n][d] = x[n][d] + v[n][d]*dt;
-            } else {
+            }
+            else
+            {
                 v[n][d]      = 0.0;
                 xprime[n][d] = x[n][d];
             }
@@ -174,7 +193,7 @@ static void do_update_positions(gmx_stochd_t *sd,
     }
 }
 
-void apply_dpd_iso(int start,int homenr,
+void apply_dpd_iso(int start, int homenr,
                    int *           p_nri,
                    int *           iinr,
                    int *           jindex,
@@ -190,9 +209,9 @@ void apply_dpd_iso(int start,int homenr,
                    gmx_rng_t gaussrand)
 {
     int           nri, nn0, nn1;
-    int           n,ii,ii3,ii4,nj0,nj1,jnr,j3;
-    real          vx1,vy1,vz1, dx11, dy11, dz11;
-    real          vix1,viy1,viz1;
+    int           n, ii, ii3, ii4, nj0, nj1, jnr, j3;
+    real          vx1, vy1, vz1, dx11, dy11, dz11;
+    real          vix1, viy1, viz1;
     real          r;
     real          w;
     real          dvx, dvy, dvz;
@@ -201,7 +220,7 @@ void apply_dpd_iso(int start,int homenr,
     real          f_iso;
     real          rsq11;
     rvec          dx;
-    int           nj_i, gt_ii =0 , gt_jnr =0;
+    int           nj_i, gt_ii = 0, gt_jnr = 0;
     int           aux_process[4000];
 
     nri = *p_nri;
@@ -209,13 +228,14 @@ void apply_dpd_iso(int start,int homenr,
     jnr = -1;
 
 #ifdef GMX_THREADS
-    gmx_fatal (FARGS,"Threads not supported for dissipative force computations"); /* Check whether is OK */
+    gmx_fatal (FARGS, "Threads not supported for dissipative force computations"); /* Check whether is OK */
 #else
     nn0 = 0;
     nn1 = nri;
 #endif
 
-    for(n=nn0; (n<nn1); n++) {
+    for (n = nn0; (n < nn1); n++)
+    {
         /* Load limits for loop over neighbors */
         nj0              = jindex[n];
         nj1              = jindex[n+1];
@@ -225,7 +245,9 @@ void apply_dpd_iso(int start,int homenr,
         ii3              = 3*ii;
 
         if (cTC)
+        {
             gt_ii  = cTC[ii];
+        }
 
         /* Load inverss-mass and velocities */
         mi = invmass[ii];
@@ -247,75 +269,99 @@ void apply_dpd_iso(int start,int homenr,
         int i5 = 0;
         int i6 = 0;
 
-        if((nj1 -nj0 -1) !=0){
+        if ((nj1 -nj0 -1) != 0)
+        {
             nj_i = rand() % (nj1 -nj0 -1 );
-            for(i5=nj0+nj_i; i5 < nj1; i5++)
-            if((jjnr[i5] >= start) && (jjnr[i5] < start + homenr)){
-                jnr=jjnr[i5];
-                break;
+            for (i5 = nj0+nj_i; i5 < nj1; i5++)
+            {
+                if ((jjnr[i5] >= start) && (jjnr[i5] < start + homenr))
+                {
+                    jnr = jjnr[i5];
+                    break;
+                }
             }
         }
 
         /* If we don't succeed, we take something computationally more expensive */
-        if(i5==nj1){
-            int lim1 =0;
+        if (i5 == nj1)
+        {
+            int lim1 = 0;
 
             if (nj1-nj0-1 < 4000)
-                lim1=nj1;
+            {
+                lim1 = nj1;
+            }
             else
+            {
                 lim1 = nj0 + 4000;
+            }
 
-            for(i5=nj0; i5 < lim1; i5++)
-            if((jjnr[i5] >= start) && (jjnr[i5] < start + homenr))
-                aux_process[i6++] = jjnr[i5];
+            for (i5 = nj0; i5 < lim1; i5++)
+            {
+                if ((jjnr[i5] >= start) && (jjnr[i5] < start + homenr))
+                {
+                    aux_process[i6++] = jjnr[i5];
+                }
+            }
 
-            if(i6 !=0)
+            if (i6 != 0)
+            {
                 nj_i = rand() % i6;
+            }
             else
+            {
                 nj_i = 0;
+            }
 
             /* Get j neighbor index, and coordinate index */
-            jnr=aux_process[nj_i];
+            jnr = aux_process[nj_i];
         }
 
         j3 = 3*jnr;
 
         if (cTC)
+        {
             gt_jnr  = cTC[jnr];
+        }
 
         mj = invmass[jnr];
 
         /* right computing */
-        pbc_rvec_sub(pbc,x[ii],x[jnr],dx);
+        pbc_rvec_sub(pbc, x[ii], x[jnr], dx);
 
         dx11 = dx[XX];
         dy11 = dx[YY];
         dz11 = dx[ZZ];
 
         rsq11  = dx11*dx11+dy11*dy11+dz11*dz11;
-        r = sqrt(rsq11);
+        r      = sqrt(rsq11);
 
         /* begin */
-        if(r>0) {/* No coupling is distance is 0 or somthing strange with the distance r (out of the radius-sphere) */
-            /* Transformation to unit vector */
+        if (r > 0)  /* No coupling is distance is 0 or somthing strange with the distance r (out of the radius-sphere) */
+        {   /* Transformation to unit vector */
             w = (1- r/rc1);
-            if(w > 0){
+            if (w > 0)
+            {
                 f_iso  = w*max_f(f_iso1[gt_jnr], f_iso1[gt_ii]);
 
                 dx11 = dx11/r;
                 dy11 = dy11/r;
                 dz11 = dz11/r;
-            } else {
-                dx11=  0 ;
-                dy11 = 0 ;
-                dz11 = 0 ;
-                f_iso=0;
             }
-        } else {
-            dx11=  0 ;
-            dy11 = 0 ;
-            dz11 = 0 ;
-            f_iso=0;
+            else
+            {
+                dx11  =  0;
+                dy11  = 0;
+                dz11  = 0;
+                f_iso = 0;
+            }
+        }
+        else
+        {
+            dx11  =  0;
+            dy11  = 0;
+            dz11  = 0;
+            f_iso = 0;
         }
         /* end */
 
@@ -325,9 +371,9 @@ void apply_dpd_iso(int start,int homenr,
         dvz =   viz1-v[j3+2];
 
         /* Application of dissipative and random terms */
-        gauss1= sqrt(kT*(2*f_iso - f_iso * f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
-        gauss2= sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
-        gauss3= sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
+        gauss1 = sqrt(kT*(2*f_iso - f_iso * f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
+        gauss2 = sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
+        gauss3 = sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
 
         dvx = -f_iso*dvx + gauss1;
         dvy = -f_iso*dvy + gauss2;
@@ -349,50 +395,61 @@ void apply_dpd_iso(int start,int homenr,
 }
 
 static void do_update_iso(gmx_stochd_t *sd,
-                          int start,int homenr,double dt,
-                          rvec accel[],ivec nFreeze[],
-                          real invmass[],unsigned short ptype[],
-                          unsigned short cFREEZE[],unsigned short cACC[],
+                          int start, int homenr, double dt,
+                          rvec accel[], ivec nFreeze[],
+                          real invmass[], unsigned short ptype[],
+                          unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
-                          rvec x[],rvec xprime[],rvec v[], rvec f[],real ref_t[], t_forcerec *fr,
+                          rvec x[], rvec xprime[], rvec v[], rvec f[], real ref_t[], t_forcerec *fr,
                           rvec *vold, real f_iso[], real rc1, t_grp_tcstat *tcstat, const t_pbc *pbc,
                           gmx_rng_t gaussrand)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
-    real   kT, lg;
-    int    n,d;
-    int    gf=0,ga=0,gt=0;
-    t_nblist *nblist;
+    real            kT, lg;
+    int             n, d;
+    int             gf = 0, ga = 0, gt = 0;
+    t_nblist       *nblist;
     t_nblists      *nblists;
-    int i0, i1;
-    int n0, n1;
-    int aux_i;
-    int i;
-    int nri1 = 0;
+    int             i0, i1;
+    int             n0, n1;
+    int             aux_i;
+    int             i;
+    int             nri1 = 0;
 
     sdc = sd->sdc;
     sig = sd->sdsig;
 
-    if (homenr > sd->sd_V_nalloc) {
+    if (homenr > sd->sd_V_nalloc)
+    {
         sd->sd_V_nalloc = over_alloc_dd(homenr);
-        srenew(sd->sd_V,sd->sd_V_nalloc);
+        srenew(sd->sd_V, sd->sd_V_nalloc);
     }
 
     kT = BOLTZ*ref_t[0]; /* For the time being, we assume all the particles to be in the same group - maybe wrong */
 
-    for(n=start; n<start+homenr; n++) {
+    for (n = start; n < start+homenr; n++)
+    {
         if (cFREEZE)
+        {
             gf  = cFREEZE[n];
+        }
         if (cACC)
+        {
             ga  = cACC[n];
+        }
         if (cTC)
+        {
             gt  = cTC[n];
-            lg   = tcstat[gt].lambda;
+        }
+        lg   = tcstat[gt].lambda;
 
-        for(d=0; d<DIM; d++) {
-            if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
                 vold[n][d] = (v[n][d]+ (invmass[n]*f[n][d] + accel[ga][d])*dt);
+            }
             v[n][d] =   vold[n][d];
         }
     }
@@ -410,43 +467,58 @@ static void do_update_iso(gmx_stochd_t *sd,
     /* Choose the right nlist */
     int trial1 = 0;
 
-    while ((nri1 < 2) && (trial1 < 3)){
-        if((n1 -n0 -1) !=0)
+    while ((nri1 < 2) && (trial1 < 3))
+    {
+        if ((n1 -n0 -1) != 0)
+        {
             aux_i = rand() % (n1 -n0 -1 );
+        }
         else
+        {
             aux_i = 0;
+        }
 
         n = n0 + aux_i;
 
         nblists = &fr->nblists[n];
 
-        if((i1 -i0 -1) !=0)
+        if ((i1 -i0 -1) != 0)
+        {
             aux_i = rand() % (i1 -i0 -1 );
+        }
         else
+        {
             aux_i = 0;
+        }
 
         i = i0 + aux_i;
 
         nblist = &(nblists->nlist_sr[i]);
 
-        nri1 = nblist->nri;
+        nri1   = nblist->nri;
         trial1 = trial1 +1;
     }
 
-    if((trial1==3) && (nri1 <= 2)){
+    if ((trial1 == 3) && (nri1 <= 2))
+    {
         nri1 = 0;
-        for(n=0; (n<fr->nnblists); n++){
-            for(n=n0; (n<n1); n++){
+        for (n = 0; (n < fr->nnblists); n++)
+        {
+            for (n = n0; (n < n1); n++)
+            {
                 nblists = &fr->nblists[n];
-                for(i=i0; (i<i1); i++){
+                for (i = i0; (i < i1); i++)
+                {
                     nblist = &(nblists->nlist_lr[i]);
-                    nri1 = nblist->nri;
+                    nri1   = nblist->nri;
 
-                    if(nri1 >2){
+                    if (nri1 > 2)
+                    {
                         break;
                     }
                 }
-                if(nri1 >2){
+                if (nri1 > 2)
+                {
                     break;
                 }
             }
@@ -456,18 +528,29 @@ static void do_update_iso(gmx_stochd_t *sd,
     apply_dpd_iso(start, homenr, &(nblist->nri), nblist->iinr, nblist->jindex, nblist->jjnr, x, v[0],
                   invmass, f_iso, kT, rc1, pbc, cTC, gaussrand);
 
-    for(n=start; n<start+homenr; n++) {
+    for (n = start; n < start+homenr; n++)
+    {
         if (cFREEZE)
+        {
             gf  = cFREEZE[n];
+        }
         if (cACC)
+        {
             ga  = cACC[n];
+        }
         if (cTC)
+        {
             gt  = cTC[n];
+        }
 
-    for(d=0; d<DIM; d++) {
-            if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
                 xprime[n][d] = x[n][d] + (0.5*v[n][d]+0.5*vold[n][d])*dt;
-            } else {
+            }
+            else
+            {
                 v[n][d]      = 0.0;
                 xprime[n][d] = x[n][d];
             }
@@ -2283,27 +2366,30 @@ void update_coords(FILE             *fplog,
     }
 
     static gmx_stochd_t *sd1;
-    int ngtc;
+    int                  ngtc;
 
-    if ((inputrec->eI == eiISO)  && bInitStep){
+    if ((inputrec->eI == eiISO)  && bInitStep)
+    {
 
         int n;
-        snew(sd1,1);
+        snew(sd1, 1);
         /* gaussrand in 4.6.5 an array of pointers */
         /* sd1->ngaussrand=1;
-        snew(sd1->gaussrand,sd1->ngaussrand); */
-        snew(sd1->gaussrand,1);
+           snew(sd1->gaussrand,sd1->ngaussrand); */
+        snew(sd1->gaussrand, 1);
         sd1->gaussrand[0] = gmx_rng_init(inputrec->ld_seed);
 
         ngtc = inputrec->opts.ngtc;
 
-        snew(sd1->sdc,ngtc);
-        snew(sd1->sdsig,ngtc);
+        snew(sd1->sdc, ngtc);
+        snew(sd1->sdsig, ngtc);
         snew(f_iso, ngtc);
 
         /* ISO case */
-        if(inputrec->eI == eiISO){
-            for(n=0; n<ngtc; n++) {
+        if (inputrec->eI == eiISO)
+        {
+            for (n = 0; n < ngtc; n++)
+            {
                 f_iso[n] = inputrec->delta_t/inputrec->opts.tau_t[n];
             }
         }
@@ -2425,19 +2511,22 @@ void update_coords(FILE             *fplog,
                         break;
                 }
                 break;
-             case (eiISO):
-                if (constr) {
-                    do_update_positions(sd1,start,homenr,dt,
-                                        inputrec->opts.acc,inputrec->opts.nFreeze,
-                                        md->invmass,md->ptype,
-                                        md->cFREEZE,md->cACC,md->cTC,
-                                        state->x,xprime,state->v,force);
-                } else {
-                    do_update_iso(sd1,start,homenr,dt,
-                                  inputrec->opts.acc,inputrec->opts.nFreeze,
-                                  md->invmass,md->ptype,
-                                  md->cFREEZE,md->cACC,md->cTC,
-                                  state->x,xprime,state->v,force,
+            case (eiISO):
+                if (constr)
+                {
+                    do_update_positions(sd1, start, homenr, dt,
+                                        inputrec->opts.acc, inputrec->opts.nFreeze,
+                                        md->invmass, md->ptype,
+                                        md->cFREEZE, md->cACC, md->cTC,
+                                        state->x, xprime, state->v, force);
+                }
+                else
+                {
+                    do_update_iso(sd1, start, homenr, dt,
+                                  inputrec->opts.acc, inputrec->opts.nFreeze,
+                                  md->invmass, md->ptype,
+                                  md->cFREEZE, md->cACC, md->cTC,
+                                  state->x, xprime, state->v, force,
                                   inputrec->opts.ref_t,
                                   fr, vold, f_iso,
                                   inputrec->userreal4, ekind->tcstat, pbc,

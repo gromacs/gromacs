@@ -742,7 +742,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                  ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
 
     rvec  * vold;
-    t_pbc pbc1;
+    t_pbc   pbc1;
     snew (vold, top_global->natoms);
 
     while (!bLastStep || (bRerunMD && bNotLastFrame))
@@ -1418,7 +1418,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
                 if (ir->eI == eiISO)
                 {
-                    set_pbc(&pbc1,ir->ePBC,state->box);
+                    set_pbc(&pbc1, ir->ePBC, state->box);
                 }
 
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
