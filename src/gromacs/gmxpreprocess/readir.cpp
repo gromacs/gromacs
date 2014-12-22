@@ -116,7 +116,6 @@ void done_inputrec_strings()
     is = NULL;
 }
 
-static char swapgrp[STRLEN], splitgrp0[STRLEN], splitgrp1[STRLEN], solgrp[STRLEN];
 
 enum {
     egrptpALL,         /* All particles have to be a member of a group.     */
@@ -2267,24 +2266,38 @@ void get_ir(const char *mdparin, const char *mdparout,
     EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
     if (ir->eSwapCoords != eswapNO)
     {
+        char buf[STRLEN];
+        int  nIonTypes;
+
+
         snew(ir->swap, 1);
         CTYPE("Swap attempt frequency");
         ITYPE("swap-frequency", ir->swap->nstswap, 1);
+        CTYPE("Number of ion types to be controlled");
+        ITYPE("iontypes", nIonTypes, 1);
+        if (nIonTypes < 1)
+        {
+            warning_error(wi, "You need to provide at least one ion type for position exchanges.");
+        }
+        ir->swap->ngrp = nIonTypes + eSwapFixedGrpNR;
+        snew(ir->swap->grp, ir->swap->ngrp);
+        for (i = 0; i < ir->swap->ngrp; i++)
+        {
+            snew(ir->swap->grp[i].molname, STRLEN);
+        }
         CTYPE("Two index groups that contain the compartment-partitioning atoms");
-        STYPE("split-group0", splitgrp0, NULL);
-        STYPE("split-group1", splitgrp1, NULL);
+        STYPE("split-group0", ir->swap->grp[eGrpSplit0].molname, NULL);
+        STYPE("split-group1", ir->swap->grp[eGrpSplit1].molname, NULL);
         CTYPE("Use center of mass of split groups (yes/no), otherwise center of geometry is used");
         EETYPE("massw-split0", ir->swap->massw_split[0], yesno_names);
         EETYPE("massw-split1", ir->swap->massw_split[1], yesno_names);
 
-        CTYPE("Group name of ions that can be exchanged with solvent molecules");
-        STYPE("swap-group", swapgrp, NULL);
-        CTYPE("Group name of solvent molecules");
-        STYPE("solvent-group", solgrp, NULL);
+        CTYPE("Name of solvent molecules");
+        STYPE("solvent-group", ir->swap->grp[eGrpSolvent].molname, NULL);
 
         CTYPE("Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
         CTYPE("Note that the split cylinder settings do not have an influence on the swapping protocol,");
-        CTYPE("however, if correctly defined, the ion permeation events are counted per channel");
+        CTYPE("however, if correctly defined, the permeation events are recorded per channel");
         RTYPE("cyl0-r", ir->swap->cyl0r, 2.0);
         RTYPE("cyl0-up", ir->swap->cyl0u, 1.0);
         RTYPE("cyl0-down", ir->swap->cyl0l, 1.0);
@@ -2294,12 +2307,21 @@ void get_ir(const char *mdparin, const char *mdparout,
 
         CTYPE("Average the number of ions per compartment over these many swap attempt steps");
         ITYPE("coupl-steps", ir->swap->nAverage, 10);
-        CTYPE("Requested number of anions and cations for each of the two compartments");
-        CTYPE("-1 means fix the numbers as found in time step 0");
-        ITYPE("anionsA", ir->swap->nanions[0], -1);
-        ITYPE("cationsA", ir->swap->ncations[0], -1);
-        ITYPE("anionsB", ir->swap->nanions[1], -1);
-        ITYPE("cationsB", ir->swap->ncations[1], -1);
+
+        CTYPE("Names of the ion types that can be exchanged with solvent molecules),");
+        CTYPE("and the requested number of ions of this type in compartments A and B");
+        CTYPE("-1 means fix the numbers as found in step 0");
+        for (i = 0; i < nIonTypes; i++)
+        {
+            int ig = eSwapFixedGrpNR + i;
+
+            sprintf(buf, "iontype%d-name", i);
+            STYPE(buf, ir->swap->grp[ig].molname, NULL);
+            sprintf(buf, "iontype%d-in-A", i);
+            ITYPE(buf, ir->swap->grp[ig].nmolReq[0], -1);
+            sprintf(buf, "iontype%d-in-B", i);
+            ITYPE(buf, ir->swap->grp[ig].nmolReq[1], -1);
+        }
 
         CTYPE("By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
         CTYPE("at maximum distance (= bulk concentration) to the split group layers. However,");
@@ -3138,86 +3160,42 @@ static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
 
 
 static void make_swap_groups(
-        t_swapcoords *swap,
-        char         *swapgname,
-        char         *splitg0name,
-        char         *splitg1name,
-        char         *solgname,
-        t_blocka     *grps,
-        char        **gnames)
+        t_swapcoords  *swap,
+        t_blocka      *grps,
+        char         **gnames)
 {
-    int   ig = -1, i = 0, j;
-    char *splitg;
+    int          ig = -1, i = 0, gind;
+    t_swapGroup *swapg;
 
 
     /* Just a quick check here, more thorough checks are in mdrun */
-    if (strcmp(splitg0name, splitg1name) == 0)
+    if (strcmp(swap->grp[eGrpSplit0].molname, swap->grp[eGrpSplit1].molname) == 0)
     {
-        gmx_fatal(FARGS, "The split groups can not both be '%s'.", splitg0name);
+        gmx_fatal(FARGS, "The split groups can not both be '%s'.", swap->grp[eGrpSplit0].molname);
     }
 
-    /* First get the swap group index atoms */
-    ig        = search_string(swapgname, grps->nr, gnames);
-    swap->nat = grps->index[ig+1] - grps->index[ig];
-    if (swap->nat > 0)
+    /* Get the index atoms of the split0, split1, solvent, and swap groups */
+    for (ig = 0; ig < swap->ngrp; ig++)
     {
-        fprintf(stderr, "Swap group '%s' contains %d atoms.\n", swapgname, swap->nat);
-        snew(swap->ind, swap->nat);
-        for (i = 0; i < swap->nat; i++)
-        {
-            swap->ind[i] = grps->a[grps->index[ig]+i];
-        }
-    }
-    else
-    {
-        gmx_fatal(FARGS, "You defined an empty group of atoms for swapping.");
-    }
+        swapg      = &swap->grp[ig];
+        gind       = search_string(swap->grp[ig].molname, grps->nr, gnames);
+        swapg->nat = grps->index[gind+1] - grps->index[gind];
 
-    /* Now do so for the split groups */
-    for (j = 0; j < 2; j++)
-    {
-        if (j == 0)
+        if (swapg->nat > 0)
         {
-            splitg = splitg0name;
-        }
-        else
-        {
-            splitg = splitg1name;
-        }
-
-        ig                 = search_string(splitg, grps->nr, gnames);
-        swap->nat_split[j] = grps->index[ig+1] - grps->index[ig];
-        if (swap->nat_split[j] > 0)
-        {
-            fprintf(stderr, "Split group %d '%s' contains %d atom%s.\n",
-                    j, splitg, swap->nat_split[j], (swap->nat_split[j] > 1) ? "s" : "");
-            snew(swap->ind_split[j], swap->nat_split[j]);
-            for (i = 0; i < swap->nat_split[j]; i++)
+            fprintf(stderr, "%s group '%s' contains %d atoms.\n",
+                    ig < 3 ? eSwapFixedGrp_names[ig] : "Swap",
+                    swap->grp[ig].molname, swapg->nat);
+            snew(swapg->ind, swapg->nat);
+            for (i = 0; i < swapg->nat; i++)
             {
-                swap->ind_split[j][i] = grps->a[grps->index[ig]+i];
+                swapg->ind[i] = grps->a[grps->index[gind]+i];
             }
         }
         else
         {
-            gmx_fatal(FARGS, "Split group %d has to contain at least 1 atom!", j);
+            gmx_fatal(FARGS, "Swap group %s does not contain any atoms.", swap->grp[ig].molname);
         }
-    }
-
-    /* Now get the solvent group index atoms */
-    ig            = search_string(solgname, grps->nr, gnames);
-    swap->nat_sol = grps->index[ig+1] - grps->index[ig];
-    if (swap->nat_sol > 0)
-    {
-        fprintf(stderr, "Solvent group '%s' contains %d atoms.\n", solgname, swap->nat_sol);
-        snew(swap->ind_sol, swap->nat_sol);
-        for (i = 0; i < swap->nat_sol; i++)
-        {
-            swap->ind_sol[i] = grps->a[grps->index[ig]+i];
-        }
-    }
-    else
-    {
-        gmx_fatal(FARGS, "You defined an empty group of solvent. Cannot exchange ions.");
     }
 }
 
@@ -3588,7 +3566,7 @@ void do_index(const char* mdparin, const char *ndx,
 
     if (ir->eSwapCoords != eswapNO)
     {
-        make_swap_groups(ir->swap, swapgrp, splitgrp0, splitgrp1, solgrp, grps, gnames);
+        make_swap_groups(ir->swap, grps, gnames);
     }
 
     /* Make indices for IMD session */

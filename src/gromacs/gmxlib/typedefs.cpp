@@ -93,30 +93,12 @@ static void zero_ekinstate(ekinstate_t *eks)
 
 static void init_swapstate(swapstate_t *swapstate)
 {
-    int ii, ic;
-
-    swapstate->eSwapCoords = 0;
-    swapstate->nAverage    = 0;
-
     /* Ion/water position swapping */
-    for (ic = 0; ic < eCompNR; ic++)
-    {
-        for (ii = 0; ii < eIonNR; ii++)
-        {
-            swapstate->nat_req[ic][ii]        = 0;
-            swapstate->nat_req_p[ic][ii]      = NULL;
-            swapstate->inflow_netto[ic][ii]   = 0;
-            swapstate->inflow_netto_p[ic][ii] = NULL;
-            swapstate->nat_past[ic][ii]       = NULL;
-            swapstate->nat_past_p[ic][ii]     = NULL;
-            swapstate->fluxfromAtoB[ic][ii]   = 0;
-            swapstate->fluxfromAtoB_p[ic][ii] = NULL;
-        }
-    }
-    swapstate->fluxleak               = NULL;
-    swapstate->nions                  = 0;
-    swapstate->comp_from              = NULL;
-    swapstate->channel_label          = NULL;
+    swapstate->eSwapCoords            = 0;
+    swapstate->nIonTypes              = 0;
+    swapstate->nAverage               = 0;
+    swapstate->fluxleak               = 0;
+    swapstate->fluxleak_p             = NULL;
     swapstate->bFromCpt               = 0;
     swapstate->nat[eChan0]            = 0;
     swapstate->nat[eChan1]            = 0;
@@ -124,6 +106,7 @@ static void init_swapstate(swapstate_t *swapstate)
     swapstate->xc_old_whole[eChan1]   = NULL;
     swapstate->xc_old_whole_p[eChan0] = NULL;
     swapstate->xc_old_whole_p[eChan1] = NULL;
+    swapstate->ionType                = NULL;
 }
 
 void init_energyhistory(energyhistory_t * enerhist)
