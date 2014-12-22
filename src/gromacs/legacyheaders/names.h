@@ -96,6 +96,8 @@ extern const char *erotg_names[erotgNR+1];
 extern const char *erotg_originnames[erotgNR+1];
 extern const char *erotg_fitnames[erotgFitNR+1];
 extern const char *eSwapTypes_names[eSwapTypesNR+1];
+extern const char *eSwapFixedGrp_names[eSwapFixedGrpNR+1];
+
 extern const char *eQMmethod_names[eQMmethodNR+1];
 extern const char *eQMbasis_names[eQMbasisNR+1];
 extern const char *eQMMMscheme_names[eQMMMschemeNR+1];

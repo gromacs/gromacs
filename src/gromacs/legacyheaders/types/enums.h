@@ -308,6 +308,14 @@ enum eSwaptype {
     eswapNO, eswapX, eswapY, eswapZ, eSwapTypesNR
 };
 
+/* These are just the fixed groups we need for any setup. In t_swap's grp
+ * entry after that follows the variable number of swap groups.
+ */
+enum {
+    eGrpSplit0, eGrpSplit1, eGrpSolvent, eSwapFixedGrpNR
+};
+
+
 /* QMMM */
 enum {
     eQMmethodAM1, eQMmethodPM3, eQMmethodRHF,
