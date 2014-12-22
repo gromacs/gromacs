@@ -1090,22 +1090,22 @@ $I$-$U$ pairs near zero current will then yield $U_{rev}$.
 The following {\tt .mdp} options control the CompEL protocol:
 {\small
 \begin{verbatim}
-swapcoords     = Z            ; Swap positions: no, X, Y, Z
-swap-frequency = 100          ; Swap attempt frequency
+swapcoords     = Z        ; Swap positions: no, X, Y, Z
+swap-frequency = 100      ; Swap attempt frequency
 \end{verbatim}}
-Choose {\tt Z} if your membrane is in the $xy$-plane (\figref{compelsetup} A, B).
+Choose {\tt Z} if your membrane is in the $xy$-plane (\figref{compelsetup}).
 Ions will be exchanged between compartments depending on their $z$-positions alone.
 {\tt swap-frequency} determines how often a swap attempt will be made.
-This step requires that the positions of the ions, solvent, and swap groups are
+This step requires that the positions of the split groups, the ions, and possibly the solvent molecules are
 communicated between the parallel processes, so if chosen too small it can decrease the simulation
 performance. The {\tt Position swapping} entry in the cycle and time accounting
 table at the end of the {\tt md.log} file summarizes the amount of runtime spent
 in the swap module.
 {\small
 \begin{verbatim}
-split-group0   = channel0     ; Defines compartment boundary
-split-group1   = channel1     ; Defines other compartment boundary
-massw-split0   = no           ; use mass-weighted center?
+split-group0   = channel0 ; Defines compartment boundary
+split-group1   = channel1 ; Defines other compartment boundary
+massw-split0   = no       ; use mass-weighted center?
 massw-split1   = no
 \end{verbatim}}
 {\tt split-group0} and {\tt split-group1} are two index groups that define the boundaries
@@ -1114,49 +1114,49 @@ If {\tt massw-split0} or {\tt massw-split1} are set to {\tt yes}, the center of 
 of each index group is used as boundary, here in $z$-direction. Otherwise, the
 geometrical centers will be used ($\times$ in \figref{compelsetup} A). If, such as here, a membrane
 channel is selected as split group, the center of the channel will define the dividing
-plane between the compartments (dashed horizontal line in the figure). All index groups
+plane between the compartments (dashed horizontal lines). All index groups
 must be defined in the index file.
 
 If, to restore the requested ion counts, an ion from one compartment has to be exchanged
 with a water molecule from the other compartment, then those molecules are swapped
 which have the largest distance to the compartment-defining boundaries
-(dashed horizontal lines in \figref{compelsetup} A). Depending on the ion concentration,
+(dashed horizontal lines). Depending on the ion concentration,
 this effectively results in exchanges of molecules between the light blue volumes.
 If a channel is very asymmetric in $z$-direction and would extend into one of the
 swap volumes, one can offset the swap exchange plane with the {\tt bulk-offset}
 parameter. A value of 0.0 means no offset $b$, values $-1.0 < b < 0$ move the
 swap exchange plane closer to the lower, values $0 < b < 1.0$ closer to the upper
-membrane. The figure \figref{compelsetup} A (left) depicts that for the {\bf A} compartment.
- 
+membrane. \figref{compelsetup} A (left) depicts that for the {\bf A} compartment.
+
 {\small
 \begin{verbatim}
-swap-group     = NA+_CL-      ; Ions to be included in exchange
-solvent-group  = SOL          ; Group name of solvent molecules
-cyl0-r         = 5.0          ; Split cylinder 0: pore radius (nm)
-cyl0-up        = 0.75         ; Split cylinder 0 upper extension (nm)
-cyl0-down      = 0.75         ; Split cylinder 0 lower extension (nm)
-cyl1-r         = 5.0          ; same for other channel
-cyl1-up        = 0.75
-cyl1-down      = 0.75
-coupl-steps    = 10           ; Average over these many swap steps
-threshold      = 1            ; Do not swap if < threshold
+solvent-group  = SOL      ; Group containing the solvent molecules
+iontypes       = 3        ; Number of different ion types to control
+iontype0-name  = NA       ; Name of the ion type
+iontype0-in-A  = 51       ; Reference count of iontype 0 in A
+iontype0-in-B  = 35       ; Reference count of iontype 0 in B
+iontype1-name  = K
+iontype1-in-A  = 10
+iontype1-in-B  = 38
+iontype2-name  = CL
+iontype2-in-A  = -1
+iontype2-in-B  = -1
 \end{verbatim}}
-{\tt swap-group} identifies the index group of ions that 
-should be involved in the flux and exchange cycles, {\tt solvent-group} defines the solvent
-group with which they are swapped. The cylinder options only influence the counting of
-ions, i.e., ions will be counted as having traveled through either channel 0 or channel 1
-according to the definition of (channel) cylinder radius, upper and lower extension,
-relative to the location of the respective split group. This will not affect the actual
-flux or exchange, but will provide you with the ion permeation numbers across
-each of the channels. Note that an ion can only be counted as passing through a particular
-channel if it is detected \emph{within} the defined split cylinder in a swap step.
-If {\tt swap-frequency} is chosen too high, a particular ion may be detected in compartment {\bf A}
-in one swap step, and in compartment {\bf B} in the following swap step, so it will be unclear
-through which of the channels it has passed.
+The group name of solvent molecules acting as exchange partners for the ions
+has to be set with {\tt solvent-group}. The number of different ionic species under
+control of the CompEL protocol is given by the {\tt iontypes} parameter,
+while the {\tt iontype0-name}, {\tt iontype0-in-A}, and {\tt iontype0-in-B} options
+set the names and reference numbers of ions per type and per compartment.
+The {\bf A} and {\bf B} reference numbers need to add up to the total number of ions in the group.
+A number of {\tt -1} means: use the number of ions as found at the beginning
+of the simulation as the reference value.
 
-{\tt coupl-steps} sets the number of swap attempt steps. A discrepancy between
-actual and reference ion numbers in each compartment must persist over this many attempts
-before an actual exchange takes place. If {\tt coupl-steps} is set to 1, then the momentary ion distribution determines
+{\small
+\begin{verbatim}
+coupl-steps    = 10       ; Average over these many swap steps
+threshold      = 1        ; Do not swap if < threshold
+\end{verbatim}}
+If {\tt coupl-steps} is set to 1, then the momentary ion distribution determines
 whether ions are exchanged. {\tt coupl-steps} \textgreater\ 1 will use the time-average
 of ion distributions over the selected number of attempt steps instead. This can be useful, for example,
 when ions diffuse near compartment boundaries, which would lead to numerous unproductive
@@ -1167,16 +1167,26 @@ number $\pm$ the threshold is reached.
 
 {\small
 \begin{verbatim}
-anionsA  = -1                 ; Reference count of anions in A
-cationsA = -1                 ; ... of cations in A
-anionsB  = -1                 ; ... of anions in B
-cationsB = -1                 ; ... of cations in B
+cyl0-r         = 5.0      ; Split cylinder 0 radius (nm)
+cyl0-up        = 0.75     ; Split cylinder 0 upper extension (nm)
+cyl0-down      = 0.75     ; Split cylinder 0 lower extension (nm)
+cyl1-r         = 5.0      ; same for other channel
+cyl1-up        = 0.75
+cyl1-down      = 0.75
 \end{verbatim}}
-These options set the requested number of anions and cations for each of the two compartments.
-A number of {\tt -1} means fix the numbers found in time step 0. Note that these numbers
-need to add up to the total number of ions in the swap group.
+The cylinder options are used to define virtual geometric cylinders around the
+channel's pore to track how many ions of which type have passed each channel.
+Ions will be counted as having traveled through a channel
+according to the definition of the channel's cylinder radius, upper and lower extension,
+relative to the location of the respective split group. This will not affect the actual
+flux or exchange, but will provide you with the ion permeation numbers across
+each of the channels. Note that an ion can only be counted as passing through a particular
+channel if it is detected \emph{within} the defined split cylinder in a swap step.
+If {\tt swap-frequency} is chosen too high, a particular ion may be detected in compartment {\bf A}
+in one swap step, and in compartment {\bf B} in the following swap step, so it will be unclear
+through which of the channels it has passed.
 
-Note that a double-layered system for CompEL simulations can be easily prepared by
+A double-layered system for CompEL simulations can be easily prepared by
 duplicating an existing membrane/channel MD system in the direction of the membrane
 normal (typically $z$) with {\tt gmx editconf -translate 0 0 <l_z>}, where {\tt l_z}
 is the box length in that direction. If you have already defined index groups for
