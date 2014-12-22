@@ -42,23 +42,23 @@ typedef struct
 
 typedef struct gmx_resp
 {
-    ChargeGenerationModel iModel;
-    int                   nesp, nrho, natom, natype, ngridp;
-    double                qtot, qsum, watoms;
-    double                rms, rrms, penalty, pfac, entropy, wtot;
-    dvec                  origin, space;
-    bool                  bZatype, bFitZeta, bEntropy;
-    bool                  bRandZeta, bRandQ;
-    bool                  bAXpRESP;
-    ivec                  nxyz;
-    real                  qfac, b_hyper, zmin, zmax, delta_z, qmin, qmax, rDecrZeta;
-    unsigned int          seed;
-    int                   nparam; /* Total number of parameters */
-    gmx_ra               *ra;
-    char                **dzatoms;
-    const char           *stoichiometry;
-    double               *pot, *pot_calc, *rho;
-    rvec                 *x, *esp;
+    ChargeDistributionModel iDistributionModel;
+    int                     nesp, nrho, natom, natype, ngridp;
+    double                  qtot, qsum, watoms;
+    double                  rms, rrms, penalty, pfac, entropy, wtot;
+    dvec                    origin, space;
+    bool                    bZatype, bFitZeta, bEntropy;
+    bool                    bRandZeta, bRandQ;
+    bool                    bAXpRESP;
+    ivec                    nxyz;
+    real                    qfac, b_hyper, zmin, zmax, delta_z, qmin, qmax, rDecrZeta;
+    unsigned int            seed;
+    int                     nparam; /* Total number of parameters */
+    gmx_ra                 *ra;
+    char                  **dzatoms;
+    const char             *stoichiometry;
+    double                 *pot, *pot_calc, *rho;
+    rvec                   *x, *esp;
 } gmx_resp;
 
 typedef struct gmx_resp *gmx_resp_t;
@@ -70,9 +70,9 @@ int atomicnumber2row(int elem);
 
 bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
                  const char *atomtype, gmx_poldata_t pd,
-                 int iModel, char **dzatoms);
+                 int iDistributionModel, char **dzatoms);
 
-gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
+gmx_resp_t gmx_resp_init(ChargeDistributionModel iDistributionModel,
                          bool bAXpRESP, real qfac, real b_hyper, real qtot,
                          real zmin, real zmax, real delta_z, bool bZatyp,
                          real watoms, real rDecrZeta,
@@ -82,7 +82,7 @@ gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
 
 void gmx_resp_statistics(gmx_resp_t gr, int len, char buf[]);
 
-void gmx_resp_summary(FILE *gp, gmx_resp_t gr, 
+void gmx_resp_summary(FILE *gp, gmx_resp_t gr,
                       std::vector<int> &symmetric_atoms);
 
 void gmx_resp_update_atomtypes(gmx_resp_t gr, t_atoms *atoms);
@@ -101,7 +101,7 @@ void gmx_resp_get_atom_info(gmx_resp_t gr, t_atoms *atoms,
 
 const char *gmx_resp_get_stoichiometry(gmx_resp_t gr);
 
-void gmx_resp_add_atom_symmetry(gmx_resp_t gr,
+void gmx_resp_add_atom_symmetry(gmx_resp_t        gr,
                                 std::vector<int> &symmetric_atoms);
 
 void gmx_resp_add_point(gmx_resp_t gr, double x, double y,

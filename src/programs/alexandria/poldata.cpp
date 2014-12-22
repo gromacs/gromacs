@@ -92,15 +92,15 @@ typedef struct {
 #define EEMBUFSIZE 256
 #define MAXZETA    12
 typedef struct {
-    ChargeGenerationModel eqg_model;
-    int                   nzeta, row[MAXZETA];
-    char                  name[EEMBUFSIZE], zetastr[EEMBUFSIZE], qstr[EEMBUFSIZE], rowstr[EEMBUFSIZE];
-    double                J0, chi0, q[MAXZETA], zeta[MAXZETA];
+    ChargeDistributionModel eqd_model;
+    int                     nzeta, row[MAXZETA];
+    char                    name[EEMBUFSIZE], zetastr[EEMBUFSIZE], qstr[EEMBUFSIZE], rowstr[EEMBUFSIZE];
+    double                  J0, chi0, q[MAXZETA], zeta[MAXZETA];
 } t_eemprops;
 
 typedef struct {
-    ChargeGenerationModel eqg_model;
-    char                 *epref;
+    ChargeDistributionModel eqd_model;
+    char                   *epref;
 } t_epref;
 
 typedef struct gmx_poldata {
@@ -1910,7 +1910,7 @@ int gmx_poldata_search_symcharges(gmx_poldata_t pd, char *central,
 }
 
 /* Electrostatics properties */
-static t_eemprops *get_eep(gmx_poldata *pd, ChargeGenerationModel eqg_model,
+static t_eemprops *get_eep(gmx_poldata *pd, ChargeDistributionModel eqd_model,
                            const char *name)
 {
     int i;
@@ -1918,7 +1918,7 @@ static t_eemprops *get_eep(gmx_poldata *pd, ChargeGenerationModel eqg_model,
     for (i = 0; (i < pd->nep); i++)
     {
         if ((strcasecmp(pd->eep[i].name, name) == 0) &&
-            (pd->eep[i].eqg_model == eqg_model))
+            (pd->eep[i].eqd_model == eqd_model))
         {
             return &(pd->eep[i]);
         }
@@ -1927,20 +1927,20 @@ static t_eemprops *get_eep(gmx_poldata *pd, ChargeGenerationModel eqg_model,
 }
 
 void gmx_poldata_set_eemprops(gmx_poldata_t pd,
-                              ChargeGenerationModel eqg_model, char *name,
+                              ChargeDistributionModel eqd_model, char *name,
                               double J0, double chi0, char *zeta, char *q, char *row)
 {
     gmx_poldata             *pold = (gmx_poldata *) pd;
     t_eemprops              *eep;
     std::vector<std::string> sz, sq, sr;
 
-    eep = get_eep(pold, eqg_model, name);
+    eep = get_eep(pold, eqd_model, name);
     if (NULL == eep)
     {
         srenew(pd->eep, ++pd->nep);
         eep = &(pd->eep[pd->nep-1]);
     }
-    eep->eqg_model = eqg_model;
+    eep->eqd_model = eqd_model;
     strncpy(eep->name, name, EEMBUFSIZE-1);
     eep->name[EEMBUFSIZE-1] = '\0';
     eep->J0                 = J0;
@@ -1992,12 +1992,12 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
 }
 
 int gmx_poldata_get_eemprops(gmx_poldata_t pd,
-                             ChargeGenerationModel *eqg_model, char **name,
+                             ChargeDistributionModel *eqd_model, char **name,
                              double *J0, double *chi0, char **zeta, char **q, char **row)
 {
     if (pd->nep_c < pd->nep)
     {
-        assign_scal(eqg_model, pd->eep[pd->nep_c].eqg_model);
+        assign_scal(eqd_model, pd->eep[pd->nep_c].eqd_model);
         assign_str(name, pd->eep[pd->nep_c].name);
         assign_scal(J0, pd->eep[pd->nep_c].J0);
         assign_str(zeta, pd->eep[pd->nep_c].zetastr);
@@ -2014,13 +2014,13 @@ int gmx_poldata_get_eemprops(gmx_poldata_t pd,
     }
 }
 
-int gmx_poldata_get_numprops(gmx_poldata_t pd, ChargeGenerationModel eqg_model)
+int gmx_poldata_get_numprops(gmx_poldata_t pd, ChargeDistributionModel eqd_model)
 {
     int i, n = 0;
 
     for (i = 0; (i < pd->nep); i++)
     {
-        if (pd->eep[i].eqg_model == eqg_model)
+        if (pd->eep[i].eqd_model == eqd_model)
         {
             n++;
         }
@@ -2043,60 +2043,60 @@ int gmx_poldata_have_pol_support(gmx_poldata_t pd, const char *atype)
     return 0;
 }
 
-int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeGenerationModel eqg_model,
+int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeDistributionModel eqd_model,
                                  const char *name,
                                  gmx_bool bAllowZeroParameters)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
-    t_eemprops  *eep  = get_eep(pold, eqg_model, name);
+    t_eemprops  *eep  = get_eep(pold, eqd_model, name);
 
     return (eep && (bAllowZeroParameters || ((eep->J0 > 0) && (eep->chi0 > 0))));
 }
 
-double gmx_poldata_get_j00(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name)
+double gmx_poldata_get_j00(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_eemprops  *eer;
 
-    if ((eer = get_eep(pold, eqg_model, name)) != NULL)
+    if ((eer = get_eep(pold, eqd_model, name)) != NULL)
     {
         return eer->J0;
     }
     else
     {
-        gmx_fatal(FARGS, "No J0 data for eqg_model %d and name %s",
-                  eqg_model, name);
+        gmx_fatal(FARGS, "No J0 data for eqd_model %d and name %s",
+                  eqd_model, name);
     }
     return -1;
 }
 
-char *gmx_poldata_get_qstr(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name)
+char *gmx_poldata_get_qstr(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqg_model, name)) != NULL)
+    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
     {
         return eer->qstr;
     }
     return NULL;
 }
 
-char *gmx_poldata_get_rowstr(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name)
+char *gmx_poldata_get_rowstr(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqg_model, name)) != NULL)
+    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
     {
         return eer->rowstr;
     }
     return NULL;
 }
 
-int gmx_poldata_get_row(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name, int zz)
+int gmx_poldata_get_row(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqg_model, name)) != NULL)
+    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
     {
         range_check(zz, 0, eer->nzeta);
         return eer->row[zz];
@@ -2104,11 +2104,11 @@ int gmx_poldata_get_row(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char 
     return -1;
 }
 
-double gmx_poldata_get_zeta(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name, int zz)
+double gmx_poldata_get_zeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqg_model, name)) != NULL)
+    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
     {
         if ((zz < 0) || (zz >= eer->nzeta))
         {
@@ -2120,22 +2120,22 @@ double gmx_poldata_get_zeta(gmx_poldata_t pd, ChargeGenerationModel eqg_model, c
     return -1;
 }
 
-int gmx_poldata_get_nzeta(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name)
+int gmx_poldata_get_nzeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqg_model, name)) != NULL)
+    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
     {
         return eer->nzeta;
     }
     return 0;
 }
 
-double gmx_poldata_get_q(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name, int zz)
+double gmx_poldata_get_q(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqg_model, name)) != NULL)
+    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
     {
         range_check(zz, 0, eer->nzeta);
         return eer->q[zz];
@@ -2143,28 +2143,28 @@ double gmx_poldata_get_q(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char
     return -1;
 }
 
-double gmx_poldata_get_chi0(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name)
+double gmx_poldata_get_chi0(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqg_model, name)) != NULL)
+    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
     {
         return eer->chi0;
     }
     else
     {
-        gmx_fatal(FARGS, "No chi0 data for eqg_model %d and name %s", eqg_model, name);
+        gmx_fatal(FARGS, "No chi0 data for eqd_model %d and name %s", eqd_model, name);
     }
     return -1;
 }
 
-void gmx_poldata_set_epref(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *epref)
+void gmx_poldata_set_epref(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *epref)
 {
     int i;
 
     for (i = 0; (i < pd->ner); i++)
     {
-        if (pd->epr[i].eqg_model == eqg_model)
+        if (pd->epr[i].eqd_model == eqd_model)
         {
             if (pd->epr[i].epref)
             {
@@ -2177,18 +2177,18 @@ void gmx_poldata_set_epref(gmx_poldata_t pd, ChargeGenerationModel eqg_model, ch
     if (i == pd->ner)
     {
         srenew(pd->epr, ++pd->ner);
-        pd->epr[i].eqg_model = eqg_model;
+        pd->epr[i].eqd_model = eqd_model;
         pd->epr[i].epref     = strdup(epref);
     }
 }
 
-char *gmx_poldata_get_epref(gmx_poldata_t pd, ChargeGenerationModel eqg_model)
+char *gmx_poldata_get_epref(gmx_poldata_t pd, ChargeDistributionModel eqd_model)
 {
     int i;
 
     for (i = 0; (i < pd->ner); i++)
     {
-        if (pd->epr[i].eqg_model == eqg_model)
+        if (pd->epr[i].eqd_model == eqd_model)
         {
             return pd->epr[i].epref;
         }
@@ -2196,11 +2196,11 @@ char *gmx_poldata_get_epref(gmx_poldata_t pd, ChargeGenerationModel eqg_model)
     return NULL;
 }
 
-int gmx_poldata_list_epref(gmx_poldata_t pd, ChargeGenerationModel *eqg_model, char **epref)
+int gmx_poldata_list_epref(gmx_poldata_t pd, ChargeDistributionModel *eqd_model, char **epref)
 {
     if (pd->ner_c < pd->ner)
     {
-        assign_scal(eqg_model, pd->epr[pd->ner_c].eqg_model);
+        assign_scal(eqd_model, pd->epr[pd->ner_c].eqd_model);
         assign_str(epref, pd->epr[pd->ner_c].epref);
         pd->ner_c++;
         return 1;
@@ -2248,7 +2248,7 @@ void gmx_poldata_comm_eemprops(gmx_poldata_t pd, t_commrec *cr)
         for (i = 0; (i < pd->nep); i++)
         {
             fprintf(debug, "%5s %5s %8.3f %8.3f",
-                    get_eemtype_name(pd->eep[i].eqg_model),
+                    get_eemtype_name(pd->eep[i].eqd_model),
                     pd->eep[i].name, pd->eep[i].chi0, pd->eep[i].J0);
             for (j = 0; (j < pd->eep[i].nzeta); j++)
             {
@@ -2297,7 +2297,7 @@ void gmx_poldata_comm_force_parameters(gmx_poldata_t pd, t_commrec *cr)
         for (i = 0; (i < pd->nep); i++)
         {
             fprintf(debug, "%5s %5s %8.3f %8.3f",
-                    get_eemtype_name(pd->eep[i].eqg_model),
+                    get_eemtype_name(pd->eep[i].eqd_model),
                     pd->eep[i].name, pd->eep[i].chi0, pd->eep[i].J0);
             for (j = 0; (j < pd->eep[i].nzeta); j++)
             {
@@ -2309,45 +2309,41 @@ void gmx_poldata_comm_force_parameters(gmx_poldata_t pd, t_commrec *cr)
 }
 
 typedef struct {
-    ChargeGenerationModel eqg;
-    const char           *name, *ref;
-    gmx_bool              bWeight;
+    ChargeDistributionModel eqd;
+    const char             *name, *ref;
+    gmx_bool                bWeight;
 } t_eemtype_props;
 
-static t_eemtype_props eemtype_props[eqgNR] = {
-    { eqgNone,     "None",     "None",          FALSE },
-    { eqgAXp,      "AXp",      "Maaren2014a",   FALSE },
-    { eqgAXg,      "AXg",      "Maaren2014a",   TRUE },
-    { eqgAXs,      "AXs",      "Maaren2014a",   TRUE },
-    { eqgESP,      "ESP",      "Kollman1991a",  FALSE },
-    { eqgRESP,     "RESP",     "Kollman1991a",  FALSE },
-    { eqgRESPG,    "RESPG",    "Maaren2014a",   FALSE },
-    { eqgYang,     "Yang",     "Yang2006b",     TRUE },
-    { eqgBultinck, "Bultinck", "Bultinck2002a", FALSE },
-    { eqgRappe,    "Rappe",    "Rappe1991a",    TRUE }
+static t_eemtype_props eemtype_props[eqdNR] = {
+    { eqdAXp,      "AXp",      "Maaren2014a",   FALSE },
+    { eqdAXg,      "AXg",      "Maaren2014a",   TRUE },
+    { eqdAXs,      "AXs",      "Maaren2014a",   TRUE },
+    { eqdYang,     "Yang",     "Yang2006b",     TRUE },
+    { eqdBultinck, "Bultinck", "Bultinck2002a", FALSE },
+    { eqdRappe,    "Rappe",    "Rappe1991a",    TRUE }
 };
 
-ChargeGenerationModel name2eemtype(const char *name)
+ChargeDistributionModel name2eemtype(const char *name)
 {
     int i;
 
-    for (i = eqgNone; (i < eqgNR); i++)
+    for (i = 0; (i < eqdNR); i++)
     {
         if (strcasecmp(name, eemtype_props[i].name) == 0)
         {
-            return eemtype_props[i].eqg;
+            return eemtype_props[i].eqd;
         }
     }
-    return eqgNR;
+    return eqdNR;
 }
 
-const char *get_eemtype_name(ChargeGenerationModel eem)
+const char *get_eemtype_name(ChargeDistributionModel eem)
 {
     int i;
 
-    for (i = eqgNone; (i < eqgNR); i++)
+    for (i = 0; (i < eqdNR); i++)
     {
-        if (eem == eemtype_props[i].eqg)
+        if (eem == eemtype_props[i].eqd)
         {
             return eemtype_props[i].name;
         }

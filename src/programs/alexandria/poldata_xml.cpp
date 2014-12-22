@@ -513,11 +513,11 @@ gmx_poldata_t gmx_poldata_read(const char *fn, gmx_atomprop_t aps)
 
 static void add_xml_poldata(xmlNodePtr parent, gmx_poldata_t pd)
 {
-    xmlNodePtr            child, grandchild;
-    int                   i, atomnumber, numbonds, nexcl,
-                          numattach, bAromatic, ntrain;
-    ChargeGenerationModel model;
-    char                 *elem, *geometry, *name, *atype, *vdwparams, *blu, *btype,
+    xmlNodePtr              child, grandchild;
+    int                     i, atomnumber, numbonds, nexcl,
+                            numattach, bAromatic, ntrain;
+    ChargeDistributionModel model;
+    char                   *elem, *geometry, *name, *atype, *vdwparams, *blu, *btype,
     *atom1, *atom2, *atom3, *atom4, *tmp, *central, *attached, *tau_unit, *ahp_unit,
     *epref, *desc, *params, *func;
     char  *neighbors, *zeta, *qstr, *rowstr;

@@ -31,23 +31,19 @@
 /* This source code file is part of the Alexandria project */
 
 /*! \brief
- * Enumerated type holding the charge generation models used in PolData
+ * Enumerated type holding the charge distribution models used in PolData
  *
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum ChargeGenerationModel {
-    eqgNone,
-    eqgAXp,
-    eqgAXg,
-    eqgAXs,
-    eqgESP,
-    eqgRESP,
-    eqgRESPG,
-    eqgYang,
-    eqgBultinck,
-    eqgRappe,
-    eqgNR
+enum ChargeDistributionModel {
+    eqdAXp,
+    eqdAXg,
+    eqdAXs,
+    eqdYang,
+    eqdBultinck,
+    eqdRappe,
+    eqdNR
 };
 
 enum DihedralType {
@@ -277,7 +273,7 @@ extern char *gmx_poldata_get_angle_function(gmx_poldata_t pd);
 extern int gmx_poldata_get_angle_ftype(gmx_poldata_t pd);
 
 /* Return 1 on success, 0 otherwise */
-extern int gmx_poldata_add_angle(gmx_poldata_t pd, 
+extern int gmx_poldata_add_angle(gmx_poldata_t pd,
                                  char *atom1, char *atom2,
                                  char *atom3, double angle, double sigma,
                                  int ntrain, char *params);
@@ -344,53 +340,53 @@ extern int gmx_poldata_get_symcharges(gmx_poldata_t pd, char **central,
 extern int gmx_poldata_search_symcharges(gmx_poldata_t pd, char *central,
                                          char *attached, int numattach);
 
-extern ChargeGenerationModel name2eemtype(const char *name);
+extern ChargeDistributionModel name2eemtype(const char *name);
 
-extern const char *get_eemtype_name(ChargeGenerationModel eem);
+extern const char *get_eemtype_name(ChargeDistributionModel eem);
 
-extern char *gmx_poldata_get_eemref(gmx_poldata_t pd, ChargeGenerationModel eqg_model);
+extern char *gmx_poldata_get_eemref(gmx_poldata_t pd, ChargeDistributionModel eqd_model);
 
-extern int gmx_poldata_get_numprops(gmx_poldata_t pd, ChargeGenerationModel eqg_model);
+extern int gmx_poldata_get_numprops(gmx_poldata_t pd, ChargeDistributionModel eqd_model);
 
 extern int gmx_poldata_have_pol_support(gmx_poldata_t pd, const char *atype);
 
-extern int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeGenerationModel eqg_model,
+extern int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeDistributionModel eqd_model,
                                         const char *name,
                                         gmx_bool bAllowZeroParameters);
 
-extern double gmx_poldata_get_j00(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name);
+extern double gmx_poldata_get_j00(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
 
-extern int gmx_poldata_get_nzeta(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name);
+extern int gmx_poldata_get_nzeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
 
-extern double gmx_poldata_get_zeta(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name, int zz);
+extern double gmx_poldata_get_zeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz);
 
-extern char *gmx_poldata_get_qstr(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name);
+extern char *gmx_poldata_get_qstr(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
 
-extern char *gmx_poldata_get_rowstr(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name);
+extern char *gmx_poldata_get_rowstr(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
 
-extern double gmx_poldata_get_q(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name, int zz);
+extern double gmx_poldata_get_q(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz);
 
-extern int gmx_poldata_get_row(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name, int zz);
+extern int gmx_poldata_get_row(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz);
 
-extern double gmx_poldata_get_chi0(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name);
+extern double gmx_poldata_get_chi0(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
 
-extern char *gmx_poldata_get_opts(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name);
+extern char *gmx_poldata_get_opts(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
 
 extern void gmx_poldata_set_eemprops(gmx_poldata_t pd,
-                                     ChargeGenerationModel eqg_model, char *name,
+                                     ChargeDistributionModel eqd_model, char *name,
                                      double J0, double chi0,
                                      char *zeta, char *q, char *row);
 
 extern int gmx_poldata_get_eemprops(gmx_poldata_t pd,
-                                    ChargeGenerationModel *eqg_model, char **name,
+                                    ChargeDistributionModel *eqd_model, char **name,
                                     double *J0, double *chi0,
                                     char **zeta, char **q, char **row);
 
-extern void gmx_poldata_set_epref(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *epref);
+extern void gmx_poldata_set_epref(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *epref);
 
-extern char *gmx_poldata_get_epref(gmx_poldata_t pd, ChargeGenerationModel eqg_model);
+extern char *gmx_poldata_get_epref(gmx_poldata_t pd, ChargeDistributionModel eqd_model);
 
-extern int gmx_poldata_list_epref(gmx_poldata_t pd, ChargeGenerationModel *eqg_model, char **epref);
+extern int gmx_poldata_list_epref(gmx_poldata_t pd, ChargeDistributionModel *eqd_model, char **epref);
 
 extern void gmx_poldata_comm_eemprops(gmx_poldata_t pd, t_commrec *cr);
 

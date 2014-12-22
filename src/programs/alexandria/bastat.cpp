@@ -477,13 +477,13 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
 
 int alex_bastat(int argc, char *argv[])
 {
-    static const char    *desc[] = {
+    static const char      *desc[] = {
         "bastat read a series of molecules and extracts average geometries from",
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
         "and dihedral angles are extracted. The results are stored in a gentop.dat file."
     };
 
-    t_filenm              fnm[] = {
+    t_filenm                fnm[] = {
         { efDAT, "-f", "allmols",    ffRDMULT  },
         { efDAT, "-d", "gentop",     ffOPTRD },
         { efDAT, "-o", "bastat",    ffWRITE },
@@ -491,12 +491,12 @@ int alex_bastat(int argc, char *argv[])
         { efLOG, "-g", "bastat",    ffWRITE }
     };
 #define NFILE asize(fnm)
-    static int            compress = 0;
-    static gmx_bool       bHisto   = FALSE, bBondOrder = TRUE, bDih = FALSE;
-    static real           Dm       = 400, kt = 400, kp = 5, beta = 20, klin = 20;
-    static char          *lot      = (char *)"B3LYP/aug-cc-pVTZ";
-    static char          *qgen[]   = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
-    t_pargs               pa[]     = {
+    static int              compress = 0;
+    static gmx_bool         bHisto   = FALSE, bBondOrder = TRUE, bDih = FALSE;
+    static real             Dm       = 400, kt = 400, kp = 5, beta = 20, klin = 20;
+    static char            *lot      = (char *)"B3LYP/aug-cc-pVTZ";
+    static char            *qgen[]   = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
+    t_pargs                 pa[]     = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
         { "-Dm",    FALSE, etREAL, {&Dm},
@@ -519,26 +519,26 @@ int alex_bastat(int argc, char *argv[])
           "Make separate bonds for different bond orders" }
     };
     //alexandria::MolDip    md;
-    FILE                 *fp;
-    ChargeGenerationModel iModel;
-    gmx_molselect_t       gms;
-    time_t                my_t;
-    char                  pukestr[STRLEN];
-    t_bonds              *b;
-    rvec                  dx, dx2, r_ij, r_kj, r_kl, mm, nn;
-    t_pbc                 pbc;
-    int                   t1, t2, t3;
-    int                   ftb, fta, ftd, fti;
-    matrix                box;
-    real                  sign;
-    double                bspacing = 1;   /* pm */
-    double                aspacing = 0.5; /* degree */
-    double                dspacing = 1;   /* degree */
-    output_env_t          oenv     = NULL;
-    gmx_poldata_t         pd;
-    gmx_atomprop_t        aps;
-    int                   nfiles;
-    char                **fns;
+    FILE                   *fp;
+    ChargeDistributionModel iDistributionModel;
+    gmx_molselect_t         gms;
+    time_t                  my_t;
+    char                    pukestr[STRLEN];
+    t_bonds                *b;
+    rvec                    dx, dx2, r_ij, r_kj, r_kl, mm, nn;
+    t_pbc                   pbc;
+    int                     t1, t2, t3;
+    int                     ftb, fta, ftd, fti;
+    matrix                  box;
+    real                    sign;
+    double                  bspacing = 1;   /* pm */
+    double                  aspacing = 0.5; /* degree */
+    double                  dspacing = 1;   /* degree */
+    output_env_t            oenv     = NULL;
+    gmx_poldata_t           pd;
+    gmx_atomprop_t          aps;
+    int                     nfiles;
+    char                  **fns;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
@@ -546,14 +546,7 @@ int alex_bastat(int argc, char *argv[])
         return 0;
     }
 
-    if (qgen[0])
-    {
-        iModel = name2eemtype(qgen[0]);
-    }
-    else
-    {
-        iModel = eqgAXg;
-    }
+    iDistributionModel = name2eemtype(qgen[0]);
 
     fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
@@ -595,7 +588,7 @@ int alex_bastat(int argc, char *argv[])
                 printf("Empty molname for molecule with formula %s\n", mmi.GetFormula().c_str());
                 continue;
             }
-            immStatus imm = mmi.GenerateTopology(aps, pd, lot, iModel, 2,
+            immStatus imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel, 2,
                                                  false, false, bDih);
 
             if (immOK != imm)

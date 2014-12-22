@@ -801,9 +801,9 @@ MyMol::~MyMol()
     }
 }
 
-immStatus MyMol::GenerateAtoms(gmx_atomprop_t        ap,
-                               const char           *lot,
-                               ChargeGenerationModel iModel)
+immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
+                               const char             *lot,
+                               ChargeDistributionModel iChargeDistributionModel)
 {
     int                 myunit;
     double              xx, yy, zz;
@@ -838,8 +838,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t        ap,
             double q = 0;
             for (AtomicChargeIterator qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
-                ChargeGenerationModel qtp = name2eemtype(qi->GetType().c_str());
-                if (qtp == iModel)
+                ChargeDistributionModel qtp = name2eemtype(qi->GetType().c_str());
+                if (qtp == iChargeDistributionModel)
                 {
                     myunit = string2unit((char *)qi->GetUnit().c_str());
                     q      = convert2gmx(qi->GetQ(), myunit);
@@ -897,14 +897,14 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t        ap,
     return imm;
 }
 
-immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
-                                  gmx_poldata_t         pd,
-                                  const char           *lot,
-                                  ChargeGenerationModel iModel,
-                                  int                   nexcl,
-                                  bool                  bUseVsites,
-                                  bool                  bPairs,
-                                  bool                  bDih)
+immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
+                                  gmx_poldata_t           pd,
+                                  const char             *lot,
+                                  ChargeDistributionModel iChargeDistributionModel,
+                                  int                     nexcl,
+                                  bool                    bUseVsites,
+                                  bool                    bPairs,
+                                  bool                    bDih)
 {
     immStatus                imm = immOK;
     int                      ftb;
@@ -926,7 +926,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
         snew(topology_, 1);
         init_top(topology_);
         /* Get atoms */
-        imm = GenerateAtoms(ap, lot, iModel);
+        imm = GenerateAtoms(ap, lot, iChargeDistributionModel);
     }
     /* Store bonds in harmonic potential list first, update type later */
     ftb = F_BONDS;
@@ -1010,7 +1010,8 @@ void MyMol::CalcMultipoles()
 
 immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                                  gmx_atomprop_t ap,
-                                 ChargeGenerationModel iModel,
+                                 ChargeDistributionModel iChargeDistributionModel,
+                                 ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
                                  real hfac, real epsr,
                                  const char *lot,
                                  bool bSymmetricCharges,
@@ -1021,9 +1022,14 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     immStatus imm = immOK;
 
     qgen_ = gentop_qgen_init(pd, &topology_->atoms, ap, x_,
-                             iModel, hfac, GetCharge(), epsr);
-
-    if (iModel == eqgNone)
+                             iChargeDistributionModel,
+                             iChargeGenerationAlgorithm,
+                             hfac, GetCharge(), epsr);
+    if (NULL == qgen_)
+    {
+        return immChargeGeneration;
+    }
+    if (iChargeGenerationAlgorithm == eqgNONE)
     {
         return imm;
     }
@@ -1044,10 +1050,10 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
 
     if (immOK == imm)
     {
-        switch (iModel)
+        eQGEN = eQGEN_OK;
+        switch (iChargeGenerationAlgorithm)
         {
             case eqgRESP:
-            case eqgRESPG:
                 if (gmx_resp_add_atom_info(gr_, &topology_->atoms, pd))
                 {
                     gmx_resp_add_atom_symmetry(gr_, symmetric_charges_);
@@ -1083,11 +1089,15 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                                                convert2gmx(epi->GetV(), vu));
                         }
                     }
+                    eQGEN = generate_charges(NULL,
+                                             qgen_, gr_, GetMolname().c_str(),
+                                             pd, &topology_->atoms, 0.0001,
+                                             10000, 1, ap);
                 }
                 break;
             case eqgESP:
                 break;
-            case eqgNone:
+            case eqgNONE:
                 /* Check which algorithm to use for charge generation */
                 strcpy(qgen_msg, "");
                 printf("Using zero charges!\n");
@@ -1106,12 +1116,12 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                                          qgen_, NULL, GetMolname().c_str(),
                                          pd, &topology_->atoms, 0.0001,
                                          10000, 1, ap);
-                qgen_message(qgen_, sizeof(qgen_msg), qgen_msg, gr_);
-                if (eQGEN_OK != eQGEN)
-                {
-                    imm = immChargeGeneration;
-                }
                 break;
+        }
+        qgen_message(qgen_, sizeof(qgen_msg), qgen_msg, gr_);
+        if (eQGEN_OK != eQGEN)
+        {
+            imm = immChargeGeneration;
         }
     }
     return imm;
@@ -1178,7 +1188,7 @@ void MyMol::PrintConformation(const char *fn)
 }
 
 static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
-                         t_atoms *atoms, ChargeGenerationModel iModel)
+                         t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel)
 {
     int    i, ii, j, k, nz, row;
     double zeta, q;
@@ -1196,7 +1206,7 @@ static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
     fprintf(fp, "; charge as well. The final charge is different between atoms however,\n");
     fprintf(fp, "; and it is listed below in the [ atoms ] section.\n");
     fprintf(fp, "; atype stype  nq%s      zeta          q  ...\n",
-            (iModel == eqgAXs) ? "  row" : "");
+            (iChargeDistributionModel == eqdAXs) ? "  row" : "");
 
     k = -1;
     for (i = 0; (i < atoms->nr); i++)
@@ -1222,7 +1232,7 @@ static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
             {
                 fprintf(fp, "%5s %6s %3d",
                         *atoms->atomtype[i],
-                        get_eemtype_name(iModel), (bAtom) ? nz : 1);
+                        get_eemtype_name(iChargeDistributionModel), (bAtom) ? nz : 1);
             }
             for (j = (bAtom ? 0 : nz); (j < (bAtom ? nz : nz)); j++)
             {
@@ -1238,7 +1248,7 @@ static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
                     }
                     if (!bTypeSet)
                     {
-                        if (iModel == eqgAXs)
+                        if (iChargeDistributionModel == eqdAXs)
                         {
                             fprintf(fp, "  %4d", row);
                         }
@@ -1260,7 +1270,7 @@ static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
 }
 
 static void write_zeta_q2(gentop_qgen_t qgen, gpp_atomtype_t atype,
-                          t_atoms *atoms, ChargeGenerationModel iModel)
+                          t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel)
 {
     FILE      *fp;
     int        i, j, k, nz, row;
@@ -1288,7 +1298,7 @@ static void write_zeta_q2(gentop_qgen_t qgen, gpp_atomtype_t atype,
         nz = gentop_qgen_get_nzeta(qgen, k);
         if (nz != NOTSET)
         {
-            fprintf(fp, "%6s  %5s  %5d", get_eemtype_name(iModel),
+            fprintf(fp, "%6s  %5s  %5d", get_eemtype_name(iChargeDistributionModel),
                     get_atomtype_name(atoms->atom[i].type, atype),
                     (bAtom) ? nz-1 : 1);
             qtot = 0;
@@ -1468,11 +1478,11 @@ static void print_top_header2(FILE *fp, gmx_poldata_t pd, gmx_atomprop_t aps, bo
     fprintf(fp, "\n");
 }
 
-void MyMol::PrintTopology(const char           *fn,
-                          ChargeGenerationModel iModel,
-                          bool                  bVerbose,
-                          gmx_poldata_t         pd,
-                          gmx_atomprop_t        aps)
+void MyMol::PrintTopology(const char             *fn,
+                          ChargeDistributionModel iChargeDistributionModel,
+                          bool                    bVerbose,
+                          gmx_poldata_t           pd,
+                          gmx_atomprop_t          aps)
 {
     FILE   *fp;
     t_mols  printmol;
@@ -1500,10 +1510,10 @@ void MyMol::PrintTopology(const char           *fn,
         print_top_header2(fp, pd, aps, bHaveShells_);
     }
 
-    if (bHaveShells_ || (iModel == eqgAXg) || (iModel == eqgAXs))
+    if (bHaveShells_ || (iChargeDistributionModel == eqdAXg) || (iChargeDistributionModel == eqdAXs))
     {
-        write_zeta_q(fp, qgen_, &topology_->atoms, iModel);
-        //write_zeta_q2(qgen,atype,&topology_->atoms,pd,iModel);
+        //write_zeta_q(fp, qgen_, &topology_->atoms, iChargeDistributionModel);
+        //write_zeta_q2(qgen,atype,&topology_->atoms,pd,iChargeDistributionModel);
     }
     write_top2(fp, printmol.name, &topology_->atoms, FALSE, plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
@@ -1837,18 +1847,18 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
     return immOK;
 }
 
-void MyMol::GenerateCube(ChargeGenerationModel iModel,
-                         gmx_poldata_t         pd,
-                         real                  spacing,
-                         const char           *reffn,
-                         const char           *pcfn,
-                         const char           *pdbdifffn,
-                         const char           *potfn,
-                         const char           *rhofn,
-                         const char           *hisfn,
-                         const char           *difffn,
-                         const char           *diffhistfn,
-                         output_env_t          oenv)
+void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
+                         gmx_poldata_t           pd,
+                         real                    spacing,
+                         const char             *reffn,
+                         const char             *pcfn,
+                         const char             *pdbdifffn,
+                         const char             *potfn,
+                         const char             *rhofn,
+                         const char             *hisfn,
+                         const char             *difffn,
+                         const char             *diffhistfn,
+                         output_env_t            oenv)
 {
     char       *gentop_version = (char *)"v0.99b";
     gmx_resp_t  grref;
@@ -1866,7 +1876,7 @@ void MyMol::GenerateCube(ChargeGenerationModel iModel,
 
             sprintf(buf, "Potential generated by %s based on %s charges",
                     gentop_version,
-                    get_eemtype_name(iModel));
+                    get_eemtype_name(iChargeDistributionModel));
 
             if (NULL != difffn)
             {
@@ -1882,12 +1892,12 @@ void MyMol::GenerateCube(ChargeGenerationModel iModel,
             if (NULL != rhofn)
             {
                 sprintf(buf, "Electron density generated by %s based on %s charges",
-                        gentop_version, get_eemtype_name(iModel));
+                        gentop_version, get_eemtype_name(iChargeDistributionModel));
                 gmx_resp_calc_rho(gr_);
                 gmx_resp_write_rho(gr_, rhofn, buf);
             }
             sprintf(buf, "Potential generated by %s based on %s charges",
-                    gentop_version, get_eemtype_name(iModel));
+                    gentop_version, get_eemtype_name(iChargeDistributionModel));
             if (NULL != potfn)
             {
                 gmx_resp_calc_pot(gr_);
@@ -1901,7 +1911,7 @@ void MyMol::GenerateCube(ChargeGenerationModel iModel,
             {
                 sprintf(buf, "Potential difference generated by %s based on %s charges",
                         gentop_version,
-                        get_eemtype_name(iModel));
+                        get_eemtype_name(iChargeDistributionModel));
                 gmx_resp_write_diff_cube(grref, gr_, difffn, diffhistfn, buf, oenv, 0);
                 gmx_resp_destroy(grref);
             }

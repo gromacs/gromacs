@@ -64,6 +64,7 @@
 #include "molprop_util.h"
 #include "mymol.h"
 #include "moldip.h"
+#include "stringutil.h"
 
 static void print_stats(FILE *fp, const char *prop, gmx_stats_t lsq, gmx_bool bHeader,
                         char *xaxis, char *yaxis)
@@ -439,16 +440,16 @@ static double dipole_function(void *params, double v[])
         }
         else
         {
-            chi0 = gmx_poldata_get_chi0(md->_pd, md->_iModel, name);
+            chi0 = gmx_poldata_get_chi0(md->_pd, md->_iChargeDistributionModel, name);
         }
 
-        qstr    = gmx_poldata_get_qstr(md->_pd, md->_iModel, name);
-        rowstr  = gmx_poldata_get_rowstr(md->_pd, md->_iModel, name);
-        nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iModel, name);
+        qstr    = gmx_poldata_get_qstr(md->_pd, md->_iChargeDistributionModel, name);
+        rowstr  = gmx_poldata_get_rowstr(md->_pd, md->_iChargeDistributionModel, name);
+        nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iChargeDistributionModel, name);
         zstr[0] = '\0';
         for (zz = 0; (zz < nzeta); zz++)
         {
-            z = gmx_poldata_get_zeta(md->_pd, md->_iModel, name, zz);
+            z = gmx_poldata_get_zeta(md->_pd, md->_iChargeDistributionModel, name, zz);
             if ((0 != z) && (md->_bFitZeta))
             {
                 z       = v[k++];
@@ -457,7 +458,7 @@ static double dipole_function(void *params, double v[])
             sprintf(buf, "  %g", z);
             strcat(zstr, buf);
         }
-        gmx_poldata_set_eemprops(md->_pd, md->_iModel, name, J0, chi0,
+        gmx_poldata_set_eemprops(md->_pd, md->_iChargeDistributionModel, name, J0, chi0,
                                  zstr, qstr, rowstr);
     }
     if (md->_bOptHfac)
@@ -535,7 +536,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
     {
         if (bStart)
         {
-            J00 = gmx_poldata_get_j00(md->_pd, md->_iModel, name);
+            J00 = gmx_poldata_get_j00(md->_pd, md->_iChargeDistributionModel, name);
             xxx = guess_new_param(J00, stepsize, md->_J0_0, md->_J0_1, rng, bRand);
             if (bRand)
             {
@@ -553,7 +554,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
         }
         test_param[k++] = J00;
 
-        chi0 = gmx_poldata_get_chi0(md->_pd, md->_iModel, name);
+        chi0 = gmx_poldata_get_chi0(md->_pd, md->_iChargeDistributionModel, name);
         if (strcasecmp(name, md->_fixchi) != 0)
         {
             if (bStart)
@@ -575,19 +576,19 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             }
             test_param[k++] = chi0;
         }
-        if ((qstr = gmx_poldata_get_qstr(md->_pd, md->_iModel, name)) == NULL)
+        if ((qstr = gmx_poldata_get_qstr(md->_pd, md->_iChargeDistributionModel, name)) == NULL)
         {
-            gmx_fatal(FARGS, "No qstr for atom %s model %d\n", name, md->_iModel);
+            gmx_fatal(FARGS, "No qstr for atom %s model %d\n", name, md->_iChargeDistributionModel);
         }
-        if ((rowstr = gmx_poldata_get_rowstr(md->_pd, md->_iModel, name)) == NULL)
+        if ((rowstr = gmx_poldata_get_rowstr(md->_pd, md->_iChargeDistributionModel, name)) == NULL)
         {
-            gmx_fatal(FARGS, "No rowstr for atom %s model %d\n", name, md->_iModel);
+            gmx_fatal(FARGS, "No rowstr for atom %s model %d\n", name, md->_iChargeDistributionModel);
         }
-        nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iModel, name);
+        nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iChargeDistributionModel, name);
         zstr[0] = '\0';
         for (zz = 0; (zz < nzeta); zz++)
         {
-            zeta = gmx_poldata_get_zeta(md->_pd, md->_iModel, name, zz);
+            zeta = gmx_poldata_get_zeta(md->_pd, md->_iChargeDistributionModel, name, zz);
             if ((md->_bFitZeta) && (0 != zeta))
             {
                 if (bStart)
@@ -605,7 +606,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             sprintf(buf, "  %10g", zeta);
             strcat(zstr, buf);
         }
-        gmx_poldata_set_eemprops(md->_pd, md->_iModel, name, J00, chi0,
+        gmx_poldata_set_eemprops(md->_pd, md->_iChargeDistributionModel, name, J00, chi0,
                                  zstr, qstr, rowstr);
         fprintf(fplog, "%-5s %10g %10g %10s\n", name, J00, chi0, zstr);
     }
@@ -649,10 +650,10 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
             }
             if (md->_bFitZeta)
             {
-                nzeta  = gmx_poldata_get_nzeta(md->_pd, md->_iModel, name);
+                nzeta  = gmx_poldata_get_nzeta(md->_pd, md->_iChargeDistributionModel, name);
                 for (i = 0; (i < nzeta); i++)
                 {
-                    zeta = gmx_poldata_get_zeta(md->_pd, md->_iModel, name, i);
+                    zeta = gmx_poldata_get_zeta(md->_pd, md->_iChargeDistributionModel, name, i);
                     if (zeta > 0)
                     {
                         nparam++;
@@ -752,18 +753,18 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
             while ((name = opt_index_count(md->_ic)) != NULL)
             {
                 J00    = start[k++];
-                chi0   = gmx_poldata_get_chi0(md->_pd, md->_iModel, name);
+                chi0   = gmx_poldata_get_chi0(md->_pd, md->_iChargeDistributionModel, name);
                 if (strcasecmp(name, md->_fixchi) != 0)
                 {
                     chi0 = start[k++];
                 }
-                qstr    = gmx_poldata_get_qstr(md->_pd, md->_iModel, name);
-                rowstr  = gmx_poldata_get_rowstr(md->_pd, md->_iModel, name);
-                nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iModel, name);
+                qstr    = gmx_poldata_get_qstr(md->_pd, md->_iChargeDistributionModel, name);
+                rowstr  = gmx_poldata_get_rowstr(md->_pd, md->_iChargeDistributionModel, name);
+                nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iChargeDistributionModel, name);
                 zstr[0] = '\0';
                 for (zz = 0; (zz < nzeta); zz++)
                 {
-                    zeta = gmx_poldata_get_zeta(md->_pd, md->_iModel, name, zz);
+                    zeta = gmx_poldata_get_zeta(md->_pd, md->_iChargeDistributionModel, name, zz);
                     if ((0 != zeta) && md->_bFitZeta)
                     {
                         zeta = start[k++];
@@ -771,7 +772,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                     sprintf(buf, " %g", zeta);
                     strcat(zstr, buf);
                 }
-                gmx_poldata_set_eemprops(md->_pd, md->_iModel, name, J00, chi0,
+                gmx_poldata_set_eemprops(md->_pd, md->_iChargeDistributionModel, name, J00, chi0,
                                          zstr, qstr, rowstr);
             }
             if (md->_bOptHfac)
@@ -863,17 +864,22 @@ int alex_tune_dip(int argc, char *argv[])
         { efXVG, "-conv", "convergence", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static int            nrun         = 1, maxiter = 100, reinit = 0, seed = 0;
-    static int            minimum_data = 3, compress = 1;
-    static real           tol          = 1e-3, stol = 1e-6, watoms = 1;
-    static gmx_bool       bRandom      = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
-    static real           J0_0         = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
-    static real           J0_1         = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
-    static real           fc_mu        = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0;
-    static real           th_toler     = 170, ph_toler = 5, dip_toler = 0.5, quad_toler = 5, q_toler = 0.25;
-    static char          *opt_elem     = NULL, *const_elem = NULL, *fixchi = (char *)"H";
-    static char          *lot          = (char *)"B3LYP/aug-cc-pVTZ";
-    static char          *qgen[]       = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
+    static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
+    static int            minimum_data  = 3, compress = 1;
+    static real           tol           = 1e-3, stol = 1e-6, watoms = 1;
+    static gmx_bool       bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
+    static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
+    static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
+    static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0;
+    static real           th_toler      = 170, ph_toler = 5, dip_toler = 0.5, quad_toler = 5, q_toler = 0.25;
+    static char          *opt_elem      = NULL, *const_elem = NULL, *fixchi = (char *)"H";
+    static char          *lot           = (char *)"B3LYP/aug-cc-pVTZ";
+    static const char    *cqdist[]      = {
+        NULL, "AXp", "AXg", "AXs", NULL
+    };
+    static const char    *cqgen[]      = {
+        NULL, "None", "EEM", "ESP", "RESP", NULL
+    };
     t_pargs               pa[]         = {
         { "-tol",   FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
@@ -891,7 +897,9 @@ int alex_tune_dip(int argc, char *argv[])
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-charged", FALSE, etBOOL, {&bCharged},
           "Use charged molecules in the parameter tuning as well" },
-        { "-qgen",   FALSE, etENUM, {qgen},
+        { "-qdist",   FALSE, etENUM, {cqdist},
+          "Model used for charge distribution" },
+        { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
         { "-fixchi", FALSE, etSTR,  {&fixchi},
           "Electronegativity for this element is fixed. Set to FALSE if you want this variable as well, but read the help text above." },
@@ -962,7 +970,6 @@ int alex_tune_dip(int argc, char *argv[])
     };
     alexandria::MolDip    md;
     FILE                 *fp;
-    ChargeGenerationModel iModel;
     t_commrec            *cr;
     output_env_t          oenv;
     gmx_molselect_t       gms;
@@ -977,14 +984,8 @@ int alex_tune_dip(int argc, char *argv[])
         return 0;
     }
 
-    if (qgen[0])
-    {
-        iModel = name2eemtype(qgen[0]);
-    }
-    else
-    {
-        iModel = eqgNone;
-    }
+    ChargeDistributionModel   iChargeDistributionModel   = name2eemtype(cqdist[0]);
+    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 
     if (MASTER(cr))
     {
@@ -1008,7 +1009,10 @@ int alex_tune_dip(int argc, char *argv[])
     {
         gms = NULL;
     }
-    md.Init(cr, bQM, bGaussianBug, iModel, rDecrZeta, epsr,
+    md.Init(cr, bQM, bGaussianBug,
+            iChargeDistributionModel,
+            iChargeGenerationAlgorithm,
+            rDecrZeta, epsr,
             J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
             fc_bound, fc_mu, fc_quad, fc_charge,
             fc_esp, 1, 1, fixchi, bOptHfac, hfac, bPol, bFitZeta);

@@ -171,20 +171,21 @@ int alex_gentop(int argc, char *argv[])
 #else
         FALSE;
 #endif
-    static gmx_bool    bRemoveDih    = FALSE, bQsym = TRUE, bZatype = TRUE, bFitCube = FALSE;
-    static gmx_bool    bParam        = FALSE, bH14 = TRUE, bRound = TRUE, bITP;
-    static const char *polaropt[]    = { NULL, "No", "AllAtom", "UnitedAtom", NULL };
-    static gmx_bool    bPairs        = FALSE, bPBC = TRUE;
-    static gmx_bool    bUsePDBcharge = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
-    static gmx_bool    bCONECT       = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = TRUE, bEntropy = FALSE;
-    static gmx_bool    bGenVSites    = FALSE, bSkipVSites = TRUE;
-    static char       *molnm         = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
-    static int         maxpot        = 0;
-    static int         seed          = 0;
+    static gmx_bool    bRemoveDih     = FALSE, bQsym = TRUE, bZatype = TRUE, bFitCube = FALSE;
+    static gmx_bool    bParam         = FALSE, bH14 = TRUE, bRound = TRUE, bITP;
+    static const char *polaropt[]     = { NULL, "No", "AllAtom", "UnitedAtom", NULL };
+    static gmx_bool    bPairs         = FALSE, bPBC = TRUE;
+    static gmx_bool    bUsePDBcharge  = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
+    static gmx_bool    bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = TRUE, bEntropy = FALSE;
+    static gmx_bool    bGenVSites     = FALSE, bSkipVSites = TRUE;
+    static char       *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
+    static int         maxpot         = 0;
+    static int         seed           = 0;
+    static const char *cqdist[]       = {
+        NULL, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", NULL
+    };
     static const char *cqgen[]       = {
-        NULL, "None",
-        "AXp", "AXs", "AXg", "ESP", "RESP",
-        "Yang", "Bultinck", "Rappe", NULL
+        NULL, "None", "EEM", "ESP", "RESP", NULL
     };
     static const char *dihopt[] = { NULL, "No", "Single", "All", NULL };
     static const char *cgopt[]  = { NULL, "Atom", "Group", "Neutral", NULL };
@@ -282,6 +283,8 @@ int alex_gentop(int argc, char *argv[])
           "Round off measured values for distances and angles" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
+        { "-qdist",   FALSE, etENUM, {cqdist},
+          "Charge distribution used" },
         { "-polar",  FALSE, etENUM, {&polaropt},
           "Add polarizable particles to the topology by specifying AllAtom or UnitedAtom (every atom except H)" },
         { "-qtol",   FALSE, etREAL, {&qtol},
@@ -357,13 +360,14 @@ int alex_gentop(int argc, char *argv[])
     }
 
     /* Check command line options of type enum */
-    eDih                  edih = (eDih) get_option(dihopt);
-    eChargeGroup          ecg  = (eChargeGroup) get_option(cgopt);
-    ePolar                epol = (ePolar) get_option(polaropt);
-    ChargeGenerationModel iModel;
-    if ((iModel = name2eemtype(cqgen[0])) == eqgNR)
+    eDih                      edih = (eDih) get_option(dihopt);
+    eChargeGroup              ecg  = (eChargeGroup) get_option(cgopt);
+    ePolar                    epol = (ePolar) get_option(polaropt);
+    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
+    ChargeDistributionModel   iChargeDistributionModel;
+    if ((iChargeDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
     {
-        gmx_fatal(FARGS, "Invalid model %s. How could you!\n", cqgen[0]);
+        gmx_fatal(FARGS, "Invalid model %s. How could you!\n", cqdist[0]);
     }
 
     /* Read standard atom properties */
@@ -433,16 +437,16 @@ int alex_gentop(int argc, char *argv[])
     mymol.Merge(*mpi);
     mymol.SetForceField(forcefield);
 
-    imm = mymol.GenerateTopology(aps, pd, lot, iModel, nexcl,
+    imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel, nexcl,
                                  bGenVSites, bPairs, edih);
 
-    if ((immOK == imm)  && (eqgRESP == iModel))
+    if ((immOK == imm)  && (eqgRESP == iChargeGenerationAlgorithm))
     {
         if (0 == seed)
         {
             seed = gmx_rng_make_seed();
         }
-        mymol.gr_ = gmx_resp_init(iModel, bAXpRESP, qweight, bhyper, mymol.GetCharge(),
+        mymol.gr_ = gmx_resp_init(iChargeDistributionModel, bAXpRESP, qweight, bhyper, mymol.GetCharge(),
                                   zmin, zmax, delta_z,
                                   bZatype, watoms, rDecrZeta, bRandZeta, bRandQ,
                                   penalty_fac, bFitZeta,
@@ -455,23 +459,30 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        imm = mymol.GenerateCharges(pd, aps, iModel, hfac, epsr,
+        imm = mymol.GenerateCharges(pd, aps,
+                                    iChargeDistributionModel,
+                                    iChargeGenerationAlgorithm,
+                                    hfac, epsr,
                                     lot, TRUE, symm_string);
     }
     if (immOK == imm)
     {
-        mymol.GenerateCube(iModel,
-                           pd,
-                           spacing,
-                           opt2fn_null("-ref", NFILE, fnm),
-                           opt2fn_null("-pc", NFILE, fnm),
-                           opt2fn_null("-pdbdiff", NFILE, fnm),
-                           opt2fn_null("-pot", NFILE, fnm),
-                           opt2fn_null("-rho", NFILE, fnm),
-                           opt2fn_null("-his", NFILE, fnm),
-                           opt2fn_null("-diff", NFILE, fnm),
-                           opt2fn_null("-diffhist", NFILE, fnm),
-                           oenv);
+        fprintf(stderr, "Fix me: GenerateCube is broken\n");
+        if (0)
+        {
+            mymol.GenerateCube(iChargeDistributionModel,
+                               pd,
+                               spacing,
+                               opt2fn_null("-ref", NFILE, fnm),
+                               opt2fn_null("-pc", NFILE, fnm),
+                               opt2fn_null("-pdbdiff", NFILE, fnm),
+                               opt2fn_null("-pot", NFILE, fnm),
+                               opt2fn_null("-rho", NFILE, fnm),
+                               opt2fn_null("-his", NFILE, fnm),
+                               opt2fn_null("-diff", NFILE, fnm),
+                               opt2fn_null("-diffhist", NFILE, fnm),
+                               oenv);
+        }
     }
     if (immOK == imm)
     {
@@ -489,7 +500,7 @@ int alex_gentop(int argc, char *argv[])
         {
             mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) :
                                 ftp2fn(efTOP, NFILE, fnm),
-                                iModel, bVerbose,
+                                iChargeDistributionModel, bVerbose,
                                 pd, aps);
         }
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));

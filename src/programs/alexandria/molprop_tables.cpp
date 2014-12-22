@@ -346,7 +346,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
                     if (mpi->SearchCategory(cats->catli[i].cat) == 1)
                     {
                         if (mpi->GetProp(mpo, iqmExp, NULL,
-                                         NULL /*qmc->conf[m]*/, 
+                                         NULL /*qmc->conf[m]*/,
                                          exp_type, &exp_val, NULL))
                         {
                             nexpres = 1;
@@ -871,12 +871,12 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, gmx_poldata_t pd)
     char   *spref, *desc, *ptype, *btype;
 #define prev (1-cur)
 #define NEQG 5
-    ChargeGenerationModel eqgcol[NEQG] = { eqgAXp, eqgAXs, eqgAXg };
-    char                  longbuf[STRLEN], buf[256];
-    int                   npcol[NEQG]  = { 2, 3, 3 };
-    const char           *clab[3]      = { "$J_0$", "$\\chi_0$", "$\\zeta$" };
-    int                   ncol;
-    alexandria::LongTable lt(fp, true);
+    ChargeDistributionModel eqgcol[NEQG] = { eqdAXp, eqdAXs, eqdAXg };
+    char                    longbuf[STRLEN], buf[256];
+    int                     npcol[NEQG]  = { 2, 3, 3 };
+    const char             *clab[3]      = { "$J_0$", "$\\chi_0$", "$\\zeta$" };
+    int                     ncol;
+    alexandria::LongTable   lt(fp, true);
 
     ncol = 1;
     for (i = 0; (i < NEQG); i++)

@@ -47,22 +47,23 @@
 
 typedef struct gentop_qgen
 {
-    gmx_bool              bWarned;
-    ChargeGenerationModel iModel;
-    int                   natom, eQGEN;
-    real                  qtotal, chieq, hfac, epsr;
+    gmx_bool                  bWarned;
+    ChargeDistributionModel   iChargeDistributionModel;
+    ChargeGenerationAlgorithm iChargeGenerationAlgorithm;
+    int                       natom, eQGEN;
+    real                      qtotal, chieq, hfac, epsr;
     /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
-    char                **elem;
-    int                  *atomnr;
-    real                 *chi0, *rhs, *j00;
-    rvec                 *x;
+    char                    **elem;
+    int                      *atomnr;
+    real                     *chi0, *rhs, *j00;
+    rvec                     *x;
     /* Jab is a matrix over atom pairs */
-    real                **Jab;
+    real                    **Jab;
     /* For each atom i there are nZeta[i] row, q and zeta entries */
-    int                  *nZeta;
-    int                 **row;
-    gmx_bool              bAllocSave;
-    real                **q, **zeta, **qsave, **zetasave;
+    int                      *nZeta;
+    int                     **row;
+    gmx_bool                  bAllocSave;
+    real                    **q, **zeta, **qsave, **zetasave;
 } gentop_qgen;
 
 static void gentop_qgen_save_params(gentop_qgen_t qgen, gmx_resp_t gr)
@@ -177,7 +178,7 @@ static real Coulomb_NN(real r)
     return 1/r;
 }
 
-static real calc_jab(ChargeGenerationModel iModel,
+static real calc_jab(ChargeDistributionModel iChargeDistributionModel,
                      rvec xi, rvec xj,
                      int nZi, int nZj,
                      real *zeta_i, real *zeta_j,
@@ -196,16 +197,16 @@ static real calc_jab(ChargeGenerationModel iModel,
     }
     if ((*zeta_i <= 0) || (*zeta_j <= 0))
     {
-        iModel = eqgAXp;
+        iChargeDistributionModel = eqdAXp;
     }
-    switch (iModel)
+    switch (iChargeDistributionModel)
     {
-        case eqgAXp:
+        case eqdAXp:
             eTot = Coulomb_NN(r);
             break;
-        case eqgAXs:
-        case eqgRappe:
-        case eqgYang:
+        case eqdAXs:
+        case eqdRappe:
+        case eqdYang:
             eTot = 0;
             for (i = nZi-1; (i < nZi); i++)
             {
@@ -215,7 +216,7 @@ static real calc_jab(ChargeGenerationModel iModel,
                 }
             }
             break;
-        case eqgAXg:
+        case eqdAXg:
             eTot = 0;
             for (i = nZi-1; (i < nZi); i++)
             {
@@ -226,7 +227,7 @@ static real calc_jab(ChargeGenerationModel iModel,
             }
             break;
         default:
-            gmx_fatal(FARGS, "Unsupported model %d in calc_jab", iModel);
+            gmx_fatal(FARGS, "Unsupported model %d in calc_jab", iChargeDistributionModel);
     }
 
     return ONE_4PI_EPS0*(eTot)/ELECTRONVOLT;
@@ -306,8 +307,8 @@ static void qgen_update_J00(gentop_qgen *qgen)
     for (i = 0; (i < qgen->natom); i++)
     {
         j0 = qgen->j00[i]/qgen->epsr;
-        if (((qgen->iModel == eqgYang) ||
-             (qgen->iModel == eqgRappe)) &&
+        if (((qgen->iChargeDistributionModel == eqdYang) ||
+             (qgen->iChargeDistributionModel == eqdRappe)) &&
             (qgen->atomnr[i] == 1))
         {
             qq = qgen->q[i][qgen->nZeta[i]-1];
@@ -457,12 +458,12 @@ static void qgen_calc_Jab(gentop_qgen *qgen)
     {
         for (j = i+1; (j < qgen->natom); j++)
         {
-            Jab = calc_jab(qgen->iModel,
+            Jab = calc_jab(qgen->iChargeDistributionModel,
                            qgen->x[i], qgen->x[j],
                            qgen->nZeta[i], qgen->nZeta[j],
                            qgen->zeta[i], qgen->zeta[j],
                            qgen->row[i], qgen->row[j]);
-            if (qgen->iModel == eqgYang)
+            if (qgen->iChargeDistributionModel == eqdYang)
             {
                 Jab = Jab*qgen_calc_Sij(qgen, i, j);
             }
@@ -508,17 +509,17 @@ static void qgen_calc_rhs(gentop_qgen *qgen)
             {
                 rvec_sub(qgen->x[i], qgen->x[j], dx);
                 r = norm(dx);
-                switch (qgen->iModel)
+                switch (qgen->iChargeDistributionModel)
                 {
-                    case eqgAXs:
-                    case eqgRappe:
-                    case eqgYang:
+                    case eqdAXs:
+                    case eqdRappe:
+                    case eqdYang:
                         for (l = 0; (l < qgen->nZeta[j]-1); l++)
                         {
                             j1 += qgen->q[j][l]*Coulomb_SS(r, k, l, qgen->zeta[i][k], qgen->zeta[j][l]);
                         }
                         break;
-                    case eqgAXg:
+                    case eqdAXg:
                         for (l = 0; (l < qgen->nZeta[j]-1); l++)
                         {
                             j1 += qgen->q[j][l]*Coulomb_GG(r, qgen->zeta[i][k], qgen->zeta[j][l]);
@@ -573,7 +574,10 @@ int atomicnumber2rowXX(int elem)
 
 gentop_qgen_t
 gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms, gmx_atomprop_t aps,
-                 rvec *x, ChargeGenerationModel iModel, real hfac, int qtotal, real epsr)
+                 rvec *x,
+                 ChargeDistributionModel   iChargeDistributionModel,
+                 ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
+                 real hfac, int qtotal, real epsr)
 {
     gentop_qgen *qgen;
     char        *atp;
@@ -581,9 +585,10 @@ gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms, gmx_atomprop_t aps,
     int          i, j, k, atm, nz;
 
     snew(qgen, 1);
-    qgen->iModel = iModel;
-    qgen->hfac   = hfac;
-    qgen->qtotal = qtotal;
+    qgen->iChargeDistributionModel   = iChargeDistributionModel;
+    qgen->iChargeGenerationAlgorithm = iChargeGenerationAlgorithm;
+    qgen->hfac                       = hfac;
+    qgen->qtotal                     = qtotal;
     if (epsr <= 1)
     {
         epsr = 1;
@@ -624,13 +629,13 @@ gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms, gmx_atomprop_t aps,
                           *(atoms->atomname[j]));
             }
             atp = *atoms->atomtype[j];
-            if (gmx_poldata_have_eem_support(pd, qgen->iModel, atp, TRUE) == 0)
+            if (gmx_poldata_have_eem_support(pd, qgen->iChargeDistributionModel, atp, TRUE) == 0)
             {
                 atp = gmx_atomprop_element(aps, atm);
-                if (gmx_poldata_have_eem_support(pd, qgen->iModel, atp, TRUE) == 0)
+                if (gmx_poldata_have_eem_support(pd, qgen->iChargeDistributionModel, atp, TRUE) == 0)
                 {
-                    fprintf(stderr, "No charge generation support for atom %s (element %s), model %s\n",
-                            *atoms->atomtype[j], atp, get_eemtype_name(qgen->iModel));
+                    fprintf(stderr, "No charge distribution support for atom %s (element %s), model %s\n",
+                            *atoms->atomtype[j], atp, get_eemtype_name(qgen->iChargeDistributionModel));
                     bSup = FALSE;
                 }
             }
@@ -638,16 +643,16 @@ gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms, gmx_atomprop_t aps,
             {
                 qgen->elem[j]   = strdup(atp);
                 qgen->atomnr[j] = atm;
-                nz              = gmx_poldata_get_nzeta(pd, qgen->iModel, atp);
+                nz              = gmx_poldata_get_nzeta(pd, qgen->iChargeDistributionModel, atp);
                 qgen->nZeta[j]  = nz;
                 snew(qgen->q[j], nz);
                 snew(qgen->zeta[j], nz);
                 snew(qgen->row[j], nz);
                 for (k = 0; (k < nz); k++)
                 {
-                    qgen->q[j][k]    = gmx_poldata_get_q(pd, qgen->iModel, *atoms->atomtype[j], k);
-                    qgen->zeta[j][k] = gmx_poldata_get_zeta(pd, qgen->iModel, *atoms->atomtype[j], k);
-                    qgen->row[j][k]  = gmx_poldata_get_row(pd, qgen->iModel, *atoms->atomtype[j], k);
+                    qgen->q[j][k]    = gmx_poldata_get_q(pd, qgen->iChargeDistributionModel, *atoms->atomtype[j], k);
+                    qgen->zeta[j][k] = gmx_poldata_get_zeta(pd, qgen->iChargeDistributionModel, *atoms->atomtype[j], k);
+                    qgen->row[j][k]  = gmx_poldata_get_row(pd, qgen->iChargeDistributionModel, *atoms->atomtype[j], k);
                     if (qgen->row[j][k] > SLATER_MAX)
                     {
                         if (debug)
@@ -802,14 +807,14 @@ static void qgen_check_support(gentop_qgen *qgen, gmx_poldata_t pd, gmx_atomprop
 
     for (i = 0; (i < qgen->natom); i++)
     {
-        if (gmx_poldata_have_eem_support(pd, qgen->iModel, qgen->elem[i], TRUE) == 0)
+        if (gmx_poldata_have_eem_support(pd, qgen->iChargeDistributionModel, qgen->elem[i], TRUE) == 0)
         {
             /*sfree(qgen->elem[i]);*/
             qgen->elem[i] = strdup(gmx_atomprop_element(aps, qgen->atomnr[i]));
-            if (gmx_poldata_have_eem_support(pd, qgen->iModel, qgen->elem[i], TRUE) == 0)
+            if (gmx_poldata_have_eem_support(pd, qgen->iChargeDistributionModel, qgen->elem[i], TRUE) == 0)
             {
                 fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                        qgen->elem[i], get_eemtype_name(qgen->iModel));
+                        qgen->elem[i], get_eemtype_name(qgen->iChargeDistributionModel));
                 bSup = FALSE;
             }
         }
@@ -832,14 +837,14 @@ static void qgen_update_pd(t_atoms *atoms, gmx_poldata_t pd, gentop_qgen_t qgen)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
-            qgen->chi0[j]  = gmx_poldata_get_chi0(pd, qgen->iModel, qgen->elem[j]);
-            qgen->j00[j]   = gmx_poldata_get_j00(pd, qgen->iModel, qgen->elem[j]);
-            nz             = gmx_poldata_get_nzeta(pd, qgen->iModel, qgen->elem[j]);
+            qgen->chi0[j]  = gmx_poldata_get_chi0(pd, qgen->iChargeDistributionModel, qgen->elem[j]);
+            qgen->j00[j]   = gmx_poldata_get_j00(pd, qgen->iChargeDistributionModel, qgen->elem[j]);
+            nz             = gmx_poldata_get_nzeta(pd, qgen->iChargeDistributionModel, qgen->elem[j]);
             for (n = 0; (n < nz); n++)
             {
-                qgen->zeta[j][n] = gmx_poldata_get_zeta(pd, qgen->iModel, qgen->elem[j], n);
-                qgen->q[j][n]    = gmx_poldata_get_q(pd, qgen->iModel, qgen->elem[j], n);
-                qgen->row[j][n]  = gmx_poldata_get_row(pd, qgen->iModel, qgen->elem[j], n);
+                qgen->zeta[j][n] = gmx_poldata_get_zeta(pd, qgen->iChargeDistributionModel, qgen->elem[j], n);
+                qgen->q[j][n]    = gmx_poldata_get_q(pd, qgen->iChargeDistributionModel, qgen->elem[j], n);
+                qgen->row[j][n]  = gmx_poldata_get_row(pd, qgen->iChargeDistributionModel, qgen->elem[j], n);
             }
             j++;
         }
@@ -962,7 +967,7 @@ int generate_charges(FILE *fp,
     real chieq, chi2, chi2min = GMX_REAL_MAX;
 
     /* Generate charges */
-    switch (qgen->iModel)
+    switch (qgen->iChargeGenerationAlgorithm)
     {
         case eqgRESP:
             if (NULL == gr)
@@ -972,7 +977,7 @@ int generate_charges(FILE *fp,
             if (fp)
             {
                 fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
-                        get_eemtype_name(qgen->iModel), molname);
+                        get_eemtype_name(qgen->iChargeDistributionModel), molname);
             }
             for (cc = 0; (cc < maxcycle); cc++)
             {
@@ -1014,9 +1019,9 @@ int generate_charges(FILE *fp,
             if (fp)
             {
                 fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                        molname, get_eemtype_name(qgen->iModel));
+                        molname, get_eemtype_name(qgen->iChargeDistributionModel));
             }
-            if (qgen->iModel == eqgBultinck)
+            if (qgen->iChargeDistributionModel == eqdBultinck)
             {
                 (void) generate_charges_bultinck(fp, qgen, pd, atoms, aps);
             }

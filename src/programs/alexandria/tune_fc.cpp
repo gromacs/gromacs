@@ -1571,20 +1571,22 @@ int alex_tune_fc(int argc, char *argv[])
         { efXVG, "-epot", "param-epot", ffWRITE }
     };
 #define NFILE asize(fnm)
-    static int            nrun         = 1, maxiter = 100, reinit = 0, seed = 0;
-    static int            minimum_data = 3, compress = 0;
-    static real           tol          = 1e-3, stol = 1e-6, watoms = 1;
-    static gmx_bool       bRandom      = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
-    static real           J0_0         = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
-    static real           J0_1         = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
-    static real           fc_mu        = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
-    static real           factor       = 0.8;
-    static char          *opt_elem     = NULL, *const_elem = NULL, *fixchi = (char *)"H";
-    static char          *lot          = (char *)"B3LYP/aug-cc-pVTZ";
-    static const char    *cqgen[]      = {
-        NULL, "None",
-        "AXp", "AXg", "AXs", "ESP", "RESP",
+    static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
+    static int            minimum_data  = 3, compress = 0;
+    static real           tol           = 1e-3, stol = 1e-6, watoms = 1;
+    static gmx_bool       bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
+    static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
+    static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
+    static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
+    static real           factor        = 0.8;
+    static char          *opt_elem      = NULL, *const_elem = NULL, *fixchi = (char *)"H";
+    static char          *lot           = (char *)"B3LYP/aug-cc-pVTZ";
+    static const char    *cqdist[]      = {
+        NULL, "AXp", "AXg", "AXs",
         "Yang", "Bultinck", "Rappe", NULL
+    };
+    static const char    *cqgen[]      = {
+        NULL, "None", "EEM", "ESP", "RESP", NULL
     };
     static bool           bOpt[ebtsNR] = { true, false, false, false, false, false };
     static real           beta0        = 0, D0 = 0, beta_min = 10, D0_min = 50, temperature;
@@ -1604,6 +1606,8 @@ int alex_tune_fc(int argc, char *argv[])
           "If reinit is -1 then a reinit will be done as soon as the simplex size is below this treshold." },
         { "-nrun",   FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
+        { "-qdist",   FALSE, etENUM, {cqdist},
+          "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
         { "-bonds",  FALSE, etBOOL, {&bOpt[ebtsBONDS]},
@@ -1652,7 +1656,6 @@ int alex_tune_fc(int argc, char *argv[])
           "Compress output XML file" }
     };
     FILE                 *fp;
-    ChargeGenerationModel iModel;
     t_commrec            *cr;
     output_env_t          oenv;
     gmx_molselect_t       gms;
@@ -1669,15 +1672,6 @@ int alex_tune_fc(int argc, char *argv[])
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
-    }
-
-    if (cqgen[0])
-    {
-        iModel = name2eemtype(cqgen[0]);
-    }
-    else
-    {
-        iModel = eqgNone;
     }
 
     if (MASTER(cr))
@@ -1704,10 +1698,14 @@ int alex_tune_fc(int argc, char *argv[])
         gms = NULL;
     }
 
-    alexandria::OptParam opt;
-    int                  nparam;
+    alexandria::OptParam      opt;
+    int                       nparam;
+    ChargeDistributionModel   iDistributionModel         = name2eemtype(cqdist[0]);
+    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 
-    opt.Init(cr, bQM, bGaussianBug, iModel, rDecrZeta, epsr,
+    opt.Init(cr, bQM, bGaussianBug, iDistributionModel,
+             iChargeGenerationAlgorithm,
+             rDecrZeta, epsr,
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
              fc_bound, fc_mu, fc_quad, fc_charge,
              fc_esp, fc_epot, fc_force, fixchi, bOptHfac, hfac, bPol, bFitZeta);

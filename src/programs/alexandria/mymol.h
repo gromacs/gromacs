@@ -89,9 +89,9 @@ class MyMol : public MolProp
         bool IsSymmetric(real toler);
 
         //! Generate Atoms based on quantum calculation with specified level of theory
-        immStatus GenerateAtoms(gmx_atomprop_t        ap,
-                                const char           *lot,
-                                ChargeGenerationModel iModel);
+        immStatus GenerateAtoms(gmx_atomprop_t          ap,
+                                const char             *lot,
+                                ChargeDistributionModel iModel);
 
         //! Generate angles, dihedrals, exclusions etc.
         void MakeAngles(bool bPairs, bool bDihs);
@@ -132,17 +132,19 @@ class MyMol : public MolProp
         ~MyMol();
 
         //! Generate the topology structure
-        immStatus GenerateTopology(gmx_atomprop_t        ap,
-                                   gmx_poldata_t         pd,
-                                   const char           *lot,
-                                   ChargeGenerationModel iModel,
-                                   int                   nexcl,
-                                   bool                  bUseVsites,
-                                   bool                  bPairs,
-                                   bool                  bDih);
+        immStatus GenerateTopology(gmx_atomprop_t          ap,
+                                   gmx_poldata_t           pd,
+                                   const char             *lot,
+                                   ChargeDistributionModel iModel,
+                                   int                     nexcl,
+                                   bool                    bUseVsites,
+                                   bool                    bPairs,
+                                   bool                    bDih);
         //! Generate Charges
         immStatus GenerateCharges(gmx_poldata_t pd, gmx_atomprop_t ap,
-                                  ChargeGenerationModel iModel, real hfac, real epsr,
+                                  ChargeDistributionModel iModel,
+                                  ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
+                                  real hfac, real epsr,
                                   const char *lot,
                                   bool bSymmetricCharges,
                                   const char *symm_string);
@@ -153,11 +155,11 @@ class MyMol : public MolProp
 
         //! Print the topology that was generated previously in GROMACS format.
         //! fp is a File pointer opened previously.
-        void PrintTopology(const char           *fn,
-                           ChargeGenerationModel iModel,
-                           bool                  bVerbose,
-                           gmx_poldata_t         pd,
-                           gmx_atomprop_t        aps);
+        void PrintTopology(const char             *fn,
+                           ChargeDistributionModel iModel,
+                           bool                    bVerbose,
+                           gmx_poldata_t           pd,
+                           gmx_atomprop_t          aps);
 
         //! Print some info about the molecule to a file
         void PrintQPol(FILE *fp, gmx_poldata_t pd);
@@ -179,35 +181,22 @@ class MyMol : public MolProp
 
         immStatus GenerateGromacs(output_env_t oenv, t_commrec *cr);
 
-        void GenerateCube(ChargeGenerationModel iModel,
-                          gmx_poldata_t         pd,
-                          real                  spacing,
-                          const char           *reffn,
-                          const char           *pcfn,
-                          const char           *pdbdifffn,
-                          const char           *potfn,
-                          const char           *rhofn,
-                          const char           *hisfn,
-                          const char           *difffn,
-                          const char           *diffhistfn,
-                          output_env_t          oenv);
+        void GenerateCube(ChargeDistributionModel iModel,
+                          gmx_poldata_t           pd,
+                          real                    spacing,
+                          const char             *reffn,
+                          const char             *pcfn,
+                          const char             *pdbdifffn,
+                          const char             *potfn,
+                          const char             *rhofn,
+                          const char             *hisfn,
+                          const char             *difffn,
+                          const char             *diffhistfn,
+                          output_env_t            oenv);
 
         //! Print the coordinates corresponding to topology after adding shell particles
         //! and/or vsites. fp is a File pointer opened previously.
         void PrintConformation(const char *fn);
-
-        //! Routine initiating the internal GROMACS structures
-        /*immStatus Initxx(FILE *fp,GaussAtomProp &gap,
-                       gmx_bool bQM,char *lot,gmx_bool bZero,
-                       gmx_poldata_t pd,gmx_atomprop_t aps,
-                       ChargeGenerationModel iModel,t_commrec *cr,int *nwarn,
-                       gmx_bool bCharged,const output_env_t oenv,
-                       real th_toler,real ph_toler,
-                       real dip_toler,real hfac,gmx_bool bH14,
-                       gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
-                       int nexcl,gmx_bool bESP,
-                       real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta);*/
-
 };
 
 const char *immsg(immStatus imm);

@@ -57,7 +57,7 @@
 
 bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
                  const char *atomtype, gmx_poldata_t pd,
-                 ChargeGenerationModel iModel, char **dzatoms)
+                 ChargeDistributionModel iDistributionModel, char **dzatoms)
 {
     int  k, zz;
     bool bRestr;
@@ -75,7 +75,7 @@ bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
     ra->atomnumber  = atomnumber;
     ra->atype       = atype;
     ra->atomtype    = strdup(atomtype);
-    ra->nZeta       = gmx_poldata_get_nzeta(pd, iModel, ra->atomtype);
+    ra->nZeta       = gmx_poldata_get_nzeta(pd, iDistributionModel, ra->atomtype);
     if (ra->nZeta <= 0)
     {
         return false;
@@ -93,11 +93,11 @@ bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
     for (zz = 0; (zz < ra->nZeta); zz++)
     {
         ra->iq[zz]       = -1;
-        ra->q[zz]        = gmx_poldata_get_q(pd, iModel, ra->atomtype, zz);
+        ra->q[zz]        = gmx_poldata_get_q(pd, iDistributionModel, ra->atomtype, zz);
         ra->iz[zz]       = -1;
         ra->zeta_ref[zz] =
-            ra->zeta[zz] = gmx_poldata_get_zeta(pd, iModel, ra->atomtype, zz);
-        ra->row[zz]      = gmx_poldata_get_row(pd, iModel, ra->atomtype, zz);
+            ra->zeta[zz] = gmx_poldata_get_zeta(pd, iDistributionModel, ra->atomtype, zz);
+        ra->row[zz]      = gmx_poldata_get_row(pd, iDistributionModel, ra->atomtype, zz);
     }
     return true;
 }
@@ -125,7 +125,7 @@ real gmx_ra_get_q(gmx_ra *ra)
     return q;
 }
 
-gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
+gmx_resp_t gmx_resp_init(ChargeDistributionModel iDistributionModel,
                          bool bAXpRESP, real qfac, real b_hyper, real qtot,
                          real zmin, real zmax, real delta_z, bool bZatype,
                          real watoms, real rDecrZeta, bool bRandZeta,
@@ -135,16 +135,16 @@ gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
     gmx_resp_t gr;
 
     snew(gr, 1);
-    gr->qtot      = qtot;
-    gr->qsum      = qtot;
-    gr->bAXpRESP  = bAXpRESP;
-    gr->qfac      = qfac;
-    gr->b_hyper   = b_hyper;
-    gr->wtot      = 0;
-    gr->iModel    = iModel;
-    gr->zmin      = zmin;
-    gr->zmax      = zmax;
-    gr->delta_z   = delta_z;
+    gr->qtot                  = qtot;
+    gr->qsum                  = qtot;
+    gr->bAXpRESP              = bAXpRESP;
+    gr->qfac                  = qfac;
+    gr->b_hyper               = b_hyper;
+    gr->wtot                  = 0;
+    gr->iDistributionModel    = iDistributionModel;
+    gr->zmin                  = zmin;
+    gr->zmax                  = zmax;
+    gr->delta_z               = delta_z;
     std::vector<std::string> ptr = split(dzatoms, ' ');
     snew(gr->dzatoms, ptr.size());
     for (unsigned int i = 0; (i < ptr.size()); ++i)
@@ -245,7 +245,7 @@ void gmx_resp_fill_zeta(gmx_resp_t gr, gmx_poldata_t pd)
     {
         for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
         {
-            gmx_resp_set_zeta(gr, i, zz, gmx_poldata_get_zeta(pd, gr->iModel,
+            gmx_resp_set_zeta(gr, i, zz, gmx_poldata_get_zeta(pd, gr->iDistributionModel,
                                                               gr->ra[i].atomtype, zz));
         }
     }
@@ -279,7 +279,7 @@ bool gmx_resp_add_atom_info(gmx_resp_t gr, t_atoms *atoms, gmx_poldata_t pd)
     {
         if (!gmx_ra_init(&gr->ra[i],
                          atoms->atom[i].atomnumber, atoms->atom[i].type,
-                         *(atoms->atomtype[i]), pd, gr->iModel, gr->dzatoms))
+                         *(atoms->atomtype[i]), pd, gr->iDistributionModel, gr->dzatoms))
         {
             return false;
         }
@@ -287,7 +287,7 @@ bool gmx_resp_add_atom_info(gmx_resp_t gr, t_atoms *atoms, gmx_poldata_t pd)
     return true;
 }
 
-void gmx_resp_summary(FILE *fp, gmx_resp_t gr, 
+void gmx_resp_summary(FILE *fp, gmx_resp_t gr,
                       std::vector<int> &symmetric_atoms)
 {
     int i;
@@ -339,7 +339,7 @@ void gmx_resp_add_param(gmx_resp_t gr, int atom, eParm eparm, int zz)
     }
 }
 
-void gmx_resp_add_atom_symmetry(gmx_resp_t gr, 
+void gmx_resp_add_atom_symmetry(gmx_resp_t        gr,
                                 std::vector<int> &symmetric_atoms)
 {
     int        i, k, zz;
@@ -426,7 +426,7 @@ void gmx_resp_add_atom_symmetry(gmx_resp_t gr,
             {
                 gmx_resp_add_param(gr, i, eparmQ, gr->ra[i].nZeta-1);
             }
-            
+
             for (k = 0; (k < gr->ra[i].nZeta); k++)
             {
                 gmx_resp_add_param(gr, i, eparmZ, k);
@@ -443,7 +443,7 @@ void gmx_resp_add_atom_symmetry(gmx_resp_t gr,
                 maxz = gr->ra[i].nZeta;
             }
         }
-        
+
         fprintf(debug, "GRQ: %3s %5s", "nr", "type");
         for (i = 0; (i < maxz); i++)
         {
@@ -859,20 +859,20 @@ void gmx_resp_calc_rho(gmx_resp_t gr)
             vv = 0;
             rvec_sub(gr->esp[i], gr->x[j], dx);
             r = norm(dx);
-            switch (gr->iModel)
+            switch (gr->iDistributionModel)
             {
-                case eqgBultinck:
-                case eqgAXp:
+                case eqdBultinck:
+                case eqdAXp:
                     return;
-                case eqgAXs:
+                case eqdAXs:
                     vv = 0;
                     break;
-                case eqgYang:
-                case eqgRappe:
+                case eqdYang:
+                case eqdRappe:
                     vv = gr->ra[j].q[0]*Nuclear_SS(r, gr->ra[j].row[0],
                                                    gr->ra[j].zeta[0]);
                     break;
-                case eqgAXg:
+                case eqdAXg:
                     vv = 0;
                     for (k = 0; (k < gr->ra[j].nZeta); k++)
                     {
@@ -885,8 +885,8 @@ void gmx_resp_calc_rho(gmx_resp_t gr)
                     }
                     break;
                 default:
-                    gmx_fatal(FARGS, "Krijg nou wat, iModel = %d!",
-                              gr->iModel);
+                    gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %d!",
+                              gr->iDistributionModel);
             }
             V  += vv;
         }
@@ -912,16 +912,16 @@ void gmx_resp_calc_pot(gmx_resp_t gr)
                 r2 += dx*dx;
             }
             r = sqrt(r2);
-            switch (gr->iModel)
+            switch (gr->iDistributionModel)
             {
-                case eqgBultinck:
-                case eqgAXp:
+                case eqdBultinck:
+                case eqdAXp:
                     if (r > 0.01)
                     {
                         vv = gr->ra[j].q[0]/r;
                     }
                     break;
-                case eqgAXs:
+                case eqdAXs:
                     vv = 0;
                     for (k = 0; (k < gr->ra[j].nZeta); k++)
                     {
@@ -929,12 +929,12 @@ void gmx_resp_calc_pot(gmx_resp_t gr)
                                                         gr->ra[j].zeta[k]);
                     }
                     break;
-                case eqgYang:
-                case eqgRappe:
+                case eqdYang:
+                case eqdRappe:
                     vv = gr->ra[j].q[0]*Nuclear_SS(r, gr->ra[j].row[0],
                                                    gr->ra[j].zeta[0]);
                     break;
-                case eqgAXg:
+                case eqdAXg:
                     vv = 0;
                     for (k = 0; (k < gr->ra[j].nZeta); k++)
                     {
@@ -942,8 +942,8 @@ void gmx_resp_calc_pot(gmx_resp_t gr)
                     }
                     break;
                 default:
-                    gmx_fatal(FARGS, "Krijg nou wat, iModel = %s!",
-                              get_eemtype_name(gr->iModel));
+                    gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
+                              get_eemtype_name(gr->iDistributionModel));
             }
             V  += vv;
         }
@@ -1319,7 +1319,7 @@ static void gmx_resp_calc_penalty(gmx_resp_t gr)
     double p, b2;
 
     p = 0;
-    if (gr->bAXpRESP && (gr->iModel == eqgAXp))
+    if (gr->bAXpRESP && (gr->iDistributionModel == eqdAXp))
     {
         b2 = sqr(gr->b_hyper);
         for (i = 0; (i < gr->natom); i++)

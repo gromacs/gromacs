@@ -318,9 +318,9 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
     double qaver, qsum;
     int    hsmin;
 
-    printf("Fix me: symmetrize charges algorithm is broken in: file %s, line %d\n",
-           __FILE__, __LINE__ );
-    return;
+    //printf("Fix me: symmetrize charges algorithm is broken in: file %s, line %d\n",
+    //       __FILE__, __LINE__ );
+    //return;
     for (int i = 0; (i < atoms->nr); i++)
     {
         sym_charges.push_back(i);
@@ -440,7 +440,7 @@ static int *generate_cg_neutral(t_atoms *atoms, gmx_bool bUsePDBcharge)
     return cgnr;
 }
 
-static int *generate_cg_group(t_atoms *atoms, 
+static int *generate_cg_group(t_atoms                               *atoms,
                               std::vector<alexandria::PlistWrapper> &plist)
 {
     int        i, j, k, atn, ai, aj, ncg = 1;
@@ -612,7 +612,7 @@ static int cg_comp(const void *a, const void *b)
     }
 }
 
-void sort_on_charge_groups(int *cgnr, t_atoms *atoms, 
+void sort_on_charge_groups(int *cgnr, t_atoms *atoms,
                            std::vector<alexandria::PlistWrapper> &pw,
                            rvec x[], t_excls excls[],
                            const char *ndxout, int nmol)
