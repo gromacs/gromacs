@@ -57,7 +57,7 @@
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_output_env_t;
-struct t_swapcoords;
+//struct t_swapcoords;
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
@@ -99,7 +99,7 @@ void init_swapcoords(
  * \param[in] dd            Structure containing domain decomposition data.
  * \param[in] si_pub        Pointer to the swap data structure.
  */
-void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *si_pub);
+void dd_make_local_swap_groups(gmx_domdec_t *dd, struct t_swapcoords *si_pub);
 
 
 /*! \brief "Computational Electrophysiology" main routine within MD loop.

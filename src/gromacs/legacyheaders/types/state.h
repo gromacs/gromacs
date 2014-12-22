@@ -181,35 +181,47 @@ edsamstate_t;
 
 typedef struct
 {
-    int        eSwapCoords;                         /* Swapping along x, y, or z-direction?      */
-    int        nat_req[eCompNR][eIonNR];            /* Requested ion numbers per type an comp.   */
-    int       *nat_req_p[eCompNR][eIonNR];          /* Pointer to this data (for .cpt writing)   */
-    int        nAverage;                            /* Use average over this many swap attempt
-                                                       steps when determining the ion counts     */
-    int        inflow_netto[eCompNR][eIonNR];       /* Flux determined from the # of swaps       */
-    int       *inflow_netto_p[eCompNR][eIonNR];     /* Pointer to this data                      */
-    int       *nat_past[eCompNR][eIonNR];           /* Array with nAverage entries for history   */
-    int       *nat_past_p[eCompNR][eIonNR];         /* Pointer points to the first entry only    */
+    int  nMolReq[eCompNR];        /* Requested # of molecules per comp.       */
+    int *nMolReq_p[eCompNR];      /* Pointer to this data (for .cpt writing)  */
+    int  inflow_net[eCompNR];     /* Flux determined from the # of swaps       */
+    int *inflow_net_p[eCompNR];   /* Pointer to this data                      */
+    int *nMolPast[eCompNR];       /* Array with nAverage entries for history   */
+    int *nMolPast_p[eCompNR];     /* Pointer points to the first entry only    */
 
     /* Channel flux detection, this is counting only and has no influence on whether swaps
      * are performed or not: */
-    int            fluxfromAtoB[eCompNR][eIonNR];   /* Flux determined from the split cylinders  */
-    int           *fluxfromAtoB_p[eCompNR][eIonNR]; /* Pointer to this data                      */
-    int           *fluxleak;                        /* Flux not going through any channel        */
-    int            nions;                           /* Size of the following arrays              */
-    unsigned char *comp_from;                       /* Ion came from which compartment?          */
-    unsigned char *channel_label;                   /* Through which channel did this ion pass?  */
+    int            fluxfromAtoB[eCompNR];   /* Flux determined from the split cylinders  */
+    int           *fluxfromAtoB_p[eCompNR]; /* Pointer to this data                      */
+    int            nMol;                    /* # of molecules, size of the following arrays  */
+    unsigned char *comp_from;               /* Ion came from which compartment?          */
+    unsigned char *channel_label;           /* Through which channel did this ion pass?  */
+} swapstateIons_t;
+
+typedef struct
+{
+    int eSwapCoords;              /* Swapping along x, y, or z-direction?      */
+    int nIonTypes;                /* Number of ion types, this is the size of
+                                     the following arrays                      */
+    int nAverage;                 /* Use average over this many swap attempt
+                                     steps when determining the ion counts     */
+
+    /* Channel flux detection, this is counting only and has no influence on whether swaps
+     * are performed or not: */
+    int  fluxleak;                /* Flux not going through any channel        */
+    int *fluxleak_p;              /* Pointer to this data */
 
     /* To also make multimeric channel proteins whole, we save the last whole configuration of
      * the channels in the checkpoint file. If we have no checkpoint file, we assume that the
-     * starting configuration hast the correct PBC representation after making the individual
+     * starting configuration has the correct PBC representation after making the individual
      * molecules whole */
-    gmx_bool    bFromCpt;                           /* Did we started from a checkpoint file?    */
-    int         nat[eChanNR];                       /* Size of xc_old_whole, i.e. the number of
-                                                       atoms in each channel                     */
-    rvec       *xc_old_whole[eChanNR];              /* Last known whole positions of the two
-                                                       channels (important for multimeric ch.!)  */
-    rvec      **xc_old_whole_p[eChanNR];            /* Pointer to these positions                */
+    gmx_bool         bFromCpt;                /* Did we start from a checkpoint file?      */
+    int              nat[eChanNR];            /* Size of xc_old_whole, i.e. the number of
+                                                 atoms in each channel                     */
+    rvec            *xc_old_whole[eChanNR];   /* Last known whole positions of the two
+                                                 channels (important for multimeric ch.!)  */
+    rvec           **xc_old_whole_p[eChanNR]; /* Pointer to these positions                */
+
+    swapstateIons_t *ionType;
 }
 swapstate_t;
 
