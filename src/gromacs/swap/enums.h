@@ -48,17 +48,10 @@
 #ifndef GMX_SWAP_ENUMS_H
 #define GMX_SWAP_ENUMS_H
 
+
 /*! \brief The two compartments for CompEL setups. */
 enum eCompartment {
     eCompA, eCompB, eCompNR
-};
-
-/*! \brief The positive and negative ions CompEL setups.
- *
- * Future versions of the protocol might consider more than two types of ions.
- */
-enum eIontype {
-    eIonNEG, eIonPOS, eIonNR
 };
 
 /*! \brief The channels that define with their COM the compartment boundaries in CompEL setups.

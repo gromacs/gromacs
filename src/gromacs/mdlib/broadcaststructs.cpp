@@ -641,25 +641,27 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
 
 static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 {
-    int i;
-
-
     block_bc(cr, *swap);
 
-    /* Broadcast ion group atom indices */
-    snew_bc(cr, swap->ind, swap->nat);
-    nblock_bc(cr, swap->nat, swap->ind);
-
-    /* Broadcast split groups atom indices */
-    for (i = 0; i < 2; i++)
+    /* Broadcast atom indices for split groups, solvent group, and for all user-defined swap groups */
+    snew_bc(cr, swap->grp, swap->ngrp);
+    for (int i = 0; i < swap->ngrp; i++)
     {
-        snew_bc(cr, swap->ind_split[i], swap->nat_split[i]);
-        nblock_bc(cr, swap->nat_split[i], swap->ind_split[i]);
-    }
+        t_swapGroup *g = &swap->grp[i];
 
-    /* Broadcast solvent group atom indices */
-    snew_bc(cr, swap->ind_sol, swap->nat_sol);
-    nblock_bc(cr, swap->nat_sol, swap->ind_sol);
+        block_bc(cr, *g);
+        snew_bc(cr, g->ind, g->nat);
+        nblock_bc(cr, g->nat, g->ind);
+
+        int len = 0;
+        if (MASTER(cr))
+        {
+            len = strlen(g->molname);
+        }
+        block_bc(cr, len);
+        snew_bc(cr, g->molname, len);
+        nblock_bc(cr, len, g->molname);
+    }
 }
 
 
