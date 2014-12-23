@@ -175,6 +175,16 @@ bool isAcceptableLibraryPath(const std::string &path)
 }
 
 /*! \brief
+ * Returns whether given path contains files from JIT repository.
+ *
+ * For now, it only checks for nbnxn_ocl_kernels.cl
+ */
+bool isAcceptableJITPath(const std::string &path)
+{
+    return Path::exists(Path::join(path, "nbnxn_ocl_kernels.cl"));
+}
+
+/*! \brief
  * Returns whether given path prefix contains files from `share/top/`.
  *
  * \param[in]  path   Path prefix to check.
@@ -228,9 +238,13 @@ std::string findFallbackLibraryDataPath()
 }
 
 /*! \brief
- * Finds the library data files based on path of the binary.
+ * Generic function to find data files based on path of the binary.
  *
- * \param[in] binaryPath  Absolute path to the binary.
+ * \param[in] binaryPath           Absolute path to the binary.
+ * \param[in] srcDataPath          Path relative to the source tree where the searched data is normally located.
+ * \param[in] binDataPath          Path relative to the binary path where the searched data is normally located.
+ * \param[in] isAcceptableDataPath Pointer to a function which validates a candidate path for the data files being searched.
+ * \param[in] fallbackPath         Fallback path to be returned if the searched data is not found.
  * \returns  Path to the `share/top/` data files.
  *
  * The search based on the path only works if the binary is in the same
@@ -241,7 +255,12 @@ std::string findFallbackLibraryDataPath()
  * Extra logic is present to allow running binaries from the build tree such
  * that they use up-to-date data files from the source tree.
  */
-std::string findDefaultLibraryDataPath(const std::string &binaryPath)
+std::string findDefaultDataPath(const std::string &binaryPath,
+                                const std::string &srcDataPath,
+                                const std::string &binDataPath,
+                                bool               (*isAcceptableDataPath) (const std::string &),
+                                const std::string &fallbackPath
+                                )
 {
     // If the input path is not absolute, the binary could not be found.
     // Don't search anything.
@@ -260,19 +279,19 @@ std::string findDefaultLibraryDataPath(const std::string &binaryPath)
 #endif
         if (Path::isEquivalent(searchPath, buildBinPath))
         {
-            std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
-            if (isAcceptableLibraryPath(testPath))
+            std::string testPath = Path::join(CMAKE_SOURCE_DIR, srcDataPath);
+            if (isAcceptableDataPath(testPath))
             {
                 return testPath;
             }
         }
 #endif
 
-        // Use the executable path to (try to) find the library dir.
+        // Use the executable path to (try to) find the data dir.
         while (!searchPath.empty())
         {
-            std::string testPath = Path::join(searchPath, GMXLIB_SEARCH_DIR);
-            if (isAcceptableLibraryPath(testPath))
+            std::string testPath = Path::join(searchPath, binDataPath);
+            if (isAcceptableDataPath(testPath))
             {
                 return testPath;
             }
@@ -282,7 +301,39 @@ std::string findDefaultLibraryDataPath(const std::string &binaryPath)
 
     // End of smart searching. If we didn't find it in our parent tree,
     // or if the program name wasn't set, return a fallback.
-    return findFallbackLibraryDataPath();
+    return fallbackPath;
+}
+
+/*! \brief
+ * Finds the library data files based on path of the binary.
+ *
+ * \param[in] binaryPath  Absolute path to the binary.
+ * \returns  Path to the `share/top/` data files.
+ *
+ */
+std::string findDefaultLibraryDataPath(const std::string &binaryPath)
+{
+    return findDefaultDataPath(binaryPath,
+                               "share/top",
+                               GMXLIB_SEARCH_DIR,
+                               &isAcceptableLibraryPath,
+                               findFallbackLibraryDataPath());
+}
+
+/*! \brief
+ * Finds the JIT data files based on path of the binary.
+ *
+ * \param[in] binaryPath  Absolute path to the binary.
+ * \returns  Path to the folder containg JIT data files.
+ *
+ */
+std::string findDefaultJITDataPath(const std::string &binaryPath)
+{
+    return findDefaultDataPath(binaryPath,
+                               "src/gromacs/mdlib/nbnxn_ocl",
+                               OCL_INSTALL_DIR,
+                               &isAcceptableJITPath,
+                               OCL_INSTALL_FULL_PATH);
 }
 
 //! \}
@@ -317,6 +368,7 @@ class CommandLineProgramContext::Impl
         std::string                   commandLine_;
         mutable std::string           fullBinaryPath_;
         mutable std::string           defaultLibraryDataPath_;
+        mutable std::string           defaultJITDataPath_;
         mutable tMPI::mutex           binaryPathMutex_;
 };
 
@@ -425,6 +477,18 @@ const char *CommandLineProgramContext::defaultLibraryDataPath() const
             Path::normalize(findDefaultLibraryDataPath(impl_->fullBinaryPath_));
     }
     return impl_->defaultLibraryDataPath_.c_str();
+}
+
+const char *CommandLineProgramContext::defaultJITDataPath() const
+{
+    tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
+    if (impl_->defaultJITDataPath_.empty())
+    {
+        impl_->findBinaryPath();
+        impl_->defaultJITDataPath_ =
+            Path::normalize(findDefaultJITDataPath(impl_->fullBinaryPath_));
+    }
+    return impl_->defaultJITDataPath_.c_str();
 }
 
 } // namespace gmx
