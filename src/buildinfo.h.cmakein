@@ -86,3 +86,9 @@
 
 /** Whether external Boost was used for compiling */
 #cmakedefine GMX_EXTERNAL_BOOST
+
+/** OpenCL include dir */
+#define OPENCL_INCLUDE_DIR "@OPENCL_INCLUDE_DIR@"
+
+/** OpenCL library */
+#define OPENCL_LIBRARY "@OPENCL_LIBRARY@"
