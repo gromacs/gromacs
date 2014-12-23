@@ -99,8 +99,6 @@ typedef struct {
     /* andersen temperature control stuff */
     gmx_bool       *randomize_group;
     real           *boltzfac;
-    /* DPD ISO stuff */
-    gmx_rng_t      *gaussrand;
 } gmx_stochd_t;
 
 typedef struct gmx_update
@@ -206,7 +204,9 @@ void apply_dpd_iso(int start, int homenr,
                    real rc1,
                    const t_pbc *pbc,
                    unsigned short cTC[],
-                   gmx_rng_t gaussrand)
+                   gmx_int64_t step,
+                   int seed,
+                   int *gatindex)
 {
     int           nri, nn0, nn1;
     int           n, ii, ii3, ii4, nj0, nj1, jnr, j3;
@@ -216,7 +216,6 @@ void apply_dpd_iso(int start, int homenr,
     real          w;
     real          dvx, dvy, dvz;
     real          mi, mj, m1, m2;
-    real          gauss1, gauss2, gauss3;
     real          f_iso;
     real          rsq11;
     rvec          dx;
@@ -236,6 +235,9 @@ void apply_dpd_iso(int start, int homenr,
 
     for (n = nn0; (n < nn1); n++)
     {
+        real rnd[3];
+        int  ng = gatindex ? gatindex[n] : n;
+
         /* Load limits for loop over neighbors */
         nj0              = jindex[n];
         nj1              = jindex[n+1];
@@ -371,13 +373,10 @@ void apply_dpd_iso(int start, int homenr,
         dvz =   viz1-v[j3+2];
 
         /* Application of dissipative and random terms */
-        gauss1 = sqrt(kT*(2*f_iso - f_iso * f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
-        gauss2 = sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
-        gauss3 = sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*gmx_rng_gaussian_table(gaussrand);
-
-        dvx = -f_iso*dvx + gauss1;
-        dvy = -f_iso*dvy + gauss2;
-        dvz = -f_iso*dvz + gauss3;
+        gmx_rng_cycle_3gaussian_table(step,ng,seed,RND_SEED_UPDATE,rnd);
+        dvx = -f_iso*dvx + sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[0];
+        dvy = -f_iso*dvy + sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[1];
+        dvz = -f_iso*dvz + sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[2];
 
         /* Distribute the velocity change 'dv' over the two particles */
         m1 = (1/((mj/mi)+1));
@@ -402,7 +401,9 @@ static void do_update_iso(gmx_stochd_t *sd,
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[], real ref_t[], t_forcerec *fr,
                           rvec *vold, real f_iso[], real rc1, t_grp_tcstat *tcstat, const t_pbc *pbc,
-                          gmx_rng_t gaussrand)
+                          gmx_int64_t step,
+                          int seed,
+                          int *gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
@@ -526,7 +527,7 @@ static void do_update_iso(gmx_stochd_t *sd,
     }
 
     apply_dpd_iso(start, homenr, &(nblist->nri), nblist->iinr, nblist->jindex, nblist->jjnr, x, v[0],
-                  invmass, f_iso, kT, rc1, pbc, cTC, gaussrand);
+                  invmass, f_iso, kT, rc1, pbc, cTC, step, seed, gatindex);
 
     for (n = start; n < start+homenr; n++)
     {
@@ -2372,15 +2373,9 @@ void update_coords(FILE             *fplog,
     {
 
         int n;
-        snew(sd1, 1);
-        /* gaussrand in 4.6.5 an array of pointers */
-        /* sd1->ngaussrand=1;
-           snew(sd1->gaussrand,sd1->ngaussrand); */
-        snew(sd1->gaussrand, 1);
-        sd1->gaussrand[0] = gmx_rng_init(inputrec->ld_seed);
-
         ngtc = inputrec->opts.ngtc;
 
+        snew(sd1, 1);
         snew(sd1->sdc, ngtc);
         snew(sd1->sdsig, ngtc);
         snew(f_iso, ngtc);
@@ -2530,7 +2525,7 @@ void update_coords(FILE             *fplog,
                                   inputrec->opts.ref_t,
                                   fr, vold, f_iso,
                                   inputrec->userreal4, ekind->tcstat, pbc,
-                                  sd1->gaussrand[0]);
+                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 }
                 break;
             default:
