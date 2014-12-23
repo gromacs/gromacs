@@ -32,15 +32,46 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(GMX_GPU)
-    if (GMX_USE_OPENCL)
-        file(GLOB GPU_UTILS_SOURCES *ocl*.cpp)
-    else()
-        file(GLOB GPU_UTILS_SOURCES *.cu)
-    endif()
-else()
-    file(GLOB OCL_UTILS_SOURCES *ocl*.cpp)
-    file(GLOB GPU_UTILS_SOURCES *.cpp)
-    list(REMOVE_ITEM GPU_UTILS_SOURCES ${OCL_UTILS_SOURCES})
+if(GMX_DOUBLE)
+    message(FATAL_ERROR "OpenCL not available in double precision - Yet!")
 endif()
-set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${GPU_UTILS_SOURCES} PARENT_SCOPE)
+
+# Look for OpenCL
+# TODO: FindOpenCL module is available in cmake starting with version 3.1.0.
+# A modified version of that module is used here.
+# Remove FindOpenCL.cmake file when GROMACS switches to cmake 3.1.0 or higher.
+find_package(OpenCL)
+
+if (OPENCL_FOUND)
+    if (OPENCL_VERSION_STRING VERSION_LESS REQUIRED_OPENCL_MIN_VERSION)
+        message(FATAL_ERROR "OpenCL " "${OPENCL_VERSION_STRING}" " is not supported. OpenCL version " "${REQUIRED_OPENCL_MIN_VERSION}" " or newer is required.")
+        return ()
+    endif()
+else ()
+    message(FATAL_ERROR "OpenCL not found.")
+    return()
+endif()
+
+# Prevent warnings when linking against OpenCL > 1.1
+if (OPENCL_VERSION_STRING VERSION_GREATER 1.1)
+    set(OPENCL_DEFINITIONS "-DCL_USE_DEPRECATED_OPENCL_1_1_APIS")
+endif()
+
+# Tell compiler to hide warnings for comments caused by cl_gl_ext.h on Linux
+if (UNIX)
+    set(OPENCL_DEFINITIONS ${OPENCL_DEFINITIONS} " -Wno-comment")
+endif()
+
+add_definitions(${OPENCL_DEFINITIONS})
+
+
+#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
+
+include_directories(${OPENCL_INCLUDE_DIRS})
+
+macro(gmx_gpu_setup)
+    # no OpenMP is no good!
+    if(NOT GMX_OPENMP)
+        message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. Without OpenMP a single CPU core can be used with a GPU which is not optimal. Note that with MPI multiple processes can be forced to use a single GPU, but this is typically inefficient. You need to set both C and C++ compilers that support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
+    endif()
+endmacro()

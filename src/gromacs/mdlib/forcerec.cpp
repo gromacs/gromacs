@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1821,11 +1821,19 @@ static void pick_nbnxn_resources(FILE                *fp,
             /* TODO the decorating of gpu_err_str is nicer if it
                happens inside init_gpu. Out here, the decorating with
                the MPI rank makes sense. */
+#ifdef GMX_USE_OPENCL
+            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%s: %s",
+                      cr->nodeid,
+                      get_ocl_gpu_device_name(&hwinfo->gpu_info, gpu_opt,
+                                              cr->rank_pp_intranode),
+                      gpu_err_str);
+#else
             gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
                       get_cuda_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
                                              cr->rank_pp_intranode),
                       gpu_err_str);
+#endif
         }
 
         /* Here we actually turn on hardware GPU acceleration */

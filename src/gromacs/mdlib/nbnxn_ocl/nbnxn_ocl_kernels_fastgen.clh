@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,37 +33,37 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_MDLIB_NBNXN_GPU_TYPES_H
-#define GMX_MDLIB_NBNXN_GPU_TYPES_H
+/*! \internal \file
+ *  This header has the sole purpose of generating kernels for the combinations of
+ *  supported electrostatics types (cut-off, reaction-field, analytical and
+ *  tabulated Ewald) and VDW types (cut-off + V shift, LJ-Ewald with
+ *  geometric or Lorentz-Berthelot combination rule, F switch, V switch).
+ *
+ *  The Ewald kernels have twin-range cut-off versions with rcoul != rvdw which
+ *  require an extra distance check to enable  PP-PME load balancing
+ *  (otherwise, by default rcoul == rvdw).
+ *
+ *  NOTE: No include fence as it is meant to be included multiple times.
+ */
 
-#include "config.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef GMX_GPU
-
-#  if defined GMX_USE_OPENCL
-
-struct gmx_nbnxn_ocl_t;
-typedef struct gmx_nbnxn_ocl_t gmx_nbnxn_gpu_t;
-
-#  else
-
-struct gmx_nbnxn_cuda_t;
-typedef struct gmx_nbnxn_cuda_t gmx_nbnxn_gpu_t;
-
-#  endif
-
+#if defined(_WARPLESS_SOURCE_)
+#define CL_SOURCE_FILE "nbnxn_ocl_kernel_nowarp.clh"
+#elif defined(_NVIDIA_SOURCE_)
+#define CL_SOURCE_FILE "nbnxn_ocl_kernel_nvidia.clh"
+#elif defined(_AMD_SOURCE_)
+#define CL_SOURCE_FILE "nbnxn_ocl_kernel_amd.clh"
 #else
-
-typedef int gmx_nbnxn_gpu_t;
-
+#pragma error "Unknown kernel vendor spec"
 #endif
 
-#ifdef __cplusplus
-}
-#endif
 
-#endif
+#include "nbnxn_ocl_kernel_utils.clh"
+
+#define NB_INDIRECT_1(x,eel,vdw,y) x ## eel ## vdw ## y
+#define NB_INDIRECT_2(x,eel,vdw,y) NB_INDIRECT_1(x,eel,vdw,y)
+#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2(x,_EELNAME,_VDWNAME,y)
+
+#include CL_SOURCE_FILE
+
+#undef NB_KERNEL_FUNC_NAME
+#undef CL_SOURCE_FILE
