@@ -127,7 +127,7 @@ class AtomNum
         ~AtomNum() {};
 
         //! Return the name of the atom for this AtomNum
-        std::string GetAtom() { return _catom; }
+        std::string getAtom() { return _catom; }
 
         //! Set the name of the atom for this AtomNum
         void SetAtom(std::string catom) { _catom = catom; }
@@ -136,7 +136,7 @@ class AtomNum
         void SetAtom(const char *catom) { _catom.assign(catom); }
 
         //! Return the number of atoms for this AtomNum
-        int GetNumber() { return _cnumber; }
+        int getNumber() { return _cnumber; }
 
         //! Set the number of atoms for this AtomNum
         void SetNumber(int cnumber) { _cnumber = cnumber; }
@@ -195,7 +195,7 @@ class MolecularComposition
         ~MolecularComposition() {}
 
         //! Return the composition name
-        std::string GetCompName() { return _compname; }
+        std::string getCompName() { return _compname; }
 
         //! Set the composition name
         void SetCompName(std::string compname) { _compname = compname; }
@@ -272,35 +272,33 @@ typedef std::vector<MolecularComposition>::iterator MolecularCompositionIterator
 class GenericProperty
 {
     private:
-        std::string _type, _unit;
+        std::string type_, unit_;
+        double      T_;
     public:
         //! Empty constructor
-        GenericProperty() {}
+        GenericProperty() {};
 
         /*! \brief
          * Creates a new GenericProperty object.
          *
          * \param[in] type  Type of the property
          * \param[in] unit  Unit of the property
+         * \param[in] T     Temperature
          */
-        GenericProperty(char *type, char *unit) { SetType(type); SetUnit(unit); };
-
-        /*! \brief
-         * Creates a new GenericProperty object.
-         *
-         * \param[in] type  Type of the property
-         * \param[in] unit  Unit of the property
-         */
-        GenericProperty(std::string type, std::string unit) { SetType(type); SetUnit(unit); };
+        GenericProperty(std::string type, std::string unit, double T)
+        { SetType(type); SetUnit(unit); setTemperature(T); }
 
         //! Destructor
         ~GenericProperty() {};
 
         //! Return the property type
-        std::string GetType() { return _type; }
+        std::string getType() { return type_; }
 
         //! Return the unit of the property
-        std::string GetUnit() { return _unit; }
+        std::string getUnit() { return unit_; }
+
+        //! Return the temperature
+        double getTemperature() { return T_; }
 
         //! Set the type of the property
         void SetType(std::string type);
@@ -308,11 +306,8 @@ class GenericProperty
         //! Set the unit of the property
         void SetUnit(std::string unit);
 
-        //! Set the type of the property
-        void SetType(const char *type) { std::string s(type); SetType(s); }
-
-        //! Set the unit of the property
-        void SetUnit(const char *unit) { std::string s(unit); SetUnit(s); }
+        //! Set the temperature of the property
+        void setTemperature(double T) { T_ = T; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -347,43 +342,42 @@ class GenericProperty
 class MolecularQuadrupole : public GenericProperty
 {
     private:
-        double _xx, _yy, _zz, _xy, _xz, _yz;
+        double xx_, yy_, zz_, xy_, xz_, yz_;
     public:
         //! Empty constructor
         MolecularQuadrupole() {}
 
         //! Constructor initiating all elements of the quadrupole tensor
-        MolecularQuadrupole(char *type, char *unit, double xx, double yy, double zz, double xy, double xz, double yz) : GenericProperty(type, unit) { Set(xx, yy, zz, xy, xz, yz); };
-
-        //! Constructor initiating all elements of the quadrupole tensor
-        MolecularQuadrupole(std::string type, std::string unit, double xx, double yy, double zz, double xy, double xz, double yz) : GenericProperty(type, unit) { Set(xx, yy, zz, xy, xz, yz); };
+        MolecularQuadrupole(std::string type, std::string unit, double T,
+                            double xx, double yy, double zz,
+                            double xy, double xz, double yz) : GenericProperty(type, unit, T) { Set(xx, yy, zz, xy, xz, yz); };
 
         //! Destructor
         ~MolecularQuadrupole() {};
 
         //! Set all the elements of the qudrupole tensor
-        void Set(double xx, double yy, double zz, double xy, double xz, double yz) { _xx = xx; _yy = yy; _zz = zz; _xy = xy; _xz = xz; _yz = yz; };
+        void Set(double xx, double yy, double zz, double xy, double xz, double yz) { xx_ = xx; yy_ = yy; zz_ = zz; xy_ = xy; xz_ = xz; yz_ = yz; };
 
-        //! Get all the elements of the qudrupole tensor
-        void Get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz) { *xx = _xx; *yy = _yy; *zz = _zz; *xy = _xy; *xz = _xz; *yz = _yz; };
+        //! get all the elements of the qudrupole tensor
+        void get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz) { *xx = xx_; *yy = yy_; *zz = zz_; *xy = xy_; *xz = xz_; *yz = yz_; };
 
         //! Return the XX component of the quadrupole tensor
-        double GetXX() { return _xx; }
+        double getXX() { return xx_; }
 
         //! Return the YY component of the quadrupole tensor
-        double GetYY() { return _yy; }
+        double getYY() { return yy_; }
 
         //! Return the ZZ component of the quadrupole tensor
-        double GetZZ() { return _zz; }
+        double getZZ() { return zz_; }
 
         //! Return the XY component of the quadrupole tensor
-        double GetXY() { return _xy; }
+        double getXY() { return xy_; }
 
         //! Return the XZ component of the quadrupole tensor
-        double GetXZ() { return _xz; }
+        double getXZ() { return xz_; }
 
         //! Return the YZ component of the quadrupole tensor
-        double GetYZ() { return _yz; }
+        double getYZ() { return yz_; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -410,7 +404,7 @@ typedef std::vector<MolecularQuadrupole>::iterator MolecularQuadrupoleIterator;
  * Contains the elements of the molecular polarizability tensor
  *
  * The six elements of the upper diagonal of a polarizability tensor are stored
- * along with the average molecular polarizability and the error if known. 
+ * along with the average molecular polarizability and the error if known.
  * The values are dependent on the orientation of the molecule.
  *
  * \inpublicapi
@@ -419,55 +413,58 @@ typedef std::vector<MolecularQuadrupole>::iterator MolecularQuadrupoleIterator;
 class MolecularPolarizability : public GenericProperty
 {
     private:
-        double _xx, _yy, _zz, _xy, _xz, _yz, _average, _error;
+        double xx_, yy_, zz_, xy_, xz_, yz_, _average, _error;
     public:
         //! Empty constructor
         MolecularPolarizability() {}
 
         //! Constructor initiating all elements of the quadrupole tensor
-        MolecularPolarizability(std::string type, std::string unit, double xx, double yy, double zz, 
-                                double xy, double xz, double yz, 
-                                double average, double error) : GenericProperty(type, unit) { Set(xx, yy, zz, xy, xz, yz, average, error); };
+        MolecularPolarizability(std::string type, std::string unit, double T,
+                                double xx, double yy, double zz,
+                                double xy, double xz, double yz,
+                                double average, double error) : GenericProperty(type, unit, T) { Set(xx, yy, zz, xy, xz, yz, average, error); };
 
         //! Destructor
         ~MolecularPolarizability() {};
 
         //! Set all the elements of the polarizability tensor
-        void Set(double xx, double yy, double zz, 
-                 double xy, double xz, double yz, 
+        void Set(double xx, double yy, double zz,
+                 double xy, double xz, double yz,
                  double average, double error);
-                                          
-        //! Get all the elements of the polarizability tensor
-        void Get(double *xx, double *yy, double *zz, 
-                 double *xy, double *xz, double *yz, 
-                 double *average, double *error) { 
-            *xx = _xx; *yy = _yy; *zz = _zz; 
-            *xy = _xy; *xz = _xz; *yz = _yz; 
-            *average = _average; *error = _error; }
+
+        //! get all the elements of the polarizability tensor
+        void get(double *xx, double *yy, double *zz,
+                 double *xy, double *xz, double *yz,
+                 double *average, double *error)
+        {
+            *xx      = xx_; *yy = yy_; *zz = zz_;
+            *xy      = xy_; *xz = xz_; *yz = yz_;
+            *average = _average; *error = _error;
+        }
 
         //! Return the XX component of the polarizability tensor
-        double GetXX() { return _xx; }
+        double getXX() { return xx_; }
 
         //! Return the YY component of the polarizability tensor
-        double GetYY() { return _yy; }
+        double getYY() { return yy_; }
 
         //! Return the ZZ component of the polarizability tensor
-        double GetZZ() { return _zz; }
+        double getZZ() { return zz_; }
 
         //! Return the XY component of the polarizability tensor
-        double GetXY() { return _xy; }
+        double getXY() { return xy_; }
 
         //! Return the XZ component of the polarizability tensor
-        double GetXZ() { return _xz; }
+        double getXZ() { return xz_; }
 
         //! Return the YZ component of the polarizability tensor
-        double GetYZ() { return _yz; }
+        double getYZ() { return yz_; }
 
         //! Return the average of the polarizability tensor
-        double GetAverage() { return _average; }
+        double getAverage() { return _average; }
 
         //! Return the error in the polarizability tensor
-        double GetError() { return _error; }
+        double getError() { return _error; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -509,10 +506,7 @@ class MolecularEnergy : public GenericProperty
         MolecularEnergy() {};
 
         //! Constructor storing all properties related to this energy term
-        MolecularEnergy(char *type, char *unit, double value, double error) : GenericProperty(type, unit) { Set(value, error); };
-
-        //! Constructor storing all properties related to this energy term
-        MolecularEnergy(std::string type, std::string unit, double value, double error) : GenericProperty(type, unit) { Set(value, error); };
+        MolecularEnergy(std::string type, std::string unit, double T, double value, double error) : GenericProperty(type, unit, T) { Set(value, error); };
 
         //! Destructor
         ~MolecularEnergy() {};
@@ -520,20 +514,20 @@ class MolecularEnergy : public GenericProperty
         //! Set the value and error for the energy
         void Set(double value, double error) { _value = value; _error = error; };
 
-        //! Get the value and error for this energy
-        void Get(double *value, double *error) { *value = _value; *error = _error; };
+        //! get the value and error for this energy
+        void get(double *value, double *error) { *value = _value; *error = _error; };
 
         //! Set the value for the energy
         void SetValue(double value) { _value = value; };
 
         //! Return the energy value
-        double GetValue() { return _value; };
+        double getValue() { return _value; };
 
         //! Set the error in the energy value
         void SetError(double error) { _value = error; };
 
         //! Return the error in the energy
-        double GetError() { return _error; };
+        double getError() { return _error; };
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -572,10 +566,8 @@ class MolecularDipole : public GenericProperty
         MolecularDipole() {}
 
         //! Constructor storing all properties related to this dipole
-        MolecularDipole(char *type, char *unit, double x, double y, double z, double aver, double error) : GenericProperty(type, unit) { Set(x, y, z, aver, error); }
-
-        //! Constructor storing all properties related to this dipole
-        MolecularDipole(std::string type, std::string unit, double x, double y, double z, double aver, double error) : GenericProperty(type, unit) { Set(x, y, z, aver, error); }
+        MolecularDipole(std::string type, std::string unit, double T,
+                        double x, double y, double z, double aver, double error) : GenericProperty(type, unit, T) { Set(x, y, z, aver, error); }
 
         //! Destructor
         ~MolecularDipole() {};
@@ -584,22 +576,22 @@ class MolecularDipole : public GenericProperty
         void Set(double x, double y, double z, double aver, double error) { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
 
         //! Return all properties of this dipole
-        void Get(double *x, double *y, double *z, double *aver, double *error) { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
+        void get(double *x, double *y, double *z, double *aver, double *error) { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
 
         //! Return the average dipole value
-        double GetAver() { return _aver; }
+        double getAver() { return _aver; }
 
         //! Return the error in the average dipole
-        double GetError() { return _error; }
+        double getError() { return _error; }
 
         //! Return the X component of the dipole
-        double GetX() { return _x; }
+        double getX() { return _x; }
 
         //! Return the Y component of the dipole
-        double GetY() { return _y; }
+        double getY() { return _y; }
 
         //! Return the Z component of the dipole
-        double GetZ() { return _z; }
+        double getZ() { return _z; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -634,9 +626,9 @@ typedef std::vector<MolecularDipole>::iterator MolecularDipoleIterator;
 class ElectrostaticPotential
 {
     private:
-        std::string _xyz_unit, _V_unit;
-        int         _espid;
-        double      _x, _y, _z, _V;
+        std::string xyzUnit_, vUnit_;
+        int         espID_;
+        double      x_, y_, z_, V_;
     public:
         //! Empty constructor
         ElectrostaticPotential() {}
@@ -651,43 +643,43 @@ class ElectrostaticPotential
         ~ElectrostaticPotential() {};
 
         //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        void Set(std::string xyz_unit, std::string V_unit, int espid, double x, double y, double z, double V) { _xyz_unit = xyz_unit; _V_unit = V_unit; _espid = espid; _x = x; _y = y; _z = z; _V = V; };
+        void Set(std::string xyz_unit, std::string V_unit, int espid, double x, double y, double z, double V) { xyzUnit_ = xyz_unit; vUnit_ = V_unit; espID_ = espid; x_ = x; y_ = y; z_ = z; V_ = V; };
 
         //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
         void Set(const char *xyz_unit, const char *V_unit, int espid, double x, double y, double z, double V)
         {
-            std::string _x(xyz_unit), _V(V_unit); Set(_x, _V, espid, x, y, z, V);
+            std::string x_(xyz_unit), V_(V_unit); Set(x_, V_, espid, x, y, z, V);
         }
 
         //! Return the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        void Get(char **xyz_unit, char **V_unit, int *espid, double *x, double *y, double *z, double *V)
+        void get(char **xyz_unit, char **V_unit, int *espid, double *x, double *y, double *z, double *V)
         {
-            *xyz_unit = strdup(_xyz_unit.c_str()); *V_unit = strdup(_V_unit.c_str()); *espid = _espid; *x = _x; *y = _y; *z = _z; *V = _V;
+            *xyz_unit = strdup(xyzUnit_.c_str()); *V_unit = strdup(vUnit_.c_str()); *espid = espID_; *x = x_; *y = y_; *z = z_; *V = V_;
         };
 
         //! Return the unit of the coordinates
-        std::string GetXYZunit() { return _xyz_unit; }
+        std::string getXYZunit() { return xyzUnit_; }
 
         //! Return the unit of the potential
-        std::string GetVunit() { return _V_unit; }
+        std::string getVunit() { return vUnit_; }
 
         //! Return the ESP id from the original calculation
-        int GetEspid() { return _espid; }
+        int getEspid() { return espID_; }
 
         //! Return the X coordinate of the ESP point
-        double GetX() { return _x; }
+        double getX() { return x_; }
 
         //! Return the Y coordinate of the ESP point
-        double GetY() { return _y; }
+        double getY() { return y_; }
 
         //! Return the Z coordinate of the ESP point
-        double GetZ() { return _z; }
+        double getZ() { return z_; }
 
         //! Return the electrostatic potential at this point in space
-        double GetV() { return _V; }
+        double getV() { return V_; }
 
         //! Set the potential for this instance of the class
-        void SetV(double V) { _V = V; }
+        void SetV(double V) { V_ = V; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -738,16 +730,16 @@ class Bond
         void Set(int ai, int aj, int bondorder) {_ai = ai; _aj = aj; _bondorder = bondorder; };
 
         //! Returns the ids of the atoms and the bondorder
-        void Get(int *ai, int *aj, int *bondorder) { *ai = _ai; *aj = _aj; *bondorder = _bondorder; };
+        void get(int *ai, int *aj, int *bondorder) { *ai = _ai; *aj = _aj; *bondorder = _bondorder; };
 
         //! Returns the first atom id
-        int GetAi() { return _ai; }
+        int getAi() { return _ai; }
 
         //! Returns the second atom id
-        int GetAj() { return _aj; }
+        int getAj() { return _aj; }
 
         //! Returns the bondorder
-        int GetBondOrder() { return _bondorder; }
+        int getBondOrder() { return _bondorder; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -788,10 +780,7 @@ class AtomicCharge : public GenericProperty
         AtomicCharge() {}
 
         //! Constructor setting type, unit and charge itself
-        AtomicCharge(const char *type, const char *unit, double q) : GenericProperty(type, unit) { SetQ(q); };
-
-        //! Constructor setting type, unit and charge itself
-        AtomicCharge(std::string type, std::string unit, double q) : GenericProperty(type, unit) { SetQ(q); };
+        AtomicCharge(std::string type, std::string unit, double T, double q) : GenericProperty(type, unit, T) { SetQ(q); };
 
         //! Destructor
         ~AtomicCharge() {};
@@ -800,7 +789,7 @@ class AtomicCharge : public GenericProperty
         void SetQ(double q) { _q = q; };
 
         //! Return the charge
-        double GetQ() { return _q; }
+        double getQ() { return _q; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -835,10 +824,10 @@ typedef std::vector<AtomicCharge>::iterator AtomicChargeIterator;
 class CalcAtom
 {
     private:
-        std::string               _name, _obtype, _unit;
-        double                    _x, _y, _z;
-        int                       _atomid;
-        std::vector<AtomicCharge> _q;
+        std::string               name_, obType_, unit_;
+        double                    x_, y_, z_;
+        int                       atomID_;
+        std::vector<AtomicCharge> q_;
     public:
         //! Empty constructor
         CalcAtom() {}
@@ -846,13 +835,13 @@ class CalcAtom
         //! Constructor initiating the name, type and atomid
         CalcAtom(const char *name, const char *obtype, int atomid)
         {
-            _name.assign(name); _obtype.assign(obtype); _atomid = atomid;
+            name_.assign(name); obType_.assign(obtype); atomID_ = atomid;
         };
 
         //! Constructor initiating the name, type and atomid
         CalcAtom(std::string name, std::string obtype, int atomid)
         {
-            _name = name; _obtype = obtype; _atomid = atomid;
+            name_ = name; obType_ = obtype; atomID_ = atomid;
         };
 
         //! Destructur
@@ -866,22 +855,22 @@ class CalcAtom
         void AddCharge(AtomicCharge aq);
 
         //! Begin Iterator over AtomicCharge items
-        AtomicChargeIterator BeginQ() { return _q.begin(); }
+        AtomicChargeIterator BeginQ() { return q_.begin(); }
 
         //! End Iterator over AtomicCharge items
-        AtomicChargeIterator EndQ() { return _q.end(); }
+        AtomicChargeIterator EndQ() { return q_.end(); }
 
         //! Return the atom id of the atom
-        int GetAtomid() { return _atomid; }
+        int getAtomid() { return atomID_; }
 
         //! Return the name of the atom
-        std::string GetName() { return _name; }
+        std::string getName() { return name_; }
 
         //! Return the OpenBabel type of the atom
-        std::string GetObtype() { return _obtype; }
+        std::string getObtype() { return obType_; }
 
         //! Return the unit of the coordinates of the atom
-        std::string GetUnit() { return _unit; }
+        std::string getUnit() { return unit_; }
 
         //! Set the unit of the coordinates of the atom
         void SetUnit(std::string unit);
@@ -890,19 +879,19 @@ class CalcAtom
         void SetUnit(const char *unit) { std::string s(unit); SetUnit(s); }
 
         //! Set the coordinates of the atom
-        void SetCoords(double x, double y, double z) { _x = x; _y = y; _z = z; }
+        void SetCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
 
         //! Return all the coordinates of the atom
-        void GetCoords(double *x, double *y, double *z) { *x = _x; *y = _y; *z = _z; }
+        void getCoords(double *x, double *y, double *z) { *x = x_; *y = y_; *z = z_; }
 
         //! Return the X coordinate of the atom
-        double GetX() { return _x; }
+        double getX() { return x_; }
 
         //! Return the Y coordinate of the atom
-        double GetY() { return _y; }
+        double getY() { return y_; }
 
         //! Return the Z coordinate of the atom
-        double GetZ() { return _z; }
+        double getZ() { return z_; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -939,11 +928,11 @@ typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
 class Experiment
 {
     private:
-        std::string                          _reference, _conformation;
-        std::vector<MolecularDipole>         _dipole;
-        std::vector<MolecularEnergy>         _energy;
-        std::vector<MolecularQuadrupole>     _quadrupole;
-        std::vector<MolecularPolarizability> _polar;
+        std::string                          reference_, conformation_;
+        std::vector<MolecularDipole>         dipole_;
+        std::vector<MolecularEnergy>         energy_;
+        std::vector<MolecularQuadrupole>     quadrupole_;
+        std::vector<MolecularPolarizability> polar_;
 
     public:
         //! Empty constructor
@@ -952,13 +941,13 @@ class Experiment
         //! Constructor initiating an Experiment with reference and conformation
         Experiment(std::string reference, std::string conformation)
         {
-            _reference = reference; _conformation = conformation;
+            reference_ = reference; conformation_ = conformation;
         };
 
         //! Constructor initiating an Experiment with reference and conformation
         Experiment(const char *reference, const char *conformation)
         {
-            _reference.assign(reference); _conformation.assign(conformation);
+            reference_.assign(reference); conformation_.assign(conformation);
         };
 
         //! Default destructor
@@ -968,55 +957,55 @@ class Experiment
         void Dump(FILE *fp);
 
         //! Add a MolecularDipole element containing polarizability data
-        void AddPolar(MolecularPolarizability mdp) { _polar.push_back(mdp); }
+        void AddPolar(MolecularPolarizability mdp) { polar_.push_back(mdp); }
 
         //! Return Begin Iterator over polarizability elements
-        MolecularPolarizabilityIterator BeginPolar() { return _polar.begin(); }
+        MolecularPolarizabilityIterator BeginPolar() { return polar_.begin(); }
 
         //! Return End Iterator over polarizability elements
-        MolecularPolarizabilityIterator EndPolar()   { return _polar.end(); }
+        MolecularPolarizabilityIterator EndPolar()   { return polar_.end(); }
 
         //! Number of polarizability values
-        int NPolar() { return _polar.size(); }
+        int NPolar() { return polar_.size(); }
 
         //! Number of dipole values
-        int NDipole() { return _dipole.size(); }
+        int NDipole() { return dipole_.size(); }
 
         //! Add a MolecularDipole element containing dipole data
-        void AddDipole(MolecularDipole mdp) { _dipole.push_back(mdp); }
+        void AddDipole(MolecularDipole mdp) { dipole_.push_back(mdp); }
 
         //! Return Begin Iterator over dipole elements
-        MolecularDipoleIterator BeginDipole() { return _dipole.begin(); }
+        MolecularDipoleIterator BeginDipole() { return dipole_.begin(); }
 
         //! Return End Iterator over dipole elements
-        MolecularDipoleIterator EndDipole()   { return _dipole.end(); }
+        MolecularDipoleIterator EndDipole()   { return dipole_.end(); }
 
         //! Number of quadrupole values
-        int NQuadrupole() { return _quadrupole.size(); }
+        int NQuadrupole() { return quadrupole_.size(); }
 
         //! Add a MolecularQuadrupole element
-        void AddQuadrupole(MolecularQuadrupole mq) { _quadrupole.push_back(mq); }
+        void AddQuadrupole(MolecularQuadrupole mq) { quadrupole_.push_back(mq); }
 
         //! Return Begin Iterator over quadrupole elements
-        MolecularQuadrupoleIterator BeginQuadrupole() { return _quadrupole.begin(); }
+        MolecularQuadrupoleIterator BeginQuadrupole() { return quadrupole_.begin(); }
 
         //! Return End Iterator over quadrupole elements
-        MolecularQuadrupoleIterator EndQuadrupole() { return _quadrupole.end(); }
+        MolecularQuadrupoleIterator EndQuadrupole() { return quadrupole_.end(); }
 
         //! Add a MolecularEnergy element
-        void AddEnergy(MolecularEnergy me) { _energy.push_back(me); }
+        void AddEnergy(MolecularEnergy me) { energy_.push_back(me); }
 
         //! Return Begin Iterator over energy elements
-        MolecularEnergyIterator BeginEnergy() { return _energy.begin(); }
+        MolecularEnergyIterator BeginEnergy() { return energy_.begin(); }
 
         //! Return End Iterator over energy elements
-        MolecularEnergyIterator EndEnergy()   { return _energy.end(); }
+        MolecularEnergyIterator EndEnergy()   { return energy_.end(); }
 
         //! Return the molecular conformation
-        std::string GetConformation() { return _conformation; }
+        std::string getConformation() { return conformation_; }
 
         //! Return the literature reference
-        std::string GetReference() { return _reference; }
+        std::string getReference() { return reference_; }
 
         /*! \brief
          * Convenience function that fetches a value from this experiment
@@ -1029,7 +1018,7 @@ class Experiment
          * \param[out] quadrupole The quadrupole tensor
          * \return true on success
          */
-        bool GetVal(const char *type, MolPropObservable mpo,
+        bool getVal(const char *type, MolPropObservable mpo,
                     double *value, double *error, double vec[3],
                     tensor quadrupole);
 
@@ -1134,16 +1123,16 @@ class Calculation : public Experiment
         ElectrostaticPotentialIterator EndPotential() { return _potential.end(); }
 
         //! Return the program used to perform the calculation
-        std::string GetProgram() { return _program; }
+        std::string getProgram() { return _program; }
 
         //! Return the basis set used to perform the calculation
-        std::string GetBasisset() { return _basisset; }
+        std::string getBasisset() { return _basisset; }
 
         //! Return the method used to perform the calculation
-        std::string GetMethod() { return _method; }
+        std::string getMethod() { return _method; }
 
         //! Return the datafile from which the calculation output was extracted
-        std::string GetDatafile() { return _datafile; }
+        std::string getDatafile() { return _datafile; }
 
         //! Merge in another object
         void Merge(Calculation &src);
@@ -1207,25 +1196,25 @@ class MolProp
         void SetIndex(int index) { _index = index; }
 
         //! Return the index number for sorting
-        int GetIndex() { return _index; }
+        int getIndex() { return _index; }
 
         //! Set the molecular mass
         void SetMass(double mass) { _mass = mass; }
 
         //! Return the molecular mass
-        double GetMass() { return _mass; }
+        double getMass() { return _mass; }
 
         //! Set the total charge of the molecule
         void SetCharge(double charge) { _charge = charge; }
 
         //! Return the total charge of the molecule
-        int GetCharge() { return _charge; }
+        int getCharge() { return _charge; }
 
         //! Set the multiplicity of the molecule
         void SetMultiplicity(int multiplicity) { _multiplicity = multiplicity; }
 
         //! Return the multiplicity  of the molecule
-        int GetMultiplicity() { return _multiplicity; }
+        int getMultiplicity() { return _multiplicity; }
 
         /*! \brief
          * Merge the content of another MolProp into this one
@@ -1248,10 +1237,10 @@ class MolProp
         void SetFormula(std::string formula) { _formula = formula; }
 
         //! Return the formula
-        std::string GetFormula() { return _formula; }
+        std::string getFormula() { return _formula; }
 
         //! Return the LaTeX formula
-        std::string GetTexFormula();
+        std::string getTexFormula();
 
         /*! \brief
          * Generate the chemical formula for this molecule based on atoms
@@ -1270,7 +1259,7 @@ class MolProp
         void SetMolname(std::string molname) { _molname = molname; }
 
         //! Return the molname
-        std::string GetMolname() { return _molname; }
+        std::string getMolname() { return _molname; }
 
         //! Set the IUPAC name
         void SetIupac(const char *iupac) { _iupac.assign(iupac); }
@@ -1279,7 +1268,7 @@ class MolProp
         void SetIupac(std::string iupac) { _iupac = iupac; }
 
         //! Return IUPAC name or, if not found, the molname
-        std::string GetIupac() { if (_iupac.size() > 0) { return _iupac; } else{ return _molname; } }
+        std::string getIupac() { if (_iupac.size() > 0) { return _iupac; } else{ return _molname; } }
 
         //! Set the CAS (Chemical Abstract Service) identifier, see http://www.cas.org/
         void SetCas(const char *cas) { _cas.assign(cas); }
@@ -1288,7 +1277,7 @@ class MolProp
         void SetCas(std::string cas) { _cas.assign(cas); }
 
         //! Return the CAS (Chemical Abstract Service) identifier, see http:://www.cas.org
-        std::string GetCas() { return _cas; }
+        std::string getCas() { return _cas; }
 
         //! Set the CID (Chemspider identifier) see http:://www.chemspider.com
         void SetCid(const char *cid) { _cid.assign(cid); }
@@ -1297,7 +1286,7 @@ class MolProp
         void SetCid(std::string cid) { _cid = cid; }
 
         //! Return the CID (Chemspider identifier) see http:://www.chemspider.com
-        std::string GetCid() { return _cid; }
+        std::string getCid() { return _cid; }
 
         //! Set the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
         void SetInchi(const char *inchi) { _inchi.assign(inchi); }
@@ -1306,16 +1295,16 @@ class MolProp
         void SetInchi(std::string inchi) { _inchi = inchi; }
 
         //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
-        std::string GetInchi() { return _inchi; }
+        std::string getInchi() { return _inchi; }
 
         //! Convenience function
-        bool GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
+        bool getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
                         const char *conf, const char *type, double *value, double *error,
                         char **ref, char **mylot,
                         double vec[3], tensor quadrupole);
 
         //! And another one
-        bool GetProp(MolPropObservable mpo, iqmType iQM, char *lot,
+        bool getProp(MolPropObservable mpo, iqmType iQM, char *lot,
                      char *conf, char *type, double *value, double *error);
 
         //! Add a classification category for this molecule
@@ -1442,11 +1431,11 @@ class MolProp
         }
 
         //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
-        CalculationIterator GetLot(const char *lot);
+        CalculationIterator getLot(const char *lot);
 
         //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
         //! The operator should hold the requested observable of the type (can be NULL)
-        CalculationIterator GetLotPropType(const char       *lot,
+        CalculationIterator getLotPropType(const char       *lot,
                                            MolPropObservable mpo,
                                            const char       *type);
 /*! \brief

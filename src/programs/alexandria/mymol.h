@@ -100,7 +100,7 @@ class MyMol : public MolProp
         void MakeSpecialInteractions(bool bUseVsites);
 
         //! Fetch the force constants
-        void GetForceConstants(gmx_poldata_t pd);
+        void getForceConstants(gmx_poldata_t pd);
     public:
         rvec                     *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix                    box;
@@ -150,7 +150,7 @@ class MyMol : public MolProp
                                   const char *symm_string);
 
         // Collect the experimental properties
-        immStatus GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
+        immStatus getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
                               alexandria::GaussAtomProp &gap);
 
         //! Print the topology that was generated previously in GROMACS format.
@@ -171,7 +171,7 @@ class MyMol : public MolProp
         void UpdateIdef(gmx_poldata_t pd, bool bOpt[]);
 
         //! Get the force field
-        std::string GetForceField() { return forcefield_; }
+        std::string getForceField() { return forcefield_; }
 
         void CalcMultipoles();
 

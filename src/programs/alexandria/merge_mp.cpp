@@ -55,7 +55,8 @@ static int tp_comp(const void *a, const void *b)
     return strcasecmp(ta->iupac, tb->iupac);
 }
 
-static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp)
+static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp,
+                           double temperature)
 {
     alexandria::MolPropIterator mpi;
     FILE                       *fp;
@@ -87,7 +88,7 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp)
         fclose(fp);
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
-            key.iupac = mpi->GetIupac().c_str();
+            key.iupac = mpi->getIupac().c_str();
             if (NULL != key.iupac)
             {
                 tpp = (t_prop *) bsearch(&key, tp, nprop, sizeof(tp[0]), tp_comp);
@@ -96,6 +97,7 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp)
                     alexandria::Experiment      ex(tpp->ref, (char *)"minimum");
                     alexandria::MolecularEnergy me(tpp->prop,
                                                    unit2string(eg2cKj_Mole),
+                                                   temperature,
                                                    atof(tpp->value), 0);
                     ex.AddEnergy(me);
                     mpi->AddExperiment(ex);
@@ -108,7 +110,8 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp)
     }
 }
 
-static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp)
+static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp,
+                        double temperature)
 {
     alexandria::MolPropIterator mpi;
     FILE                       *fp;
@@ -140,7 +143,7 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp)
         fclose(fp);
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
-            key.iupac = mpi->GetIupac().c_str();
+            key.iupac = mpi->getIupac().c_str();
             if (NULL != key.iupac)
             {
                 tpp = (t_prop *) bsearch(&key, tp, nprop, sizeof(tp[0]), tp_comp);
@@ -149,6 +152,7 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp)
                     alexandria::Experiment      ex(tpp->ref, (char *)"minimum");
                     alexandria::MolecularEnergy me(tpp->prop,
                                                    unit2string(eg2cKj_Mole),
+                                                   temperature,
                                                    atof(tpp->value), 0);
                     ex.AddEnergy(me);
                     mpi->AddExperiment(ex);
@@ -178,15 +182,18 @@ int alex_merge_mp(int argc, char *argv[])
         { efDAT, "-x",  "extra",     ffOPTRD },
         { efDAT, "-c",  "charges",   ffOPTRD }
     };
-    int                              NFILE    = (sizeof(fnm)/sizeof(fnm[0]));
-    static const char               *sort[]   = { NULL, "molname", "formula", "composition", NULL };
-    static int                       compress = 1;
-    t_pargs                          pa[]     =
+    int                              NFILE       = (sizeof(fnm)/sizeof(fnm[0]));
+    static const char               *sort[]      = { NULL, "molname", "formula", "composition", NULL };
+    static int                       compress    = 1;
+    static real                      temperature = 298.15;
+    t_pargs                          pa[]        =
     {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
         { "-compress", FALSE, etBOOL, {&compress},
-          "Compress output XML files" }
+          "Compress output XML files" },
+        { "-temp", FALSE, etREAL, {&temperature},
+          "Temperature corresponding to the experimental data (options [TT]-x[tt] or [TT]-c[tt])" }
     };
     char                           **fns;
     int                              nfiles;
@@ -213,9 +220,9 @@ int alex_merge_mp(int argc, char *argv[])
 
     ReadSqlite3(opt2fn_null("-db", NFILE, fnm), mp);
 
-    add_properties(opt2fn_null("-x", NFILE, fnm), mp);
+    add_properties(opt2fn_null("-x", NFILE, fnm), mp, temperature);
 
-    add_charges(opt2fn_null("-c", NFILE, fnm), mp);
+    add_charges(opt2fn_null("-c", NFILE, fnm), mp, temperature);
 
     MolPropWrite(opt2fn("-o", NFILE, fnm), mp, compress);
 

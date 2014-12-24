@@ -58,19 +58,19 @@ class GaussAtomPropVal
         ~GaussAtomPropVal() {}
 
         //! Return element name
-        std::string GetElement() { return _element; }
+        std::string getElement() { return _element; }
 
         //! Return the method used
-        std::string GetMethod() { return _method; }
+        std::string getMethod() { return _method; }
 
         //! Return a description of the type of value stored
-        std::string GetDesc() { return _desc; }
+        std::string getDesc() { return _desc; }
 
         //! Return the temperature
-        real GetTemp() { return _temp; }
+        real getTemp() { return _temp; }
 
         //! Return the actual value
-        real GetValue() { return _value; }
+        real getValue() { return _value; }
 };
 
 /*! \brief
@@ -105,7 +105,7 @@ class GaussAtomProp
          * \return 1 on success, 0 otherwise
          * \ingroup module_alexandria
          */
-        int GetValue(const char *element,
+        int getValue(const char *element,
                      const char *method,
                      const char *desc,
                      double      temp,

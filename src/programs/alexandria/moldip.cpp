@@ -337,7 +337,7 @@ static int check_data_sufficiency(FILE *fp,
                         if (debug)
                         {
                             fprintf(debug, "Removing %s because of lacking support for atom %s\n",
-                                    mmi->GetMolname().c_str(),
+                                    mmi->getMolname().c_str(),
                                     *(mmi->topology_->atoms.atomtype[k]));
                         }
                         mmi->eSupp = eSupportNo;
@@ -380,7 +380,7 @@ static int check_data_sufficiency(FILE *fp,
                         if (debug)
                         {
                             fprintf(debug, "Removing %s because of no support for name %s\n",
-                                    mmi->GetMolname().c_str(),
+                                    mmi->getMolname().c_str(),
                                     *(mmi->topology_->atoms.atomtype[j]));
                         }
                         break;
@@ -419,7 +419,7 @@ static int check_data_sufficiency(FILE *fp,
             if (NULL != debug)
             {
                 fprintf(debug, "Supported molecule %s on CPU %d\n",
-                        mmi->GetMolname().c_str(), cr->nodeid);
+                        mmi->getMolname().c_str(), cr->nodeid);
             }
             nsupported++;
         }
@@ -564,7 +564,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
         i = -1;
         for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
-            if (imsTrain == gmx_molselect_status(gms, mpi->GetIupac().c_str()))
+            if (imsTrain == gmx_molselect_status(gms, mpi->getIupac().c_str()))
             {
                 int               dest = (n % _cr->nnodes);
                 alexandria::MyMol mpnew;
@@ -580,7 +580,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                     {
                         mpnew.gr_ = gmx_resp_init(_iChargeDistributionModel,
                                                   TRUE, 0.001, 0.1,
-                                                  mpnew.GetCharge(),
+                                                  mpnew.getCharge(),
                                                   1, 100, 5,
                                                   TRUE, watoms, 5, TRUE, TRUE,
                                                   1, TRUE,
@@ -610,7 +610,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 }
                 if (immOK == imm)
                 {
-                    imm = mpnew.GetExpProps(_bQM, bZero, lot, gap);
+                    imm = mpnew.getExpProps(_bQM, bZero, lot, gap);
                 }
 
                 if (immOK == imm)
@@ -622,7 +622,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                         if (NULL != debug)
                         {
                             fprintf(debug, "Going to send %s to cpu %d\n",
-                                    mpi->GetMolname().c_str(), dest);
+                                    mpi->getMolname().c_str(), dest);
                         }
                         gmx_send_int(_cr, dest, 1);
                         CommunicationStatus cs = mpi->Send(_cr, dest);
@@ -637,11 +637,11 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                         if (imm != immOK)
                         {
                             fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
-                                    mpnew.GetMolname().c_str(), dest, alexandria::immsg(imm));
+                                    mpnew.getMolname().c_str(), dest, alexandria::immsg(imm));
                         }
                         else if (NULL != debug)
                         {
-                            fprintf(debug, "Succesfully beamed over %s\n", mpi->GetMolname().c_str());
+                            fprintf(debug, "Succesfully beamed over %s\n", mpi->getMolname().c_str());
                         }
 
                     }
@@ -656,14 +656,14 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                         if (NULL != debug)
                         {
                             fprintf(debug, "Added %s, n = %d\n",
-                                    mpnew.GetMolname().c_str(), n);
+                                    mpnew.getMolname().c_str(), n);
                         }
                     }
                 }
                 if ((immOK != imm) && (NULL != debug))
                 {
                     fprintf(debug, "IMM: Dest: %d %s - %s\n",
-                            dest, mpi->GetMolname().c_str(), immsg(imm));
+                            dest, mpi->getMolname().c_str(), immsg(imm));
                 }
             }
             else
@@ -702,7 +702,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             }
             else if (NULL != debug)
             {
-                fprintf(debug, "Succesfully retrieved %s\n", mpnew.GetMolname().c_str());
+                fprintf(debug, "Succesfully retrieved %s\n", mpnew.getMolname().c_str());
                 fflush(debug);
             }
 
@@ -711,7 +711,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
             if (immOK == imm)
             {
-                mpnew.gr_ = gmx_resp_init(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.GetCharge(),
+                mpnew.gr_ = gmx_resp_init(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.getCharge(),
                                           1, 100, 5,
                                           TRUE, watoms, 5, TRUE, TRUE,
                                           1, TRUE,
@@ -739,7 +739,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             }
             if (immOK == imm)
             {
-                imm = mpnew.GetExpProps(_bQM, bZero, lot, gap);
+                imm = mpnew.getExpProps(_bQM, bZero, lot, gap);
             }
 
             mpnew.eSupp = eSupportLocal;
@@ -749,7 +749,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 _mymol.push_back(mpnew);
                 if (NULL != debug)
                 {
-                    fprintf(debug, "Added molecule %s\n", mpnew.GetMolname().c_str());
+                    fprintf(debug, "Added molecule %s\n", mpnew.getMolname().c_str());
                 }
             }
             gmx_send_int(_cr, 0, imm);
@@ -928,7 +928,7 @@ void MolDip::CalcDeviation()
                                      mymol->x_, _iChargeDistributionModel,
                                      _iChargeGenerationAlgorithm,
                                      _hfac,
-                                     mymol->GetCharge(), _epsr);
+                                     mymol->getCharge(), _epsr);
             }
             /*if (strcmp(mymol->molname,"1-butene") == 0)
                fprintf(stderr,"Ready for %s\n",mymol->molname);*/
@@ -1001,11 +1001,11 @@ void MolDip::CalcDeviation()
                     _ener[ermsCHARGE] += sqr(qq-mymol->qESP[j]);
                 }
             }
-            if (0 && (fabs(qtot-mymol->GetCharge()) > 1e-2))
+            if (0 && (fabs(qtot-mymol->getCharge()) > 1e-2))
             {
                 fprintf(stderr, "Warning qtot for %s is %g, should be %d\n",
-                        mymol->GetMolname().c_str(),
-                        qtot, mymol->GetCharge());
+                        mymol->getMolname().c_str(),
+                        qtot, mymol->getCharge());
             }
             if (_bQM)
             {
@@ -1035,7 +1035,7 @@ void MolDip::CalcDeviation()
                     if (NULL != debug)
                     {
                         fprintf(debug, "RMS %s = %g\n",
-                                mymol->GetMolname().c_str(), _ener[ermsESP]);
+                                mymol->getMolname().c_str(), _ener[ermsESP]);
                     }
                 }
             }

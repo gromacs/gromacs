@@ -394,7 +394,7 @@ int alex_gentop(int argc, char *argv[])
 
         for (mpi = mps.begin(); (mpi < mps.end()); mpi++)
         {
-            if (strcasecmp(dbname, mpi->GetMolname().c_str()) == 0)
+            if (strcasecmp(dbname, mpi->getMolname().c_str()) == 0)
             {
                 break;
             }
@@ -446,7 +446,7 @@ int alex_gentop(int argc, char *argv[])
         {
             seed = gmx_rng_make_seed();
         }
-        mymol.gr_ = gmx_resp_init(iChargeDistributionModel, bAXpRESP, qweight, bhyper, mymol.GetCharge(),
+        mymol.gr_ = gmx_resp_init(iChargeDistributionModel, bAXpRESP, qweight, bhyper, mymol.getCharge(),
                                   zmin, zmax, delta_z,
                                   bZatype, watoms, rDecrZeta, bRandZeta, bRandQ,
                                   penalty_fac, bFitZeta,

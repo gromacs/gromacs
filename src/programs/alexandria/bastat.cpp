@@ -578,14 +578,14 @@ int alex_bastat(int argc, char *argv[])
     snew(b, 1);
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if (gmx_molselect_status(gms, mpi->GetIupac().c_str()) == imsTrain)
+        if (gmx_molselect_status(gms, mpi->getIupac().c_str()) == imsTrain)
         {
             alexandria::MyMol mmi;
             int               i;
             mmi.Merge(*mpi);
-            if (mmi.GetMolname().size() == 0)
+            if (mmi.getMolname().size() == 0)
             {
-                printf("Empty molname for molecule with formula %s\n", mmi.GetFormula().c_str());
+                printf("Empty molname for molecule with formula %s\n", mmi.getFormula().c_str());
                 continue;
             }
             immStatus imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel, 2,
@@ -595,7 +595,7 @@ int alex_bastat(int argc, char *argv[])
             {
                 if (NULL != debug)
                 {
-                    fprintf(debug, "Could not make topology for %s\n", mmi.GetMolname().c_str());
+                    fprintf(debug, "Could not make topology for %s\n", mmi.getMolname().c_str());
                 }
                 continue;
             }
@@ -607,7 +607,7 @@ int alex_bastat(int argc, char *argv[])
                     if (NULL != debug)
                     {
                         fprintf(debug, "No bond-type support for atom %s in %s\n",
-                                *mmi.topology_->atoms.atomtype[i], mmi.GetMolname().c_str());
+                                *mmi.topology_->atoms.atomtype[i], mmi.getMolname().c_str());
                     }
                     break;
                 }
@@ -628,14 +628,14 @@ int alex_bastat(int argc, char *argv[])
                     for (alexandria::BondIterator bi = mmi.BeginBond(); (bi < mmi.EndBond()); bi++)
                     {
                         int xi, xj, xb;
-                        bi->Get(&xi, &xj, &xb);
+                        bi->get(&xi, &xj, &xb);
                         if (!bBondOrder)
                         {
                             xb = 1;
                         }
                         if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
                         {
-                            add_bond(fp, mmi.GetMolname().c_str(), b, cai, caj, 1000*norm(dx),
+                            add_bond(fp, mmi.getMolname().c_str(), b, cai, caj, 1000*norm(dx),
                                      bspacing, xb);
                             break;
                         }
@@ -660,7 +660,7 @@ int alex_bastat(int argc, char *argv[])
                 const char *cak = BTP(ak);
                 if ((NULL != cai) && (NULL != caj) && (NULL != cak))
                 {
-                    add_angle(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, ang, aspacing);
+                    add_angle(fp, mmi.getMolname().c_str(), b, cai, caj, cak, ang, aspacing);
                 }
                 else
                 {
@@ -687,7 +687,7 @@ int alex_bastat(int argc, char *argv[])
                 const char *cal = BTP(al);
                 if ((NULL != cai) && (NULL != caj) && (NULL != cak) && (NULL != cal))
                 {
-                    add_dih(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdPDIHS);
+                    add_dih(fp, mmi.getMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdPDIHS);
                 }
                 else
                 {
@@ -712,7 +712,7 @@ int alex_bastat(int argc, char *argv[])
                 const char *cal = BTP(al);
                 if ((NULL != cai) && (NULL != caj) && (NULL != cak) && (NULL != cal))
                 {
-                    add_dih(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdIDIHS);
+                    add_dih(fp, mmi.getMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdIDIHS);
                 }
                 else
                 {

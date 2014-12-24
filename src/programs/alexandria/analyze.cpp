@@ -66,7 +66,7 @@ static void calc_frag_miller(gmx_poldata_t                     pd,
 
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        const char *iupac = mpi->GetIupac().c_str();
+        const char *iupac = mpi->getIupac().c_str();
         ims = gmx_molselect_status(gms, iupac);
         if ((ims == imsTrain) || (ims == imsTest))
         {
@@ -83,8 +83,8 @@ static void calc_frag_miller(gmx_poldata_t                     pd,
                     int    natom_tot = 0, Nelec = 0;
                     for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); bSupport && (ani < mci->EndAtomNum()); ani++)
                     {
-                        const char *atomname = ani->GetAtom().c_str();
-                        int         natom    = ani->GetNumber();
+                        const char *atomname = ani->getAtom().c_str();
+                        int         natom    = ani->getNumber();
                         switch (ic)
                         {
                             case alexandria::iCalexandria:
@@ -125,21 +125,21 @@ static void calc_frag_miller(gmx_poldata_t                     pd,
                             alexandria::Calculation calc1(program, type, (char *)"ahc",
                                                           ref, minimum, nofile);
                             ahc = 4*sqr(ahc)/Nelec;
-                            alexandria::MolecularPolarizability md1(empirical, ang3, 0, 0, 0, 0, 0, 0, ahc, 0);
+                            alexandria::MolecularPolarizability md1(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahc, 0);
                             calc1.AddPolar(md1);
                             mpi->AddCalculation(calc1);
 
-                            alexandria::Calculation       calc2(program, type, (char *)"ahp",
-                                                                ref, minimum, nofile);
-                            alexandria::MolecularPolarizability md2(empirical, ang3, 0, 0, 0, 0, 0, 0, ahp, 0);
+                            alexandria::Calculation             calc2(program, type, (char *)"ahp",
+                                                                      ref, minimum, nofile);
+                            alexandria::MolecularPolarizability md2(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahp, 0);
                             calc2.AddPolar(md2);
                             mpi->AddCalculation(calc2);
                         }
                         else
                         {
-                            alexandria::Calculation       calc(program, type, minus,
-                                                               ref, minimum, nofile);
-                            alexandria::MolecularPolarizability md(empirical, ang3, 0, 0, 0, 0, 0, 0, p, sp);
+                            alexandria::Calculation             calc(program, type, minus,
+                                                                     ref, minimum, nofile);
+                            alexandria::MolecularPolarizability md(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, p, sp);
                             calc.AddPolar(md);
                             mpi->AddCalculation(calc);
                             if (NULL != debug)
@@ -190,13 +190,13 @@ static void write_corr_xvg(const char *fn,
         nout = 0;
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
-            ims = gmx_molselect_status(gms, mpi->GetIupac().c_str());
+            ims = gmx_molselect_status(gms, mpi->getIupac().c_str());
             if ((ims == imsTrain) || (ims == imsTest))
             {
                 for (k = 0; (k < qmc->nconf); k++)
                 {
-                    bool bExp = mpi->GetProp(mpo, iqmExp, NULL, NULL, exp_type, &exp_val, NULL);
-                    bool bQM  = mpi->GetProp(mpo, iqmQM, lbuf, qmc->conf[k],
+                    bool bExp = mpi->getProp(mpo, iqmExp, NULL, NULL, exp_type, &exp_val, NULL);
+                    bool bQM  = mpi->getProp(mpo, iqmQM, lbuf, qmc->conf[k],
                                              qmc->type[i], &qm_val, &qm_error);
                     if (bExp && bQM)
                     {
@@ -207,13 +207,13 @@ static void write_corr_xvg(const char *fn,
                              ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
                         {
                             fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g\n",
-                                    mpi->GetIupac().c_str(), exp_val, qm_val, qm_error);
+                                    mpi->getIupac().c_str(), exp_val, qm_val, qm_error);
                             nout++;
                         }
                     }
                     else if (NULL != debug)
                     {
-                        fprintf(debug, "%s bQM = %d bExp = %d\n", mpi->GetMolname().c_str(),
+                        fprintf(debug, "%s bQM = %d bExp = %d\n", mpi->getMolname().c_str(),
                                 bQM ? 1 : 0, bExp ? 1 : 0);
                     }
                 }
@@ -299,12 +299,12 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     snew(rc, 1);
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        molname[cur] = mpi->GetMolname().c_str();
+        molname[cur] = mpi->getMolname().c_str();
         for (ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
         {
-            if (ei->GetVal(exp_type, prop, &value, &error, vec, quadrupole))
+            if (ei->getVal(exp_type, prop, &value, &error, vec, quadrupole))
             {
-                add_refc(rc, ei->GetReference().c_str());
+                add_refc(rc, ei->getReference().c_str());
             }
         }
         if (debug && ((mpi > mp.begin()) && (strcasecmp(molname[cur], molname[prev]) == 0)))
@@ -352,10 +352,10 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
             gp = fopen(selout, "w");
             for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
             {
-                iupac = mpi->GetIupac().c_str();
+                iupac = mpi->getIupac().c_str();
                 if ((NULL != iupac) && (strlen(iupac) > 0))
                 {
-                    if (mpi->GetPropRef(prop, iqmBoth, lot, NULL, NULL,
+                    if (mpi->getPropRef(prop, iqmBoth, lot, NULL, NULL,
                                         &value, &error, &ref, NULL,
                                         vec, quadrupole))
                     {
