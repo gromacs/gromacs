@@ -84,7 +84,7 @@ void ReadSqlite3(const char                       *sqlite_file,
     sqlite3_stmt               *stmt = NULL, *stmt2 = NULL;
     char sql_str[1024];
     const char                 *iupac, *cas, *csid, *prop, *unit, *ref, *classification, *source;
-    double                      value, error;
+    double                      value, error, temperature;
     int                         cidx, rc, nbind, nexp_prop;
     t_synonym                  *syn  = NULL, key, *keyptr;
     int                         nsyn = 0, maxsyn = 0;
@@ -146,7 +146,7 @@ void ReadSqlite3(const char                       *sqlite_file,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit,gp.value,gp.error,gp.ref,ds.source FROM molecules as mol,gasproperty as gp,proptypes as pt, datasource as ds WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
+    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit,gp.temperature,gp.value,gp.error,gp.ref,ds.source FROM molecules as mol,gasproperty as gp,proptypes as pt, datasource as ds WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, NULL));
 
@@ -162,8 +162,8 @@ void ReadSqlite3(const char                       *sqlite_file,
     }
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        key.molname = mpi->GetMolname().c_str();
-        key.iupac   = mpi->GetIupac().c_str();
+        key.molname = mpi->getMolname().c_str();
+        key.iupac   = mpi->getIupac().c_str();
         keyptr      = (t_synonym *) bsearch((const void *)&key,
                                             (const void *)syn,
                                             nsyn, sizeof(syn[0]), syn_comp);
@@ -210,6 +210,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                         classification = (char *)sqlite3_column_text(stmt, cidx++);
                         prop           = (char *)sqlite3_column_text(stmt, cidx++);
                         unit           = (char *)sqlite3_column_text(stmt, cidx++);
+                        temperature    = sqlite3_column_double(stmt, cidx++);
                         value          = sqlite3_column_double(stmt, cidx++);
                         error          = sqlite3_column_double(stmt, cidx++);
                         ref            = (char *)sqlite3_column_text(stmt, cidx++);
@@ -224,16 +225,16 @@ void ReadSqlite3(const char                       *sqlite_file,
                             alexandria::Experiment exper(ref, "minimum");
                             if (strcasecmp(prop, "Polarizability") == 0)
                             {
-                                exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, 0, 0, 0, 0, 0, 0, value, 0));
-                                
+                                exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0));
+
                             }
                             else if (strcasecmp(prop, "dipole") == 0)
                             {
-                                exper.AddDipole(alexandria::MolecularDipole(prop, unit, 0, 0, 0, value, error));
+                                exper.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
                             }
-                            else if (strcasecmp(prop, "DHf(298.15K)") == 0)
+                            else if (strcasecmp(prop, "DHf") == 0)
                             {
-                                exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, value, error));
+                                exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, value, error));
                             }
                             mpi->AddExperiment(exper);
                         }
@@ -244,16 +245,16 @@ void ReadSqlite3(const char                       *sqlite_file,
                                                          "unknown" );
                             if (strcasecmp(prop, "Polarizability") == 0)
                             {
-                                alexandria::MolecularPolarizability mp(prop, unit, 0, 0, 0, 0, 0, 0, value, 0);
+                                alexandria::MolecularPolarizability mp(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0);
                                 calc.AddPolar(mp);
                             }
                             else if (strcasecmp(prop, "dipole") == 0)
                             {
-                                calc.AddDipole(alexandria::MolecularDipole(prop, unit, 0, 0, 0, value, error));
+                                calc.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
                             }
-                            else if (strcasecmp(prop, "DHf(298.15K)") == 0)
+                            else if (strcasecmp(prop, "DHf") == 0)
                             {
-                                calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, value, error));
+                                calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, value, error));
                             }
                             mpi->AddCalculation(calc);
                         }
@@ -270,7 +271,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                         }
                         if (strlen(cas) > 0)
                         {
-                            cas2 = mpi->GetCas();
+                            cas2 = mpi->getCas();
                             if ((cas2.length() > 0) &&
                                 (strcmp(cas, cas2.c_str()) != 0))
                             {
@@ -280,7 +281,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                         }
                         if (strlen(csid) > 0)
                         {
-                            csid2 = mpi->GetCid();
+                            csid2 = mpi->getCid();
                             if ((csid2.length() > 0) &&
                                 (strcmp(csid, csid2.c_str()) != 0))
                             {

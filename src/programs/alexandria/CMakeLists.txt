@@ -97,6 +97,7 @@ set(ALEXANDRIA_SOURCES
 #        gen_ff.cpp
         gen_table.cpp
         alex_modules.cpp
+        categories.cpp
 	)
 	
 add_library(libalexandria ${ALEXANDRIA_SOURCES})	

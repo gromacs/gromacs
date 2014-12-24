@@ -114,15 +114,15 @@ static void gmx_molprop_csv(const char *fn,
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         fprintf(fp, "\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%g\"",
-                mpi->GetIupac().c_str(),
-                mpi->GetFormula().c_str(),
-                mpi->GetInchi().c_str(),
-                mpi->GetCharge(),
-                mpi->GetMultiplicity(),
-                mpi->GetMass());
+                mpi->getIupac().c_str(),
+                mpi->getFormula().c_str(),
+                mpi->getInchi().c_str(),
+                mpi->getCharge(),
+                mpi->getMultiplicity(),
+                mpi->getMass());
         for (k = 0; (k < NEMP); k++)
         {
-            if (mpi->GetPropRef(mpo[k], iqmExp,
+            if (mpi->getPropRef(mpo[k], iqmExp,
                                 NULL, NULL, NULL, &d, &err, &ref, NULL, vec,
                                 quadrupole))
             {
@@ -135,7 +135,7 @@ static void gmx_molprop_csv(const char *fn,
             }
             for (j = 0; (j < qmc[k]->n); j++)
             {
-                if (mpi->GetProp(mpo[k], iqmQM, qmc[k]->lot[j], NULL, qmc[k]->type[j], &d, NULL))
+                if (mpi->getProp(mpo[k], iqmQM, qmc[k]->lot[j], NULL, qmc[k]->type[j], &d, NULL))
                 {
                     fprintf(fp, ",\"%.4f\"", d);
                 }

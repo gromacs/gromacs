@@ -72,7 +72,7 @@ void generate_composition(std::vector<alexandria::MolProp> &mp, gmx_poldata_t pd
         else if (debug)
         {
             fprintf(debug, "Failed to make composition for %s\n",
-                    mpi->GetMolname().c_str());
+                    mpi->getMolname().c_str());
         }
     }
     if (mp.size() > 1)
@@ -127,9 +127,9 @@ static bool molprop_2_atoms(alexandria::MolProp mp, gmx_atomprop_t ap,
     bool        bDone = false;
 
     (*x)  = NULL;
-    molnm = mp.GetMolname();
+    molnm = mp.getMolname();
 
-    ci = mp.GetLot(lot);
+    ci = mp.getLot(lot);
     if (ci < mp.EndCalculation())
     {
         natom = 0;
@@ -138,8 +138,8 @@ static bool molprop_2_atoms(alexandria::MolProp mp, gmx_atomprop_t ap,
 
         for (cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
         {
-            myunit = string2unit((char *)cai->GetUnit().c_str());
-            cai->GetCoords(&xx, &yy, &zz);
+            myunit = string2unit((char *)cai->getUnit().c_str());
+            cai->getCoords(&xx, &yy, &zz);
             (*x)[natom][XX] = convert2gmx(xx, myunit);
             (*x)[natom][YY] = convert2gmx(yy, myunit);
             (*x)[natom][ZZ] = convert2gmx(zz, myunit);
@@ -147,17 +147,17 @@ static bool molprop_2_atoms(alexandria::MolProp mp, gmx_atomprop_t ap,
             q = 0;
             for (qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
-                if (strcmp(qi->GetType().c_str(), q_algorithm) == 0)
+                if (strcmp(qi->getType().c_str(), q_algorithm) == 0)
                 {
-                    myunit = string2unit((char *)qi->GetUnit().c_str());
-                    q      = convert2gmx(qi->GetQ(), myunit);
+                    myunit = string2unit((char *)qi->getUnit().c_str());
+                    q      = convert2gmx(qi->getQ(), myunit);
                     break;
                 }
             }
 
             t_atoms_set_resinfo(atoms, natom, tab, molnm.c_str(), 1, ' ', 1, ' ');
-            atoms->atomname[natom]        = put_symtab(tab, cai->GetName().c_str());
-            atoms->atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->GetName().c_str());
+            atoms->atomname[natom]        = put_symtab(tab, cai->getName().c_str());
+            atoms->atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->getName().c_str());
             strcpy(atoms->atom[natom].elem, gmx_atomprop_element(ap, atoms->atom[natom].atomnumber));
             atoms->atom[natom].q      = q;
             atoms->atom[natom].resind = 0;
@@ -194,7 +194,7 @@ bool molprop_2_topology2(alexandria::MolProp mp, gmx_atomprop_t ap,
     top = *mytop;
     init_top(top);
 
-    /* Get atoms */
+    /* get atoms */
     if (false == molprop_2_atoms(mp, ap, tab, lot, &(top->atoms), q_algorithm, x))
     {
         return false;
@@ -205,8 +205,8 @@ bool molprop_2_topology2(alexandria::MolProp mp, gmx_atomprop_t ap,
     memset(&b, 0, sizeof(b));
     for (bi = mp.BeginBond(); (bi < mp.EndBond()); bi++)
     {
-        b.a[0] = bi->GetAi() - 1;
-        b.a[1] = bi->GetAj() - 1;
+        b.a[0] = bi->getAi() - 1;
+        b.a[1] = bi->getAj() - 1;
         add_param_to_list(&(plist[ftb]), &b);
     }
     natom = mp.NAtom();
@@ -269,8 +269,8 @@ void merge_doubles(std::vector<alexandria::MolProp> &mp, char *doubles,
         bDouble = false;
         mpi->Dump(debug);
         mmm[cur]     = mpi;
-        molname[cur] = mpi->GetMolname();
-        form[cur]    = mpi->GetFormula();
+        molname[cur] = mpi->getMolname();
+        form[cur]    = mpi->getFormula();
         if (i > 0)
         {
             bForm = (form[prev] == form[cur]);
@@ -297,8 +297,8 @@ void merge_doubles(std::vector<alexandria::MolProp> &mp, char *doubles,
                     if (mpi != mp.end())
                     {
                         mmm[cur]      = mpi;
-                        molname[cur]  = mmm[cur]->GetMolname();
-                        form[cur]     = mmm[cur]->GetFormula();
+                        molname[cur]  = mmm[cur]->getMolname();
+                        form[cur]     = mmm[cur]->getFormula();
                     }
                 }
             }
@@ -331,8 +331,8 @@ static void dump_mp(std::vector<alexandria::MolProp> mp)
 
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        fprintf(fp, "%-20s  %s\n", mpi->GetFormula().c_str(),
-                mpi->GetMolname().c_str());
+        fprintf(fp, "%-20s  %s\n", mpi->getFormula().c_str(),
+                mpi->getMolname().c_str());
     }
 
     fclose(fp);
@@ -394,8 +394,8 @@ void merge_xml(int nfile, char **filens,
 static bool comp_mp_molname(alexandria::MolProp ma,
                             alexandria::MolProp mb)
 {
-    std::string mma = ma.GetMolname();
-    std::string mmb = mb.GetMolname();
+    std::string mma = ma.getMolname();
+    std::string mmb = mb.getMolname();
 
     return (mma.compare(mmb) < 0);
 }
@@ -403,8 +403,8 @@ static bool comp_mp_molname(alexandria::MolProp ma,
 static bool comp_mp_formula(alexandria::MolProp ma,
                             alexandria::MolProp mb)
 {
-    std::string fma = ma.GetFormula();
-    std::string fmb = mb.GetFormula();
+    std::string fma = ma.getFormula();
+    std::string fmb = mb.getFormula();
 
     if (fma.compare(fmb) < 0)
     {
@@ -471,7 +471,7 @@ static bool comp_mp_elem(alexandria::MolProp ma,
 static bool comp_mp_index(alexandria::MolProp ma,
                           alexandria::MolProp mb)
 {
-    return (ma.GetIndex() < mb.GetIndex());
+    return (ma.getIndex() < mb.getIndex());
 }
 
 alexandria::MolPropIterator SearchMolProp(std::vector<alexandria::MolProp> &mp,
@@ -480,7 +480,7 @@ alexandria::MolPropIterator SearchMolProp(std::vector<alexandria::MolProp> &mp,
     alexandria::MolPropIterator mpi;
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if (strcmp(mpi->GetMolname().c_str(), name) == 0)
+        if (strcmp(mpi->getMolname().c_str(), name) == 0)
         {
             break;
         }
@@ -525,7 +525,7 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
             {
                 for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
                 {
-                    int index = gmx_molselect_index(gms, mpi->GetIupac().c_str());
+                    int index = gmx_molselect_index(gms, mpi->getIupac().c_str());
                     mpi->SetIndex(index);
                 }
                 std::sort(mp.begin(), mp.end(), comp_mp_index);
@@ -630,11 +630,11 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
     {
         for (ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
         {
-            add_qmc_conf(qmc, ei->GetConformation().c_str());
+            add_qmc_conf(qmc, ei->getConformation().c_str());
         }
         for (ci = mpi->BeginCalculation(); (ci < mpi->EndCalculation()); ci++)
         {
-            add_qmc_conf(qmc, ci->GetConformation().c_str());
+            add_qmc_conf(qmc, ci->getConformation().c_str());
         }
     }
     if (NULL != fc_str)
@@ -670,13 +670,13 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
     {
         for (ci = mpi->BeginCalculation(); (ci < mpi->EndCalculation()); ci++)
         {
-            method = ci->GetMethod().c_str();
-            basis  = ci->GetBasisset().c_str();
+            method = ci->getMethod().c_str();
+            basis  = ci->getBasisset().c_str();
             for (ti = types.begin(); (ti < types.end()); ti++)
             {
                 if ((NULL == fc_str) || (get_qmc_count(qmc, method, basis, ti->c_str()) > 0))
                 {
-                    if (ci->GetVal(ti->c_str(), mpo, &value, &error, vec, quadrupole))
+                    if (ci->getVal(ti->c_str(), mpo, &value, &error, vec, quadrupole))
                     {
                         add_qmc_calc(qmc, method, basis, ti->c_str());
                     }

@@ -180,7 +180,7 @@ static void check_support(FILE                           *fp,
         if (!bSupport)
         {
             fprintf(stderr, "No force field support for %s\n",
-                    mymol->GetMolname().c_str());
+                    mymol->getMolname().c_str());
             mymol = mm.erase(mymol);
         }
         else
@@ -393,7 +393,7 @@ class OptParam : public MolDip
                      opt_mask_t *omt, real factor);
 
         void MkInvGt();
-        void GetDissociationEnergy(FILE *fplog);
+        void getDissociationEnergy(FILE *fplog);
         void Opt2List();
         void List2Opt();
         void Add(int otype, int natom, char **ai,
@@ -575,7 +575,7 @@ static void dump_csv(int                             nD,
     for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
          (mymol < _mymol.end()); mymol++)
     {
-        fprintf(csv, "\"%s\",", mymol->GetMolname().c_str());
+        fprintf(csv, "\"%s\",", mymol->getMolname().c_str());
         for (int j = 0; (j < nD); j++)
         {
             fprintf(csv, "%g,", a[i][j]);
@@ -586,7 +586,7 @@ static void dump_csv(int                             nD,
     fclose(csv);
 
 }
-void OptParam::GetDissociationEnergy(FILE *fplog)
+void OptParam::getDissociationEnergy(FILE *fplog)
 {
     int        nD, nMol, ftb, gt, gti, ai, aj, niter, row;
     char     **ctest;
@@ -647,7 +647,7 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
                           aai, aaj,
                           *mymol->topology_->atoms.atomtype[ai],
                           *mymol->topology_->atoms.atomtype[aj],
-                          mymol->GetIupac().c_str());
+                          mymol->getIupac().c_str());
             }
         }
         x[j] = mymol->Emol;
@@ -921,7 +921,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
 
     MkInvGt();
     Opt2List();
-    GetDissociationEnergy(fplog);
+    getDissociationEnergy(fplog);
     Opt2List();
     List2Opt();
     snew(_best, _nparam);
@@ -1103,7 +1103,7 @@ double OptParam::CalcDeviation()
 
             if (NULL != debug)
             {
-                fprintf(debug, "%s ener %g Epot %g Force2 %g\n", mymol->GetMolname().c_str(), ener,
+                fprintf(debug, "%s ener %g Epot %g Force2 %g\n", mymol->getMolname().c_str(), ener,
                         mymol->Ecalc, mymol->Force2);
             }
         }
@@ -1429,7 +1429,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
 
     for (std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
     {
-        fprintf(fp, "%-30s  %d\n", mi->GetMolname().c_str(), mi->NAtom());
+        fprintf(fp, "%-30s  %d\n", mi->getMolname().c_str(), mi->NAtom());
         for (j = 0; (j < mi->NAtom()); j++)
         {
             fprintf(fp, "  %-5s  %-5s  q = %10g", *(mi->topology_->atoms.atomname[j]),
@@ -1458,7 +1458,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
         }
         if (bMtop)
         {
-            pr_mtop(fp, 0, mi->GetMolname().c_str(), mi->mtop_, TRUE);
+            pr_mtop(fp, 0, mi->getMolname().c_str(), mi->mtop_, TRUE);
         }
     }
 }
@@ -1488,7 +1488,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         real DeltaE = mi->Ecalc - mi->Emol;
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i,
-                mi->GetMolname().c_str(),
+                mi->getMolname().c_str(),
                 mi->Hform, mi->Emol, DeltaE,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");

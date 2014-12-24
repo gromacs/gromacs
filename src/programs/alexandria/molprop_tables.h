@@ -30,6 +30,7 @@
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molselect.h"
+#include "categories.h"
 
 //! Utility function converting float to char *
 extern char *ftoa(double f);
@@ -48,6 +49,8 @@ extern char *itoa(int f);
  * \param[in] lot   Level of theory in 'A/B' form
  * \param[in] exp_type The type of experimental property
  * \param[in] outlier  Outlier indicates a level (in units of sigma, one standard deviation). Calculations that deviate more than this level from the experiment are not taken into account when computing statistics. Moreover, the outliers are printed to the standard error. If outlier is 0, no action is taken.
+ * \param[in] catmin Mininum number of molecules in a category for it to be printed
+ * \param[in] cList Structure containing all categories and the number of molecules per category
  * \param[in] gms   Structure containing selections of which molecules to output
  * \param[in] ims   The actual selection of the right set
  * \todo Transform iQM to enum
@@ -56,7 +59,9 @@ extern char *itoa(int f);
 extern void gmx_molprop_stats_table(FILE *fp, MolPropObservable eprop,
                                     std::vector<alexandria::MolProp> mp,
                                     t_qmcount *qmc, char *exp_type,
-                                    double outlier, gmx_molselect_t gms, iMolSelect ims);
+                                    double outlier, int catmin,
+                                    alexandria::CategoryList cList,
+                                    gmx_molselect_t gms, iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the composition in atoms of each molecule
@@ -75,16 +80,14 @@ extern void gmx_molprop_composition_table(FILE *fp,
 /*! \brief
  * Generates a LaTeX table containing the molecules in each molecule category
  *
- * \param[out] fp   File pointer to write to
- * \param[in] mp    Array of molecules
- * \param[in] gms   Structure containing selections of which molecules to output
- * \param[in] ims   The actual selection of the right set
- * \todo Transform ims to enum
+ * \param[out] fp    File pointer to write to
+ * \param[in] catmin Mininum number of molecules in a category for it to be printed
+ * \param[in] cList  Structure containing all categories and the number of molecules per category
  * \ingroup module_alexandria
  */
-extern void gmx_molprop_category_table(FILE *fp,
-                                       std::vector<alexandria::MolProp> mp,
-                                       gmx_molselect_t gms, iMolSelect ims);
+extern void gmx_molprop_category_table(FILE                    *fp,
+                                       int                      catmin,
+                                       alexandria::CategoryList cList);
 
 /*! \brief
  * Generates a LaTeX table containing properties for molecules from different sources

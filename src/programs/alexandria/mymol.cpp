@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -130,7 +130,7 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     return false;
 }
 
-void MyMol::GetForceConstants(gmx_poldata_t pd)
+void MyMol::getForceConstants(gmx_poldata_t pd)
 {
     int    n;
     double xx, sx, bo;
@@ -290,8 +290,8 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
     for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
     {
         // Store bonds bidirectionally to get the number correct
-        bonds[bi->GetAi() - 1].push_back(bi->GetAj() - 1);
-        bonds[bi->GetAj() - 1].push_back(bi->GetAi() - 1);
+        bonds[bi->getAi() - 1].push_back(bi->getAj() - 1);
+        bonds[bi->getAj() - 1].push_back(bi->getAi() - 1);
     }
     nbonds.resize(topology_->atoms.nr);
     for (int i = 0; (i < topology_->atoms.nr); i++)
@@ -311,7 +311,7 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
                         *topology_->atoms.atomtype[bonds[i][0]],
                         *topology_->atoms.atomtype[i],
                         *topology_->atoms.atomtype[bonds[i][1]],
-                        GetMolname().c_str());
+                        getMolname().c_str());
             }
             gvt_.addLinear(bonds[i][0], i, bonds[i][1]);
         }
@@ -327,7 +327,7 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
                         *topology_->atoms.atomtype[bonds[i][0]],
                         *topology_->atoms.atomtype[bonds[i][1]],
                         *topology_->atoms.atomtype[bonds[i][2]],
-                        GetMolname().c_str());
+                        getMolname().c_str());
             }
             gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
                            &nbonds[0]);
@@ -810,7 +810,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
     int                 natom;
     immStatus           imm   = immOK;
 
-    CalculationIterator ci = GetLot(lot);
+    CalculationIterator ci = getLot(lot);
     if (ci < EndCalculation())
     {
         t_param nb;
@@ -824,13 +824,13 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
 
         for (CalcAtomIterator cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
         {
-            myunit = string2unit((char *)cai->GetUnit().c_str());
+            myunit = string2unit((char *)cai->getUnit().c_str());
             if (myunit == -1)
             {
                 gmx_fatal(FARGS, "Unknown unit '%s' for atom coords",
-                          cai->GetUnit().c_str());
+                          cai->getUnit().c_str());
             }
-            cai->GetCoords(&xx, &yy, &zz);
+            cai->getCoords(&xx, &yy, &zz);
             x_[natom][XX] = convert2gmx(xx, myunit);
             x_[natom][YY] = convert2gmx(yy, myunit);
             x_[natom][ZZ] = convert2gmx(zz, myunit);
@@ -838,25 +838,25 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
             double q = 0;
             for (AtomicChargeIterator qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
-                ChargeDistributionModel qtp = name2eemtype(qi->GetType().c_str());
+                ChargeDistributionModel qtp = name2eemtype(qi->getType().c_str());
                 if (qtp == iChargeDistributionModel)
                 {
-                    myunit = string2unit((char *)qi->GetUnit().c_str());
-                    q      = convert2gmx(qi->GetQ(), myunit);
+                    myunit = string2unit((char *)qi->getUnit().c_str());
+                    q      = convert2gmx(qi->getQ(), myunit);
                     break;
                 }
             }
             topology_->atoms.atom[natom].q      =
                 topology_->atoms.atom[natom].qB = q;
 
-            t_atoms_set_resinfo(&(topology_->atoms), natom, symtab_, GetMolname().c_str(), 1, ' ', 1, ' ');
-            topology_->atoms.atomname[natom]        = put_symtab(symtab_, cai->GetName().c_str());
-            topology_->atoms.atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->GetName().c_str());
+            t_atoms_set_resinfo(&(topology_->atoms), natom, symtab_, getMolname().c_str(), 1, ' ', 1, ' ');
+            topology_->atoms.atomname[natom]        = put_symtab(symtab_, cai->getName().c_str());
+            topology_->atoms.atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->getName().c_str());
 
             real mass = 0;
-            if (!gmx_atomprop_query(ap, epropMass, "???", cai->GetName().c_str(), &mass))
+            if (!gmx_atomprop_query(ap, epropMass, "???", cai->getName().c_str(), &mass))
             {
-                fprintf(stderr, "Could not find mass for %s\n", cai->GetName().c_str());
+                fprintf(stderr, "Could not find mass for %s\n", cai->getName().c_str());
             }
             topology_->atoms.atom[natom].m      =
                 topology_->atoms.atom[natom].mB = mass;
@@ -866,7 +866,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
             topology_->atoms.atom[natom].resind = 0;
             // First set the atomtype
             topology_->atoms.atomtype[natom]      =
-                topology_->atoms.atomtypeB[natom] = put_symtab(symtab_, cai->GetObtype().c_str());
+                topology_->atoms.atomtypeB[natom] = put_symtab(symtab_, cai->getObtype().c_str());
 
             natom++;
         }
@@ -891,7 +891,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
     if (NULL != debug)
     {
         fprintf(debug, "Tried to convert %s to gromacs. LOT is %s. Natoms is %d\n",
-                GetMolname().c_str(), lot, natom);
+                getMolname().c_str(), lot, natom);
     }
 
     return imm;
@@ -912,7 +912,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
     if (NULL != debug)
     {
-        fprintf(debug, "Generating topology_ for %s\n", GetMolname().c_str());
+        fprintf(debug, "Generating topology_ for %s\n", getMolname().c_str());
     }
 
     nexcl_ = nexcl;
@@ -925,7 +925,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     {
         snew(topology_, 1);
         init_top(topology_);
-        /* Get atoms */
+        /* get atoms */
         imm = GenerateAtoms(ap, lot, iChargeDistributionModel);
     }
     /* Store bonds in harmonic potential list first, update type later */
@@ -935,8 +935,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         memset(&b, 0, sizeof(b));
         for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
         {
-            b.a[0] = bi->GetAi() - 1;
-            b.a[1] = bi->GetAj() - 1;
+            b.a[0] = bi->getAi() - 1;
+            b.a[1] = bi->getAj() - 1;
             add_param_to_plist(plist_, ftb, b);
         }
         if (NBond() == 0)
@@ -955,9 +955,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         /* Move the plist_ to the correct function */
         //mv_plists(pd, plist_, true);
 
-        GetForceConstants(pd);
+        getForceConstants(pd);
 
-        char **molnameptr = put_symtab(symtab_, GetMolname().c_str());
+        char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         snew(mtop_, 1);
         do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms);
 
@@ -1024,7 +1024,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     qgen_ = gentop_qgen_init(pd, &topology_->atoms, ap, x_,
                              iChargeDistributionModel,
                              iChargeGenerationAlgorithm,
-                             hfac, GetCharge(), epsr);
+                             hfac, getCharge(), epsr);
     if (NULL == qgen_)
     {
         return immChargeGeneration;
@@ -1063,7 +1063,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                     /* Even if we get the right LoT it may still not have
                      * the ESP
                      */
-                    CalculationIterator ci = GetLotPropType(lot,
+                    CalculationIterator ci = getLotPropType(lot,
                                                             MPO_POTENTIAL,
                                                             NULL);
                     if (ci != EndCalculation())
@@ -1072,8 +1072,8 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                         for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi)
                         {
                             /* Maybe not convert to gmx ? */
-                            int xu = string2unit(epi->GetXYZunit().c_str());
-                            int vu = string2unit(epi->GetVunit().c_str());
+                            int xu = string2unit(epi->getXYZunit().c_str());
+                            int vu = string2unit(epi->getVunit().c_str());
                             if (-1 == xu)
                             {
                                 xu = eg2cAngstrom;
@@ -1083,14 +1083,14 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                                 vu = eg2cHartree_e;
                             }
                             gmx_resp_add_point(gr_,
-                                               convert2gmx(epi->GetX(), xu),
-                                               convert2gmx(epi->GetY(), xu),
-                                               convert2gmx(epi->GetZ(), xu),
-                                               convert2gmx(epi->GetV(), vu));
+                                               convert2gmx(epi->getX(), xu),
+                                               convert2gmx(epi->getY(), xu),
+                                               convert2gmx(epi->getZ(), xu),
+                                               convert2gmx(epi->getV(), vu));
                         }
                     }
                     eQGEN = generate_charges(NULL,
-                                             qgen_, gr_, GetMolname().c_str(),
+                                             qgen_, gr_, getMolname().c_str(),
                                              pd, &topology_->atoms, 0.0001,
                                              10000, 1, ap);
                 }
@@ -1110,10 +1110,10 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
             default:
                 if (NULL == qgen_)
                 {
-                    gmx_fatal(FARGS, "Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n", GetMolname().c_str());
+                    gmx_fatal(FARGS, "Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n", getMolname().c_str());
                 }
                 eQGEN = generate_charges(NULL,
-                                         qgen_, NULL, GetMolname().c_str(),
+                                         qgen_, NULL, getMolname().c_str(),
                                          pd, &topology_->atoms, 0.0001,
                                          10000, 1, ap);
                 break;
@@ -1183,7 +1183,7 @@ void MyMol::PrintConformation(const char *fn)
     char title[STRLEN];
 
     put_in_box(topology_->atoms.nr, box, x_, 0.3);
-    sprintf(title, "%s processed by %s", GetMolname().c_str(), ShortProgram());
+    sprintf(title, "%s processed by %s", getMolname().c_str(), ShortProgram());
     write_sto_conf(fn, title, &topology_->atoms, x_, NULL, epbcNONE, box);
 }
 
@@ -1488,13 +1488,13 @@ void MyMol::PrintTopology(const char             *fn,
     t_mols  printmol;
     bool    bITP;
 
-    if (GetMolname().size() > 0)
+    if (getMolname().size() > 0)
     {
-        printmol.name = strdup(GetMolname().c_str());
+        printmol.name = strdup(getMolname().c_str());
     }
-    else if (GetFormula().size() > 0)
+    else if (getFormula().size() > 0)
     {
-        printmol.name = strdup(GetFormula().c_str());
+        printmol.name = strdup(getFormula().c_str());
     }
     else
     {
@@ -1518,7 +1518,7 @@ void MyMol::PrintTopology(const char             *fn,
     write_top2(fp, printmol.name, &topology_->atoms, FALSE, plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
     {
-        print_top_mols(fp, printmol.name, GetForceField().c_str(), NULL, 0, NULL, 1, &printmol);
+        print_top_mols(fp, printmol.name, getForceField().c_str(), NULL, 0, NULL, 1, &printmol);
     }
 
     if (bVerbose)
@@ -1920,7 +1920,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
     }
 }
 
-immStatus MyMol::GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
+immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
                              alexandria::GaussAtomProp &gap)
 {
     immStatus    imm = immOK;
@@ -1930,7 +1930,7 @@ immStatus MyMol::GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
     char        *myref, *mylot;
     int          ia;
 
-    if (GetPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
+    if (getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
                    lot, NULL, (char *)"elec",
                    &value, &error, &myref, &mylot,
                    vec, quadrupole))
@@ -1964,14 +1964,14 @@ immStatus MyMol::GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
             if (debug)
             {
                 fprintf(debug, "WARNING: Error for %s is %g, assuming it is 10%%.\n",
-                        GetMolname().c_str(), error);
+                        getMolname().c_str(), error);
             }
             nwarn++;
             error = 0.1*value;
         }
         dip_weight = sqr(1.0/error);
     }
-    if (GetPropRef(MPO_DIPOLE, iqmQM,
+    if (getPropRef(MPO_DIPOLE, iqmQM,
                    lot, NULL, (char *)"ESP", &value, &error, NULL, NULL, vec, quadrupole))
     {
         for (m = 0; (m < DIM); m++)
@@ -1979,16 +1979,16 @@ immStatus MyMol::GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
             mu_esp[m] = vec[m];
         }
     }
-    if (GetProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
+    if (getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
                 lot, NULL, (char *)"DHf(298.15K)", &value, NULL))
     {
         Hform = value;
         Emol  = value;
         for (ia = 0; (ia < topology_->atoms.nr); ia++)
         {
-            if (gap.GetValue(*topology_->atoms.atomname[ia],
+            if (gap.getValue(*topology_->atoms.atomname[ia],
                              (char *)"exp", (char *)"DHf(0K)", 0, &dv0) &&
-                gap.GetValue(*topology_->atoms.atomname[ia],
+                gap.getValue(*topology_->atoms.atomname[ia],
                              (char *)"exp", (char *)"H(0K)-H(298.15K)",
                              298.15, &dv298))
             {
@@ -2036,8 +2036,8 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
             mu[m] += x_[i][m]*topology_->atoms.atom[i].q;
         }
     }
-    int    qq    = GetCharge();
-    double mm    = GetMass();
+    int    qq    = getCharge();
+    double mm    = getMass();
     double mutot = ENM2DEBYE*norm(mu);
     fprintf(fp, "Total charge is %d, total mass is %g, dipole is %.3f D\n",
             qq, mm, mutot);
@@ -2219,7 +2219,7 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
             else
             {
                 gmx_fatal(FARGS, "There are no parameters for improper %-%s-%s-%s in the force field for %s",
-                          aai, aaj, aak, aal, GetMolname().c_str());
+                          aai, aaj, aak, aal, getMolname().c_str());
             }
         }
     }

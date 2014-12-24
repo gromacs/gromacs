@@ -98,82 +98,122 @@ static CommunicationStatus gmx_recv_data_(t_commrec *cr, int src, int line)
 namespace alexandria
 {
 
+/*********************** GenericProperty routines **********************/
 void GenericProperty::SetType(std::string type)
 {
-    if ((_type.size() == 0) && (type.size() > 0))
+    if ((type_.size() == 0) && (type.size() > 0))
     {
-        _type = type;
+        type_ = type;
     }
     else
     {
-        if (_type.size() == 0)
+        if (type_.size() == 0)
         {
-            fprintf(stderr, "Replacing GenericProperty type '%s' by '%s'\n", _type.c_str(), type.c_str());
+            fprintf(stderr, "Replacing GenericProperty type '%s' by '%s'\n", type_.c_str(), type.c_str());
         }
     }
 }
 
 void GenericProperty::SetUnit(std::string unit)
 {
-    if ((_unit.size() == 0) && (unit.size() > 0))
+    if ((unit_.size() == 0) && (unit.size() > 0))
     {
-        _unit = unit;
+        unit_ = unit;
     }
     else
     {
-        if (_unit.size() == 0)
+        if (unit_.size() == 0)
         {
-            fprintf(stderr, "Replacing GenericProperty unit '%s' by '%s'\n", _unit.c_str(), unit.c_str());
+            fprintf(stderr, "Replacing GenericProperty unit '%s' by '%s'\n", unit_.c_str(), unit.c_str());
         }
     }
 }
 
+CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_str(cr, dest, type_.c_str());
+        gmx_send_str(cr, dest, unit_.c_str());
+        gmx_send_double(cr, dest, T_);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send GenericProperty, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
+CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        type_.assign(gmx_recv_str(cr, src));
+        unit_.assign(gmx_recv_str(cr, src));
+        T_ = gmx_recv_double(cr, src);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to receive GenericProperty, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
 void CalcAtom::SetUnit(std::string unit)
 {
-    if ((_unit.size() == 0) && (unit.size() > 0))
+    if ((unit_.size() == 0) && (unit.size() > 0))
     {
-        _unit = unit;
+        unit_ = unit;
     }
     else
     {
-        if (_unit.size() == 0)
+        if (unit_.size() == 0)
         {
-            fprintf(stderr, "Replacing CalcAtom unit '%s' by '%s'\n", _unit.c_str(), unit.c_str());
+            fprintf(stderr, "Replacing CalcAtom unit '%s' by '%s'\n", unit_.c_str(), unit.c_str());
         }
     }
 }
 
 void MolecularComposition::AddAtom(AtomNum an)
 {
-    AtomNumIterator mci = SearchAtom(an.GetAtom());
+    AtomNumIterator mci = SearchAtom(an.getAtom());
     if (mci == EndAtomNum())
     {
         _atomnum.push_back(an);
     }
     else
     {
-        mci->SetNumber(mci->GetNumber()+an.GetNumber());
+        mci->SetNumber(mci->getNumber()+an.getNumber());
     }
 }
 
-void MolecularPolarizability::Set(double xx, double yy, double zz, 
-                                  double xy, double xz, double yz, 
-                                  double average, double error) 
+void MolecularPolarizability::Set(double xx, double yy, double zz,
+                                  double xy, double xz, double yz,
+                                  double average, double error)
 {
-    _xx = xx; _yy = yy; _zz = zz; 
-    _xy = xy; _xz = xz; _yz = yz; 
-    _average = average; _error = error; 
-    if (_average == 0) 
-    { 
-        // Compute average as the 1/3 the trace of the diagonal 
-        _average = (_xx + _yy + _zz)/3.0;
+    xx_      = xx; yy_ = yy; zz_ = zz;
+    xy_      = xy; xz_ = xz; yz_ = yz;
+    _average = average; _error = error;
+    if (_average == 0)
+    {
+        // Compute average as the 1/3 the trace of the diagonal
+        _average = (xx_ + yy_ + zz_)/3.0;
     }
-    else if ((_xx == 0) && (_yy == 0) && (_zz == 0)) { 
-        // Estimate tensor as the 1/3 the trace of the diagonal 
-        _xx = _yy = _zz = _average;
-    } 
+    else if ((xx_ == 0) && (yy_ == 0) && (zz_ == 0))
+    {
+        // Estimate tensor as the 1/3 the trace of the diagonal
+        xx_ = yy_ = zz_ = _average;
+    }
 }
-        
+
 int MolProp::NAtom()
 {
     if (_mol_comp.size() > 0)
@@ -191,8 +231,8 @@ void MolProp::AddBond(Bond b)
 
     for (bi = BeginBond(); !bFound && (bi < EndBond()); bi++)
     {
-        bFound = (((bi->GetAi() == b.GetAi()) && (bi->GetAj() == b.GetAj())) ||
-                  ((bi->GetAi() == b.GetAj()) && (bi->GetAj() == b.GetAi())));
+        bFound = (((bi->getAi() == b.getAi()) && (bi->getAj() == b.getAj())) ||
+                  ((bi->getAi() == b.getAj()) && (bi->getAj() == b.getAi())));
         if (bFound)
         {
             break;
@@ -202,9 +242,9 @@ void MolProp::AddBond(Bond b)
     {
         _bond.push_back(b);
     }
-    else if ((NULL != debug) && (bi->GetBondOrder() != b.GetBondOrder()))
+    else if ((NULL != debug) && (bi->getBondOrder() != b.getBondOrder()))
     {
-        fprintf(debug, "Different bond orders in molecule %s\n", GetMolname().c_str());
+        fprintf(debug, "Different bond orders in molecule %s\n", getMolname().c_str());
         fflush(debug);
     }
 }
@@ -225,7 +265,7 @@ AtomNumIterator MolecularComposition::SearchAtom(std::string an)
 
     for (ani = BeginAtomNum(); (ani < EndAtomNum()); ani++)
     {
-        if (an.compare(ani->GetAtom()) == 0)
+        if (an.compare(ani->getAtom()) == 0)
         {
             return ani;
         }
@@ -239,7 +279,7 @@ void MolecularComposition::ReplaceAtom(std::string oldatom, std::string newatom)
 
     for (i = BeginAtomNum(); (i < EndAtomNum()); i++)
     {
-        if (oldatom.compare(i->GetAtom()) == 0)
+        if (oldatom.compare(i->getAtom()) == 0)
         {
             i->SetAtom(newatom);
             break;
@@ -251,9 +291,9 @@ int MolecularComposition::CountAtoms(std::string atom)
 {
     for (AtomNumIterator i = BeginAtomNum(); (i < EndAtomNum()); i++)
     {
-        if (atom.compare(i->GetAtom()) == 0)
+        if (atom.compare(i->getAtom()) == 0)
         {
-            return i->GetNumber();
+            return i->getNumber();
         }
     }
     return 0;
@@ -273,7 +313,7 @@ int MolecularComposition::CountAtoms()
 
     for (i = BeginAtomNum(); (i < EndAtomNum()); i++)
     {
-        nat += i->GetNumber();
+        nat += i->getNumber();
     }
     return nat;
 }
@@ -302,7 +342,7 @@ void MolProp::DeleteComposition(std::string compname)
 
     for (i = BeginMolecularComposition(); (i < EndMolecularComposition()); i++)
     {
-        if (compname.compare(i->GetCompName()) == 0)
+        if (compname.compare(i->getCompName()) == 0)
         {
             break;
         }
@@ -319,8 +359,8 @@ void Experiment::Dump(FILE *fp)
     {
         fprintf(fp, "Experiment %d polar %d dipole\n",
                 NPolar(), NDipole());
-        fprintf(fp, "reference    = %s\n", _reference.c_str());
-        fprintf(fp, "conformation = %s\n", _conformation.c_str());
+        fprintf(fp, "reference    = %s\n", reference_.c_str());
+        fprintf(fp, "conformation = %s\n", conformation_.c_str());
     }
 }
 
@@ -347,32 +387,40 @@ void Experiment::MergeLow(Experiment *src)
 {
     for (alexandria::MolecularEnergyIterator mei = src->BeginEnergy(); (mei < src->EndEnergy()); ++mei)
     {
-        alexandria::MolecularEnergy me(mei->GetType(), mei->GetUnit(), mei->GetValue(), mei->GetError());
+        alexandria::MolecularEnergy me(mei->getType(),
+                                       mei->getUnit(),
+                                       mei->getTemperature(),
+                                       mei->getValue(), mei->getError());
         AddEnergy(me);
     }
 
     for (alexandria::MolecularDipoleIterator dpi = src->BeginDipole(); (dpi < src->EndDipole()); ++dpi)
     {
-        alexandria::MolecularDipole dp(dpi->GetType(), dpi->GetUnit(),
-                                         dpi->GetX(), dpi->GetY(), dpi->GetZ(),
-                                         dpi->GetAver(), dpi->GetError());
+        alexandria::MolecularDipole dp(dpi->getType(),
+                                       dpi->getUnit(),
+                                       dpi->getTemperature(),
+                                       dpi->getX(), dpi->getY(), dpi->getZ(),
+                                       dpi->getAver(), dpi->getError());
         AddDipole(dp);
     }
 
     for (alexandria::MolecularPolarizabilityIterator mpi = src->BeginPolar(); (mpi < src->EndPolar()); ++mpi)
     {
-        alexandria::MolecularPolarizability mp(mpi->GetType(), mpi->GetUnit(),
-                                               mpi->GetXX(), mpi->GetYY(), mpi->GetZZ(),
-                                               mpi->GetXY(), mpi->GetXZ(), mpi->GetYZ(),
-                                               mpi->GetAverage(), mpi->GetError());
+        alexandria::MolecularPolarizability mp(mpi->getType(),
+                                               mpi->getUnit(),
+                                               mpi->getTemperature(),
+                                               mpi->getXX(), mpi->getYY(), mpi->getZZ(),
+                                               mpi->getXY(), mpi->getXZ(), mpi->getYZ(),
+                                               mpi->getAverage(), mpi->getError());
         AddPolar(mp);
     }
 
     for (alexandria::MolecularQuadrupoleIterator mqi = src->BeginQuadrupole(); (mqi < src->EndQuadrupole()); ++mqi)
     {
-        alexandria::MolecularQuadrupole mq(mqi->GetType(), mqi->GetUnit(),
-                                           mqi->GetXX(), mqi->GetYY(), mqi->GetZZ(),
-                                           mqi->GetXY(), mqi->GetXZ(), mqi->GetYZ());
+        alexandria::MolecularQuadrupole mq(mqi->getType(), mqi->getUnit(),
+                                           mqi->getTemperature(),
+                                           mqi->getXX(), mqi->getYY(), mqi->getZZ(),
+                                           mqi->getXY(), mqi->getXZ(), mqi->getYZ());
         AddQuadrupole(mq);
     }
 }
@@ -384,15 +432,16 @@ void Calculation::Merge(Calculation &src)
     for (CalcAtomIterator cai = src.BeginAtom(); (cai < src.EndAtom()); cai++)
     {
         double   x, y, z;
-        CalcAtom caa(cai->GetName(), cai->GetObtype(), cai->GetAtomid());
+        CalcAtom caa(cai->getName(), cai->getObtype(), cai->getAtomid());
 
-        cai->GetCoords(&x, &y, &z);
+        cai->getCoords(&x, &y, &z);
         caa.SetCoords(x, y, z);
-        caa.SetUnit(cai->GetUnit());
+        caa.SetUnit(cai->getUnit());
 
         for (AtomicChargeIterator aci = cai->BeginQ(); (aci < cai->EndQ()); aci++)
         {
-            AtomicCharge aq(aci->GetType(), aci->GetUnit(), aci->GetQ());
+            AtomicCharge aq(aci->getType(), aci->getUnit(),
+                            aci->getTemperature(), aci->getQ());
             caa.AddCharge(aq);
         }
         AddAtom(caa);
@@ -400,8 +449,9 @@ void Calculation::Merge(Calculation &src)
 
     for (ElectrostaticPotentialIterator mep = src.BeginPotential(); (mep < src.EndPotential()); mep++)
     {
-        alexandria::ElectrostaticPotential ep(mep->GetXYZunit(), mep->GetVunit(), mep->GetEspid(),
-                                              mep->GetX(), mep->GetY(), mep->GetZ(), mep->GetV());
+        alexandria::ElectrostaticPotential ep(mep->getXYZunit(), mep->getVunit(),
+                                              mep->getEspid(),
+                                              mep->getX(), mep->getY(), mep->getZ(), mep->getV());
         AddPotential(ep);
     }
 }
@@ -412,27 +462,28 @@ void CalcAtom::AddCharge(AtomicCharge q)
 
     for (aci = BeginQ(); (aci < EndQ()); aci++)
     {
-        if ((aci->GetType().compare(q.GetType()) == 0) &&
-            (aci->GetUnit().compare(q.GetUnit()) == 0) &&
-            (aci->GetQ() == q.GetQ()))
+        if ((aci->getType().compare(q.getType()) == 0) &&
+            (aci->getUnit().compare(q.getUnit()) == 0) &&
+            (aci->getTemperature() == q.getTemperature()) &&
+            (aci->getQ() == q.getQ()))
         {
             break;
         }
     }
     if (aci == EndQ())
     {
-        _q.push_back(q);
+        q_.push_back(q);
     }
 }
 
 bool CalcAtom::Equal(CalcAtom ca)
 {
-    return !((_name.compare(ca.GetName()) != 0) ||
-             (_obtype.compare(ca.GetObtype()) != 0) ||
-             (_x != ca.GetX()) ||
-             (_y != ca.GetY()) ||
-             (_z != ca.GetZ()) ||
-             (_atomid != ca.GetAtomid()));
+    return !((name_.compare(ca.getName()) != 0) ||
+             (obType_.compare(ca.getObtype()) != 0) ||
+             (x_ != ca.getX()) ||
+             (y_ != ca.getY()) ||
+             (z_ != ca.getZ()) ||
+             (atomID_ != ca.getAtomid()));
 }
 
 CalcAtomIterator Calculation::SearchAtom(CalcAtom ca)
@@ -459,13 +510,13 @@ void Calculation::AddAtom(CalcAtom ca)
     else
     {
         printf("Trying to add identical atom %s (%s) twice. N = %d\n",
-               ca.GetName().c_str(), ca.GetObtype().c_str(), (int)_catom.size());
+               ca.getName().c_str(), ca.getObtype().c_str(), (int)_catom.size());
     }
 }
 
 void MolProp::AddComposition(MolecularComposition mc)
 {
-    MolecularCompositionIterator mci = SearchMolecularComposition(mc.GetCompName());
+    MolecularCompositionIterator mci = SearchMolecularComposition(mc.getCompName());
     if (mci == EndMolecularComposition())
     {
         _mol_comp.push_back(mc);
@@ -476,8 +527,8 @@ bool MolProp::BondExists(Bond b)
 {
     for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
     {
-        if (((bi->GetAi() == b.GetAi()) && (bi->GetAj() == b.GetAj())) ||
-            ((bi->GetAi() == b.GetAj()) && (bi->GetAj() == b.GetAi())))
+        if (((bi->getAi() == b.getAi()) && (bi->getAj() == b.getAj())) ||
+            ((bi->getAi() == b.getAj()) && (bi->getAj() == b.getAi())))
         {
             return true;
         }
@@ -494,60 +545,60 @@ void MolProp::Merge(MolProp &src)
     {
         AddCategory(*si);
     }
-    SetFormula(src.GetFormula());
-    SetMass(src.GetMass());
-    if (GetMultiplicity() <= 1)
+    SetFormula(src.getFormula());
+    SetMass(src.getMass());
+    if (getMultiplicity() <= 1)
     {
-        SetMultiplicity(src.GetMultiplicity());
+        SetMultiplicity(src.getMultiplicity());
     }
     else
     {
-        int smult = src.GetMultiplicity();
-        if ((NULL != debug) && (smult != GetMultiplicity()))
+        int smult = src.getMultiplicity();
+        if ((NULL != debug) && (smult != getMultiplicity()))
         {
             fprintf(debug, "Not overriding multiplicity to %d when merging since it is %d (%s)\n",
-                    smult, GetMultiplicity(), src.GetMolname().c_str());
+                    smult, getMultiplicity(), src.getMolname().c_str());
             fflush(debug);
         }
     }
-    q = GetCharge();
+    q = getCharge();
     if (q == 0)
     {
-        SetCharge(src.GetCharge());
+        SetCharge(src.getCharge());
     }
     else
     {
-        sq = src.GetCharge();
+        sq = src.getCharge();
         if ((NULL != debug) && (sq != q))
         {
             fprintf(debug, "Not overriding charge to %g when merging since it is %g (%s)\n",
-                    sq, q, GetMolname().c_str());
+                    sq, q, getMolname().c_str());
             fflush(debug);
         }
     }
 
-    stmp = src.GetMolname();
-    if ((GetMolname().size() == 0) && (stmp.size() != 0))
+    stmp = src.getMolname();
+    if ((getMolname().size() == 0) && (stmp.size() != 0))
     {
         SetMolname(stmp);
     }
-    stmp = src.GetIupac();
-    if ((GetIupac().size() == 0) && (stmp.size() != 0))
+    stmp = src.getIupac();
+    if ((getIupac().size() == 0) && (stmp.size() != 0))
     {
         SetIupac(stmp);
     }
-    stmp = src.GetCas();
-    if ((GetCas().size() == 0) && (stmp.size() != 0))
+    stmp = src.getCas();
+    if ((getCas().size() == 0) && (stmp.size() != 0))
     {
         SetCas(stmp);
     }
-    stmp = src.GetCid();
-    if ((GetCid().size() == 0) && (stmp.size() != 0))
+    stmp = src.getCid();
+    if ((getCid().size() == 0) && (stmp.size() != 0))
     {
         SetCid(stmp);
     }
-    stmp = src.GetInchi();
-    if ((GetInchi().size() == 0) && (stmp.size() != 0))
+    stmp = src.getInchi();
+    if ((getInchi().size() == 0) && (stmp.size() != 0))
     {
         SetInchi(stmp);
     }
@@ -555,7 +606,7 @@ void MolProp::Merge(MolProp &src)
     {
         for (alexandria::BondIterator bi = src.BeginBond(); (bi < src.EndBond()); bi++)
         {
-            alexandria::Bond bb(bi->GetAi(), bi->GetAj(), bi->GetBondOrder());
+            alexandria::Bond bb(bi->getAi(), bi->getAj(), bi->getBondOrder());
             AddBond(bb);
         }
     }
@@ -563,18 +614,18 @@ void MolProp::Merge(MolProp &src)
     {
         for (alexandria::BondIterator bi = src.BeginBond(); (bi < src.EndBond()); bi++)
         {
-            alexandria::Bond bb(bi->GetAi(), bi->GetAj(), bi->GetBondOrder());
+            alexandria::Bond bb(bi->getAi(), bi->getAj(), bi->getBondOrder());
             if (!BondExists(bb))
             {
                 fprintf(stderr, "WARNING bond %d-%d not present in %s\n",
-                        bi->GetAi(), bi->GetAj(), GetMolname().c_str());
+                        bi->getAi(), bi->getAj(), getMolname().c_str());
             }
         }
     }
 
     for (alexandria::ExperimentIterator ei = src.BeginExperiment(); (ei < src.EndExperiment()); ei++)
     {
-        Experiment ex(ei->GetReference(), ei->GetConformation());
+        Experiment ex(ei->getReference(), ei->getConformation());
 
         ex.Merge(*ei);
         AddExperiment(ex);
@@ -582,9 +633,9 @@ void MolProp::Merge(MolProp &src)
 
     for (alexandria::CalculationIterator ci = src.BeginCalculation(); (ci < src.EndCalculation()); ci++)
     {
-        Calculation ca(ci->GetProgram(), ci->GetMethod(),
-                       ci->GetBasisset(), ci->GetReference(),
-                       ci->GetConformation(), ci->GetDatafile());
+        Calculation ca(ci->getProgram(), ci->getMethod(),
+                       ci->getBasisset(), ci->getReference(),
+                       ci->getConformation(), ci->getDatafile());
         ca.Merge(*ci);
 
         AddCalculation(ca);
@@ -593,11 +644,11 @@ void MolProp::Merge(MolProp &src)
     for (alexandria::MolecularCompositionIterator mci = src.BeginMolecularComposition();
          (mci < src.EndMolecularComposition()); mci++)
     {
-        alexandria::MolecularComposition mc(mci->GetCompName());
+        alexandria::MolecularComposition mc(mci->getCompName());
 
         for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
         {
-            AtomNum an(ani->GetAtom(), ani->GetNumber());
+            AtomNum an(ani->getAtom(), ani->getNumber());
             mc.AddAtom(an);
         }
         AddComposition(mc);
@@ -610,7 +661,7 @@ MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str
 
     for (i = BeginMolecularComposition(); (i < EndMolecularComposition()); i++)
     {
-        std::string s = i->GetCompName();
+        std::string s = i->getCompName();
         if (s.compare(str) == 0)
         {
             break;
@@ -627,15 +678,15 @@ void MolProp::Dump(FILE *fp)
 
     if (fp)
     {
-        fprintf(fp, "formula:      %s\n", GetFormula().c_str());
-        fprintf(fp, "molname:      %s\n", GetMolname().c_str());
-        fprintf(fp, "iupac:        %s\n", GetIupac().c_str());
-        fprintf(fp, "CAS:          %s\n", GetCas().c_str());
-        fprintf(fp, "cis:          %s\n", GetCid().c_str());
-        fprintf(fp, "InChi:        %s\n", GetInchi().c_str());
-        fprintf(fp, "mass:         %g\n", GetMass());
-        fprintf(fp, "charge:       %d\n", GetCharge());
-        fprintf(fp, "multiplicity: %d\n", GetMultiplicity());
+        fprintf(fp, "formula:      %s\n", getFormula().c_str());
+        fprintf(fp, "molname:      %s\n", getMolname().c_str());
+        fprintf(fp, "iupac:        %s\n", getIupac().c_str());
+        fprintf(fp, "CAS:          %s\n", getCas().c_str());
+        fprintf(fp, "cis:          %s\n", getCid().c_str());
+        fprintf(fp, "InChi:        %s\n", getInchi().c_str());
+        fprintf(fp, "mass:         %g\n", getMass());
+        fprintf(fp, "charge:       %d\n", getCharge());
+        fprintf(fp, "multiplicity: %d\n", getMultiplicity());
         fprintf(fp, "category:    ");
         for (si = BeginCategory(); (si < EndCategory()); si++)
         {
@@ -677,10 +728,10 @@ bool MolProp::GenerateComposition(gmx_poldata_t pd)
         for (cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
         {
             nat++;
-            AtomNum ans(cai->GetObtype(), 1);
+            AtomNum ans(cai->getObtype(), 1);
             mci_alexandria.AddAtom(ans);
 
-            const char *ptype = gmx_poldata_atype_to_ptype(pd, cai->GetObtype().c_str());
+            const char *ptype = gmx_poldata_atype_to_ptype(pd, cai->getObtype().c_str());
             if (NULL != ptype)
             {
                 const char *bos_type = gmx_poldata_ptype_to_bosque(pd, ptype);
@@ -717,7 +768,7 @@ bool MolProp::GenerateComposition(gmx_poldata_t pd)
             fprintf(debug, "LO_COMP: ");
             for (AtomNumIterator ani = mci_alexandria.BeginAtomNum(); (ani < mci_alexandria.EndAtomNum()); ani++)
             {
-                fprintf(debug, " %s:%d", ani->GetAtom().c_str(), ani->GetNumber());
+                fprintf(debug, " %s:%d", ani->getAtom().c_str(), ani->getNumber());
             }
             fprintf(debug, "\n");
             fflush(debug);
@@ -761,8 +812,8 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
         {
             int         cnumber, an;
             real        value;
-            std::string catom = ani->GetAtom();
-            cnumber = ani->GetNumber();
+            std::string catom = ani->getAtom();
+            cnumber = ani->getNumber();
             if (gmx_atomprop_query(ap, epropElement, "???", catom.c_str(), &value))
             {
                 an = gmx_nint(value);
@@ -782,7 +833,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     {
         add_element_to_formula(gmx_atomprop_element(ap, j), ncomp[j], formula, texform);
     }
-    std::string mform = GetFormula();
+    std::string mform = getFormula();
     if (strlen(formula) > 0)
     {
         if (debug)
@@ -790,7 +841,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
             if ((mform.size() > 0) && (strcasecmp(formula, mform.c_str()) != 0))
             {
                 fprintf(debug, "Formula '%s' does match '%s' based on composition for %s.\n",
-                        mform.c_str(), formula, GetMolname().c_str());
+                        mform.c_str(), formula, getMolname().c_str());
                 fflush(debug);
             }
         }
@@ -800,7 +851,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     else if ((mform.size() == 0) && debug)
     {
         fprintf(debug, "Empty composition and formula for %s\n",
-                GetMolname().c_str());
+                getMolname().c_str());
         fflush(debug);
     }
     sfree(ncomp);
@@ -817,7 +868,7 @@ bool MolProp::HasComposition(std::string composition)
     {
         for (mci = BeginMolecularComposition(); !bComp && (mci < EndMolecularComposition()); mci++)
         {
-            if (mci->GetCompName().compare(composition) == 0)
+            if (mci->getCompName().compare(composition) == 0)
             {
                 bComp = true;
             }
@@ -826,14 +877,14 @@ bool MolProp::HasComposition(std::string composition)
     if (debug && !bComp)
     {
         fprintf(debug, "No composition %s for molecule %s\n", composition.c_str(),
-                GetMolname().c_str());
+                getMolname().c_str());
         fflush(debug);
     }
 
     return bComp;
 }
 
-bool Experiment::GetVal(const char *type, MolPropObservable mpo,
+bool Experiment::getVal(const char *type, MolPropObservable mpo,
                         double *value, double *error, double vec[3],
                         tensor quad_polar)
 {
@@ -845,9 +896,9 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
         case MPO_ENERGY:
             for (MolecularEnergyIterator mei = BeginEnergy(); !done && (mei < EndEnergy()); mei++)
             {
-                if ((NULL == type) || (strcasecmp(mei->GetType().c_str(), type) == 0))
+                if ((NULL == type) || (strcasecmp(mei->getType().c_str(), type) == 0))
                 {
-                    mei->Get(value, error);
+                    mei->get(value, error);
                     done = true;
                 }
             }
@@ -855,9 +906,9 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
         case MPO_DIPOLE:
             for (MolecularDipoleIterator mdp = BeginDipole(); !done && (mdp < EndDipole()); mdp++)
             {
-                if ((NULL == type) || (strcasecmp(mdp->GetType().c_str(), type) == 0))
+                if ((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0))
                 {
-                    mdp->Get(&x, &y, &z, value, error);
+                    mdp->get(&x, &y, &z, value, error);
                     vec[XX] = x;
                     vec[YY] = y;
                     vec[ZZ] = z;
@@ -868,10 +919,10 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
         case MPO_POLARIZABILITY:
             for (MolecularPolarizabilityIterator mdp = BeginPolar(); !done && (mdp < EndPolar()); mdp++)
             {
-                if ((NULL == type) || (strcasecmp(mdp->GetType().c_str(), type) == 0))
+                if ((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0))
                 {
                     double xx, yy, zz, xy, xz, yz;
-                    mdp->Get(&xx, &yy, &zz, &xy, &xz, &yz, value, error);
+                    mdp->get(&xx, &yy, &zz, &xy, &xz, &yz, value, error);
                     quad_polar[XX][XX] = xx;
                     quad_polar[XX][YY] = xy;
                     quad_polar[XX][ZZ] = xz;
@@ -881,17 +932,17 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
                     quad_polar[ZZ][XX] = 0;
                     quad_polar[ZZ][YY] = 0;
                     quad_polar[ZZ][ZZ] = zz;
-                    done    = true;
+                    done               = true;
                 }
             }
             break;
         case MPO_QUADRUPOLE:
             for (MolecularQuadrupoleIterator mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); mqi++)
             {
-                if ((NULL == type) || (strcasecmp(mqi->GetType().c_str(), type) == 0))
+                if ((NULL == type) || (strcasecmp(mqi->getType().c_str(), type) == 0))
                 {
                     double xx, yy, zz, xy, xz, yz;
-                    mqi->Get(&xx, &yy, &zz, &xy, &xz, &yz);
+                    mqi->get(&xx, &yy, &zz, &xy, &xz, &yz);
                     quad_polar[XX][XX] = xx;
                     quad_polar[XX][YY] = xy;
                     quad_polar[XX][ZZ] = xz;
@@ -911,7 +962,7 @@ bool Experiment::GetVal(const char *type, MolPropObservable mpo,
     return done;
 }
 
-bool MolProp::GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
+bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
                          const char *conf, const char *type, double *value, double *error,
                          char **ref, char **mylot,
                          double vec[3], tensor quad_polar)
@@ -925,12 +976,12 @@ bool MolProp::GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
     {
         for (ei = BeginExperiment(); (ei < EndExperiment()); ei++)
         {
-            reference = ei->GetReference();
-            expconf   = ei->GetConformation();
+            reference = ei->getReference();
+            expconf   = ei->getConformation();
 
             if ((NULL == conf) || (strcasecmp(conf, expconf.c_str()) == 0))
             {
-                done = ei->GetVal(type, mpo, value, error, vec, quad_polar);
+                done = ei->getVal(type, mpo, value, error, vec, quad_polar);
             }
             if (done)
             {
@@ -954,17 +1005,17 @@ bool MolProp::GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
     {
         if (NULL != lot)
         {
-            ci = GetLotPropType(lot, mpo, type);
+            ci = getLotPropType(lot, mpo, type);
             if (ci != EndCalculation())
             {
-                basisset     = ci->GetBasisset();
-                method       = ci->GetMethod();
-                reference    = ci->GetReference();
-                conformation = ci->GetConformation();
+                basisset     = ci->getBasisset();
+                method       = ci->getMethod();
+                reference    = ci->getReference();
+                conformation = ci->getConformation();
 
                 if ((NULL == conf) || (strcasecmp(conf, conformation.c_str()) == 0))
                 {
-                    done = ci->GetVal(type, mpo, value, error, vec, quad_polar);
+                    done = ci->getVal(type, mpo, value, error, vec, quad_polar);
                 }
                 if (done && (NULL != ref))
                 {
@@ -980,24 +1031,24 @@ bool MolProp::GetPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
     return done;
 }
 
-bool MolProp::GetProp(MolPropObservable mpo, iqmType iQM, char *lot,
+bool MolProp::getProp(MolPropObservable mpo, iqmType iQM, char *lot,
                       char *conf, char *type, double *value, double *error)
 {
     double myerror, vec[3];
     tensor quad;
     bool   bReturn;
-    
-    bReturn = GetPropRef(mpo, iQM, lot, conf, type, value, &myerror,
+
+    bReturn = getPropRef(mpo, iQM, lot, conf, type, value, &myerror,
                          NULL, NULL, vec, quad);
     if (NULL != error)
     {
         *error = myerror;
-    }      
+    }
     return bReturn;
 }
 
 
-CalculationIterator MolProp::GetLotPropType(const char       *lot,
+CalculationIterator MolProp::getLotPropType(const char       *lot,
                                             MolPropObservable mpo,
                                             const char       *type)
 {
@@ -1008,8 +1059,8 @@ CalculationIterator MolProp::GetLotPropType(const char       *lot,
     {
         for (ci = BeginCalculation(); (ci < EndCalculation()); ci++)
         {
-            if ((strcasecmp(ci->GetMethod().c_str(), ll[0].c_str()) == 0) &&
-                (strcasecmp(ci->GetBasisset().c_str(), ll[1].c_str()) == 0))
+            if ((strcasecmp(ci->getMethod().c_str(), ll[0].c_str()) == 0) &&
+                (strcasecmp(ci->getBasisset().c_str(), ll[1].c_str()) == 0))
             {
                 bool done = false;
                 switch (mpo)
@@ -1021,28 +1072,28 @@ CalculationIterator MolProp::GetLotPropType(const char       *lot,
                         for (MolecularDipoleIterator mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
                         {
                             done =  ((NULL == type) ||
-                                     (strcasecmp(type, mdp->GetType().c_str()) == 0));
+                                     (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
                     case MPO_QUADRUPOLE:
                         for (MolecularQuadrupoleIterator mdp = ci->BeginQuadrupole(); !done && (mdp < ci->EndQuadrupole()); mdp++)
                         {
                             done =  ((NULL == type) ||
-                                     (strcasecmp(type, mdp->GetType().c_str()) == 0));
+                                     (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
                     case MPO_POLARIZABILITY:
                         for (MolecularPolarizabilityIterator mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
                         {
                             done =  ((NULL == type) ||
-                                     (strcasecmp(type, mdp->GetType().c_str()) == 0));
+                                     (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
                     case MPO_ENERGY:
                         for (MolecularEnergyIterator mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
                         {
                             done =  ((NULL == type) ||
-                                     (strcasecmp(type, mdp->GetType().c_str()) == 0));
+                                     (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
                     default:
@@ -1062,7 +1113,7 @@ CalculationIterator MolProp::GetLotPropType(const char       *lot,
     }
 }
 
-CalculationIterator MolProp::GetLot(const char *lot)
+CalculationIterator MolProp::getLot(const char *lot)
 {
     CalculationIterator      ci;
 
@@ -1072,8 +1123,8 @@ CalculationIterator MolProp::GetLot(const char *lot)
         bool done = false;
         for (ci = BeginCalculation(); (!done) && (ci < EndCalculation()); ci++)
         {
-            done = ((strcasecmp(ci->GetMethod().c_str(), ll[0].c_str()) == 0) &&
-                    (strcasecmp(ci->GetBasisset().c_str(), ll[1].c_str()) == 0));
+            done = ((strcasecmp(ci->getMethod().c_str(), ll[0].c_str()) == 0) &&
+                    (strcasecmp(ci->getBasisset().c_str(), ll[1].c_str()) == 0));
             if (done)
             {
                 break;
@@ -1087,42 +1138,6 @@ CalculationIterator MolProp::GetLot(const char *lot)
     }
 }
 
-CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest)
-{
-    CommunicationStatus cs;
-
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, _type.c_str());
-        gmx_send_str(cr, dest, _unit.c_str());
-    }
-    else if (NULL != debug)
-    {
-        fprintf(debug, "Trying to send GenericProperty, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        _type.assign(gmx_recv_str(cr, src));
-        _unit.assign(gmx_recv_str(cr, src));
-    }
-    else if (NULL != debug)
-    {
-        fprintf(debug, "Trying to receive GenericProperty, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
 CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
@@ -1134,12 +1149,12 @@ CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr, int dest)
     }
     if (CS_OK == cs)
     {
-        gmx_send_double(cr, dest, _xx);
-        gmx_send_double(cr, dest, _yy);
-        gmx_send_double(cr, dest, _zz);
-        gmx_send_double(cr, dest, _xy);
-        gmx_send_double(cr, dest, _xz);
-        gmx_send_double(cr, dest, _yz);
+        gmx_send_double(cr, dest, xx_);
+        gmx_send_double(cr, dest, yy_);
+        gmx_send_double(cr, dest, zz_);
+        gmx_send_double(cr, dest, xy_);
+        gmx_send_double(cr, dest, xz_);
+        gmx_send_double(cr, dest, yz_);
     }
     else if (NULL != debug)
     {
@@ -1160,12 +1175,12 @@ CommunicationStatus MolecularQuadrupole::Receive(t_commrec *cr, int src)
     }
     if (CS_OK == cs)
     {
-        _xx    = gmx_recv_double(cr, src);
-        _yy    = gmx_recv_double(cr, src);
-        _zz    = gmx_recv_double(cr, src);
-        _xy    = gmx_recv_double(cr, src);
-        _xz    = gmx_recv_double(cr, src);
-        _yz    = gmx_recv_double(cr, src);
+        xx_    = gmx_recv_double(cr, src);
+        yy_    = gmx_recv_double(cr, src);
+        zz_    = gmx_recv_double(cr, src);
+        xy_    = gmx_recv_double(cr, src);
+        xz_    = gmx_recv_double(cr, src);
+        yz_    = gmx_recv_double(cr, src);
     }
     else if (NULL != debug)
     {
@@ -1186,12 +1201,12 @@ CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest)
     }
     if (CS_OK == cs)
     {
-        gmx_send_double(cr, dest, _xx);
-        gmx_send_double(cr, dest, _yy);
-        gmx_send_double(cr, dest, _zz);
-        gmx_send_double(cr, dest, _xy);
-        gmx_send_double(cr, dest, _xz);
-        gmx_send_double(cr, dest, _yz);
+        gmx_send_double(cr, dest, xx_);
+        gmx_send_double(cr, dest, yy_);
+        gmx_send_double(cr, dest, zz_);
+        gmx_send_double(cr, dest, xy_);
+        gmx_send_double(cr, dest, xz_);
+        gmx_send_double(cr, dest, yz_);
         gmx_send_double(cr, dest, _average);
         gmx_send_double(cr, dest, _error);
     }
@@ -1214,12 +1229,12 @@ CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
     }
     if (CS_OK == cs)
     {
-        _xx      = gmx_recv_double(cr, src);
-        _yy      = gmx_recv_double(cr, src);
-        _zz      = gmx_recv_double(cr, src);
-        _xy      = gmx_recv_double(cr, src);
-        _xz      = gmx_recv_double(cr, src);
-        _yz      = gmx_recv_double(cr, src);
+        xx_      = gmx_recv_double(cr, src);
+        yy_      = gmx_recv_double(cr, src);
+        zz_      = gmx_recv_double(cr, src);
+        xy_      = gmx_recv_double(cr, src);
+        xz_      = gmx_recv_double(cr, src);
+        yz_      = gmx_recv_double(cr, src);
         _average = gmx_recv_double(cr, src);
         _error   = gmx_recv_double(cr, src);
     }
@@ -1371,10 +1386,10 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         //! Receive literature reference
-        _reference    = gmx_recv_str(cr, src);
+        reference_    = gmx_recv_str(cr, src);
 
         //! Receive conformation
-        _conformation = gmx_recv_str(cr, src);
+        conformation_ = gmx_recv_str(cr, src);
 
         //! Receive polarizabilities
         do
@@ -1431,10 +1446,10 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         //! Send literature reference
-        gmx_send_str(cr, dest, _reference.c_str());
+        gmx_send_str(cr, dest, reference_.c_str());
 
         //! Send conformation
-        gmx_send_str(cr, dest, _conformation.c_str());
+        gmx_send_str(cr, dest, conformation_.c_str());
 
         //! Send polarizabilities
         for (MolecularPolarizabilityIterator dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
@@ -1472,13 +1487,13 @@ CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        _xyz_unit.assign(gmx_recv_str(cr, src));
-        _V_unit.assign(gmx_recv_str(cr, src));
-        _espid = gmx_recv_int(cr, src);
-        _x     = gmx_recv_double(cr, src);
-        _y     = gmx_recv_double(cr, src);
-        _z     = gmx_recv_double(cr, src);
-        _V     = gmx_recv_double(cr, src);
+        xyzUnit_.assign(gmx_recv_str(cr, src));
+        vUnit_.assign(gmx_recv_str(cr, src));
+        espID_ = gmx_recv_int(cr, src);
+        x_     = gmx_recv_double(cr, src);
+        y_     = gmx_recv_double(cr, src);
+        z_     = gmx_recv_double(cr, src);
+        V_     = gmx_recv_double(cr, src);
     }
     else if (NULL != debug)
     {
@@ -1495,13 +1510,13 @@ CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, _xyz_unit.c_str());
-        gmx_send_str(cr, dest, _V_unit.c_str());
-        gmx_send_int(cr, dest, _espid);
-        gmx_send_double(cr, dest, _x);
-        gmx_send_double(cr, dest, _y);
-        gmx_send_double(cr, dest, _z);
-        gmx_send_double(cr, dest, _V);
+        gmx_send_str(cr, dest, xyzUnit_.c_str());
+        gmx_send_str(cr, dest, vUnit_.c_str());
+        gmx_send_int(cr, dest, espID_);
+        gmx_send_double(cr, dest, x_);
+        gmx_send_double(cr, dest, y_);
+        gmx_send_double(cr, dest, z_);
+        gmx_send_double(cr, dest, V_);
     }
     else if (NULL != debug)
     {
@@ -1562,13 +1577,13 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        _name.assign(gmx_recv_str(cr, src));
-        _obtype.assign(gmx_recv_str(cr, src));
-        _atomid = gmx_recv_int(cr, src);
-        _unit.assign(gmx_recv_str(cr, src));
-        _x = gmx_recv_double(cr, src);
-        _y = gmx_recv_double(cr, src);
-        _z = gmx_recv_double(cr, src);
+        name_.assign(gmx_recv_str(cr, src));
+        obType_.assign(gmx_recv_str(cr, src));
+        atomID_ = gmx_recv_int(cr, src);
+        unit_.assign(gmx_recv_str(cr, src));
+        x_ = gmx_recv_double(cr, src);
+        y_ = gmx_recv_double(cr, src);
+        z_ = gmx_recv_double(cr, src);
 
         do
         {
@@ -1599,13 +1614,13 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, _name.c_str());
-        gmx_send_str(cr, dest, _obtype.c_str());
-        gmx_send_int(cr, dest, _atomid);
-        gmx_send_str(cr, dest, _unit.c_str());
-        gmx_send_double(cr, dest, _x);
-        gmx_send_double(cr, dest, _y);
-        gmx_send_double(cr, dest, _z);
+        gmx_send_str(cr, dest, name_.c_str());
+        gmx_send_str(cr, dest, obType_.c_str());
+        gmx_send_int(cr, dest, atomID_);
+        gmx_send_str(cr, dest, unit_.c_str());
+        gmx_send_double(cr, dest, x_);
+        gmx_send_double(cr, dest, y_);
+        gmx_send_double(cr, dest, z_);
 
         for (qi = BeginQ(); (CS_OK == cs) && (qi < EndQ()); qi++)
         {
@@ -1870,7 +1885,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
         if (NULL != debug)
         {
             fprintf(debug, "Sent MolProp %s, status %s\n",
-                    GetMolname().c_str(), cs_name(cs));
+                    getMolname().c_str(), cs_name(cs));
             fflush(debug);
         }
     }
@@ -1897,7 +1912,7 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         _inchi.assign(gmx_recv_str(cr, src));
         if (NULL != debug)
         {
-            fprintf(debug, "Got molname %s\n", GetMolname().c_str());
+            fprintf(debug, "Got molname %s\n", getMolname().c_str());
         }
         //! Receive Bonds
         do
@@ -1978,16 +1993,16 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         if (NULL != debug)
         {
             fprintf(debug, "Reveived %d calculations from %d for mol %s\n",
-                    NCalculation(), src, GetMolname().c_str());
+                    NCalculation(), src, getMolname().c_str());
             fprintf(debug, "Received MolProp %s, status %s\n",
-                    GetMolname().c_str(), cs_name(cs));
+                    getMolname().c_str(), cs_name(cs));
             fflush(debug);
         }
     }
     return cs;
 }
 
-std::string MolProp::GetTexFormula()
+std::string MolProp::getTexFormula()
 {
     if (_texform.size() > 0)
     {

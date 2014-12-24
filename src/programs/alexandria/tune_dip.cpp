@@ -218,9 +218,9 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
         {
             fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n",
                     n+1,
-                    mi->GetMolname().c_str(),
-                    mi->GetCharge(),
-                    mi->GetMultiplicity());
+                    mi->getMolname().c_str(),
+                    mi->getCharge(),
+                    mi->getMultiplicity());
 
             print_dip(fp, mi->mu_exp, NULL, NULL, dip_toler);
             print_dip(fp, mi->mu_exp, mi->mu_calc, (char *)"EEM", dip_toler);
@@ -385,7 +385,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
             (norm(dmu) > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
-                    mi->GetMolname().c_str(),
+                    mi->getMolname().c_str(),
                     mi->dip_calc, mi->dip_exp,
                     mi->dip_calc-mi->dip_exp);
             nout++;
