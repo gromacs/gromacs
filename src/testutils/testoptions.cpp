@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,31 +43,11 @@
 
 #include "testoptions.h"
 
-#include <cstdio>
-#include <cstdlib>
-
 #include <list>
-
-#include <gmock/gmock.h>
 
 #include "thread_mpi/mutex.h"
 
-#include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/commandline/cmdlinehelpwriter.h"
-#include "gromacs/commandline/cmdlineinit.h"
-#include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/errorcodes.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
-#include "gromacs/utility/programcontext.h"
-
-#include "testutils/mpi-printer.h"
-#include "testutils/refdata.h"
-#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -125,18 +105,6 @@ void TestOptionsRegistry::initOptions(Options *options)
     }
 }
 
-//! Prints the command-line options for the unit test binary.
-void printHelp(const Options &options)
-{
-    std::fprintf(stderr,
-                 "\nYou can use the following GROMACS-specific command-line flags\n"
-                 "to control the behavior of the tests:\n\n");
-    CommandLineHelpContext context(&File::standardError(),
-                                   eHelpOutputFormat_Console, NULL);
-    context.setModuleDisplayName(getProgramContext().displayName());
-    CommandLineHelpWriter(options).writeHelp(context);
-}
-
 }       // namespace
 
 void registerTestOptions(const char *name, TestOptionsProvider *provider)
@@ -144,62 +112,9 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
     TestOptionsRegistry::getInstance().add(name, provider);
 }
 
-void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
+void initTestOptions(Options *options)
 {
-#ifndef NDEBUG
-    gmx_feenableexcept();
-#endif
-    gmx::initForCommandLine(argc, argv);
-    try
-    {
-        ::testing::InitGoogleMock(argc, *argv);
-        if (dataPath != NULL)
-        {
-            TestFileManager::setInputDataDirectory(dataPath);
-        }
-        if (tempPath != NULL)
-        {
-            TestFileManager::setGlobalOutputTempDirectory(tempPath);
-        }
-        bool    bHelp = false;
-        Options options(NULL, NULL);
-        // TODO: A single option that accepts multiple names would be nicer.
-        // Also, we recognize -help, but GTest doesn't, which leads to a bit
-        // unintuitive behavior.
-        options.addOption(BooleanOption("h").store(&bHelp)
-                              .description("Print GROMACS-specific unit test options"));
-        options.addOption(BooleanOption("help").store(&bHelp).hidden());
-        options.addOption(BooleanOption("?").store(&bHelp).hidden());
-        // TODO: Consider removing this option from test binaries that do not need it.
-        initReferenceData(&options);
-        TestOptionsRegistry::getInstance().initOptions(&options);
-        try
-        {
-            CommandLineParser(&options).parse(argc, *argv);
-            options.finish();
-        }
-        catch (const UserInputError &)
-        {
-            printHelp(options);
-            throw;
-        }
-        if (bHelp)
-        {
-            printHelp(options);
-        }
-        setFatalErrorHandler(NULL);
-        initMPIOutput();
-    }
-    catch (const std::exception &ex)
-    {
-        printFatalErrorMessage(stderr, ex);
-        std::exit(processExceptionAtExitForCommandLine(ex));
-    }
-}
-
-void finalizeTestUtils()
-{
-    gmx::finalizeForCommandLine();
+    TestOptionsRegistry::getInstance().initOptions(options);
 }
 
 } // namespace test
