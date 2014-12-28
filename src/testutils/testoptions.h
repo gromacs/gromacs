@@ -97,6 +97,16 @@ class TestOptionsProvider
  * \ingroup module_testutils
  */
 void registerTestOptions(const char *name, TestOptionsProvider *provider);
+/*! \libinternal \brief
+ * Initializes the options from all registered test providers.
+ *
+ * \param   options  The options are added here.
+ *
+ * This is called automatically by initTestUtils().
+ *
+ * \ingroup module_testutils
+ */
+void initTestOptions(Options *options);
 
 // Uncrustify screws up the indentation for the example otherwise.
 /* *INDENT-OFF* */
@@ -166,26 +176,6 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
     static name s_ ## name ## Instance; \
     \
     void name::initOptions(::gmx::Options *options)
-
-/*! \libinternal \brief
- * Initializes the test utilities library.
- *
- * Does not throw.  Terminates the program with a non-zero error code if an
- * error occurs.
- *
- * This function is automatically called by unittest_main.cpp.
- */
-void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv);
-
-/*! \libinternal \brief
- * Finalizes the test utilities library.
- *
- * Does not throw.  Terminates the program with a non-zero error code if an
- * error occurs.
- *
- * This function is automatically called by unittest_main.cpp.
- */
-void finalizeTestUtils();
 
 } // namespace test
 } // namespace gmx

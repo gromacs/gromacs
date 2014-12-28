@@ -43,7 +43,7 @@
 
 #include <gtest/gtest.h>
 
-#include "testutils/testoptions.h"
+#include "testutils/testinit.h"
 
 #ifndef TEST_DATA_PATH
 //! Path to test input data directory (needs to be set by the build system).

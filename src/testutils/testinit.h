@@ -34,88 +34,49 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions in testoptions.h.
+ * Functions for initialing \Gromacs unit test executables.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
-#include "gmxpre.h"
-
-#include "testoptions.h"
-
-#include <list>
-
-#include "thread_mpi/mutex.h"
-
-#include "gromacs/utility/classhelpers.h"
+#ifndef GMX_TESTUTILS_TESTINIT_H
+#define GMX_TESTUTILS_TESTINIT_H
 
 namespace gmx
 {
+
 namespace test
 {
 
-namespace
-{
-
-/*! \brief
- * Singleton registry for test options added with #GMX_TEST_OPTIONS.
+//! \cond internal
+/*! \internal
+ * \brief
+ * Initializes the test utilities library.
+ *
+ * Does not throw.  Terminates the program with a non-zero error code if an
+ * error occurs.
+ *
+ * This function is automatically called by unittest_main.cpp.
  *
  * \ingroup module_testutils
  */
-class TestOptionsRegistry
-{
-    public:
-        //! Returns the singleton instance of this class.
-        static TestOptionsRegistry &getInstance()
-        {
-            static TestOptionsRegistry singleton;
-            return singleton;
-        }
+void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv);
 
-        //! Adds a provider into the registry.
-        void add(const char * /*name*/, TestOptionsProvider *provider)
-        {
-            tMPI::lock_guard<tMPI::mutex> lock(listMutex_);
-            providerList_.push_back(provider);
-        }
-
-        //! Initializes the options from all the provides.
-        void initOptions(Options *options);
-
-    private:
-        TestOptionsRegistry() {}
-
-        typedef std::list<TestOptionsProvider *> ProviderList;
-
-        tMPI::mutex             listMutex_;
-        ProviderList            providerList_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(TestOptionsRegistry);
-};
-
-void TestOptionsRegistry::initOptions(Options *options)
-{
-    // TODO: Have some deterministic order for the options; now it depends on
-    // the order in which the global initializers are run.
-    tMPI::lock_guard<tMPI::mutex> lock(listMutex_);
-    ProviderList::const_iterator  i;
-    for (i = providerList_.begin(); i != providerList_.end(); ++i)
-    {
-        (*i)->initOptions(options);
-    }
-}
-
-}       // namespace
-
-void registerTestOptions(const char *name, TestOptionsProvider *provider)
-{
-    TestOptionsRegistry::getInstance().add(name, provider);
-}
-
-void initTestOptions(Options *options)
-{
-    TestOptionsRegistry::getInstance().initOptions(options);
-}
+/*! \internal
+ * \brief
+ * Finalizes the test utilities library.
+ *
+ * Does not throw.  Terminates the program with a non-zero error code if an
+ * error occurs.
+ *
+ * This function is automatically called by unittest_main.cpp.
+ *
+ * \ingroup module_testutils
+ */
+void finalizeTestUtils();
+//! \endcond
 
 } // namespace test
 } // namespace gmx
+
+#endif
