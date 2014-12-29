@@ -76,7 +76,7 @@ class TestFileManager::Impl
 {
     public:
         //! Global test input data path set with setDataInputDirectory().
-        static const char *s_inputDirectory;
+        static std::string s_inputDirectory;
 
         //! Global temporary output directory for tests, set with setGlobalOutputTempDirectory().
         static const char *s_globalOutputTempDirectory;
@@ -111,7 +111,7 @@ class TestFileManager::Impl
         std::string outputTempDirectory_;
 };
 
-const char *TestFileManager::Impl::s_inputDirectory            = NULL;
+std::string TestFileManager::Impl::s_inputDirectory;
 const char *TestFileManager::Impl::s_globalOutputTempDirectory = NULL;
 /** Controls whether TestFileManager should delete temporary files
     after the test finishes. */
@@ -200,8 +200,8 @@ std::string TestFileManager::getInputFilePath(const char *filename)
 
 const char *TestFileManager::getInputDataDirectory()
 {
-    GMX_RELEASE_ASSERT(Impl::s_inputDirectory != NULL, "Path for test input files is not set");
-    return Impl::s_inputDirectory;
+    GMX_RELEASE_ASSERT(!Impl::s_inputDirectory.empty(), "Path for test input files is not set");
+    return Impl::s_inputDirectory.c_str();
 }
 
 const char *TestFileManager::getGlobalOutputTempDirectory()
@@ -215,7 +215,7 @@ const char *TestFileManager::getOutputTempDirectory() const
     return impl_->outputTempDirectory_.c_str();
 }
 
-void TestFileManager::setInputDataDirectory(const char *path)
+void TestFileManager::setInputDataDirectory(const std::string &path)
 {
     // There is no need to protect this by a mutex, as this is called in early
     // initialization of the tests.

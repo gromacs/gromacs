@@ -43,20 +43,25 @@
 
 #include "testinit.h"
 
+#include "config.h"
+
 #include <cstdio>
 #include <cstdlib>
 
+#include <boost/scoped_ptr.hpp>
 #include <gmock/gmock.h>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 
 #include "testutils/mpi-printer.h"
@@ -71,6 +76,65 @@ namespace test
 
 namespace
 {
+
+/*! \brief
+ * Custom program context for test binaries.
+ *
+ * This context overrides the defaultLibraryDataPath() implementation to always
+ * load data files from the source directory, as the test binaries are never
+ * installed.  It also support overriding the directory through a command-line
+ * option to the test binary.
+ *
+ * \ingroup module_testutils
+ */
+class TestProgramContext : public ProgramContextInterface
+{
+    public:
+        /*! \brief
+         * Initializes a test program context.
+         *
+         * \param[in] context  Current \Gromacs program context.
+         */
+        explicit TestProgramContext(const ProgramContextInterface &context)
+            : context_(context),
+              dataPath_(Path::join(CMAKE_SOURCE_DIR, "share/top"))
+        {
+        }
+
+        /*! \brief
+         * Sets the source directory root from which to look for data files.
+         */
+        void overrideSourceRoot(const std::string &sourceRoot)
+        {
+            dataPath_ = Path::join(sourceRoot, "share/top");
+        }
+
+        virtual const char *programName() const
+        {
+            return context_.programName();
+        }
+        virtual const char *displayName() const
+        {
+            return context_.displayName();
+        }
+        virtual const char *fullBinaryPath() const
+        {
+            return context_.fullBinaryPath();
+        }
+        virtual const char *defaultLibraryDataPath() const
+        {
+            return dataPath_.c_str();
+        }
+        virtual const char *commandLine() const
+        {
+            return context_.commandLine();
+        }
+
+    private:
+        const ProgramContextInterface   &context_;
+        std::string                      dataPath_;
+};
+
 //! Prints the command-line options for the unit test binary.
 void printHelp(const Options &options)
 {
@@ -82,25 +146,33 @@ void printHelp(const Options &options)
     context.setModuleDisplayName(getProgramContext().displayName());
     CommandLineHelpWriter(options).writeHelp(context);
 }
+
+//! Global program context instance for test binaries.
+boost::scoped_ptr<TestProgramContext> g_testContext;
+
 }       // namespace
 
 //! \cond internal
 void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
 {
-    gmx::initForCommandLine(argc, argv);
+    const CommandLineProgramContext &context = initForCommandLine(argc, argv);
     try
     {
+        g_testContext.reset(new TestProgramContext(context));
+        setProgramContext(g_testContext.get());
         ::testing::InitGoogleMock(argc, *argv);
         if (dataPath != NULL)
         {
-            TestFileManager::setInputDataDirectory(dataPath);
+            TestFileManager::setInputDataDirectory(
+                    Path::join(CMAKE_SOURCE_DIR, dataPath));
         }
         if (tempPath != NULL)
         {
             TestFileManager::setGlobalOutputTempDirectory(tempPath);
         }
-        bool    bHelp = false;
-        Options options(NULL, NULL);
+        bool        bHelp = false;
+        std::string sourceRoot;
+        Options     options(NULL, NULL);
         // TODO: A single option that accepts multiple names would be nicer.
         // Also, we recognize -help, but GTest doesn't, which leads to a bit
         // unintuitive behavior.
@@ -108,6 +180,9 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
                               .description("Print GROMACS-specific unit test options"));
         options.addOption(BooleanOption("help").store(&bHelp).hidden());
         options.addOption(BooleanOption("?").store(&bHelp).hidden());
+        // TODO: Make this into a FileNameOption (or a DirectoryNameOption).
+        options.addOption(StringOption("src-root").store(&sourceRoot)
+                              .description("Override source tree location (for data files)"));
         // TODO: Consider removing this option from test binaries that do not need it.
         initReferenceData(&options);
         initTestOptions(&options);
@@ -125,19 +200,32 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
         {
             printHelp(options);
         }
+        if (!sourceRoot.empty())
+        {
+            g_testContext->overrideSourceRoot(sourceRoot);
+            TestFileManager::setInputDataDirectory(
+                    Path::join(sourceRoot, dataPath));
+        }
         setFatalErrorHandler(NULL);
         initMPIOutput();
     }
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        std::exit(processExceptionAtExitForCommandLine(ex));
+        int retcode = processExceptionAtExitForCommandLine(ex);
+        // TODO: It could be nice to destroy things in proper order such that
+        // g_testContext would not contain hanging references at this point,
+        // but in practice that should not matter.
+        g_testContext.reset();
+        std::exit(retcode);
     }
 }
 
 void finalizeTestUtils()
 {
-    gmx::finalizeForCommandLine();
+    setProgramContext(NULL);
+    g_testContext.reset();
+    finalizeForCommandLine();
 }
 //! \endcond
 
