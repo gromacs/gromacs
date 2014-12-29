@@ -195,7 +195,7 @@ class TestFileManager
          * This function is automatically called by unittest_main.cpp through
          * initTestUtils().
          */
-        static void setInputDataDirectory(const char *path);
+        static void setInputDataDirectory(const std::string &path);
 
         /*! \brief Returns the path to the global test output
          * temporary directory for future TestFileManager objects.

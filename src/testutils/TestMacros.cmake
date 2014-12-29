@@ -46,13 +46,15 @@ function (gmx_build_unit_test NAME EXENAME)
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         target_link_libraries(${EXENAME} ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+        file(RELATIVE_PATH _input_files_path ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
         set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
         file(MAKE_DIRECTORY ${_temporary_files_path})
-
         # Note that the quotation marks in the next line form part of
         # the defined symbol, so that the macro replacement in the
         # source file is as a string.
-        set(EXTRA_COMPILE_DEFINITIONS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}" TEST_TEMP_PATH="${_temporary_files_path}")
+        set(EXTRA_COMPILE_DEFINITIONS
+            TEST_DATA_PATH="${_input_files_path}"
+            TEST_TEMP_PATH="${_temporary_files_path}")
 
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
     endif()
