@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@
 #include "thread_mpi/threads.h"
 
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/datafilefinder.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/path.h"
@@ -87,6 +88,32 @@ static int          s_maxBackupCount = 0;
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
 static tMPI_Thread_mutex_t pstack_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+
+namespace gmx
+{
+namespace
+{
+//! Global library file finder; stores the object set with setLibraryFileFinder().
+const DataFileFinder *g_libFileFinder;
+//! Default library file finder if nothing is set.
+const DataFileFinder  g_defaultLibFileFinder;
+}   // namespace
+
+const DataFileFinder &getLibraryFileFinder()
+{
+    if (g_libFileFinder != NULL)
+    {
+        return *g_libFileFinder;
+    }
+    return g_defaultLibFileFinder;
+}
+
+void setLibraryFileFinder(const DataFileFinder *finder)
+{
+    g_libFileFinder = finder;
+}
+
+} // namespace gmx
 
 void gmx_disable_file_buffering(void)
 {
@@ -689,83 +716,35 @@ gmx_directory_close(gmx_directory_t gmxdir)
 
 char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
 {
-    bool bEnvIsSet = false;
     try
     {
-        if (bAddCWD && gmx_fexist(file))
+        const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
+        std::string                result =
+            finder.findFile(gmx::DataFileOptions(file)
+                                .includeCurrentDir(bAddCWD)
+                                .throwIfNotFound(bFatal));
+        if (!result.empty())
         {
-            return gmx_strdup(file);
-        }
-        else
-        {
-            std::string  libpath;
-            // GMXLIB can be a path.
-            const char  *lib = getenv("GMXLIB");
-            if (lib != NULL)
-            {
-                bEnvIsSet = true;
-                libpath   = lib;
-            }
-            else
-            {
-                libpath = gmx::getProgramContext().defaultLibraryDataPath();
-            }
-
-            std::vector<std::string>                 pathEntries;
-            gmx::Path::splitPathEnvironment(libpath, &pathEntries);
-            std::vector<std::string>::const_iterator i;
-            for (i = pathEntries.begin(); i != pathEntries.end(); ++i)
-            {
-                std::string testPath = gmx::Path::join(*i, file);
-                if (gmx::Path::exists(testPath))
-                {
-                    return gmx_strdup(testPath.c_str());
-                }
-            }
+            return gmx_strdup(result.c_str());
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    if (bFatal)
-    {
-        if (bEnvIsSet)
-        {
-            gmx_fatal(FARGS,
-                      "Library file %s not found %sin your GMXLIB path.",
-                      file, bAddCWD ? "in current dir nor " : "");
-        }
-        else
-        {
-            gmx_fatal(FARGS,
-                      "Library file %s not found %sin default directories.\n"
-                      "(You can set the directories to search with the GMXLIB path variable)",
-                      file, bAddCWD ? "in current dir nor " : "");
-        }
-    }
     return NULL;
 }
 
 FILE *low_libopen(const char *file, gmx_bool bFatal)
 {
-    FILE *ff;
-    char *fn;
-
-    fn = low_gmxlibfn(file, TRUE, bFatal);
-
-    if (fn == NULL)
+    try
     {
-        ff = NULL;
+        const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
+        FILE *fp =
+            finder.openFile(gmx::DataFileOptions(file)
+                                .includeCurrentDir(true)
+                                .throwIfNotFound(bFatal));
+        return fp;
     }
-    else
-    {
-        if (debug)
-        {
-            fprintf(debug, "Opening library file %s\n", fn);
-        }
-        ff = fopen(fn, "r");
-    }
-    sfree(fn);
-
-    return ff;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return NULL;
 }
 
 char *gmxlibfn(const char *file)
