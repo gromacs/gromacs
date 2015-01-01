@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -269,6 +269,50 @@ void gmx_getcwd(char *buffer, size_t size);
 
 #ifdef __cplusplus
 }
+
+namespace gmx
+{
+
+class DataFileFinder;
+
+/*! \brief
+ * Gets a finder for locating data files from share/top/.
+ *
+ * \returns Finder set with setLibraryFileFinder(), or a default finder.
+ *
+ * If setLibraryFileFinder() has not been called (or a `NULL` finder has been
+ * set), a default finder is returned.
+ * The default finder searches data files from the directory identified by the
+ * global program context; it does not respect GMXLIB environment variable.
+ * Calling initForCommandLine() sets a finder that respects GMXLIB.
+ *
+ * Does not throw.
+ *
+ * See setLibraryFileFinder() for thread safety.
+ *
+ * \ingroup module_utility
+ */
+const DataFileFinder &getLibraryFileFinder();
+/*! \brief
+ * Sets a finder for location data files from share/top/.
+ *
+ * \param[in] finder  finder to set
+ *     (can be NULL to restore the default finder).
+ *
+ * The library does not take ownership of \p finder.
+ * The provided object must remain valid until the global instance is changed
+ * by another call to setLibraryFileFinder().
+ *
+ * The global instance is used by gmxlibfn() and libopen().
+ *
+ * This method is not thread-safe.  See setProgramContext(); the same
+ * constraints apply here as well.
+ *
+ * Does not throw.
+ */
+void setLibraryFileFinder(const DataFileFinder *finder);
+
+} // namespace gmx
 #endif
 
 #endif
