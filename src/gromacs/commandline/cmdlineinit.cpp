@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,9 @@
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/datafilefinder.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/programcontext.h"
@@ -71,6 +73,8 @@ namespace
 
 //! Global context instance initialized in initForCommandLine().
 boost::scoped_ptr<CommandLineProgramContext> g_commandLineContext;
+//! Global library data file finder that respects GMXLIB.
+boost::scoped_ptr<DataFileFinder>            g_libFileFinder;
 
 #ifdef GMX_LIB_MPI
 void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
@@ -125,6 +129,9 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
     {
         g_commandLineContext.reset(new CommandLineProgramContext(*argc, *argv));
         setProgramContext(g_commandLineContext.get());
+        g_libFileFinder.reset(new DataFileFinder());
+        g_libFileFinder->setSearchPathFromEnv("GMXLIB");
+        setLibraryFileFinder(g_libFileFinder.get());
     }
     catch (const std::exception &ex)
     {
@@ -137,6 +144,8 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
 void finalizeForCommandLine()
 {
     gmx::finalize();
+    setLibraryFileFinder(NULL);
+    g_libFileFinder.reset();
     setProgramContext(NULL);
     g_commandLineContext.reset();
 }
