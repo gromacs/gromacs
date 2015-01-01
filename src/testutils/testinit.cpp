@@ -62,6 +62,7 @@
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 
@@ -164,6 +165,9 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
     {
         g_testContext.reset(new TestProgramContext(context));
         setProgramContext(g_testContext.get());
+        // Use the default finder that does not respect GMXLIB, since the tests
+        // generally can only get confused by a different set of data files.
+        setLibraryFileFinder(NULL);
         ::testing::InitGoogleMock(argc, *argv);
         if (dataPath != NULL)
         {
