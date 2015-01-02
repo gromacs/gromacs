@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -192,7 +192,7 @@ static void printCopyright(FILE *fp)
     };
     static const char * const CopyrightText[] = {
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-        "Copyright (c) 2001-2014, The GROMACS development team at",
+        "Copyright (c) 2001-2015, The GROMACS development team at",
         "Uppsala University, Stockholm University and",
         "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
