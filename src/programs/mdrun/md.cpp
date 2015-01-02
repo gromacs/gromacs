@@ -323,7 +323,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gstat = global_stat_init(ir);
     debug_gmx();
 
-    /* TODO: testing location effect! */
     init_shell_flexcon(fplog, shellfc, ir, top_global, n_flexible_constraints(constr),
                        (ir->bContinuation || (DOMAINDECOMP(cr) && !MASTER(cr))) ?
                        NULL : state_global->x);
@@ -922,11 +921,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 /* Repartition the domain decomposition */
                 wallcycle_start(wcycle, ewcDOMDEC);
-                /* TODO: remove */
-                if (debug)
-                {
-                    fprintf(debug, "DD: Second call to dd_partition_system()\n");
-                }
                 dd_partition_system(fplog, step, cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
@@ -1084,12 +1078,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
             else
             {
-                /* TODO: remove, just for debugging */
-                if (debug)
-                {
-                    fprintf(debug, "MD: step = %d, calling trotter ettTSEQ1\n", (int)step);
-                }
-
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ1);
 
@@ -1142,13 +1130,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                            should be changed by this routine here.  If
                            !(first time), we start with the previous value
                            of veta.  */
-
-                        /* TODO: remove */
-                        if (debug)
-                        {
-                            fprintf(debug, "MD: step = %d, calling trotter ettTSEQ0\n", (int)step);
-                        }
-
                         veta_save = state->veta;
                         trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ0);
                         vetanew     = state->veta;
@@ -1231,11 +1212,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         m_add(force_vir, shake_vir, total_vir); /* we need the un-dispersion corrected total vir here */
 
-                        /* TODO: remove */
-                        if (debug)
-                        {
-                            fprintf(debug, "MD: step = %d, calling trotter ettTSEQ2\n", (int)step);
-                        }
                         trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ2);
 
                         if (debug)
@@ -1512,12 +1488,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         clear_mat(shake_vir);
                     }
 
-                    /* TODO: remove */
-                    if (debug)
-                    {
-                        fprintf(debug, "MD: step = %d, calling trotter ettTSEQ3\n", (int)step);
-                    }
-
                     trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ3);
                     /* We can only do Berendsen coupling after we have summed
                      * the kinetic energy or virial. Since the happens
@@ -1587,11 +1557,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     );
                     wallcycle_start(wcycle, ewcUPDATE);
 
-                    /* TODO: remove */
-                    if (debug)
-                    {
-                        fprintf(debug, "MD: step = %d, calling trotter ettTSEQ4\n", (int)step);
-                    }
                     trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
 
                     /* now we know the scaling, we can compute the positions again again */
@@ -1859,11 +1824,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
         {
-            /* TODO: remove */
-            if (debug)
-            {
-                fprintf(debug, "DD: Third call to dd_partition_system\n");
-            }
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
                                 state, &f, mdatoms, top, fr,

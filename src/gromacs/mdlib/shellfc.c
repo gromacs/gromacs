@@ -148,6 +148,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
         {
             clear_rvec(x[s1]);
         }
+
         switch (s[i].nnucl)
         {
             case 1:
@@ -351,7 +352,6 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                         case F_CUBICBONDS:
                         case F_POLARIZATION:
                         case F_ANHARM_POL:
-                        case F_ANISO_POL:
                             if (atom[ia[1]].ptype == eptShell)
                             {
                                 aS = ia[1];
@@ -366,6 +366,10 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                         case F_WATER_POL:
                             aN    = ia[4]; /* Dummy */
                             aS    = ia[5]; /* Shell */
+                            break;
+                        case F_ANISO_POL:
+                            /* we don't need to do any special assignment in this case, since
+                             * anisotropy will be a subset of either F_BONDS or F_POLARIZATION */
                             break;
                         default:
                             gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
@@ -1330,7 +1334,9 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         int     x;
         for (x = 0; x < nshell; x++)
         {
-            fprintf(debug, "RELAX SHELL FLEXCON: shell[%d].shell = %d\n", x, shell[x].shell);
+            fprintf(debug, "RELAX SHELL FLEXCON: shell[%d].shell = %d, x = %8.4f %8.4f %8.4f\n", 
+                    x, shell[x].shell, state->x[shell[x].shell][XX], state->x[shell[x].shell][YY],
+                    state->x[shell[x].shell][ZZ]);
         }
     }
 

@@ -340,10 +340,6 @@ static int count_intercg_shells(gmx_mtop_t *mtop,
         a2cg = atom2cg(&molt->cgs);
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            /* TODO */
-            /*
-            if (interaction_function[ftype].flags & (IF_BOND | IF_CHEMBOND))
-            */
             if (ftype == F_BONDS || ftype == F_POLARIZATION)
             {
                 nral = NRAL(ftype);
@@ -380,7 +376,6 @@ static int **get_shell_pbc(t_ilist *ilist,
     char    *pbc_set;
     gmx_bool bShellOnlyCG_and_FirstAtom;
 
-    /* TODO: testing!!! */
     if (md == NULL)
     {
         return 0;
@@ -547,8 +542,6 @@ gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
     }
 
     snew(shfc, 1);
-    /* TODO: check - nshell or nshell_gl? Seems like nshell_gl */
-    shfc->nshell = nshell;
 
     if (debug)
     {
@@ -606,12 +599,6 @@ gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
 
     shfc->th_ind        = NULL;
     shfc->th_ind_nalloc = 0;
-
-    /* TODO: remove */
-    if (debug)
-    {
-        fprintf(debug, "INIT SHELL: returning %d local shells.\n", shfc->nshell);
-    }
 
     return shfc;
 }
