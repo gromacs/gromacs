@@ -662,7 +662,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             useed = (int)gmx_rng_make_seed();
             fprintf(stderr, "Setting gen_seed to %u\n", useed);
         }
-        /* TODO: add fix for Drude velocity generation at ir->drude_t */
         maxwell_speed(opts->tempi, useed, sys, state->v, ir);
 
         stop_cm(stdout, state->natoms, mass, state->x, state->v);
