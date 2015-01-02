@@ -1,8 +1,4 @@
 
-; PLEASE NOTE: Do NOT change the order of H and D additions in this file!
-; Doing so will lead to a badly broken topology with atoms in the wrong
-; order! Any Drude or LP must be added after any H or O atoms.
-
 [ None ]
 
 ; normal polypeptide N-terminus, charged
