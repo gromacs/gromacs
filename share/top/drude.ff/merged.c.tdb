@@ -123,15 +123,15 @@
  O    OT1   OD2C3A  15.5994  1.66629
  DO   DOT1  D        0.4000 -1.66629
 [ add ]
+ 2  12  LP1 OT1 C   CA
+    LP               0.0000 -0.31900   -1
  1  8   OT2 C   CA  N
     OD30D           15.5994  1.96331   -1
  1  2   HT2 OT2 C   CA
     HDP1A            1.0080  0.37400   -1
- 2  12  LP1 OT1 C   CA
-    LP               0.0000 -0.31900   -1
  1  14  DOT2 OT2
     D                0.4000 -1.96331   -1
- 2  12  LP2 OT2 C   CA
+ 2  13  LP2 OT2 C   CA
     LP               0.0000 -0.28500   -1
 [ impropers ]
  C  OT1  OT2  CA
@@ -324,15 +324,15 @@
  O    OT1   OD2C2A  15.5994  1.66629
  DO   DOT1  D        0.4000 -1.66629
 [ add ]
+ 2  12  LP1 OT1 C   CA
+    LP               0.0000 -0.31900   -1
  1  8   OT  C   CA  N
     OD30D           15.5994  1.96331   -1
  1  2   HT2 OT2 C   CA
     HDP1A            1.0080  0.37400   -1
- 2  12  LP1 OT1 C   CA
-    LP               0.0000 -0.31900   -1
  1  14  DOT2 OT2
     D                0.4000 -1.96331   -1
- 2  12  LP2 OT2 C   CA
+ 2  13  LP2 OT2 C   CA
     LP               0.0000 -0.28500   -1
 [ impropers ]
  C  OT1  OT2  CA
@@ -640,15 +640,15 @@
  O    OT1   OD2C3A  15.5994  1.66629
  DO   DOT1  D        0.4000 -1.66629
 [ add ]
+ 2  12  LP1 OT1 C   CA
+    LP               0.0000 -0.31900   -1
  1  8   OT2 C   CA  N
     OD30D           15.5994  1.96331   -1
  1  2   HT2 OT2 C   CA
     HDP1A            1.0080  0.37400   -1
- 2  12  LP1 OT1 C   CA
-    LP               0.0000 -0.31900   -1
  1  14  DOT2 OT2
     D                0.4000 -1.96331   -1
- 2  12  LP2 OT2 C   CA
+ 2  13  LP2 OT2 C   CA
     LP               0.0000 -0.28500   -1
 [ impropers ]
  C  OT1  OT2  CA
