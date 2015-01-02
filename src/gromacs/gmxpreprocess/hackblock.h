@@ -107,7 +107,7 @@ typedef struct {
      */
     t_atom     *atom; /* New atom data              */
     int         cgnr; /* chargegroup number. if not read will be NOTSET */
-    int         tp;   /* Type of attachment (1..11) */
+    int         tp;   /* Type of attachment (1..14) */
     int         nctl; /* How many control atoms there are */
     char       *a[4]; /* Control atoms i,j,k,l	  */
     gmx_bool    bAlreadyPresent;

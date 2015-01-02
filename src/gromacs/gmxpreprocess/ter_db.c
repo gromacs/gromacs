@@ -364,7 +364,8 @@ static void read_ter_db_file(char *fn,
             }
             else if (kwnr >= 0 && kwnr < ebtsNR)
             {
-                /* this is bonded data: bonds, angles, dihedrals or impropers */
+                /* this is bonded data: bonds, angles, dihedrals, impropers,
+                 * exclusions, Thole, polarization, or virtual sites */
                 srenew(tb[nb].rb[kwnr].b, tb[nb].rb[kwnr].nb+1);
                 n = 0;
                 for (j = 0; j < btsNiatoms[kwnr]; j++)

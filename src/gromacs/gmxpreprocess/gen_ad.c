@@ -1133,18 +1133,18 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
 
      if (debug)
     {
-        fprintf(stderr, "At end of gen_excl:\n");
+        fprintf(debug, "At end of gen_excl:\n");
         for (a = 0; a < atoms->nr; a++)
         {
             if (excls[a].nr > 1)
             {
                 int q;
-                fprintf(stderr, "excluded from %d: ", a+1);
+                fprintf(debug, "excluded from %d: ", a+1);
                 for (q = 0; q < excls[a].nr; q++)
                 {
-                    fprintf(stderr, "%5d", excls[a].e[q]+1);
+                    fprintf(debug, "%5d", excls[a].e[q]+1);
                 }
-                fprintf(stderr, "\n");
+                fprintf(debug, "\n");
             }
         }
     }

@@ -1971,18 +1971,21 @@ int gmx_pdb2gmx(int argc, char *argv[])
         }
 
         /* Generate Hydrogen atoms (and termini) in the sequence */
-        /* Drudes will be added here */
         fprintf(stderr, "Generating any missing hydrogen atoms%s and/or adding termini.\n",
-                bDrude ? ", Drudes," : "");
+                bDrude ? ", Drudes, lone pairs," : "");
+
+        /* Note that new function types have been added to cause add_h to build terminus-specific
+         * Drudes and lone pairs, so this function builds more than just H now */ 
         natom = add_h(&pdba, &x, nah, ah,
                       cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing,
                       NULL, NULL, TRUE, FALSE);
 
-        /* At this point, pdba has all H and termini built, so all this function needs to do
-         * is loop thru all the atoms in pdba and find anything that's not H, LP, or D that already
-         * exists.  Prepend each of those atom names with a 'D' and copy the coords */
+        /* At this point, pdba has all H and termini built, so we need to add lone pairs (if any)
+         * and Drudes. For topology reasons and compatibility with CHARMM, we need to follow this
+         * exact order, so that H are inserted first (above), then LP, and Drudes. */ 
         if (bDrude)
         {
+            add_drude_lonepairs(&pdba, &x, restp_chain, nssbonds, ssbonds);
             add_drudes(&pdba, &x);
         }
 

@@ -43,12 +43,13 @@
 extern "C" {
 #endif
 
-void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
+void calc_h_pos(int nht, int nadd, rvec xa[], rvec xh[], int *l);
 /*
  *    w.f. van gunsteren, groningen, july 1981
  *
  *    translated to c d. van der spoel groningen jun 1993
  *    added option 5 jan 95
+ *    added LP and Drude construction options - jal 2014
  *
  *    subroutine genh (nht,nh,na,d,alfa,x)
  *
@@ -56,6 +57,8 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
  *    using the coordinates of neighbour atoms.
  *
  *    nht      : type of hydrogen attachment (see manual)
+ *    nadd     : number of additions (only for type-8 C-term additions)
+ *                See comments in code.
  *    xh(1.. ) : atomic positions of the hydrogen atoms that are to be
  *               generated
  *    xa(1..4) : atomic positions of the control atoms i, j and k and l

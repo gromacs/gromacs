@@ -143,7 +143,7 @@ static void gen_oh_lonepairs(rvec xa[], rvec xh[], int *l)
     *l = (*l+1) % 6;
 }
 
-void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
+void calc_h_pos(int nht, int nadd, rvec xa[], rvec xh[], int *l)
 {
 #define alfaH   (acos(-1/3.0)) /* 109.47 degrees */
 #define alfaHpl (2*M_PI/3)     /* 120 degrees */
@@ -159,7 +159,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 
 /* For LP construction */
 #define distOLP  0.030
-#define alfaOLP  (DEG2RAD*140)
+#define alfaOLP  (DEG2RAD*90)
 
     rvec sa, sb, sij;
     real s6, rij, ra, rb, xd;
@@ -175,6 +175,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
         case 4:
         case 8:
         case 9:
+        case 12:
             rij = 0.e0;
             for (d = 0; (d < DIM); d++)
             {
@@ -313,10 +314,26 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             gen_waterhydrogen(4, xa, xh, l);
             break;
         case 8: /* two carboxyl oxygens, -COO- */
+            /* Note that some termini (methyl amide, Drude with LP, etc) may only add 
+             * one oxygen (due to some limitations in expand_hackblocks_one(), we need
+             * to determine if we should only construct 1 O/N atom. Without doing this,
+             * the added atom has the same coordinates as the existing carbonyl O.
+             * If nadd = 1, just construct the "second" position, if nadd = 2, do both. */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]-distOM*sin(alfaCOM)*sb[d]-distOM*cos(alfaCOM)*sij[d];
-                xH2[d] = xAI[d]+distOM*sin(alfaCOM)*sb[d]-distOM*cos(alfaCOM)*sij[d];
+                if (nadd == 2)
+                {
+                    xH1[d] = xAI[d]-distOM*sin(alfaCOM)*sb[d]-distOM*cos(alfaCOM)*sij[d];
+                    xH2[d] = xAI[d]+distOM*sin(alfaCOM)*sb[d]-distOM*cos(alfaCOM)*sij[d];
+                }
+                else if (nadd == 1)
+                {
+                    xH1[d] = xAI[d]+distOM*sin(alfaCOM)*sb[d]-distOM*cos(alfaCOM)*sij[d];
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Unsupported add nr (%d) in calc_h_pos.\n", nadd);
+                }
             }
             break;
         case 9:          /* carboxyl oxygens and hydrogen, -COOH */
@@ -335,7 +352,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             copy_rvec(xAI, xa2[1]); /* new j = i  */
             copy_rvec(xAJ, xa2[2]); /* new k = j  */
             copy_rvec(xAK, xa2[3]); /* new l = k, not used */
-            calc_h_pos(2, xa2, (xh+2), l);
+            calc_h_pos(2, 2, xa2, (xh+2), l);
 
             break;
         }

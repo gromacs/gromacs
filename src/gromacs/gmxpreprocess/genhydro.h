@@ -40,6 +40,7 @@
 
 #include "gromacs/fileio/pdbio.h"
 #include "hackblock.h"
+#include "pdb2top.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,6 +76,9 @@ void deprotonate(t_atoms *atoms, rvec *x);
 /* Deprotonate any molecule: all atoms whose name begins with H will be
  * removed
  */
+
+void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nssbonds, t_ssbond *ssbonds);
+/* Build lone pair coordinates on input structure */
 
 void add_drudes(t_atoms **pdbaptr, rvec *xptr[]);
 /* Add Drudes to input structure */

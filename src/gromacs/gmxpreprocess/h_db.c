@@ -53,9 +53,9 @@
 
 /* Number of control atoms for each 'add' type.
  *
- * There are 14 types of adding hydrogens, numbered from 1 thru
+ * There are 14 types of adding atoms (H, O, Drude, LP), numbered from 1 thru
  * 14. Each of these has a specific number of control atoms, that
- * determine how the hydrogens are added.  Here these number are
+ * determine how the atoms are added.  Here these number are
  * given. Because arrays start at 0, an extra dummy for index 0 is
  * added.
  */

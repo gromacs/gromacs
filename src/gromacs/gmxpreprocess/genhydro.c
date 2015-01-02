@@ -57,6 +57,14 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+/* new structure for lone pair/virtual site construction */
+typedef struct
+{
+    int     nr;     /* number of vsites to add to a particular atom (dim: natoms) */
+    char  **names;  /* names of the vsites/LP to add */
+    rvec   *x;      /* constructed coordinates of the vsites/LP to add */  
+} t_vsiteadd;
+
 static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
 {
     atoms2->atom[a2] = atoms1->atom[a1];
@@ -71,6 +79,15 @@ static void copy_atom_drude(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2, co
     atoms2->atom[a2].resind = atoms1->atom[a1].resind;
     snew(atoms2->atomname[a2], 1);
     *atoms2->atomname[a2] = strdup(dname);
+}
+
+static void add_lonepair_pdba(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2, const char *lpname)
+{
+    atoms2->atom[a2].type = 'V';
+    atoms2->atom[a2].ptype = eptVSite;
+    atoms2->atom[a2].resind = atoms1->atom[a1].resind;
+    snew(atoms2->atomname[a2], 1);
+    *atoms2->atomname[a2] = strdup(lpname);
 }
 
 static atom_id pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
@@ -212,7 +229,7 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
             }
         }
         /* must be either hdb entry (tp>0) or add from tdb (oname==NULL)
-           and first control aton (AI) matches this atom or
+           and first control atom (AI) matches this atom or
            delete/replace from tdb (oname!=NULL) and oname matches this atom */
         if (debug)
         {
@@ -396,11 +413,13 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
             if (ab[i][j].oname == NULL && ab[i][j].tp > 0)
             {
                 bFoundAll = TRUE;
+
                 for (m = 0; (m < ab[i][j].nctl && bFoundAll); m++)
                 {
                     ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba,
                                          bCheckMissing ? "atom" : "check",
                                          !bCheckMissing);
+
                     if (ia < 0)
                     {
                         /* not found in original atoms, might still be in t_hack (ab) */
@@ -445,7 +464,7 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
                             }
                         }
                     }
-                    calc_h_pos(ab[i][j].tp, xa, xh, &l);
+                    calc_h_pos(ab[i][j].tp, ab[i][j].nr, xa, xh, &l);
                     for (m = 0; m < ab[i][j].nr; m++)
                     {
                         copy_rvec(xh[m], ab[i][j+m].newx);
@@ -522,13 +541,11 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
         bUpdate_pdba = TRUE;
         /* first get all the hackblocks for each residue: */
         hb = get_hackblocks(pdba, nah, ah, nterpairs, ntdb, ctdb, rN, rC);
-#if 0
         if (debug)
         {
             /* TODO: BROKEN */
             dump_hb(debug, pdba->nres, hb);
         }
-#endif
 
         /* expand the hackblocks to atom level */
         snew(nab, natoms);
@@ -630,6 +647,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                 if (ab[i][j].oname == NULL) /* add */
                 {
                     newi++;
+
                     if (newi >= natoms+nadd)
                     {
                         /* gmx_fatal(FARGS,"Not enough space for adding atoms");*/
@@ -672,18 +690,18 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                         {
                             if (gmx_debug_at)
                             {
-                                fprintf(debug, "Replacing %d '%s' with (old name '%s') %s\n",
+                                fprintf(debug, "\nReplacing %d '%s' with (old name '%s') %s\n",
                                         newi,
                                         (newpdba->atomname[newi] && *newpdba->atomname[newi]) ? *newpdba->atomname[newi] : "",
-                                        ab[i][j].oname ? ab[i][j].oname : "",
-                                        ab[i][j].nname);
+                                        ab[i][j].oname ? ab[i][j].oname : "", ab[i][j].nname);
                             }
                             snew(newpdba->atomname[newi], 1);
                             *newpdba->atomname[newi] = strdup(ab[i][j].nname);
                             if (ab[i][j].oname != NULL && ab[i][j].atom) /* replace */
-                            {                                            /*          newpdba->atom[newi].m    = ab[i][j].atom->m; */
-/*        newpdba->atom[newi].q    = ab[i][j].atom->q; */
-/*        newpdba->atom[newi].type = ab[i][j].atom->type; */
+                            {                                            
+                                /* newpdba->atom[newi].m    = ab[i][j].atom->m; */
+                                /* newpdba->atom[newi].q    = ab[i][j].atom->q; */
+                                /* newpdba->atom[newi].type = ab[i][j].atom->type; */
                             }
                         }
                         if (ab[i][j].bXSet)
@@ -1080,62 +1098,516 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
     sfree(bPresent);
 }
 
-/* TODO */
-#if 0
-/* Adding lone pairs is a bit different from H and Drudes, but since the Drude function
- * is here, I will just keep everything in one place - jal */
-void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp *rtp, int nrtp)
+/* Build lone pair (virtual site) coordinates based on input constructing atoms */
+static void build_lonepair_coords(int bt, int f, atom_id ai[], real *params, rvec *xptr[], rvec *xlp)
 {
 
-    int         i, j, natoms, nadd, bt;
-    rvec       *xn;                 /* new lone pair positions */
+    real    a, b, c, d, a1, b1, c1, invdij;
+    rvec    xi, xj, xk, xl;     /* coords of constructing atoms, for convenience */
+    rvec    xij, xjk, xik, xil, xp, temp;
+    rvec    ra, rb, rja, rjb, rm;
+
+    switch (bt)
+    {
+        case ebtsVSITE2:
+            copy_rvec((*xptr)[ai[1]], xi);
+            copy_rvec((*xptr)[ai[2]], xj);
+            a = params[0];
+            b = 1.0 - a;
+            (*xlp)[XX] = b*xi[XX] + a*xj[XX];
+            (*xlp)[YY] = b*xi[YY] + a*xj[XX];
+            (*xlp)[ZZ] = b*xi[ZZ] + a*xj[XX];
+            break;
+        case ebtsVSITE3:
+            /* always three constructing atoms for type 3 vsites */
+            copy_rvec((*xptr)[ai[1]], xi);
+            copy_rvec((*xptr)[ai[2]], xj);
+            copy_rvec((*xptr)[ai[3]], xk);
+            /* always at least 2 constructing constants, only 3out supplies 3 */
+            a = params[0];
+            b = params[1];
+
+            if (debug)
+            {
+                fprintf(debug, "BUILD LP: received a = %f b = %f for type 3 construction.\n", a, b);
+            }
+            switch (f)
+            {
+                case 1:     /* 3 */
+                    c = 1.0 - a - b;
+                    (*xlp)[XX] = c*xi[XX] + a*xj[XX] + b*xk[XX];
+                    (*xlp)[YY] = c*xi[YY] + a*xj[YY] + b*xk[YY];
+                    (*xlp)[ZZ] = c*xi[ZZ] + a*xj[ZZ] + b*xk[ZZ];
+                    break;
+                case 2:     /* 3fd */
+                    rvec_sub(xj, xi, xij);
+                    rvec_sub(xk, xj, xjk);
+                    temp[XX] = xij[XX] + a*xjk[XX];
+                    temp[YY] = xij[YY] + a*xjk[YY];
+                    temp[ZZ] = xij[ZZ] + a*xjk[ZZ];
+                    c = b*gmx_invsqrt(iprod(temp, temp));
+                    (*xlp)[XX] = xi[XX] + c*temp[XX];
+                    (*xlp)[YY] = xi[YY] + c*temp[YY];
+                    (*xlp)[ZZ] = xi[ZZ] + c*temp[ZZ];
+                    break;
+                case 3:     /* 3fad */
+                    rvec_sub(xj, xi, xij);
+                    rvec_sub(xk, xj, xjk);
+                    /* special case for calculating a and b, so replace values from above (same as convparm.c) */
+                    a = params[1] * cos(DEG2RAD * params[0]);
+                    b = params[1] * sin(DEG2RAD * params[0]);
+                    invdij = gmx_invsqrt(iprod(xij, xij));
+                    c1     = invdij * invdij * iprod(xij, xjk);
+                    xp[XX] = xjk[XX] - c1*xij[XX];
+                    xp[YY] = xjk[YY] - c1*xij[YY];
+                    xp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
+                    a1     = a*invdij;
+                    b1     = b*gmx_invsqrt(iprod(xp, xp));
+                    (*xlp)[XX] = xi[XX] + a1*xij[XX] + b1*xp[XX];
+                    (*xlp)[YY] = xi[YY] + a1*xij[YY] + b1*xp[YY];
+                    (*xlp)[ZZ] = xi[ZZ] + a1*xij[ZZ] + b1*xp[ZZ];
+                    break;
+                case 4:     /* 3out */
+                    c = params[2];
+                    rvec_sub(xj, xi, xij);
+                    rvec_sub(xk, xi, xik);
+                    cprod(xij, xik, temp);
+                    (*xlp)[XX] = xi[XX] + a*xij[XX] + b*xik[XX] + c*temp[XX];
+                    (*xlp)[YY] = xi[YY] + a*xij[YY] + b*xik[YY] + c*temp[YY];
+                    (*xlp)[ZZ] = xi[ZZ] + a*xij[ZZ] + b*xik[ZZ] + c*temp[ZZ];
+                    break;
+                default:
+                    gmx_fatal(FARGS, "Unknown subtype of virtual_sites3 in build_lonepair_coords.\n");
+            }
+            break;
+        case ebtsVSITE4:
+            /* constructing atoms */
+            copy_rvec((*xptr)[ai[1]], xi);
+            copy_rvec((*xptr)[ai[2]], xj);
+            copy_rvec((*xptr)[ai[3]], xk);
+            copy_rvec((*xptr)[ai[4]], xl);
+
+            /* constants */
+            a = params[0];
+            b = params[1];
+            c = params[2];
+
+            rvec_sub(xj, xi, xij);
+            rvec_sub(xk, xi, xik);
+            rvec_sub(xl, xi, xil);
+            ra[XX] = a*xik[XX];
+            ra[YY] = a*xik[YY];
+            ra[ZZ] = a*xik[ZZ];
+            rb[XX] = b*xil[XX];
+            rb[YY] = b*xil[YY];
+            rb[ZZ] = b*xil[ZZ];
+            rvec_sub(ra, xij, rja);
+            rvec_sub(rb, xij, rjb);
+            cprod(rja, rjb, rm);
+            d = c*gmx_invsqrt(norm2(rm));
+            (*xlp)[XX] = xi[XX] + d*rm[XX];
+            (*xlp)[YY] = xi[YY] + d*rm[YY];
+            (*xlp)[ZZ] = xi[ZZ] + d*rm[ZZ];
+            break;
+        default:
+            gmx_fatal(FARGS, "Something totally weird in build_lonepair_coords.\n");
+    }
+
+    /* print coords */
+    if (debug)
+    {
+        fprintf(debug, "BUILD LP: lp coords = %f %f %f\n", (*xlp)[XX], (*xlp)[YY], (*xlp)[ZZ]);
+    }
+}
+
+/* Adding lone pairs is a bit different from H and Drudes, but since the Drude function
+ * is here, I will just keep everything in one place - jal */
+void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nssbonds, t_ssbond *ssbonds)
+{
+
+    int         f, i, j, k, m, ss, index, natoms, nadd, bt, start;
+    int         nat;                /* number of atoms in vsite interaction definition */
+    int         r1, r2;             /* residues involved in disulfide */
+    atom_id     cb1, sg1, sg2, cb2; /* atom indices of CB and SG in a disulfide */
+    atom_id     lpsa, lpsb;         /* atom indices of LPSA and LPSB of SG */
+    atom_id     ai[MAXATOMLIST];
+    real       *params;             /* constructing constants for vsite */
+    rvec       *xlp;                /* coordinates of added lone pair */
+    rvec       *xn;                 /* new coordinate array */
     char       *rname;              /* residue name */
-    char       *vname;              /* name of virtual site (LP) */
+    char       *lpname;             /* name of virtual site (LP) */
+
+    /* lone pair construction constant strings */
+    char ss_lpa[] = "4   -0.135847248   -0.131015228   -2.467798394";
+    char ss_lpb[] = "4   -0.135847248   -0.131015228    2.467798394";
+
     t_atoms    *newpdba = NULL, *pdba = NULL;
-    t_bonded   *bvsite;
+    t_rbonded  *bvsite;
     t_restp    *rtp_tmp;
+    t_vsiteadd *lp;
+
+    /* for parsing parameter strings, note that 3, 3fd, and 3fad have the same format */
+    const char *vsite2fmt = "%d %f";            /* ftype a     */
+    const char *vsite3fadfmt = "%d %f %f";      /* ftype a b   */
+    const char *vsite3outfmt = "%d %f %f %f";   /* ftype a b c */
+    const char *vsite4fdnfmt = "%d %f %f %f";   /* ftype a b c */
+
+    snew(lpname, 8);    /* another ugly hack */
+    snew(xlp, 1);
+    snew(bvsite, 1);
 
     pdba = *pdbaptr;
     natoms = pdba->nr;
 
     snew(xn, natoms);
     snew(newpdba, 1);
+    snew(lp, natoms);
 
+    newpdba->nres = pdba->nres;
+    sfree(newpdba->resinfo);
+    newpdba->resinfo = pdba->resinfo;
+
+    /* initialize lp struct */
+    for (i=0; i<natoms; i++)
+    {
+        lp[i].nr = 0;
+        snew((lp[i]).names, 1);
+        snew((lp[i]).x, 1);
+    }
+
+    nat = 0;
     nadd = 0;
+    start = 0;
     /* find all of the lone pairs specified in the .rtp entries */
     for (i=0; i < pdba->nres; i++)
     {
-        rname = strdup(*pdba->resinfo[i].rtp);
-        if (debug)
-        {
-            fprintf(debug, "ADD LP: Residue %d name %s...\n", i, rname);
-        }
-        /* Find .rtp entry for this residue */
-        for (j=0; j<nrtp; j++)
-        {
-            if (strcmp(rname, *rtp[j]->resname)==0)
-            {
-                rtp_tmp = rtp[j];
-            }
-        }
+        rtp_tmp = &rtp[i];
+
         /* Search .rtp entry for this residue for any ebtsVSITE, increment nadd
          * for each vsite found if it is not present in pdba */
         for (bt = ebtsVSITE2; bt <= ebtsVSITE4; bt++)
         {
-            /* only do this if there are vsites... */
-            /* WRONG: i is index for residue in pdba */
-            if (rtp_tmp.rb[bt].nb > 0)
+            /* set number of atoms in vsite type */
+            switch (bt)
             {
-                bvsite = rtp_tmp.rb[bt]->b;
+                case ebtsVSITE2:
+                    nat = 3;
+                    break;
+                case ebtsVSITE3:
+                    nat = 4;
+                    break;
+                case ebtsVSITE4:
+                    nat = 5;
+                    break;
+                default:
+                    gmx_fatal(FARGS, "Unknown vsite type in add_drude_lonepairs.\n");
+            }
+
+            /* only do this if there are vsites in the rtp entry */
+            if (rtp_tmp->rb[bt].nb > 0)
+            {
+                /* Loop over nb to find atoms and get their indices */
+                for (k = rtp_tmp->rb[bt].nb - 1; k >= 0; k--)
+                {
+                    *bvsite = rtp_tmp->rb[bt].b[k];
+
+                    /* determine vsite sub-type from param string in rtp entry */
+                    /* only type 3 has multiple sub-types */
+                    if (bt == ebtsVSITE3)
+                    {
+                        sscanf(bvsite->s, "%d", &f);
+                        switch (f)
+                        {
+                            /* the first three types (3, 3fd, 3fad) have the same format */
+                            case 1:
+                            case 2:
+                            case 3:
+                                snew(params, 2);
+                                sscanf(bvsite->s, vsite3fadfmt, &f, &(params[0]), &(params[1]));
+                                break;
+                            case 4:
+                                snew(params, 3);
+                                sscanf(bvsite->s, vsite3outfmt, &f, &(params[0]), &(params[1]), &(params[2]));
+                                break;
+                            default:
+                                gmx_fatal(FARGS, "Unknown vsite sub-type for type 3: %d\n", f);
+                        }
+                    }
+                    else if (bt == ebtsVSITE2)
+                    {
+                        /* one constructing parameter */
+                        snew(params, 1);
+                        sscanf(bvsite->s, vsite2fmt, &f, &(params[0]));
+                    }
+                    else if (bt == ebtsVSITE4)
+                    {
+                        /* three constructing parameters */
+                        snew(params, 3);
+                        sscanf(bvsite->s, vsite4fdnfmt, &f, &(params[0]), &(params[1]), &(params[2]));
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Unknown vsite type in add_drude_lonepairs.\n");
+                    }
+
+                    /* initialize */
+                    for (m = 0; m < MAXATOMLIST; m++)
+                    {
+                        ai[m] = NO_ATID; 
+                    }
+
+                    /* find the LP and constructing atoms for each vsite in the residue */
+                    for (m = 0; m < nat; m++)
+                    {
+                        ai[m] = search_atom(bvsite->a[m], start, pdba, "check", TRUE);
+                    }
+
+                    /* Loop back over to add the LP if it is missing */
+                    for (m = 0; m < nat; m++)
+                    {
+                        /* At this point, the only missing atoms should be lone pairs, and the atom
+                           to which it is "bonded" is the next index (m+1), so the LP needs to be inserted
+                           in newpdba at the position of ai[m+1] */
+                        /* NOTE: The array a[m] holds atom names, ai[m] holds their indices */
+                        if (ai[m] == NO_ATID)
+                        {
+                            /* Here, we have to guard against atoms that have been removed/replaced when combining
+                             * .rtp and .tdb entries.  For instance, for a backbone carbonyl LP at the C-terminus,
+                             * O has been renamed (so O will be NO_ATID) and the LP have been built already, so we
+                             * we don't need to do this, but we still need to build other LP that may be in the .rtp
+                             * entry (e.g. side chain LP). */
+                            if (is_lonepair(bvsite->a[m]) && ai[m+1] != NO_ATID)
+                            {
+                                if (debug)
+                                {
+                                    fprintf(debug, "ADD DRUDE LP: adding %s to %s\n", bvsite->a[m], bvsite->a[m+1]);
+                                    fprintf(debug, "ADD DRUDE LP: attached to %d (%s) %d (%s) %d (%s)\n", ai[1], bvsite->a[m+1],
+                                            ai[2], bvsite->a[m+2], ai[3], bvsite->a[m+3]);
+                                    fprintf(debug, "ADD DRUDE LP: x[%d]: %f %f %f\n", ai[1], (*xptr)[ai[1]][XX], (*xptr)[ai[1]][YY], (*xptr)[ai[1]][ZZ]);
+                                    fprintf(debug, "ADD DRUDE LP: x[%d]: %f %f %f\n", ai[2], (*xptr)[ai[2]][XX], (*xptr)[ai[2]][YY], (*xptr)[ai[2]][ZZ]);
+                                    fprintf(debug, "ADD DRUDE LP: x[%d]: %f %f %f\n", ai[3], (*xptr)[ai[3]][XX], (*xptr)[ai[3]][YY], (*xptr)[ai[3]][ZZ]);
+                                }
+
+                                /* we have a lone pair to add, so keep track of total number of additions (nadd)
+                                 * and the number of lone pairs added to a given atom (lp[ai[m+1]]->nr) */
+                                nadd++;
+                                lp[ai[m+1]].nr++;
+                                srenew(lp[ai[m+1]].names, lp[ai[m+1]].nr);
+                                srenew(lp[ai[m+1]].x, lp[ai[m+1]].nr);
+                                index = lp[ai[m+1]].nr - 1;
+
+                                /* construct LP coordinates and set name */
+                                build_lonepair_coords(bt, f, ai, params, xptr, xlp);
+                                lpname = strdup(bvsite->a[m]);
+
+                                if (debug)
+                                {
+                                    fprintf(debug, "ADD DRUDE LP: adding lp %s to atom %d, lp[%d].nr = %d\n", lpname, ai[m+1], ai[m+1], lp[ai[m+1]].nr);
+                                }
+
+                                /* copy name and coords to lp struct */
+                                copy_rvec((*xlp), lp[ai[m+1]].x[index]);
+                                snew(lp[ai[m+1]].names[index], 8);
+                                lp[ai[m+1]].names[index] = strdup(lpname);
+                            }
+                        }
+                    }
+                }
             }
         }
 
+        while ((start < pdba->nr) && (pdba->atom[start].resind == i))
+        {
+            start++;
+        }
 
+    }   /* end of loop over nres */
+
+    /* Disulfides need to be treated separately since the .rtp for CYS2
+     * cannot specify the lone pair construction, as it depends on SG
+     * from the linked CYS2 */
+    if (nssbonds > 0)
+    {
+        for (m = 0; m < MAXATOMLIST; m++)
+        {
+            ai[m] = NO_ATID;
+        }
+
+        for (ss=0; ss<nssbonds; ss++)
+        {
+            /* get atom indices for each half of the disulfide */
+            r1 = ssbonds[ss].res1;
+            r2 = ssbonds[ss].res2;
+
+            /* check to see if LPSA is already there */
+            lpsa = search_res_atom("LPSA", r1, pdba, "check", TRUE);
+
+            if (lpsa == NO_ATID)
+            { 
+                /* LPSA construction constants */
+                sscanf(ss_lpa, "%d %f %f %f", &f, &(params[0]), &(params[1]), &(params[2]));
+
+                /* get constructing indices */
+                cb1 = search_res_atom("CB", r1, pdba, "special bond", FALSE);
+                sg1 = search_res_atom("SG", r1, pdba, "special bond", FALSE);
+                cb2 = search_res_atom("CB", r2, pdba, "special bond", FALSE);
+                sg2 = search_res_atom("SG", r2, pdba, "special bond", FALSE);
+
+                ai[0] = NO_ATID;
+                ai[1] = sg1;
+                ai[2] = cb1;
+                ai[3] = sg2;
+
+                /* build it */
+                nadd++;
+                lp[sg1].nr++;
+                srenew(lp[sg1].names, lp[sg1].nr);
+                srenew(lp[sg1].x, lp[sg1].nr);
+                index = lp[sg1].nr - 1;
+                build_lonepair_coords(ebtsVSITE3, f, ai, params, xptr, xlp);
+
+                /* add it */
+                lpname = "LPSA";
+                copy_rvec((*xlp), lp[sg1].x[index]);        
+                snew(lp[sg1].names[index], 8);              
+                lp[sg1].names[index] = strdup(lpname); 
+
+                /* Now, the other half of the disulfide */
+                ai[1] = sg2;
+                ai[2] = cb2;
+                ai[3] = sg1;
+
+                nadd++;
+                lp[sg2].nr++;
+                srenew(lp[sg2].names, lp[sg2].nr);
+                srenew(lp[sg2].x, lp[sg2].nr);
+                index = lp[sg2].nr - 1;
+                build_lonepair_coords(ebtsVSITE3, f, ai, params, xptr, xlp);
+
+                copy_rvec((*xlp), lp[sg2].x[index]);
+                snew(lp[sg2].names[index], 8);
+                lp[sg2].names[index] = strdup(lpname);
+            }
+
+            /* same for LPSB */
+            lpsb = search_res_atom("LPSB", r1, pdba, "check", TRUE);
+
+            if (lpsb == NO_ATID)
+            {            
+                /* LPSB construction constants */
+                sscanf(ss_lpb, "%d %f %f %f", &f, &(params[0]), &(params[1]), &(params[2]));
+
+                /* get constructing indices */
+                cb1 = search_res_atom("CB", r1, pdba, "special bond", FALSE);
+                sg1 = search_res_atom("SG", r1, pdba, "special bond", FALSE);
+                cb2 = search_res_atom("CB", r2, pdba, "special bond", FALSE);
+                sg2 = search_res_atom("SG", r2, pdba, "special bond", FALSE);
+
+                ai[0] = NO_ATID;
+                ai[1] = sg1;
+                ai[2] = cb1;
+                ai[3] = sg2;
+
+                /* build it */
+                nadd++;
+                lp[sg1].nr++;
+                srenew(lp[sg1].names, lp[sg1].nr);
+                srenew(lp[sg1].x, lp[sg1].nr);
+                index = lp[sg1].nr - 1;
+                build_lonepair_coords(ebtsVSITE3, f, ai, params, xptr, xlp);
+
+                /* add it */
+                lpname = "LPSB";
+                copy_rvec((*xlp), lp[sg1].x[index]);
+                snew(lp[sg1].names[index], 8);
+                lp[sg1].names[index] = strdup(lpname);
+
+                /* Now, the other half of the disulfide */
+                ai[1] = sg2;
+                ai[2] = cb2;
+                ai[3] = sg1;
+
+                nadd++;
+                lp[sg2].nr++;
+                srenew(lp[sg2].names, lp[sg2].nr);
+                srenew(lp[sg2].x, lp[sg2].nr);
+                index = lp[sg2].nr - 1;
+                build_lonepair_coords(ebtsVSITE3, f, ai, params, xptr, xlp);
+
+                copy_rvec((*xlp), lp[sg2].x[index]);
+                snew(lp[sg2].names[index], 8);
+                lp[sg2].names[index] = strdup(lpname);
+            }
+        }
     }
 
-    /* Match atom names for constructing atoms and get their indices,
-     * then pull their coordinates.  Pass coordinates and LP name to
-     * an appropriate constructing function and return coordinates for
-     * the LP. */  
+    /* re-allocate memory to prepare for additions */
+    init_t_atoms(newpdba, natoms+nadd, FALSE);
+    newpdba->nres = pdba->nres;
+    sfree(newpdba->resinfo);
+    newpdba->resinfo = pdba->resinfo;
+
+    if (nadd > 0)
+    {
+        if (debug)
+        {
+            fprintf(debug, "ADD DRUDE LP: need to add %d lone pairs.\n", nadd);
+        }
+        srenew(newpdba->atom, natoms+nadd);
+        srenew(newpdba->atomname, natoms+nadd);
+    }
+
+    srenew(xn, natoms+nadd);
+
+    newpdba->nr = natoms+nadd;
+
+    j = 0;  /* number of additions made for each atom */
+    k = 0;  /* total number of additions made to pdba */ 
+    /* loop over natoms and add the lone pairs from the lp structure to those atoms that need them */
+    for (i=0; i<natoms; i++)
+    {
+        if (lp[i].nr > 0)
+        {
+            /* copy the parent atom to which additions are being made */
+            copy_atom(pdba, i, newpdba, i+k);
+            copy_rvec((*xptr)[i], xn[i+k]);
+            /* now, add the lone pairs */
+            for (j=(lp[i].nr-1); j >= 0; j--)
+            {
+                /* increment counter of total additions made */
+                k++;
+                /* add lone pair to newpdba and add coords to xn */
+                add_lonepair_pdba(pdba, i, newpdba, i+k, lp[i].names[j]);
+                copy_rvec(lp[i].x[j], xn[i+k]);
+            }
+        }
+        else
+        {
+            /* nothing to add to this atom, just copy */
+            copy_atom(pdba, i, newpdba, i+k);
+            copy_rvec((*xptr)[i], xn[i+k]);
+        }
+    }
+
+    /* update coords */
+    sfree(*xptr);
+    *xptr = xn;
+
+    /* update pdba */
+    *pdbaptr = newpdba;
+
+    /* status check */
+    if (debug)
+    {
+        fprintf(debug, "ADD DRUDE LP: End of function check of pdbaptr\n");
+        fprintf(debug, "ADD DRUDE LP: New no. of atoms: %d\n", newpdba->nr);
+        for (i=0; i<(newpdba->nr); i++)
+        {
+            fprintf(debug, "ADD DRUDE LP: Atom %d: %s", i, *(newpdba->atomname[i]));
+            fprintf(debug, " x: %f %f %f\n", (*xptr)[i][XX], (*xptr)[i][YY], (*xptr)[i][ZZ]);
+        }
+    }
+
+    sfree(params);
+
 }
-#endif

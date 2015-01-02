@@ -1086,8 +1086,6 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
 
         /* Remove doubles, but here keep the second instance of a parameter if it is duplicated */
         j = 0;
-        /* TODO: remove, debugging */
-        /* fprintf(stdout, "Before loop: ps->nr = %d\n", ps->nr); */
 
         for (i = 1; (i < ps->nr); i++)
         {
@@ -1095,11 +1093,6 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
             if ((ps->param[i].a[0] == ps->param[j].a[0]) &&
                 (ps->param[i].a[2] == ps->param[j].a[2]))
             {
-                /* TODO: remove, debugging */
-                /*
-                fprintf(stdout, "Duplicate found for atoms: %d - %d, j = %d, i = %d\n", ps->param[i].a[0]+1, ps->param[i].a[1]+1, j, i);
-                */
-
                 /* Check to see if either of the atoms is a CB */
                 /* We need this because CB Thole and alpha values vary based on the nature of
                  * of the residue, but only a single value can be used in the .tdb,
@@ -1145,13 +1138,6 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
             else if ((ps->param[i].a[0] != ps->param[j].a[0]) ||
                      (ps->param[i].a[2] != ps->param[j].a[2]))
             {
-                /* TODO: remove, debugging */
-                /*
-                fprintf(stdout, "Unique entries found in Thole:\n");
-                fprintf(stdout, "    i = %d a[0] = %d, a[1] = %d\n", i, ps->param[i].a[0]+1, ps->param[i].a[1]+1);
-                fprintf(stdout, "    j = %d a[0] = %d, a[1] = %d\n", j, ps->param[j].a[0]+1, ps->param[j].a[1]+1);
-                */
-
                 j++;
                 if (is_cbeta(atoms, ps->param[i].a[0]))
                 {
@@ -2091,6 +2077,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     if (debug)
     {
         print_resall(debug, atoms->nres, restp, atype);
+        /* TODO: BROKEN */
         dump_hb(debug, atoms->nres, hb);
     }
 
@@ -2150,10 +2137,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     gen_pad(&nnb, atoms, restp, plist, excls, hb, nssbonds, ssbonds, bAllowMissing, bDrude);
     done_nnb(&nnb);
 
-    /* TODO: add Tholes for Drude disulfides */
     if (bDrude)
     {
-        /* TODO: write this function... */ 
         add_drude_ssbonds_thole(atoms, nssbonds, ssbonds, &(plist[F_THOLE_POL]), bAllowMissing);
 
         /* Duplicates can happen when merging tdb and rtp, so since the

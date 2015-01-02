@@ -394,9 +394,10 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
                     {
                         fprintf(out, " %s", hb[i].rb[j].b[k].a[l]);
                     }
-                    fprintf(out, " %s]", SS(hb[i].rb[j].b[k].s));
+                    fprintf(out, " %s]\n", SS(hb[i].rb[j].b[k].s));
+                    /* TODO: jal moved inside k-loop and commented out to fix seg fault */
+                    /* fprintf(out, " Entry matched: %s\n", yesno_names[hb[i].rb[j].b[k].match]); */
                 }
-                fprintf(out, " Entry matched: %s\n", yesno_names[hb[i].rb[j].b[k].match]);
             }
         }
         fprintf(out, "\n");
