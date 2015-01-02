@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">x - y of cog of resnr 2 &lt; 0</String>
+      <String Name="Text">x - y of cog of resnr 2 &lt; 0</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">15</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+        <Int>10</Int>
+        <Int>11</Int>
+        <Int>12</Int>
+        <Int>13</Int>
+        <Int>14</Int>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+  <EvaluatedSelections Name="Frame1">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+      </Sequence>
+    </Selection>
+  </EvaluatedSelections>
+</ReferenceData>

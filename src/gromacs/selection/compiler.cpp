@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1875,7 +1875,7 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
             if ((sel->flags & SEL_DYNAMIC)
                 && sel->v.type != GROUP_VALUE && sel->v.type != POS_VALUE)
             {
-                sel->v.nr = isize;
+                sel->v.nr = ((sel->flags & SEL_SINGLEVAL) ? 1 : isize);
             }
             /* If the method is char-valued, pre-allocate the strings. */
             if (sel->u.expr.method->flags & SMETH_CHARVAL)
