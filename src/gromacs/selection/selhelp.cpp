@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,12 @@ const char        CommonHelpText::title[] =
 const char *const CommonHelpText::text[] = {
     "Selections are used to select atoms/molecules/residues for analysis.",
     "In contrast to traditional index files, selections can be dynamic, i.e.,",
-    "select different atoms for different trajectory frames.[PAR]",
+    "select different atoms for different trajectory frames. The GROMACS",
+    "manual contains a short introductory section to selections in the",
+    "Analysis chapter, including suggestions on how to get familiar with",
+    "selections if you are new to the concept. The subtopics listed below",
+    "provide more details on the technical and syntactic aspects of",
+    "selections.[PAR]",
 
     "Each analysis tool requires a different number of selections and the",
     "selections are interpreted differently. The general idea is still the",
@@ -82,16 +87,7 @@ const char *const CommonHelpText::text[] = {
     "can be an atom position or center-of-mass or center-of-geometry of",
     "a set of atoms. The tool then uses these positions for its analysis to",
     "allow very flexible processing. Some analysis tools may have limitations",
-    "on the types of selections allowed.[PAR]",
-
-    "To get started with selections, run, e.g., [TT][PROGRAM] select[tt]",
-    "without specifying selections on the command-line and use the interactive",
-    "prompt to try out different selections.",
-    "This tool provides output options that allow one to see what is actually",
-    "selected by the given selections, and the interactive prompt reports",
-    "syntax errors immediately, allowing one to try again.",
-    "The subtopics listed below give more details on different aspects of",
-    "selections.",
+    "on the types of selections allowed."
 };
 
 struct ArithmeticHelpText
