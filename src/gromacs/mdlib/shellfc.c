@@ -1327,19 +1327,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
     idef = &top->idef;
 
-    if (debug)
-    {
-        fprintf(debug, "RELAX SHELL FLEXCON: top of function.\n");
-        fprintf(debug, "RELAX SHELL FLEXCON: %d shells\n", nshell);
-        int     x;
-        for (x = 0; x < nshell; x++)
-        {
-            fprintf(debug, "RELAX SHELL FLEXCON: shell[%d].shell = %d, x = %8.4f %8.4f %8.4f\n", 
-                    x, shell[x].shell, state->x[shell[x].shell][XX], state->x[shell[x].shell][YY],
-                    state->x[shell[x].shell][ZZ]);
-        }
-    }
-
     if (DOMAINDECOMP(cr))
     {
         nat = dd_natoms_vsite(cr->dd);
@@ -1446,8 +1433,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
     /* Now, update shell/Drude positions. There are two methods to do this:
-     *  1. The energy minimization/SCF approach
-     *  2. Extended Lagrangian to integrate positions
+     *  1. The energy minimization/SCF approach - done here
+     *  2. Extended Lagrangian to integrate positions - done with md.cpp
      */
     if ((inputrec->drude->drudemode==edrudeSCF) || EI_ENERGY_MINIMIZATION(inputrec->eI))
     {
@@ -1648,20 +1635,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         memcpy(state->x, pos[Min], nat*sizeof(state->x[0]));
         memcpy(f, force[Min], nat*sizeof(f[0]));
     }
-/* jal 11/20/2014 - no longer necessary since call in mdrun is different */
-#if 0
-    else if (inputrec->drude->drudemode==edrudeLagrangian) 
-    {
-        /* Here, all we need to do is calculate forces; updates will be done in
-         * the main MD loop */
-        do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle,
-                 top, groups, state->box, state->x, &state->hist,
-                 f, force_vir,
-                 md, enerd, fcd, state->lambda, graph,
-                 fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
-                 force_flags);
-    }
-#endif
     else
     {
         /* something has gone horribly wrong */
