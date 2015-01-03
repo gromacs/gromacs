@@ -1255,6 +1255,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
     snew(lpname, 8);    /* another ugly hack */
     snew(xlp, 1);
     snew(bvsite, 1);
+    snew(params, 1);
 
     pdba = *pdbaptr;
     natoms = pdba->nr;
@@ -1322,11 +1323,11 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
                             case 1:
                             case 2:
                             case 3:
-                                snew(params, 2);
+                                srenew(params, 2);
                                 sscanf(bvsite->s, vsite3fadfmt, &f, &(params[0]), &(params[1]));
                                 break;
                             case 4:
-                                snew(params, 3);
+                                srenew(params, 3);
                                 sscanf(bvsite->s, vsite3outfmt, &f, &(params[0]), &(params[1]), &(params[2]));
                                 break;
                             default:
@@ -1336,13 +1337,12 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
                     else if (bt == ebtsVSITE2)
                     {
                         /* one constructing parameter */
-                        snew(params, 1);
                         sscanf(bvsite->s, vsite2fmt, &f, &(params[0]));
                     }
                     else if (bt == ebtsVSITE4)
                     {
                         /* three constructing parameters */
-                        snew(params, 3);
+                        srenew(params, 3);
                         sscanf(bvsite->s, vsite4fdnfmt, &f, &(params[0]), &(params[1]), &(params[2]));
                     }
                     else
