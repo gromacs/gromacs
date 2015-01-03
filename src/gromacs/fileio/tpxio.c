@@ -1554,7 +1554,9 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             gmx_fio_do_real(fio, ir->drude->drude_t);
             gmx_fio_do_gmx_bool(fio, ir->drude->bHardWall);
             gmx_fio_do_real(fio, ir->drude->drude_r);
+            gmx_fio_do_gmx_bool(fio, ir->drude->bHyper);
             gmx_fio_do_real(fio, ir->drude->drude_khyp);
+            gmx_fio_do_int(fio, ir->drude->drude_hyp_power);
             gmx_fio_do_real(fio, ir->drude->nbtholecut);
             gmx_fio_do_int(fio, ir->drude->tsteps);
         }

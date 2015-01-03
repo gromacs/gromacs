@@ -40,6 +40,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "typedefs.h"
 #include "types/commrec.h"
@@ -1279,6 +1280,54 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
 } 
 
+/* Drude quartic restraint (hyperpolarizability)
+ *
+ * Since the hardwall cannot be used with SCF (no velocities on Drudes),
+ * an alternative (and older) method for avoiding polarization catastrophe
+ * is to apply a quartic restraining force on the Drudes.  This algorithm is
+ * less stable for dynamics than the hardwall, so it should generally be
+ * disfavored during MD, but it can be VERY useful during EM and when running
+ * MD+SCF.
+ */
+static void add_quartic_restraint_force(t_inputrec *ir, gmx_shellfc_t shfc, rvec x[], rvec f[])
+{
+    int     d, i;
+    int     ns;
+    int     power;
+    atom_id s, n;   /* Drude (shell) and atom (nucleus) */
+    rvec    dx;
+    real    dx2;
+    real    du;
+    real    k, r, rbond;
+
+    k = ir->drude->drude_khyp;
+    r = ir->drude->drude_r;
+    power = ir->drude->drude_hyp_power;
+
+    ns = shfc->nshell;
+
+    for (i=0; i<ns; i++)
+    {
+        s = shfc->shell[i].shell;
+        n = shfc->shell[i].nucl1;
+
+        /* Drude-atom bond length */
+        rvec_sub(x[s], x[s], dx);
+        dx2 = norm(dx);
+        rbond = sqrt(dx2);
+
+        if (rbond > r)
+        {
+            du = k*power*(pow((rbond - r),(power-2)));
+            for (d=0; d<DIM; d++)
+            {
+                f[s][d] += du*dx[d];
+                f[n][d] -= du*dx[d];
+            }
+        }
+    }
+}
+
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         gmx_int64_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
@@ -1432,6 +1481,12 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
+    /* TODO: add hyperpolarizability here */
+    if (inputrec->drude->bHyper)
+    {
+        add_quartic_restraint_force(inputrec, shfc, state->x, force[Min]);
+    }
+
     /* Now, update shell/Drude positions. There are two methods to do this:
      *  1. The energy minimization/SCF approach - done here
      *  2. Extended Lagrangian to integrate positions - done with md.cpp
@@ -1541,6 +1596,12 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                      md, enerd, fcd, state->lambda, graph,
                      fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
                      force_flags);
+
+            /* TODO: add hyperpolarizability here */
+            if (inputrec->drude->bHyper)
+            {
+                add_quartic_restraint_force(inputrec, shfc, state->x, force[Try]);
+            }
 
             if (gmx_debug_at)
             {

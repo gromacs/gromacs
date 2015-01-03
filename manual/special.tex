@@ -2190,11 +2190,11 @@ drude-r         = 0.02
 drude-tsteps    = 20
 \end{verbatim}
 
-If using the hardwall restraint, the anharmonic restraint potential specified using
+If using the hardwall restraint, the quartic restraint potential specified using
 {\tt drude-khyp} is not necessary, as the hardwall is more stable and effective at
-preventing polarization catastrophe.  The anharmonic restraint is available in the
-code in case someone might find it useful, though in general it is discouraged in
-favor of the hardwall.
+preventing polarization catastrophe.  The quartic restraint is available in the
+code for use with SCF, though in general it is discouraged in favor of the hardwall
+for extended Lagrangian dynamics.
 
 One feature that is present in CHARMM and NAMD that is not yet available in
 {\gromacs} is so-called ``nonbonded Thole screening'' that applies Thole dipole

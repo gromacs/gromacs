@@ -18,7 +18,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init-step, comm-mode, nstcomm, comm-grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd-fric, ld-seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
-<li><a HREF="#shellmd"><b>polarizable simulations</b></a>(drude,drude-mode,emtol,niter,fcstep,drude-t,drude-hardwall,drude-r,drude-khyp,drude-tsteps)
+<li><a HREF="#shellmd"><b>polarizable simulations</b></a>(drude,drude-mode,emtol,niter,fcstep,drude-t,drude-hardwall,drude-r,drude-hyper,drude-khyp,drude-pow,drude-tsteps)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxout-compressed, compressed-x-precision, compressed-x-grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-tolerance, rlist, rlistlong)
@@ -331,21 +331,27 @@ is set to <b>SCF</b></dd>
 <dt><b>drude-t: (1.0) [K]</b></dt>
 <dd>The temperature for Drude particle velocity generation.  Only meaningful when
 <b>drude-mode</b> is set to <b>Lagrangian</b></dd>
-<dt><b>drude-hardwall: (yes)</b></dt>
+<dt><b>drude-hardwall: (no)</b></dt>
 <dd><dl compact>
 <dt><b>yes</b></dt>
-<dd>The hardwall restraint described by Chowdhary et al. (see manual) will be applied
+<dd>The hardwall constraint described by Chowdhary et al. (see manual) will be applied
 to avoid polarization catastrophe.</dd>
 <dt><b>no</b></dt>
 <dd>No hardwall restraint will be applied.  Simulations may be unstable and the value
 of <b>dt</b> should be set no larger than 0.0005.</dd>
 </dl></dd>
 <dt><b>drude-r: (0.02) [nm]</b></dt>
-<dd>The distance limit for Drude-atom bonds, at which point the hardwall restraint is imposed.</dd>
-<dt><b>drude-khyp: (418400.0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
-<dd>The force constant for using an anharmonic potential (quartic restraint).  Anharmonic
-restraints are less stable than using the hardwall restraint, and <b>dt</b> is still
+<dd>The distance limit for Drude-atom bonds, at which point the hardwall or quartic restraint is imposed.</dd>
+<dt><b>drude-hyper: (no)</b></dt>
+<dd>An additional restraint potential beyond <b>drude-r</b> is used. Cannot be applied in conjunction
+with the hardwall constraint. Should only be used when <b>drude-mode</b> is set to <b>SCF</b></dd>
+<dt><b>drude-khyp: (16736000.0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
+<dd>The force constant for using the additional (quartic) restraint.  The quartic
+restraint is less stable than using the hardwall restraint, and <b>dt</b> is still
 limited in most cases to 0.0005.</dd>
+<dd><b>drude-power: (4)</b></dt>
+<dd>Power for the additional restraining potential.  Typically, this is a quartic restraint,
+though it can be tuned.  Be advised that values other than 4 are untested!</dd>
 <dt><b>drude-tsteps: (20)</b></dt>
 <dd>The number of subdivided time steps for updating thermostat and barostat variables.
 A value of 20 is generally recommended, though values as low as 5 can be stable and

@@ -1767,27 +1767,55 @@ int gmx_grompp(int argc, char *argv[])
             /* Hard wall relies on velocities */
             if (ir->drude->drudemode == edrudeSCF)
             {
-                gmx_fatal(FARGS, "Cannot do hard wall with SCF. Please use extended Lagrangian.");
+                gmx_fatal(FARGS, "Cannot do hard wall with SCF. Maybe you want the quartic restraint?");
             }
 
+            /* Hard wall and quartic restraint are mutually exclusive */
+            if (ir->drude->bHyper)
+            {
+                gmx_fatal(FARGS, "Cannot apply hard wall and quartic restraint. Please turn off one or the other");
+            }
         }
         else
         {
-            /* only really relevant during dynamics, hard wall not usually necessary during EM */
+            /* only really relevant during dynamics */
             if (ir->drude->drudemode == edrudeLagrangian)
             {
                 warning_note(wi, "Drude hard wall not set, could be unstable!");
             }
         }
 
-        /* dt = 0.002 is probably safe for water, but not much else */
-        /* Highly charged systems like proteins and DNA are very sensitive */
+        if (ir->drude->drudemode == edrudeSCF)
+        {
+            /* Advise that the quartic restraint should be used with SCF */
+            if (!(ir->drude->bHyper))
+            {
+                warning_note(wi, "Quartic restraint not set, could be unstable!");
+            }
+
+            /* nstcalcenergy requirement */
+            if (ir->nstcalcenergy != 1)
+            {
+                gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) > 1.\nThis is not supported in combination with shell particles in SCF mode.", ir->nstcalcenergy);
+            }
+
+            if (ir->drude->bHyper)
+            {
+                if (ir->drude->drude_hyp_power != 4)
+                {
+                    warning_note(wi, "Quartic restraint set with power not equal to 4. Consider using the normal value; nothing else is tested!");
+                }
+            }
+        }
+
+        /* dt = 0.002 is probably safe for water, but not much else, and in practice dt is always 0.001 */
+        /* Highly charged systems like proteins and DNA are very sensitive! */
         if (ir->delta_t > 0.001)
         {
             warning_note(wi, "dt is very large, recommend 0.001 for stability.");
         }
 
-        /* Recommended subdivision of time steps is 20 for Drude systems,
+        /* Recommended subdivision of time steps is 5-20 for Drude systems,
          * but the only strict requirement is that the value be != 1 since
          * energy conservation becomes an issue */ 
         if (ir->drude->tsteps <= 1)
@@ -1846,11 +1874,6 @@ int gmx_grompp(int argc, char *argv[])
         {
             /* Currently shells don't work with Normal Modes */
             gmx_fatal(FARGS, "Normal Mode analysis is not supported with shells.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
-        }
-
-        if (ir->nstcalcenergy != 1 && (ir->drude->drudemode == edrudeSCF))
-        {
-            gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles in SCF mode.", ir->nstcalcenergy);
         }
 
     }

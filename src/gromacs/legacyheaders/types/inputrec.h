@@ -327,17 +327,19 @@ typedef struct {
 } t_adress;
 
 typedef struct {
-    int         drudemode;      /* Mode: SCF of extended Lagrangian */
-    real        drude_t;        /* Temperature for Drude thermostat */
-    gmx_bool    bHardWall;      /* Whether or not to apply hard-wall restraining potential */
-    real        drude_r;        /* Length beyond which to apply quartic restraining potential */
-    real        drude_khyp;     /* Force constant for hyperpolarization correction */
-    real        nbtholecut;     /* Radius for screened Coulomb correction of Thole for
-                                 * non-excluded nonbonded Drude pairs. Set to 0.5 for
-                                 * highly charged systems (default is 0.0) */
-    int         tsteps;         /* number of sub-steps into which each time step is divided
-                                 * to integrate thermostat variables. Default is 20, for 
-                                 * non-polarizable systems it would be 1 */
+    int         drudemode;          /* Mode: SCF of extended Lagrangian */
+    real        drude_t;            /* Temperature for Drude thermostat */
+    gmx_bool    bHardWall;          /* Whether or not to apply hard-wall restraining potential */
+    real        drude_r;            /* Length beyond which to apply hardwall or quartic restraining potential */
+    gmx_bool    bHyper;             /* Whether or not to apply quartic restraining potential */
+    real        drude_khyp;         /* Force constant for hyperpolarization correction */
+    int         drude_hyp_power;    /* Power for extra restraining potential, typically 4 (quartic) */
+    real        nbtholecut;         /* Radius for screened Coulomb correction of Thole for
+                                     * non-excluded nonbonded Drude pairs. Set to 0.5 for
+                                     * highly charged systems (default is 0.0) */
+    int         tsteps;             /* number of sub-steps into which each time step is divided
+                                     * to integrate thermostat variables. Default is 20, for 
+                                     * non-polarizable systems it would be 1 */
 } t_drude;
 
 typedef struct {

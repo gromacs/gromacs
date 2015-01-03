@@ -50,7 +50,9 @@ void read_drude_opts(int *ninp_p, t_inpfile **inp_p, t_drude *drude, warninp_t w
     RTYPE ("drude-t", drude->drude_t, 1.0);
     EETYPE("drude-hardwall", drude->bHardWall, yesno_names);
     RTYPE ("drude-r", drude->drude_r, 0.02);
-    RTYPE ("drude-khyp", drude->drude_khyp, 418400.00);
+    EETYPE("drude-hyper", drude->bHyper, yesno_names);
+    RTYPE ("drude-khyp", drude->drude_khyp, 16736000.00);   /* default CHARMM value: 40,000 kcal/mol/A^2 */
+    ITYPE ("drude-pow", drude->drude_hyp_power, 4);
     RTYPE ("nbtholecut", drude->nbtholecut, 0.0);
     ITYPE ("drude-tsteps", drude->tsteps, 20);
 

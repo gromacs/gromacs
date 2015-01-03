@@ -1118,7 +1118,9 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
             PR("drude-t", ir->drude->drude_t);
             PS("drude-hardwall", EBOOL(ir->drude->bHardWall));
             PR("drude-r", ir->drude->drude_r);
+            PS("drude-hyper", EBOOL(ir->drude->bHyper));
             PR("drude-khyp", ir->drude->drude_khyp);
+            PI("drude-hyp-power", ir->drude->drude_hyp_power);
             PR("nbtholecut", ir->drude->nbtholecut);
             PI("drude-tsteps", ir->drude->tsteps);
         }
