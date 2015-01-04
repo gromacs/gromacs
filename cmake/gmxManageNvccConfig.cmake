@@ -75,7 +75,7 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
             ")
         else()
             # do not use MPI compiler wrappers, as these are prone to break nvcc
-            if (GMX_MPI AND NOT "${${MPI_PREFIX}_FOUND}") # FindMPI-based detection
+            if (GMX_MPI AND NOT "${MPI_C_FOUND}") # FindMPI-based detection
                 message(WARNING "
             Will not set the nvcc host compiler because the current C compiler is an MPI
             compiler wrapper: ${CMAKE_C_COMPILER}
