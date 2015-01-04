@@ -40,7 +40,6 @@ gmx_build_unit_test(
     ${exename}
     # files with code for tests
     rerun.cpp
-    replicaexchange.cpp
     trajectory_writing.cpp
     compressed_x_output.cpp
     swapcoords.cpp
@@ -53,4 +52,23 @@ gmx_build_unit_test(
 gmx_register_integration_test(
     ${testname}
     ${exename}
+    )
+
+set(testname "MdrunMpiTests")
+set(exename "mdrun-mpi-test")
+
+gmx_build_unit_test(
+    ${testname}
+    ${exename}
+    # files with code for tests
+    replicaexchange.cpp
+    # files with code for test fixtures
+    moduletest.cpp
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+gmx_register_mpi_integration_test(
+    ${testname}
+    ${exename}
+    2
     )
