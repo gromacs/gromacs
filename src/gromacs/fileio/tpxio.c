@@ -222,7 +222,7 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
-    { 96, F_ANISO_POL         }
+    { tpxv_DrudeExtendedLagrangian, F_ANISO_POL         }
 };
 #define NFTUPD asize(ftupd)
 
