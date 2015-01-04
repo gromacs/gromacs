@@ -847,7 +847,20 @@ the ``./gmxtest.pl -mdrun`` option will let you specify that name to the
 test machinery. You can use ``./gmxtest.pl -double`` to test the
 double-precision version. You can use ``./gmxtest.pl -crosscompiling``
 to stop the test harness attempting to check that the programs can
-be run.
+be run. You can use ``./gmxtest.pl -mpirun srun`` if your command to
+run an MPI program is called ``srun``.
+
+The ``make check`` target also runs integration-style tests that may run
+with MPI if ``GMX_MPI=ON`` was set. To make these work, you may need to
+set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
+``MPIEXEC_PREFLAGS`` and ``MPIEXEC_POSTFLAGS`` so that
+``mdrun-mpi-test_mpi`` would run on multiple ranks via the shell command
+
+    $ ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROC} ${MPIEXEC_PREFLAGS} \
+          mdrun-mpi-test_mpi ${MPIEXEC_POSTFLAGS} -otherflags
+
+Typically, one might use variable values ``mpirun``, ``-np``, ``2``, ``''``,
+``''`` respectively, in order to run on two ranks.
 
 .. _GROMACS regression test suite: `gmx-regression-tests`_
 

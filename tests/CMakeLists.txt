@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -100,9 +100,9 @@ if(REGRESSIONTEST_PATH)
     if(GMX_DOUBLE)
         list(APPEND ARGS -double)
     endif()
-    if(GMX_LIB_MPI AND NOT MPIEXEC) #autodetection failed or CC=mpicc was used
+    if(GMX_LIB_MPI AND NOT MPIEXEC) # find_program failed
         message(WARNING
-            "Please set MPIEXEC. Otherwise mpirun is assumed for runnings tests.")
+            "Please set MPIEXEC. Otherwise mpirun is assumed for running tests.")
     endif()
     if(GMX_LIB_MPI)
         set(GMX_TEST_NUMBER_PROCS 8 CACHE STRING "Number of processors used for testing")
