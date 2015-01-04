@@ -100,9 +100,9 @@ if(REGRESSIONTEST_PATH)
     if(GMX_DOUBLE)
         list(APPEND ARGS -double)
     endif()
-    if(GMX_LIB_MPI AND NOT MPIEXEC) #autodetection failed or CC=mpicc was used
+    if(GMX_LIB_MPI AND NOT MPIEXEC) # find_program failed
         message(WARNING
-            "Please set MPIEXEC. Otherwise mpirun is assumed for runnings tests.")
+            "Please set MPIEXEC. Otherwise mpirun is assumed for running tests.")
     endif()
     if(GMX_LIB_MPI)
         set(GMX_TEST_NUMBER_PROCS 8 CACHE STRING "Number of processors used for testing")

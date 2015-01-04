@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,28 @@ if(GMX_MPI)
         list(APPEND GMX_EXTRA_LIBRARIES ${${MPI_PREFIX}_LIBRARIES})
       endif()
       set(MPI_FOUND ${${MPI_PREFIX}_FOUND})
+  else()
+      # The following defaults are taken from FindMPI.cmake in cmake
+      # 2.8.8. (That package does not actually do any detection of the
+      # flags, but if it ever does then we should re-visit how we use
+      # the package.) If we are compiling with an MPI wrapper
+      # compiler, then MPI_FOUND will be set above, and will mean that
+      # none of these cache variables are populated by the package. We
+      # need to do it manually so that test drivers can work using the
+      # standard machinery for CMake + FindMPI.cmake.  Users will need
+      # to set these to suit their MPI setup in order for tests to
+      # work.
+      find_program(MPIEXEC
+          NAMES mpiexec mpirun lamexec
+          PATHS ${MPI_PREFIX_PATH}
+          PATH_SUFFIXES bin
+          DOC "Executable for running MPI programs."
+          )
+      set(MPIEXEC_NUMPROC_FLAG "-np" CACHE STRING "Flag used by MPI to specify the number of processes for MPIEXEC; the next option will be the number of processes.")
+      set(MPIEXEC_PREFLAGS "" CACHE STRING "These flags will be directly before the executable that is being run by MPIEXEC.")
+      set(MPIEXEC_POSTFLAGS "" CACHE STRING "These flags will come after all flags given to MPIEXEC.")
+      set(MPIEXEC_MAX_NUMPROCS "2" CACHE STRING "Maximum number of processors available to run MPI applications.")
+      mark_as_advanced(MPIEXEC MPIEXEC_NUMPROC_FLAG MPIEXEC_PREFLAGS MPIEXEC_POSTFLAGS MPIEXEC_MAX_NUMPROCS)
   endif()
 
   if(MPI_FOUND)
