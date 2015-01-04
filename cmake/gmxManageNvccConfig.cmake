@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -74,10 +74,8 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
             setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
             ")
         else()
-            # do not use MPI compiler wrappers, as these are prone to brake nvcc
-            if (GMX_MPI AND
-                NOT "${${MPI_PREFIX}_FOUND}" AND # FindMPI-based detection
-                NOT GMX_THREAD_MPI)
+            # do not use MPI compiler wrappers, as these are prone to break nvcc
+            if (GMX_MPI AND NOT "${${MPI_PREFIX}_FOUND}") # FindMPI-based detection
                 message(WARNING "
             Will not set the nvcc host compiler because the current C compiler is an MPI
             compiler wrapper: ${CMAKE_C_COMPILER}
