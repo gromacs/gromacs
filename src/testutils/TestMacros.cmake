@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -67,12 +67,34 @@ function (gmx_register_unit_test NAME EXENAME)
     endif()
 endfunction ()
 
+# Use this function to register a test binary as an integration test
 function (gmx_register_integration_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         add_test(NAME ${NAME}
                  COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
-        # TODO consider whether integration tests should be run by the check target
         set_tests_properties(${testname} PROPERTIES LABELS "IntegrationTest")
+        add_dependencies(tests ${EXENAME})
+
+        # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
+        # some point.
+        # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES})
+    endif()
+endfunction ()
+
+# Use this function to register a test binary as an integration test
+# that requires MPI. The intended number of MPI ranks is also passed
+#
+# TODO When a test case needs it, generalize the NUMPROC mechanism so
+# that ctest can run the test binary over a range of numbers of MPI
+# ranks.
+function (gmx_register_mpi_integration_test NAME EXENAME NUMPROC)
+    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING AND GMX_MPI)
+        add_test(NAME ${NAME}
+                 COMMAND
+                 ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROC}
+                 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:${EXENAME}> ${MPIEXEC_POSTFLAGS}
+                 --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
+        set_tests_properties(${testname} PROPERTIES LABELS "MpiIntegrationTest")
         add_dependencies(tests ${EXENAME})
 
         # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
