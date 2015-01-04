@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <math.h>
 
 #include <algorithm>
+#include <iostream>
 
 #include <gtest/gtest.h>
 
@@ -70,46 +71,10 @@ class ReplicaExchangeTest : public gmx::test::ParameterizedMdrunTestFixture
 {
     public:
         //! Constructor
-        ReplicaExchangeTest() : size(gmx_node_num()),
-                                rank(gmx_node_rank())
+        ReplicaExchangeTest() : size_(gmx_node_num()),
+                                rank_(gmx_node_rank())
         {
-            mdrunCaller.append("mdrun_mpi");
-        }
-
-        /*! \brief Organize the -multidir directories for the test.
-         *
-         * These are created inside the temporary directory for the
-         * test case, and added to the eventual mdrun command
-         * line. The temporary directory for the call to grompp by
-         * this rank is set to the appropriate -multidir directory, so
-         * the grompp output files go to the right place. */
-        void organizeMultidir()
-        {
-            mdrunCaller.append("-multidir");
-
-            std::string futureTestTempDirectory;
-            for (int i = 0; i != size; ++i)
-            {
-                std::string replicaTempDirectory =
-                    gmx::formatString("%s/multidir_%d",
-                                      fileManager_.getOutputTempDirectory(), i);
-                mdrunCaller.append(replicaTempDirectory);
-
-                if (rank == i)
-                {
-                    gmx::Directory::create(replicaTempDirectory);
-                    futureTestTempDirectory = std::string(replicaTempDirectory);
-                }
-            }
-            fileManager_.setOutputTempDirectory(futureTestTempDirectory);
-
-            /* Prepare grompp output filenames inside the new
-               temporary directory */
-            runner_.mdpInputFileName_  = fileManager_.getTemporaryFilePath("input.mdp");
-            runner_.mdpOutputFileName_ = fileManager_.getTemporaryFilePath("output.mdp");
-            runner_.tprFileName_       = fileManager_.getTemporaryFilePath(".tpr");
-
-            mdrunCaller.addOption("-deffnm", fileManager_.getTestSpecificFileNameRoot());
+            mdrunCaller_.append("mdrun_mpi");
         }
 
         /*! \brief Organize the .mdp file for this rank
@@ -141,46 +106,60 @@ class ReplicaExchangeTest : public gmx::test::ParameterizedMdrunTestFixture
                     "gen-temp = %f\n"
                     // control variable specification
                     "%s\n",
-                    baseTemperature + 0.0001*rank,
-                    basePressure * pow(1.01, rank),
+                    baseTemperature + 0.0001*rank_,
+                    basePressure * pow(1.01, rank_),
                     /* Set things up so that the initial KE decreases
                        with increasing replica number, so that the
                        (identical) starting PE decreases on the first
                        step more for the replicas with higher number,
                        which will tend to force replica exchange to
                        occur. */
-                    std::max(baseTemperature - 10 * rank, real(0)),
+                    std::max(baseTemperature - 10 * rank_, real(0)),
                     controlVariable);
             runner_.useStringAsMdpFile(mdpFileContents);
         }
 
-        //! MPI process set size
-        int                    size;
+        //! Number of MPI ranks
+        int                    size_;
         //! MPI rank of this process
-        int                    rank;
+        int                    rank_;
         //! Object for building the mdrun command line
-        gmx::test::CommandLine mdrunCaller;
+        gmx::test::CommandLine mdrunCaller_;
 };
 
 /* This test ensures mdrun can run NVT REMD under the supported
- * conditions.
+ * conditions. It runs one replica per MPI rank.
  *
  * TODO Preferably, we could test that mdrun correctly refuses to run
  * replica exchange unless under real MPI with more than one rank
- * available. However, those cases trigger an error that is currently
- * fatal to mdrun and also to the test binary. So, in the meantime we
- * must not test those cases. This is done via disabling the test, so
- * that there is a reminder that it is disabled. There's no elegant
- * way to conditionally disable a test. */
+ * available. However, if we just call mdrun blindly, those cases
+ * trigger an error that is currently fatal to mdrun and also to the
+ * test binary. So, in the meantime we must not test those cases. If
+ * there is no MPI, we disable the test, so that there is a reminder
+ * that it is disabled. There's no elegant way to conditionally
+ * disable a test at run time, so currently there is no feedback if
+ * only one rank is available. However, the test harness knows
+ * to run this test with more than one rank. */
 TEST_P(ReplicaExchangeTest, ExitsNormally)
 {
-    if (size <= 1)
+    if (size_ <= 1)
     {
         /* Can't test replica exchange without multiple ranks. */
         return;
     }
 
-    organizeMultidir();
+    runner_.mdpInputFileName_  = fileManager_.getTemporaryFilePath(gmx::formatString("input%d.mdp", rank_));
+    runner_.mdpOutputFileName_ = fileManager_.getTemporaryFilePath(gmx::formatString("output%d.mdp", rank_));
+
+    /* grompp needs to name the .tpr file so that when mdrun appends
+       the MPI rank, it will find the right file. If we just used
+       "%d.tpr" then \c TestFileManager prefixes that with an
+       underscore. Then, there is no way for mdrun to be told the
+       right name, because if you add the underscore manually, you get
+       a second one from \c TestFileManager. However, it's easy to
+       just start the suffix with "topol" in both cases. */
+    runner_.tprFileName_ = fileManager_.getTemporaryFilePath(gmx::formatString("topol%d.tpr", rank_));
+
     const char *pcoupl = GetParam();
     organizeMdpFile(pcoupl);
     runner_.useTopGroAndNdxFromDatabase("spc2");
@@ -188,8 +167,10 @@ TEST_P(ReplicaExchangeTest, ExitsNormally)
        grompp on rank 0. */
     EXPECT_EQ(0, runner_.callGromppOnThisRank());
 
-    mdrunCaller.addOption("-replex", 1);
-    ASSERT_EQ(0, gmx_mdrun(mdrunCaller.argc(), mdrunCaller.argv()));
+    runner_.tprFileName_ = fileManager_.getTemporaryFilePath("topol.tpr");
+    mdrunCaller_.addOption("-multi", size_);
+    mdrunCaller_.addOption("-replex", 1);
+    ASSERT_EQ(0, runner_.callMdrun(mdrunCaller_));
 }
 
 #ifdef GMX_LIB_MPI
