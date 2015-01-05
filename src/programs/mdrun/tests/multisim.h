@@ -32,65 +32,66 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDRUN_TESTS_MULTISIM_H
+#define GMX_MDRUN_TESTS_MULTISIM_H
 
 /*! \internal \file
  * \brief
- * Tests for the mdrun replica-exchange functionality
+ * Declares test fixture for the mdrun multi-simulation functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#include "gmxpre.h"
-
-#include "config.h"
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include "gromacs/utility/uniqueptr.h"
-#include "programs/mdrun/mdrun_main.h"
 
-#include "testutils/cmdlinetest.h"
-
-#include "multisim.h"
+#include "moduletest.h"
 
 namespace gmx
 {
 namespace test
 {
 
-typedef MultiSimTest ReplicaExchangeTest;
+typedef gmx_unique_ptr<CommandLine>::type CommandLinePointer;
 
-/* This test ensures mdrun can run NVT REMD under the supported
- * conditions. It runs one replica per MPI rank.
- *
- * See also comments about MultiSimTest */
-TEST_P(ReplicaExchangeTest, ExitsNormally)
+/*! \brief
+ * Test fixture for multi simulation
+ */
+class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
 {
-    if (size_ <= 1)
-    {
-        /* Can't test replica exchange without multiple ranks. */
-        return;
-    }
+    public:
+        //! Constructor
+        MultiSimTest();
 
-    const char *pcoupl = GetParam();
-    organizeMdpFile(pcoupl);
-    /* Call grompp on every rank - the standard callGrompp() only runs
-       grompp on rank 0. */
-    EXPECT_EQ(0, runner_.callGromppOnThisRank());
+        /*! \brief Organize the .mdp file for this rank
+         *
+         * For testing multi-simulation, this .mdp file is more
+         * complicated than it needs to be, but it does little harm,
+         * and doing it this way allows this function to be re-used
+         * for testing replica-exchange.
+         *
+         * \param controlVariable Allows parameterization to work with
+         * T, P or (later) lambda as the control variable, by passing a
+         * string with "mdp-param = value" such that different paths
+         * in init_replica_exchange() are followed.
+         */
+        void organizeMdpFile(const char *controlVariable);
 
-    // mdrun names the files without the rank suffix
-    runner_.tprFileName_ = mdrunTprFileName_;
-    mdrunCaller_->addOption("-replex", 1);
-    ASSERT_EQ(0, runner_.callMdrun(*mdrunCaller_));
-}
+        //! Number of MPI ranks
+        int                size_;
+        //! MPI rank of this process
+        int                rank_;
+        //! Object for building the mdrun command line
+        CommandLinePointer mdrunCaller_;
+        //! Name of .tpr file to be used by mdrun
+        std::string        mdrunTprFileName_;
+};
 
-#ifdef GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables, ReplicaExchangeTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
-#else
-INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables, ReplicaExchangeTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+} // namespace
+} // namespace
+
 #endif
-
-} // namespace
-} // namespace
