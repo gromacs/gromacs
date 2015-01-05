@@ -61,6 +61,7 @@ gmx_build_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    multisim.cpp
     replicaexchange.cpp
     # files with code for test fixtures
     moduletest.cpp
