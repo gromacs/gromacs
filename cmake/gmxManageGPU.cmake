@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -57,8 +57,18 @@ if ((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     gmx_detect_gpu()
 endif()
 
+# CMake 3.0-3.1 has a bug in the following case, which breaks
+# configuration on at least BlueGene/Q. Patch proposed at
+# http://public.kitware.com/pipermail/cmake-developers/2015-January/024055.html
+if ((NOT CMAKE_VERSION VERSION_LESS "3.0.0") AND
+        (CMAKE_CROSSCOMPILING AND NOT CMAKE_SYSTEM_PROCESSOR))
+    message(STATUS "Cannot search for CUDA because the CMake find package has a bug. Set a valid CMAKE_SYSTEM_PROCESSOR if you need to detect CUDA")
+else()
+    set(CAN_RUN_CUDA_FIND_PACKAGE 1)
+endif()
+
 # We need to call find_package even when we've already done the detection/setup
-if(GMX_GPU OR GMX_GPU_AUTO)
+if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
     if(NOT GMX_GPU AND NOT GMX_DETECT_GPU_AVAILABLE)
         # Stay quiet when detection has occured and found no GPU.
         # Noise is acceptable when there is a GPU or the user required one.
