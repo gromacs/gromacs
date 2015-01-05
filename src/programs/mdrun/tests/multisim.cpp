@@ -35,7 +35,7 @@
 
 /*! \internal \file
  * \brief
- * Tests for the mdrun replica-exchange functionality
+ * Tests for the mdrun multi-simulation functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
@@ -53,18 +53,28 @@ namespace gmx
 namespace test
 {
 
-//! Convenience typedef
-typedef MultiSimTest ReplicaExchangeTest;
-
-/* This test ensures mdrun can run NVT REMD under the supported
- * conditions. It runs one replica per MPI rank.
+/* This test ensures mdrun can run multi-simulations.  It runs one
+ * simulation per MPI rank.
  *
- * See also comments about MultiSimTest */
-TEST_P(ReplicaExchangeTest, ExitsNormally)
+ * TODO Preferably, we could test that mdrun correctly refuses to run
+ * multi-simulation unless compiled with real MPI with more than one
+ * rank available. However, if we just call mdrun blindly, those cases
+ * trigger an error that is currently fatal to mdrun and also to the
+ * test binary. So, in the meantime we must not test those cases. If
+ * there is no MPI, we disable the test, so that there is a reminder
+ * that it is disabled. There's no elegant way to conditionally
+ * disable a test at run time, so currently there is no feedback if
+ * only one rank is available. However, the test harness knows to run
+ * this test with more than one rank.
+ *
+ * Strictly, this test does not need to be parameterized, but
+ * conditionally disabling it with respect to GMX_LIB_MPI is easier if
+ * it is parameterized. */
+TEST_P(MultiSimTest, ExitsNormally)
 {
     if (size_ <= 1)
     {
-        /* Can't test replica exchange without multiple ranks. */
+        /* Can't test multi-sim without multiple ranks. */
         return;
     }
 
@@ -76,18 +86,18 @@ TEST_P(ReplicaExchangeTest, ExitsNormally)
 
     // mdrun names the files without the rank suffix
     runner_.tprFileName_ = mdrunTprFileName_;
-    mdrunCaller_->addOption("-replex", 1);
     ASSERT_EQ(0, runner_.callMdrun(*mdrunCaller_));
 }
 
 /* Note, not all preprocessor implementations nest macro expansions
    the same way / at all, if we would try to duplicate less code. */
 #ifdef GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables, ReplicaExchangeTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+INSTANTIATE_TEST_CASE_P(InNvt, MultiSimTest,
+                            ::testing::Values("pcoupl = no"));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables, ReplicaExchangeTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+// Test needs real MPI to run
+INSTANTIATE_TEST_CASE_P(DISABLED_InNvt, MultiSimTest,
+                            ::testing::Values("pcoupl = no"));
 #endif
 
 } // namespace
