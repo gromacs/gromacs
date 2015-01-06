@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1412,6 +1412,7 @@ static void reset_nhbonds(t_donors *ddd)
 }
 
 void pbc_correct_gem(rvec dx, matrix box, rvec hbox);
+void pbc_in_gridbox(rvec dx, matrix box);
 
 static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                        gmx_bool bBox, matrix box, rvec hbox,
@@ -1561,30 +1562,19 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                         {
                             copy_rvec(x[ad[i]], xtemp);
                         }
-                        pbc_correct_gem(x[ad[i]], box, hbox);
-                    }
-                    for (m = DIM-1; m >= 0; m--)
-                    {
-                        if (TRUE || !hb->bGem)
-                        {
-                            /* put atom in the box */
-                            while (x[ad[i]][m] < 0)
-                            {
-                                rvec_inc(x[ad[i]], box[m]);
-                            }
-                            while (x[ad[i]][m] >= box[m][m])
-                            {
-                                rvec_dec(x[ad[i]], box[m]);
-                            }
+                        pbc_in_gridbox(x[ad[i]], box);
+
+                        for (m = DIM-1; m >= 0; m--)
+                        {   /* determine grid index of atom */
+                            grididx[m] = x[ad[i]][m]*invdelta[m];
+                            grididx[m] = (grididx[m]+ngrid[m]) % ngrid[m];
                         }
-                        /* determine grid index of atom */
-                        grididx[m] = x[ad[i]][m]*invdelta[m];
-                        grididx[m] = (grididx[m]+ngrid[m]) % ngrid[m];
+                        if (hb->bGem)
+                        {
+                            copy_rvec(xtemp, x[ad[i]]); /* copy back */
+                        }
                     }
-                    if (hb->bGem)
-                    {
-                        copy_rvec(xtemp, x[ad[i]]); /* copy back */
-                    }
+
                     gx = grididx[XX];
                     gy = grididx[YY];
                     gz = grididx[ZZ];
@@ -1740,6 +1730,29 @@ void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
                 rvec_inc(dx, box[m]);
             }
             if (dx[m] >= hbox[m])
+            {
+                bDone = FALSE;
+                rvec_dec(dx, box[m]);
+            }
+        }
+    }
+}
+
+void pbc_in_gridbox(rvec dx, matrix box)
+{
+    int      m;
+    gmx_bool bDone = FALSE;
+    while (!bDone)
+    {
+        bDone = TRUE;
+        for (m = DIM-1; m >= 0; m--)
+        {
+            if (dx[m] < 0)
+            {
+                bDone = FALSE;
+                rvec_inc(dx, box[m]);
+            }
+            if (dx[m] >= box[m][m])
             {
                 bDone = FALSE;
                 rvec_dec(dx, box[m]);
