@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -559,7 +559,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
         fprintf(vout, "%10d  %10.5e\n", j, mypow(violaver[j]/nframes, minthird));
     }
 #endif
-    gmx_ffclose(vout);
+    xvgrclose(vout);
 
     fprintf(stdout, "\nSum of violations averaged over simulation: %g nm\n",
             sumt);
@@ -621,8 +621,8 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
         }
         fprintf(fp1, "\n");
     }
-    gmx_ffclose(fp0);
-    gmx_ffclose(fp1);
+    xvgrclose(fp0);
+    xvgrclose(fp1);
 }
 
 typedef struct {
@@ -1420,7 +1420,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                 intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
                 fprintf(fp, "%10g  %10g  %10g\n", (i*Dt), integral, intBulk);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
 
             for (i = 0; i < 12; i++)
             {
@@ -1583,7 +1583,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
     }
     if (fp)
     {
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     sfree(fr);
 }
@@ -2709,21 +2709,21 @@ int gmx_energy(int argc, char *argv[])
     close_enx(fp);
     if (out)
     {
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
 
     if (bDRAll)
     {
-        gmx_ffclose(fp_pairs);
+        xvgrclose(fp_pairs);
     }
 
     if (bORT)
     {
-        gmx_ffclose(fort);
+        xvgrclose(fort);
     }
     if (bODT)
     {
-        gmx_ffclose(fodt);
+        xvgrclose(fodt);
     }
     if (bORA)
     {
@@ -2738,7 +2738,7 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr);
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
     if (bODA)
     {
@@ -2753,7 +2753,7 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr-oobs[i]);
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
     if (bODR)
     {
@@ -2768,11 +2768,11 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], sqrt(odrms[i]/norfr));
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
     if (bOTEN)
     {
-        gmx_ffclose(foten);
+        xvgrclose(foten);
     }
 
     if (bDisRe)
@@ -2784,7 +2784,7 @@ int gmx_energy(int argc, char *argv[])
     {
         if (fp_dhdl)
         {
-            gmx_ffclose(fp_dhdl);
+            gmx_fio_fclose(fp_dhdl);
             printf("\n\nWrote %d lambda values with %d samples as ",
                    dh_lambdas, dh_samples);
             if (dh_hists > 0)

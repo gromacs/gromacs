@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         do_view(oenv, fn_trans, "-nxy");
     }
 
@@ -169,7 +169,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         }
         fprintf(fp, "\n");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     do_view(oenv, fn_tc, "-nxy");
 
     if (fn_cub)
@@ -220,7 +220,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         }
         fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     do_view(oenv, fn_tcf, "-nxy");
 
     if (fn_cub)
@@ -247,10 +247,10 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             fprintf(fp_cub, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(fp_vk, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
-        gmx_ffclose(fp_cub);
+        xvgrclose(fp_cub);
         do_view(oenv, fn_cub, "-nxy");
     }
-    gmx_ffclose(fp_vk);
+    xvgrclose(fp_vk);
     do_view(oenv, fn_vk, "-nxy");
 }
 

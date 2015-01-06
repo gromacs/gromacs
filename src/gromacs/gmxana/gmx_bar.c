@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3971,7 +3971,11 @@ int gmx_bar(int argc, char *argv[])
     {
         lambda_vec_print_short(results[nresults-1].b->native_lambda, buf);
         fprintf(fpi, xvg2format, buf, dg_tot);
-        gmx_ffclose(fpi);
+        xvgrclose(fpi);
+    }
+    if (fpb != NULL)
+    {
+        xvgrclose(fpb);
     }
 
     do_view(oenv, opt2fn_null("-o", NFILE, fnm), "-xydy");

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -213,7 +213,7 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
         }
         fprintf(out, "\n");
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
 }
 
 /* called from corr_loop, to do the main calculations */
@@ -607,7 +607,7 @@ void printmol(t_corr *curr, const char *fn,
             }
         }
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
     do_view(oenv, fn, "-graphtype bar");
 
     /* Compute variance, stddev and error */

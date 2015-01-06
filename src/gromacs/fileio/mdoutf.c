@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -185,8 +185,8 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         {
             if (bAppendFiles)
             {
-                of->fp_dhdl = gmx_fio_fopen(opt2fn("-field", nfile, fnm),
-                                            filemode);
+                of->fp_field = gmx_fio_fopen(opt2fn("-field", nfile, fnm),
+                                             filemode);
             }
             else
             {
@@ -412,6 +412,9 @@ void done_mdoutf(gmx_mdoutf_t of)
     }
     if (of->fp_field != NULL)
     {
+        /* This is opened sometimes with xvgropen, sometimes with
+         * gmx_fio_fopen, so we use the least common denominator for closing.
+         */
         gmx_fio_fclose(of->fp_field);
     }
 

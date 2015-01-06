@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -484,7 +484,7 @@ static void overlap(const char *outfile, int natoms,
         fprintf(out, "%5d  %5.3f\n", eignr2[x]+1, overlap/noutvec);
     }
 
-    gmx_ffclose(out);
+    xvgrclose(out);
 }
 
 static void project(const char *trajfile, t_topology *top, int ePBC, matrix topbox,
@@ -670,7 +670,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             }
             fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec-1][i]);
         }
-        gmx_ffclose(xvgrout);
+        xvgrclose(xvgrout);
     }
 
     if (threedplotfile)

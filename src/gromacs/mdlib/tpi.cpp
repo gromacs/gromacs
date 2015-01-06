@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -835,7 +835,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     if (fp_tpi != NULL)
     {
-        gmx_fio_fclose(fp_tpi);
+        xvgrclose(fp_tpi);
     }
 
     if (fplog != NULL)
@@ -870,7 +870,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                     (int)(bin[i]+0.5),
                     bin[i]*exp(-bUlogV)*V_all/VembU_all);
         }
-        gmx_fio_fclose(fp_tpi);
+        xvgrclose(fp_tpi);
     }
     sfree(bin);
 

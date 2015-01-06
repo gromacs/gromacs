@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -330,10 +330,10 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     while (read_next_frame(oenv, status, &fr));
     close_trx(status);
-    gmx_ffclose(fp);
-    gmx_ffclose(gp);
-    gmx_ffclose(hp);
-    gmx_ffclose(tp);
+    xvgrclose(fp);
+    xvgrclose(gp);
+    xvgrclose(hp);
+    xvgrclose(tp);
 
     gmx_mtop_atomlookup_destroy(alook);
 
@@ -376,7 +376,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         nhisto += (int)((j+1)*nelem/n_x);
     }
     fprintf(fp, "%5d  %8.3f\n", j+1, 0.0);
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     fprintf(stderr, "Total number of atoms in clusters =  %d\n", nhisto);
 

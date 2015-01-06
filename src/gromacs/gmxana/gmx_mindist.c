@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -201,7 +201,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
         gmx_rmpbc_done(gpbc);
     }
 
-    gmx_ffclose(out);
+    xvgrclose(out);
 
     fprintf(stdout,
             "\nThe shortest periodic distance is %g (nm) at time %g (%s),\n"
@@ -550,10 +550,10 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     while (read_next_x(oenv, status, &t, x0, box));
 
     close_trj(status);
-    gmx_ffclose(dist);
+    xvgrclose(dist);
     if (num)
     {
-        gmx_ffclose(num);
+        xvgrclose(num);
     }
     if (atm)
     {
@@ -562,6 +562,10 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     if (trxout)
     {
         close_trx(trxout);
+    }
+    if (respertime)
+    {
+        xvgrclose(respertime);
     }
 
     if (nres && !bEachResEachTime)
@@ -580,6 +584,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
             }
             fprintf(res, "\n");
         }
+        xvgrclose(res);
     }
 
     sfree(x0);

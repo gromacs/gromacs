@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -992,16 +992,20 @@ int gmx_current(int argc, char *argv[])
                temp, trust, bfit, efit, bvit, evit, status, isize, nmols, nshift,
                index0, indexm, mass2, qmol, eps_rf, oenv);
 
-    gmx_ffclose(fmj);
-    gmx_ffclose(fmd);
-    gmx_ffclose(fmjdsp);
-    if (bACF)
+    xvgrclose(fmj);
+    xvgrclose(fmd);
+    xvgrclose(fmjdsp);
+    if (fr.bV)
     {
-        gmx_ffclose(outf);
-    }
-    if (bINT)
-    {
-        gmx_ffclose(mcor);
+        if (bACF)
+        {
+            xvgrclose(outf);
+        }
+        xvgrclose(fcur);
+        if (bINT)
+        {
+            xvgrclose(mcor);
+        }
     }
 
     return 0;

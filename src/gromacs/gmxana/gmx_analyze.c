@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -156,7 +156,7 @@ static void plot_coscont(const char *ccfile, int n, int nset, real **val,
     }
     fprintf(stdout, "\n");
 
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static void regression_analysis(int n, gmx_bool bXYdy,
@@ -296,7 +296,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
             fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static int real_comp(const void *a, const void *b)
@@ -696,7 +696,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
     sfree(fitsig);
     sfree(ybs);
     sfree(tbs);
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static void luzar_correl(int nn, real *time, int nset, real **val, real temp,
@@ -941,6 +941,7 @@ static void do_ballistic(const char *balFile, int nData,
         }
         sfree(ctd);
         sfree(td);
+        xvgrclose(fp);
     }
     else
     {
@@ -1002,6 +1003,7 @@ static void do_geminate(const char *gemFile, int nData,
     sfree(ctd);
     sfree(ctdGem);
     sfree(td);
+    xvgrclose(fp);
 }
 
 int gmx_analyze(int argc, char *argv[])
@@ -1367,7 +1369,7 @@ int gmx_analyze(int argc, char *argv[])
                 fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
         fprintf(stderr, "\r%d, time=%g\n", j-1, (j-1)*dt);
     }
     if (ccfile)

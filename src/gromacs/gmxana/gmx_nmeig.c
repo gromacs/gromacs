@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -488,7 +488,7 @@ int gmx_nmeig(int argc, char *argv[])
     {
         fprintf (out, "%6d %15g\n", begin+i, eigenvalues[i]);
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
 
 
     if (opt2bSet("-qc", NFILE, fnm))
@@ -577,14 +577,14 @@ int gmx_nmeig(int argc, char *argv[])
             qutot  += qu;
         }
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
     if (NULL != spec)
     {
         for (j = 0; (j < maxspec); j++)
         {
             fprintf(spec, "%10g  %10g\n", 1.0*j, spectrum[j]);
         }
-        gmx_ffclose(spec);
+        xvgrclose(spec);
     }
     if (NULL != qc)
     {
@@ -594,7 +594,7 @@ int gmx_nmeig(int argc, char *argv[])
                nharm, nvsite);
         printf("Total correction to cV = %g J/mol K\n", qcvtot);
         printf("Total correction to  H = %g kJ/mol\n", qutot);
-        gmx_ffclose(qc);
+        xvgrclose(qc);
         please_cite(stdout, "Caleman2011b");
     }
     /* Writing eigenvectors. Note that if mass scaling was used, the eigenvectors

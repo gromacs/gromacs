@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -280,7 +280,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
 
     if (NULL != fp)
     {
-        fclose(fp);
+        xvgrclose(fp);
     }
 }
 
@@ -995,7 +995,7 @@ static void ana_trans(t_clusters *clust, int nf,
         {
             fprintf(fp, "%5d %5d\n", i+1, ntrans[i]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     sfree(ntrans);
     for (i = 0; i < clust->ncl; i++)
@@ -1104,10 +1104,11 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         {
             fprintf(fp, "%8g %8d\n", time[i], clust->cl[i]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     if (sizefn)
     {
+        /* FIXME: This file is never closed. */
         fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
@@ -1870,7 +1871,7 @@ int gmx_cluster(int argc, char *argv[])
             {
                 fprintf(fp, "%10d  %10g\n", i, eigenvalues[i]);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
             break;
         case m_monte_carlo:
             orig     = init_mat(rms->nn, FALSE);

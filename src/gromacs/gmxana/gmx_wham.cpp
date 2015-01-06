@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1254,7 +1254,7 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
             fprintf(fp, "\n");
         }
         printf("Wrote cumulative distribution functions to %s\n", fn);
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         sfree(fn);
         sfree(buf);
     }
@@ -1480,7 +1480,7 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
         fprintf(fp, "\n");
     }
 
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     printf("Wrote %s\n", fn);
     if (bs_index >= 0)
     {
@@ -1724,7 +1724,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         }
         fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     /* write average and stddev */
     fp = xvgropen(fnres, "Average and stddev from bootstrapping", xlabel, ylabel, opt->oenv);
@@ -1740,7 +1740,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         stddev             = (tmp >= 0.) ? sqrt(tmp) : 0.; /* Catch rouding errors */
         fprintf(fp, "%e\t%e\t%e\n", (i+0.5)*opt->dz+opt->min, bsProfiles_av [i], stddev);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     printf("Wrote boot strap result to %s\n", fnres);
 }
 
@@ -2715,7 +2715,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
     printf(" done\n");
     if (fpcorr)
     {
-        gmx_ffclose(fpcorr);
+        xvgrclose(fpcorr);
     }
 
     /* plot IACT along reaction coordinate */
@@ -2761,7 +2761,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
             }
         }
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     printf("Wrote %s\n", fn);
 }
 
@@ -3000,7 +3000,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
         {
             fprintf(fp, "%g  %g\n", (j+0.5)*dz+opt->min, pot[j]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         printf("verbose mode: wrote %s with PMF from interated forces\n", "pmfintegrated.xvg");
     }
 
@@ -3519,7 +3519,7 @@ int gmx_wham(int argc, char *argv[])
         }
         fprintf(histout, "\n");
     }
-    gmx_ffclose(histout);
+    xvgrclose(histout);
     printf("Wrote %s\n", opt2fn("-hist", NFILE, fnm));
     if (opt.bHistOnly)
     {
@@ -3620,7 +3620,7 @@ int gmx_wham(int argc, char *argv[])
     {
         fprintf(profout, "%e\t%e\n", (double)(i+0.5)/opt.bins*(opt.max-opt.min)+opt.min, profile[i]);
     }
-    gmx_ffclose(profout);
+    xvgrclose(profout);
     printf("Wrote %s\n", opt2fn("-o", NFILE, fnm));
 
     /* Bootstrap Method */
