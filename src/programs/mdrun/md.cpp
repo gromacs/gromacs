@@ -2001,7 +2001,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                          fr->nbv != NULL && fr->nbv->bUseGPU);
     }
 
-    if (shellfc && fplog)
+    if (if->bDrude && (ir->drude->drudemode == edrudeSCF) && fplog)
     {
         fprintf(fplog, "Fraction of iterations that converged:           %.2f %%\n",
                 (nconverged*100.0)/step_rel);
