@@ -479,6 +479,41 @@ but this is not very accurate~\cite{Hess2002a}, and
 actually the values do not converge.
 %} % Brace matches ifthenelse test for gmxlite
 
+\section{Curve fitting in \gromacs}
+Sometimes it is useful to fit a curve to an analytical function, for
+example in the case of autocorrelation functions with noisy
+tails. {\gromacs} is not a general purpose curve-fitting tool however
+and therefore {\gromacs} only supports a limited number of
+functions. The target functions that have been implemented are:
+\beq
+f(t) ~=~ \sum_{i=n}^N a_i {\rm e}^{-t/\tau_i}
+\eeq
+where $a_i$ are constants and $\tau_i$ time constants and $N$ is a
+user defined constant between 1 and 4, whereas $n$ is either 0 or
+1. The fit is done with the restrictions that $\tau_0 = 0$ and $\forall_i \,\tau_i < \tau_{i+1}$.
+Table~\ref{tab:fitfn} lists the available options with the
+corresponding command-line options. The underlying routines for
+fitting use the Levenberg-Marquardt algorithm as implemented in the
+{\tt lmfit} package~\cite{lmfit} (a bare-bones version of which is
+included in {\gromacs}).
+\begin{table}[ht]
+\centering
+\caption{Overview of fitting functions supported in {\tt gmx analyze}
+  and other tools.}
+\label{tab:fitfn}
+\begin{tabular}{lccc}
+\hline
+Function & N & n & Comment\\
+\hline
+exp        & 1 & 1 & $a_1$ = 1 \\
+aexp      & 1 & 1 & \\
+exp_exp & 2 & 1 & $a_1$ = 1-$a_2$\\
+exp5      & 2 & 0 & \\
+exp7     & 3 & 0 & \\
+exp9    & 4 & 0 & \\
+\hline
+\end{tabular}
+\end{table}
 \section{Mean Square Displacement}
 \label{sec:msd}
 {\tt gmx msd}\\
