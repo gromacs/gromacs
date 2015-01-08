@@ -46,27 +46,21 @@ Command line manager {#section_wrapperbinary_manager}
 
 The core of the wrapper binary is the gmx::CommandLineModuleManager::run()
 method.  This method:
- 1. Checks whether the binary is invoked through a symlink.  If it is, it
-    searches the registered modules for names matching the name of the symlink
-    (with certain prefixes in the symlink name ignored).  If a match is found,
-    it continues as if the command was invoked as `gmx` _module_ `...`, where
-    _module_ is the name of the found module and `...` are the rest of the
-    arguments.
- 2. Parses the command line arguments before the module name as arguments to
+ 1. Parses the command line arguments before the module name as arguments to
     the wrapper binary.  Some arguments such as `-h` and `-version` cause rest
     of the command (the module name and all that follows) to be ignored.
- 3. If a module is specified, also checks the command line arguments after the
+ 2. If a module is specified, also checks the command line arguments after the
     module name for the options understood by the wrapper binary, such as `-h`
     and `-version` (see below for details of how `-h` works).  Any such options
     are handled by the manager and removed from the command line for further
     processing.
- 4. Print the startup header (contents of which can be controlled by the
+ 3. Print the startup header (contents of which can be controlled by the
     command line options).
- 5. If a command line option requests termination after the startup header
+ 4. If a command line option requests termination after the startup header
     (such as `-version`), return.
- 6. Passes control to the selected module.  If there is no module specified,
+ 5. Passes control to the selected module.  If there is no module specified,
     the help module is invoked (see below).
- 7. Print a quote at the end, and return the exit code from the module.
+ 6. Print a quote at the end, and return the exit code from the module.
 
 Command line help
 -----------------
