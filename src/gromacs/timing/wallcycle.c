@@ -527,6 +527,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
     char   nthreads_str[6];
     char   ncalls_str[11];
     double wallt;
+    double percentage = (tot > 0.) ? (100. * c_sum / tot) : 0.;
 
     if (c_sum > 0)
     {
@@ -561,7 +562,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
 
         fprintf(fplog, " %-19.19s %4s %4s %10s  %10.3f %14.3f %5.1f\n",
                 name, nnodes_str, nthreads_str, ncalls_str, wallt,
-                c_sum*1e-9, 100*c_sum/tot);
+                c_sum*1e-9, percentage);
     }
 }
 
