@@ -365,9 +365,6 @@ class GeneratorSourceFile(File):
                 match = re.match(define_re, line)
                 if match:
                     self._defines.append(match.group(1))
-            # Hard-code the contents of gmx_header_config.h to avoid
-            # unnecessary complexity.
-            self._defines.append('GMX_NATIVE_WINDOWS')
 
     def get_defines(self):
         """Return set of possible defines from config.h.cmakein.
@@ -964,8 +961,7 @@ class GromacsTree(object):
             fileobj = self._files.get(filename)
             if fileobj is not None:
                 if fileobj.get_name() not in ('config.h', 'config.h.cmakein',
-                        'gmxpre-config.h', 'gmxpre-config.h.cmakein',
-                        'gmx_header_config.h'):
+                        'gmxpre-config.h', 'gmxpre-config.h.cmakein'):
                     defines = re.findall(define_re, text)
                     fileobj.add_used_config_h_defines(defines)
 
