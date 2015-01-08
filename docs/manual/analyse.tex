@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -478,6 +478,114 @@ time of the Pressure tensor $\ve{P}$~\cite{PSmith93c,Balasubramanian96}.
 but this is not very accurate~\cite{Hess2002a}, and 
 actually the values do not converge.
 %} % Brace matches ifthenelse test for gmxlite
+
+\section{Curve fitting in \gromacs}
+\subsection{Sum of exponential functions}
+Sometimes it is useful to fit a curve to an analytical function, for
+example in the case of autocorrelation functions with noisy
+tails. {\gromacs} is not a general purpose curve-fitting tool however
+and therefore {\gromacs} only supports a limited number of
+functions. The target functions that have been implemented are:
+\beq
+f(t) ~=~ \sum_{i=n}^N a_i {\rm e}^{-t/\tau_i}
+\eeq
+where $a_i$ are constants and $\tau_i$ time constants and $N$ is a
+user defined constant between 1 and 4, whereas $n$ is either 0 or
+1. The fit is done with the restrictions that $\tau_0 = 0$ and $\forall_i \,\tau_i < \tau_{i+1}$.
+Table~\ref{tab:fitfn} lists the available options with the
+corresponding command-line options. The underlying routines for
+fitting use the Levenberg-Marquardt algorithm as implemented in the
+{\tt lmfit} package~\cite{lmfit} (a bare-bones version of which is
+included in {\gromacs}). 
+\begin{table}[ht]
+\centering
+\caption{Overview of fitting functions supported in (most) analysis tools
+  that compute autocorrelation functions.}
+\label{tab:fitfn}
+\begin{tabular}{lccc}
+\hline
+Function & N & n & Comment\\
+\hline
+exp        & 1 & 1 & $a_1$ = 1 \\
+aexp      & 1 & 1 & \\
+exp_exp & 2 & 1 & $a_1$ = 1-$a_2$\\
+exp5      & 2 & 0 & \\
+exp7     & 3 & 0 & \\
+exp9    & 4 & 0 & \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Error estimation}
+Under the hood {\gromacs} implements some more fitting functions,
+namely a function to estimate the error in time-correlated data due to Hess~\cite{Hess2002a}:
+\beq
+\varepsilon^2(t) =
+\alpha\tau_1\left(1+\frac{\tau_1}{t}\left(e^{-t/\tau_1}-1\right)\right)
+      + (1-\alpha)\tau_2\left(1+\frac{\tau_2}{t}\left(e^{-t/\tau_2}-1\right)\right)
+\eeq
+where $\tau_1$ and
+$\tau_2$ are time constants (with $\tau_2 > \tau_1$) and $\alpha$
+usually is close to 1 (in the fitting procedure it is enforced that
+$0\leq\alpha\leq 1$). This is used in {\tt gmx analyze} for error
+estimation using
+\beq
+\lim_{t\rightarrow\infty}\varepsilon(t) = \sigma\sqrt{\frac{2(\alpha\tau_1+(1-\alpha)\tau_2)}{T}}
+\eeq
+where $\sigma$ is the standard deviation of the data set and $T$ is
+the total simulation time~\cite{Hess2002a}.
+
+\subsection{Interphase boundary demarcation}
+In order to determine the position and width of an interface,
+Steen-S{\ae}thre {\em et al.} fitted a density profile to the
+following function
+\beq
+f(x) ~=~ \frac{a_0+a_1}{2} - \frac{a_0-a_1}{2}{\rm
+  erf}\left(\frac{x-a_2}{a_3^2}\right)
+\eeq
+where $a_0$ and $a_1$ are densities of different phases, $x$ is the
+coordinate normal to the interface, $a_2$ is the position of the
+interface and $a_3$ is the width of the
+interface~\cite{Steen-Saethre2014a}.
+This is implemented in {\tt gmx densorder}.
+
+\subsection{Transverse current autocorrelation function}
+In order to establish the transverse current autocorrelation function
+(useful for computing viscosity~\cite{Palmer1994a})
+the following function is fitted:
+\beq
+f(x) ~=~ e^{-\nu}\left({\rm cosh}(\omega\nu)+\frac{{\rm
+    sinh}(\omega\nu)}{\omega}\right)
+\eeq
+with $\nu = x/(2a_0)$ and $\omega = \sqrt{1-a_1}$.
+This is implemented in {\tt gmx tcaf}.
+
+\subsection{Viscosity estimation from pressure autocorrelation
+  function}
+The viscosity is a notoriously difficult property to extract from
+simulations~\cite{Hess2002a,Wensink2003a}. It is {\em in principle}
+possible to determine it by integrating the pressure autocorrelation
+function~\cite{PSmith93c}, however this is often hampered by the noisy
+tail of the ACF. A workaround to this is fitting the ACF to the
+following function~\cite{Guo2002b}:
+\beq
+f(t)/f(0) = (1-C) {\rm cos}(\omega t) e^{-(t/\tau_f)^{\beta_f}} + C
+e^{-(t/\tau_s)^{\beta_s}}
+\eeq
+where $\omega$ is the frequency of rapid pressure oscillations (mainly
+due to bonded forces in molecular simulations), $\tau_f$ and $\beta_f$
+are the time constant and exponent of fast relaxation in a
+stretched-exponential approximation, $\tau_s$ and $\beta_s$ are constants
+for slow relaxation and $C$ is the pre-factor that determines the
+weight between fast and slow relaxation. After a fit, the integral of
+the function $f(t)$ is used to compute the viscosity:
+\beq
+\eta = \frac{V}{k_B T}\int_0^{\infty} f(t) dt
+\eeq
+This equation has been
+applied to computing the bulk and shear viscosity using different
+elements from the pressure tensor~\cite{Fanourgakis2012a}.
+This is implemented in {\tt gmx viscosity}.
 
 \section{Mean Square Displacement}
 \label{sec:msd}

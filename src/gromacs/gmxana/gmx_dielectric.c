@@ -397,7 +397,7 @@ int gmx_dielectric(int argc, char *argv[])
     integral = print_and_integrate(NULL, calc_nbegin(nx, y[0], tbegin),
                                    dt, y[1], NULL, 1);
     integral += do_lmfit(nx, y[1], y[2], dt, y[0], tbegin, tend,
-                         oenv, TRUE, eFitFn, fitparms, fix);
+                         oenv, TRUE, eFitFn, fitparms, fix, NULL);
     for (i = 0; i < nx; i++)
     {
         y[3][i] = fit_function(eFitFn, fitparms, y[0][i]);
