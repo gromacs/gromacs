@@ -3,14 +3,14 @@
 <ReferenceData>
   <Sequence Name="result">
     <Int Name="Length">9</Int>
-    <Real>15.957817686967116</Real>
-    <Real>221006.78653735726</Real>
-    <Real>114.88630569000553</Real>
-    <Real>-33734.142061366547</Real>
-    <Real>7.6914607460936715</Real>
-    <Real>1876.2303193471271</Real>
-    <Real>0.75265207702909753</Real>
-    <Real>24.572552704802391</Real>
-    <Real>-138.40801944191745</Real>
+    <Real>0.22969086672835151</Real>
+    <Real>1.6938036292509138</Real>
+    <Real>0.44194868847867191</Real>
+    <Real>23.513035628000434</Real>
+    <Real>0.13852713430709759</Real>
+    <Real>23.519216989391605</Real>
+    <Real>0.25468685075723652</Real>
+    <Real>124.69561162954194</Real>
+    <Real>0.008894417740064841</Real>
   </Sequence>
 </ReferenceData>
