@@ -3,11 +3,11 @@
 <ReferenceData>
   <Sequence Name="result">
     <Int Name="Length">6</Int>
-    <Real>0.2214172263311579</Real>
-    <Real>10.066519430470473</Real>
-    <Real>3.7707829256907712</Real>
-    <Real>0.72109681793857272</Real>
-    <Real>0.49886880345093437</Real>
-    <Real>1.000154618776814</Real>
+    <Real>0.49146807677176813</Real>
+    <Real>10.122470863238238</Real>
+    <Real>7.3785890028734542</Real>
+    <Real>1.2022517448320804</Real>
+    <Real>0.41325325292628245</Real>
+    <Real>5.8277122335091622</Real>
   </Sequence>
 </ReferenceData>
