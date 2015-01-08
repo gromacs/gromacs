@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2401,7 +2401,7 @@ static void smooth_tail(int n, real t[], real c[], real sigma_c[], real start,
     }
     fitparm[1] = 0.95;
     do_lmfit(n, c, sigma_c, 0, t, start, t[n-1], oenv, bDebugMode(),
-             effnEXP2, fitparm, 0);
+             effnEXP2, fitparm, 0, NULL);
 }
 
 void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
