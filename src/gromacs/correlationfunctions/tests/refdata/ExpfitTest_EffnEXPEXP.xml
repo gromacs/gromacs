@@ -3,8 +3,8 @@
 <ReferenceData>
   <Sequence Name="result">
     <Int Name="Length">3</Int>
-    <Real>49.669368440495347</Real>
-    <Real>0.58492964998546348</Real>
-    <Real>6.4814246273214478</Real>
+    <Real>6.729665031622809</Real>
+    <Real>0.42360104945910249</Real>
+    <Real>50.315069828297375</Real>
   </Sequence>
 </ReferenceData>

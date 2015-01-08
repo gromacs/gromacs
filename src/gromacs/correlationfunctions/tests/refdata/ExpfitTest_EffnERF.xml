@@ -3,9 +3,9 @@
 <ReferenceData>
   <Sequence Name="result">
     <Int Name="Length">4</Int>
-    <Real>7.8450705641969325</Real>
-    <Real>2.6181457557146546</Real>
-    <Real>-124.26093946666471</Real>
-    <Real>10.991394787222672</Real>
+    <Real>93.493371302821373</Real>
+    <Real>105.99758938160808</Real>
+    <Real>180.04252523378653</Real>
+    <Real>3.8387360476852392</Real>
   </Sequence>
 </ReferenceData>
