@@ -3,10 +3,10 @@
 <ReferenceData>
   <Sequence Name="result">
     <Int Name="Length">5</Int>
-    <Real>0.4874505859136089</Real>
-    <Real>5.593512789216291</Real>
-    <Real>0.5859548866294173</Real>
-    <Real>50.639858390563305</Real>
-    <Real>-0.002429583757534859</Real>
+    <Real>0.48838432582718438</Real>
+    <Real>5.6667799939039201</Real>
+    <Real>0.58370436077959009</Real>
+    <Real>50.861268137723116</Real>
+    <Real>-0.0025422189904255482</Real>
   </Sequence>
 </ReferenceData>
