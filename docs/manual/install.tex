@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -289,9 +289,6 @@ you should consult your local documentation for details.
 \item   {\tt GMX_USE_GRAPH}: use graph for bonded interactions.
 \item   {\tt GMX_VERLET_BUFFER_RES}: resolution of buffer size in Verlet cutoff scheme.  The default value is
         0.001, but can be overridden with this environment variable.
-\item   {\tt GMX_VERLET_SCHEME}: convert from group-based to Verlet cutoff scheme, even if the {\tt cutoff_scheme} is
-        not set to use Verlet in the {\tt .mdp} file. It is unnecessary since the {\tt -testverlet} option of
-        {\tt \normindex{mdrun}} has the same functionality, but it is maintained for backwards compatibility.
 \item   {\tt MPIRUN}: the {\tt mpirun} command used by {\tt \normindex{g_tune_pme}}.
 \item   {\tt MDRUN}: the {\tt \normindex{mdrun}} command used by {\tt \normindex{g_tune_pme}}.
 \item   {\tt GMX_NSTLIST}: sets the default value for {\tt nstlist}, preventing it from being tuned during
@@ -376,10 +373,7 @@ is decided at run time by {\tt mdrun}, depending on the availability
 of (suitable) GPUs and on the run input settings. A binary compiled
 with GPU support can also run CPU only simulations. Use {\tt mdrun -nb cpu}
 to force a simulation to run on CPUs only. Only simulations with the Verlet
-cut-off scheme will run on a GPU. To test performance of old tpr files
-with GPUs, you can use the {\tt -testverlet} option of {\tt mdrun},
-but as this doesn't do the full parameter consistency check of {\tt grommp},
-you should not use this option for production simulations.
+cut-off scheme will run on a GPU.
 Getting good performance with {\gromacs} on GPUs is easy,
 but getting best performance can be difficult.
 Please check {\wwwpage} for up to date information on GPU usage.
@@ -406,4 +400,4 @@ Please check {\wwwpage} for up to date information on GPU usage.
 % LocalWords:  GMXFONT ns MEM MULTIPROT multiprot NCPUS CPUs OPENMM
 % LocalWords:  PLUGIN OpenMM plugins SASTEP TESTMC eneconv VMD VMDDIR
 % LocalWords:  GMX_USE_XMGR xmgr parallelization nt online Nvidia nb cpu
-% LocalWords:  testverlet grommp
+% LocalWords:  grommp

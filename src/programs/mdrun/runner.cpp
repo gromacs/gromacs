@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -753,99 +753,6 @@ static void prepare_verlet_scheme(FILE                           *fplog,
     }
 }
 
-static void convert_to_verlet_scheme(FILE *fplog,
-                                     t_inputrec *ir,
-                                     gmx_mtop_t *mtop, real box_vol)
-{
-    const char *conv_mesg = "Converting input file with group cut-off scheme to the Verlet cut-off scheme";
-
-    md_print_warn(NULL, fplog, "%s\n", conv_mesg);
-
-    ir->cutoff_scheme = ecutsVERLET;
-    ir->verletbuf_tol = 0.005;
-
-    if (ir->rcoulomb != ir->rvdw)
-    {
-        gmx_fatal(FARGS, "The VdW and Coulomb cut-offs are different, whereas the Verlet scheme only supports equal cut-offs");
-    }
-
-    if (ir->vdwtype == evdwUSER || EEL_USER(ir->coulombtype))
-    {
-        gmx_fatal(FARGS, "User non-bonded potentials are not (yet) supported with the Verlet scheme");
-    }
-    else if (ir_vdw_switched(ir) || ir_coulomb_switched(ir))
-    {
-        if (ir_vdw_switched(ir) && ir->vdw_modifier == eintmodNONE)
-        {
-            ir->vdwtype = evdwCUT;
-
-            switch (ir->vdwtype)
-            {
-                case evdwSHIFT:  ir->vdw_modifier = eintmodFORCESWITCH; break;
-                case evdwSWITCH: ir->vdw_modifier = eintmodPOTSWITCH; break;
-                default: gmx_fatal(FARGS, "The Verlet scheme does not support Van der Waals interactions of type '%s'", evdw_names[ir->vdwtype]);
-            }
-        }
-        if (ir_coulomb_switched(ir) && ir->coulomb_modifier == eintmodNONE)
-        {
-            if (EEL_FULL(ir->coulombtype))
-            {
-                /* With full electrostatic only PME can be switched */
-                ir->coulombtype      = eelPME;
-                ir->coulomb_modifier = eintmodPOTSHIFT;
-            }
-            else
-            {
-                md_print_warn(NULL, fplog, "NOTE: Replacing %s electrostatics with reaction-field with epsilon-rf=inf\n", eel_names[ir->coulombtype]);
-                ir->coulombtype      = eelRF;
-                ir->epsilon_rf       = 0.0;
-                ir->coulomb_modifier = eintmodPOTSHIFT;
-            }
-        }
-
-        /* We set the pair energy error tolerance to a small number.
-         * Note that this is only for testing. For production the user
-         * should think about this and set the mdp options.
-         */
-        ir->verletbuf_tol = 1e-4;
-    }
-
-    if (inputrec2nboundeddim(ir) != 3)
-    {
-        gmx_fatal(FARGS, "Can only convert old tpr files to the Verlet cut-off scheme with 3D pbc");
-    }
-
-    if (ir->efep != efepNO || ir->implicit_solvent != eisNO)
-    {
-        gmx_fatal(FARGS, "Will not convert old tpr files to the Verlet cut-off scheme with free-energy calculations or implicit solvent");
-    }
-
-    if (EI_DYNAMICS(ir->eI) && !(EI_MD(ir->eI) && ir->etc == etcNO))
-    {
-        verletbuf_list_setup_t ls;
-
-        verletbuf_get_list_setup(FALSE, &ls);
-        calc_verlet_buffer_size(mtop, box_vol, ir, -1, &ls, NULL, &ir->rlist);
-    }
-    else
-    {
-        real rlist_fac;
-
-        if (EI_MD(ir->eI))
-        {
-            rlist_fac       = 1 + verlet_buffer_ratio_NVE_T0;
-        }
-        else
-        {
-            rlist_fac       = 1 + verlet_buffer_ratio_nodynamics;
-        }
-        ir->verletbuf_tol   = -1;
-        ir->rlist           = rlist_fac*std::max(ir->rvdw, ir->rcoulomb);
-    }
-
-    gmx_mtop_remove_chargegroups(mtop);
-}
-
 static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 {
     fprintf(fp, "hw_opt: nt %d ntmpi %d ntomp %d ntomp_pme %d gpu_id '%s'\n",
@@ -1101,12 +1008,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, NULL, mtop);
 
-        if (inputrec->cutoff_scheme != ecutsVERLET &&
-            ((Flags & MD_TESTVERLET) || getenv("GMX_VERLET_SCHEME") != NULL))
-        {
-            convert_to_verlet_scheme(fplog, inputrec, mtop, det(state->box));
-        }
-
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             /* Here the master rank decides if all ranks will use GPUs */
@@ -1144,8 +1045,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             {
                 md_print_warn(cr, fplog,
                               "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
-                              "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n"
-                              "      (for quick performance testing you can use the -testverlet option)\n");
+                              "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n");
             }
 
             if (bForceUseGPU)
