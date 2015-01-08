@@ -14,7 +14,7 @@
     <Real>0.98145622</Real>
     <Real>0.97775453</Real>
     <Real>0.97388524</Real>
-    <Real>0.96959651</Real>
+    <Real>0.96959645</Real>
     <Real>0.96521682</Real>
     <Real>0.96071005</Real>
     <Real>0.95656222</Real>
@@ -37,7 +37,7 @@
     <Real>0.92004192</Real>
     <Real>0.92134565</Real>
     <Real>0.92249507</Real>
-    <Real>0.92415452</Real>
+    <Real>0.92415446</Real>
     <Real>0.92598462</Real>
     <Real>0.92835307</Real>
     <Real>0.93056071</Real>
@@ -48,8 +48,8 @@
     <Real>0.9445464</Real>
     <Real>0.94751155</Real>
     <Real>0.95099658</Real>
-    <Real>0.95437491</Real>
-    <Real>0.95766789</Real>
+    <Real>0.95437485</Real>
+    <Real>0.95766783</Real>
     <Real>0.96085715</Real>
     <Real>0.96405703</Real>
     <Real>0.96722084</Real>
@@ -75,19 +75,19 @@
     <Real>0.98345906</Real>
     <Real>0.98124063</Real>
     <Real>0.97880316</Real>
-    <Real>0.97668463</Real>
+    <Real>0.97668457</Real>
     <Real>0.97459376</Real>
     <Real>0.97177458</Real>
     <Real>0.9690451</Real>
     <Real>0.96629435</Real>
-    <Real>0.96378684</Real>
+    <Real>0.96378678</Real>
     <Real>0.96081358</Real>
     <Real>0.95825708</Real>
     <Real>0.95578271</Real>
     <Real>0.95307195</Real>
-    <Real>0.95074266</Real>
+    <Real>0.9507426</Real>
     <Real>0.94830912</Real>
-    <Real>0.94601887</Real>
+    <Real>0.94601882</Real>
     <Real>0.94421709</Real>
     <Real>0.94242907</Real>
     <Real>0.94094354</Real>
@@ -106,9 +106,9 @@
     <Real>0.94294119</Real>
     <Real>0.94477904</Real>
     <Real>0.94679701</Real>
-    <Real>0.94860345</Real>
+    <Real>0.94860339</Real>
     <Real>0.95079654</Real>
-    <Real>0.95264018</Real>
+    <Real>0.95264012</Real>
     <Real>0.95462155</Real>
     <Real>0.95684212</Real>
     <Real>0.95912236</Real>
@@ -133,14 +133,14 @@
     <Real>0.97891223</Real>
     <Real>0.97828108</Real>
     <Real>0.97720605</Real>
-    <Real>0.97623944</Real>
+    <Real>0.97623938</Real>
     <Real>0.97527778</Real>
     <Real>0.97370166</Real>
     <Real>0.97211659</Real>
     <Real>0.97065586</Real>
     <Real>0.96862853</Real>
     <Real>0.96749282</Real>
-    <Real>0.96519589</Real>
+    <Real>0.96519583</Real>
     <Real>0.96352464</Real>
     <Real>0.96173507</Real>
     <Real>0.9598251</Real>
@@ -155,7 +155,7 @@
     <Real>0.94696826</Real>
     <Real>0.94605809</Real>
     <Real>0.94519788</Real>
-    <Real>0.94469965</Real>
+    <Real>0.94469959</Real>
     <Real>0.94453776</Real>
     <Real>0.94388711</Real>
     <Real>0.94351792</Real>
@@ -164,21 +164,21 @@
     <Real>0.94424397</Real>
     <Real>0.94460499</Real>
     <Real>0.94499773</Real>
-    <Real>0.94563341</Real>
+    <Real>0.94563335</Real>
     <Real>0.94637001</Real>
     <Real>0.94729853</Real>
     <Real>0.94789016</Real>
-    <Real>0.9492957</Real>
+    <Real>0.94929564</Real>
     <Real>0.95013034</Real>
     <Real>0.95128489</Real>
-    <Real>0.95289272</Real>
+    <Real>0.95289266</Real>
     <Real>0.9538911</Real>
     <Real>0.95517474</Real>
     <Real>0.95651346</Real>
     <Real>0.95739591</Real>
     <Real>0.95905453</Real>
-    <Real>0.95995909</Real>
-    <Real>0.96129471</Real>
+    <Real>0.95995903</Real>
+    <Real>0.96129465</Real>
     <Real>0.96225822</Real>
     <Real>0.96320486</Real>
     <Real>0.96370006</Real>
@@ -194,7 +194,7 @@
     <Real>0.96682173</Real>
     <Real>0.96666759</Real>
     <Real>0.96608764</Real>
-    <Real>0.96583378</Real>
+    <Real>0.96583372</Real>
     <Real>0.96554524</Real>
     <Real>0.9645654</Real>
     <Real>0.96389264</Real>
@@ -228,7 +228,7 @@
     <Real>0.94219875</Real>
     <Real>0.94211328</Real>
     <Real>0.94299912</Real>
-    <Real>0.94275576</Real>
+    <Real>0.9427557</Real>
     <Real>0.94383633</Real>
     <Real>0.94452924</Real>
     <Real>0.94524854</Real>
@@ -505,5 +505,5 @@
     <Real>0.00094952446</Real>
     <Real>0.00096428557</Real>
   </Sequence>
-  <Real Name="Integral">240.60057076136582</Real>
+  <Real Name="Integral">240.60056956927292</Real>
 </ReferenceData>
