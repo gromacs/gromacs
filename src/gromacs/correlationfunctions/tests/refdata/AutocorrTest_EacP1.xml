@@ -38,7 +38,7 @@
     <Real>-0.47069913</Real>
     <Real>-0.44109708</Real>
     <Real>-0.44801748</Real>
-    <Real>-0.44286934</Real>
+    <Real>-0.44286937</Real>
     <Real>-0.40633747</Real>
     <Real>-0.38159758</Real>
     <Real>-0.38471025</Real>
@@ -46,7 +46,7 @@
     <Real>-0.2954666</Real>
     <Real>-0.22040513</Real>
     <Real>-0.20538236</Real>
-    <Real>-0.17562716</Real>
+    <Real>-0.17562717</Real>
     <Real>-0.12331922</Real>
     <Real>-0.10807745</Real>
     <Real>-0.050659552</Real>
@@ -125,7 +125,7 @@
     <Real>0.33220929</Real>
     <Real>0.33306259</Real>
     <Real>0.33927098</Real>
-    <Real>0.37198529</Real>
+    <Real>0.37198532</Real>
     <Real>0.417128</Real>
     <Real>0.4154191</Real>
     <Real>0.39847392</Real>
@@ -238,7 +238,7 @@
     <Real>-0.13059393</Real>
     <Real>-0.10386769</Real>
     <Real>-0.075353824</Real>
-    <Real>-0.065707266</Real>
+    <Real>-0.065707274</Real>
     <Real>-0.018131474</Real>
     <Real>-0.014584285</Real>
     <Real>0.0061852229</Real>
@@ -505,5 +505,5 @@
     <Real>-0.00067634159</Real>
     <Real>-0.0014037765</Real>
   </Sequence>
-  <Real Name="Integral">-0.13156737015469844</Real>
+  <Real Name="Integral">-0.13156739250644023</Real>
 </ReferenceData>
