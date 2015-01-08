@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,21 +34,44 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
- * Include file for configuration macros that affect installed headers.
- *
- * This include file will be installed with GROMACS header files so that they
- * can refer to a central location for \#defines that will be available for
- * builds of projects that depend on GROMACS.
- *
- * \todo
- * It would be better to not have these defines at all in installed headers.
+ * Provides OS-specific directory-name separator
  *
  * \inlibraryapi
  * \ingroup module_utility
  */
+#ifndef GMX_UTILITY_DIR_SEPARATOR_H
+#define GMX_UTILITY_DIR_SEPARATOR_H
 
-#if defined( _WIN32 ) || defined( _WIN64 )
-#define GMX_NATIVE_WINDOWS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "config.h"
+
+/*! \def DIR_SEPARATOR
+ * \brief
+ * Directory separator on this OS.
+ *
+ * Native Windows uses backslash path separators (but accepts also slashes).
+ * Cygwin and most other systems use slash.
+ *
+ * \todo Get rid of this (Redmine #950). It is not necessary for
+ * constructing paths on the systems that it currently supports, and
+ * is not reliable in parsing input paths either, since Windows needs
+ * to accept both instead of only DIR_SEPARATOR. At the very least, we
+ * should refactor the clients of this header so that they operate
+ * upon path objects rather than raw path strings.
+ */
+#ifdef GMX_NATIVE_WINDOWS
+#define DIR_SEPARATOR '\\'
+#else
+#define DIR_SEPARATOR '/'
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

@@ -11,7 +11,7 @@ src/gromacs/linearalgebra/gmx_blas/*: warning: does not include "gmxpre.h" first
 src/gromacs/linearalgebra/gmx_blas/*: warning: should include "config.h"
 src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" first
 src/gromacs/linearalgebra/gmx_lapack/*: warning: should include "config.h"
-src/gromacs/utility/baseversion-gen.c: warning: does not include "gmxpre.h" first
+src/gromacs/utility/baseversion-gen.c.cmakein: warning: does not include "gmxpre.h"
 
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests

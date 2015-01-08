@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -76,27 +76,15 @@ def check_file(fileobj, reporter):
             else:
                 reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
         includes_config_h = False
-        includes_gmx_header_config_h = False
         for include in includes:
             includedfile = include.get_file()
             if includedfile:
                 if includedfile.get_name() == 'config.h':
                     includes_config_h = True
-                if includedfile.get_name() == 'gmx_header_config.h':
-                    includes_gmx_header_config_h = True
         if includes_config_h:
             if not fileobj.get_used_config_h_defines():
                 reporter.code_issue(fileobj,
                         "includes \"config.h\" unnecessarily")
-        elif includes_gmx_header_config_h:
-            if not fileobj.get_used_config_h_defines():
-                if fileobj.get_name() != 'config.h':
-                    reporter.code_issue(fileobj,
-                            "includes \"gmx_header_config.h\" unnecessarily")
-            # Hard-code logic for gmx_header_config.h contents for simplicity.
-            elif len(fileobj.get_used_config_h_defines()) > 1 or \
-                    'GMX_NATIVE_WINDOWS' not in fileobj.get_used_config_h_defines():
-                reporter.code_issue(fileobj, "should include \"config.h\"")
         else:
             if fileobj.get_used_config_h_defines():
                 reporter.code_issue(fileobj, "should include \"config.h\"")
