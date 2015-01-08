@@ -13,7 +13,7 @@
     <Real>0.65127754</Real>
     <Real>0.58396322</Real>
     <Real>0.50845456</Real>
-    <Real>0.43051061</Real>
+    <Real>0.43051064</Real>
     <Real>0.35105249</Real>
     <Real>0.26587203</Real>
     <Real>0.18143819</Real>
@@ -43,7 +43,7 @@
     <Real>-0.56959647</Real>
     <Real>-0.53186774</Real>
     <Real>-0.47233477</Real>
-    <Real>-0.42289308</Real>
+    <Real>-0.42289311</Real>
     <Real>-0.36013916</Real>
     <Real>-0.30238953</Real>
     <Real>-0.23851043</Real>
@@ -116,7 +116,7 @@
     <Real>0.033095215</Real>
     <Real>0.064681761</Real>
     <Real>0.10605592</Real>
-    <Real>0.13676096</Real>
+    <Real>0.13676098</Real>
     <Real>0.17619975</Real>
     <Real>0.20634755</Real>
     <Real>0.23424256</Real>
@@ -124,7 +124,7 @@
     <Real>0.28315401</Real>
     <Real>0.31159228</Real>
     <Real>0.32296148</Real>
-    <Real>0.3337082</Real>
+    <Real>0.33370823</Real>
     <Real>0.3472271</Real>
     <Real>0.35520938</Real>
     <Real>0.35884556</Real>
@@ -167,7 +167,7 @@
     <Real>-0.24391536</Real>
     <Real>-0.23143035</Real>
     <Real>-0.21355876</Real>
-    <Real>-0.19516303</Real>
+    <Real>-0.19516304</Real>
     <Real>-0.17305651</Real>
     <Real>-0.14851433</Real>
     <Real>-0.13391782</Real>
@@ -178,7 +178,7 @@
     <Real>-0.0082916291</Real>
     <Real>0.028239559</Real>
     <Real>0.044842608</Real>
-    <Real>0.066723041</Real>
+    <Real>0.066723049</Real>
     <Real>0.086818486</Real>
     <Real>0.11206019</Real>
     <Real>0.13034853</Real>
@@ -201,7 +201,7 @@
     <Real>0.16507152</Real>
     <Real>0.14102207</Real>
     <Real>0.13159586</Real>
-    <Real>0.11218439</Real>
+    <Real>0.1121844</Real>
     <Real>0.090035476</Real>
     <Real>0.069503993</Real>
     <Real>0.054288179</Real>
@@ -210,7 +210,7 @@
     <Real>-0.0047988398</Real>
     <Real>-0.024740862</Real>
     <Real>-0.042112309</Real>
-    <Real>-0.057106286</Real>
+    <Real>-0.05710629</Real>
     <Real>-0.079133794</Real>
     <Real>-0.08531253</Real>
     <Real>-0.10183473</Real>
@@ -505,5 +505,5 @@
     <Real>-8.4526189e-05</Real>
     <Real>-0.00019142308</Real>
   </Sequence>
-  <Real Name="Integral">0.54968381075777017</Real>
+  <Real Name="Integral">0.54968385173596346</Real>
 </ReferenceData>
