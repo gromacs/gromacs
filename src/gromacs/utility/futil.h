@@ -57,26 +57,6 @@ extern "C" {
 }
 #endif
 
-#include "gromacs/utility/gmx_header_config.h"
-/*! \def DIR_SEPARATOR
- * \brief
- * Directory separator on this OS.
- *
- * Native Windows uses backslash path separators (but accepts also slashes).
- * Cygwin and most other systems use slash.
- *
- * \todo
- * Get rid of this (Redmine #950), or at least remove this from an installed
- * header.  It is not necessary for constructing paths on the systems that it
- * currently supports, and is not reliable in parsing input paths either, since
- * Windows needs to accept both instead of only DIR_SEPARATOR.
- */
-#ifdef GMX_NATIVE_WINDOWS
-#define DIR_SEPARATOR '\\'
-#else
-#define DIR_SEPARATOR '/'
-#endif
-
 /*! \def GMX_PATH_MAX
  * \brief
  * Maximum path length, if the OS provides one, otherwise a fixed constant.

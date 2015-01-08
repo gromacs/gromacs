@@ -47,7 +47,6 @@ gmx_install_headers(
     file.h
     flags.h
     futil.h
-    gmx_header_config.h
     gmxassert.h
     init.h
     programcontext.h
