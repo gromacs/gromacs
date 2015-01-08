@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -492,9 +492,9 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
         /*Fit average density in z over whole trajectory to obtain tentative fit-parameters in fit1 and fit2*/
 
         /*Fit 1st half of box*/
-        do_lmfit(zslices, zDensavg, sigma1, binwidth, NULL, startpoint, splitpoint, oenv, FALSE, effnERF, beginfit1, 3);
+        do_lmfit(zslices, zDensavg, sigma1, binwidth, NULL, startpoint, splitpoint, oenv, FALSE, effnERF, beginfit1, 8, NULL);
         /*Fit 2nd half of box*/
-        do_lmfit(zslices, zDensavg, sigma2, binwidth, NULL, splitpoint, endpoint, oenv, FALSE, effnERF, beginfit2, 3);
+        do_lmfit(zslices, zDensavg, sigma2, binwidth, NULL, splitpoint, endpoint, oenv, FALSE, effnERF, beginfit2, 8, NULL);
 
         /*Initialise the const arrays for storing the average fit parameters*/
         avgfit1 = beginfit1;
@@ -518,10 +518,10 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                         fit2[k] = avgfit2[k];
                     }
                     /*Now fit and store in structures in row-major order int[n][i][j]*/
-                    do_lmfit(zslices, Densmap[n][i][j], sigma1, binwidth, NULL, startpoint, splitpoint, oenv, FALSE, effnERF, fit1, 1);
+                    do_lmfit(zslices, Densmap[n][i][j], sigma1, binwidth, NULL, startpoint, splitpoint, oenv, FALSE, effnERF, fit1, 0, NULL);
                     int1[n][j+(yslices*i)]->Z = fit1[2];
                     int1[n][j+(yslices*i)]->t = fit1[3];
-                    do_lmfit(zslices, Densmap[n][i][j], sigma2, binwidth, NULL, splitpoint, endpoint, oenv, FALSE, effnERF, fit2, 2);
+                    do_lmfit(zslices, Densmap[n][i][j], sigma2, binwidth, NULL, splitpoint, endpoint, oenv, FALSE, effnERF, fit2, 0, NULL);
                     int2[n][j+(yslices*i)]->Z = fit2[2];
                     int2[n][j+(yslices*i)]->t = fit2[3];
                 }

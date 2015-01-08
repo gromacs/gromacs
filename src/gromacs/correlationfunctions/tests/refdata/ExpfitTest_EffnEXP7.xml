@@ -3,12 +3,12 @@
 <ReferenceData>
   <Sequence Name="result">
     <Int Name="Length">7</Int>
-    <Real>0.5512395081799536</Real>
-    <Real>6.5183422896301373</Real>
-    <Real>-0.67296121974350642</Real>
-    <Real>31.927951035981206</Real>
-    <Real>1.186708933085455</Real>
-    <Real>42.008654192804514</Real>
-    <Real>-0.0015455112108527936</Real>
+    <Real>0.22969109737961602</Real>
+    <Real>1.6938073214026785</Real>
+    <Real>0.58047615485173931</Real>
+    <Real>23.514547265682463</Real>
+    <Real>0.25468630875040837</Real>
+    <Real>124.69588927433887</Real>
+    <Real>0.0088943612374425204</Real>
   </Sequence>
 </ReferenceData>
