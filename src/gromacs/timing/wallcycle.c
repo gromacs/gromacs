@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -527,6 +527,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
     char   nthreads_str[6];
     char   ncalls_str[11];
     double wallt;
+    double percentage = (tot > 0.) ? (100. * c_sum / tot) : 0.;
 
     if (c_sum > 0)
     {
@@ -561,7 +562,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
 
         fprintf(fplog, " %-19.19s %4s %4s %10s  %10.3f %14.3f %5.1f\n",
                 name, nnodes_str, nthreads_str, ncalls_str, wallt,
-                c_sum*1e-9, 100*c_sum/tot);
+                c_sum*1e-9, percentage);
     }
 }
 
