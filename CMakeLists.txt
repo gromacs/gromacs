@@ -220,9 +220,6 @@ option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
 
-if(UNIX)
-    option(GMX_SYMLINK_OLD_BINARY_NAMES "Create symbolic links for pre-5.0 binary names" ON)
-endif()
 option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
 option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)

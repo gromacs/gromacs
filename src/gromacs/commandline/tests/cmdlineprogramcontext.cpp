@@ -65,8 +65,6 @@ using gmx::Path;
 #else
 //! Extension for executable files on the platform.
 #define EXECUTABLE_EXTENSION ""
-//! Defined if the platform supports symlinks and those can be tested.
-#define TEST_SYMLINKS
 #endif
 
 namespace
@@ -148,17 +146,5 @@ TEST_F(CommandLineProgramContextTest, FindsBinaryFromCurrentDirectory)
     env_->path_.push_back("");
     testBinaryPathSearch("test-exe");
 }
-
-#ifdef TEST_SYMLINKS
-TEST_F(CommandLineProgramContextTest, FindsBinaryFromAbsoluteSymLink)
-{
-    testBinaryPathSearch("bin/test-abs-link");
-}
-
-TEST_F(CommandLineProgramContextTest, FindsBinaryFromRelativeSymLink)
-{
-    testBinaryPathSearch("bin/test-rel-link");
-}
-#endif
 
 } // namespace

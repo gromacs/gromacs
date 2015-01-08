@@ -249,23 +249,19 @@ class CommandLineModuleManager::Impl
         CommandLineModuleMap::const_iterator
         findModuleByName(const std::string &name) const;
         /*! \brief
-         * Finds a module that the name of the binary.
+         * Finds a module from the command line.
          *
          * \param[in] invokedName  Name by which the program was invoked.
          * \throws    std::bad_alloc if out of memory.
          * \returns   Iterator to the found module, or
          *      \c modules_.end() if not found.
          *
-         * Checks whether the program is invoked through a symlink whose name
-         * is different from \a binaryName_, and if so, checks
-         * if a module name matches the name of the symlink.
-         *
          * Note that the \p invokedName parameter is currently not necessary
          * (as the program context object is also available and provides this
          * value), but it clarifies the control flow.
          */
         CommandLineModuleMap::const_iterator
-        findModuleFromBinaryName(const char *invokedName) const;
+        findModuleFromCommandLine(const char *invokedName) const;
 
         /*! \brief
          * Processes command-line options for the wrapper binary.
@@ -360,21 +356,20 @@ CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
 }
 
 CommandLineModuleMap::const_iterator
-CommandLineModuleManager::Impl::findModuleFromBinaryName(
+CommandLineModuleManager::Impl::findModuleFromCommandLine(
         const char *invokedName) const
 {
     std::string moduleName = invokedName;
 #ifdef GMX_BINARY_SUFFIX
     moduleName = stripSuffixIfPresent(moduleName, GMX_BINARY_SUFFIX);
 #endif
+    // Caters for mdrun-only build, or any user-generated symlink
+    // whose name matches the name of the module
     if (moduleName == binaryName_)
     {
         return modules_.end();
     }
-    if (startsWith(moduleName, "g_"))
-    {
-        moduleName.erase(0, 2);
-    }
+    // Caters for normal wrapper-binary build
     if (startsWith(moduleName, "gmx"))
     {
         moduleName.erase(0, 3);
@@ -390,9 +385,8 @@ CommandLineModuleManager::Impl::processCommonOptions(
     CommandLineModuleInterface *module = singleModule_;
     if (module == NULL)
     {
-        // Also check for invokation through named symlinks.
         CommandLineModuleMap::const_iterator moduleIter
-            = findModuleFromBinaryName(programContext_.programName());
+            = findModuleFromCommandLine(programContext_.programName());
         if (moduleIter != modules_.end())
         {
             module = moduleIter->second.get();
