@@ -643,7 +643,7 @@ the directories can be renamed by editing the installation paths in the main
 CMakeLists.txt.
 
 `bin/`
-  : The standard location for executables, some scripts, and some symlinks.
+  : The standard location for executables and some scripts.
     Some of the scripts hardcode the absolute installation prefix, which needs
     to be changed if the scripts are relocated.
 `include/gromacs/`
