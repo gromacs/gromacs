@@ -2401,7 +2401,7 @@ static void smooth_tail(int n, real t[], real c[], real sigma_c[], real start,
     }
     fitparm[1] = 0.95;
     do_lmfit(n, c, sigma_c, 0, t, start, t[n-1], oenv, bDebugMode(),
-             effnEXP2, fitparm, 0);
+             effnEXP2, fitparm, 0, NULL);
 }
 
 void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
