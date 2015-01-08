@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"
@@ -56,7 +57,7 @@
 #include "testutils/testfilemanager.h"
 
 //! Number of data files for testing.
-#define expTestNrTypes 3
+#define expTestNrTypes 5
 
 namespace gmx
 {
@@ -90,6 +91,8 @@ class ExpfitTest : public ::testing::Test
             fileName[0] = test::TestFileManager::getInputFilePath("testINVEXP.xvg");
             fileName[1] = test::TestFileManager::getInputFilePath("testPRES.xvg");
             fileName[2] = test::TestFileManager::getInputFilePath("testEXP.xvg");
+            fileName[3] = test::TestFileManager::getInputFilePath("testINVEXP79.xvg");
+            fileName[4] = test::TestFileManager::getInputFilePath("testERF.xvg");
             for (int i = 0; i < expTestNrTypes; i++)
             {
                 const char * name = fileName[i].c_str();
@@ -131,11 +134,13 @@ class ExpfitTest : public ::testing::Test
 
         void test(int type, double result[], double tolerance, int testType)
         {
-            int     nfitparm = effnNparams(type);
+            int          nfitparm = effnNparams(type);
+            output_env_t oenv;
 
+            output_env_init_default(&oenv);
             do_lmfit(nrLines_, &values_[testType][0], &standardDev_[0], timeDeriv_,
-                     NULL, startTime_, endTime_, NULL, false, type, result, 0);
-
+                     NULL, startTime_, endTime_, oenv, false, type, result, 0, NULL);
+            output_env_done(oenv);
             checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, tolerance));
             checker_.checkSequenceArray(nfitparm, result, "result");
         }
@@ -154,52 +159,51 @@ real              ExpfitTest::timeDeriv_;
 
 TEST_F (ExpfitTest, EffnEXP1) {
     double  param[] = {25};
-    test(effnEXP1, param, 1e-6, 0);
+    test(effnEXP1, param, 1e-5, 0);
 }
 
 TEST_F (ExpfitTest, EffnEXP2) {
     double  param[] = {35, 0.5};
-    test(effnEXP2, param, 1e-6, 0);
+    test(effnEXP2, param, 1e-5, 0);
 }
 
-TEST_F (ExpfitTest, EffnEXP3) {
-    double param[] = {45, 0.5, 5};
-    test(effnEXP3, param, 1e-4, 0);
+TEST_F (ExpfitTest, EffnEXPEXP) {
+    double param[] = {5, 0.5, 45};
+    test(effnEXPEXP, param, 1e-2, 0);
 }
 
 TEST_F (ExpfitTest, EffnEXP5) {
     double  param[] = {0.5, 5, 0.5, 50, 0.002};
-    test(effnEXP5, param, 1e-4, 0);
+    test(effnEXP5, param, 1e-2, 0);
 }
 
 TEST_F (ExpfitTest, EffnEXP7) {
-    double  param[] = {0.5, 5, -0.02, 0.5, 0.5, 50, -0.002};
-    test(effnEXP7, param, 1e-4, 0);
+    double  param[] = {0.1, 2, 0.5, 30, 0.3, 50, -0.002};
+    test(effnEXP7, param, 1e-2, 3);
 }
 
 TEST_F (ExpfitTest, EffnEXP9) {
-    double  param[] = {2, 1200, -1, 300, 0.7, 70, 0.5, 6, -0.5};
-    test(effnEXP9, param, 4e-2, 0);
+    double  param[] = {0.4, 5, 0.2, 30, 0.1, 70, 0.2, 200, -0.05};
+    test(effnEXP9, param, 4e-2, 3);
 }
 
 TEST_F (ExpfitTest, EffnERF) {
-    double  param[] = {0.5, 0.5, 0.5, 1};
-    test(effnERF, param, 1e-2, 0);
+    double  param[] = {100, 80, 80, 5};
+    test(effnERF, param, 1e-2, 4);
 }
 
 TEST_F (ExpfitTest, EffnERREST) {
     double  param[] = {0.5, 0.7, 0.3};
-    test(effnERREST, param, 1e-4, 2);
+    test(effnERREST, param, 5e-3, 2);
 }
 
 TEST_F (ExpfitTest, EffnVAC) {
-    double param[] = {0.5, 0.05};
-    test(effnVAC, param, 1e-4, 0);
+    double param[] = {30, 0.0};
+    test(effnVAC, param, 0.05, 0);
 }
 
-TEST_F (ExpfitTest, DISABLED_EffnPRES) {
-    //TODO: This test is prodocues NaNs and INFs. Fix and then reactivate.
-    double param[] = {0, 10, 4, 1, 0.5, 1};
+TEST_F (ExpfitTest, EffnPRES) {
+    double param[] = {0.6, 10, 7, 1, 0.25, 2};
     test(effnPRES, param, 1e-4, 1);
 }
 
