@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -125,14 +125,6 @@ int gmx_mdrun(int argc, char *argv[])
         "threads, up to 12 threads with Intel Nehalem/Westmere, or up to 16",
         "threads with Intel Sandy Bridge or newer CPUs. Otherwise MPI-only",
         "parallelization is used (except with GPUs, see below).",
-        "[PAR]",
-        "To quickly test the performance of the new Verlet cut-off scheme",
-        "with old [TT].tpr[tt] files, either on CPUs or CPUs+GPUs, you can use",
-        "the [TT]-testverlet[tt] option. This should not be used for production,",
-        "since it can slightly modify potentials and it will remove charge groups",
-        "making analysis difficult, as the [TT].tpr[tt] file will still contain",
-        "charge groups. For production simulations it is highly recommended",
-        "to specify [TT]cutoff-scheme = Verlet[tt] in the [TT].mdp[tt] file.",
         "[PAR]",
         "With GPUs (only supported with the Verlet cut-off scheme), the number",
         "of GPUs should match the number of particle-particle ranks, i.e.",
@@ -451,7 +443,6 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bDDBondCheck  = TRUE;
     gmx_bool        bDDBondComm   = TRUE;
     gmx_bool        bTunePME      = TRUE;
-    gmx_bool        bTestVerlet   = FALSE;
     gmx_bool        bVerbose      = FALSE;
     gmx_bool        bCompact      = TRUE;
     gmx_bool        bRerunVSite   = FALSE;
@@ -557,8 +548,6 @@ int gmx_mdrun(int argc, char *argv[])
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
         { "-tunepme", FALSE, etBOOL, {&bTunePME},
           "Optimize PME load between PP/PME ranks or GPU/CPU" },
-        { "-testverlet", FALSE, etBOOL, {&bTestVerlet},
-          "Test the Verlet non-bonded scheme" },
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
         { "-compact", FALSE, etBOOL, {&bCompact},
@@ -751,7 +740,6 @@ int gmx_mdrun(int argc, char *argv[])
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
     Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
-    Flags = Flags | (bTestVerlet   ? MD_TESTVERLET   : 0);
     Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
     Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
     Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
