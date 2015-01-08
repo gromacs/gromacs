@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -260,23 +260,6 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
     ASSERT_EQ(0, rc);
 }
 
-TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSymLink)
-{
-    const char *const cmdline[] = {
-        "g_module", "-h"
-    };
-    CommandLine       args(cmdline);
-    initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
-    addModule("other", "Second module");
-    using ::testing::_;
-    EXPECT_CALL(mod1, writeHelp(_));
-    mod1.setExpectedDisplayName("test module");
-    int rc = 0;
-    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
-}
-
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
 {
     const char *const cmdline[] = {
@@ -305,46 +288,6 @@ TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
     MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
     using ::testing::_;
     EXPECT_CALL(topic, writeHelp(_));
-    int rc = 0;
-    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
-}
-
-TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
-{
-    const char *const cmdline[] = {
-        "g_module", "-flag", "yes"
-    };
-    CommandLine       args(cmdline);
-    initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
-    addModule("other", "Second module");
-    using ::testing::_;
-    using ::testing::Args;
-    using ::testing::ElementsAreArray;
-    EXPECT_CALL(mod1, init(_));
-    EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
-    int rc = 0;
-    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
-}
-
-TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffix)
-{
-    const char *const cmdline[] = {
-        "/usr/local/gromacs/bin/g_module" GMX_BINARY_SUFFIX ".exe", "-flag", "yes"
-    };
-    CommandLine       args(cmdline);
-    initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
-    addModule("other", "Second module");
-    using ::testing::_;
-    using ::testing::Args;
-    using ::testing::ElementsAreArray;
-    EXPECT_CALL(mod1, init(_));
-    EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);

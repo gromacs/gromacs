@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,8 +42,6 @@
 #include "gmxpre.h"
 
 #include "cmdlinemodulemanager.h"
-
-#include "config.h"
 
 #include <cstdio>
 
@@ -248,24 +246,6 @@ class CommandLineModuleManager::Impl
          */
         CommandLineModuleMap::const_iterator
         findModuleByName(const std::string &name) const;
-        /*! \brief
-         * Finds a module that the name of the binary.
-         *
-         * \param[in] invokedName  Name by which the program was invoked.
-         * \throws    std::bad_alloc if out of memory.
-         * \returns   Iterator to the found module, or
-         *      \c modules_.end() if not found.
-         *
-         * Checks whether the program is invoked through a symlink whose name
-         * is different from \a binaryName_, and if so, checks
-         * if a module name matches the name of the symlink.
-         *
-         * Note that the \p invokedName parameter is currently not necessary
-         * (as the program context object is also available and provides this
-         * value), but it clarifies the control flow.
-         */
-        CommandLineModuleMap::const_iterator
-        findModuleFromBinaryName(const char *invokedName) const;
 
         /*! \brief
          * Processes command-line options for the wrapper binary.
@@ -359,45 +339,12 @@ CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
     return modules_.find(name);
 }
 
-CommandLineModuleMap::const_iterator
-CommandLineModuleManager::Impl::findModuleFromBinaryName(
-        const char *invokedName) const
-{
-    std::string moduleName = invokedName;
-#ifdef GMX_BINARY_SUFFIX
-    moduleName = stripSuffixIfPresent(moduleName, GMX_BINARY_SUFFIX);
-#endif
-    if (moduleName == binaryName_)
-    {
-        return modules_.end();
-    }
-    if (startsWith(moduleName, "g_"))
-    {
-        moduleName.erase(0, 2);
-    }
-    if (startsWith(moduleName, "gmx"))
-    {
-        moduleName.erase(0, 3);
-    }
-    return findModuleByName(moduleName);
-}
-
 CommandLineModuleInterface *
 CommandLineModuleManager::Impl::processCommonOptions(
         CommandLineCommonOptionsHolder *optionsHolder, int *argc, char ***argv)
 {
     // Check if we are directly invoking a certain module.
     CommandLineModuleInterface *module = singleModule_;
-    if (module == NULL)
-    {
-        // Also check for invokation through named symlinks.
-        CommandLineModuleMap::const_iterator moduleIter
-            = findModuleFromBinaryName(programContext_.programName());
-        if (moduleIter != modules_.end())
-        {
-            module = moduleIter->second.get();
-        }
-    }
 
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
