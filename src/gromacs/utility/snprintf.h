@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,21 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Include file for configuration macros that affect installed headers.
+/*! \libinternal \file
+ * \brief Provide snprintf symbol on all OS (for internal Gromacs use)
  *
- * This include file will be installed with GROMACS header files so that they
- * can refer to a central location for \#defines that will be available for
- * builds of projects that depend on GROMACS.
- *
- * \todo
- * It would be better to not have these defines at all in installed headers.
+ * \todo When all callers of snprintf compile as C++, perhaps use
+ * gmx::formatString() everywhere instead of snprintf.
  *
  * \inlibraryapi
  * \ingroup module_utility
  */
+#ifndef GMX_UTILITY_SNPRINTF_H
+#define GMX_UTILITY_SNPRINTF_H
 
-#if defined( _WIN32 ) || defined( _WIN64 )
-#define GMX_NATIVE_WINDOWS
+#include "config.h"
+
+#include <stdio.h>
+
+#ifdef GMX_NATIVE_WINDOWS
+#define snprintf _snprintf
+#endif
+
 #endif

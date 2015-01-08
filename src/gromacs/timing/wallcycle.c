@@ -48,6 +48,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/snprintf.h"
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last
