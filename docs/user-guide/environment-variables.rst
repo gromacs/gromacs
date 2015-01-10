@@ -350,6 +350,95 @@ Performance and Run Control
         use tree reduction for nbnxn force reduction. Potentially faster for large number of
         OpenMP threads (if memory locality is important).
 
+.. _opencl-management:
+
+OpenCL management
+-----------------
+Currently, several environment variables exist that help customize some aspects
+of the OpenCL_ version of |Gromacs|. They are mostly related to the runtime
+compilation of OpenCL kernels, but they are also used in device selection.
+
+``GMX_OCL_NOGENCACHE``
+        Disable caching for OpenCL kernel builds. Caching is normally useful so that
+        future runs can re-use the compiled kernels from previous runs.
+
+``GMX_OCL_NOFASTGEN``
+        Generates and compiles all algorithm flavors, otherwise only
+        the flavor required for the simulation is generated and
+        compiled.
+
+``GMX_OCL_FASTMATH``
+        Adds the option ``cl-fast-relaxed-math`` to the compiler
+        options (in the CUDA version this is enabled by default, it is likely that
+        the same will happen with the OpenCL version soon)
+
+``GMX_OCL_DUMP_LOG``
+        If defined, the OpenCL build log is always written to file.
+        The file is saved in the current directory with the name
+        ``OpenCL_kernel_file_name.build_status`` where
+        ``OpenCL_kernel_file_name`` is the name of the file containing the
+        OpenCL source code (usually ``nbnxn_ocl_kernels.cl``) and
+        build_status can be either SUCCEEDED or FAILED. If this
+        environment variable is not defined, the default behavior is
+        the following:
+
+           - Debug build: build log is always written to file
+	   - Release build: build log is written to file only in case of errors.
+
+``GMX_OCL_VERBOSE``
+        If defined, it enables verbose mode for OpenCL kernel build.
+        Currently available only for NVIDIA GPUs. See ``GMX_OCL_DUMP_LOG``
+        for details about how to obtain the OpenCL build log.
+
+``GMX_OCL_DUMP_INTERM_FILES``
+
+        If defined, intermediate language code corresponding to the
+        OpenCL build process is saved to file. Caching has to be
+        turned off in order for this option to take effect (see
+        ``GMX_OCL_NOGENCACHE``).
+
+            - NVIDIA GPUs: PTX code is saved in the current directory
+	      with the name ``device_name.ptx``
+	    - AMD GPUs: ``.IL/.ISA`` files will be created for each OpenCL
+              kernel built.  For details about where these files are
+              created check AMD documentation for ``-save-temps`` compiler
+              option.
+
+``GMX_OCL_DEBUG``
+        Use in conjunction with ``OCL_FORCE_CPU`` or with an AMD device.
+        It adds the debug flag to the compiler options (-g).
+
+``GMX_OCL_NOOPT``
+        Disable optimisations. Adds the option ``cl-opt-disable`` to the
+        compiler options.
+
+``GMX_OCL_FORCE_CPU``
+        Force the selection of a CPU device instead of a GPU.  This
+        exists only for debugging purposes. Do not expect |Gromacs| to
+        function properly with this option on, it is solely for the
+        simplicity of stepping in a kernel and see what is happening.
+
+``GMX_OCL_NB_ANA_EWALD``
+        Forces the use of analytical Ewald kernels. Equivalent of
+        CUDA environment variable ``GMX_CUDA_NB_ANA_EWALD``
+
+``GMX_OCL_NB_TAB_EWALD``
+        Forces the use of tabulated Ewald kernel. Equivalent
+        of CUDA environment variable ``GMX_OCL_NB_TAB_EWALD``
+
+``GMX_OCL_NB_EWALD_TWINCUT``
+        Forces the use of twin-range cutoff kernel. Equivalent of
+        CUDA environment variable ``GMX_CUDA_NB_EWALD_TWINCUT``
+
+``GMX_DISABLE_OCL_TIMING``
+        Disables timing for OpenCL operations
+
+``GMX_OCL_FILE_PATH``
+        Use this parameter to force |Gromacs| to load the OpenCL
+        kernels from a custom location. Use it only if you want to
+        override |Gromacs| default behavior, or if you want to test
+        your own kernels.
+
 Analysis and Core Functions
 ---------------------------
 ``GMX_QM_ACCURACY``
