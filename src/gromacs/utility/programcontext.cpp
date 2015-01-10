@@ -74,6 +74,7 @@ class DefaultProgramContext : public ProgramContextInterface
         {
             return InstallationPrefixInfo("", false);
         }
+        virtual const char *defaultJitDataPath() const { return ""; }
         virtual const char *commandLine() const { return ""; }
 };
 

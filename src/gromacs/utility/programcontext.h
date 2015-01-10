@@ -156,6 +156,15 @@ class ProgramContextInterface
          */
         virtual InstallationPrefixInfo installationPrefix() const = 0;
         /*! \brief
+         * Returns the default path for \Gromacs JIT files.
+         *
+         * This path is used to locate the JIT data files.
+         * The implementation can provide an empty string if the path is not
+         * available; in such a case, functions that require data files may
+         * fail.
+         */
+        virtual const char *defaultJitDataPath() const = 0;
+        /*! \brief
          * Returns the full command line used to invoke the binary.
          *
          * The implementation can provide an empty string if no command line is

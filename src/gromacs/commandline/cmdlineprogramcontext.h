@@ -206,6 +206,16 @@ class CommandLineProgramContext : public ProgramContextInterface
          */
         virtual InstallationPrefixInfo installationPrefix() const;
         /*! \brief
+         * Returns the default path for \Gromacs JIT files.
+         *
+         * \throws std::bad_alloc if out of memory.
+         * \throws tMPI::system_error on thread synchronization errors.
+         *
+         * Returns an empty string if the JIT data files are not
+         * found.
+         */
+        virtual const char *defaultJitDataPath() const;
+        /*! \brief
          * Returns the full command line used to invoke the binary.
          *
          * Does not throw.

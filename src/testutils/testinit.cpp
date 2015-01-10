@@ -98,8 +98,19 @@ class TestProgramContext : public ProgramContextInterface
          * \param[in] context  Current \Gromacs program context.
          */
         explicit TestProgramContext(const ProgramContextInterface &context)
-            : context_(context), dataPath_(CMAKE_SOURCE_DIR)
+            : context_(context), dataPath_(CMAKE_SOURCE_DIR),
+              jitPath_()
         {
+            /* This path has to point to the right location in the
+               source tree, so that integration tests that compute
+               forces can work for OpenCL builds.
+
+               TODO Ideally, the contents of this string would come
+               from somewhere else rather than being hard-coded
+               here. It's currently unclear where that place should
+               be. Resolve this when we want to do more than OpenCL
+               JIT. */
+            jitPath_ = Path::join(dataPath_, "src/gromacs/mdlib/nbnxn_ocl");
         }
 
         /*! \brief
@@ -126,6 +137,10 @@ class TestProgramContext : public ProgramContextInterface
         {
             return InstallationPrefixInfo(dataPath_.c_str(), true);
         }
+        virtual const char *defaultJitDataPath() const
+        {
+            return jitPath_.c_str();
+        }
         virtual const char *commandLine() const
         {
             return context_.commandLine();
@@ -134,6 +149,7 @@ class TestProgramContext : public ProgramContextInterface
     private:
         const ProgramContextInterface   &context_;
         std::string                      dataPath_;
+        std::string                      jitPath_;
 };
 
 //! Prints the command-line options for the unit test binary.

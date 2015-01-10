@@ -175,6 +175,16 @@ bool isAcceptableLibraryPath(const std::string &path)
 }
 
 /*! \brief
+ * Returns whether given path contains files from JIT repository.
+ *
+ * For now, it only checks for nbnxn_ocl_kernels.cl
+ */
+bool isAcceptableJitPath(const std::string &path)
+{
+    return Path::exists(Path::join(path, "nbnxn_ocl_kernels.cl"));
+}
+
+/*! \brief
  * Returns whether given path prefix contains files from `share/top/`.
  *
  * \param[in]  path   Path prefix to check.
@@ -224,7 +234,7 @@ std::string findFallbackInstallationPrefixPath()
 }
 
 /*! \brief
- * Finds the library data files based on path of the binary.
+ * Generic function to find data files based on path of the binary.
  *
  * \param[in]  binaryPath     Absolute path to the binary.
  * \param[out] bSourceLayout  Set to `true` if the binary is run from
@@ -285,6 +295,35 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
     return findFallbackInstallationPrefixPath();
 }
 
+/*! \brief
+ * Finds the JIT data files based on path of the binary.
+ *
+ * \param[in] binaryPath  Absolute path to the binary.
+ * \returns  Path to the folder containg JIT data files, or an empty string if none is found
+ *
+ * \todo Currently the checking is specific to the OpenCL use, but we
+ * can change that when we have other uses for JIT compilation.
+ */
+std::string findDefaultJitDataPath(const std::string &binaryPath)
+{
+    bool bSourceLayout;
+    std::string dataPath, dataPathSuffix, pathToOpenclKernels;
+
+    dataPath = findInstallationPrefixPath(binaryPath,
+                                          &bSourceLayout);
+    dataPathSuffix = (bSourceLayout ?
+                      "src/gromacs/mdlib/nbnxn_ocl" :
+                      OCL_INSTALL_DIR);
+    // Make sure we have an OS-correct path format
+    pathToOpenclKernels = Path::normalize(Path::join(dataPath, dataPathSuffix));
+    if (isAcceptableJitPath(pathToOpenclKernels))
+    {
+        return pathToOpenclKernels;
+    }
+    // Couldn't find anything.
+    return "";
+}
+
 //! \}
 
 }   // namespace
@@ -317,6 +356,7 @@ class CommandLineProgramContext::Impl
         std::string                   commandLine_;
         mutable std::string           fullBinaryPath_;
         mutable std::string           installationPrefix_;
+        mutable std::string           defaultJitDataPath_;
         mutable bool                  bSourceLayout_;
         mutable tMPI::mutex           binaryPathMutex_;
 };
@@ -429,6 +469,18 @@ InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
     return InstallationPrefixInfo(
             impl_->installationPrefix_.c_str(),
             impl_->bSourceLayout_);
+}
+
+const char *CommandLineProgramContext::defaultJitDataPath() const
+{
+    tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
+    if (impl_->defaultJitDataPath_.empty())
+    {
+        impl_->findBinaryPath();
+        impl_->defaultJitDataPath_ =
+            Path::normalize(findDefaultJitDataPath(impl_->fullBinaryPath_));
+    }
+    return impl_->defaultJitDataPath_.c_str();
 }
 
 } // namespace gmx
