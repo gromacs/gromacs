@@ -1820,11 +1820,19 @@ static void pick_nbnxn_resources(FILE                *fp,
             /* TODO the decorating of gpu_err_str is nicer if it
                happens inside init_gpu. Out here, the decorating with
                the MPI rank makes sense. */
+#ifdef GMX_USE_OPENCL
+            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%s: %s",
+                      cr->nodeid,
+                      get_ocl_gpu_device_name(&hwinfo->gpu_info, gpu_opt,
+                                              cr->rank_pp_intranode),
+                      gpu_err_str);
+#else
             gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
                       get_cuda_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
                                              cr->rank_pp_intranode),
                       gpu_err_str);
+#endif
         }
 
         /* Here we actually turn on hardware GPU acceleration */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -243,6 +243,15 @@
 
 /* Use NVML */
 #cmakedefine HAVE_NVML
+
+/* Use OpenCL acceleators */
+#cmakedefine GMX_USE_OPENCL
+
+/* Define relative path to OpenCL kernels */
+#define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
+
+/* Define absolute path to OpenCL kernels */
+#define OCL_INSTALL_FULL_PATH "@OCL_INSTALL_FULL_PATH@"
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
