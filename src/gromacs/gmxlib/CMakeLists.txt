@@ -42,7 +42,11 @@ file(GLOB GMXLIB_SOURCES *.c *.cpp)
 
 # gpu utils + cuda tools module
 if(GMX_GPU)
-    add_subdirectory(cuda_tools)
+    if(NOT GMX_USE_OPENCL)
+        add_subdirectory(cuda_tools)
+    else()
+        add_subdirectory(ocl_tools)
+    endif()
 endif()
 add_subdirectory(gpu_utils)
 
