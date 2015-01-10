@@ -228,7 +228,7 @@ std::string findFallbackInstallationPrefixPath()
 }
 
 /*! \brief
- * Finds the library data files based on path of the binary.
+ * Generic function to find data files based on path of the binary.
  *
  * \param[in]  binaryPath     Absolute path to the binary.
  * \param[out] bSourceLayout  Set to `true` if the binary is run from
