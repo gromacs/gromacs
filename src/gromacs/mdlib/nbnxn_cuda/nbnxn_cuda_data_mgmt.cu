@@ -570,7 +570,7 @@ void nbnxn_gpu_init(FILE                 *fplog,
     init_plist(nb->plist[eintLocal]);
 
     /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = &gpu_info->gpu_dev[get_cuda_gpu_device_id(gpu_info, gpu_opt, my_gpu_index)];
+    nb->dev_info = &gpu_info->gpu_dev[get_gpu_device_id(gpu_info, gpu_opt, my_gpu_index)];
 
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);
