@@ -505,3 +505,56 @@ maybe elsewhere
 Running mdrun with GPUs
 -----------------------
 TODO In future patch: any tips not covered above
+
+Running the OpenCL version of mdrun
+-----------------------------------
+
+The current version works with GCN-based AMD GPUs, and NVIDIA CUDA
+GPUs. Make sure that you have the latest drivers installed. The
+minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
+also the :ref:`known limitations <opencl-known-limitations>`.
+
+The same ``-gpu_id`` option (or ``GMX_GPU_ID`` environment variable)
+used to select CUDA devices, or to define a mapping of GPUs to PP
+ranks, is used for OpenCL devices.
+
+The following devices are known to work correctly: TODO update?
+   - AMD: FirePro W5100, HD 7950, FirePro W9100, Radeon R7 M260, R9 290
+   - NVIDIA: GeForce GTX 660M, GeForce GTX 750Ti, GeForce GTX 780
+
+Caching options for building the kernels
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Building an OpenCL program can take a significant amount of
+time. NVIDIA implements a mechanism to cache the result of the
+build. As a consequence, only the first build of the OpenCL kernels
+will take longer, the following builds will be very fast. AMD drivers,
+on the other hand, implement no caching and running a program can be
+very slow. |Gromacs| implements its own caching in this case, which is
+enabled by default. To disable it, set ``GMX_OCL_NOGENCACHE``
+environment variable.
+
+If you plan to modify the OpenCL kernels, you should disable any caching:
+
+   * add ``GMX_OCL_NOGENCACHE`` environment variable and set it to 1
+   * for NVIDIA cards: add ``CUDA_CACHE_DISABLE`` environment variable and set it to 1
+
+Some other :ref:`OpenCL management <opencl-management>` environment
+variables may be of interest to developers.
+
+.. _opencl-known-limitations:
+
+Known limitations of the OpenCL support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- No Intel devices (CPUs, GPUs or Xeon Phi) are supported
+- The current implementation is not compatible with OpenCL devices that are
+  not using warp/wavefronts or for which the warp/wavefront size is not a
+  multiple of 32
+- Some Ewald tabulated kernels are known to produce incorrect results, so
+  (correct) analytical kernels are used instead.
+- Due to blocking behavior of clEnqueue functions in NVIDIA driver, there is
+  almost no performance gain when using NVIDIA GPUs. A bug report has already
+  been filled on about this issue. A possible workaround would be to have a
+  separate thread for issuing GPU commands. However this hasn't been implemented
+  yet.
