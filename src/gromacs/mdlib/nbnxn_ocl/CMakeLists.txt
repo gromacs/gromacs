@@ -32,15 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(GMX_GPU)
-    if (GMX_USE_OPENCL)
-        file(GLOB GPU_UTILS_SOURCES *ocl*.cpp)
-    else()
-        file(GLOB GPU_UTILS_SOURCES *.cu)
-    endif()
-else()
-    file(GLOB OCL_UTILS_SOURCES *ocl*.cpp)
-    file(GLOB GPU_UTILS_SOURCES *.cpp)
-    list(REMOVE_ITEM GPU_UTILS_SOURCES ${OCL_UTILS_SOURCES})
+if(GMX_GPU AND GMX_USE_OPENCL)
+    file(GLOB OPENCL_NB_SOURCES *.cpp)
+    set(MDLIB_SOURCES ${MDLIB_SOURCES} ${OPENCL_NB_SOURCES} PARENT_SCOPE)
+    file(GLOB MDLIB_OPENCL_KERNELS *.cl *.clh)
+    set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} PARENT_SCOPE)
 endif()
-set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${GPU_UTILS_SOURCES} PARENT_SCOPE)
