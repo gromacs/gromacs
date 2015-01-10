@@ -78,8 +78,19 @@
 
 #ifdef GMX_GPU
 const gmx_bool bGPUBinary = TRUE;
+#  ifdef GMX_USE_OPENCL
+/* Our current OpenCL implementation only supports using exactly one
+ * PP rank per GPU, so sharing is impossible */
+const gmx_bool bGpuSharingSupported = FALSE;
+const char    *gpu_implementation   = "OpenCL";
+#  else
+const gmx_bool bGpuSharingSupported = TRUE;
+const char    *gpu_implementation   = "CUDA";
+#  endif
 #else
-const gmx_bool bGPUBinary = FALSE;
+const gmx_bool bGPUBinary           = FALSE;
+const gmx_bool bGpuSharingSupported = FALSE;
+const char    *gpu_implementation   = "non-GPU";
 #endif
 
 static const char * invalid_gpuid_hint =
@@ -196,13 +207,23 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     }
 
     {
-        std::vector<int>   gpuIdsInUse;
+#ifdef GMX_USE_OPENCL
+        std::vector<char*> gpuNamesInUse;
+        for (int i = 0; i < ngpu_use; i++)
+        {
+            gpuNamesInUse.push_back(get_ocl_gpu_device_name(gpu_info, gpu_opt, i));
+        }
+        std::string gpuIdsString =
+            formatAndJoin(gpuNamesInUse, ",", gmx::StringFormatter("%s"));
+#else
+        std::vector<int> gpuIdsInUse;
         for (int i = 0; i < ngpu_use; i++)
         {
             gpuIdsInUse.push_back(get_cuda_gpu_device_id(gpu_info, gpu_opt, i));
         }
         std::string gpuIdsString =
             formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
+#endif
         int         numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
         bool        bPluralGpus  = numGpusInUse > 1;
 
@@ -508,7 +529,10 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
      * to 1 indicates that the respective GPU was selected to be used. */
     for (i = 0; i < gpu_opt->n_dev_use; i++)
     {
-        uniq_ids[get_cuda_gpu_device_id(gpu_info, gpu_opt, i)] = 1;
+        int device_id;
+
+        device_id           = bGpuSharingSupported ? get_cuda_gpu_device_id(gpu_info, gpu_opt, i) : i;
+        uniq_ids[device_id] = 1;
     }
     /* Count the devices used. */
     for (i = 0; i < ngpu; i++)
@@ -1027,6 +1051,27 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
     check_use_of_rdtscp_on_this_cpu(fplog, cr, hwinfo);
 }
 
+//! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
+static gmx_bool anyGpuIdIsRepeated(const gmx_gpu_opt_t *gpu_opt)
+{
+    /* Loop over IDs in the string */
+    for (int i = 0; i < gpu_opt->n_dev_use - 1; ++i)
+    {
+        /* Look for the ID in location i in the following part of the
+           string */
+        for (int j = i + 1; j < gpu_opt->n_dev_use; ++j)
+        {
+            if (gpu_opt->dev_use[i] == gpu_opt->dev_use[j])
+            {
+                /* Same ID found in locations i and j */
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
 {
     char *env;
@@ -1055,7 +1100,10 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
         parse_digits_from_plain_string(env,
                                        &gpu_opt->n_dev_use,
                                        &gpu_opt->dev_use);
-
+        if (!bGpuSharingSupported && anyGpuIdIsRepeated(gpu_opt))
+        {
+            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", gpu_implementation);
+        }
         if (gpu_opt->n_dev_use == 0)
         {
             gmx_fatal(FARGS, "Empty GPU ID string encountered.\n%s\n",
@@ -1158,7 +1206,7 @@ static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     {
         if (nrank % gpu_opt->n_dev_compatible == 0)
         {
-            nshare = nrank/gpu_opt->n_dev_compatible;
+            nshare = bGpuSharingSupported ? nrank/gpu_opt->n_dev_compatible : 1;
         }
         else
         {
