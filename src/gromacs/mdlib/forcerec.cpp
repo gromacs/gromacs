@@ -1799,8 +1799,8 @@ static void pick_nbnxn_resources(FILE                *fp,
                the MPI rank makes sense. */
             gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
-                      get_cuda_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
-                                             cr->rank_pp_intranode),
+                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
+                                        cr->rank_pp_intranode),
                       gpu_err_str);
         }
 
