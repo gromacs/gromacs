@@ -42,19 +42,11 @@
 #ifndef GMX_MDLIB_NBNXN_GPU_JIT_SUPPORT_H
 #define GMX_MDLIB_NBNXN_GPU_JIT_SUPPORT_H
 
-#include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
-#include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/mdlib/nbnxn_gpu_types.h"
+#include "gromacs/utility/basedefinitions.h"
 
-struct gmx_gpu_info_t;
-
-/*! \brief Handles any JIT compilation of nbnxn kernels for the GPU given by \p mygpu */
-GPU_FUNC_QUALIFIER void
-nbnxn_gpu_compile_kernels(int                       gmx_unused  mygpu,
-                          int                       gmx_unused  rank,
-                          const gmx_gpu_info_t      gmx_unused *gpu_info,
-                          const gmx_gpu_opt_t       gmx_unused *gpu_opt,
-                          const interaction_const_t gmx_unused *ic) GPU_FUNC_TERM
+/*! \brief Handles any JIT compilation of nbnxn kernels for the selected device */
+OPENCL_FUNC_QUALIFIER void
+nbnxn_gpu_compile_kernels(gmx_nbnxn_gpu_t gmx_unused *nb) OPENCL_FUNC_TERM
 
 #endif

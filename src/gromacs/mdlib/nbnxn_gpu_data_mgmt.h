@@ -65,15 +65,12 @@ void nbnxn_gpu_init(FILE gmx_unused                        *fplog,
                     gmx_nbnxn_gpu_t gmx_unused            **p_nb,
                     const struct gmx_gpu_info_t gmx_unused *gpu_info,
                     const gmx_gpu_opt_t gmx_unused         *gpu_opt,
+                    const interaction_const_t gmx_unused   *ic,
+                    nonbonded_verlet_group_t gmx_unused    *nbv_grp,
                     int gmx_unused                          my_gpu_index,
-                    /* true of both local and non-local are don on GPU */
+                    int gmx_unused                          rank,
+                    /* true if both local and non-local are done on GPU */
                     gmx_bool gmx_unused                     bLocalAndNonlocal) GPU_FUNC_TERM
-
-/** Initializes simulation constant data. */
-GPU_FUNC_QUALIFIER
-void nbnxn_gpu_init_const(gmx_nbnxn_gpu_t gmx_unused                       *nb,
-                          const interaction_const_t      gmx_unused        *ic,
-                          const struct nonbonded_verlet_group_t gmx_unused *nbv_group) GPU_FUNC_TERM
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
