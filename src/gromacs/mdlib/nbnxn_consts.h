@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,6 @@ extern "C" {
    parameters in the texture cache. */
 #define GPU_EWALD_COULOMB_FORCE_TABLE_SIZE 1536
 
-
 /* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
 #define STRIDE_XYZ   3
 #define STRIDE_XYZQ  4
@@ -97,22 +96,19 @@ extern "C" {
 #define X4_IND_A(a)  (STRIDE_P4*((a) >> 2) + ((a) & (PACK_X4 - 1)))
 #define X8_IND_A(a)  (STRIDE_P8*((a) >> 3) + ((a) & (PACK_X8 - 1)))
 
-#define CONSTANT_ADDRESS_SPACE static const
-
-
 /* Cluster-pair Interaction masks for 4xN and 2xNN kernels.
  * Bit i*CJ_SIZE + j tells if atom i and j interact.
  */
 /* All interaction mask is the same for all kernels */
-CONSTANT_ADDRESS_SPACE unsigned int NBNXN_INTERACTION_MASK_ALL       = 0xffffffffU;
+static const unsigned int NBNXN_INTERACTION_MASK_ALL       = 0xffffffffU;
 /* 4x4 kernel diagonal mask */
-CONSTANT_ADDRESS_SPACE unsigned int NBNXN_INTERACTION_MASK_DIAG      = 0x08ceU;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG      = 0x08ceU;
 /* 4x2 kernel diagonal masks */
-CONSTANT_ADDRESS_SPACE unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_0 = 0x0002U;
-CONSTANT_ADDRESS_SPACE unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_1 = 0x002fU;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_0 = 0x0002U;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_1 = 0x002fU;
 /* 4x8 kernel diagonal masks */
-CONSTANT_ADDRESS_SPACE unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
-CONSTANT_ADDRESS_SPACE unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
 
 
 #ifdef __cplusplus

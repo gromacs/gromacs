@@ -1,0 +1,146 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+#ifndef VECTYPE_OPS_CLH
+#define VECTYPE_OPS_CLH
+
+/* !Cannot inline!
+ * AMD OpenCL compiler will fail with exotic message
+ * "Error: Undeclared function index 1024" if make_float4
+ * is inlined (nbnxnx_ocl_kernel_nvidia.clh call in line 375).
+ */
+
+#define _VECTYPE_OPS_INLINE_
+
+#if defined(_VECTYPE_OPS_INLINE_)
+#define _INLINE_ inline
+#else
+#define _INLINE_
+#endif
+
+/**** float3 ****/
+
+
+_INLINE_ float norm_f3(float3 a)
+{
+    return sqrt(dot(a,a));
+}
+_INLINE_ float norm_ref_f3(float3 a)
+{
+    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+}
+_INLINE_ float norm2(float3 a)
+{
+    return dot(a,a);
+}
+_INLINE_ float norm2_ref(float3 a)
+{
+    return (a.x * a.x + a.y * a.y + a.z * a.z);
+}
+_INLINE_ float dist3_f3(float3 a, float3 b)
+{
+    return distance(b,a);
+}
+_INLINE_ float dist3_ref_f3(float3 a, float3 b)
+{
+    return norm_ref_f3(b - a);
+}
+
+_INLINE_ void atomicAdd_l_f(volatile __local float *addr, float val)
+{
+    union{
+        unsigned int u32;
+        float        f32;
+    } next, expected, current;
+	current.f32    = *addr;
+    do{
+        expected.f32 = current.f32;
+        next.f32     = expected.f32 + val;
+		current.u32  = atomic_cmpxchg( (volatile __local unsigned int *)addr, expected.u32, next.u32);
+    } while( current.u32 != expected.u32 );
+}
+_INLINE_ void atomicAdd_l_f3(__local float3 *addr, float3 val)
+{
+    atomicAdd_l_f( ((__local float*)(addr)), val.x);
+    atomicAdd_l_f( ((__local float*)(addr))+1, val.y);
+    atomicAdd_l_f( ((__local float*)(addr))+2, val.z);
+}
+_INLINE_ void atomicAdd_g_f(volatile __global float *addr, float val)
+{
+    union{
+        unsigned int u32;
+        float        f32;
+    } next, expected, current;
+	current.f32    = *addr;
+    do{
+	    expected.f32 = current.f32;
+        next.f32     = expected.f32 + val;
+		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+    } while( current.u32 != expected.u32 );
+}
+
+/* On the host float3, on the device float1 because f3 translates to f4 and messes up memory indexing */
+_INLINE_ void atomicAdd_g_f3(__global float *addr, const float3 val)
+{
+    atomicAdd_g_f(addr, val.x);
+    atomicAdd_g_f(addr + 1, val.y);
+    atomicAdd_g_f(addr + 2, val.z);
+}
+
+/****************************************************************/
+
+/**** float4 ****/
+
+
+_INLINE_ float norm_f4(float4 a)
+{
+    return sqrt(dot(a,a));
+}
+
+_INLINE_ float norm_ref_f4(float4 a)
+{
+    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
+}
+
+_INLINE_ float dist3_f4(float4 a, float4 b)
+{
+    return norm_f4(b - a);
+}
+
+_INLINE_ float dist3_ref_f4(float4 a, float4 b)
+{
+    return norm_ref_f4(b - a);
+}
+#endif /* VECTYPE_OPS_CLH */
