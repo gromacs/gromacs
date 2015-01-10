@@ -53,7 +53,8 @@ appropriate value instead of ``xxx`` :
 * ``-DCMAKE_C_COMPILER=xxx`` equal to the name of the C99 `Compiler`_ you wish to use (or the environment variable ``CC``)
 * ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
 * ``-DGMX_MPI=on`` to build using `MPI support`_
-* ``-DGMX_GPU=on`` to build using nvcc to run with an NVIDIA `native GPU acceleration`_
+* ``-DGMX_GPU=on`` to build using nvcc to run using NVIDIA `native GPU acceleration`_ or an OpenCL_ GPU
+* ``-DGMX_USE_OPENCL=on`` to build with OpenCL_ support enabled. ``GMX_GPU`` must also be set.
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which mdrun will run
 * ``-DGMX_BUILD_MDRUN_ONLY=on`` for `building only mdrun`_, e.g. for compute cluster back-end nodes
 * ``-DGMX_DOUBLE=on`` to run |Gromacs| in double precision (slower, and not normally useful)
@@ -163,6 +164,15 @@ code on the CPU. It is most reliable to use the same C++ compiler
 version for |Gromacs| code as used as the back-end compiler for nvcc,
 but it could be faster to mix compiler versions to suit particular
 contexts.
+
+To make it possible to use other accelerators, |Gromacs| also includes
+OpenCL_ support. The current version is recommended for use with
+GCN-based AMD GPUs. It does work with NVIDIA GPUs, but see the
+known limitations in the user guide. The minimum
+OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|.
+
+It is not possible to configure both CUDA and OpenCL support in the
+same version of |Gromacs|.
 
 .. _mpi-support:
 
@@ -413,7 +423,7 @@ For example, the following command line
 
     cmake .. -DGMX_GPU=ON -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=/home/marydoe/programs
 
-can be used to build with GPUs, MPI and install in a custom
+can be used to build with CUDA GPUs, MPI and install in a custom
 location. You can even save that in a shell script to make it even
 easier next time. You can also do this kind of thing with ``ccmake``,
 but you should avoid this, because the options set with ``-D`` will not
@@ -535,8 +545,10 @@ and its relatives.
 
 See also the page on `CMake environment variables`_.
 
-Native GPU acceleration
-^^^^^^^^^^^^^^^^^^^^^^^
+.. _Native GPU acceleration:
+
+Native CUDA GPU acceleration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 ::
@@ -563,6 +575,25 @@ The GPU acceleration has been tested on AMD64/x86-64 platforms with
 Linux, Mac OS X and Windows operating systems, but Linux is the
 best-tested and supported of these. Linux running on ARM v7 (32 bit)
 CPUs also works.
+
+OpenCL GPU acceleration
+^^^^^^^^^^^^^^^^^^^^^^^
+To build Gromacs with OpenCL support enabled, an OpenCL_ SDK
+(e.g. `from AMD <http://developer.amd.com/appsdk>`_) must be installed
+in a path found in ``CMAKE_PREFIX_PATH`` (or via the environment
+variables ``AMDAPPSDKROOT`` or ``CUDA_PATH``), and the following CMake
+flags must be set
+
+::
+
+    cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+
+Building |Gromacs| OpenCL support for a CUDA_ GPU works, but see the
+known limitations in the user guide. If you want to
+do so anyway, because NVIDIA OpenCL support is part of the CUDA
+package, a C++ compiler supported by your CUDA installation is
+required.
+
 
 Static linking
 ^^^^^^^^^^^^^^
