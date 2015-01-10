@@ -1,0 +1,556 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+#include "nbnxn_ocl_kernel_utils.clh"
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if defined EL_EWALD_ANA || defined EL_EWALD_TAB
+/* Note: convenience macro, needs to be undef-ed at the end of the file. */
+#define EL_EWALD_ANY
+#endif
+
+#if defined EL_EWALD_ANY || defined EL_RF || defined LJ_EWALD || (defined EL_CUTOFF && defined CALC_ENERGIES)
+/* Macro to control the calculation of exclusion forces in the kernel
+ * We do that with Ewald (elec/vdw) and RF. Cut-off only has exclusion
+ * energy terms.
+ *
+ * Note: convenience macro, needs to be undef-ed at the end of the file.
+ */
+#define EXCLUSION_FORCES
+#endif
+
+#if defined LJ_EWALD_COMB_GEOM || defined LJ_EWALD_COMB_LB
+/* Note: convenience macro, needs to be undef-ed at the end of the file. */
+#define LJ_EWALD
+#endif
+
+/*
+   Kernel launch parameters:
+    - #blocks   = #pair lists, blockId = pair list Id
+    - #threads  = CL_SIZE^2
+    - shmem     = CL_SIZE^2 * sizeof(float)
+
+    Each thread calculates an i force-component taking one pair of i-j atoms.
+ */
+//#if __CUDA_ARCH__ >= 350
+//__launch_bounds__(64, 16)
+//#endif
+/* NOTE:
+ NB_KERNEL_FUNC_NAME differs from the CUDA equivalent as it is not a variadic macro due to OpenCL not having a support for them, this version only takes exactly 2 arguments.
+ Thus if more strings need to be appended a new macro must be written or it must be directly appended here.
+*/
+__attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, 1)))
+#ifdef PRUNE_NBL
+    #ifdef CALC_ENERGIES
+        __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_opencl)
+    #else
+        __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_opencl)
+    #endif
+#else
+    #ifdef CALC_ENERGIES
+        __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_opencl)
+    #else
+        __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
+    #endif
+#endif
+(int ntypes,                                                               /* IN  */
+ cl_nbparam_params_t nbparam_params,                                       /* IN  */
+ const __global float4 *restrict xq,                                       /* IN  */
+ __global float *restrict f,                /* stores float3 values */     /* OUT */
+ __global float *restrict e_lj,                                            /* OUT */
+ __global float *restrict e_el,                                            /* OUT */
+__global float *restrict fshift,            /* stores float3 values */     /* OUT */
+ const __global int *restrict atom_types,                                  /* IN  */
+ const __global float *restrict shift_vec,  /* stores float3 values */     /* IN  */
+ __constant float* nbfp_climg2d,                                           /* IN  */
+ __constant float* nbfp_comb_climg2d,                                      /* IN  */
+ __constant float* coulomb_tab_climg2d,                                    /* IN  */
+ const __global nbnxn_sci_t* pl_sci,                                       /* IN  */
+#ifndef PRUNE_NBL
+    const
+#endif
+ __global nbnxn_cj4_t* pl_cj4,                                             /* OUT / IN */
+ const __global nbnxn_excl_t* excl,                                        /* IN  */
+ int bCalcFshift,                                                          /* IN  */
+ __local  float4   *xqib,                                                  /* Pointer to dyn alloc'ed shmem */
+ __global float *debug_buffer                                              /* Debug buffer, can be used with print_to_debug_buffer_f */
+ )
+{
+    /* convenience variables */
+    cl_nbparam_params_t *nbparam = &nbparam_params;
+
+    float               rcoulomb_sq = nbparam->rcoulomb_sq;
+
+#ifdef VDW_CUTOFF_CHECK
+    float               rvdw_sq     = nbparam_params.rvdw_sq;//nbparam->rvdw_sq;
+    float               vdw_in_range;
+#endif
+#ifdef LJ_EWALD
+    float               lje_coeff2, lje_coeff6_6;
+#endif
+#ifdef EL_RF
+    float two_k_rf              = nbparam->two_k_rf;
+#endif
+#ifdef EL_EWALD_TAB
+    float coulomb_tab_scale     = nbparam->coulomb_tab_scale;
+#endif
+#ifdef EL_EWALD_ANA
+    float beta2                 = nbparam->ewald_beta*nbparam->ewald_beta;
+    float beta3                 = nbparam->ewald_beta*nbparam->ewald_beta*nbparam->ewald_beta;
+#endif
+#ifdef PRUNE_NBL
+    float rlist_sq              = nbparam->rlist_sq;
+#endif
+
+#ifdef CALC_ENERGIES
+#ifdef EL_EWALD_ANY
+    float  beta        = nbparam->ewald_beta;
+    float  ewald_shift = nbparam->sh_ewald;
+#else
+    float  c_rf        = nbparam->c_rf;
+#endif /* EL_EWALD_ANY */
+#endif /* CALC_ENERGIES */
+
+    /* thread/block/warp id-s */
+    unsigned int tidxi  = get_local_id(0);
+    unsigned int tidxj  = get_local_id(1);
+    unsigned int tidx   = get_local_id(1) * get_local_size(0) + get_local_id(0);
+    unsigned int bidx   = get_group_id(0);
+    unsigned int widx   = tidx / WARP_SIZE; /* warp index */
+    int          sci, ci, cj, ci_offset,
+                 ai, aj,
+                 cij4_start, cij4_end,
+                 typei, typej,
+                 i, jm, j4, wexcl_idx;
+    float        qi, qj_f,
+                 r2, inv_r, inv_r2, inv_r6,
+                 c6, c12,
+                 int_bit,
+                 F_invr;
+
+#ifdef CALC_ENERGIES
+    float        E_lj, E_el;
+#endif
+#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
+    float        E_lj_p;
+#endif
+    unsigned int wexcl, imask, mask_ji;
+    float4       xqbuf;
+    float3       xi, xj, rv, f_ij, fcj_buf/*, fshift_buf*/;
+    float        fshift_buf;
+    float3       fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
+    nbnxn_sci_t  nb_sci;
+
+    /* shmem buffer for cj, for both warps separately */
+    __local int *cjs     = (__local int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
+    #define LOCAL_OFFSET cjs + 2 * NBNXN_GPU_JGROUP_SIZE
+
+#ifdef IATYPE_SHMEM //Should not be defined! CUDA > 300
+    /* shmem buffer for i atom-type pre-loading */
+    __local int *atib = (__local int *)(LOCAL_OFFSET);
+    #undef LOCAL_OFFSET
+    #define LOCAL_OFFSET atib + NCL_PER_SUPERCL * CL_SIZE
+#endif
+
+#ifndef REDUCE_SHUFFLE
+    /* shmem j force buffer */
+    __local float *f_buf = (__local float *)(LOCAL_OFFSET);
+    #undef LOCAL_OFFSET
+    #define LOCAL_OFFSET f_buf + CL_SIZE * CL_SIZE * 3
+#endif
+    /* Local buffer used to implement __any warp vote function from CUDA.
+       volatile is used to avoid compiler optimizations for AMD builds. */
+    volatile __local uint *warp_any = (__local uint*)(LOCAL_OFFSET);
+#undef LOCAL_OFFSET
+
+    nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
+    sci         = nb_sci.sci;           /* super-cluster */
+    cij4_start  = nb_sci.cj4_ind_start; /* first ...*/
+    cij4_end    = nb_sci.cj4_ind_end;   /* and last index of j clusters */
+
+    /* Pre-load i-atom x and q into shared memory */
+    ci = sci * NCL_PER_SUPERCL + tidxj;
+    ai = ci * CL_SIZE + tidxi;
+
+    xqib[tidxj * CL_SIZE + tidxi] = xq[ai] + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+
+#ifdef IATYPE_SHMEM //Should not be defined! CUDA > 300
+    /* Pre-load the i-atom types into shared memory */
+    atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
+#endif
+    /* Initialise warp vote. (8x8 block) 2 warps for nvidia */
+    if(tidx==0 || tidx==32)
+        warp_any[widx] = 0;
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    {
+        fci_buf[ci_offset] = (float3)(0.0f);
+    }
+
+#ifdef LJ_EWALD
+    /* TODO: we are trading registers with flops by keeping lje_coeff-s, try re-calculating it later */
+    lje_coeff2   = nbparam->ewaldcoeff_lj*nbparam->ewaldcoeff_lj;
+    lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2*ONE_SIXTH_F;
+#endif /* LJ_EWALD */
+
+
+#ifdef CALC_ENERGIES
+    E_lj = 0.0f;
+    E_el = 0.0f;
+
+#if defined EXCLUSION_FORCES /* Ewald or RF */
+    if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*NCL_PER_SUPERCL)
+    {
+        /* we have the diagonal: add the charge and LJ self interaction energy term */
+        for (i = 0; i < NCL_PER_SUPERCL; i++)
+        {
+#if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
+            qi    = xqib[i * CL_SIZE + tidxi].w;
+            E_el += qi*qi;
+#endif
+#if defined LJ_EWALD
+            E_lj += nbfp_climg2d[atom_types[(sci*NCL_PER_SUPERCL + i)*CL_SIZE + tidxi]*(ntypes + 1)*2];
+#endif /* LJ_EWALD */
+        }
+
+        /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
+#ifdef LJ_EWALD
+        E_lj /= CL_SIZE;
+        E_lj *= 0.5f*ONE_SIXTH_F*lje_coeff6_6;
+#endif  /* LJ_EWALD */
+
+#if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
+        E_el /= CL_SIZE;
+#if defined EL_RF || defined EL_CUTOFF
+        E_el *= -nbparam->epsfac*0.5f*c_rf;
+#else
+        E_el *= -nbparam->epsfac*beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
+#endif
+#endif                                                 /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
+    }
+#endif                                                 /* EXCLUSION_FORCES */
+
+#endif                                                 /* CALC_ENERGIES */
+
+    /* skip central shifts when summing shift forces */
+    if (nb_sci.shift == CENTRAL)
+    {
+        bCalcFshift = false;
+    }
+
+    fshift_buf = 0.0f;
+
+    /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
+    for (j4 = cij4_start; j4 < cij4_end; j4++)
+    {
+        wexcl_idx   = pl_cj4[j4].imei[widx].excl_ind;
+        imask       = pl_cj4[j4].imei[widx].imask;
+        wexcl       = excl[wexcl_idx].pair[(tidx) & (WARP_SIZE - 1)];
+
+#ifndef PRUNE_NBL
+        if (imask)
+#endif
+        {
+            /* Pre-load cj into shared memory on both warps separately */
+            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            {
+                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
+            }
+
+            /* Unrolling this loop
+               - with pruning leads to register spilling;
+               - on Kepler is much slower;
+               - doesn't work on CUDA <v4.1
+               Tested with nvcc 3.2 - 5.0.7 */
+#if !defined PRUNE_NBL //&& __CUDA_ARCH__ < 300 && CUDA_VERSION >= 4010
+//#pragma unroll 4
+#endif
+
+            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
+            {
+                if (imask & (supercl_interaction_mask << (jm * NCL_PER_SUPERCL)))
+                {
+                    mask_ji = (1U << (jm * NCL_PER_SUPERCL));
+
+                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
+                    aj      = cj * CL_SIZE + tidxj;
+
+                    /* load j atom data */
+                    xqbuf   = xq[aj];
+                    xj      = (float3)(xqbuf.xyz);
+                    qj_f    = nbparam->epsfac * xqbuf.w;
+                    typej   = atom_types[aj];
+
+                    fcj_buf = (float3)(0.0f);
+
+                    /* The PME and RF kernels don't unroll with CUDA <v4.1. */
+#if !defined PRUNE_NBL //&& !(CUDA_VERSION < 4010 && defined EXCLUSION_FORCES)
+//#pragma unroll 8
+#endif
+                    for (i = 0; i < NCL_PER_SUPERCL; i++)
+                    {
+                        if (imask & mask_ji)
+                        {
+                            ci_offset   = i;                     /* i force buffer offset */
+
+                            ci      = sci * NCL_PER_SUPERCL + i; /* i cluster index */
+                            ai      = ci * CL_SIZE + tidxi;      /* i atom index */
+
+                            /* all threads load an atom from i cluster ci into shmem! */
+                            xqbuf   = xqib[i * CL_SIZE + tidxi];
+                            xi      = (float3)(xqbuf.xyz);
+
+                            /* distance between i and j atoms */
+                            rv      = xi - xj;
+                            r2      = norm2(rv);
+
+#ifdef PRUNE_NBL
+                            /* vote.. should code shmem serialisation, wonder what the hit will be */
+                            if (r2 < rlist_sq)
+                                warp_any[widx]=1;
+
+                            /* If _none_ of the atoms pairs are in cutoff range,
+                               the bit corresponding to the current
+                               cluster-pair in imask gets set to 0. */
+                            if (!warp_any[widx])
+                                imask &= ~mask_ji;
+
+                            warp_any[widx]=0;
+
+#endif
+
+                            int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
+
+                            /* cutoff & exclusion check */
+#ifdef EXCLUSION_FORCES
+                            if (r2 < rcoulomb_sq *
+                                (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
+#else
+                            if (r2 < rcoulomb_sq * int_bit)
+#endif
+                            {
+                                /* load the rest of the i-atom parameters */
+                                qi      = xqbuf.w;
+#ifdef IATYPE_SHMEM //Should not be defined! CUDA > 300
+                                typei   = atib[i * CL_SIZE + tidxi];
+#else
+                                typei   = atom_types[ai];
+#endif
+                                /* LJ 6*C6 and 12*C12 */
+                                c6      = nbfp_climg2d[2 * (ntypes * typei + typej)];
+                                c12     = nbfp_climg2d[2 * (ntypes * typei + typej)+1];
+
+                                /* avoid NaN for excluded pairs at r=0 */
+                                r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
+
+                                inv_r   = rsqrt(r2);
+                                inv_r2  = inv_r * inv_r;
+                                inv_r6  = inv_r2 * inv_r2 * inv_r2;
+#if defined EXCLUSION_FORCES
+                                /* We could mask inv_r2, but with Ewald
+                                 * masking both inv_r6 and F_invr is faster */
+                                inv_r6  *= int_bit;
+#endif                          /* EXCLUSION_FORCES */
+
+                                F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
+#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
+                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 + nbparam->repulsion_shift.cpot)*ONE_TWELVETH_F -
+                                                     c6 * (inv_r6 + nbparam->dispersion_shift.cpot)*ONE_SIXTH_F);
+
+#endif
+
+
+#ifdef LJ_FORCE_SWITCH
+#ifdef CALC_ENERGIES
+                                calculate_force_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#else
+                                calculate_force_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr);
+#endif /* CALC_ENERGIES */
+#endif /* LJ_FORCE_SWITCH */
+
+
+#ifdef LJ_EWALD
+#ifdef LJ_EWALD_COMB_GEOM
+#ifdef CALC_ENERGIES
+                                calculate_lj_ewald_comb_geom_F_E(nbfp_comb_climg2d, nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, int_bit, &F_invr, &E_lj_p);
+#else
+                                calculate_lj_ewald_comb_geom_F(nbfp_comb_climg2d, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, &F_invr);
+#endif                          /* CALC_ENERGIES */
+#elif defined LJ_EWALD_COMB_LB
+                                calculate_lj_ewald_comb_LB_F_E(nbfp_comb_climg2d, nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6,
+#ifdef CALC_ENERGIES
+                                                               int_bit, true, &F_invr, &E_lj_p
+#else
+                                                               0, false, &F_invr, 0
+#endif /* CALC_ENERGIES */
+                                                               );
+#endif /* LJ_EWALD_COMB_GEOM */
+#endif /* LJ_EWALD */
+
+#ifdef VDW_CUTOFF_CHECK
+                                /* Separate VDW cut-off check to enable twin-range cut-offs
+                                 * (rvdw < rcoulomb <= rlist)
+                                 */
+                                vdw_in_range  = (r2 < rvdw_sq) ? 1.0f : 0.0f;
+                                F_invr       *= vdw_in_range;
+#ifdef CALC_ENERGIES
+                                E_lj_p       *= vdw_in_range;
+#endif
+#endif                          /* VDW_CUTOFF_CHECK */
+
+#ifdef LJ_POT_SWITCH
+#ifdef CALC_ENERGIES
+                                calculate_potential_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#else
+                                calculate_potential_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#endif /* CALC_ENERGIES */
+#endif /* LJ_POT_SWITCH */
+
+#ifdef CALC_ENERGIES
+                                E_lj    += E_lj_p;
+
+#endif
+
+
+#ifdef EL_CUTOFF
+#ifdef EXCLUSION_FORCES
+                                F_invr  += qi * qj_f * int_bit * inv_r2 * inv_r;
+#else
+                                F_invr  += qi * qj_f * inv_r2 * inv_r;
+#endif
+#endif
+#ifdef EL_RF
+                                F_invr  += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
+#endif
+#if defined EL_EWALD_ANA
+                                F_invr  += qi * qj_f * (int_bit*inv_r2*inv_r + pmecorrF(beta2*r2)*beta3);
+#elif defined EL_EWALD_TAB
+                                F_invr  += qi * qj_f * (int_bit*inv_r2 -
+#ifdef USE_TEXOBJ
+                                                        interpolate_coulomb_force_r(nbparam->coulomb_tab_texobj, r2 * inv_r, coulomb_tab_scale)
+#else
+                                                        interpolate_coulomb_force_r(coulomb_tab_climg2d, r2 * inv_r, coulomb_tab_scale)
+#endif /* USE_TEXOBJ */
+                                                        ) * inv_r;
+#endif /* EL_EWALD_ANA/TAB */
+
+#ifdef CALC_ENERGIES
+#ifdef EL_CUTOFF
+                                E_el    += qi * qj_f * (int_bit*inv_r - c_rf);
+#endif
+#ifdef EL_RF
+                                E_el    += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
+#endif
+#ifdef EL_EWALD_ANY
+                                /* 1.0f - erff is faster than erfcf */
+                                E_el    += qi * qj_f * (inv_r * (int_bit - erf(r2 * inv_r * beta)) - int_bit * ewald_shift);
+#endif                          /* EL_EWALD_ANY */
+#endif
+                                f_ij    = rv * F_invr;
+
+                                /* accumulate j forces in registers */
+                                fcj_buf -= f_ij;
+
+                                /* accumulate i forces in registers */
+                                fci_buf[ci_offset] += f_ij;
+                            }
+                        }
+
+                        /* shift the mask bit by 1 */
+                        mask_ji += mask_ji;
+                    }
+
+                    /* reduce j forces */
+
+                    /* store j forces in shmem */
+                    f_buf[                  tidx] = fcj_buf.x;
+                    f_buf[    FBUF_STRIDE + tidx] = fcj_buf.y;
+                    f_buf[2 * FBUF_STRIDE + tidx] = fcj_buf.z;
+
+                    reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
+                }
+            }
+#ifdef PRUNE_NBL
+            /* Update the imask with the new one which does not contain the
+               out of range clusters anymore. */
+
+            pl_cj4[j4].imei[widx].imask = imask;
+#endif
+        }
+    }
+
+    /* reduce i forces */
+    for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    {
+        ai  = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
+
+        f_buf[                  tidx] = fci_buf[ci_offset].x;
+        f_buf[    FBUF_STRIDE + tidx] = fci_buf[ci_offset].y;
+        f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        reduce_force_i(f_buf, f,
+                       &fshift_buf, bCalcFshift,
+                       tidxi, tidxj, ai);
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+
+    /* add up local shift forces into global mem */    
+	//if (bCalcFshift && tidxj == 0)
+    //	atomicAdd_g_f3(&(fshift[3 * nb_sci.shift]),fshift_buf);
+    if (bCalcFshift)
+    {      
+        /* Only threads with tidxj < 3 will update fshift.
+           The threads performing the update must be the same with the threads
+           which stored the reduction result in reduce_force_i function
+        */
+        if (tidxj < 3)
+            atomicAdd_g_f(&(fshift[3 * nb_sci.shift + tidxj]), fshift_buf);
+    }
+
+#ifdef CALC_ENERGIES
+    /* flush the energies to shmem and reduce them */
+    f_buf[              tidx] = E_lj;
+    f_buf[FBUF_STRIDE + tidx] = E_el;
+    reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
+
+#endif
+}
+
+#undef EL_EWALD_ANY
+#undef EXCLUSION_FORCES
+#undef LJ_EWALD

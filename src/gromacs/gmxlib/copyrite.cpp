@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -188,7 +188,9 @@ static void printCopyright(FILE *fp)
         "Alfons Sijbers",
         "Peter Tieleman",
         "Christian Wennberg",
-        "Maarten Wolf"
+        "Maarten Wolf",
+        "Dimitrios Karkoulis",
+        "StreamComputing (Vincent Hindriksen, Anca Hamuraru, Teemu Virolainen)"
     };
     static const char * const CopyrightText[] = {
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
@@ -676,6 +678,11 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "GPU support:        disabled\n");
 #endif
+#if defined(GMX_GPU) && defined(GMX_USE_OPENCL)
+    fprintf(fp, "OpenCL support:     enabled\n");
+#else
+    fprintf(fp, "OpenCL support:     disabled\n");
+#endif
     /* A preprocessor trick to avoid duplicating logic from vec.h */
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
@@ -734,8 +741,14 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Boost version:      %d.%d.%d%s\n", BOOST_VERSION / 100000,
             BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
             bExternalBoost ? " (external)" : " (internal)");
-#ifdef GMX_GPU
+#if defined(GMX_GPU)
+#ifdef GMX_USE_OPENCL
+    fprintf(fp, "OpenCL include dir: %s\n", OPENCL_INCLUDE_DIR);
+    fprintf(fp, "OpenCL library:     %s\n", OPENCL_LIBRARY);
+    fprintf(fp, "OpenCL version:     %s\n", OPENCL_VERSION_STRING);
+#else
     gmx_print_version_info_cuda_gpu(fp);
+#endif
 #endif
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,9 +54,25 @@
 #define GPU_FUNC_TERM REAL_FUNC_TERM
 #define GPU_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
+#  if defined GMX_USE_OPENCL
+
+#define CUDA_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define CUDA_FUNC_TERM NULL_FUNC_TERM
+#define CUDA_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+#define OPENCL_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define OPENCL_FUNC_TERM REAL_FUNC_TERM
+#define OPENCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+
+#  else
+
 #define CUDA_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
 #define CUDA_FUNC_TERM REAL_FUNC_TERM
 #define CUDA_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+#define OPENCL_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define OPENCL_FUNC_TERM NULL_FUNC_TERM
+#define OPENCL_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+
+#  endif
 
 #else /* No accelerator support */
 
@@ -66,6 +82,9 @@
 #define CUDA_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
 #define CUDA_FUNC_TERM NULL_FUNC_TERM
 #define CUDA_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+#define OPENCL_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define OPENCL_FUNC_TERM NULL_FUNC_TERM
+#define OPENCL_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
 
 #endif
 
