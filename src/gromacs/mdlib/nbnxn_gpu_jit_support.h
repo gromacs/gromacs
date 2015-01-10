@@ -47,6 +47,16 @@
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/simple.h"
 
+/*! \brief Returns the kinds of electrostatics and Vdw OpenCL
+ *  kernels that will be used.
+ *
+ * Respectively, these values are from enum eelOcl and enum
+ * evdwOcl. */
+GPU_FUNC_QUALIFIER void
+    nbnxn_ocl_map_interaction_types_to_gpu_kernel_flavors(const interaction_const_t gmx_unused *ic,
+                                                          int                       gmx_unused *gpu_eeltype,
+                                                          int                       gmx_unused *gpu_vdwtype) GPU_FUNC_TERM
+
 struct gmx_gpu_info_t;
 
 /*! \brief Handles any JIT compilation of nbnxn kernels for the GPU given by \p mygpu */

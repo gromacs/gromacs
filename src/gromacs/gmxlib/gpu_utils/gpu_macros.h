@@ -41,31 +41,87 @@
    that non-GPU Gromacs can run with no overhead without conditionality
    everywhere a GPU function is called. */
 #define REAL_FUNC_QUALIFIER
+#define REAL_FUNC_ARGUMENT(arg) arg
 #define REAL_FUNC_TERM ;
 #define REAL_FUNC_TERM_WITH_RETURN(arg) ;
 
 #define NULL_FUNC_QUALIFIER static
+#define NULL_FUNC_ARGUMENT(arg) /*arg*/
 #define NULL_FUNC_TERM {}
 #define NULL_FUNC_TERM_WITH_RETURN(arg) { return (arg); }
 
-#if defined GMX_GPU
+#ifdef DOXYGEN
 
+/* Doxygen build appreciates always having argument names, and doesn't
+ * care about duplicate function definitions. */
 #define GPU_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define GPU_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
+#define GPU_FUNC_TERM REAL_FUNC_TERM
+#define GPU_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+#define CUDA_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define CUDA_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
+#define CUDA_FUNC_TERM REAL_FUNC_TERM
+#define CUDA_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+#define OPENCL_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define OPENCL_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
+#define OPENCL_FUNC_TERM REAL_FUNC_TERM
+#define OPENCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+
+#elif defined GMX_GPU
+
+/* GPU support is enabled, so these functions will have real code
+ * defined somewhere */
+#define GPU_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define GPU_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
 #define GPU_FUNC_TERM REAL_FUNC_TERM
 #define GPU_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
+#  if defined GMX_USE_OPENCL
+
+/* OpenCL support is enabled, so CUDA-specific functions need empty
+ * implementations, while OpenCL-specific functions will have real
+ * code defined somewhere. */
+#define CUDA_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define CUDA_FUNC_ARGUMENT NULL_FUNC_ARGUMENT
+#define CUDA_FUNC_TERM NULL_FUNC_TERM
+#define CUDA_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+#define OPENCL_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define OPENCL_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
+#define OPENCL_FUNC_TERM REAL_FUNC_TERM
+#define OPENCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+
+#  else /* !(defined GMX_USE_OPENCL) */
+
+/* CUDA support is enabled, so OpenCL-specific functions need empty
+ * implementations, while CUDA-specific functions will have real
+ * code defined somewhere. */
 #define CUDA_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#define CUDA_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
 #define CUDA_FUNC_TERM REAL_FUNC_TERM
 #define CUDA_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+#define OPENCL_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define OPENCL_FUNC_ARGUMENT NULL_FUNC_ARGUMENT
+#define OPENCL_FUNC_TERM NULL_FUNC_TERM
+#define OPENCL_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
 
-#else /* No accelerator support */
+#  endif
 
+#else /* !(defined DOXYGEN) && !(defined GMX_GPU) */
+
+/* No GPU support is configured, so none of these functions will have
+ * real definitions. */
 #define GPU_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define GPU_FUNC_ARGUMENT NULL_FUNC_ARGUMENT
 #define GPU_FUNC_TERM NULL_FUNC_TERM
 #define GPU_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
 #define CUDA_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define CUDA_FUNC_ARGUMENT NULL_FUNC_ARGUMENT
 #define CUDA_FUNC_TERM NULL_FUNC_TERM
 #define CUDA_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+#define OPENCL_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#define OPENCL_FUNC_ARGUMENT NULL_FUNC_ARGUMENT
+#define OPENCL_FUNC_TERM NULL_FUNC_TERM
+#define OPENCL_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
 
 #endif
 
