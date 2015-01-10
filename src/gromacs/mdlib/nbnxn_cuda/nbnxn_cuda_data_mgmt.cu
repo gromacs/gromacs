@@ -531,12 +531,27 @@ static void init_timings(gmx_wallclock_gpu_t *t)
     }
 }
 
-void nbnxn_gpu_init(FILE                 *fplog,
-                    gmx_nbnxn_cuda_t    **p_nb,
-                    const gmx_gpu_info_t *gpu_info,
-                    const gmx_gpu_opt_t  *gpu_opt,
-                    int                   my_gpu_index,
-                    gmx_bool              bLocalAndNonlocal)
+/*! Initializes simulation constant data. */
+static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
+                                  const interaction_const_t      *ic,
+                                  const nonbonded_verlet_group_t *nbv_group)
+{
+    init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype);
+    init_nbparam(nb->nbparam, ic, nbv_group[0].nbat, nb->dev_info);
+
+    /* clear energy and shift force outputs */
+    nbnxn_cuda_clear_e_fshift(nb);
+}
+
+void nbnxn_gpu_init(FILE                      *fplog,
+                    gmx_nbnxn_cuda_t         **p_nb,
+                    const gmx_gpu_info_t      *gpu_info,
+                    const gmx_gpu_opt_t       *gpu_opt,
+                    const interaction_const_t *ic,
+                    nonbonded_verlet_group_t  *nbv_grp,
+                    int                        my_gpu_index,
+                    int                        /*rank*/,
+                    gmx_bool                   bLocalAndNonlocal)
 {
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
@@ -573,7 +588,7 @@ void nbnxn_gpu_init(FILE                 *fplog,
     init_plist(nb->plist[eintLocal]);
 
     /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = &gpu_info->gpu_dev[get_cuda_gpu_device_id(gpu_info, gpu_opt, my_gpu_index)];
+    nb->dev_info = &gpu_info->gpu_dev[get_gpu_device_id(gpu_info, gpu_opt, my_gpu_index)];
 
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);
@@ -734,23 +749,14 @@ void nbnxn_gpu_init(FILE                 *fplog,
     /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig(nb->dev_info);
 
+    nbnxn_cuda_init_const(nb, ic, nbv_grp);
+
     *p_nb = nb;
 
     if (debug)
     {
         fprintf(debug, "Initialized CUDA data structures.\n");
     }
-}
-
-void nbnxn_gpu_init_const(gmx_nbnxn_cuda_t               *nb,
-                          const interaction_const_t      *ic,
-                          const nonbonded_verlet_group_t *nbv_group)
-{
-    init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype);
-    init_nbparam(nb->nbparam, ic, nbv_group[0].nbat, nb->dev_info);
-
-    /* clear energy and shift force outputs */
-    nbnxn_cuda_clear_e_fshift(nb);
 }
 
 void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,

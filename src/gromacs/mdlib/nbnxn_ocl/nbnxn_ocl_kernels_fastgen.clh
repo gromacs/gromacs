@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,25 +32,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- *  \brief Define CUDA implementation of nbnxn_gpu_git_support.h
+
+/*! \internal \file
+ *  This header has the sole purpose of generating kernels for the combinations of
+ *  supported electrostatics types (cut-off, reaction-field, analytical and
+ *  tabulated Ewald) and VDW types (cut-off + V shift, LJ-Ewald with
+ *  geometric or Lorentz-Berthelot combination rule, F switch, V switch).
  *
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  The Ewald kernels have twin-range cut-off versions with rcoul != rvdw which
+ *  require an extra distance check to enable  PP-PME load balancing
+ *  (otherwise, by default rcoul == rvdw).
+ *
+ *  NOTE: No include fence as it is meant to be included multiple times.
  */
-#include "gmxpre.h"
 
-#include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/mdlib/nbnxn_gpu_jit_support.h"
+#if defined(_WARPLESS_SOURCE_)
+#define CL_SOURCE_FILE "nbnxn_ocl_kernel_nowarp.clh"
+#elif defined(_NVIDIA_SOURCE_)
+#define CL_SOURCE_FILE "nbnxn_ocl_kernel_nvidia.clh"
+#elif defined(_AMD_SOURCE_)
+#define CL_SOURCE_FILE "nbnxn_ocl_kernel_amd.clh"
+#else
+#pragma error "Unknown kernel vendor spec"
+#endif
 
-void
-nbnxn_gpu_compile_kernels(int                        /*mygpu*/,
-                          int                        /*rank*/,
-                          const gmx_gpu_info_t      */*gpu_info*/,
-                          const gmx_gpu_opt_t       */*gpu_opt*/,
-                          const interaction_const_t */*ic*/)
-{
-    /* CUDA support does not use JIT (yet).
-     *
-     * It would be nice if this function inlined away to nothing, but
-     * it's only used during setup. */
-}
+
+#include "nbnxn_ocl_kernel_utils.clh"
+
+#define NB_INDIRECT_1(x,eel,vdw,y) x ## eel ## vdw ## y
+#define NB_INDIRECT_2(x,eel,vdw,y) NB_INDIRECT_1(x,eel,vdw,y)
+#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2(x,EELNAME,VDWNAME,y)
+
+#include CL_SOURCE_FILE
+
+#undef NB_KERNEL_FUNC_NAME
+#undef CL_SOURCE_FILE

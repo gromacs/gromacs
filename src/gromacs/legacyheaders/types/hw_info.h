@@ -61,7 +61,7 @@ typedef enum
 /* Names of the GPU detection/check results */
 extern const char * const gpu_detect_res_str[egpuNR];
 
-/* GPU device information -- for now with only CUDA devices
+/* GPU device information -- includes either CUDA or OpenCL devices.
  * The gmx_hardware_detect module initializes it. */
 struct gmx_gpu_info_t
 {
@@ -115,7 +115,7 @@ enum {
     threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
 };
 
-/* GPU device selection information -- for now with only CUDA devices */
+/* GPU device selection information -- includes either CUDA or OpenCL devices */
 typedef struct
 {
     char     *gpu_id;           /* GPU id's to use, each specified as chars */

@@ -712,9 +712,9 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int ind
     }
 }
 
-int get_cuda_gpu_device_id(const gmx_gpu_info_t *gpu_info,
-                           const gmx_gpu_opt_t  *gpu_opt,
-                           int                   idx)
+int get_gpu_device_id(const gmx_gpu_info_t *gpu_info,
+                      const gmx_gpu_opt_t  *gpu_opt,
+                      int                   idx)
 {
     assert(gpu_info);
     assert(gpu_opt);

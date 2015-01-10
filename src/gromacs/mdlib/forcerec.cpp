@@ -1800,8 +1800,8 @@ static void pick_nbnxn_resources(FILE                *fp,
                the MPI rank makes sense. */
             gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
-                      get_cuda_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
-                                             cr->rank_pp_intranode),
+                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
+                                        cr->rank_pp_intranode),
                       gpu_err_str);
         }
 
@@ -2076,40 +2076,6 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
-/*! \brief Manage initialization within the NBNXN module of
- * run-time constants.
- */
-static void
-initialize_gpu_constants(const t_commrec gmx_unused      *cr,
-                         interaction_const_t             *interaction_const,
-                         const struct nonbonded_verlet_t *nbv)
-{
-    if (nbv != NULL && nbv->bUseGPU)
-    {
-        nbnxn_gpu_init_const(nbv->gpu_nbv, interaction_const, nbv->grp);
-
-        /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
-         * also sharing texture references. To keep the code simple, we don't
-         * treat texture references as shared resources, but this means that
-         * the coulomb_tab and nbfp texture refs will get updated by multiple threads.
-         * Hence, to ensure that the non-bonded kernels don't start before all
-         * texture binding operations are finished, we need to wait for all ranks
-         * to arrive here before continuing.
-         *
-         * Note that we could omit this barrier if GPUs are not shared (or
-         * texture objects are used), but as this is initialization code, there
-         * is no point in complicating things.
-         */
-#ifdef GMX_THREAD_MPI
-        if (PAR(cr))
-        {
-            gmx_barrier(cr);
-        }
-#endif  /* GMX_THREAD_MPI */
-    }
-
-}
-
 static void init_nb_verlet(FILE                *fp,
                            nonbonded_verlet_t **nb_verlet,
                            gmx_bool             bFEP_NonBonded,
@@ -2134,7 +2100,8 @@ static void init_nb_verlet(FILE                *fp,
                          &bEmulateGPU,
                          fr->gpu_opt);
 
-    nbv->nbs = NULL;
+    nbv->nbs             = NULL;
+    nbv->min_ci_balanced = 0;
 
     nbv->ngrp = (DOMAINDECOMP(cr) ? 2 : 1);
     for (i = 0; i < nbv->ngrp; i++)
@@ -2172,50 +2139,6 @@ static void init_nb_verlet(FILE                *fp,
             }
         }
     }
-
-    if (nbv->bUseGPU)
-    {
-        nbnxn_gpu_compile_kernels(cr->rank_pp_intranode, cr->nodeid, &fr->hwinfo->gpu_info, fr->gpu_opt, fr->ic);
-
-        /* init the NxN GPU data; the last argument tells whether we'll have
-         * both local and non-local NB calculation on GPU */
-        nbnxn_gpu_init(fp, &nbv->gpu_nbv,
-                       &fr->hwinfo->gpu_info, fr->gpu_opt,
-                       cr->rank_pp_intranode,
-                       (nbv->ngrp > 1) && !bHybridGPURun);
-
-        if ((env = getenv("GMX_NB_MIN_CI")) != NULL)
-        {
-            char *end;
-
-            nbv->min_ci_balanced = strtol(env, &end, 10);
-            if (!end || (*end != 0) || nbv->min_ci_balanced <= 0)
-            {
-                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, positive integer required", env);
-            }
-
-            if (debug)
-            {
-                fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n",
-                        nbv->min_ci_balanced);
-            }
-        }
-        else
-        {
-            nbv->min_ci_balanced = nbnxn_gpu_min_ci_balanced(nbv->gpu_nbv);
-            if (debug)
-            {
-                fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
-                        nbv->min_ci_balanced);
-            }
-        }
-    }
-    else
-    {
-        nbv->min_ci_balanced = 0;
-    }
-
-    *nb_verlet = nbv;
 
     nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
@@ -2281,6 +2204,68 @@ static void init_nb_verlet(FILE                *fp,
             nbv->grp[i].nbat = nbv->grp[0].nbat;
         }
     }
+
+    if (nbv->bUseGPU)
+    {
+        /* init the NxN GPU data; the last argument tells whether we'll have
+         * both local and non-local NB calculation on GPU */
+        nbnxn_gpu_init(fp, &nbv->gpu_nbv,
+                       &fr->hwinfo->gpu_info,
+                       fr->gpu_opt,
+                       fr->ic,
+                       nbv->grp,
+                       cr->rank_pp_intranode,
+                       cr->nodeid,
+                       (nbv->ngrp > 1) && !bHybridGPURun);
+
+        /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
+         * also sharing texture references. To keep the code simple, we don't
+         * treat texture references as shared resources, but this means that
+         * the coulomb_tab and nbfp texture refs will get updated by multiple threads.
+         * Hence, to ensure that the non-bonded kernels don't start before all
+         * texture binding operations are finished, we need to wait for all ranks
+         * to arrive here before continuing.
+         *
+         * Note that we could omit this barrier if GPUs are not shared (or
+         * texture objects are used), but as this is initialization code, there
+         * is no point in complicating things.
+         */
+#ifdef GMX_THREAD_MPI
+        if (PAR(cr))
+        {
+            gmx_barrier(cr);
+        }
+#endif  /* GMX_THREAD_MPI */
+
+        if ((env = getenv("GMX_NB_MIN_CI")) != NULL)
+        {
+            char *end;
+
+            nbv->min_ci_balanced = strtol(env, &end, 10);
+            if (!end || (*end != 0) || nbv->min_ci_balanced <= 0)
+            {
+                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, positive integer required", env);
+            }
+
+            if (debug)
+            {
+                fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n",
+                        nbv->min_ci_balanced);
+            }
+        }
+        else
+        {
+            nbv->min_ci_balanced = nbnxn_gpu_min_ci_balanced(nbv->gpu_nbv);
+            if (debug)
+            {
+                fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
+                        nbv->min_ci_balanced);
+            }
+        }
+
+    }
+
+    *nb_verlet = nbv;
 }
 
 gmx_bool usingGpu(nonbonded_verlet_t *nbv)
@@ -3232,6 +3217,7 @@ void init_forcerec(FILE              *fp,
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, fr);
+    init_interaction_const_tables(fp, fr->ic, rtab);
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
@@ -3242,10 +3228,6 @@ void init_forcerec(FILE              *fp,
 
         init_nb_verlet(fp, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
     }
-
-    init_interaction_const_tables(fp, fr->ic, rtab);
-
-    initialize_gpu_constants(cr, fr->ic, fr->nbv);
 
     if (ir->eDispCorr != edispcNO)
     {
