@@ -44,8 +44,17 @@ extern "C" {
 
 #ifdef GMX_GPU
 
+#  if defined GMX_USE_OPENCL
+
+struct gmx_nbnxn_ocl_t;
+typedef struct gmx_nbnxn_ocl_t gmx_nbnxn_gpu_t;
+
+#  else
+
 struct gmx_nbnxn_cuda_t;
 typedef struct gmx_nbnxn_cuda_t gmx_nbnxn_gpu_t;
+
+#  endif
 
 #else
 
