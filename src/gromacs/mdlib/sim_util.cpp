@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1343,6 +1343,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
+#if defined(GMX_GPU) && !defined(GMX_USE_OPENCL)
             float       cycles_tmp, cycles_wait_est;
             const float cuda_api_overhead_margin = 50000.0f; /* cycles */
 
@@ -1382,8 +1383,18 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             cycles_force    += cycles_wait_est;
             cycles_wait_gpu += cycles_wait_est;
 
-            /* now clear the GPU outputs while we finish the step on the CPU */
+#elif defined(GMX_GPU) && defined(GMX_USE_OPENCL)
 
+            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
+            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                                   nbv->grp[eintLocal].nbat,
+                                   flags, eatLocal,
+                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                   fr->fshift);
+            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+#endif
+
+            /* now clear the GPU outputs while we finish the step on the CPU */
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -205,6 +205,16 @@ class CommandLineProgramContext : public ProgramContextInterface
          * an error in finding the library data files.
          */
         virtual const char *defaultLibraryDataPath() const;
+        /*! \brief
+         * Returns the default path for \Gromacs JIT files.
+         *
+         * \throws std::bad_alloc if out of memory.
+         * \throws tMPI::system_error on thread synchronization errors.
+         *
+         * Returns NULL during configuration time if there is
+         * an error in finding the JIT data files.
+         */
+        virtual const char *defaultJitDataPath() const;
         /*! \brief
          * Returns the full command line used to invoke the binary.
          *
