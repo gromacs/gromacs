@@ -49,6 +49,7 @@
 #include <vector>
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/directoryenumerator.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
@@ -153,7 +154,7 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
         const char *const envName   = (impl_.get() ? impl_->envName_ : NULL);
         const bool        bEnvIsSet = (impl_.get() ? impl_->bEnvIsSet_ : false);
         std::string       message(
-                formatString("Library file %s not found", options.filename_));
+                formatString("Library file '%s' not found", options.filename_));
         if (options.bCurrentDir_)
         {
             message.append(" in current dir nor");
@@ -193,6 +194,61 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
         GMX_THROW(FileIOError(message));
     }
     return std::string();
+}
+
+std::vector<DataFileInfo>
+DataFileFinder::enumerateFiles(const DataFileOptions &options) const
+{
+    // TODO: Consider if not being able to list one of the directories should
+    // really be a fatal error. Or alternatively, check somewhere else that
+    // paths in GMXLIB are valid.
+    std::vector<DataFileInfo>                result;
+    std::vector<std::string>                 files;
+    std::vector<std::string>::const_iterator i;
+    if (options.bCurrentDir_)
+    {
+        DirectoryEnumerator::enumerateFilesWithExtension(
+                ".", options.filename_, false, &files);
+        for (i = files.begin(); i != files.end(); ++i)
+        {
+            result.push_back(DataFileInfo(".", *i, false));
+        }
+    }
+    if (impl_.get())
+    {
+        std::vector<std::string>::const_iterator j;
+        for (j = impl_->searchPath_.begin(); j != impl_->searchPath_.end(); ++j)
+        {
+            files.clear();
+            DirectoryEnumerator::enumerateFilesWithExtension(
+                    j->c_str(), options.filename_, false, &files);
+            for (i = files.begin(); i != files.end(); ++i)
+            {
+                result.push_back(DataFileInfo(*j, *i, false));
+            }
+        }
+    }
+    const char *const defaultPath = getProgramContext().defaultLibraryDataPath();
+    if (defaultPath != NULL && defaultPath[0] != '\0')
+    {
+        files.clear();
+        DirectoryEnumerator::enumerateFilesWithExtension(
+                defaultPath, options.filename_, false, &files);
+        for (i = files.begin(); i != files.end(); ++i)
+        {
+            result.push_back(DataFileInfo(defaultPath, *i, true));
+        }
+    }
+    if (result.empty() && options.bThrow_)
+    {
+        // TODO: Print the search path as is done in findFile().
+        std::string message(
+                formatString("Could not find any files ending on '%s' in the "
+                             "current directory or the GROMACS library search path",
+                             options.filename_));
+        GMX_THROW(FileIOError(message));
+    }
+    return result;
 }
 
 } // namespace gmx

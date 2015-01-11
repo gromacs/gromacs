@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,11 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
+
+#include <algorithm>
+#include <string>
+#include <vector>
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
@@ -64,9 +69,12 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
@@ -119,89 +127,52 @@ gmx_bool is_int(double x)
     return (fabs(x-ix) < tol);
 }
 
-static void swap_strings(char **s, int i, int j)
+static void
+choose_ff_impl(const char *ffsel,
+               char *forcefield, int ff_maxlen,
+               char *ffdir, int ffdir_maxlen)
 {
-    char *tmp;
-
-    tmp  = s[i];
-    s[i] = s[j];
-    s[j] = tmp;
-}
-
-void
-choose_ff(const char *ffsel,
-          char *forcefield, int ff_maxlen,
-          char *ffdir, int ffdir_maxlen)
-{
-    int    nff;
-    char **ffdirs, **ffs, **ffs_dir, *ptr;
-    int    i, j, sel, cwdsel, nfound;
-    char   buf[STRLEN], **desc;
-    FILE  *fp;
-    char  *pret;
-
-    nff = fflib_search_file_in_dirend(fflib_forcefield_itp(),
-                                      fflib_forcefield_dir_ext(),
-                                      &ffdirs);
-
-    if (nff == 0)
+    std::vector<gmx::DataFileInfo> ffdirs = fflib_enumerate_forcefields();
+    if (ffdirs.empty())
     {
         gmx_fatal(FARGS, "No force fields found (files with name '%s' in subdirectories ending on '%s')",
                   fflib_forcefield_itp(), fflib_forcefield_dir_ext());
     }
+    const int nff = static_cast<int>(ffdirs.size());
 
     /* Replace with unix path separators */
     if (DIR_SEPARATOR != '/')
     {
-        for (i = 0; i < nff; i++)
+        for (int i = 0; i < nff; ++i)
         {
-            while ( (ptr = strchr(ffdirs[i], DIR_SEPARATOR)) != NULL)
-            {
-                *ptr = '/';
-            }
+            std::replace(ffdirs[i].dir.begin(), ffdirs[i].dir.end(), DIR_SEPARATOR, '/');
         }
     }
 
     /* Store the force field names in ffs */
-    snew(ffs, nff);
-    snew(ffs_dir, nff);
-    for (i = 0; i < nff; i++)
+    std::vector<std::string> ffs;
+    ffs.reserve(ffdirs.size());
+    for (int i = 0; i < nff; ++i)
     {
-        /* Remove the path from the ffdir name - use our unix standard here! */
-        ptr = strrchr(ffdirs[i], '/');
-        if (ptr == NULL)
-        {
-            ffs[i]     = gmx_strdup(ffdirs[i]);
-            ffs_dir[i] = low_gmxlibfn(ffdirs[i], FALSE, FALSE);
-            if (ffs_dir[i] == NULL)
-            {
-                gmx_fatal(FARGS, "Can no longer find file '%s'", ffdirs[i]);
-            }
-        }
-        else
-        {
-            ffs[i]     = gmx_strdup(ptr+1);
-            ffs_dir[i] = gmx_strdup(ffdirs[i]);
-        }
-        ffs_dir[i][strlen(ffs_dir[i])-strlen(ffs[i])-1] = '\0';
-        /* Remove the extension from the ffdir name */
-        ffs[i][strlen(ffs[i])-strlen(fflib_forcefield_dir_ext())] = '\0';
+        ffs.push_back(gmx::stripSuffixIfPresent(ffdirs[i].name,
+                                                fflib_forcefield_dir_ext()));
     }
 
+    int sel;
     if (ffsel != NULL)
     {
-        sel     = -1;
-        cwdsel  = -1;
-        nfound  = 0;
-        for (i = 0; i < nff; i++)
+        sel         = -1;
+        int cwdsel  = -1;
+        int nfound  = 0;
+        for (int i = 0; i < nff; ++i)
         {
-            if (strcmp(ffs[i], ffsel) == 0)
+            if (ffs[i] == ffsel)
             {
                 /* Matching ff name */
                 sel = i;
                 nfound++;
 
-                if (strncmp(ffs_dir[i], ".", 1) == 0)
+                if (ffdirs[i].dir == ".")
                 {
                     cwdsel = i;
                 }
@@ -231,70 +202,75 @@ choose_ff(const char *ffsel,
         }
         else if (nfound == 0)
         {
-            gmx_fatal(FARGS, "Could not find force field '%s' in current directory, install tree or GMXDATA path.", ffsel);
+            gmx_fatal(FARGS, "Could not find force field '%s' in current directory, install tree or GMXLIB path.", ffsel);
         }
     }
     else if (nff > 1)
     {
-        snew(desc, nff);
-        for (i = 0; (i < nff); i++)
+        std::vector<std::string> desc;
+        desc.reserve(ffdirs.size());
+        for (int i = 0; i < nff; ++i)
         {
-            sprintf(buf, "%s%c%s%s%c%s",
-                    ffs_dir[i], DIR_SEPARATOR,
-                    ffs[i], fflib_forcefield_dir_ext(), DIR_SEPARATOR,
-                    fflib_forcefield_doc());
-            if (gmx_fexist(buf))
+            std::string docFileName(
+                    gmx::Path::join(ffdirs[i].dir, ffdirs[i].name,
+                                    fflib_forcefield_doc()));
+            // TODO: Just try to open the file with a method that does not
+            // throw/bail out with a fatal error instead of multiple checks.
+            if (gmx::File::exists(docFileName))
             {
+                // TODO: Use a C++ API without such an intermediate/fixed-length buffer.
+                char  buf[STRLEN];
                 /* We don't use fflib_open, because we don't want printf's */
-                fp = gmx_ffopen(buf, "r");
-                snew(desc[i], STRLEN);
-                get_a_line(fp, desc[i], STRLEN);
+                FILE *fp = gmx_ffopen(docFileName.c_str(), "r");
+                get_a_line(fp, buf, STRLEN);
                 gmx_ffclose(fp);
+                desc.push_back(buf);
             }
             else
             {
-                desc[i] = gmx_strdup(ffs[i]);
+                desc.push_back(ffs[i]);
             }
         }
         /* Order force fields from the same dir alphabetically
          * and put deprecated force fields at the end.
          */
-        for (i = 0; (i < nff); i++)
+        for (int i = 0; i < nff; ++i)
         {
-            for (j = i+1; (j < nff); j++)
+            for (int j = i + 1; j < nff; ++j)
             {
-                if (strcmp(ffs_dir[i], ffs_dir[j]) == 0 &&
+                if (ffdirs[i].dir == ffdirs[j].dir &&
                     ((desc[i][0] == '[' && desc[j][0] != '[') ||
                      ((desc[i][0] == '[' || desc[j][0] != '[') &&
-                      gmx_strcasecmp(desc[i], desc[j]) > 0)))
+                      gmx_strcasecmp(desc[i].c_str(), desc[j].c_str()) > 0)))
                 {
-                    swap_strings(ffdirs, i, j);
-                    swap_strings(ffs, i, j);
-                    swap_strings(desc, i, j);
+                    std::swap(ffdirs[i].name, ffdirs[j].name);
+                    std::swap(ffs[i], ffs[j]);
+                    std::swap(desc[i], desc[j]);
                 }
             }
         }
 
         printf("\nSelect the Force Field:\n");
-        for (i = 0; (i < nff); i++)
+        for (int i = 0; i < nff; ++i)
         {
-            if (i == 0 || strcmp(ffs_dir[i-1], ffs_dir[i]) != 0)
+            if (i == 0 || ffdirs[i-1].dir != ffdirs[i].dir)
             {
-                if (strcmp(ffs_dir[i], ".") == 0)
+                if (ffdirs[i].dir == ".")
                 {
                     printf("From current directory:\n");
                 }
                 else
                 {
-                    printf("From '%s':\n", ffs_dir[i]);
+                    printf("From '%s':\n", ffdirs[i].dir.c_str());
                 }
             }
-            printf("%2d: %s\n", i+1, desc[i]);
-            sfree(desc[i]);
+            printf("%2d: %s\n", i+1, desc[i].c_str());
         }
-        sfree(desc);
 
         sel = -1;
+        // TODO: Add a C++ API for this.
+        char   buf[STRLEN];
+        char  *pret;
         do
         {
             pret = fgets(buf, STRLEN, stdin);
@@ -312,12 +288,12 @@ choose_ff(const char *ffsel,
          * This check assumes that the order of ffs matches the order
          * in which fflib_open searches ff library files.
          */
-        for (i = 0; i < sel; i++)
+        for (int i = 0; i < sel; i++)
         {
-            if (strcmp(ffs[i], ffs[sel]) == 0)
+            if (ffs[i] == ffs[sel])
             {
                 gmx_fatal(FARGS, "Can only select the first of multiple force field entries with directory name '%s%s' in the list. If you want to use the next entry, run pdb2gmx in a different directory or rename or move the force field directory present in the current working directory.",
-                          ffs[sel], fflib_forcefield_dir_ext());
+                          ffs[sel].c_str(), fflib_forcefield_dir_ext());
             }
         }
     }
@@ -326,29 +302,40 @@ choose_ff(const char *ffsel,
         sel = 0;
     }
 
-    if (strlen(ffs[sel]) >= (size_t)ff_maxlen)
+    if (ffs[sel].length() >= static_cast<size_t>(ff_maxlen))
     {
         gmx_fatal(FARGS, "Length of force field name (%d) >= maxlen (%d)",
-                  strlen(ffs[sel]), ff_maxlen);
+                  static_cast<int>(ffs[sel].length()), ff_maxlen);
     }
-    strcpy(forcefield, ffs[sel]);
+    strcpy(forcefield, ffs[sel].c_str());
 
-    if (strlen(ffdirs[sel]) >= (size_t)ffdir_maxlen)
+    std::string ffpath;
+    if (ffdirs[sel].bFromDefaultDir)
+    {
+        ffpath = ffdirs[sel].name;
+    }
+    else
+    {
+        ffpath = gmx::Path::join(ffdirs[sel].dir, ffdirs[sel].name);
+    }
+    if (ffpath.length() >= static_cast<size_t>(ffdir_maxlen))
     {
         gmx_fatal(FARGS, "Length of force field dir (%d) >= maxlen (%d)",
-                  strlen(ffdirs[sel]), ffdir_maxlen);
+                  static_cast<int>(ffpath.length()), ffdir_maxlen);
     }
-    strcpy(ffdir, ffdirs[sel]);
+    strcpy(ffdir, ffpath.c_str());
+}
 
-    for (i = 0; (i < nff); i++)
+void
+choose_ff(const char *ffsel,
+          char *forcefield, int ff_maxlen,
+          char *ffdir, int ffdir_maxlen)
+{
+    try
     {
-        sfree(ffdirs[i]);
-        sfree(ffs[i]);
-        sfree(ffs_dir[i]);
+        choose_ff_impl(ffsel, forcefield, ff_maxlen, ffdir, ffdir_maxlen);
     }
-    sfree(ffdirs);
-    sfree(ffs);
-    sfree(ffs_dir);
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 void choose_watermodel(const char *wmsel, const char *ffdir,
