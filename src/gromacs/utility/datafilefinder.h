@@ -46,6 +46,7 @@
 #include <cstdio>
 
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/classhelpers.h"
 
@@ -118,6 +119,18 @@ class DataFileOptions
         friend class DataFileFinder;
 };
 
+struct DataFileInfo
+{
+    DataFileInfo(const std::string &dir, const std::string &name, bool bDefault)
+        : dir(dir), name(name), bFromDefaultDir(bDefault)
+    {
+    }
+
+    std::string dir;
+    std::string name;
+    bool        bFromDefaultDir;
+};
+
 /*! \brief
  * Searches data files from a set of paths.
  *
@@ -160,6 +173,7 @@ class DataFileFinder
          * \param[in] options  Identifies the file to be searched for.
          * \returns The opened file handle, or `NULL` if the file could not be
          *     found and exceptions were turned off.
+         * \throws  std::bad_alloc if out of memory.
          * \throws  FileIOError if
          *   - no such file can be found, and \p options specifies that an
          *     exception should be thrown, or
@@ -176,6 +190,7 @@ class DataFileFinder
          * \param[in] options  Identifies the file to be searched for.
          * \returns Full path to the data file, or an empty string if the file
          *     could not be found and exceptions were turned off.
+         * \throws  std::bad_alloc if out of memory.
          * \throws  FileIOError if no such file can be found, and \p options
          *     specifies that an exception should be thrown.
          *
@@ -184,6 +199,20 @@ class DataFileFinder
          * Returns the full path to the first file found.
          */
         std::string findFile(const DataFileOptions &options) const;
+        /*! \brief
+         * Enumerates files in the data directories.
+         *
+         * \param[in] options  Idenfies files to be searched for.
+         * \throws  std::bad_alloc if out of memory.
+         * \throws  FileIOError if no such file can be found, and \p options
+         *     specifies that an exception should be thrown.
+         *
+         * Enumerates all files in the data directories that have the
+         * extension/suffix specified by the file name in \p options.
+         * See DataFileInfo for details on what is returned for each found
+         * file.
+         */
+        std::vector<DataFileInfo> enumerateFiles(const DataFileOptions &options) const;
 
     private:
         class Impl;
