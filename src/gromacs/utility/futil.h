@@ -196,35 +196,6 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
  */
 FILE *low_libopen(const char *file, gmx_bool bFatal);
 
-/** Opaque data type to list directories. */
-typedef struct gmx_directory *gmx_directory_t;
-
-/*! \brief
- * Opens a directory for reading.
- *
- * \param[out] p_gmxdir Handle to the opened directory.
- * \param[in]  dirname  Path to directory to open.
- * \returns  0 on success.
- */
-int
-gmx_directory_open(gmx_directory_t *p_gmxdir, const char *dirname);
-
-/*! \brief
- * Gets next file in a directory.
- *
- * Given an initialized gmx_directory_t, if there are more files in
- * the directory this routine returns 0 and write the next name
- * into the USER-PROVIDED buffer \p name.  The last argument is the max
- * number of characters that will be written.  Just as strncpy(), the
- * string will NOT be terminated it it is longer than \p maxlength_name.
- */
-int
-gmx_directory_nextfile(gmx_directory_t gmxdir, char *name, int maxlength_name);
-
-/** Releases all data for a directory structure. */
-int
-gmx_directory_close(gmx_directory_t gmxdir);
-
 
 /*! \brief
  * Creates unique name for temp file (wrapper around mkstemp).
