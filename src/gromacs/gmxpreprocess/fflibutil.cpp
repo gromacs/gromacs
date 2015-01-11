@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,18 +36,21 @@
 
 #include "fflibutil.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/network.h"
+#include <string>
+#include <vector>
+
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/datafilefinder.h"
+#include "gromacs/utility/directoryenumerator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 const char *fflib_forcefield_dir_ext()
 {
@@ -93,214 +96,75 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
     }
 }
 
-static void sort_filenames(int n, char **name, char **name2)
-{
-    /* Slow sort, but we usually have tens of names */
-    int   i, j, f;
-    char *tmp;
-
-    for (i = 0; i < n-1; i++)
-    {
-        f = i;
-        for (j = i+1; j < n; j++)
-        {
-            if (strcmp(name[j], name[f]) < 0)
-            {
-                f = j;
-            }
-        }
-        if (f > i)
-        {
-            tmp     = name[i];
-            name[i] = name[f];
-            name[f] = tmp;
-            if (name2 != NULL)
-            {
-                tmp      = name2[i];
-                name2[i] = name2[f];
-                name2[f] = tmp;
-            }
-        }
-    }
-}
-
-static int low_fflib_search_file_end(const char *ffdir,
-                                     gmx_bool    bAddCWD,
-                                     const char *file_end,
-                                     gmx_bool    bFatalError,
-                                     char     ***filenames,
-                                     char     ***filenames_short)
-{
-    char **fns = NULL, **fns_short = NULL;
-    int    n   = 0;
-    try
-    {
-        std::vector<std::string> libPaths;
-        bool                     bEnvIsSet = false;
-
-        if (ffdir != NULL)
-        {
-            /* Search ffdir in current dir and library dirs */
-            libPaths.push_back(gmxlibfn(ffdir));
-        }
-        else
-        {
-            /* GMXLIB can be a path now */
-            if (bAddCWD)
-            {
-                libPaths.push_back(".");
-            }
-            const char *lib = getenv("GMXLIB");
-            if (lib != NULL)
-            {
-                bEnvIsSet = true;
-                gmx::Path::splitPathEnvironment(lib, &libPaths);
-            }
-            else
-            {
-                libPaths.push_back(gmx::getProgramContext().defaultLibraryDataPath());
-            }
-        }
-
-        const int len_fe = strlen(file_end);
-
-        std::vector<std::string>::const_iterator i;
-        for (i = libPaths.begin(); i != libPaths.end(); ++i)
-        {
-            const char      *dir = i->c_str();
-            gmx_directory_t  dirhandle;
-            const int        rc  = gmx_directory_open(&dirhandle, dir);
-            if (rc == 0)
-            {
-                char nextname[STRLEN];
-                int  n_thisdir = 0;
-                while (gmx_directory_nextfile(dirhandle, nextname, STRLEN-1) == 0)
-                {
-                    nextname[STRLEN-1] = 0;
-                    if (debug)
-                    {
-                        fprintf(debug, "dir '%s' %d file '%s'\n",
-                                dir, n_thisdir, nextname);
-                    }
-                    const int len_name = strlen(nextname);
-                    /* What about case sensitivity? */
-                    if (len_name >= len_fe &&
-                        strcmp(nextname+len_name-len_fe, file_end) == 0)
-                    {
-                        char fn_dir[GMX_PATH_MAX];
-                        /* We have a match */
-                        srenew(fns, n+1);
-                        sprintf(fn_dir, "%s%c%s", dir, DIR_SEPARATOR, nextname);
-
-                        /* Copy the file name, possibly including the path. */
-                        fns[n] = gmx_strdup(fn_dir);
-
-                        if (ffdir == NULL)
-                        {
-                            /* We are searching in a path.
-                             * Use the relative path when we use share/top
-                             * from the installation.
-                             * Add the full path when we use the current
-                             * working directory of GMXLIB.
-                             */
-                            srenew(fns_short, n+1);
-                            if (strcmp(dir, ".") == 0 || bEnvIsSet)
-                            {
-                                fns_short[n] = gmx_strdup(fn_dir);
-                            }
-                            else
-                            {
-                                fns_short[n] = gmx_strdup(nextname);
-                            }
-                        }
-                        n++;
-                        n_thisdir++;
-                    }
-                }
-                gmx_directory_close(dirhandle);
-
-                sort_filenames(n_thisdir,
-                               fns+n-n_thisdir,
-                               fns_short == NULL ? NULL : fns_short+n-n_thisdir);
-            }
-        }
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-    if (n == 0 && bFatalError)
-    {
-        if (ffdir != NULL)
-        {
-            gmx_fatal(FARGS, "Could not find any files ending on '%s' in the force field directory '%s'", file_end, ffdir);
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Could not find any files ending on '%s' in the current directory or the GROMACS library search path", file_end);
-        }
-    }
-
-    *filenames = fns;
-    if (ffdir == NULL)
-    {
-        *filenames_short = fns_short;
-    }
-
-    return n;
-}
-
 int fflib_search_file_end(const char *ffdir,
                           const char *file_end,
                           gmx_bool    bFatalError,
                           char     ***filenames)
 {
-    return low_fflib_search_file_end(ffdir, FALSE, file_end, bFatalError,
-                                     filenames, NULL);
+    try
+    {
+        std::vector<std::string> result;
+        std::string              ffdirFull(gmx::getLibraryFileFinder().findFile(ffdir));
+        gmx::DirectoryEnumerator::enumerateFilesWithExtension(
+                ffdirFull.c_str(), file_end, true, &result);
+        if (result.empty() && bFatalError)
+        {
+            std::string message
+                = gmx::formatString("Could not find any files ending on '%s' "
+                                    "in the force field directory '%s'",
+                                    file_end, ffdir);
+            GMX_THROW(gmx::InvalidInputError(message));
+        }
+        const int count = static_cast<int>(result.size());
+        for (int i = 0; i < count; ++i)
+        {
+            result[i] = gmx::Path::join(ffdir, result[i]);
+        }
+        char    **fns;
+        snew(fns, count);
+        for (int i = 0; i < count; ++i)
+        {
+            fns[i] = gmx_strdup(result[i].c_str());
+        }
+        *filenames = fns;
+        return count;
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-int fflib_search_file_in_dirend(const char *filename, const char *dirend,
-                                char ***dirnames)
+std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
 {
-    int             nf, i;
-    char          **f, **f_short;
-    int             n;
-    char          **dns;
-    gmx_directory_t dirhandle;
-    char            nextname[STRLEN];
-    int             rc;
+    const char *const              dirend   = fflib_forcefield_dir_ext();
+    const char *const              filename = fflib_forcefield_itp();
+    std::vector<gmx::DataFileInfo> candidates
+        = gmx::getLibraryFileFinder().enumerateFiles(
+                    gmx::DataFileOptions(dirend)
+                        .throwIfNotFound(false));
 
-    /* Find all files (not only dir's) ending on dirend */
-    nf = low_fflib_search_file_end(NULL, TRUE, dirend, FALSE, &f, &f_short);
-
-    n   = 0;
-    dns = NULL;
-    for (i = 0; i < nf; i++)
+    std::vector<gmx::DataFileInfo> result;
+    for (size_t i = 0; i < candidates.size(); ++i)
     {
-        rc = gmx_directory_open(&dirhandle, f[i]);
-
-        if (rc == 0)
+        std::string testPath(gmx::Path::join(
+                                     candidates[i].dir, candidates[i].name, filename));
+        // TODO: Consider also checking that the directory can be listed.
+        if (gmx::File::exists(testPath))
         {
-            while (gmx_directory_nextfile(dirhandle, nextname, STRLEN-1) == 0)
-            {
-                nextname[STRLEN-1] = 0;
-                if (strcmp(nextname, filename) == 0)
-                {
-                    /* We have a match */
-                    srenew(dns, n+1);
-                    dns[n] = gmx_strdup(f_short[i]);
-                    n++;
-                }
-            }
-            gmx_directory_close(dirhandle);
+            result.push_back(candidates[i]);
         }
-        sfree(f[i]);
-        sfree(f_short[i]);
     }
-    sfree(f);
-    sfree(f_short);
 
-    *dirnames = dns;
+    // TODO: Consider merging this into enumerateFiles(), such that the error
+    // could also list the directories searched.
+    if (result.empty())
+    {
+        std::string message
+            = gmx::formatString("No force fields found (files with name '%s' "
+                                "in subdirectories ending on '%s')",
+                                filename, dirend);
+        GMX_THROW(gmx::InvalidInputError(message));
+    }
 
-    return n;
+    return result;
 }
 
 gmx_bool fflib_fexist(const char *file)
