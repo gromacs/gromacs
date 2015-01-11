@@ -46,6 +46,7 @@
 #include <cstdio>
 
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/classhelpers.h"
 
@@ -119,6 +120,45 @@ class DataFileOptions
 };
 
 /*! \brief
+ * Information about a data file found by DataFileFinder::enumerateFiles().
+ *
+ * \inpublicapi
+ * \ingroup module_utility
+ */
+struct DataFileInfo
+{
+    //! Initializes the structure with given values.
+    DataFileInfo(const std::string &dir, const std::string &name, bool bDefault)
+        : dir(dir), name(name), bFromDefaultDir(bDefault)
+    {
+    }
+
+    /*! \brief
+     * Directory from which the file was found.
+     *
+     * If the file was found from the current directory, this will be `"."`.
+     * In other cases, this will be a full path (except if the user-provided
+     * search path contains relative paths).
+     */
+    std::string dir;
+    /*! \brief
+     * Name of the file without any directory name.
+     */
+    std::string name;
+    /*! \brief
+     * Whether the file was found from the default directory.
+     *
+     * If `true`, the file was found from the default installation data
+     * directory, not from the current directory or any user-provided (through
+     * DataFileFinder::setSearchPathFromEnv()) location.
+     * \todo
+     * Consider replacing with an enum that identifies the source (current dir,
+     * GMXLIB, default).
+     */
+    bool        bFromDefaultDir;
+};
+
+/*! \brief
  * Searches data files from a set of paths.
  *
  * \inpublicapi
@@ -160,6 +200,7 @@ class DataFileFinder
          * \param[in] options  Identifies the file to be searched for.
          * \returns The opened file handle, or `NULL` if the file could not be
          *     found and exceptions were turned off.
+         * \throws  std::bad_alloc if out of memory.
          * \throws  FileIOError if
          *   - no such file can be found, and \p options specifies that an
          *     exception should be thrown, or
@@ -176,6 +217,7 @@ class DataFileFinder
          * \param[in] options  Identifies the file to be searched for.
          * \returns Full path to the data file, or an empty string if the file
          *     could not be found and exceptions were turned off.
+         * \throws  std::bad_alloc if out of memory.
          * \throws  FileIOError if no such file can be found, and \p options
          *     specifies that an exception should be thrown.
          *
@@ -184,6 +226,26 @@ class DataFileFinder
          * Returns the full path to the first file found.
          */
         std::string findFile(const DataFileOptions &options) const;
+        /*! \brief
+         * Enumerates files in the data directories.
+         *
+         * \param[in] options  Idenfies files to be searched for.
+         * \returns Information about each found file.
+         * \throws  std::bad_alloc if out of memory.
+         * \throws  FileIOError if no such file can be found, and \p options
+         *     specifies that an exception should be thrown.
+         *
+         * Enumerates all files in the data directories that have the
+         * extension/suffix specified by the file name in \p options.
+         * Unlike findFile() and openFile(), this only works on files that are
+         * in the actual data directories, not for any entry within
+         * subdirectories of those.
+         * See DataFileInfo for details on what is returned for each found
+         * file.
+         * Files from the same directory will be returned as a continuous block
+         * in the returned vector.
+         */
+        std::vector<DataFileInfo> enumerateFiles(const DataFileOptions &options) const;
 
     private:
         class Impl;
