@@ -198,6 +198,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bUpdateDoLR;
     real              dvdl_constr;
     rvec             *cbuf = NULL;
+    int               cbuf_nalloc = 0;
     matrix            lastbox;
     real              veta_save, scalevir, tracevir;
     real              vetanew = 0;
@@ -247,10 +248,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
        md-vv-avek uses averaged half step velocities for T-control (but full step ekin for P control)
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
     bVV = EI_VV(ir->eI);
-    if (bVV) /* to store the initial velocities while computing virial */
-    {
-        snew(cbuf, top_global->natoms);
-    }
     /* all the iteratative cases - only if there are constraints */
     bIterativeCase = ((IR_NPH_TROTTER(ir) || IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
     gmx_iterate_init(&iterate, FALSE); /* The default value of iterate->bIterationActive is set to
@@ -1089,6 +1086,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bVV && !bStartingFromCpt && !bRerunMD)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
+            rvec *vbuf;
+
             wallcycle_start(wcycle, ewcUPDATE);
             if (ir->eI == eiVV && bInitStep)
             {
@@ -1098,7 +1097,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                  * revert back to the initial coordinates
                  * so that the input is actually the initial step.
                  */
-                copy_rvecn(state->v, cbuf, 0, state->natoms); /* should make this better for parallelizing? */
+                snew(vbuf, state->natoms);
+                copy_rvecn(state->v, vbuf, 0, state->natoms); /* should make this better for parallelizing? */
             }
             else
             {
@@ -1282,7 +1282,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* if it's the initial step, we performed this first step just to get the constraint virial */
             if (bInitStep && ir->eI == eiVV)
             {
-                copy_rvecn(cbuf, state->v, 0, state->natoms);
+                copy_rvecn(vbuf, state->v, 0, state->natoms);
+                sfree(vbuf);
             }
             wallcycle_stop(wcycle, ewcUPDATE);
         }
@@ -1538,6 +1539,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (ir->eI == eiVVAK)
                 {
+                    /* We probably only need md->homenr, not state->natoms */
+                    if (state->natoms > cbuf_nalloc)
+                    {
+                        cbuf_nalloc = state->natoms;
+                        srenew(cbuf, cbuf_nalloc);
+                    }
                     copy_rvecn(state->x, cbuf, 0, state->natoms);
                 }
                 bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
