@@ -259,6 +259,16 @@ calc_one_bond(int thread,
               gmx_bool bCalcEnerVir,
               int *global_atom_index)
 {
+#ifdef GMX_SIMD_HAVE_REAL
+    gmx_bool bUseSIMD;
+    /* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
+#if defined _MSC_VER && _MSC_VER < 1700
+    bUseSIMD = FALSE;
+#else
+    bUseSIMD = fr->use_simd_kernels;
+#endif
+#endif
+
     int      nat1, nbonds, efptFTYPE;
     real     v = 0;
     t_iatom *iatoms;
@@ -291,7 +301,7 @@ calc_one_bond(int thread,
                           md, fcd, global_atom_index);
         }
 #ifdef GMX_SIMD_HAVE_REAL
-        else if (ftype == F_ANGLES &&
+        else if (ftype == F_ANGLES && bUseSIMD &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
             /* No energies, shift forces, dvdl */
@@ -308,19 +318,27 @@ calc_one_bond(int thread,
         {
             /* No energies, shift forces, dvdl */
 #ifdef GMX_SIMD_HAVE_REAL
-            pdihs_noener_simd
-#else
-            pdihs_noener
+            if (bUseSIMD)
+            {
+                pdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+                                  idef->iparams,
+                                  x, f,
+                                  pbc, g, lambda[efptFTYPE], md, fcd,
+                                  global_atom_index);
+            }
+            else
 #endif
-                (nbn, idef->il[ftype].iatoms+nb0,
-                idef->iparams,
-                x, f,
-                pbc, g, lambda[efptFTYPE], md, fcd,
-                global_atom_index);
+            {
+                pdihs_noener(nbn, idef->il[ftype].iatoms+nb0,
+                             idef->iparams,
+                             x, f,
+                             pbc, g, lambda[efptFTYPE], md, fcd,
+                             global_atom_index);
+            }
             v = 0;
         }
 #ifdef GMX_SIMD_HAVE_REAL
-        else if (ftype == F_RBDIHS &&
+        else if (ftype == F_RBDIHS && bUseSIMD &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
             /* No energies, shift forces, dvdl */

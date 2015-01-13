@@ -56,6 +56,7 @@
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
