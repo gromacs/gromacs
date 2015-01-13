@@ -2486,7 +2486,8 @@ void init_forcerec(FILE              *fp,
         {
             fprintf(fp,
                     "\nFound environment variable GMX_DISABLE_SIMD_KERNELS.\n"
-                    "Disabling the usage of any SIMD-specific kernel routines (e.g. SSE2/SSE4.1/AVX).\n\n");
+                    "Disabling the usage of any SIMD-specific non-bonded & bonded kernel routines\n"
+                    "(e.g. SSE2/SSE4.1/AVX).\n\n");
         }
     }
 
