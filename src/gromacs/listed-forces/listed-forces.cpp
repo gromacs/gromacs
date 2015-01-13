@@ -63,7 +63,6 @@
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -290,7 +289,7 @@ calc_one_bond(int thread,
                           pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                           md, fcd, global_atom_index);
         }
-#ifdef GMX_SIMD_HAVE_REAL
+#ifdef BONDED_SIMD
         else if (ftype == F_ANGLES &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
@@ -307,7 +306,7 @@ calc_one_bond(int thread,
                  !bCalcEnerVir && fr->efep == efepNO)
         {
             /* No energies, shift forces, dvdl */
-#ifdef GMX_SIMD_HAVE_REAL
+#ifdef BONDED_SIMD
             pdihs_noener_simd
 #else
             pdihs_noener
