@@ -57,6 +57,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
@@ -104,83 +105,6 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
         return CENTRAL;
     }
 }
-
-#ifdef GMX_SIMD_HAVE_REAL
-
-/* SIMD PBC data structure, containing 1/boxdiag and the box vectors */
-typedef struct {
-    gmx_simd_real_t inv_bzz;
-    gmx_simd_real_t inv_byy;
-    gmx_simd_real_t inv_bxx;
-    gmx_simd_real_t bzx;
-    gmx_simd_real_t bzy;
-    gmx_simd_real_t bzz;
-    gmx_simd_real_t byx;
-    gmx_simd_real_t byy;
-    gmx_simd_real_t bxx;
-} pbc_simd_t;
-
-/*! \brief Set the SIMD pbc data from a normal t_pbc struct */
-static void set_pbc_simd(const t_pbc *pbc, pbc_simd_t *pbc_simd)
-{
-    rvec inv_bdiag;
-    int  d;
-
-    /* Setting inv_bdiag to 0 effectively turns off PBC */
-    clear_rvec(inv_bdiag);
-    if (pbc != NULL)
-    {
-        for (d = 0; d < pbc->ndim_ePBC; d++)
-        {
-            inv_bdiag[d] = 1.0/pbc->box[d][d];
-        }
-    }
-
-    pbc_simd->inv_bzz = gmx_simd_set1_r(inv_bdiag[ZZ]);
-    pbc_simd->inv_byy = gmx_simd_set1_r(inv_bdiag[YY]);
-    pbc_simd->inv_bxx = gmx_simd_set1_r(inv_bdiag[XX]);
-
-    if (pbc != NULL)
-    {
-        pbc_simd->bzx = gmx_simd_set1_r(pbc->box[ZZ][XX]);
-        pbc_simd->bzy = gmx_simd_set1_r(pbc->box[ZZ][YY]);
-        pbc_simd->bzz = gmx_simd_set1_r(pbc->box[ZZ][ZZ]);
-        pbc_simd->byx = gmx_simd_set1_r(pbc->box[YY][XX]);
-        pbc_simd->byy = gmx_simd_set1_r(pbc->box[YY][YY]);
-        pbc_simd->bxx = gmx_simd_set1_r(pbc->box[XX][XX]);
-    }
-    else
-    {
-        pbc_simd->bzx = gmx_simd_setzero_r();
-        pbc_simd->bzy = gmx_simd_setzero_r();
-        pbc_simd->bzz = gmx_simd_setzero_r();
-        pbc_simd->byx = gmx_simd_setzero_r();
-        pbc_simd->byy = gmx_simd_setzero_r();
-        pbc_simd->bxx = gmx_simd_setzero_r();
-    }
-}
-
-/*! \brief Correct distance vector *dx,*dy,*dz for PBC using SIMD */
-static gmx_inline void
-pbc_dx_simd(gmx_simd_real_t *dx, gmx_simd_real_t *dy, gmx_simd_real_t *dz,
-            const pbc_simd_t *pbc)
-{
-    gmx_simd_real_t sh;
-
-    sh  = gmx_simd_round_r(gmx_simd_mul_r(*dz, pbc->inv_bzz));
-    *dx = gmx_simd_fnmadd_r(sh, pbc->bzx, *dx);
-    *dy = gmx_simd_fnmadd_r(sh, pbc->bzy, *dy);
-    *dz = gmx_simd_fnmadd_r(sh, pbc->bzz, *dz);
-
-    sh  = gmx_simd_round_r(gmx_simd_mul_r(*dy, pbc->inv_byy));
-    *dx = gmx_simd_fnmadd_r(sh, pbc->byx, *dx);
-    *dy = gmx_simd_fnmadd_r(sh, pbc->byy, *dy);
-
-    sh  = gmx_simd_round_r(gmx_simd_mul_r(*dx, pbc->inv_bxx));
-    *dx = gmx_simd_fnmadd_r(sh, pbc->bxx, *dx);
-}
-
-#endif /* GMX_SIMD_HAVE_REAL */
 
 /*! \brief Morse potential bond
  *
@@ -1035,7 +959,7 @@ real angles(int nbonds,
     return vtot;
 }
 
-#ifdef GMX_SIMD_HAVE_REAL
+#ifdef BONDED_SIMD
 
 /* As angles, but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
@@ -1101,9 +1025,6 @@ angles_noener_simd(int nbonds,
             coeff[s]                     = forceparams[type].harmonic.krA;
             coeff[GMX_SIMD_REAL_WIDTH+s] = forceparams[type].harmonic.rA*DEG2RAD;
 
-            /* If you can't use pbc_dx_simd below for PBC, e.g. because
-             * you can't round in SIMD, use pbc_rvec_sub here.
-             */
             /* Store the non PBC corrected distances packed and aligned */
             for (m = 0; m < DIM; m++)
             {
@@ -1128,8 +1049,8 @@ angles_noener_simd(int nbonds,
         rkjy_S    = gmx_simd_load_r(dr + 4*GMX_SIMD_REAL_WIDTH);
         rkjz_S    = gmx_simd_load_r(dr + 5*GMX_SIMD_REAL_WIDTH);
 
-        pbc_dx_simd(&rijx_S, &rijy_S, &rijz_S, &pbc_simd);
-        pbc_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, &pbc_simd);
+        pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, &pbc_simd);
+        pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, &pbc_simd);
 
         rij_rkj_S = gmx_simd_iprod_r(rijx_S, rijy_S, rijz_S,
                                      rkjx_S, rkjy_S, rkjz_S);
@@ -1200,7 +1121,7 @@ angles_noener_simd(int nbonds,
     }
 }
 
-#endif /* GMX_SIMD_HAVE_REAL */
+#endif /* BONDED_SIMD */
 
 real linear_angles(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -1500,7 +1421,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 }
 
 
-#ifdef GMX_SIMD_HAVE_REAL
+#ifdef BONDED_SIMD
 
 /* As dih_angle above, but calculates 4 dihedral angles at once using SIMD,
  * also calculates the pre-factor required for the dihedral force update.
@@ -1544,9 +1465,6 @@ dih_angle_simd(const rvec *x,
 
     for (s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
     {
-        /* If you can't use pbc_dx_simd below for PBC, e.g. because
-         * you can't round in SIMD, use pbc_rvec_sub here.
-         */
         for (m = 0; m < DIM; m++)
         {
             dr[s + (0*DIM + m)*GMX_SIMD_REAL_WIDTH] = x[ai[s]][m] - x[aj[s]][m];
@@ -1565,9 +1483,9 @@ dih_angle_simd(const rvec *x,
     rkly_S = gmx_simd_load_r(dr + 7*GMX_SIMD_REAL_WIDTH);
     rklz_S = gmx_simd_load_r(dr + 8*GMX_SIMD_REAL_WIDTH);
 
-    pbc_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc);
-    pbc_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc);
-    pbc_dx_simd(&rklx_S, &rkly_S, &rklz_S, pbc);
+    pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc);
+    pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc);
+    pbc_correct_dx_simd(&rklx_S, &rkly_S, &rklz_S, pbc);
 
     gmx_simd_cprod_r(rijx_S, rijy_S, rijz_S,
                      rkjx_S, rkjy_S, rkjz_S,
@@ -1629,7 +1547,7 @@ dih_angle_simd(const rvec *x,
     gmx_simd_store_r(q, q_S);
 }
 
-#endif /* GMX_SIMD_HAVE_REAL */
+#endif /* BONDED_SIMD */
 
 
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
@@ -1963,7 +1881,7 @@ pdihs_noener(int nbonds,
 }
 
 
-#ifdef GMX_SIMD_HAVE_REAL
+#ifdef BONDED_SIMD
 
 /* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
 void
@@ -2235,7 +2153,7 @@ rbdihs_noener_simd(int nbonds,
     }
 }
 
-#endif /* GMX_SIMD_HAVE_REAL */
+#endif /* BONDED_SIMD */
 
 
 real idihs(int nbonds,
