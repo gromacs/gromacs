@@ -56,9 +56,15 @@
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
+
+/* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
+#if defined GMX_SIMD_HAVE_REAL && !(defined _MSC_VER && _MSC_VER < 1700)
+#define BONDED_SIMD
+#endif
 
 #ifdef __cplusplus
 extern "C" {
