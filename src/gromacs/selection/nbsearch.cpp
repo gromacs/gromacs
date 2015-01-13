@@ -132,15 +132,12 @@ class AnalysisNeighborhoodSearchImpl
          * Initializes the search with a given box and reference positions.
          *
          * \param[in] mode            Search mode to use.
-         * \param[in] bUseBoundingBox Whether to use bounding box for
-         *     non-periodic grids.
          * \param[in] bXY             Whether to use 2D searching.
          * \param[in] excls           Exclusions.
          * \param[in] pbc             PBC information.
          * \param[in] positions       Set of reference positions.
          */
         void init(AnalysisNeighborhood::SearchMode     mode,
-                  bool                                 bUseBoundingBox,
                   bool                                 bXY,
                   const t_blocka                      *excls,
                   const t_pbc                         *pbc,
@@ -176,14 +173,11 @@ class AnalysisNeighborhoodSearchImpl
          * \param[in] pbc      Information about the box.
          * \param[in] posCount Number of positions in \p x.
          * \param[in] x        Reference positions that will be put on the grid.
-         * \param[in] bUseBoundingBox  If `true`, non-periodic grid dimensions
-         *     will use the bounding box of \p x instead of the box.
          * \param[in] bForce   If `true`, grid searching will be used if at all
          *     possible, even if a simple search might give better performance.
          * \returns   `false` if grid search is not suitable.
          */
-        bool initGrid(const t_pbc &pbc, int posCount, const rvec x[],
-                      bool bUseBoundingBox, bool bForce);
+        bool initGrid(const t_pbc &pbc, int posCount, const rvec x[], bool bForce);
         /*! \brief
          * Maps a point into a grid cell.
          *
@@ -600,8 +594,7 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(
 }
 
 bool AnalysisNeighborhoodSearchImpl::initGrid(
-        const t_pbc &pbc, int posCount, const rvec x[], bool bUseBoundingBox,
-        bool bForce)
+        const t_pbc &pbc, int posCount, const rvec x[], bool bForce)
 {
     if (posCount == 0)
     {
@@ -641,7 +634,7 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(
     clear_rvec(gridOrigin_);
     for (int dd = 0; dd < DIM; ++dd)
     {
-        if (bUseBoundingBox && !bGridPBC_[dd] && !bSingleCell[dd])
+        if (!bGridPBC_[dd] && !bSingleCell[dd])
         {
             gridOrigin_[dd] = origin[dd];
             clear_rvec(box[dd]);
@@ -879,7 +872,6 @@ int AnalysisNeighborhoodSearchImpl::shiftCell(const ivec cell, rvec shift) const
 
 void AnalysisNeighborhoodSearchImpl::init(
         AnalysisNeighborhood::SearchMode     mode,
-        bool                                 bUseBoundingBox,
         bool                                 bXY,
         const t_blocka                      *excls,
         const t_pbc                         *pbc,
@@ -925,7 +917,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     }
     else if (bTryGrid_)
     {
-        bGrid_ = initGrid(pbc_, positions.count_, positions.x_, bUseBoundingBox,
+        bGrid_ = initGrid(pbc_, positions.count_, positions.x_,
                           mode == AnalysisNeighborhood::eSearchMode_Grid);
     }
     refIndices_ = positions.indices_;
@@ -1240,8 +1232,7 @@ class AnalysisNeighborhood::Impl
         typedef std::vector<SearchImplPointer> SearchList;
 
         Impl()
-            : cutoff_(0), excls_(NULL), mode_(eSearchMode_Automatic),
-              bUseBoundingBox_(true), bXY_(false)
+            : cutoff_(0), excls_(NULL), mode_(eSearchMode_Automatic), bXY_(false)
         {
         }
         ~Impl()
@@ -1261,7 +1252,6 @@ class AnalysisNeighborhood::Impl
         real                    cutoff_;
         const t_blocka         *excls_;
         SearchMode              mode_;
-        bool                    bUseBoundingBox_;
         bool                    bXY_;
 };
 
@@ -1304,11 +1294,6 @@ void AnalysisNeighborhood::setCutoff(real cutoff)
     impl_->cutoff_ = cutoff;
 }
 
-void AnalysisNeighborhood::setUseBoundingBox(bool bUseBoundingBox)
-{
-    impl_->bUseBoundingBox_ = bUseBoundingBox;
-}
-
 void AnalysisNeighborhood::setXYMode(bool bXY)
 {
     impl_->bXY_ = bXY;
@@ -1336,7 +1321,7 @@ AnalysisNeighborhood::initSearch(const t_pbc                         *pbc,
                                  const AnalysisNeighborhoodPositions &positions)
 {
     Impl::SearchImplPointer search(impl_->getSearch());
-    search->init(mode(), impl_->bUseBoundingBox_, impl_->bXY_, impl_->excls_,
+    search->init(mode(), impl_->bXY_, impl_->excls_,
                  pbc, positions);
     return AnalysisNeighborhoodSearch(search);
 }
