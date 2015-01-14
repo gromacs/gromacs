@@ -829,3 +829,6 @@
  Fe2+       Fe2+   26	55.84700     2.000       A    2.59400e-01  5.43920e-02
 ; Added by DvdS 05/2005 copied from GROMACS force field.       
  SI         SI     14	28.08000     0.000       A    3.38550e-01  2.44704e+00
+;tip4p-EW, copied from Amber
+HW_tip4pew   1       1.008   0.0000  A   0.00000e+00  0.00000e+00
+OW_tip4pew   8      16.00    0.0000  A   3.16435e-01  6.80946e-01
