@@ -35,12 +35,28 @@
 #include "config.h"
 #include <stdlib.h>
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_tracing.h"
 #include "extrae_user_events.h"
+#include "gromacs/timing/wallcycle.h"
 
 // TODO: remove when done with development
 #include "gromacs/utility/fatalerror.h"
-#include "wallcycle.h"
+
+// Define max size for the stack of events
+// It corresponds to the depth of nesting of ranges
+#define TRACE_EVENT_MAXDEPTH 30
+
+struct stack
+{
+    int stk[TRACE_EVENT_MAXDEPTH];
+    int top;
+};
+typedef struct stack STACK;
+STACK events_stack;
+
+void push(int);
+int  pop(void);
 
 /* start the tracer */
 void gmx_tracer_start()
@@ -69,14 +85,13 @@ void gmx_tracer_start()
 
     Extrae_define_event_type(&eventID, type_desc, &nevents, event, event_labels);
 
-/*
-   TODO: check whether we need to deallocate here
-    for (i = 0; i <= ewcNR; i++)
+/* We deallocate here because Extrae stores the info in the .sym file */
+    for (i = 0; i < ewcNR+1; i++)
     {
         sfree(event_labels[i]);
     }
-    sfree(event_labels);
- */
+
+    pop();
 };
 
 /* stop the tracer */
@@ -107,6 +122,7 @@ void start_range(int epem)
 // Uncomment for debugging
 // gmx_warning("PROFILER: Start range Event %d/n", epem);
 
+    // printf(">>> Start range Event %d\n", epem);
     Extrae_event(EXTRAE_GMX_EVENT, epem+1);
 
 };
@@ -118,5 +134,45 @@ void stop_range(int epem)
 // Uncomment for debugging
 // gmx_warning("PROFILER: STOP range Event %d/n", epem);
 
+    //printf("xxx Stop range Event %d\n", epem);
     Extrae_event(EXTRAE_GMX_EVENT, 0);
 };
+
+void push (int eventID)
+{
+    if (events_stack.top == (TRACE_EVENT_MAXDEPTH - 1))
+    {
+        printf ("Stack is Full\n");
+        return;
+    }
+    else
+    {
+        events_stack.top = events_stack.top + 1;
+
+        events_stack.stk[events_stack.top] = eventID;
+    }
+    return;
+}
+
+int pop ()
+{
+    int eventID;
+    if (events_stack.top == -1)
+    {
+        //  the stack is empty
+        return (events_stack.top);
+    }
+    else
+    {
+        eventID          = events_stack.stk[events_stack.top];
+        events_stack.top = events_stack.top - 1;
+    }
+    return(eventID);
+}
+
+int eventStackTop()
+{
+
+    return events_stack.top;
+
+}

@@ -105,6 +105,10 @@ typedef struct gmx_wallcycle
     wallcc_t         *wcsc;
 #endif
     double           *cycles_sum;
+#ifdef HAVE_EXTRAE
+    /* do we trace those events? */
+    gmx_bool         *bTracing;
+#endif
 } gmx_wallcycle_t_t;
 
 /* Each name should not exceed 19 printing characters
@@ -138,6 +142,19 @@ static const char *wcsn[ewcsNR] =
 };
 #endif
 
+static const char *wc_event_name[ewcNR] =
+{
+    "RUN", "STEP", "PPDURINGPME", "DOMDEC", "DDCOMMLOAD",
+    "DDCOMMBOUND", "VSITECONSTR", "PP_PMESENDX", "NS", "LAUNCH_GPU_NB",
+    "MOVEX", "GB", "FORCE", "MOVEF", "PMEMESH",
+    "PME_REDISTXF", "PME_SPREADGATHER", "PME_FFT", "PME_FFTCOMM", "LJPME", "PME_SOLVE",
+    "PMEWAITCOMM", "PP_PMEWAITRECVF", "WAIT_GPU_NB_NL", "WAIT_GPU_NB_L", "WAIT_GPU_NB_L_EST", "NB_XF_BUF_OPS",
+    "VSITESPREAD", "PULLPOT",
+    "TRAJ", "UPDATE", "CONSTR", "MoveE", "ROT", "ROTadd", "SWAP", "IMD",
+    "TEST"
+};
+
+
 gmx_bool wallcycle_have_counter(void)
 {
     return gmx_cycles_have_counter();
@@ -154,6 +171,72 @@ const char * wcn_name_get(int i)
     wcname = wcn[i];
     return wcname;
 }
+
+void gmx_tracer_readconf(gmx_wallcycle_t wc)
+
+{
+
+    int            i;
+    char          *trace_config;
+
+    if ((trace_config = getenv("GMX_TRACE_CONFIG")) == NULL)
+    {
+        gmx_warning ("Will trace all the code during the run,");
+        gmx_warning ("for selective tracing, please set GMX_TRACE_CONFIG.");
+
+        for (i = 0; i < ewcNR; i++)
+        {
+            wc->bTracing[i] = 1;
+        }
+    }
+
+    else
+    {
+
+        gmx_warning ("Will do selective tracing.");
+
+        // unset all events
+
+        for (i = 0; i < ewcNR; i++)
+        {
+            wc->bTracing[i] = 0;
+        }
+
+        FILE      *TraceConfigFile;
+        char       buffer[STRLEN];
+        char       TraceEventName[20];
+        gmx_bool   bTrace;
+
+        if ((TraceConfigFile = fopen(trace_config, "r")) != NULL)
+        {
+            while (!feof(TraceConfigFile))
+            {
+                fgets(buffer, STRLEN, TraceConfigFile);
+                sscanf(buffer, "%s = %d", TraceEventName, &bTrace);
+
+                for (i = 0; i < ewcNR; i++)
+                {
+                    if (gmx_strcasecmp(TraceEventName, wc_event_name[i]) == 0)
+                    {
+                        //             gmx_warning("tracing for event %s is %d", TraceEventName, bTrace);
+                        wc->bTracing[i] = bTrace;
+                    }
+                }
+
+
+            }
+            fclose(TraceConfigFile);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Error reading trace config file.\n");
+        }
+
+    }
+
+};
+
+
 
 gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused *cr,
                                int nthreads_pp, int nthreads_pme)
@@ -178,6 +261,8 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
     wc->cycles_sum          = NULL;
 
     gmx_tracer_start();
+    snew(wc->bTracing, ewcNR);
+    gmx_tracer_readconf(wc);
 
 #ifdef GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
@@ -233,6 +318,7 @@ void wallcycle_destroy(gmx_wallcycle_t wc)
         sfree(wc->wcsc);
     }
 #endif
+    sfree(wc->bTracing);
     sfree(wc);
 }
 
@@ -284,16 +370,24 @@ static void debug_stop_check(gmx_wallcycle_t wc, int ewc)
 void wallcycle_start(gmx_wallcycle_t wc, int ewc)
 {
 
-#ifdef HAVE_EXTRAE
-    gmx_tracer_resume();
-    start_range(ewc);
-#endif
-
     gmx_cycles_t cycle;
 
     if (wc == NULL)
     {
         return;
+    }
+
+    /* Set event marker only if it's not being already set */
+    if (wc->bTracing[ewc])
+    {
+        int top = eventStackTop();
+        if (top == -1)
+        {
+            gmx_tracer_resume();
+        }
+        start_range(ewc);
+        push(ewc);
+
     }
 
 #ifdef GMX_MPI
@@ -337,11 +431,6 @@ void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc)
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 {
 
-#ifdef HAVE_EXTRAE
-    gmx_tracer_pause();
-    stop_range(ewc);
-#endif
-
     gmx_cycles_t cycle, last;
 
     if (wc == NULL)
@@ -349,6 +438,18 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
         return 0;
     }
 
+    /* Unset the event marker only if it's already set */
+    if (wc->bTracing[ewc])
+    {
+        /* remove the event from the top of the stack */
+        stop_range(ewc);
+        pop();
+        int top = eventStackTop();
+        if (top == -1)
+        {
+            gmx_tracer_pause();
+        }
+    }
 #ifdef GMX_MPI
     if (wc->wc_barrier)
     {

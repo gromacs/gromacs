@@ -33,6 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "gromacs/utility/fatalerror.h"
+#include "wallcycle.h"
 
 #ifndef GMX_TRACING_H
 #define GMX_TRACING_H
@@ -44,6 +45,7 @@
  * It could be any number, but preferably between 1000-10000
  */
 #define EXTRAE_GMX_EVENT  1001
+
 #else
 #define FUNC_QUALIFIER static
 #define FUNC_TERM {}
@@ -74,8 +76,24 @@ FUNC_QUALIFIER
 void start_range(int epem) FUNC_TERM
 
 /* unset the event marker */
-FUNC_QUALIFIER void stop_range(int epem) FUNC_TERM
+FUNC_QUALIFIER
+void stop_range(int epem) FUNC_TERM
 
+/* read tracing preferences */
+FUNC_QUALIFIER
+void gmx_tracer_readconf(gmx_wallcycle_t wc) FUNC_TERM
+
+/* push an element to a stack of events to be traced */
+FUNC_QUALIFIER
+void push(int) FUNC_TERM
+
+/* pop an element*/
+FUNC_QUALIFIER
+int  pop(void) FUNC_TERM
+
+/* whats on the top of the stack */
+FUNC_QUALIFIER
+int eventStackTop(void) FUNC_TERM
 #ifdef __cplusplus
 }
 #endif
