@@ -21,5 +21,6 @@ For background on algorithms and implementations, see the
 
    getting-started
    cutoff-schemes
+   mdp-options
    file-formats
    tools
