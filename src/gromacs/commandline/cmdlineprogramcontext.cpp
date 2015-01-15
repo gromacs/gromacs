@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,59 +178,57 @@ bool isAcceptableLibraryPath(const std::string &path)
  * Returns whether given path prefix contains files from `share/top/`.
  *
  * \param[in]  path   Path prefix to check.
- * \param[out] result If return value is `true`, the pointee is set to the
- *     actual data directory. Otherwise, the pointee is not modified.
  * \returns  `true` if \p path contains the data files.
  *
  * Checks whether \p path could be the installation prefix where `share/top/`
  * files have been installed:  appends the relative installation path of the
  * data files and calls isAcceptableLibraryPath().
  */
-bool isAcceptableLibraryPathPrefix(const std::string &path, std::string *result)
+bool isAcceptableLibraryPathPrefix(const std::string &path)
 {
-    std::string testPath = Path::join(path, GMXLIB_SEARCH_DIR);
+    std::string testPath = Path::join(path, DATA_INSTALL_DIR, "top");
     if (isAcceptableLibraryPath(testPath))
     {
-        *result = testPath;
         return true;
     }
     return false;
 }
 
 /*! \brief
- * Returns a fallback data path.
+ * Returns a fallback installation prefix path.
  *
  * Checks a few standard locations for the data files before returning a
  * configure-time hard-coded path.  The hard-coded path is preferred if it
  * actually contains the data files, though.
  */
-std::string findFallbackLibraryDataPath()
+std::string findFallbackInstallationPrefixPath()
 {
 #ifndef GMX_NATIVE_WINDOWS
-    if (!isAcceptableLibraryPath(GMXLIB_FALLBACK))
+    if (!isAcceptableLibraryPathPrefix(CMAKE_INSTALL_PREFIX))
     {
-        std::string foundPath;
-        if (isAcceptableLibraryPathPrefix("/usr/local", &foundPath))
+        if (isAcceptableLibraryPathPrefix("/usr/local"))
         {
-            return foundPath;
+            return "/usr/local";
         }
-        if (isAcceptableLibraryPathPrefix("/usr", &foundPath))
+        if (isAcceptableLibraryPathPrefix("/usr"))
         {
-            return foundPath;
+            return "/usr";
         }
-        if (isAcceptableLibraryPathPrefix("/opt", &foundPath))
+        if (isAcceptableLibraryPathPrefix("/opt"))
         {
-            return foundPath;
+            return "/opt";
         }
     }
 #endif
-    return GMXLIB_FALLBACK;
+    return CMAKE_INSTALL_PREFIX;
 }
 
 /*! \brief
  * Finds the library data files based on path of the binary.
  *
- * \param[in] binaryPath  Absolute path to the binary.
+ * \param[in]  binaryPath     Absolute path to the binary.
+ * \param[out] bSourceLayout  Set to `true` if the binary is run from
+ *     the build tree and the original source directory can be found.
  * \returns  Path to the `share/top/` data files.
  *
  * The search based on the path only works if the binary is in the same
@@ -241,8 +239,10 @@ std::string findFallbackLibraryDataPath()
  * Extra logic is present to allow running binaries from the build tree such
  * that they use up-to-date data files from the source tree.
  */
-std::string findDefaultLibraryDataPath(const std::string &binaryPath)
+std::string findInstallationPrefixPath(const std::string &binaryPath,
+                                       bool              *bSourceLayout)
 {
+    *bSourceLayout = false;
     // If the input path is not absolute, the binary could not be found.
     // Don't search anything.
     if (Path::isAbsolute(binaryPath))
@@ -263,18 +263,19 @@ std::string findDefaultLibraryDataPath(const std::string &binaryPath)
             std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
             if (isAcceptableLibraryPath(testPath))
             {
-                return testPath;
+                *bSourceLayout = true;
+                return CMAKE_SOURCE_DIR;
             }
         }
 #endif
 
         // Use the executable path to (try to) find the library dir.
+        // TODO: Consider only going up exactly the required number of levels.
         while (!searchPath.empty())
         {
-            std::string testPath = Path::join(searchPath, GMXLIB_SEARCH_DIR);
-            if (isAcceptableLibraryPath(testPath))
+            if (isAcceptableLibraryPathPrefix(searchPath))
             {
-                return testPath;
+                return searchPath;
             }
             searchPath = Path::getParentPath(searchPath);
         }
@@ -282,7 +283,7 @@ std::string findDefaultLibraryDataPath(const std::string &binaryPath)
 
     // End of smart searching. If we didn't find it in our parent tree,
     // or if the program name wasn't set, return a fallback.
-    return findFallbackLibraryDataPath();
+    return findFallbackInstallationPrefixPath();
 }
 
 //! \}
@@ -316,18 +317,19 @@ class CommandLineProgramContext::Impl
         std::string                   displayName_;
         std::string                   commandLine_;
         mutable std::string           fullBinaryPath_;
-        mutable std::string           defaultLibraryDataPath_;
+        mutable std::string           installationPrefix_;
+        mutable bool                  bSourceLayout_;
         mutable tMPI::mutex           binaryPathMutex_;
 };
 
 CommandLineProgramContext::Impl::Impl()
-    : programName_("GROMACS")
+    : programName_("GROMACS"), bSourceLayout_(false)
 {
 }
 
 CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
                                       ExecutableEnvironmentPointer env)
-    : executableEnv_(env)
+    : executableEnv_(env), bSourceLayout_(false)
 {
     invokedName_ = (argc != 0 ? argv[0] : "");
     programName_ = Path::getFilename(invokedName_);
@@ -415,16 +417,19 @@ const char *CommandLineProgramContext::fullBinaryPath() const
     return impl_->fullBinaryPath_.c_str();
 }
 
-const char *CommandLineProgramContext::defaultLibraryDataPath() const
+InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
-    if (impl_->defaultLibraryDataPath_.empty())
+    if (impl_->installationPrefix_.empty())
     {
         impl_->findBinaryPath();
-        impl_->defaultLibraryDataPath_ =
-            Path::normalize(findDefaultLibraryDataPath(impl_->fullBinaryPath_));
+        impl_->installationPrefix_ =
+            Path::normalize(findInstallationPrefixPath(impl_->fullBinaryPath_,
+                                                       &impl_->bSourceLayout_));
     }
-    return impl_->defaultLibraryDataPath_.c_str();
+    return InstallationPrefixInfo(
+            impl_->installationPrefix_.c_str(),
+            impl_->bSourceLayout_);
 }
 
 } // namespace gmx

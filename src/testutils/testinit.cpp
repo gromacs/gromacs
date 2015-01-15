@@ -82,7 +82,7 @@ namespace
 /*! \brief
  * Custom program context for test binaries.
  *
- * This context overrides the defaultLibraryDataPath() implementation to always
+ * This context overrides the installationPrefix() implementation to always
  * load data files from the source directory, as the test binaries are never
  * installed.  It also support overriding the directory through a command-line
  * option to the test binary.
@@ -98,8 +98,7 @@ class TestProgramContext : public ProgramContextInterface
          * \param[in] context  Current \Gromacs program context.
          */
         explicit TestProgramContext(const ProgramContextInterface &context)
-            : context_(context),
-              dataPath_(Path::join(CMAKE_SOURCE_DIR, "share/top"))
+            : context_(context), dataPath_(CMAKE_SOURCE_DIR)
         {
         }
 
@@ -108,7 +107,7 @@ class TestProgramContext : public ProgramContextInterface
          */
         void overrideSourceRoot(const std::string &sourceRoot)
         {
-            dataPath_ = Path::join(sourceRoot, "share/top");
+            dataPath_ = sourceRoot;
         }
 
         virtual const char *programName() const
@@ -123,9 +122,9 @@ class TestProgramContext : public ProgramContextInterface
         {
             return context_.fullBinaryPath();
         }
-        virtual const char *defaultLibraryDataPath() const
+        virtual InstallationPrefixInfo installationPrefix() const
         {
-            return dataPath_.c_str();
+            return InstallationPrefixInfo(dataPath_.c_str(), true);
         }
         virtual const char *commandLine() const
         {

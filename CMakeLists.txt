@@ -743,6 +743,8 @@ mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
 # customizing the install locations.
 set(LIB_INSTALL_DIR       ${GMX_LIB_INSTALL_DIR})
 set(BIN_INSTALL_DIR       bin)
+# This variable also gets written into config.h for use in finding the data
+# directories.
 set(DATA_INSTALL_DIR      share/${GMX_DATA_INSTALL_DIR})
 set(MAN_INSTALL_DIR       share/man)
 # If the nesting level wrt. the installation root is changed,
@@ -751,11 +753,6 @@ set(CMAKE_INSTALL_DIR     share/cmake)
 # TODO: Make GMXRC adapt if this is changed
 set(PKGCONFIG_INSTALL_DIR ${LIB_INSTALL_DIR}/pkgconfig)
 set(INCL_INSTALL_DIR      include)
-
-# These variables get written into config.h for use in finding the data
-# directories.
-set(GMXLIB_SEARCH_DIR share/${GMX_DATA_INSTALL_DIR}/top)
-set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 
 list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR})
 

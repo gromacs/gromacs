@@ -68,6 +68,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static gmx_bool be_cool(void)
 {
@@ -802,17 +803,18 @@ void printBinaryInformation(FILE                            *fp,
     fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
             gmx_version(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
-    if (binaryPath != NULL && binaryPath[0] != '\0')
+    if (!gmx::isNullOrEmpty(binaryPath))
     {
         fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
     }
-    const char *const libraryPath = programContext.defaultLibraryDataPath();
-    if (libraryPath != NULL && libraryPath[0] != '\0')
+    const gmx::InstallationPrefixInfo installPrefix = programContext.installationPrefix();
+    if (!gmx::isNullOrEmpty(installPrefix.path))
     {
-        fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
+        fprintf(fp, "%sData prefix:  %s%s%s\n", prefix, installPrefix.path,
+                installPrefix.bSourceLayout ? " (source tree)" : "", suffix);
     }
     const char *const commandLine = programContext.commandLine();
-    if (commandLine != NULL && commandLine[0] != '\0')
+    if (!gmx::isNullOrEmpty(commandLine))
     {
         fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
                 prefix, suffix, prefix, commandLine, suffix);
