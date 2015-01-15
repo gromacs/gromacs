@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -209,7 +209,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bVV, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
     real              dvdl_constr;
-    rvec             *cbuf = NULL;
+    rvec             *cbuf        = NULL;
+    int               cbuf_nalloc = 0;
     matrix            lastbox;
     int               lamnew  = 0;
     /* for FEP */
@@ -253,11 +254,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* md-vv uses averaged full step velocities for T-control
        md-vv-avek uses averaged half step velocities for T-control (but full step ekin for P control)
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
-    bVV = EI_VV(ir->eI);
-    if (bVV) /* to store the initial velocities while computing virial */
-    {
-        snew(cbuf, top_global->natoms);
-    }
+    bVV      = EI_VV(ir->eI);
     bTrotter = (bVV && (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir) || IR_NVT_TROTTER(ir)));
 
     if (bRerunMD)
@@ -1071,6 +1068,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bVV && !bStartingFromCpt && !bRerunMD)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
+            rvec *vbuf = NULL;
+
             wallcycle_start(wcycle, ewcUPDATE);
             if (ir->eI == eiVV && bInitStep)
             {
@@ -1080,7 +1079,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                  * revert back to the initial coordinates
                  * so that the input is actually the initial step.
                  */
-                copy_rvecn(state->v, cbuf, 0, state->natoms); /* should make this better for parallelizing? */
+                snew(vbuf, state->natoms);
+                copy_rvecn(state->v, vbuf, 0, state->natoms); /* should make this better for parallelizing? */
             }
             else
             {
@@ -1207,9 +1207,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
             }
             /* if it's the initial step, we performed this first step just to get the constraint virial */
-            if (bInitStep && ir->eI == eiVV)
+            if (ir->eI == eiVV && bInitStep)
             {
-                copy_rvecn(cbuf, state->v, 0, state->natoms);
+                copy_rvecn(vbuf, state->v, 0, state->natoms);
+                sfree(vbuf);
             }
             wallcycle_stop(wcycle, ewcUPDATE);
         }
@@ -1406,6 +1407,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (ir->eI == eiVVAK)
                 {
+                    /* We probably only need md->homenr, not state->natoms */
+                    if (state->natoms > cbuf_nalloc)
+                    {
+                        cbuf_nalloc = state->natoms;
+                        srenew(cbuf, cbuf_nalloc);
+                    }
                     copy_rvecn(state->x, cbuf, 0, state->natoms);
                 }
                 bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));

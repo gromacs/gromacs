@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -8715,7 +8715,7 @@ static void set_zones_size(gmx_domdec_t *dd,
         /* To determine the bounding box for a zone we need to find
          * the extreme corners of 4, 2 or 1 corners.
          */
-        nc = 1 << (ddbox->npbcdim - 1);
+        nc = 1 << (ddbox->nboundeddim - 1);
 
         for (c = 0; c < nc; c++)
         {
