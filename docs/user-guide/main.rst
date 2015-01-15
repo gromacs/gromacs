@@ -10,5 +10,6 @@ User guide
    introduction
    getting-started
    cutoff-schemes
+   mdp-options
    file-formats
    tools

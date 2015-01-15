@@ -43,8 +43,6 @@ Documentation for developers
 Indices and tables
 ==================
 
-.. TODO this does nothing so far, but it will later
-
 * :ref:`genindex`
 
 .. _Reference Manual: `gmx-manual`_
