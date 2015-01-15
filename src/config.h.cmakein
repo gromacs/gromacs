@@ -47,14 +47,14 @@
 /* TODO: For now, disable Doxygen warnings from here */
 /*! \cond */
 
-/* Default location of data files */
-#define GMXLIB_SEARCH_DIR "@GMXLIB_SEARCH_DIR@"
-
-/* Default location of data files */
-#define GMXLIB_FALLBACK "@GMXLIB_FALLBACK@"
-
 /* Binary suffix for the created binaries */
 #define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
+
+/* Installation prefix (default location of data files) */
+#define CMAKE_INSTALL_PREFIX "@CMAKE_INSTALL_PREFIX@"
+
+/* Location of data files in the installation directory */
+#define DATA_INSTALL_DIR "@DATA_INSTALL_DIR@"
 
 /* Source directory for the build */
 #cmakedefine CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@"

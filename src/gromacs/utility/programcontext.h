@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,41 @@ namespace gmx
 
 //! \addtogroup module_utility
 //! \{
+
+/*! \brief
+ * Provides information about installation prefix (see
+ * ProgramContextInterface::installationPrefix()).
+ *
+ * \inpublicapi
+ */
+struct InstallationPrefixInfo
+{
+    //! Initializes the structure with given values.
+    InstallationPrefixInfo(const char *path, bool bSource)
+        : path(path), bSourceLayout(bSource)
+    {
+    }
+
+    /*! \brief
+     * Path to the installation prefix of the current \Gromacs instance.
+     *
+     * If this is `NULL` or empty, data files cannot be looked up from the
+     * install tree and \Gromacs functions that access such files may fail.
+     * This can also contain a path to the source tree (see \a bSourceLayout).
+     */
+    const char *const path;
+    /*! \brief
+     * Whether \a path points to a source tree -like layout.
+     *
+     * For testing, it is useful to read data files from the source tree.
+     * For such cases, the program context can return the source tree root path
+     * in \a path, and set this to `true` to indicate that the data files
+     * should be searched using the layout of the source tree instead of the
+     * installation.
+     */
+    const bool        bSourceLayout;
+};
+
 
 /*! \brief
  * Provides context information about the program that is calling the library.
@@ -107,15 +142,19 @@ class ProgramContextInterface
          */
         virtual const char *fullBinaryPath() const = 0;
         /*! \brief
-         * Returns the default path for \Gromacs data files.
+         * Returns the installation prefix for \Gromacs.
          *
          * This path is used to locate the data files that are in `share/top/`
          * in the source directory.
          * The implementation can provide an empty string if the path is not
          * available; in such a case, functions that require data files may
          * fail.
+         *
+         * The returned structure also contains a flag to indicate whether the
+         * prefix actually points to the source tree.  This is used for tests
+         * and to support running binaries directly from the build tree.
          */
-        virtual const char *defaultLibraryDataPath() const = 0;
+        virtual InstallationPrefixInfo installationPrefix() const = 0;
         /*! \brief
          * Returns the full command line used to invoke the binary.
          *
