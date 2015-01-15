@@ -96,6 +96,7 @@ if (SPHINX_FOUND)
         user-guide/index.rst
         user-guide/getting-started.rst
         user-guide/cutoff-schemes.rst
+        user-guide/mdp-options.rst
         user-guide/file-formats.rst
         user-guide/tools.rst
         conf.py
