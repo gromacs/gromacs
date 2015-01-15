@@ -32,14 +32,29 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_sphinx_extension_path = '@SPHINX_EXTENSION_PATH@'
-gmx_version_string = '@GMX_VERSION_STRING@'
-gmx_version_string_full = '@GMX_VERSION_STRING_FULL@'
-regressiontest_version = '@REGRESSIONTEST_VERSION@'
-variables = [
-        ('GMX_CMAKE_MINIMUM_REQUIRED_VERSION', '@GMX_CMAKE_MINIMUM_REQUIRED_VERSION@'),
-        ('REQUIRED_CUDA_VERSION', '@REQUIRED_CUDA_VERSION@'),
-        ('REQUIRED_CUDA_COMPUTE_CAPABILITY', '@REQUIRED_CUDA_COMPUTE_CAPABILITY@'),
-        ('SOURCE_MD5SUM', '@SOURCE_MD5SUM@'),
-        ('REGRESSIONTESTS_MD5SUM', '@REGRESSIONTESTS_MD5SUM@')
-    ]
+from sphinx import addnodes
+
+class MdpNodeParser(object):
+    def __init__(self):
+        self._current_option = None
+
+    def parse_option(self, env, text, nodes):
+        nodes += addnodes.desc_name(text, text)
+        self._current_option = text
+        return text
+
+    def parse_value(self, env, text, nodes):
+        nodes += addnodes.desc_name(text, text)
+        if self._current_option is None:
+            return text
+        return self._current_option + '=' + text
+
+def setup(app):
+    mdp_parser = MdpNodeParser()
+    app.add_object_type('mdp', 'mdp',
+            indextemplate='pair: %s; mdp option',
+            parse_node = mdp_parser.parse_option,
+            objname='mdp option')
+    app.add_object_type('mdp-value', 'mdp-value',
+            parse_node = mdp_parser.parse_value,
+            objname='mdp value')
