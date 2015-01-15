@@ -81,8 +81,10 @@ if (SPHINX_FOUND)
     set(SPHINX_INPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sphinx-input)
     set(SPHINX_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/conf.py)
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
+    set(SPHINX_EXTENSION_PATH ${CMAKE_CURRENT_SOURCE_DIR})
     gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
         EXTRA_VARS
+            SPHINX_EXTENSION_PATH
             GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
             SOURCE_MD5SUM REGRESSIONTESTS_MD5SUM
@@ -96,6 +98,7 @@ if (SPHINX_FOUND)
         user-guide/index.rst
         user-guide/getting-started.rst
         user-guide/cutoff-schemes.rst
+        user-guide/mdp-options.rst
         user-guide/file-formats.rst
         user-guide/tools.rst
         user-guide/plotje.gif
