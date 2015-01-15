@@ -62,6 +62,15 @@
 #include "gromacs/utility/fatalerror.h"
 #endif
 
+#ifdef HAVE_EXTRAE
+#include "gromacs/utility/fatalerror.h"
+#include <extrae_user_events.h>
+#include "gmx_tracing.h"
+/* Set an identifier for Gromacs events.
+ * It could be any number, but preferably between 1000-10000
+ */
+#endif
+
 typedef struct
 {
     int          n;
@@ -134,11 +143,22 @@ gmx_bool wallcycle_have_counter(void)
     return gmx_cycles_have_counter();
 }
 
+/* in order to set lables to markers,
+   Extrae needs an array starting at 1.
+   So we supply a helped function for later mapping */
+
+const char * wcn_name_get(int i)
+{
+    const char *wcname;
+    snew(wcname, 20);
+    wcname = wcn[i];
+    return wcname;
+}
+
 gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused *cr,
                                int nthreads_pp, int nthreads_pme)
 {
     gmx_wallcycle_t wc;
-
 
     if (!wallcycle_have_counter())
     {
@@ -156,6 +176,8 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
     wc->nthreads_pp         = nthreads_pp;
     wc->nthreads_pme        = nthreads_pme;
     wc->cycles_sum          = NULL;
+
+    gmx_tracer_start();
 
 #ifdef GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
@@ -261,6 +283,12 @@ static void debug_stop_check(gmx_wallcycle_t wc, int ewc)
 
 void wallcycle_start(gmx_wallcycle_t wc, int ewc)
 {
+
+#ifdef HAVE_EXTRAE
+    gmx_tracer_resume();
+    start_range(ewc);
+#endif
+
     gmx_cycles_t cycle;
 
     if (wc == NULL)
@@ -308,6 +336,12 @@ void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc)
 
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 {
+
+#ifdef HAVE_EXTRAE
+    gmx_tracer_pause();
+    stop_range(ewc);
+#endif
+
     gmx_cycles_t cycle, last;
 
     if (wc == NULL)

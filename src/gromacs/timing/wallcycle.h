@@ -126,6 +126,9 @@ void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs);
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 /* Stop the sub cycle count for ewcs */
 
+const char * wcn_name_get(int i);
+/* Get the name of the wcn element, used by Extrae*/
+
 #ifdef __cplusplus
 }
 #endif

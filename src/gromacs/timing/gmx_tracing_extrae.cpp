@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,23 +33,55 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "config.h"
+#include <stdlib.h>
+#include "gromacs/utility/cstringutil.h"
 #include "gmx_tracing.h"
 #include "extrae_user_events.h"
 
 // TODO: remove when done with development
 #include "gromacs/utility/fatalerror.h"
+#include "wallcycle.h"
 
 /* start the tracer */
 void gmx_tracer_start()
 {
+    // Extrae is automatically initialized upon launch
+    //Extrae_init();
 
-    Extrae_init();
+    int            i;
+    extrae_type_t  eventID   = EXTRAE_GMX_EVENT;
+    char          *type_desc = (char *) "GMX_EVENT";
+    unsigned int   nevents   = ewcNR;
+    extrae_value_t event[ewcNR + 1];
+    char          *event_labels[ewcNR+1];
+
+
+    /* Define labels for the event markers */
+    /* we have ewcNR+1 events, element 0 is a dummy */
+    event_labels[0] = gmx_strdup("End");
+    event[0]        = 0;
+
+    for (i = 0; i < ewcNR; i++)
+    {
+        event[i+1]        = i+1;
+        event_labels[i+1] = gmx_strdup(wcn_name_get(i));
+    }
+
+    Extrae_define_event_type(&eventID, type_desc, &nevents, event, event_labels);
+
+/*
+   TODO: check whether we need to deallocate here
+    for (i = 0; i <= ewcNR; i++)
+    {
+        sfree(event_labels[i]);
+    }
+    sfree(event_labels);
+ */
 };
 
 /* stop the tracer */
 void gmx_tracer_stop()
 {
-
     Extrae_fini();
 };
 
@@ -73,9 +105,9 @@ void start_range(int epem)
 {
 
 // Uncomment for debugging
-// gmx_warning("PROFILER: Event %d/n", epem);
+// gmx_warning("PROFILER: Start range Event %d/n", epem);
 
-    Extrae_event(1001, epem+1);
+    Extrae_event(EXTRAE_GMX_EVENT, epem+1);
 
 };
 
@@ -84,7 +116,7 @@ void stop_range(int epem)
 {
 
 // Uncomment for debugging
-// gmx_warning("PROFILER: Event %d/n", epem);
+// gmx_warning("PROFILER: STOP range Event %d/n", epem);
 
-    Extrae_event(1001, 0);
+    Extrae_event(EXTRAE_GMX_EVENT, 0);
 };
