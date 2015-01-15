@@ -43,6 +43,8 @@
 
 #include "datafilefinder.h"
 
+#include "config.h"
+
 #include <cstdlib>
 
 #include <string>
@@ -65,12 +67,27 @@ namespace gmx
 class DataFileFinder::Impl
 {
     public:
+        static std::string getDefaultPath();
+
         Impl() : envName_(NULL), bEnvIsSet_(false) {}
 
         const char               *envName_;
         bool                      bEnvIsSet_;
         std::vector<std::string>  searchPath_;
 };
+
+std::string DataFileFinder::Impl::getDefaultPath()
+{
+    const InstallationPrefixInfo installPrefix
+        = getProgramContext().installationPrefix();
+    if (!isNullOrEmpty(installPrefix.path))
+    {
+        const char *const dataPath
+            = installPrefix.bSourceLayout ? "share" : DATA_INSTALL_DIR;
+        return Path::join(installPrefix.path, dataPath, "top");
+    }
+    return std::string();
+}
 
 /********************************************************************
  * DataFileFinder
@@ -140,8 +157,8 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
             }
         }
     }
-    const char *const defaultPath = getProgramContext().defaultLibraryDataPath();
-    if (defaultPath != NULL && defaultPath[0] != '\0')
+    const std::string &defaultPath = Impl::getDefaultPath();
+    if (!defaultPath.empty())
     {
         std::string testPath = Path::join(defaultPath, options.filename_);
         if (Path::exists(testPath))
@@ -179,7 +196,7 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
                 message.append(*i);
             }
         }
-        if (defaultPath != NULL && defaultPath[0] != '\0')
+        if (!defaultPath.empty())
         {
             message.append("\n  ");
             message.append(defaultPath);
@@ -228,12 +245,12 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
             }
         }
     }
-    const char *const defaultPath = getProgramContext().defaultLibraryDataPath();
-    if (defaultPath != NULL && defaultPath[0] != '\0')
+    const std::string &defaultPath = Impl::getDefaultPath();
+    if (!defaultPath.empty())
     {
         std::vector<std::string> files
             = DirectoryEnumerator::enumerateFilesWithExtension(
-                        defaultPath, options.filename_, false);
+                        defaultPath.c_str(), options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {
             result.push_back(DataFileInfo(defaultPath, *i, true));
