@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -348,7 +348,9 @@ function (gmx_configure_version_file INFILE OUTFILE)
     include(CMakeParseArguments)
     set(_options REMOTE_HASH SOURCE_FILE)
     set(_one_value_args COMMENT TARGET)
-    cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
+    set(_multi_value_args EXTRA_VARS)
+    cmake_parse_arguments(
+        ARG "${_options}" "${_one_value_args}" "${_multi_value_args}" ${ARGN})
     if (ARG_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
     endif()
@@ -363,6 +365,11 @@ function (gmx_configure_version_file INFILE OUTFILE)
     if (NOT IS_ABSOLUTE ${INFILE})
         set(INFILE ${CMAKE_CURRENT_SOURCE_DIR}/${INFILE})
     endif()
+    # Create command-line definitions for the requested variables
+    set(_extra_var_defines)
+    foreach(_var ${ARG_EXTRA_VARS})
+        list(APPEND _extra_var_defines -D "${_var}=${${_var}}")
+    endforeach()
     # The touch command is necessary to ensure that after the target is run,
     # the timestamp is newer than in the input files.
     add_custom_command(OUTPUT ${OUTFILE}
@@ -370,6 +377,7 @@ function (gmx_configure_version_file INFILE OUTFILE)
             -D VERSION_VARIABLES=${VERSION_INFO_CMAKE_FILE}
             -D VERSION_CMAKEIN=${INFILE}
             -D VERSION_OUT=${OUTFILE}
+            ${_extra_var_defines}
             -P ${VERSION_INFO_CONFIGURE_SCRIPT}
         COMMAND ${CMAKE_COMMAND} -E touch ${OUTFILE}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
