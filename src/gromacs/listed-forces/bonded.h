@@ -56,6 +56,7 @@
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -115,7 +116,7 @@ t_ifunc restrdihs, cbtdihs;
 t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
 
-/* As pdihs above, but without calculating energies and shift forces */
+/* As pdihs(), but without calculating energies and shift forces */
 void
     pdihs_noener(int nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -125,6 +126,35 @@ void
                  real lambda,
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                  int gmx_unused *global_atom_index);
+
+#ifdef GMX_SIMD_HAVE_REAL
+
+/* As angles(), but using SIMD to calculate many angles at once.
+ * This routines does not calculate energies and shift forces.
+ */
+void
+    angles_noener_simd(int nbonds,
+                       const t_iatom forceatoms[], const t_iparams forceparams[],
+                       const rvec x[], rvec f[],
+                       const struct t_pbc *pbc,
+                       const struct t_graph gmx_unused *g,
+                       real gmx_unused lambda,
+                       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                       int gmx_unused *global_atom_index);
+
+/* As pdihs_noener(), but using SIMD to calculate many dihedrals at once. */
+void
+    pdihs_noener_simd(int nbonds,
+                      const t_iatom forceatoms[], const t_iparams forceparams[],
+                      const rvec x[], rvec f[],
+                      const struct t_pbc *pbc,
+                      const struct t_graph gmx_unused *g,
+                      real gmx_unused lambda,
+                      const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                      int gmx_unused *global_atom_index);
+
+#endif
+
 //! \endcond
 
 #ifdef __cplusplus
