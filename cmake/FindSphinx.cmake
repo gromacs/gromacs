@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,47 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This module looks for Pandoc, and sets PANDOC_EXECUTABLE to the
-# location of its binary.
-#
-# It respects the variable Pandoc_FIND_QUIETLY
+find_program(SPHINX_EXECUTABLE NAMES sphinx-build
+    HINTS
+    $ENV{SPHINX_DIR}
+    PATH_SUFFIXES bin
+    DOC "Sphinx documentation generator"
+)
+mark_as_advanced(SPHINX_EXECUTABLE)
+
+# Detect Sphinx version
+
+if(SPHINX_FOUND AND NOT DEFINED SPHINX_EXECUTABLE_VERSION)
+    execute_process(
+        COMMAND ${SPHINX_EXECUTABLE} --version
+        OUTPUT_VARIABLE SPHINX_VERSION_OUTPUT_VARIABLE
+        RESULT_VARIABLE SPHINX_VERSION_RESULT_VARIABLE
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    string(REGEX REPLACE "Sphinx \\(sphinx-build\\) ([^ ]+)" "\\1" SPHINX_EXECUTABLE_VERSION ${SPHINX_VERSION_OUTPUT_VARIABLE})
+    set(SPHINX_EXECUTABLE_VERSION "${SPHINX_EXECUTABLE_VERSION}" CACHE INTERNAL "Version of sphinx-build")
+endif()
+
+# In lieu of finding the pygments python module as a needed component
+# for Sphinx, find the pygmentize executable that requires the module.
+find_program(PYGMENTIZE_EXECUTABLE NAMES pygmentize
+    HINTS
+    $ENV{PYGMENTIZE_DIR}
+    PATH_SUFFIXES bin
+    DOC "Pygmentize from pygments Python syntax highlighting package"
+    )
+mark_as_advanced(PYGMENTIZE_EXECUTABLE)
+
+if(NOT ${PYGMENTIZE_EXECUTABLE})
+    # That's enough, pygments for use in Sphinx is found
+    set(Sphinx_pygments_FOUND 1)
+endif()
 
 include(FindPackageHandleStandardArgs)
 
-if(DEFINED PANDOC_EXECUTABLE)
-  set(Pandoc_FIND_QUIETLY TRUE)
-endif()
-
-find_program(PANDOC_EXECUTABLE
-  NAMES pandoc
-  DOC "Pandoc - a universal document converter")
-
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(Pandoc REQUIRED_VARS PANDOC_EXECUTABLE)
-
-mark_as_advanced(PANDOC_EXECUTABLE)
+find_package_handle_standard_args(Sphinx
+    REQUIRED_VARS SPHINX_EXECUTABLE
+    VERSION_VAR SPHINX_EXECUTABLE_VERSION
+    HANDLE_COMPONENTS
+    )

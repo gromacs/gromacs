@@ -50,7 +50,7 @@ if (BUILDING_SOURCE_PACKAGE)
     # outdated.
     if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/man1/gmx-view.1" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/docs/install-guide/final/INSTALL" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/online.html" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/online/gro.html" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/programs/gmx-view.html")
         message(FATAL_ERROR
