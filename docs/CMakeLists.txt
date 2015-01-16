@@ -98,9 +98,12 @@ if (SPHINX_FOUND)
         user-guide/index.rst
         user-guide/getting-started.rst
         user-guide/cutoff-schemes.rst
+        user-guide/mdrun-features.rst
+        user-guide/mdrun-performance.rst
         user-guide/mdp-options.rst
         user-guide/file-formats.rst
         user-guide/tools.rst
+        user-guide/environment-variables.rst
         user-guide/plotje.gif
         user-guide/xvgr.gif
         conf.py
