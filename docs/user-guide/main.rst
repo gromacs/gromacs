@@ -10,6 +10,9 @@ User guide
    introduction
    getting-started
    cutoff-schemes
+   mdrun-features
+   mdrun-performance
    mdp-options
    file-formats
    tools
+   environment-variables

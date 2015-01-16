@@ -94,9 +94,12 @@ if (SPHINX_FOUND)
         user-guide/introduction.rst
         user-guide/getting-started.rst
         user-guide/cutoff-schemes.rst
+        user-guide/mdrun-features.rst
+        user-guide/mdrun-performance.rst
         user-guide/mdp-options.rst
         user-guide/file-formats.rst
         user-guide/tools.rst
+        user-guide/environment-variables.rst
         conf.py
         )
     set(SPHINX_INPUT_FILES ${SPHINX_CONFIG_VARS_FILE})
