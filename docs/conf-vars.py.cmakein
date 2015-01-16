@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This module looks for Pandoc, and sets PANDOC_EXECUTABLE to the
-# location of its binary.
-#
-# It respects the variable Pandoc_FIND_QUIETLY
-
-include(FindPackageHandleStandardArgs)
-
-if(DEFINED PANDOC_EXECUTABLE)
-  set(Pandoc_FIND_QUIETLY TRUE)
-endif()
-
-find_program(PANDOC_EXECUTABLE
-  NAMES pandoc
-  DOC "Pandoc - a universal document converter")
-
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(Pandoc REQUIRED_VARS PANDOC_EXECUTABLE)
-
-mark_as_advanced(PANDOC_EXECUTABLE)
+gmx_version_string = '@GMX_VERSION_STRING@'
+gmx_version_string_full = '@GMX_VERSION_STRING_FULL@'
+regressiontest_version = '@REGRESSIONTEST_VERSION@'
+variables = [
+        ('GMX_CMAKE_MINIMUM_REQUIRED_VERSION', '@GMX_CMAKE_MINIMUM_REQUIRED_VERSION@'),
+        ('REQUIRED_CUDA_VERSION', '@REQUIRED_CUDA_VERSION@'),
+        ('REQUIRED_CUDA_COMPUTE_CAPABILITY', '@REQUIRED_CUDA_COMPUTE_CAPABILITY@'),
+        ('SOURCE_MD5SUM', '@SOURCE_MD5SUM@'),
+        ('REGRESSIONTESTS_MD5SUM', '@REGRESSIONTESTS_MD5SUM@')
+    ]

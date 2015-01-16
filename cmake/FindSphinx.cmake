@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,33 +32,47 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note that the install-guide target, etc. can still be built
-# independent of the webpage target.
-if(MARKDOWN_CONFIGURE_IS_POSSIBLE AND PANDOC_EXECUTABLE)
-    set(name "install-guide")
-    configure_markdown(${name}.md)
-    make_markdown_html(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.md)
-    make_markdown_pdf(${name} ${CMAKE_CURRENT_BINARY_DIR}/${name}.md)
+find_program(SPHINX_EXECUTABLE NAMES sphinx-build
+    HINTS
+    $ENV{SPHINX_DIR}
+    PATH_SUFFIXES bin
+    DOC "Sphinx documentation generator"
+)
+mark_as_advanced(SPHINX_EXECUTABLE)
 
-    # Make the INSTALL file for CPack for the tarball. This gets put
-    # into the tarball via the CPack rules in the top-level
-    # CMakeLists.txt
-    add_custom_command(
-        OUTPUT final/INSTALL
-        COMMAND ${CMAKE_COMMAND} -E make_directory final
-        COMMAND ${PANDOC_EXECUTABLE} -t plain -o final/INSTALL ${name}.md
-        DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/${name}.md
-        VERBATIM
-        )
+# Detect Sphinx version
 
-    # Add a top-level target for the webpage build to hook onto
-    add_custom_target(${name}
-        DEPENDS
-            final/INSTALL
-            ${HTML_OUTPUT_DIR}/${name}.html
-            ${HTML_OUTPUT_DIR}/${name}.pdf
-        VERBATIM
+if(SPHINX_FOUND AND NOT DEFINED SPHINX_EXECUTABLE_VERSION)
+    execute_process(
+        COMMAND ${SPHINX_EXECUTABLE} --version
+        OUTPUT_VARIABLE SPHINX_VERSION_OUTPUT_VARIABLE
+        RESULT_VARIABLE SPHINX_VERSION_RESULT_VARIABLE
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-    gmx_cpack_add_generated_source_directory(final DESTINATION /)
+    string(REGEX REPLACE "Sphinx \\(${SPHINX_EXECUTABLE}\\) ([^ ]+)" "\\1" SPHINX_EXECUTABLE_VERSION ${SPHINX_VERSION_OUTPUT_VARIABLE})
+    set(SPHINX_EXECUTABLE_VERSION "${SPHINX_EXECUTABLE_VERSION}" CACHE INTERNAL "Version of ${SPHINX_EXECUTABLE}")
 endif()
+
+# In lieu of finding the pygments python module as a needed component
+# for Sphinx, find the pygmentize executable that requires the module.
+find_program(PYGMENTIZE_EXECUTABLE NAMES pygmentize
+    HINTS
+    $ENV{PYGMENTIZE_DIR}
+    PATH_SUFFIXES bin
+    DOC "Pygmentize from pygments Python syntax highlighting package"
+    )
+mark_as_advanced(PYGMENTIZE_EXECUTABLE)
+
+if(PYGMENTIZE_EXECUTABLE)
+    # That's enough, pygments for use in Sphinx is found
+    set(Sphinx_pygments_FOUND 1)
+endif()
+
+include(FindPackageHandleStandardArgs)
+
+find_package_handle_standard_args(Sphinx
+    REQUIRED_VARS SPHINX_EXECUTABLE
+    VERSION_VAR SPHINX_EXECUTABLE_VERSION
+    HANDLE_COMPONENTS
+    )
