@@ -1037,10 +1037,10 @@ real angles(int nbonds,
 
 #ifdef GMX_SIMD_HAVE_REAL
 
-/* As angles, but using SIMD to calculate many dihedrals at once.
+/* As angles, but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
  */
-static gmx_inline void
+void
 angles_noener_simd(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
                    const rvec x[], rvec f[],
@@ -1966,7 +1966,7 @@ pdihs_noener(int nbonds,
 #ifdef GMX_SIMD_HAVE_REAL
 
 /* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
-static void
+void
 pdihs_noener_simd(int nbonds,
                   const t_iatom forceatoms[], const t_iparams forceparams[],
                   const rvec x[], rvec f[],
