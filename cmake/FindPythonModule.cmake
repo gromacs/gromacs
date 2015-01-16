@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,29 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This module looks for Pandoc, and sets PANDOC_EXECUTABLE to the
-# location of its binary.
-#
-# It respects the variable Pandoc_FIND_QUIETLY
-
-include(FindPackageHandleStandardArgs)
-
-if(DEFINED PANDOC_EXECUTABLE)
-  set(Pandoc_FIND_QUIETLY TRUE)
-endif()
-
-find_program(PANDOC_EXECUTABLE
-  NAMES pandoc
-  DOC "Pandoc - a universal document converter")
-
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(Pandoc REQUIRED_VARS PANDOC_EXECUTABLE)
-
-mark_as_advanced(PANDOC_EXECUTABLE)
+# Adapted from code posted on cmake-users by Mark Moll
+find_package(PythonInterp)
+function(find_python_module module)
+    string(TOUPPER ${module} module_upper)
+    if(NOT PYTHONMODULE_${module_upper})
+	if(ARGC GREATER 1 AND ARGV1 STREQUAL "REQUIRED")
+	    set(${module}_FIND_REQUIRED TRUE)
+	endif()
+        if (NOT PYTHON_EXECUTABLE)
+            message(STATUS "Cannot find python module ${module} because no python executable is known")
+        else()
+	    # A module's location is usually a directory, but for binary modules
+	    # it's a .so file.
+	    execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c" 
+	        "import re, ${module}; print re.compile('/__init__.py.*').sub('',${module}.__file__)"
+	        RESULT_VARIABLE _${module}_status 
+	        OUTPUT_VARIABLE _${module}_location
+	        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+        endif()
+	if(NOT _${module}_status)
+	    set(PYTHONMODULE_${module_upper} ${_${module}_location} CACHE STRING 
+		"Location of Python module ${module}")
+	endif()
+    endif()
+    find_package_handle_standard_args(PYTHONMODULE_${module} DEFAULT_MSG PYTHONMODULE_${module_upper})
+endfunction()
