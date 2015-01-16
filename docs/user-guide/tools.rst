@@ -1,4 +1,5 @@
-# Command-line tools in GROMACS  
+Command-line tools in GROMACS
+=====
 
 GROMACS includes many tools for preparing, running and analysing
 molecular dynamics simulations. These are all structured as part of
@@ -11,7 +12,8 @@ below.
 * Tools documentation [by name](programs/byname.html)  
 * Tools documentation [by topic](programs/bytopic.html)  
 
-## Common options and behaviour of GROMACS tools
+Common options and behaviour of GROMACS tools
+-----
 
 Optional files are not used unless the option is set, in contrast to
 non optional files, where the default file name is used when the

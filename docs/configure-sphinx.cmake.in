@@ -1,0 +1,22 @@
+# Helper script that defers configure_file of reStructuredText for
+# sphinx until build time, so that changes to the files configured
+# here don't trigger a global reconfigure
+
+# Now configure the values for all the variables that might later
+# configure any of the reStructuredText files.
+set(GMX_VERSION_STRING "@GMX_VERSION_STRING@")
+set(GMX_CMAKE_MINIMUM_REQUIRED_VERSION "@GMX_CMAKE_MINIMUM_REQUIRED_VERSION@")
+set(REQUIRED_CUDA_VERSION "@REQUIRED_CUDA_VERSION@")
+set(REQUIRED_CUDA_COMPUTE_CAPABILITY "@REQUIRED_CUDA_COMPUTE_CAPABILITY@")
+set(REGRESSIONTEST_VERSION "@REGRESSIONTEST_VERSION@")
+
+if(NOT DEFINED SPHINX_THEME)
+    set(SPHINX_THEME default)
+endif()
+
+if(NOT DEFINED SPHINX_THEME_DIR)
+    set(SPHINX_THEME_DIR)
+endif()
+
+configure_file(${FILE_TO_CONFIGURE}
+    ${CONFIGURED_FILE} @ONLY)
