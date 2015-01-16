@@ -514,6 +514,12 @@ void HelpExportReStructuredText::exportModuleHelp(
     // This would make Sphinx reruns much faster.
     File file("programs/" + tag + ".rst", "w");
     file.writeLine(formatString(".. _%s:", displayName.c_str()));
+    if (0 == displayName.compare("gmx mdrun"))
+    {
+        // Make an extra link target for the convenience of
+        // MPI-specific documentation
+        file.writeLine(".. _mdrun_mpi:");
+    }
     file.writeLine();
     file.writeLine(displayName);
     file.writeLine(std::string(displayName.length(), '='));
