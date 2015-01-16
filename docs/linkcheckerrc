@@ -3,6 +3,10 @@
 #
 # linkchecker index.html --ignore-url html-full --ignore-url html-user --ignore-url html-lib -f linkcheckerrc
 [filtering]
-# This site gives warnings about changed URLs, and suggests
-# using... the same URLs. Well done, someone.
-ignore=www.ks.uiuc.edu
+ignore=
+# This site gives warnings about URLs if you try to refer to page.html\#heading
+ cmake.org
+# This site has a robots.txt that denies access
+ jenkins.gromacs.org
+# A matching regressiontests tarball generally can't be found on this server yet.
+ gerrit.gromacs.org/download

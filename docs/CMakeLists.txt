@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,116 +41,25 @@
 # a form suitable for automated deployment to the GROMACS website. It
 # also provides the INSTALL file for the tarball.
 #
-# All of the markdown content is configured, and we'd like to do that
-# at build time rather than configure time (for speed, when not
-# building markdown content). Also, the way they should be configured
-# varies with whether the source is a tarball or repo, and which file
-# is being configured. So several *_IS_POSSIBLE variables are used to
-# direct the configure-time logic so that all appropriate variables
-# are set by the time the configure-markdown.cmake.in file is
-# configured, so that later it can do the configuration of all the
-# markdown files and the right thing will happen in each case.
+# The webpage is mostly built by Sphinx. Variable values for Sphinx
+# subustitutions are configured by CMake (for things like version
+# numbers), and we'd like to do that at build time rather than
+# configure time (for speed, when not building webpage content). So at
+# configure time, variables are set in configure-sphinx.cmake.in and
+# those used at build time to do the configuration needed.
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 file(MAKE_DIRECTORY ${HTML_OUTPUT_DIR})
 
-if (BUILD_IS_INSOURCE)
-    set(MARKDOWN_CONFIGURE_IS_POSSIBLE off)
-else()
-    set(MARKDOWN_CONFIGURE_IS_POSSIBLE on)
-endif()
-find_package(Pandoc)
+find_package(Sphinx 1.2.3 COMPONENTS pygments)
 
-# Set up common infrastructure for configuring markdown at build time.
-# Do replacement of CMake variables for version strings, etc. The use
-# of configure-markdown.cmake defers until build time the
-# configuration of markdown files, which could be faster for all the
-# configurations that don't make the documentation even though it was
-# possible, and helps avoid global re-configures if these files
-# change.
-set(SCRIPT_TO_CONFIGURE_MARKDOWN ${CMAKE_CURRENT_BINARY_DIR}/configure-markdown.cmake)
-configure_file(configure-markdown.cmake.in
-    ${SCRIPT_TO_CONFIGURE_MARKDOWN}
-    @ONLY)
-
-# Makes a custom command to configure a Markdown file found in the
-# current source directory with the configure-markdown.make script
-# produced above. The result is placed in the current binary directory
-# for future use.
-function(configure_markdown MARKDOWN_FILE)
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${MARKDOWN_FILE}
-        COMMAND ${CMAKE_COMMAND}
-            -D FILE_TO_CONFIGURE=${CMAKE_CURRENT_SOURCE_DIR}/${MARKDOWN_FILE}
-            -D CONFIGURED_FILE=${CMAKE_CURRENT_BINARY_DIR}/${MARKDOWN_FILE}
-            -P ${SCRIPT_TO_CONFIGURE_MARKDOWN}
-        DEPENDS
-            ${SCRIPT_TO_CONFIGURE_MARKDOWN}
-            ${CMAKE_CURRENT_SOURCE_DIR}/${MARKDOWN_FILE}
-        COMMENT "Configuring Markdown"
-        VERBATIM
-        )
-endfunction()
-
-# Makes a custom command to make single-page HTML from Markdown. Takes
-# a NAME argument for an output filename prefix, and a list of full
-# paths to input files to concatenate with Pandoc into the HTML
-# output.
-function(make_markdown_html NAME)
-    add_custom_command(
-        OUTPUT ${HTML_OUTPUT_DIR}/${NAME}.html
-        COMMAND
-            ${PANDOC_EXECUTABLE} ${ARGN} -o ${HTML_OUTPUT_DIR}/${NAME}.html -s --toc --css buttondown.css
-        DEPENDS ${ARGN}
-        VERBATIM
-        )
-endfunction()
-
-# Makes a custom command to make PDF from Markdown. Takes a NAME
-# argument for an output filename prefix, and a list of full paths to
-# input files to concatenate with Pandoc into the PDF.
-function(make_markdown_pdf NAME)
-    add_custom_command(
-        OUTPUT ${HTML_OUTPUT_DIR}/${NAME}.pdf
-        COMMAND
-            ${PANDOC_EXECUTABLE} ${ARGN} -o ${HTML_OUTPUT_DIR}/${NAME}.pdf -s --toc
-        DEPENDS ${ARGN}
-        VERBATIM
-        )
-endfunction()
-
-# function(make_markdown_multipage_html NAME)
-#     # Make the multi-page HTML install guide
-#
-#     # TODO This is currently disabled, because the pandoc-specific
-#     # buttondown.css doesn't work with the different kind of output
-#     # makeinfo produces. When we understand better how we want to do
-#     # generation, decide whether we want multi-page HTML output and
-#     # how to make it work well.
-#
-#     add_custom_command(
-#         OUTPUT ${HTML_OUTPUT_DIR}/${HTML_DIR}/index.html
-#         COMMAND
-#         ${PANDOC_EXECUTABLE} ${ARGN} -o ${NAME}.texi -s
-#         COMMAND
-#         ${MAKEINFO_EXECUTABLE} ${NAME}.texi --html -o ${HTML_OUTPUT_DIR}/${NAME} --css-ref buttondown.css
-#         DEPENDS ${ARGN}
-#         VERBATIM
-#         )
-# endfunction()
-
-add_subdirectory(install-guide)
-add_subdirectory(user-guide)
 add_subdirectory(man)
 add_subdirectory(old-html)
 add_subdirectory(doxygen)
 
-option(GMX_BUILD_WEBPAGE "Whether to try to configure to build the GROMACS static webpages" OFF)
-mark_as_advanced(GMX_BUILD_WEBPAGE)
-
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" ${GMX_BUILD_WEBPAGE})
+option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
 mark_as_advanced(GMX_BUILD_MANUAL)
 if(GMX_BUILD_MANUAL)
     # Make sure we only do detection of manual-building dependencies
@@ -158,23 +67,73 @@ if(GMX_BUILD_MANUAL)
     add_subdirectory(manual)
 endif()
 
-set(HTML_BUILD_IS_POSSIBLE OFF)
-# We can only configure to build the webpage if the user asked for it,
-# the build is outside of the source dir, and all the components can
-# be built. There's no need to be talkative if we fail - most people
-# never need to know.
-if(GMX_BUILD_WEBPAGE AND
-        GMX_BUILD_HELP AND
-        NOT BUILD_IS_INSOURCE AND
-        MARKDOWN_CONFIGURE_IS_POSSIBLE AND
-        MANUAL_BUILD_IS_POSSIBLE AND
-        PANDOC_EXECUTABLE AND
-        DOXYGEN_EXECUTABLE AND
-        DOXYGEN_MSCGEN_EXECUTABLE)
-    set(HTML_BUILD_IS_POSSIBLE ON)
-endif()
+if (SPHINX_FOUND)
+    # We need to copy all the Sphinx input files to a single directory, and
+    # since some of them are generated, we just copy everything into the build
+    # tree, to this directory.
+    set(SPHINX_INPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sphinx-input)
+    set(SPHINX_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/conf.py)
+    set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
+    gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
+        EXTRA_VARS
+            GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
+            REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
+            SOURCE_MD5SUM REGRESSIONTESTS_MD5SUM
+        COMMENT "Configuring Sphinx configuration file")
+    set(SPHINX_SOURCE_FILES
+        index.rst
+        download.rst
+        online.rst
+        install-guide/main.rst
+        user-guide/main.rst
+        user-guide/introduction.rst
+        user-guide/getting-started.rst
+        user-guide/cutoff-schemes.rst
+        user-guide/file-formats.rst
+        user-guide/tools.rst
+        conf.py
+        )
+    set(SPHINX_INPUT_FILES ${SPHINX_CONFIG_VARS_FILE})
+    foreach(_file ${SPHINX_SOURCE_FILES})
+        add_custom_command(
+            OUTPUT ${SPHINX_INPUT_DIR}/${_file}
+            COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_CURRENT_SOURCE_DIR}/${_file}
+                ${SPHINX_INPUT_DIR}/${_file}
+            DEPENDS
+                ${CMAKE_CURRENT_SOURCE_DIR}/${_file}
+            COMMENT "Copying Sphinx input file ${_file}"
+            VERBATIM)
+        list(APPEND SPHINX_INPUT_FILES ${SPHINX_INPUT_DIR}/${_file})
+    endforeach()
+    gmx_add_custom_output_target(sphinx-input OUTPUT STAMP
+        DEPENDS ${SPHINX_INPUT_FILES})
 
-if(HTML_BUILD_IS_POSSIBLE)
+    # Make the INSTALL file for CPack for the tarball. This gets put
+    # into the tarball via the CPack rules below, which requires that
+    # the INSTALL file is in a separate directory by itself.
+    set(TEXT_INSTALL_GUIDE_OUTPUT_DIR "install-guide/text")
+    add_custom_target(install-guide
+        COMMAND
+            ${SPHINX_EXECUTABLE}
+            -q -b text
+            -d ${CMAKE_CURRENT_BINARY_DIR}/install-guide/_doctrees
+            -t install_guide
+            -c ${SPHINX_INPUT_DIR}
+            "${SPHINX_INPUT_DIR}/install-guide"
+            "${TEXT_INSTALL_GUIDE_OUTPUT_DIR}"
+        COMMAND
+            ${CMAKE_COMMAND} -E rename
+            ${TEXT_INSTALL_GUIDE_OUTPUT_DIR}/main.txt
+            ${TEXT_INSTALL_GUIDE_OUTPUT_DIR}/INSTALL
+        WORKING_DIRECTORY
+            ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Building INSTALL with Sphinx"
+        VERBATIM
+        )
+    add_dependencies(install-guide sphinx-input)
+    gmx_cpack_add_generated_source_directory(install-guide/text DESTINATION /)
+
     # For a real build of the webpage, the md5sum of the tarballs must
     # already be known, and so we may as well require that the real
     # build of the webpage take place from cmake run from the unpacked
@@ -184,7 +143,7 @@ if(HTML_BUILD_IS_POSSIBLE)
     # building of the webpages (e.g. for debugging), those variables
     # can be left unset, and if so, the download section will not be
     # constructed.
-    if(NOT SOURCE_IS_SOURCE_DISTRIBUTION)
+    if(NOT SOURCE_IS_SOURCE_DISTRIBUTION OR NOT GMX_BUILD_WEBPAGE)
         if (SOURCE_TARBALL AND SOURCE_MD5SUM AND
                 REGRESSIONTESTS_TARBALL AND REGRESSIONTESTS_MD5SUM)
             set(BUILD_DOWNLOAD_SECTION on)
@@ -200,21 +159,51 @@ if(HTML_BUILD_IS_POSSIBLE)
         set(BUILD_DOWNLOAD_SECTION on)
     endif()
 
+    set(BUILD_DOWNLOAD_SECTION_TAG)
+    if (BUILD_DOWNLOAD_SECTION)
+        # Get Sphinx to do the right thing in index.rst
+        set(BUILD_DOWNLOAD_SECTION_TAG -t is_webpage)
+    endif()
+
+    # Sphinx cache with pickled ReST documents
+    set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
+
+    add_custom_target(webpage-sphinx
+        COMMAND
+            ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
+        COMMAND
+            ${SPHINX_EXECUTABLE}
+            -q -b html
+            -d "${SPHINX_CACHE_DIR}"
+            ${BUILD_DOWNLOAD_SECTION_TAG}
+            "${SPHINX_INPUT_DIR}"
+            "${HTML_OUTPUT_DIR}"
+        WORKING_DIRECTORY
+            ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Building HTML documentation with Sphinx"
+        VERBATIM
+        )
+    add_dependencies(webpage-sphinx sphinx-input)
+endif()
+
+set(HTML_BUILD_IS_POSSIBLE OFF)
+# We can only configure to build the webpage if the user asked for it,
+# the build is outside of the source dir, and all the components can
+# be built. There's no need to be talkative if we fail - most people
+# never need to know.
+if(GMX_BUILD_WEBPAGE AND
+        GMX_BUILD_HELP AND
+        SPHINX_FOUND AND
+        DOXYGEN_EXECUTABLE AND
+        DOXYGEN_MSCGEN_EXECUTABLE)
+    set(HTML_BUILD_IS_POSSIBLE ON)
+endif()
+
+if(HTML_BUILD_IS_POSSIBLE)
     # If building the webpage from the repo, then tarballs may not
     # exist, and if so, it would not make sense to build that part of
-    # the front page from index.md.
+    # the front page from index.rst.
     if(BUILD_DOWNLOAD_SECTION)
-        set(DOWNLOAD_SECTION
-"# Downloads
-
-*   Source code - [gromacs-${GMX_VERSION_STRING}.tar.gz](gromacs-${GMX_VERSION_STRING}.tar.gz)  
-    (md5sum ${SOURCE_MD5SUM})  
-    Other source code versions may be found at <ftp://ftp.gromacs.org/pub/gromacs/>
-
-*   Regression tests - [regressiontests-${GMX_VERSION_STRING}.tar.gz](regressiontests-${GMX_VERSION_STRING}.tar.gz)  
-    (md5sum ${REGRESSIONTESTS_MD5SUM})
-")
-
         # Copy the source tarball to the webpage output
         add_custom_command(
             OUTPUT ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
@@ -230,18 +219,14 @@ if(HTML_BUILD_IS_POSSIBLE)
                -E copy ${REGRESSIONTESTS_TARBALL} ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
             VERBATIM
             )
-    else()
-        set(DOWNLOAD_SECTION "")
-    endif()
 
-    # Put the CSS in the HTML output directory
-    add_custom_command(
-        OUTPUT ${HTML_OUTPUT_DIR}/buttondown.css
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/buttondown.css ${HTML_OUTPUT_DIR}/buttondown.css
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/buttondown.css
-        VERBATIM
-        )
-    list(APPEND extra_webpage_dependencies ${HTML_OUTPUT_DIR}/buttondown.css)
+        # Add other dependencies for doing the webpage build from the real
+        # tarball
+        list(APPEND extra_webpage_dependencies
+            ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
+            ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
+            )
+    endif()
 
     # Make the PDF reference guide
     # TODO Try to make the PDF arrive directly in ${HTML_OUTPUT_DIR}
@@ -279,27 +264,12 @@ if(HTML_BUILD_IS_POSSIBLE)
     # ${HTML_OUTPUT_DIR}/doxygen (and makes the directory if it needs
     # to).
 
-    # Add other dependencies for doing the webpage build from the real
-    # tarball
-    if(BUILD_DOWNLOAD_SECTION)
-        list(APPEND extra_webpage_dependencies
-            ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
-            ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
-            )
-    endif()
-
-    configure_markdown(index.md)
-    make_markdown_html(index ${CMAKE_CURRENT_BINARY_DIR}/index.md)
-
     # Add a top-level target for the others to hook onto
     add_custom_target(webpage
         DEPENDS
-           ${HTML_OUTPUT_DIR}/index.html
-           install-guide
-           user-guide
            ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf
            ${extra_webpage_dependencies}
         VERBATIM
         )
-    add_dependencies(webpage webpage-html doxygen-all)
+    add_dependencies(webpage webpage-sphinx webpage-html doxygen-all)
 endif()
