@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,7 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
                                              FileNameOptionManager *manager)
     : MyBase(settings), info_(this), manager_(manager), fileType_(-1),
       defaultExtension_(""), bRead_(settings.bRead_), bWrite_(settings.bWrite_),
-      bLibrary_(settings.bLibrary_)
+      bLibrary_(settings.bLibrary_), bAllowMissing_(settings.bAllowMissing_)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for file name options");
@@ -477,6 +477,11 @@ bool FileNameOptionInfo::isInputOutputFile() const
 bool FileNameOptionInfo::isLibraryFile() const
 {
     return option().isLibraryFile();
+}
+
+bool FileNameOptionInfo::allowMissing() const
+{
+    return option().allowMissing();
 }
 
 bool FileNameOptionInfo::isDirectoryOption() const
