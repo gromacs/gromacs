@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,6 @@ function(CREATE_HTML_FILE SOURCE_FILE ROOTPATH)
     file(WRITE ${OUTPUT_DIR}/${_rel_path} "${_content}")
 endfunction()
 
-create_html_file(${SOURCE_HTML_DIR}/online.html "")
 file(COPY ${SOURCE_HTML_DIR}/images DESTINATION ${OUTPUT_DIR})
 file(MAKE_DIRECTORY ${OUTPUT_DIR}/online)
 file(COPY ${SOURCE_HTML_DIR}/online/style.css DESTINATION ${OUTPUT_DIR}/online)
