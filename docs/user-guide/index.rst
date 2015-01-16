@@ -21,6 +21,9 @@ For background on algorithms and implementations, see the
 
    getting-started
    cutoff-schemes
+   mdrun-features
+   mdrun-performance
    mdp-options
    file-formats
    tools
+   environment-variables
