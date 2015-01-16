@@ -179,9 +179,9 @@ The generated graph is embedded into the Doxygen documentation:
 This script shares most of its implementation with the custom checkers, and is
 documented on the same page: \subpage page_dev_gmxtree.</dd>
 
-<dt>Pandoc</dt>
-<dd>Pandoc (<http://johnmacfarlane.net/pandoc/>) is used for building some
-parts of the documentation from Markdown source files.</dd>
+<dt>Sphinx</dt>
+<dd>Sphinx (<http://sphinx-doc.org/>) is used for building some
+parts of the documentation from reStructuredText source files.</dd>
 
 <dt>latex</dt>
 <dd></dd>
