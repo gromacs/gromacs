@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -49,8 +49,8 @@ if (BUILDING_SOURCE_PACKAGE)
     # And this does not detect if things have been built in the past, but are
     # outdated.
     if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/man1/gmx-view.1" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/install-guide/final/INSTALL" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/online.html" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/install-guide/text/INSTALL" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/online/gro.html" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/programs/gmx-view.html")
         message(FATAL_ERROR
