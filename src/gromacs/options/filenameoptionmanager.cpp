@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,13 +146,16 @@ void FileNameOptionManager::addDefaultFileNameOption(
 std::string FileNameOptionManager::completeFileName(
         const std::string &value, const FileNameOptionInfo &option)
 {
-    const bool bInput = option.isInputFile() || option.isInputOutputFile();
+    const bool bAllowMissing = option.allowMissing();
+    const bool bInput
+        = option.isInputFile() || option.isInputOutputFile();
     // Currently, directory options are simple, and don't need any
     // special processing.
     // TODO: Consider splitting them into a separate DirectoryOption.
     if (option.isDirectoryOption())
     {
-        if (!impl_->bInputCheckingDisabled_ && bInput && !Directory::exists(value))
+        if (!impl_->bInputCheckingDisabled_ && bInput && !bAllowMissing
+            && !Directory::exists(value))
         {
             std::string message
                 = formatString("Directory '%s' does not exist or is not accessible.",
@@ -198,7 +201,11 @@ std::string FileNameOptionManager::completeFileName(
             {
                 return processedValue;
             }
-            if (option.isLibraryFile())
+            if (bAllowMissing)
+            {
+                return value + option.defaultExtension();
+            }
+            else if (option.isLibraryFile())
             {
                 // TODO: Treat also library files here.
                 return value + option.defaultExtension();
@@ -218,7 +225,7 @@ std::string FileNameOptionManager::completeFileName(
             {
                 // TODO: Treat also library files.
             }
-            else if (!File::exists(value))
+            else if (!bAllowMissing && !File::exists(value))
             {
                 std::string message
                     = formatString("File '%s' does not exist or is not accessible.",
@@ -254,6 +261,7 @@ std::string FileNameOptionManager::completeDefaultFileName(
     const bool        bInput = option.isInputFile() || option.isInputOutputFile();
     const std::string realPrefix
         = !impl_->defaultFileName_.empty() ? impl_->defaultFileName_ : prefix;
+    const bool        bAllowMissing = option.allowMissing();
     if (bInput)
     {
         std::string completedName = findExistingExtension(realPrefix, option);
@@ -261,7 +269,11 @@ std::string FileNameOptionManager::completeDefaultFileName(
         {
             return completedName;
         }
-        if (option.isLibraryFile())
+        if (bAllowMissing)
+        {
+            return realPrefix + option.defaultExtension();
+        }
+        else if (option.isLibraryFile())
         {
             // TODO: Treat also library files here.
             return realPrefix + option.defaultExtension();

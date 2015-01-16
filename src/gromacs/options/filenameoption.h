@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
             : MyBase(name), optionType_(eftUnknown), legacyType_(-1),
               defaultBasename_(NULL), defaultType_(-1),
               bLegacyOptionalBehavior_(false),
-              bRead_(false), bWrite_(false), bLibrary_(false)
+              bRead_(false), bWrite_(false), bLibrary_(false),
+              bAllowMissing_(false)
         {
         }
 
@@ -134,6 +135,20 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          */
         MyClass &libraryFile(bool bLibrary = true)
         { bLibrary_ = bLibrary; return me(); }
+        /*! \brief
+         * Tells that missing file names explicitly provided by the user are
+         * valid for this input option.
+         *
+         * If this method is not called, an error will be raised if the user
+         * explicitly provides a file name that does not name an existing file,
+         * or if the default value does not resolve to a valid file name for a
+         * required option that the user has not set.
+         *
+         * This method only has effect with input files, and only if a
+         * FileNameOptionManager is being used.
+         */
+        MyClass &allowMissing(bool bAllow = true)
+        { bAllowMissing_ = bAllow; return me(); }
         /*! \brief
          * Sets a default basename for the file option.
          *
@@ -194,6 +209,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         bool                    bRead_;
         bool                    bWrite_;
         bool                    bLibrary_;
+        bool                    bAllowMissing_;
 
         /*! \brief
          * Needed to initialize FileNameOptionStorage from this class without
@@ -229,6 +245,8 @@ class FileNameOptionInfo : public OptionInfo
          * \see FileNameOption::libraryFile()
          */
         bool isLibraryFile() const;
+        //! Whether the (input) option allows missing files to be provided.
+        bool allowMissing() const;
 
         //! Whether the option specifies directories.
         bool isDirectoryOption() const;

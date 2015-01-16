@@ -408,7 +408,7 @@ int gmx_mdrun(int argc, char *argv[])
         { efTPR, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
         { efCOMPRESSED, "-x", NULL,     ffOPTWR },
-        { efCPT, "-cpi",    NULL,       ffOPTRD },
+        { efCPT, "-cpi",    NULL,       ffOPTRD | ffALLOW_MISSING },
         { efCPT, "-cpo",    NULL,       ffOPTWR },
         { efSTO, "-c",      "confout",  ffWRITE },
         { efEDR, "-e",      "ener",     ffWRITE },
