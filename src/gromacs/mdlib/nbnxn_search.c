@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3558,7 +3558,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                 nlist->gid[nri]      = 0;
                 nlist->shift[nri]    = nbl_sci->shift & NBNXN_CI_SHIFT;
 
-                bFEP_i = (gridi->fep[c_abs - gridi->cell0] & (1 << i));
+                bFEP_i = (gridi->fep[c_abs - gridi->cell0*GPU_NSUBCELL] & (1 << i));
 
                 xi = nbat->x[ind_i*nbat->xstride+XX] + shx;
                 yi = nbat->x[ind_i*nbat->xstride+YY] + shy;

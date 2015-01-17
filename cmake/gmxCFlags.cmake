@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -249,18 +249,18 @@ MACRO(gmx_c_flags)
     endif()
 
     # xlc
-    # The suppressions below stop information messages about -O3
-    # causing non-strict IEEE compliance that changes the semantics of
-    # the program (duh; 1500-036), warnings about correct PBC-related use of
-    # maximum array indices of DIM-sized C arrays (1500-010).
+    # The suppressions below stop
+    # 1500-036: (I) about -O3 causing non-strict IEEE compliance that changes the semantics of the program (duh)
+    # 1500-010: (W) about correct PBC-related use of maximum array indices of DIM-sized C arrays
+    # 1500-030: (I) Additional optimization may be attained by recompiling and specifying MAXMEM option with a value greater than 8192.
     if (CMAKE_C_COMPILER_ID MATCHES "XL")
         GMX_TEST_CFLAG(CFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_LANG "-qlanglvl=extc99" GMXC_CFLAGS)
-        GMX_TEST_CFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010 -qsuppress=1500-030" GMXC_CFLAGS)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
         GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CXXFLAGS)
-        GMX_TEST_CXXFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010 -qsuppress=1500-030" GMXC_CXXFLAGS)
     endif()
 
     # msvc

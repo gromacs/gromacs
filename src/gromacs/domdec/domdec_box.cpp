@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,7 +146,7 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
                 if (dd_nc != NULL && (*dd_nc)[j] > 1 && (*dd_nc)[d] == 1)
                 {
                     gmx_fatal(FARGS, "Domain decomposition has not been implemented for box vectors that have non-zero components in directions that do not use domain decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
-                              dd_nc[XX], dd_nc[YY], dd_nc[ZZ],
+                              (*dd_nc)[XX], (*dd_nc)[YY], (*dd_nc)[ZZ],
                               j+1, box[j][XX], box[j][YY], box[j][ZZ]);
                 }
             }
