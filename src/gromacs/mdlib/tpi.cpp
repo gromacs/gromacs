@@ -70,6 +70,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
@@ -670,7 +671,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             bEnergyOutOfBounds = FALSE;
 #ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
             /* With SSE the energy can overflow, check for this */
-            if (gmx_mm_check_and_reset_overflow())
+            if (gmx_simd_check_and_reset_overflow())
             {
                 if (debug)
                 {

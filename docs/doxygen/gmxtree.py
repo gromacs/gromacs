@@ -164,6 +164,7 @@ class File(object):
         self._lines = None
         self._filter = None
         self._used_config_h_defines = set()
+        self._used_simd_h_defines = set()
         directory.add_file(self)
 
     def set_doc_xml(self, rawdoc, sourcetree):
@@ -240,6 +241,12 @@ class File(object):
 
         Used internally by find_config_h_uses()."""
         self._used_config_h_defines.update(defines)
+
+    def add_used_simd_h_defines(self, defines):
+        """Set simd.h defines used in this file.
+
+        Used internally by find_simd_h_uses()."""
+        self._used_simd_h_defines.update(defines)
 
     def get_reporter_location(self):
         return reporter.Location(self._abspath, None)
@@ -333,6 +340,35 @@ class File(object):
         as well as for headers that declare these defines."""
         return self._used_config_h_defines
 
+    def get_used_simd_h_defines(self):
+        """Return set of defines from simd.h that are used in this file.
+
+        The return value is empty if find_simd_h_uses() has not been called,
+        as well as for headers that declare these defines."""
+        return self._used_simd_h_defines
+
+class LowLevelHeaderFile(File):
+    def __init__(self, abspath, relpath, directory):
+        File.__init__(self, abspath, relpath, directory)
+        self._defines = None
+
+    def scan_contents(self, sourcetree, keep_contents):
+        detect_defines = (self.get_name() == 'simd.h')
+        File.scan_contents(self, sourcetree, keep_contents or detect_defines)
+        if detect_defines:
+            self._defines = []
+            define_re = r'^#.*define\s+(\w*)'
+            for line in self.get_contents():
+                match = re.match(define_re, line)
+                if match:
+                    self._defines.append(match.group(1))
+
+    def get_defines(self):
+        """Return set of possible defines from simd.h.
+
+        The information is only populated for that file."""
+        return self._defines
+
 class GeneratedFile(File):
     def __init__(self, abspath, relpath, directory):
         File.__init__(self, abspath, relpath, directory)
@@ -372,7 +408,7 @@ class GeneratorSourceFile(File):
     def get_defines(self):
         """Return set of possible defines from config.h.cmakein.
 
-        The information is only populated for config.h.cmakein."""
+        The information is only populated for that file."""
         return self._defines
 
 class Directory(object):
@@ -671,8 +707,9 @@ class GromacsTree(object):
     (Doxygen only sees those #includes that the preprocessor sees, which
     depends on what #defines it has seen).
 
-    find_config_h_uses() can be called to find all uses of defines declared in
-    config.h.  In the current implementation, scan_files() must have been
+    find_config_h_uses() can be called to find all uses of defines
+    declared in config.h. Likewise for find_simd_h_uses() and
+    simd.h. In the current implementation, scan_files() must have been
     called earlier.
 
     load_xml() can be called to load information from Doxygen XML data in
@@ -756,7 +793,10 @@ class GromacsTree(object):
                 if extension in extensions:
                     fullpath = os.path.join(dirpath, filename)
                     relpath = self._get_rel_path(fullpath)
-                    self._files[relpath] = File(fullpath, relpath, currentdir)
+                    if (filename == 'simd.h'):
+                        self._files[relpath] = LowLevelHeaderFile(fullpath, relpath, currentdir)
+                    else:
+                        self._files[relpath] = File(fullpath, relpath, currentdir)
                 elif extension == '.cmakein':
                     extension = os.path.splitext(basename)[1]
                     if extension in extensions:
@@ -968,6 +1008,25 @@ class GromacsTree(object):
                         'gmx_header_config.h'):
                     defines = re.findall(define_re, text)
                     fileobj.add_used_config_h_defines(defines)
+
+    def find_simd_h_uses(self):
+        """Find files that use defines from config.h."""
+        # Executing git grep is substantially faster than using the define_re
+        # directly on the contents of the file in Python.
+        args = ['git', 'grep', '-zwIF']
+        simdfile = self._files['src/gromacs/simd/simd.h']
+        for define in simdfile.get_defines():
+            args.extend(['-e', define])
+        args.extend(['--', '*.cpp', '*.c', '*.cu', '*.h', '*.cuh'])
+        define_re = r'\b(?:' + '|'.join(simdfile.get_defines())+ r')\b'
+        output = subprocess.check_output(args, cwd=self._source_root)
+        for line in output.splitlines():
+            (filename, text) = line.split('\0')
+            fileobj = self._files.get(filename)
+            if fileobj is not None:
+                if fileobj.get_name() not in ('simd.h'):
+                    defines = re.findall(define_re, text)
+                    fileobj.add_used_simd_h_defines(defines)
 
     def load_installed_file_list(self):
         """Load list of installed files from the build tree."""

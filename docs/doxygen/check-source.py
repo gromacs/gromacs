@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -77,6 +77,7 @@ def check_file(fileobj, reporter):
                 reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
         includes_config_h = False
         includes_gmx_header_config_h = False
+        includes_simd_h = False
         for include in includes:
             includedfile = include.get_file()
             if includedfile:
@@ -84,6 +85,8 @@ def check_file(fileobj, reporter):
                     includes_config_h = True
                 if includedfile.get_name() == 'gmx_header_config.h':
                     includes_gmx_header_config_h = True
+                if includedfile.get_name() == 'simd.h':
+                    includes_simd_h = True
         if includes_config_h:
             if not fileobj.get_used_config_h_defines():
                 reporter.code_issue(fileobj,
@@ -100,6 +103,31 @@ def check_file(fileobj, reporter):
         else:
             if fileobj.get_used_config_h_defines():
                 reporter.code_issue(fileobj, "should include \"config.h\"")
+
+        if includes_simd_h:
+            if not fileobj.get_used_simd_h_defines():
+                reporter.code_issue(fileobj,
+                        "includes \"simd/simd.h\" unnecessarily")
+        else:
+            if fileobj.get_used_simd_h_defines():
+                # Exclude header files that are used for inlining
+                # code; the responsibility for making the right
+                # #includes should be on the source file that uses
+                # these. TODO Stop using the preprocessor for
+                # meta-programming!
+                #
+                # Also, suppress warnings for the header files that
+                # implement the SIMD support.
+                if (fileobj.get_name() not in ('pme-simd4.h',
+                                               'nbnxn_search_simd_4xn.h', 'nbnxn_kernel_simd_4xn_inner.h', 'nbnxn_kernel_simd_4xn_outer.h',
+                                               'nbnxn_search_simd_2xnn.h', 'nbnxn_kernel_simd_2xnn_inner.h', 'nbnxn_kernel_simd_2xnn_outer.h',
+                                               'nbnxn_kernel_simd_utils_x86_128s.h', 'nbnxn_kernel_simd_utils_x86_128d.h',
+                                               'nbnxn_kernel_simd_utils_x86_256s.h', 'nbnxn_kernel_simd_utils_x86_256d.h',
+                                               'nbnxn_kernel_simd_utils_x86_mic.h', 'nbnxn_kernel_simd_utils_ibm_qpx.h',
+                                               'nbnxn_kernel_simd_utils_ref.h',
+                                               'impl_reference.h', 'impl_ibm_qpx.h'
+                                           )):
+                    reporter.code_issue(fileobj, "should include \"simd/simd.h\"")
 
     if not fileobj.is_documented():
         # TODO: Add rules for required documentation
@@ -423,6 +451,9 @@ def main():
     if not options.quiet:
         sys.stderr.write('Finding config.h uses...\n')
     tree.find_config_h_uses()
+    if not options.quiet:
+        sys.stderr.write('Finding simd.h uses...\n')
+    tree.find_simd_h_uses()
     if options.ignore_cycles:
         tree.load_cycle_suppression_list(options.ignore_cycles)
     if not options.quiet:
