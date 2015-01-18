@@ -499,4 +499,12 @@ implementation detail you won't have to worry about until you start writing
 support for a new SIMD architecture.
 
 
+Automated checking
+------------------
 
+Having fallback implementations when SIMD is not supported can be a
+performance problem if the code does not correctly include
+`gromacs/simd/simd.h`, particularly after refactoring.
+`make check-source` checks the whole code for the use of symbols defined
+in `gromacs/simd/simd.h` and requires that files using those symbols
+do the correct include.
