@@ -40,6 +40,7 @@
 #include "pme-spline-work.h"
 
 #include "gromacs/ewald/pme-simd.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 

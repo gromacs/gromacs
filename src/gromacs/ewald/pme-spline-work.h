@@ -36,6 +36,7 @@
 #define GMX_EWALD_PME_SPLINE_WORK_H
 
 #include "gromacs/ewald/pme-simd.h"
+#include "gromacs/simd/simd.h"
 
 #ifdef __cplusplus
 extern "C" {

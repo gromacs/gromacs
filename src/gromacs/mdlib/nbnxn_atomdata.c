@@ -54,6 +54,7 @@
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 

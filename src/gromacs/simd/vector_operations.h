@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,13 @@
 /*! \cond libapi */
 /*! \addtogroup module_simd */
 /*! \{ */
+
+/* This check is not actually required, but it must be true if the
+ * code below actualy declares anything, and it makes it easy for
+ * check-source to know that this file depends on simd.h (though
+ * symbols like GMX_SIMD_HAVE_FLOAT are actually defined in its
+ * implementation headers). */
+#if (defined GMX_SIMD_HAVE_REAL) || (defined DOXYGEN)
 
 #if (defined GMX_SIMD_HAVE_FLOAT) || (defined DOXYGEN)
 /*! \brief SIMD float inner product of multiple float vectors.
@@ -327,6 +334,8 @@ gmx_simd4_norm2_d(gmx_simd4_double_t ax, gmx_simd4_double_t ay, gmx_simd4_double
 #    define gmx_simd4_calc_rsq_r  gmx_simd4_calc_rsq_f
 
 #endif /* GMX_DOUBLE */
+
+#endif /* (defined GMX_SIMD_HAVE REAL) || (defined DOXYGEN) */
 
 /*! \} */
 /*! \endcond */

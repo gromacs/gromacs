@@ -51,15 +51,12 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/smalloc.h"
-
-/* nbnxn_internal.h included gromacs/simd/macros.h */
-#include "gromacs/mdlib/nbnxn_internal.h"
-#ifdef GMX_SIMD
+#include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
-#endif
+#include "gromacs/utility/smalloc.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
