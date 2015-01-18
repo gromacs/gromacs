@@ -13,6 +13,19 @@ src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" fir
 src/gromacs/linearalgebra/gmx_lapack/*: warning: should include "config.h"
 src/gromacs/utility/baseversion-gen.c: warning: does not include "gmxpre.h" first
 
+# Exclude header files that are used for inlining code; the responsibility for
+# making the right #includes should be on the source file that uses these.
+# TODO: # Stop using the preprocessor for meta-programming!
+src/gromacs/ewald/pme-simd4.h: warning: should include "simd.h"
+src/gromacs/ewald/pme-simd4.h: warning: should include "pme-simd.h"
+src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_*.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_search_simd_2xnn.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_search_simd_4xn.h: warning: should include "simd.h"
+
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests
 

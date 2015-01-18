@@ -45,6 +45,7 @@
 #include "gromacs/ewald/pme-simd.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/simd/simd.h"
 
 void get_pme_ener_vir_q(const struct gmx_pme_t *pme, int nthread,
                         real *mesh_energy, matrix vir)

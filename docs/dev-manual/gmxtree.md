@@ -78,8 +78,9 @@ module and documenting it.
 
    * Installed headers must not include non-installed headers.
    * All source files must include "gmxpre.h" as the first header.
-   * A source/header file should include "config.h" if and only if it uses a
-     macro declared there.
+   * A source/header file should include "config.h," "gromacs/simd/simd.h" or
+     "gromacs/ewald/pme-simd.h" if and only if it uses a macro declared in
+     such files.
    * If the file has a git attribute to identify it as a candidate for include
      sorting, the include sorter described below should not produce any
      changes (i.e., the file should follow \ref page_devstyle_includes).
