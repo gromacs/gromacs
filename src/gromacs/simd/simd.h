@@ -1593,4 +1593,27 @@ gmx_simd4_align_d(double *p)
 /*! \} */
 /*! \endcond */
 
+#if 0
+/* Finally, a hack to cover a possible corner case of using an
+   explicit GMX_SIMD_HAVE_FLOAT or GMX_SIMD_HAVE_DOUBLE, rather than
+   GMX_SIMD_HAVE_REAL.
+
+   Such code is expected to include simd.h to get those symbols
+   defined, but the actual definitions are in the implemention headers
+   included by simd.h. check-source.py is not a full preprocessor, so
+   it does not see the definitions in the implementation headers as
+   belonging to simd.h, thus it cannot check that simd.h is being used
+   correctly in the above hypothetical corner case. However, the
+   checker also does not parse #if 0, so we can fool the checker into
+   thinking that definition occurs here, and that will work well
+   enough.
+
+   If there's ever other kinds of SIMD code that might have the same
+   problem, we might want to add other variables here.
+ */
+#    define GMX_SIMD_HAVE_FLOAT
+#    define GMX_SIMD_HAVE_DOUBLE
+
+#endif /* 0 */
+
 #endif /* GMX_SIMD_SIMD_H */

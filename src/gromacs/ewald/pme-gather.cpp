@@ -43,6 +43,7 @@
 #include "gromacs/ewald/pme-simd.h"
 #include "gromacs/ewald/pme-spline-work.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/smalloc.h"
 
 #define DO_FSPLINE(order)                      \
