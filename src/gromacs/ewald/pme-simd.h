@@ -37,7 +37,6 @@
 
 /* Include the SIMD macro file and then check for support */
 #include "gromacs/simd/simd.h"
-#include "gromacs/simd/simd_math.h"
 #ifdef GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
 #    define PME_SIMD_SOLVE

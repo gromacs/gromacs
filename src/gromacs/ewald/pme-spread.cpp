@@ -48,6 +48,7 @@
 #include "gromacs/ewald/pme-simd.h"
 #include "gromacs/ewald/pme-spline-work.h"
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/smalloc.h"
 
 /* TODO consider split of pme-spline from this file */

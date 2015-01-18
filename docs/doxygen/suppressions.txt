@@ -13,12 +13,33 @@ src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" fir
 src/gromacs/linearalgebra/gmx_lapack/*: warning: should include "config.h"
 src/gromacs/utility/baseversion-gen.c: warning: does not include "gmxpre.h" first
 
+# Exclude header files that are used for inlining code; the responsibility for
+# making the right #includes should be on the source file that uses these.
+# TODO: # Stop using the preprocessor for meta-programming!
+src/gromacs/ewald/pme-simd4.h: warning: should include "simd.h"
+src/gromacs/ewald/pme-simd4.h: warning: should include "pme-simd.h"
+src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_*.h: warning: should include "simd.h"
+src/gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/kernelutil_sparc64_hpc_ace_double.h: warning: includes "simd.h" unnecessarily
+src/gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/kernelutil_sparc64_hpc_ace_double.h: warning: includes "simd_math.h" unnecessarily
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h: warning: includes "simd_math.h" unnecessarily
+src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h: warning: should include "simd_math.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: includes "simd_math.h" unnecessarily
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h: warning: should include "simd_math.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_search_simd_2xnn.h: warning: should include "simd.h"
+src/gromacs/mdlib/nbnxn_search_simd_4xn.h: warning: should include "simd.h"
+src/gromacs/simd/math*.h: warning: includes "simd_math.h" unnecessarily
+
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests
 
 # These would be nice to fix, but can wait for later
 src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd/math_x86_*.h" is not documented as exposed outside its module
 src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: includes "config.h" unnecessarily
+src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: should include "simd_math.h"
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.c: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.c: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.c: warning: includes "config.h" unnecessarily

@@ -163,7 +163,8 @@ class File(object):
         self._main_header = None
         self._lines = None
         self._filter = None
-        self._used_config_h_defines = set()
+        self._declared_defines = None
+        self._used_define_files = set()
         directory.add_file(self)
 
     def set_doc_xml(self, rawdoc, sourcetree):
@@ -210,10 +211,11 @@ class File(object):
         self._includes.append(included_file)
         return included_file
 
-    def scan_contents(self, sourcetree, keep_contents):
+    def scan_contents(self, sourcetree, keep_contents, detect_defines):
         """Scan the file contents and initialize information based on it."""
         # TODO: Consider a more robust regex.
         include_re = r'^\s*#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
+        define_re = r'^\s*#.*define\s+(\w*)'
         current_block = None
         with open(self._abspath, 'r') as scanfile:
             contents = scanfile.read()
@@ -232,14 +234,20 @@ class File(object):
                     current_block.add_file(included_file)
             elif line and not line.isspace():
                 current_block = None
+        if detect_defines:
+            self._declared_defines = []
+            for line in lines:
+                match = re.match(define_re, line)
+                if match:
+                    self._declared_defines.append(match.group(1))
         if keep_contents:
             self._lines = lines
 
-    def add_used_config_h_defines(self, defines):
-        """Set config.h defines used in this file.
+    def add_used_defines(self, define_file, defines):
+        """Add defines used in this file.
 
-        Used internally by find_config_h_uses()."""
-        self._used_config_h_defines.update(defines)
+        Used internally by find_define_file_uses()."""
+        self._used_define_files.add(define_file)
 
     def get_reporter_location(self):
         return reporter.Location(self._abspath, None)
@@ -320,57 +328,66 @@ class File(object):
     def get_include_blocks(self):
         return self._include_blocks
 
+    def _get_included_files_recurse(self, result):
+        for include in self._includes:
+            included_file = include.get_file()
+            if included_file is not None and not included_file in result:
+                result.add(included_file)
+                included_file._get_included_files_recurse(result)
+
+    def get_included_files(self, recursive=False):
+        if recursive:
+            result = set()
+            self._get_included_files_recurse(result)
+            return result
+        return set([x.get_file() for x in self._includes])
+
     def get_main_header(self):
         return self._main_header
 
     def get_contents(self):
         return self._lines
 
-    def get_used_config_h_defines(self):
+    def get_declared_defines(self):
+        """Return set of defines declared in this file.
+
+        The information is only populated for selected files."""
+        return self._declared_defines
+
+    def get_used_define_files(self):
         """Return set of defines from config.h that are used in this file.
 
-        The return value is empty if find_config_h_uses() has not been called,
+        The return value is empty if find_define_file_uses() has not been called,
         as well as for headers that declare these defines."""
-        return self._used_config_h_defines
+        return self._used_define_files
 
 class GeneratedFile(File):
     def __init__(self, abspath, relpath, directory):
         File.__init__(self, abspath, relpath, directory)
         self._generator_source_file = None
 
-    def scan_contents(self, sourcetree, keep_contents):
+    def scan_contents(self, sourcetree, keep_contents, detect_defines):
         if os.path.exists(self.get_abspath()):
-            File.scan_contents(self, sourcetree, keep_contents)
+            File.scan_contents(self, sourcetree, keep_contents, False)
 
     def set_generator_source(self, sourcefile):
         self._generator_source_file = sourcefile
+
+    def get_generator_source(self):
+        return self._generator_source_file
 
     def get_reporter_location(self):
         if self._generator_source_file:
             return self._generator_source_file.get_reporter_location()
         return File.get_reporter_location(self)
 
+    def get_declared_defines(self):
+        if self._generator_source_file:
+            return self._generator_source_file.get_declared_defines()
+        return File.get_declared_defines(self)
+
 class GeneratorSourceFile(File):
-    def __init__(self, abspath, relpath, directory):
-        File.__init__(self, abspath, relpath, directory)
-        self._defines = None
-
-    def scan_contents(self, sourcetree, keep_contents):
-        detect_defines = (self.get_name() == 'config.h.cmakein')
-        File.scan_contents(self, sourcetree, keep_contents or detect_defines)
-        if detect_defines:
-            self._defines = []
-            define_re = r'^#.*define\s+(\w*)'
-            for line in self.get_contents():
-                match = re.match(define_re, line)
-                if match:
-                    self._defines.append(match.group(1))
-
-    def get_defines(self):
-        """Return set of possible defines from config.h.cmakein.
-
-        The information is only populated for config.h.cmakein."""
-        return self._defines
+    pass
 
 class Directory(object):
 
@@ -675,9 +692,9 @@ class GromacsTree(object):
     (Doxygen only sees those #includes that the preprocessor sees, which
     depends on what #defines it has seen).
 
-    find_config_h_uses() can be called to find all uses of defines declared in
-    config.h.  In the current implementation, scan_files() must have been
-    called earlier.
+    find_define_file_uses() can be called to find all uses of defines
+    declared in config.h and some other macro headers. In the current
+    implementation, scan_files() must have been called earlier.
 
     load_xml() can be called to load information from Doxygen XML data in
     the build tree (the Doxygen XML data must have been built separately).
@@ -792,9 +809,15 @@ class GromacsTree(object):
             filelist = only_files
         else:
             filelist = self._files.itervalues()
+        define_files = list(self.get_checked_define_files())
+        for define_file in list(define_files):
+            if isinstance(define_file, GeneratedFile) and \
+                    define_file.get_generator_source() is not None:
+                define_files.append(define_file.get_generator_source())
         for fileobj in filelist:
             if not fileobj.is_external():
-                fileobj.scan_contents(self, keep_contents)
+                detect_defines = fileobj in define_files
+                fileobj.scan_contents(self, keep_contents, detect_defines)
                 module = fileobj.get_module()
                 if module:
                     for includedfile in fileobj.get_includes():
@@ -952,25 +975,26 @@ class GromacsTree(object):
             assert fileobj is not None
             fileobj.set_git_filter_attribute(value)
 
-    def find_config_h_uses(self):
+    def find_define_file_uses(self):
         """Find files that use defines from config.h."""
         # Executing git grep is substantially faster than using the define_re
         # directly on the contents of the file in Python.
-        args = ['git', 'grep', '-zwIF']
-        configfile = self._files['src/config.h.cmakein']
-        for define in configfile.get_defines():
-            args.extend(['-e', define])
-        args.extend(['--', '*.cpp', '*.c', '*.cu', '*.h', '*.cuh'])
-        define_re = r'\b(?:' + '|'.join(configfile.get_defines())+ r')\b'
-        output = subprocess.check_output(args, cwd=self._source_root)
-        for line in output.splitlines():
-            (filename, text) = line.split('\0')
-            fileobj = self._files.get(filename)
-            if fileobj is not None:
-                if fileobj.get_name() not in ('config.h', 'config.h.cmakein',
-                        'gmxpre-config.h', 'gmxpre-config.h.cmakein'):
+        for define_file in self.get_checked_define_files():
+            excluded_files = set([define_file])
+            excluded_files.update(define_file.get_included_files(recursive=True))
+            all_defines = define_file.get_declared_defines()
+            args = ['git', 'grep', '-zwIF']
+            for define in all_defines:
+                args.extend(['-e', define])
+            args.extend(['--', '*.cpp', '*.c', '*.cu', '*.h', '*.cuh'])
+            define_re = r'\b(?:' + '|'.join(all_defines)+ r')\b'
+            output = subprocess.check_output(args, cwd=self._source_root)
+            for line in output.splitlines():
+                (filename, text) = line.split('\0')
+                fileobj = self._files.get(filename)
+                if fileobj is not None and fileobj not in excluded_files:
                     defines = re.findall(define_re, text)
-                    fileobj.add_used_config_h_defines(defines)
+                    fileobj.add_used_defines(define_file, defines)
 
     def load_installed_file_list(self):
         """Load list of installed files from the build tree."""
@@ -1039,3 +1063,11 @@ class GromacsTree(object):
     def get_members(self):
         """Get iterable for all members (in Doxygen terms) in the source tree."""
         return self._members
+
+    def get_checked_define_files(self):
+        """Get list of files that contain #define macros whose usage needs to
+        be checked."""
+        return (self._files['src/config.h'],
+                self._files['src/gromacs/simd/simd.h'],
+                self._files['src/gromacs/simd/simd_math.h'],
+                self._files['src/gromacs/ewald/pme-simd.h'])
