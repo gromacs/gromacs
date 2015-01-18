@@ -63,7 +63,7 @@ from gmxtree import GromacsTree, DocType
 from includesorter import IncludeSorter
 from reporter import Reporter
 
-def check_file(fileobj, reporter):
+def check_file(fileobj, tree, reporter):
     """Check file-level issues."""
     if not fileobj.is_external() and fileobj.get_relpath().startswith('src/'):
         includes = fileobj.get_includes()
@@ -75,19 +75,21 @@ def check_file(fileobj, reporter):
                                         "does not include \"gmxpre.h\" first")
             else:
                 reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
-        includes_config_h = False
-        for include in includes:
-            includedfile = include.get_file()
-            if includedfile:
-                if includedfile.get_name() == 'config.h':
-                    includes_config_h = True
-        if includes_config_h:
-            if not fileobj.get_used_config_h_defines():
-                reporter.code_issue(fileobj,
-                        "includes \"config.h\" unnecessarily")
-        else:
-            if fileobj.get_used_config_h_defines():
-                reporter.code_issue(fileobj, "should include \"config.h\"")
+        used_define_files = fileobj.get_used_define_files()
+        for define_file in tree.get_checked_define_files():
+            includes_file = False
+            for include in includes:
+                if include.get_file() == define_file:
+                    includes_file = True
+                    break
+            if includes_file:
+                if not define_file in used_define_files:
+                    reporter.code_issue(fileobj,
+                            "includes \"{0}\" unnecessarily".format(define_file.get_name()))
+            else:
+                if define_file in used_define_files:
+                    reporter.code_issue(fileobj,
+                            "should include \"{0}\"".format(define_file.get_name()))
 
     if not fileobj.is_documented():
         # TODO: Add rules for required documentation
@@ -357,7 +359,7 @@ def check_all(tree, reporter, check_ignored):
     for fileobj in tree.get_files():
         if isinstance(fileobj, gmxtree.GeneratorSourceFile):
             continue
-        check_file(fileobj, reporter)
+        check_file(fileobj, tree, reporter)
         for includedfile in fileobj.get_includes():
             check_include(fileobj, includedfile, reporter)
         if fileobj.should_includes_be_sorted() \
@@ -407,8 +409,8 @@ def main():
     # TODO: The checking should be possible without storing everything in memory
     tree.scan_files(keep_contents=True)
     if not options.quiet:
-        sys.stderr.write('Finding config.h uses...\n')
-    tree.find_config_h_uses()
+        sys.stderr.write('Finding config.h and other preprocessor macro uses...\n')
+    tree.find_define_file_uses()
     if options.ignore_cycles:
         tree.load_cycle_suppression_list(options.ignore_cycles)
     if not options.quiet:
