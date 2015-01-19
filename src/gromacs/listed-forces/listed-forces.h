@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,8 @@
  *
  * \brief This file contains declarations of high-level functions used
  * by mdrun to compute energies and forces for listed interactions.
+ * Clients of libgromacs that want to evaluate listed interactions
+ * should call functions declared here.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
@@ -68,6 +70,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*! \brief Return whether this is an interaction that actually
+ * calculates a potential and works on multiple atoms (not e.g. a
+ * connection or a position restraint).
+ *
+ * \todo This function could go away when idef is not a big bucket of
+ * everything. */
+gmx_bool
+ftype_is_bonded_potential(int ftype);
 
 /*! \brief Calculates all listed force interactions.
  *
