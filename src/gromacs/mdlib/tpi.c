@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,7 @@
 #include "mtop_util.h"
 #include "pme.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/simd/simd.h"
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -672,7 +673,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             bEnergyOutOfBounds = FALSE;
 #ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
             /* With SSE the energy can overflow, check for this */
-            if (gmx_mm_check_and_reset_overflow())
+            if (gmx_simd_check_and_reset_overflow())
             {
                 if (debug)
                 {
