@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2503,30 +2503,38 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
                                          int nfile, const t_filenm fnm[],
                                          const char *part_suffix, gmx_bool *bAddPart)
 {
-    t_fileio            *fp;
-    gmx_int64_t          step = 0;
-    double               t;
-    /* This next line is nasty because the sub-structures of t_state
-     * cannot be assumed to be zeroed (or even initialized in ways the
-     * rest of the code might assume). Using snew would be better, but
-     * this will all go away for 5.0. */
-    t_state              state;
-    int                  nfiles;
-    gmx_file_position_t *outputfiles;
-    int                  nexist, f;
-    gmx_bool             bAppend;
-    char                *fn, suf_up[STRLEN];
+    gmx_int64_t step = 0;
+    gmx_bool    bAppend;
 
     bAppend = FALSE;
 
     if (SIMMASTER(cr))
     {
-        if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
+        if (!gmx_fexist(filename))
         {
             *simulation_part = 0;
         }
         else
         {
+            t_fileio            *fp;
+            double               t;
+            /* This next line is nasty because the sub-structures of t_state
+             * cannot be assumed to be zeroed (or even initialized in ways the
+             * rest of the code might assume). Using snew would be better, but
+             * this will all go away for 6.0. */
+            t_state              state;
+            int                  nfiles;
+            gmx_file_position_t *outputfiles;
+            int                  nexist, f;
+            char                *fn, suf_up[STRLEN];
+
+            fp = gmx_fio_open(filename, "r");
+
+            if (fp == NULL)
+            {
+                gmx_fatal(FARGS, "Checkpoint file '%s' exists, but can not be opened", filename);
+            }
+
             init_state(&state, 0, 0, 0, 0, 0);
 
             read_checkpoint_data(fp, simulation_part, &step, &t, &state,

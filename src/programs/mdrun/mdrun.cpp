@@ -600,7 +600,7 @@ int gmx_mdrun(int argc, char *argv[])
     unsigned long   Flags;
     ivec            ddxyz;
     int             dd_node_order;
-    gmx_bool        bAddPart;
+    gmx_bool        bAddPart, bFoundCheckPoint = FALSE;
     FILE           *fplog, *fpmulti;
     int             sim_part, sim_part_fn;
     const char     *part_suffix = ".part";
@@ -693,7 +693,8 @@ int gmx_mdrun(int argc, char *argv[])
                                             &sim_part_fn, NULL, cr,
                                             bAppendFiles, NFILE, fnm,
                                             part_suffix, &bAddPart);
-        if (sim_part_fn == 0 && MULTIMASTER(cr))
+        bFoundCheckPoint = (sim_part_fn > 0);
+        if (bFoundCheckPoint && MULTIMASTER(cr))
         {
             fprintf(stdout, "No previous checkpoint file present, assuming this is a new run.\n");
         }
@@ -738,6 +739,14 @@ int gmx_mdrun(int argc, char *argv[])
         {
             fprintf(stdout, "Checkpoint file is from part %d, new output files will be suffixed '%s'.\n", sim_part-1, suffix);
         }
+    }
+
+    /* Check if -cpi is set, but no checkpoint file found and log file found */
+    if (!bFoundCheckPoint && gmx_fexist(ftp2fn(efLOG, NFILE, fnm)))
+    {
+        gmx_fatal(FARGS, "Checkpoint file '%s' is not present, but log file '%s' is present. Terminating to avoid overwriting output files of a previous run.",
+                  opt2fn("-cpi", NFILE, fnm),
+                  ftp2fn(efLOG, NFILE, fnm));
     }
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
