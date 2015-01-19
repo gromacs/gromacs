@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -342,6 +342,15 @@ calc_one_bond(int thread,
 }
 
 } // namespace
+
+gmx_bool
+ftype_is_bonded_potential(int ftype)
+{
+    return
+        (interaction_function[ftype].flags & IF_BOND) &&
+        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES) &&
+        (ftype < F_GB12 || ftype > F_GB14);
+}
 
 void calc_listed(const gmx_multisim_t *ms,
                  const t_idef *idef,
