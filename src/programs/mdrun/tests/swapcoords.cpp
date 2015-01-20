@@ -38,7 +38,7 @@
  * Tests utilities for "Computational Electrophysiology" setups.
  *
  * \author Carsten Kutzner <ckutzne@gwdg.de>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 
