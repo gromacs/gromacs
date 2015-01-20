@@ -38,7 +38,7 @@
  * Tests for the mdrun -x functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 

@@ -38,7 +38,7 @@
  * Tests utilities for interactive molecular dynamics (IMD) setups.
  *
  * \author Carsten Kutzner <ckutzne@gwdg.de>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 
