@@ -48,8 +48,8 @@
  * \ingroup module_mdrun
  */
 
-#ifndef GMX_MDRUN_HANDLE_RESTARTS_H
-#define GMX_MDRUN_HANDLE_RESTARTS_H
+#ifndef GMX_MDRUN_HANDLERESTARTS_H
+#define GMX_MDRUN_HANDLERESTARTS_H
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/types/commrec.h"

@@ -61,6 +61,66 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
 
+/*! \brief Handle reading of mdrun -cpi to get basic info
+ *
+ * If a checkpoint file was supplied to mdrun and this is a master
+ * rank, read that file to get the old simulation part number, and the
+ * names of files used in that run.
+ *
+ * Does not alter the output parameters if there's no checkpoint file,
+ * or it cannot be read, or it should not be read on this non-master
+ * rank. This anticipates global broadcast of simulation part to all
+ * non-master ranks in a simulation.
+ *
+ * \param[in]    bIsSimMaster           Flag to permit only one rank to write to read the checkpoint file; should normally be set to SIMMASTER(cr)
+ * \param[in]    bIsMultiMaster         Flag to permit only one rank to write to stdout; should normally be set to MULTIMASTER(cr)
+ * \param[in]    NFILE                  Size of fnm struct
+ * \param[in]    fnm                    Filename parameters to mdrun
+ * \param[out]   partForThisSimulation  The number of the simulation part that will be run
+ * \param[out]   nfiles                 Number of output files from the previous run
+ * \param[out]   outputfiles            Pointer to array of output file names from the previous run.
+ *
+ * The outputfiles pointer is allocated in this function if the
+ * checkpoint is actually read. The caller has responsibility for
+ * calling sfree on \p outputfiles when it is non-NULL.
+ */
+static void
+getDataFromCheckpoint(const gmx_bool        bIsSimMaster,
+                      const gmx_bool        bIsMultiMaster,
+                      const int             NFILE,
+                      const t_filenm        fnm[],
+                      int                  *partForThisSimulation,
+                      int                  *nfiles,
+                      gmx_file_position_t **outputfiles)
+{
+    t_fileio *fp;
+
+    if (!opt2bSet("-cpi", NFILE, fnm) || !bIsSimMaster)
+    {
+        return;
+    }
+
+    const char *filename = opt2fn("-cpi", NFILE, fnm);
+
+    if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
+    {
+        if (bIsMultiMaster)
+        {
+            // TODO This might be a user input error if a .log file also exists, but currently we don't check for that.
+            fprintf(stdout, "No previous checkpoint file present, assuming this is a new run.\n");
+        }
+        return;
+    }
+
+    int partFromCpt;
+    // A checkpoint file exists and is open in fp
+    read_checkpoint_simulation_part_and_filenames(fp, &partFromCpt,
+                                                  nfiles, outputfiles);
+
+    // The new part number is the one from the checkpoint file, plus one
+    *partForThisSimulation = partFromCpt + 1;
+}
+
 /*! \brief Search for \p fnm_cp in fnm and return true iff found
  *
  * \todo This could be implemented sanely with a for loop. */
@@ -81,131 +141,136 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
     return (i < nfile && gmx_fexist(fnm_cp));
 }
 
-/*! \brief Support handling restarts
+/*! \brief Check whether all the files for appending exist
  *
- * \todo Clean this up (next patch)
- *
- * Read just the simulation 'generation' and with bTryToAppendFiles check files.
- * This is necessary already at the beginning of mdrun,
- * to be able to rename the logfile correctly.
- * When file appending is requested, checks which output files are present,
- * and returns TRUE/FALSE in bDoAppendFiles if all or none are present.
- * If only some output files are present, give a fatal error.
- * When bDoAppendFiles is TRUE upon return, bAddPart will tell whether the simulation part
- * needs to be added to the output file name.
- *
- * This routine cannot print tons of data, since it is called before
- * the log file is opened. */
-static void
-read_checkpoint_data(const char *filename, int *simulation_part,
-                     t_commrec *cr,
-                     gmx_bool bTryToAppendFiles,
-                     int nfile, const t_filenm fnm[],
-                     const char *part_suffix,
-                     gmx_bool *bAddPart,
-                     gmx_bool *bDoAppendFiles)
+ * Returns TRUE/FALSE if they all/none exist. Gives fatal error
+ * if only some of them exist. */
+static gmx_bool checkIfFilesToAppendExist(const char                *checkpointFilename,
+                                          const int                  nfile,
+                                          const t_filenm             fnm[],
+                                          const int                  nfiles,
+                                          const gmx_file_position_t *outputfiles)
 {
-    t_fileio            *fp;
-    int                  nfiles;
-    gmx_file_position_t *outputfiles;
-    int                  nexist, f;
-    char                *fn, suf_up[STRLEN];
+    int nexist = 0;
 
-    *bDoAppendFiles = FALSE;
-
-    if (SIMMASTER(cr))
+    for (int f = 0; f < nfiles; f++)
     {
-        if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
+        if (exist_output_file(outputfiles[f].filename, nfile, fnm))
         {
-            *simulation_part = 0;
-        }
-        else
-        {
-            read_checkpoint_simulation_part_and_filenames(fp,
-                                                          simulation_part,
-                                                          &nfiles,
-                                                          &outputfiles);
-
-            if (bTryToAppendFiles)
-            {
-                nexist = 0;
-                for (f = 0; f < nfiles; f++)
-                {
-                    if (exist_output_file(outputfiles[f].filename, nfile, fnm))
-                    {
-                        nexist++;
-                    }
-                }
-                if (nexist == nfiles)
-                {
-                    *bDoAppendFiles = bTryToAppendFiles;
-                }
-                else if (nexist > 0)
-                {
-                    fprintf(stderr,
-                            "Output file appending has been requested,\n"
-                            "but some output files listed in the checkpoint file %s\n"
-                            "are not present or are named differently by the current program:\n",
-                            filename);
-                    fprintf(stderr, "output files present:");
-                    for (f = 0; f < nfiles; f++)
-                    {
-                        if (exist_output_file(outputfiles[f].filename,
-                                              nfile, fnm))
-                        {
-                            fprintf(stderr, " %s", outputfiles[f].filename);
-                        }
-                    }
-                    fprintf(stderr, "\n");
-                    fprintf(stderr, "output files not present or named differently:");
-                    for (f = 0; f < nfiles; f++)
-                    {
-                        if (!exist_output_file(outputfiles[f].filename,
-                                               nfile, fnm))
-                        {
-                            fprintf(stderr, " %s", outputfiles[f].filename);
-                        }
-                    }
-                    fprintf(stderr, "\n");
-
-                    gmx_fatal(FARGS, "File appending requested, but %d of the %d output files are not present or are named differently", nfiles-nexist, nfiles);
-                }
-            }
-
-            if (*bDoAppendFiles)
-            {
-                if (nfiles == 0)
-                {
-                    gmx_fatal(FARGS, "File appending requested, but no output file information is stored in the checkpoint file");
-                }
-                fn = outputfiles[0].filename;
-                if (strlen(fn) < 4 ||
-                    gmx_strcasecmp(fn+strlen(fn)-4, ftp2ext(efLOG)) == 0)
-                {
-                    gmx_fatal(FARGS, "File appending requested, but the log file is not the first file listed in the checkpoint file");
-                }
-                /* Set bAddPart to whether the suffix string '.part' is present
-                 * in the log file name.
-                 */
-                strcpy(suf_up, part_suffix);
-                upstring(suf_up);
-                *bAddPart = (strstr(fn, part_suffix) != NULL ||
-                             strstr(fn, suf_up) != NULL);
-            }
-
-            sfree(outputfiles);
+            nexist++;
         }
     }
-    if (PAR(cr))
+    if (nexist == nfiles)
     {
-        gmx_bcast(sizeof(*simulation_part), simulation_part, cr);
-
-        if (*simulation_part > 0 && bTryToAppendFiles)
-        {
-            gmx_bcast(sizeof(*bDoAppendFiles), bDoAppendFiles, cr);
-            gmx_bcast(sizeof(*bAddPart), bAddPart, cr);
-        }
+        return TRUE;
     }
+    if (nexist > 0)
+    {
+        fprintf(stderr,
+                "Output file appending has been requested,\n"
+                "but some output files listed in the checkpoint file %s\n"
+                "are not present or are named differently by the current program:\n",
+                checkpointFilename);
+        fprintf(stderr, "output files present:");
+        for (int f = 0; f < nfiles; f++)
+        {
+            if (exist_output_file(outputfiles[f].filename,
+                                  nfile, fnm))
+            {
+                fprintf(stderr, " %s", outputfiles[f].filename);
+            }
+        }
+        fprintf(stderr, "\n");
+        fprintf(stderr, "output files not present or named differently:");
+        for (int f = 0; f < nfiles; f++)
+        {
+            if (!exist_output_file(outputfiles[f].filename,
+                                   nfile, fnm))
+            {
+                fprintf(stderr, " %s", outputfiles[f].filename);
+            }
+        }
+        fprintf(stderr, "\n");
+
+        gmx_fatal(FARGS, "File appending requested, but %d of the %d output files are not present or are named differently", nfiles-nexist, nfiles);
+    }
+    return FALSE;
+}
+
+/*! \brief Return whether the conditions on this rank permit appending
+ *
+ * If using mdrun -append and the old simulation part number is > 1,
+ * appending might occur. Check that the files on disk form a
+ * complete/empty set, and prepare to return true/false
+ * respectively. If only some output files are present, give a fatal
+ * error. However, if the .log filename in the checkpoint file
+ * contains \c part_suffix, then do not append any files.
+ *
+ * Gives fatal errors if \p nfiles and \p outputfiles are malformed.
+ *
+ * \param[in]    bTryToAppendFiles      Whether mdrun -append was used
+ * \param[in]    NFILE                  Size of fnm struct
+ * \param[in]    fnm                    Filename parameters to mdrun
+ * \param[in]    part_suffix            Suffix string used to produce filenames like "md.part0003.log"
+ * \param[in]    partForThisSimulation  The number of the simulation part that will be run
+ * \param[in]    nfiles                 Number of output files from the previous run
+ * \param[in]    outputfiles            Pointer to array of output file names from the previous run
+ *
+ * \return On master rank, whether the conditions are correct for the
+ * run to actually do appending; otherwise false. It is expected that
+ * non-master ranks will get the information via broadcast.
+ */
+static gmx_bool
+chooseWhetherToAppend(const gmx_bool             bTryToAppendFiles,
+                      const int                  NFILE,
+                      const t_filenm             fnm[],
+                      const char                *part_suffix,
+                      const int                  partForThisSimulation,
+                      const int                  nfiles,
+                      const gmx_file_position_t *outputfiles)
+{
+    gmx_bool bDoAppendFiles;
+
+    if (!bTryToAppendFiles || partForThisSimulation == 1)
+    {
+        return FALSE;
+    }
+
+    if (nfiles == 0)
+    {
+        gmx_fatal(FARGS, "File appending requested, but no output file information is stored in the checkpoint file");
+    }
+    bDoAppendFiles = checkIfFilesToAppendExist(opt2fn("-cpi", NFILE, fnm),
+                                               NFILE, fnm,
+                                               nfiles, outputfiles);
+
+    if (bDoAppendFiles)
+    {
+        /* Check that the .log file is the first one in the checkpoint
+           file, and see whether it contains the part suffix, in which
+           case we'll have to continue doing that. */
+        char        suf_up[STRLEN];
+        const char *fn = outputfiles[0].filename;
+        gmx_bool    bNeedToAddPart;
+
+        if (strlen(fn) < 4 ||
+            gmx_strcasecmp(fn+strlen(fn)-4, ftp2ext(efLOG)) == 0)
+        {
+            gmx_fatal(FARGS, "File appending requested, but the name of the previous log file in the checkpoint file is either invalid not listed first");
+        }
+        /* Set bNeedToAddPart to whether the suffix string '.part' is
+         * present in the log file name. */
+        strcpy(suf_up, part_suffix);
+        upstring(suf_up);
+        bNeedToAddPart = (strstr(fn, part_suffix) != NULL ||
+                          strstr(fn, suf_up) != NULL);
+        /* We can't start appending to files that previously had
+           explicit .part names, even if somehow all the other
+           conditions are satisfied. */
+        bDoAppendFiles = !bNeedToAddPart;
+    }
+
+    return bDoAppendFiles;
 }
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
@@ -217,70 +282,69 @@ handleRestarts(t_commrec *cr,
                gmx_bool  *bDoAppendFiles,
                gmx_bool  *bStartFromCpt)
 {
-    gmx_bool        bAddPart;
-    int             sim_part, sim_part_fn;
-    const char     *part_suffix = ".part";
-    FILE           *fpmulti;
+    const char *part_suffix = ".part";
+    // Set safe default
+    int         partForThisSimulation = 1;
 
-    bAddPart = !bTryToAppendFiles;
-
-    /* Check if there is ANY checkpoint file available */
-    sim_part    = 1;
-    sim_part_fn = sim_part;
-    if (opt2bSet("-cpi", NFILE, fnm))
     {
-        read_checkpoint_data(opt2fn_master("-cpi", NFILE, fnm, cr),
-                             &sim_part_fn, cr,
-                             bTryToAppendFiles, NFILE, fnm,
-                             part_suffix, &bAddPart,
-                             bDoAppendFiles);
-        if (sim_part_fn == 0 && MULTIMASTER(cr))
-        {
-            fprintf(stdout, "No previous checkpoint file present, assuming this is a new run.\n");
-        }
-        else
-        {
-            sim_part = sim_part_fn + 1;
-        }
+        int                  nfiles;
+        gmx_file_position_t *outputfiles = NULL;
 
-        if (MULTISIM(cr) && MASTER(cr))
+        getDataFromCheckpoint(SIMMASTER(cr),
+                              MULTIMASTER(cr),
+                              NFILE,
+                              fnm,
+                              &partForThisSimulation,
+                              &nfiles,
+                              &outputfiles);
+
+        *bDoAppendFiles = chooseWhetherToAppend(bTryToAppendFiles,
+                                                NFILE, fnm, part_suffix,
+                                                partForThisSimulation,
+                                                nfiles,
+                                                outputfiles);
+        if (outputfiles)
         {
-            if (MULTIMASTER(cr))
-            {
-                /* Log file is not yet available, so if there's a
-                 * problem we can only write to stderr. */
-                fpmulti = stderr;
-            }
-            else
-            {
-                fpmulti = NULL;
-            }
-            check_multi_int(fpmulti, cr->ms, sim_part, "simulation part", TRUE);
+            sfree(outputfiles);
         }
     }
-    else
-    {
-        *bDoAppendFiles = FALSE;
-    }
-    *bStartFromCpt = sim_part > 1;
 
-    if (!*bDoAppendFiles)
+    /* Communicate results of checks */
+    if (PAR(cr))
     {
-        sim_part_fn = sim_part;
+        gmx_bcast(sizeof(partForThisSimulation), &partForThisSimulation, cr);
+
+        if (partForThisSimulation > 1 && bTryToAppendFiles)
+        {
+            /* In this case, we need to coordinate whether we'll do
+               appending. Otherwise, the default for bDoAppendFiles
+               will do. */
+            gmx_bcast(sizeof(*bDoAppendFiles), bDoAppendFiles, cr);
+        }
+    }
+    *bStartFromCpt = partForThisSimulation > 1;
+
+    if (*bDoAppendFiles && MULTISIM(cr) && MASTER(cr))
+    {
+        /* Log file is not yet available, so if there's a
+         * problem we can only write to stderr. */
+        check_multi_int(stderr, cr->ms, partForThisSimulation, "simulation part", TRUE);
     }
 
-    if (bAddPart)
+    if (*bStartFromCpt && !*bDoAppendFiles)
     {
+        /* Now modify filenames on all ranks (which happens only when
+           we're not appending) */
         char suffix[STRLEN];
 
-        /* Rename all output files (except checkpoint files) */
-        /* create new part name first (zero-filled) */
-        sprintf(suffix, "%s%04d", part_suffix, sim_part_fn);
+        /* Rename all output files (except checkpoint files) using the
+           suffix containing the new part number. */
+        sprintf(suffix, "%s%04d", part_suffix, partForThisSimulation);
 
         add_suffix_to_output_names(fnm, NFILE, suffix);
         if (MULTIMASTER(cr))
         {
-            fprintf(stdout, "Checkpoint file is from part %d, new output files will be suffixed '%s'.\n", sim_part-1, suffix);
+            fprintf(stdout, "Checkpoint file is from part %d, new output files will be suffixed '%s'.\n", partForThisSimulation-1, suffix);
         }
     }
 }
