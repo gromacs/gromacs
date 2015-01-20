@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2430,22 +2430,20 @@ int gmx_tune_pme(int argc, char *argv[])
     create_command_line_snippets(bAppendFiles, bKeepAndNumCPT, bResetCountersHalfWay, presteps,
                                  NFILE, fnm, &cmd_args_bench, &cmd_args_launch, ExtraArgs);
 
-    /* Read in checkpoint file if requested */
+    /* Prepare to use checkpoint file if requested */
     sim_part = 1;
     if (opt2bSet("-cpi", NFILE, fnm))
     {
-        snew(cr, 1);
-        cr->duty = DUTY_PP; /* makes the following routine happy */
-        read_checkpoint_simulation_part(opt2fn("-cpi", NFILE, fnm),
-                                        &sim_part, &cpt_steps, cr,
-                                        FALSE, NFILE, fnm, NULL, NULL);
-        sfree(cr);
-        sim_part++;
-        /* sim_part will now be 1 if no checkpoint file was found */
-        if (sim_part <= 1)
+        const char *filename = opt2fn("-cpi", NFILE, fnm);
+        int         cpt_sim_part;
+        read_checkpoint_part_and_step(filename,
+                                      &cpt_sim_part, &cpt_steps);
+        if (cpt_sim_part == 0)
         {
-            gmx_fatal(FARGS, "Checkpoint file %s not found!", opt2fn("-cpi", NFILE, fnm));
+            gmx_fatal(FARGS, "Checkpoint file %s could not be read!", filename);
         }
+        /* tune_pme will run the next part of the simulation */
+        sim_part = cpt_sim_part + 1;
     }
 
     /* Open performance output file and write header info */

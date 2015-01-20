@@ -690,7 +690,7 @@ int gmx_mdrun(int argc, char *argv[])
         bAppendFiles =
             read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
                                                           fnm, cr),
-                                            &sim_part_fn, NULL, cr,
+                                            &sim_part_fn, cr,
                                             bAppendFiles, NFILE, fnm,
                                             part_suffix, &bAddPart);
         if (sim_part_fn == 0 && MULTIMASTER(cr))
