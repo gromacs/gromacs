@@ -2516,145 +2516,24 @@ void list_checkpoint(const char *fn, FILE *out)
     done_state(&state);
 }
 
-
-static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm fnm[])
-{
-    int i;
-
-    /* Check if the output file name stored in the checkpoint file
-     * is one of the output file names of mdrun.
-     */
-    i = 0;
-    while (i < nfile &&
-           !(is_output(&fnm[i]) && strcmp(fnm_cp, fnm[i].fns[0]) == 0))
-    {
-        i++;
-    }
-
-    return (i < nfile && gmx_fexist(fnm_cp));
-}
-
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         t_commrec *cr,
-                                         gmx_bool bAppendReq,
-                                         int nfile, const t_filenm fnm[],
-                                         const char *part_suffix, gmx_bool *bAddPart)
+void
+read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
+                                              int                  *simulation_part,
+                                              int                  *nfiles,
+                                              gmx_file_position_t **outputfiles)
 {
-    t_fileio            *fp;
-    gmx_int64_t          step = 0;
-    double               t;
-    /* This next line is nasty because the sub-structures of t_state
-     * cannot be assumed to be zeroed (or even initialized in ways the
-     * rest of the code might assume). Using snew would be better, but
-     * this will all go away for 5.0. */
-    t_state              state;
-    int                  nfiles;
-    gmx_file_position_t *outputfiles;
-    int                  nexist, f;
-    gmx_bool             bAppend;
-    char                *fn, suf_up[STRLEN];
+    gmx_int64_t step = 0;
+    double      t;
+    t_state     state;
 
-    bAppend = FALSE;
+    init_state(&state, 0, 0, 0, 0, 0);
 
-    if (SIMMASTER(cr))
+    read_checkpoint_data(fp, simulation_part, &step, &t, &state,
+                         nfiles, outputfiles);
+    if (gmx_fio_close(fp) != 0)
     {
-        if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
-        {
-            *simulation_part = 0;
-        }
-        else
-        {
-            init_state(&state, 0, 0, 0, 0, 0);
-
-            read_checkpoint_data(fp, simulation_part, &step, &t, &state,
-                                 &nfiles, &outputfiles);
-            if (gmx_fio_close(fp) != 0)
-            {
-                gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
-            }
-            done_state(&state);
-
-            if (bAppendReq)
-            {
-                nexist = 0;
-                for (f = 0; f < nfiles; f++)
-                {
-                    if (exist_output_file(outputfiles[f].filename, nfile, fnm))
-                    {
-                        nexist++;
-                    }
-                }
-                if (nexist == nfiles)
-                {
-                    bAppend = bAppendReq;
-                }
-                else if (nexist > 0)
-                {
-                    fprintf(stderr,
-                            "Output file appending has been requested,\n"
-                            "but some output files listed in the checkpoint file %s\n"
-                            "are not present or are named differently by the current program:\n",
-                            filename);
-                    fprintf(stderr, "output files present:");
-                    for (f = 0; f < nfiles; f++)
-                    {
-                        if (exist_output_file(outputfiles[f].filename,
-                                              nfile, fnm))
-                        {
-                            fprintf(stderr, " %s", outputfiles[f].filename);
-                        }
-                    }
-                    fprintf(stderr, "\n");
-                    fprintf(stderr, "output files not present or named differently:");
-                    for (f = 0; f < nfiles; f++)
-                    {
-                        if (!exist_output_file(outputfiles[f].filename,
-                                               nfile, fnm))
-                        {
-                            fprintf(stderr, " %s", outputfiles[f].filename);
-                        }
-                    }
-                    fprintf(stderr, "\n");
-
-                    gmx_fatal(FARGS, "File appending requested, but %d of the %d output files are not present or are named differently", nfiles-nexist, nfiles);
-                }
-            }
-
-            if (bAppend)
-            {
-                if (nfiles == 0)
-                {
-                    gmx_fatal(FARGS, "File appending requested, but no output file information is stored in the checkpoint file");
-                }
-                fn = outputfiles[0].filename;
-                if (strlen(fn) < 4 ||
-                    gmx_strcasecmp(fn+strlen(fn)-4, ftp2ext(efLOG)) == 0)
-                {
-                    gmx_fatal(FARGS, "File appending requested, but the log file is not the first file listed in the checkpoint file");
-                }
-                /* Set bAddPart to whether the suffix string '.part' is present
-                 * in the log file name.
-                 */
-                strcpy(suf_up, part_suffix);
-                upstring(suf_up);
-                *bAddPart = (strstr(fn, part_suffix) != NULL ||
-                             strstr(fn, suf_up) != NULL);
-            }
-
-            sfree(outputfiles);
-        }
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(*simulation_part), simulation_part, cr);
-
-        if (*simulation_part > 0 && bAppendReq)
-        {
-            gmx_bcast(sizeof(bAppend), &bAppend, cr);
-            gmx_bcast(sizeof(*bAddPart), bAddPart, cr);
-        }
-    }
-
-    return bAppend;
+    done_state(&state);
 }
