@@ -34,6 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \defgroup module_mdrun Implementation of mdrun
+ * \ingroup group_mdrun
+ *
+ * \brief This module contains code that implements mdrun.
+ */
+/*! \internal \file
+ *
+ * \brief This file implements mdrun
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Erik Lindahl <erik@kth.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *
+ * \ingroup module_mdrun
+ */
 #include "gmxpre.h"
 
 #include "config.h"
@@ -56,6 +72,8 @@
 
 #include "mdrun_main.h"
 
+/*! \brief Return whether either of the command-line parameters that
+ *  will trigger a multi-simulation is set */
 static bool is_multisim_option_set(int argc, const char *const argv[])
 {
     for (int i = 0; i < argc; ++i)
@@ -68,6 +86,7 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
     return false;
 }
 
+//! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
 {
     const char   *desc[] = {
@@ -441,7 +460,7 @@ int gmx_mdrun(int argc, char *argv[])
         { efXVG, "-if",     "imdforces", ffOPTWR },
         { efXVG, "-swap",   "swapions", ffOPTWR }
     };
-#define NFILE asize(fnm)
+    const int     NFILE = asize(fnm);
 
     /* Command line options ! */
     gmx_bool        bDDBondCheck  = TRUE;
