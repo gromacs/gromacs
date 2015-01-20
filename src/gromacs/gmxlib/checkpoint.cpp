@@ -2258,6 +2258,44 @@ void load_checkpoint(const char *fn, FILE **fplog,
     ir->simulation_part += 1;
 }
 
+void read_checkpoint_part_and_step(const char  *filename,
+                                   int         *simulation_part,
+                                   gmx_int64_t *step)
+{
+    int       file_version;
+    char     *version, *btime, *buser, *bhost, *fprog, *ftime;
+    int       double_prec;
+    int       eIntegrator;
+    int       nppnodes, npme;
+    ivec      dd_nc;
+    int       flags_eks, flags_enh, flags_dfh;
+    double    t;
+    t_state   state;
+    t_fileio *fp;
+
+    if (filename == NULL ||
+        !gmx_fexist(filename) ||
+        (!(fp = gmx_fio_open(filename, "r"))))
+    {
+        *simulation_part = 0;
+        *step            = 0;
+        return;
+    }
+
+    /* Not calling initializing state before use is nasty, but all we
+       do is read into its member variables and throw the struct away
+       again immediately. */
+
+    do_cpt_header(gmx_fio_getxdr(fp), TRUE, &file_version,
+                  &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
+                  &eIntegrator, simulation_part, step, &t, &nppnodes, dd_nc, &npme,
+                  &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
+                  &(state.dfhist.nlambda), &state.flags, &flags_eks, &flags_enh, &flags_dfh,
+                  &state.edsamstate.nED, &state.swapstate.eSwapCoords, NULL);
+
+    gmx_fio_close(fp);
+}
+
 static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                                  gmx_int64_t *step, double *t, t_state *state,
                                  int *nfiles, gmx_file_position_t **outputfiles)
@@ -2499,7 +2537,7 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         gmx_int64_t *cpt_step, t_commrec *cr,
+                                         t_commrec *cr,
                                          gmx_bool bAppendReq,
                                          int nfile, const t_filenm fnm[],
                                          const char *part_suffix, gmx_bool *bAddPart)
@@ -2617,10 +2655,6 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
             gmx_bcast(sizeof(bAppend), &bAppend, cr);
             gmx_bcast(sizeof(*bAddPart), bAddPart, cr);
         }
-    }
-    if (NULL != cpt_step)
-    {
-        *cpt_step = step;
     }
 
     return bAppend;
