@@ -13,6 +13,10 @@ src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" fir
 src/gromacs/linearalgebra/gmx_lapack/*: warning: should include "config.h"
 src/gromacs/utility/baseversion-gen.c: warning: does not include "gmxpre.h" first
 
+# There's no decision yet on how to name and organize modules of functionality
+# specific to mdrun
+: error: no matching directory for module: module_mdrun
+
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests
 
