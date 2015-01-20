@@ -105,21 +105,20 @@ void read_checkpoint_part_and_step(const char  *filename,
                                    int         *simulation_part,
                                    gmx_int64_t *step);
 
-/* Read just the simulation 'generation' and with bAppendReq check files.
- * This is necessary already at the beginning of mdrun,
- * to be able to rename the logfile correctly.
- * When file appending is requested, checks which output files are present:
- * all present: return TRUE,
- * none present: return FALSE,
- * part present: fatal error.
- * When TRUE is returned, bAddPart will tell whether the simulation part
- * needs to be added to the output file name.
+/* ! \brief Read simulation part and output filenames from a checkpoint file
+ *
+ * Used by mdrun to handle restarts
+ *
+ * \param[in]  fp               Handle to open checkpoint file
+ * \param[out] simulation_part  The part of the simulation that wrote the checkpoint
+ * \param[out] nfiles           Number of output files from the previous run
+ * \param[out] outputfiles      Pointer to array of output file names from the previous run. Pointer is allocated in this function.
  */
-gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         t_commrec *cr,
-                                         gmx_bool bAppendReq,
-                                         int nfile, const t_filenm fnm[],
-                                         const char *part_suffix, gmx_bool *bAddPart);
+void
+read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
+                                              int                  *simulation_part,
+                                              int                  *nfiles,
+                                              gmx_file_position_t **outputfiles);
 
 #ifdef __cplusplus
 }
