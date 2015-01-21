@@ -283,7 +283,7 @@ typedef struct {
 } t_IMD;
 
 /* Abstract types for position swapping only defined in swapcoords.c */
-typedef struct swap *gmx_swapcoords_t;
+typedef struct t_swap *gmx_swapcoords_t;
 
 typedef struct {
     int              nstswap;           /* Every how many steps a swap is attempted?    */
