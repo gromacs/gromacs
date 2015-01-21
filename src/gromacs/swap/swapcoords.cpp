@@ -149,7 +149,7 @@ typedef struct swap_group
 /*! \internal \brief
  * Main (private) data structure for the position swapping protocol.
  */
-typedef struct swap
+typedef struct t_swap
 {
     int               swapdim;                       /**< One of XX, YY, ZZ                               */
     t_pbc            *pbc;                           /**< Needed to make molecules whole.                 */
