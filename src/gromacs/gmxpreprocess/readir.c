@@ -2737,8 +2737,9 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     {
         nrdf2[i] = 0;
         /* special accommodation for Shell particle that has mass, i.e.
-         * it is a Drude */
-        if (atom->ptype == eptAtom || atom->ptype == eptNucleus || ((atom->m > 0 && atom->ptype == eptShell)))
+         * it is a Drude with extended Lagrangian (SCF does not add to nrdf) */
+        if (atom->ptype == eptAtom || atom->ptype == eptNucleus || 
+            ((atom->m > 0 && atom->ptype == eptShell && ir->drude->drudemode == edrudeLagrangian)))
         {
             g = ggrpnr(groups, egcFREEZE, i);
             /* Double count nrdf for particle i */

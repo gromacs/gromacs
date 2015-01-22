@@ -90,6 +90,14 @@ static void low_mspeed(real tempi,
                     /* Drude T is not an absolute T and should not affect system T so we do not add to ekin */
                 }
             }
+            /* Drudes with mass, but using SCF */
+            else
+            {
+                for (m = 0; (m < DIM); m++)
+                {
+                    v[i][m] = 0;
+                }
+            }
         }
     }
 
