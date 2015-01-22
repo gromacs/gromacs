@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1016,7 +1016,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
      */
     evaluate_energy(fplog, cr,
                     top_global, s_min, top,
-                    inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                    inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     where();
@@ -1194,7 +1194,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
         /* Calculate energy for the trial step */
         evaluate_energy(fplog, cr,
                         top_global, s_c, top,
-                        inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                        inputrec, nrnb, wcycle, gstat,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, -1, FALSE);
 
@@ -1302,7 +1302,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                 /* Calculate energy for the trial step */
                 evaluate_energy(fplog, cr,
                                 top_global, s_b, top,
-                                inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                                inputrec, nrnb, wcycle, gstat,
                                 vsite, constr, fcd, graph, mdatoms, fr,
                                 mu_tot, enerd, vir, pres, -1, FALSE);
 
@@ -1722,7 +1722,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     ems.f   = f;
     evaluate_energy(fplog, cr,
                     top_global, &ems, top,
-                    inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                    inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     where();
@@ -1938,7 +1938,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         ems.f   = (rvec *)fc;
         evaluate_energy(fplog, cr,
                         top_global, &ems, top,
-                        inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                        inputrec, nrnb, wcycle, gstat,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, step, FALSE);
         EpotC = ems.epot;
@@ -2030,7 +2030,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 ems.f   = (rvec *)fb;
                 evaluate_energy(fplog, cr,
                                 top_global, &ems, top,
-                                inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                                inputrec, nrnb, wcycle, gstat,
                                 vsite, constr, fcd, graph, mdatoms, fr,
                                 mu_tot, enerd, vir, pres, step, FALSE);
                 EpotB = ems.epot;
@@ -2468,7 +2468,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
 
         evaluate_energy(fplog, cr,
                         top_global, s_try, top,
-                        inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                        inputrec, nrnb, wcycle, gstat,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, count, count == 0);
 
@@ -2750,7 +2750,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     cr->nnodes = 1;
     evaluate_energy(fplog, cr,
                     top_global, state_work, top,
-                    inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                    inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
     cr->nnodes = nnodes;
@@ -2791,7 +2791,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
             cr->nnodes = 1;
             evaluate_energy(fplog, cr,
                             top_global, state_work, top,
-                            inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                            inputrec, nrnb, wcycle, gstat,
                             vsite, constr, fcd, graph, mdatoms, fr,
                             mu_tot, enerd, vir, pres, atom*2, FALSE);
 
@@ -2804,7 +2804,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
             evaluate_energy(fplog, cr,
                             top_global, state_work, top,
-                            inputrec, nrnb, wcycle, gstat ? gstat : NULL,
+                            inputrec, nrnb, wcycle, gstat,
                             vsite, constr, fcd, graph, mdatoms, fr,
                             mu_tot, enerd, vir, pres, atom*2+1, FALSE);
             cr->nnodes = nnodes;
