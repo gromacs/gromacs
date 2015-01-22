@@ -476,10 +476,13 @@ class ModuleDependency(object):
         self._othermodule = othermodule
         self._includedfiles = []
         self._cyclesuppression = None
+        self._is_test_only_dependency = True
 
     def add_included_file(self, includedfile):
         """Add IncludedFile that is part of this dependency."""
         assert includedfile.get_file().get_module() == self._othermodule
+        if not includedfile.get_including_file().is_test_file():
+            self._is_test_only_dependency = False
         self._includedfiles.append(includedfile)
 
     def set_cycle_suppression(self):
@@ -489,6 +492,10 @@ class ModuleDependency(object):
     def is_cycle_suppressed(self):
         """Return whether cycles containing this dependency are suppressed."""
         return self._cyclesuppression is not None
+
+    def is_test_only_dependency(self):
+        """Return whether this dependency is only from test code."""
+        return self._is_test_only_dependency
 
     def get_other_module(self):
         """Get module that this dependency is to."""

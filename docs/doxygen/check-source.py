@@ -336,13 +336,11 @@ class ModuleDependencyGraph(object):
         self._tree = tree
 
     def iternodes(self):
-        for module in self._tree.get_modules():
-            if module.get_name() != 'module_testutils':
-                yield module
+        return self._tree.get_modules()
 
     def iteredges(self, module):
         for dependency in module.get_dependencies():
-            if dependency.get_other_module().get_name() != 'module_testutils':
+            if not dependency.is_test_only_dependency():
                 yield (dependency.get_other_module(), dependency)
 
     def report_cycle(self, cycle, reporter):
