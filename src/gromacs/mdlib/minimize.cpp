@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2479,7 +2479,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
 
         if (count == 0)
         {
-            s_min->epot = s_try->epot + 1;
+            s_min->epot = s_try->epot;
         }
 
         /* Print it if necessary  */
@@ -2489,10 +2489,10 @@ double do_steep(FILE *fplog, t_commrec *cr,
             {
                 fprintf(stderr, "Step=%5d, Dmax= %6.1e nm, Epot= %12.5e Fmax= %11.5e, atom= %d%c",
                         count, ustep, s_try->epot, s_try->fmax, s_try->a_fmax+1,
-                        (s_try->epot < s_min->epot) ? '\n' : '\r');
+                        ( (count == 0) || (s_try->epot < s_min->epot) ) ? '\n' : '\r');
             }
 
-            if (s_try->epot < s_min->epot)
+            if ( (count == 0) || (s_try->epot < s_min->epot) )
             {
                 /* Store the new (lower) energies  */
                 upd_mdebin(mdebin, FALSE, FALSE, (double)count,
