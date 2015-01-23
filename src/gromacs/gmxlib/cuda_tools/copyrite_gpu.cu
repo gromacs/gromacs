@@ -37,9 +37,6 @@
 
 #include <stdio.h>
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-
 #include "buildinfo.h"
 
 void gmx_print_version_info_gpu(FILE *fp)

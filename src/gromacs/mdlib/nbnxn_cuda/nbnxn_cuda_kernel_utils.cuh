@@ -316,7 +316,7 @@ float interpolate_coulomb_force_r(float r, float scale)
            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
 }
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static inline __device__
 float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)
