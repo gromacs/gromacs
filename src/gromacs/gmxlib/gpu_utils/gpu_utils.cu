@@ -163,13 +163,8 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     /* destroy context if we created one */
     if (id != -1)
     {
-#if CUDA_VERSION < 4000
-        cu_err = cudaThreadExit();
-        CU_RET_ERR(cu_err, "cudaThreadExit failed");
-#else
         cu_err = cudaDeviceReset();
         CU_RET_ERR(cu_err, "cudaDeviceReset failed");
-#endif
     }
 
     return 0;
@@ -490,11 +485,8 @@ gmx_bool free_gpu(
     {
         reset_gpu_application_clocks_status = reset_gpu_application_clocks( &(gpu_info->cuda_dev[gpuid]) );
     }
-#if CUDA_VERSION < 4000
-    stat = cudaThreadExit();
-#else
+
     stat = cudaDeviceReset();
-#endif
     strncpy(result_str, cudaGetErrorString(stat), STRLEN);
     return (stat == cudaSuccess) && reset_gpu_application_clocks_status;
 }
