@@ -58,10 +58,9 @@ if ((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
 endif()
 
 # CMake 3.0-3.1 has a bug in the following case, which breaks
-# configuration on at least BlueGene/Q. A patch for that bug has been
-# accepted for upcoming CMake 3.2.
+# configuration on at least BlueGene/Q. Fixed in 3.1.1
 if ((NOT CMAKE_VERSION VERSION_LESS "3.0.0") AND
-    (CMAKE_VERSION VERSION_LESS "3.2.0") AND
+    (CMAKE_VERSION VERSION_LESS "3.1.1") AND
         (CMAKE_CROSSCOMPILING AND NOT CMAKE_SYSTEM_PROCESSOR))
     message(STATUS "Cannot search for CUDA because the CMake find package has a bug. Set a valid CMAKE_SYSTEM_PROCESSOR if you need to detect CUDA")
 else()
