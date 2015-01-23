@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,6 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+/*! \internal \file
+ *  \brief
+ *  CUDA non-bonded kernel used through preprocessor-based code generation
+ *  of multiple kernel flavors, see nbnxn_cuda_kernels.cuh.
+ *
+ *  NOTE: No include fence as it is meant to be included multiple times.
+ *
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_mdlib
+ */
+#include "config.h"
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -296,7 +308,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                - on Kepler is much slower;
                - doesn't work on CUDA <v4.1
                Tested with nvcc 3.2 - 5.0.7 */
-#if !defined PRUNE_NBL && __CUDA_ARCH__ < 300 && CUDA_VERSION >= 4010
+#if !defined PRUNE_NBL && __CUDA_ARCH__ < 300 && GMX_CUDA_VERSION >= 4010
 #pragma unroll 4
 #endif
             for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
@@ -317,7 +329,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     fcj_buf = make_float3(0.0f);
 
                     /* The PME and RF kernels don't unroll with CUDA <v4.1. */
-#if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && defined EXCLUSION_FORCES)
+#if !defined PRUNE_NBL && !(GMX_CUDA_VERSION < 4010 && defined EXCLUSION_FORCES)
 #pragma unroll 8
 #endif
                     for (i = 0; i < NCL_PER_SUPERCL; i++)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <cuda.h>
 #include <cuda_profiler_api.h>
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
@@ -143,7 +142,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
 
         nbp->coulomb_tab = coul_tab;
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (dev_info->prop.major >= 3)
         {
@@ -162,7 +161,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
             CU_RET_ERR(stat, "cudaCreateTextureObject on coulomb_tab_texobj failed");
         }
         else
-#endif
+#endif  /* HAVE_CUDA_TEXOBJ_SUPPORT */
         {
             GMX_UNUSED_VALUE(dev_info);
             cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
@@ -376,7 +375,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         cu_copy_H2D(nbp->nbfp_comb, nbat->nbfp_comb, nnbfp_comb*sizeof(*nbp->nbfp_comb));
     }
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     if (dev_info->prop.major >= 3)
     {
@@ -411,7 +410,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         }
     }
     else
-#endif
+#endif /* HAVE_CUDA_TEXOBJ_SUPPORT */
     {
         cudaChannelFormatDesc cd = cudaCreateChannelDesc<float>();
         stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
@@ -580,7 +579,7 @@ void nbnxn_cuda_init(FILE                 *fplog,
          * priorities, because we are querying the priority range which in this
          * case will be a single value.
          */
-#if CUDA_VERSION >= 5050
+#if GMX_CUDA_VERSION >= 5050
         {
             int highest_priority;
             stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);
@@ -949,7 +948,7 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (cu_nb->dev_info->prop.major >= 3)
         {
@@ -1005,7 +1004,7 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
         }
     }
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     if (cu_nb->dev_info->prop.major >= 3)
     {
@@ -1022,7 +1021,7 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
 
     if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
     {
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (cu_nb->dev_info->prop.major >= 3)
         {

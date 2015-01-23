@@ -212,6 +212,39 @@ macro(gmx_gpu_setup)
     # set up nvcc options
     include(gmxManageNvccConfig)
 
+    gmx_check_if_changed(_cuda_version_changed CUDA_VERSION)
+
+    # Generate CUDA RT API version string which will end up in config.h
+    # We do this because nvcc is silly enough to not define its own version
+    # (which should match the CUDA runtime API version AFAICT) and we want to
+    # avoid creating the fragile dependency on cuda.h.
+    if (NOT GMX_CUDA_VERSION OR _cuda_version_changed)
+        MATH(EXPR GMX_CUDA_VERSION "${CUDA_VERSION_MAJOR}*1000 + ${CUDA_VERSION_MINOR}*10")
+    endif()
+
+    if (_cuda_version_changed)
+        # check the generated CUDA API version against the one present in cuda.h
+        try_compile(_get_cuda_version_compile_res
+            ${CMAKE_BINARY_DIR}
+            ${CMAKE_SOURCE_DIR}/cmake/TestCUDAVersion.c
+            COMPILE_DEFINITIONS "-DGMX_CUDA_VERSION=${GMX_CUDA_VERSION}"
+            CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${CUDA_TOOLKIT_INCLUDE}"
+            OUTPUT_VARIABLE _get_cuda_version_compile_out)
+
+        if (NOT _get_cuda_version_compile_res)
+            if (_get_cuda_version_compile_out MATCHES "CUDA version mismatch")
+                message(FATAL_ERROR "The CUDA API version generated internally from the compiler version does not match the version reported by cuda.h. This means either that the CUDA detection picked up mismatching nvcc and the CUDA headers (likely not part of the same toolkit installation) or that there is an error in the internal version generation. If you are sure that it is not the former causing the error (check the relevant cache variables), define the GMX_CUDA_VERSION cache variable to work around the error.")
+            else()
+                message(FATAL_ERROR "Could not detect CUDA runtime API version")
+            endif()
+        endif()
+    endif()
+
+    # texture objects are supported in CUDA 5.0 and later
+    if (CUDA_VERSION VERSION_GREATER 4.999)
+        set(HAVE_CUDA_TEXOBJ_SUPPORT 1)
+    endif()
+
     # Atomic operations used for polling wait for GPU
     # (to avoid the cudaStreamSynchronize + ECC bug).
     # ThreadMPI is now always included. Thus, we don't check for Atomics anymore here.
