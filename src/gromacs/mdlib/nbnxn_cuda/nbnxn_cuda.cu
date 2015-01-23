@@ -63,7 +63,7 @@
 
 #include "nbnxn_cuda_types.h"
 
-#if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
+#if defined HAVE_CUDA_TEXOBJ_SUPPORT && __CUDA_ARCH__ >= 300
 #define USE_TEXOBJ
 #endif
 
