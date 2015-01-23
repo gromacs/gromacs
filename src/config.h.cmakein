@@ -244,6 +244,12 @@
 /* Use GPU native acceleration */
 #cmakedefine GMX_GPU
 
+/* CUDA runtime API version (identical to CUDART_VERSION from cuda_runtime_api.h) */
+#cmakedefine GMX_CUDA_VERSION @GMX_CUDA_VERSION@
+
+/* Defined if texture objects are supported by CUDA */
+#cmakedefine HAVE_CUDA_TEXOBJ_SUPPORT
+
 /* Use NVML */
 #cmakedefine HAVE_NVML
 
