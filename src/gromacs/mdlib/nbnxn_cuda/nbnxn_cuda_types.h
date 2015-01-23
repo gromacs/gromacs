@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,18 +46,17 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
+#include "config.h"
+
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
-/* CUDA versions from 5.0 above support texture objects. */
-#if CUDA_VERSION >= 5000
-#define TEXOBJ_SUPPORTED
-#else  /* CUDA_VERSION */
+#ifndef HAVE_CUDA_TEXOBJ_SUPPORT
 /** This typedef allows us to define only one version of struct cu_nbparam */
 typedef int cudaTextureObject_t;
-#endif /* CUDA_VERSION */
+#endif
 
 #ifdef __cplusplus
 extern "C" {
