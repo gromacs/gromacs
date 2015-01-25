@@ -100,6 +100,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/gmx_tracing.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
@@ -665,6 +666,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         fprintf(fplog, "\n");
     }
 
+    /* start the tracer */
+    gmx_tracer_start();
+
     walltime_accounting_start(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     print_start(fplog, cr, walltime_accounting, "mdrun");
@@ -755,6 +759,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         multisim_nsteps = get_multisim_nsteps(cr, ir->nsteps);
     }
 
+    /* pause the tracer until we get to the resetstep */
+    gmx_tracer_pause();
 
     /* and stop now if we should */
     bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
@@ -1783,6 +1789,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
                                use_GPU(fr->nbv) ? fr->nbv : NULL);
             wcycle_set_reset_counters(wcycle, -1);
+
+            /* resume tracing after resetting counters*/
+            gmx_tracer_resume();
+
             if (!(cr->duty & DUTY_PME))
             {
                 /* Tell our PME node to reset its counters */
@@ -1806,6 +1816,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* Closing TNG files can include compressing data. Therefore it is good to do that
      * before stopping the time measurements. */
     mdoutf_tng_close(outf);
+
+    /* stop the tracer */
+    gmx_tracer_stop();
 
     /* Stop measuring walltime */
     walltime_accounting_end(walltime_accounting);

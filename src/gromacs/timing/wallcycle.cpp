@@ -260,7 +260,6 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
     wc->nthreads_pme        = nthreads_pme;
     wc->cycles_sum          = NULL;
 
-    gmx_tracer_start();
     snew(wc->bTracing, ewcNR);
     gmx_tracer_readconf(wc);
 
