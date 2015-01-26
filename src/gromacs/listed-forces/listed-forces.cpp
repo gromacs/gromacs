@@ -510,7 +510,7 @@ void calc_listed_lambda(const t_idef *idef,
 {
     int           ftype, nr_nonperturbed, nr;
     real          v;
-    real          dvdl_dum[efptNR];
+    real          dvdl_dum[efptNR] = {0};
     rvec         *f, *fshift;
     const  t_pbc *pbc_null;
     t_idef        idef_fe;
