@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1759,8 +1759,9 @@ static void check_match(FILE *fplog,
         int   gmx_major, gmx_minor;
         int   cpt_major, cpt_minor;
         sscanf(gmx_version(), "VERSION %5d.%5d", &gmx_major, &gmx_minor);
-        sscanf(version, "VERSION %5d.%5d", &cpt_major, &cpt_minor);
-        version_differs = (gmx_major != cpt_major || gmx_minor != cpt_minor);
+        int   ret = sscanf(version, "VERSION %5d.%5d", &cpt_major, &cpt_minor);
+        version_differs = (ret < 2 || gmx_major != cpt_major ||
+                           gmx_minor != cpt_minor);
     }
 
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
