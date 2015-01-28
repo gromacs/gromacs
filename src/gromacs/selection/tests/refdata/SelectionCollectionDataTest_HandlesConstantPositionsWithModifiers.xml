@@ -3,8 +3,8 @@
 <ReferenceData>
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
-      <String Name="Input">[1, -2, 3.5]</String>
-      <String Name="Text">[1, -2, 3.5]</String>
+      <String Name="Input">[0, 0, 0] plus [0, 1, 0]</String>
+      <String Name="Text">[0, 0, 0] plus [0, 1, 0]</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
   </ParsedSelections>
@@ -14,9 +14,13 @@
         <Int Name="Length">0</Int>
       </Sequence>
       <Sequence Name="Positions">
-        <Int Name="Length">1</Int>
+        <Int Name="Length">2</Int>
         <Position>
           <Int Name="RefId">0</Int>
+          <Int Name="MappedId">0</Int>
+        </Position>
+        <Position>
+          <Int Name="RefId">1</Int>
           <Int Name="MappedId">0</Int>
         </Position>
       </Sequence>
@@ -28,14 +32,23 @@
         <Int Name="Length">0</Int>
       </Sequence>
       <Sequence Name="Positions">
-        <Int Name="Length">1</Int>
+        <Int Name="Length">2</Int>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">1</Real>
-            <Real Name="Y">-2</Real>
-            <Real Name="Z">3.5</Real>
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
           </Vector>
           <Int Name="RefId">0</Int>
+          <Int Name="MappedId">0</Int>
+        </Position>
+        <Position>
+          <Vector Name="Coordinates">
+            <Real Name="X">0</Real>
+            <Real Name="Y">1</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Int Name="RefId">1</Int>
           <Int Name="MappedId">0</Int>
         </Position>
       </Sequence>

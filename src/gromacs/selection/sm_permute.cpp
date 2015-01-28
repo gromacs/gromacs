@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -238,7 +238,7 @@ free_data_permute(void *data)
 
 static void
 evaluate_permute(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
-                 gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
+                 gmx_ana_pos_t * /*p*/, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i, j, b;
@@ -261,7 +261,7 @@ evaluate_permute(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc *
                 /* De-permute the reference ID */
                 refid = refid - (refid % d->n) + d->perm[refid % d->n];
             }
-            gmx_ana_pos_append(out->u.p, p, b, refid);
+            gmx_ana_pos_append(out->u.p, &d->p, b, refid);
         }
     }
     gmx_ana_pos_append_finish(out->u.p);

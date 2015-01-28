@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1021,15 +1021,12 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t                     *data,
         sel->u.expr.method->init_frame(data->top, data->fr, data->pbc,
                                        sel->u.expr.mdata);
     }
-    GMX_RELEASE_ASSERT(sel->child != NULL,
-                       "Modifier element with a value must have a child");
-    if (sel->child->v.type != POS_VALUE)
+    if (sel->child && sel->child->v.type != POS_VALUE)
     {
         GMX_THROW(gmx::NotImplementedError("Non-position valued modifiers not implemented"));
     }
     sel->u.expr.method->pupdate(data->top, data->fr, data->pbc,
-                                sel->child->v.u.p,
-                                &sel->v, sel->u.expr.mdata);
+                                NULL, &sel->v, sel->u.expr.mdata);
 }
 
 
