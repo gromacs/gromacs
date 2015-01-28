@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,6 +87,10 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
         while (child->type == SEL_MODIFIER)
         {
             child = child->child;
+            if (!child)
+            {
+                break;
+            }
             if (child->type == SEL_SUBEXPRREF)
             {
                 child = child->child;
@@ -100,13 +104,16 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
                 }
             }
         }
-        /* For variable references, we should skip the
-         * SEL_SUBEXPRREF and SEL_SUBEXPR elements. */
-        if (child->type == SEL_SUBEXPRREF)
+        if (child)
         {
-            child = child->child->child;
+            /* For variable references, we should skip the
+             * SEL_SUBEXPRREF and SEL_SUBEXPR elements. */
+            if (child->type == SEL_SUBEXPRREF)
+            {
+                child = child->child->child;
+            }
+            bDynamic_ = (child->child->flags & SEL_DYNAMIC);
         }
-        bDynamic_ = (child->child->flags & SEL_DYNAMIC);
     }
     initCoveredFraction(CFRAC_NONE);
 }

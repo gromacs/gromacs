@@ -1028,12 +1028,25 @@ TEST_F(SelectionCollectionDataTest, HandlesUnsortedIndexGroupsInSelectionsDelaye
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
+
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)
 {
     static const char * const selections[] = {
         "[1, -2, 3.5]"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+             | efTestPositionMapping);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesConstantPositionsWithModifiers)
+{
+    static const char * const selections[] = {
+        "[0, 0, 0] plus [0, 1, 0]"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+             | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 

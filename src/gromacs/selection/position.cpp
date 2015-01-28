@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
             srenew(pos->f, n);
         }
     }
-    if (isize > 0)
+    if (isize >= 0)
     {
         gmx_ana_indexmap_reserve(&pos->m, n, isize);
     }
@@ -200,7 +200,7 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
 {
     if (bFirst)
     {
-        gmx_ana_pos_reserve(dest, src->count(), 0);
+        gmx_ana_pos_reserve(dest, src->count(), -1);
         if (src->v)
         {
             gmx_ana_pos_reserve_velocities(dest);
@@ -247,7 +247,8 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
     pos->m.mapb.nra = 0;
     pos->m.b.nr     = 0;
     pos->m.b.nra    = 0;
-    /* This should not really be necessary, but do it for safety... */
+    /* Initializing these should not really be necessary, but do it for
+     * safety... */
     pos->m.mapb.index[0] = 0;
     pos->m.b.index[0]    = 0;
     /* This function should only be used to construct all the possible
