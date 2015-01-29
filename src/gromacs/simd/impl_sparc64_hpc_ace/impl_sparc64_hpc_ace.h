@@ -244,7 +244,7 @@ gmx_simd_load_f_sparc64_hpc_ace(const float *m)
     /* We are not allowed to cast single-to-double registers, but we can
      * masquerade the memory location as a variable of type _fjsp_v2r4.
      */
-    const _fjsp_v2r4 *p = (const _fjsp_v2r4 *)m;
+    const _fjsp_v2r4 *p = (const _fjsp_v2r4 *)(m);
     _fjsp_v2r4        simd;
 
     simd = *p;

@@ -84,10 +84,10 @@
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
 #define gmx_simd_float_t           __vector float
-#define gmx_simd_load_f(m)         vec_ld(0, (const __vector float *)m)
+#define gmx_simd_load_f(m)         vec_ld(0, (const __vector float *)(m))
 #define gmx_simd_load1_f(m)        gmx_simd_load1_f_ibm_vmx(m)
 #define gmx_simd_set1_f(x)         gmx_simd_set1_f_ibm_vmx(x)
-#define gmx_simd_store_f(m, x)     vec_st(x, 0, (__vector float *)m)
+#define gmx_simd_store_f(m, x)     vec_st(x, 0, (__vector float *)(m))
 #undef  gmx_simd_loadu_f
 #undef  gmx_simd_storeu_f
 #define gmx_simd_setzero_f()       ((__vector float)vec_splat_u32(0))
@@ -118,9 +118,9 @@
 #define gmx_simd_set_exponent_f(a) gmx_simd_set_exponent_f_ibm_vmx(a)
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_fint32_t          __vector int
-#define gmx_simd_load_fi(m)        vec_ld(0, (const __vector int *)m)
-#define gmx_simd_set1_fi(i)        gmx_simd_set1_fi_ibm_vmx((int)i)
-#define gmx_simd_store_fi(m, x)    vec_st(x, 0, (__vector int *)m)
+#define gmx_simd_load_fi(m)        vec_ld(0, (const __vector int *)(m))
+#define gmx_simd_set1_fi(i)        gmx_simd_set1_fi_ibm_vmx((int)(i))
+#define gmx_simd_store_fi(m, x)    vec_st(x, 0, (__vector int *)(m))
 #undef  gmx_simd_loadu_fi
 #undef  gmx_simd_storeu_fi
 #define gmx_simd_setzero_fi()      vec_splat_s32(0)
