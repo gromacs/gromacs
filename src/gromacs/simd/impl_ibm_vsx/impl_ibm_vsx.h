@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,8 +111,8 @@
  ****************************************************/
 #define gmx_simd_float_t           __vector float
 #ifdef __GNUC__
-#    define gmx_simd_load_f(m)     vec_vsx_ld(0, (const float *)m)
-#    define gmx_simd_store_f(m, x) vec_vsx_st(x, 0, (float *)m)
+#    define gmx_simd_load_f(m)     vec_vsx_ld(0, (const float *)(m))
+#    define gmx_simd_store_f(m, x) vec_vsx_st(x, 0, (float *)(m))
 #else
 /* IBM xlC */
 #    define gmx_simd_load_f(m)     vec_xlw4(0, (float *)(m))
@@ -158,12 +158,12 @@
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_fint32_t          __vector signed int
 #ifdef __GNUC__
-#    define gmx_simd_load_fi(m)     vec_vsx_ld(0, (const int *)m)
-#    define gmx_simd_store_fi(m, x) vec_vsx_st(x, 0, (int *)m)
+#    define gmx_simd_load_fi(m)     vec_vsx_ld(0, (const int *)(m))
+#    define gmx_simd_store_fi(m, x) vec_vsx_st(x, 0, (int *)(m))
 #else
 /* IBM xlC */
-#    define gmx_simd_load_fi(m)     vec_xlw4(0, (int *)m)
-#    define gmx_simd_store_fi(m, x) vec_xstw4(x, 0, (int *)m)
+#    define gmx_simd_load_fi(m)     vec_xlw4(0, (int *)(m))
+#    define gmx_simd_store_fi(m, x) vec_xstw4(x, 0, (int *)(m))
 #endif
 #define gmx_simd_set1_fi(i)        vec_splats((int)(i))
 #define gmx_simd_loadu_fi          gmx_simd_load_fi
@@ -174,8 +174,8 @@
 #define gmx_simd_cvt_i2f(a)        vec_ctf(a, 0)
 #define gmx_simd_extract_fi(a, i)   gmx_simd_extract_fi_ibm_vsx(a, i)
 /* Integer logical ops on gmx_simd_fint32_t */
-#define gmx_simd_slli_fi(a, i)      vec_sl(a, vec_splats((unsigned int)i))
-#define gmx_simd_srli_fi(a, i)      vec_sr(a, vec_splats((unsigned int)i))
+#define gmx_simd_slli_fi(a, i)      vec_sl(a, vec_splats((unsigned int)(i)))
+#define gmx_simd_srli_fi(a, i)      vec_sr(a, vec_splats((unsigned int)(i)))
 #define gmx_simd_and_fi(a, b)       vec_and(a, b)
 #define gmx_simd_andnot_fi(a, b)    vec_andc(b, a)
 #define gmx_simd_or_fi(a, b)        vec_or(a, b)
@@ -300,8 +300,8 @@
 #define gmx_simd_cvt_d2i(a)         gmx_simd_cvtt_d2i(gmx_simd_round_d(a))
 #define gmx_simd_extract_di(a, i)   gmx_simd_extract_fi_ibm_vsx(a, (i)*2)
 /* Integer logical ops on gmx_simd_dint32_t */
-#define gmx_simd_slli_di(a, i)      vec_sl(a, vec_splats((unsigned int)i))
-#define gmx_simd_srli_di(a, i)      vec_sr(a, vec_splats((unsigned int)i))
+#define gmx_simd_slli_di(a, i)      vec_sl(a, vec_splats((unsigned int)(i)))
+#define gmx_simd_srli_di(a, i)      vec_sr(a, vec_splats((unsigned int)(i)))
 #define gmx_simd_and_di(a, b)       vec_and(a, b)
 #define gmx_simd_andnot_di(a, b)    vec_andc(b, a)
 #define gmx_simd_or_di(a, b)        vec_or(a, b)
