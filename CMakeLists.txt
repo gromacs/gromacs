@@ -472,7 +472,7 @@ endif()
 # Detect boost unless GMX_EXTERNAL_BOOST is explicitly OFF
 # Used for default if GMX_EXTERNAL_BOOST is not defined (first CMake pass)
 if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
-    find_package(Boost 1.44.0)
+    find_package(Boost QUIET 1.44.0)
     if(Boost_FOUND AND Boost_VERSION VERSION_LESS "104400")
         set(Boost_FOUND FALSE)
     endif()
