@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,11 +118,11 @@
 #define gmx_simd_set_exponent_f    gmx_simd_set_exponent_f_avx_256
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_fint32_t          __m256i
-#define gmx_simd_load_fi(m)        _mm256_load_si256((__m256i const*)m)
+#define gmx_simd_load_fi(m)        _mm256_load_si256((__m256i const*)(m))
 #define gmx_simd_set1_fi           _mm256_set1_epi32
-#define gmx_simd_store_fi(m, x)    _mm256_store_si256((__m256i *)m, x)
-#define gmx_simd_loadu_fi(m)       _mm256_loadu_si256((__m256i const*)m)
-#define gmx_simd_storeu_fi(m, x)   _mm256_storeu_si256((__m256i *)m, x)
+#define gmx_simd_store_fi(m, x)    _mm256_store_si256((__m256i *)(m), x)
+#define gmx_simd_loadu_fi(m)       _mm256_loadu_si256((__m256i const*)(m))
+#define gmx_simd_storeu_fi(m, x)   _mm256_storeu_si256((__m256i *)(m), x)
 #define gmx_simd_setzero_fi        _mm256_setzero_si256
 #define gmx_simd_cvt_f2i           _mm256_cvtps_epi32
 #define gmx_simd_cvtt_f2i          _mm256_cvttps_epi32
@@ -204,11 +204,11 @@
 #define gmx_simd_set_exponent_d    gmx_simd_set_exponent_d_avx_256
 /* integer datatype corresponding to double: gmx_simd_dint32_t */
 #define gmx_simd_dint32_t          __m128i
-#define gmx_simd_load_di(m)        _mm_load_si128((const __m128i *)m)
+#define gmx_simd_load_di(m)        _mm_load_si128((const __m128i *)(m))
 #define gmx_simd_set1_di           _mm_set1_epi32
-#define gmx_simd_store_di(m, x)     _mm_store_si128((__m128i *)m, x)
-#define gmx_simd_loadu_di(m)       _mm_loadu_si128((const __m128i *)m)
-#define gmx_simd_storeu_di(m, x)    _mm_storeu_si128((__m128i *)m, x)
+#define gmx_simd_store_di(m, x)     _mm_store_si128((__m128i *)(m), x)
+#define gmx_simd_loadu_di(m)       _mm_loadu_si128((const __m128i *)(m))
+#define gmx_simd_storeu_di(m, x)    _mm_storeu_si128((__m128i *)(m), x)
 #define gmx_simd_setzero_di        _mm_setzero_si128
 #define gmx_simd_cvt_d2i           _mm256_cvtpd_epi32
 #define gmx_simd_cvtt_d2i          _mm256_cvttpd_epi32
