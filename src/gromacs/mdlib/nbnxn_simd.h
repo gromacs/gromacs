@@ -61,7 +61,7 @@
 
 /* MIC for double is implemented in the SIMD module but so far missing in
    mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_mic.h */
-#if defined GMX_SIMD_X86_MIC && !defined GMX_DOUBLE
+#if ( defined GMX_SIMD_X86_MIC || defined GMX_SIMD_X86_AVX_512ER ) && !defined GMX_DOUBLE
 #define GMX_NBNXN_SIMD
 #endif
 
