@@ -447,6 +447,21 @@ class ConstArrayRef
             : begin_(array), end_(array + count)
         {
         }
+        /*! \brief
+         * Constructs a const reference to the same array as an existing reference
+         *
+         * \param[in] arrayRef  Reference to array
+         *
+         * This reference is valid only during the lifetime of the
+         * array from which the reference was made.
+         *
+         * \note For clarity, use the non-member function
+         * constArrayRefFromArrayRef instead.
+         */
+        ConstArrayRef(const ArrayRef<T> &arrayRef)
+            : begin_(arrayRef.begin()), end_(arrayRef.end())
+        {
+        }
         //! \endcond
 
         //! Returns an iterator to the beginning of the container.
@@ -553,6 +568,21 @@ ConstArrayRef<T> constArrayRefFromVector(typename std::vector<T>::const_iterator
     const T * p_begin = (begin != end) ? &*begin : NULL;
     const T * p_end   = p_begin + (end-begin);
     return constArrayRefFromPointers<T>(p_begin, p_end);
+}
+
+/*! \brief
+ * Constructs a reference to an array.
+ *
+ * \param[in] arrayRef  Existing reference to an array
+ *
+ * Underlying data must remain valid for the lifetime of this object.
+ *
+ * \related ConstArrayRef ArrayRef
+ */
+template <typename T>
+ConstArrayRef<T> constArrayRefFromArrayRef(const ArrayRef<T> &arrayRef)
+{
+    return ConstArrayRef<T>(arrayRef);
 }
 
 /*! \brief

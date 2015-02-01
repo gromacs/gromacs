@@ -58,6 +58,7 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/fileiohandler.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
@@ -68,6 +69,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/mpihandler.h"
 
 #include "mdrun_main.h"
 
@@ -418,7 +420,6 @@ int gmx_mdrun(int argc, char *argv[])
     unsigned long   Flags;
     ivec            ddxyz;
     int             dd_node_order;
-    gmx_bool        bDoAppendFiles, bStartFromCpt;
     FILE           *fplog;
     int             rc;
     char          **multidir = NULL;
@@ -495,8 +496,11 @@ int gmx_mdrun(int argc, char *argv[])
 #endif
     }
 
-    handleRestart(cr, bTryToAppendFiles, NFILE, fnm,
-                  &bDoAppendFiles, &bStartFromCpt);
+    gmx::FileIOHandlerPointer fileIOHandler(new gmx::FileIOHandler);
+    gmx::MpiHandlerPointer    mpiHandler(new gmx::MpiHandler(cr));
+    gmx::CommandLineFilenames mdrunFilenames(fnm);
+    gmx::RestartInformation   restartInfo;
+    restartInfo = gmx::handleRestart(fileIOHandler.get(), mpiHandler.get(), mdrunFilenames, bTryToAppendFiles);
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
@@ -505,10 +509,10 @@ int gmx_mdrun(int argc, char *argv[])
     Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
     Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
     Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
-    Flags = Flags | (bDoAppendFiles ? MD_APPENDFILES  : 0);
+    Flags = Flags | (restartInfo.bAppendFiles_ ? MD_APPENDFILES  : 0);
     Flags = Flags | (opt2parg_bSet("-append", asize(pa), pa) ? MD_APPENDFILESSET : 0);
     Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0);
-    Flags = Flags | (bStartFromCpt ? MD_STARTFROMCPT : 0);
+    Flags = Flags | (restartInfo.bStartFromCpt_ ? MD_STARTFROMCPT : 0);
     Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
     Flags = Flags | (bIMDwait      ? MD_IMDWAIT      : 0);
     Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
@@ -517,7 +521,7 @@ int gmx_mdrun(int argc, char *argv[])
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
        there instead.  */
-    if (MASTER(cr) && !bDoAppendFiles)
+    if (MASTER(cr) && !restartInfo.bAppendFiles_)
     {
         gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
                      Flags & MD_APPENDFILES, &fplog);
@@ -541,7 +545,7 @@ int gmx_mdrun(int argc, char *argv[])
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (MASTER(cr) && !bDoAppendFiles)
+    if (MASTER(cr) && !restartInfo.bAppendFiles_)
     {
         gmx_log_close(fplog);
     }

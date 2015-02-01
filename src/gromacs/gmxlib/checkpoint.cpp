@@ -68,6 +68,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
 #ifdef GMX_FAHCORE
@@ -2519,7 +2520,7 @@ void list_checkpoint(const char *fn, FILE *out)
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 void
-read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
+read_checkpoint_simulation_part_and_filenames(const char           *filename,
                                               int                  *simulation_part,
                                               int                  *nfiles,
                                               gmx_file_position_t **outputfiles)
@@ -2527,8 +2528,15 @@ read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
     gmx_int64_t step = 0;
     double      t;
     t_state     state;
+    t_fileio   *fp;
 
     init_state(&state, 0, 0, 0, 0, 0);
+
+    fp = gmx_fio_open(filename, "r");
+    if (!fp)
+    {
+        gmx_file(gmx::formatString("Checkpoint file '%s' exists, but can not be opened", filename).c_str());
+    }
 
     read_checkpoint_data(fp, simulation_part, &step, &t, &state,
                          nfiles, outputfiles);

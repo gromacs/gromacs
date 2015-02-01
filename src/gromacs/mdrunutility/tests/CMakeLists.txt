@@ -32,12 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDRUNUTILITY_SOURCES
+gmx_add_unit_test(
+    # Test name
+    MdrunUtilityTests
+    # executable name
+    mdrunutility-test
+    # code
     handlerestart.cpp
     handlerestart-impl.cpp
+    pargswrapper.cpp
     )
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MDRUNUTILITY_SOURCES} PARENT_SCOPE)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()

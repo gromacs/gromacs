@@ -109,13 +109,13 @@ void read_checkpoint_part_and_step(const char  *filename,
  *
  * Used by mdrun to handle restarts
  *
- * \param[in]  fp               Handle to open checkpoint file
+ * \param[in]  filename         Name of checkpoint file
  * \param[out] simulation_part  The part of the simulation that wrote the checkpoint
  * \param[out] nfiles           Number of output files from the previous run
  * \param[out] outputfiles      Pointer to array of output file names from the previous run. Pointer is allocated in this function.
  */
 void
-read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
+read_checkpoint_simulation_part_and_filenames(const char           *filename,
                                               int                  *simulation_part,
                                               int                  *nfiles,
                                               gmx_file_position_t **outputfiles);
